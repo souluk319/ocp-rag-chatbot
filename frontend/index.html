@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCP RAG Chatbot</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f1117;
+            color: #e4e4e7;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: #1a1b23;
+            border-bottom: 1px solid #2d2d3a;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .header h1 { font-size: 18px; font-weight: 600; color: #8b5cf6; }
+        .header .session-info { font-size: 12px; color: #71717a; flex: 1; }
+        .header .trace-toggle {
+            background: none; border: 1px solid #2d2d3a; color: #a1a1aa;
+            padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;
+        }
+        .header .trace-toggle.active { border-color: #8b5cf6; color: #8b5cf6; }
+        .header .new-chat-btn {
+            background: #8b5cf6; color: white; border: none;
+            padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+        }
+        .header .new-chat-btn:hover { background: #7c3aed; }
+
+        /* Main layout */
+        .main-layout {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        .chat-container {
+            flex: 1; overflow-y: auto; padding: 20px 24px;
+            display: flex; flex-direction: column; gap: 16px;
+        }
+
+        .message {
+            max-width: 80%; padding: 12px 16px; border-radius: 12px;
+            line-height: 1.7; font-size: 14px; word-break: break-word;
+        }
+        .message.user {
+            align-self: flex-end; background: #8b5cf6; color: white;
+            border-bottom-right-radius: 4px; white-space: pre-wrap;
+        }
+        .message.assistant {
+            align-self: flex-start; background: #1e1f2e;
+            border: 1px solid #2d2d3a; border-bottom-left-radius: 4px;
+        }
+        .message.assistant h1, .message.assistant h2, .message.assistant h3 {
+            margin: 12px 0 6px 0; color: #c4b5fd;
+        }
+        .message.assistant h1 { font-size: 18px; }
+        .message.assistant h2 { font-size: 16px; }
+        .message.assistant h3 { font-size: 15px; }
+        .message.assistant p { margin: 6px 0; }
+        .message.assistant ul, .message.assistant ol { margin: 6px 0; padding-left: 20px; }
+        .message.assistant li { margin: 3px 0; }
+        .message.assistant code {
+            background: #2d2d3a; padding: 1px 5px; border-radius: 3px;
+            font-family: 'SF Mono', 'Consolas', monospace; font-size: 13px;
+        }
+        .message.assistant pre {
+            background: #0f1117; border: 1px solid #2d2d3a; border-radius: 6px;
+            padding: 10px; margin: 8px 0; overflow-x: auto;
+        }
+        .message.assistant pre code { background: none; padding: 0; }
+        .message.assistant strong { color: #e2e8f0; }
+        .message .sources {
+            margin-top: 8px; padding-top: 8px; border-top: 1px solid #3d3d4a;
+            font-size: 12px; color: #a1a1aa;
+        }
+        .message .rewrite-info {
+            font-size: 11px; color: #8b5cf6; margin-bottom: 6px; font-style: italic;
+        }
+        .message .cache-badge {
+            display: inline-block; background: #22c55e; color: white;
+            font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-bottom: 6px;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            align-self: flex-start; padding: 12px 16px; background: #1e1f2e;
+            border: 1px solid #2d2d3a; border-radius: 12px; border-bottom-left-radius: 4px;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .typing-indicator span {
+            display: inline-block; width: 8px; height: 8px; background: #8b5cf6;
+            border-radius: 50%; animation: bounce 1.4s ease-in-out infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+            30% { transform: translateY(-8px); opacity: 1; }
+        }
+
+        .message.error {
+            align-self: center; background: #2d1215; border: 1px solid #7f1d1d;
+            color: #fca5a5; font-size: 13px; max-width: 90%;
+        }
+
+        /* ========== Trace Panel ========== */
+        .trace-panel {
+            width: 0;
+            overflow: hidden;
+            background: #12131a;
+            border-left: 1px solid #2d2d3a;
+            transition: width 0.3s ease;
+            flex-shrink: 0;
+        }
+        .trace-panel.open { width: 380px; }
+
+        .trace-inner {
+            width: 380px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .trace-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #2d2d3a;
+            font-size: 13px;
+            font-weight: 600;
+            color: #8b5cf6;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .trace-header .clear-btn {
+            background: none; border: none; color: #71717a; cursor: pointer; font-size: 11px;
+        }
+        .trace-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        /* Trace Steps */
+        .trace-group {
+            margin-bottom: 12px;
+            border: 1px solid #1e1f2e;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .trace-group-header {
+            padding: 6px 10px;
+            background: #1a1b23;
+            font-size: 11px;
+            color: #71717a;
+            border-bottom: 1px solid #1e1f2e;
+        }
+        .trace-step {
+            padding: 8px 12px;
+            border-bottom: 1px solid #1a1b23;
+            font-size: 12px;
+        }
+        .trace-step:last-child { border-bottom: none; }
+        .trace-step-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .trace-icon {
+            width: 18px; height: 18px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; flex-shrink: 0;
+        }
+        .trace-icon.done { background: #064e3b; color: #34d399; }
+        .trace-icon.hit { background: #064e3b; color: #34d399; }
+        .trace-icon.miss { background: #422006; color: #fbbf24; }
+        .trace-icon.streaming { background: #1e1b4b; color: #818cf8; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        .trace-step-name {
+            font-weight: 500; color: #e4e4e7; flex: 1;
+        }
+        .trace-step-time {
+            color: #71717a; font-size: 11px; font-family: monospace;
+        }
+        .trace-detail {
+            margin-top: 4px;
+            padding: 6px 8px;
+            background: #0f1117;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #a1a1aa;
+            line-height: 1.5;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .trace-detail .key { color: #8b5cf6; }
+        .trace-detail .val-str { color: #34d399; }
+        .trace-detail .val-num { color: #fbbf24; }
+        .trace-detail .val-bool-true { color: #34d399; }
+        .trace-detail .val-bool-false { color: #71717a; }
+
+        /* Total time bar */
+        .trace-total {
+            padding: 8px 12px;
+            background: #1a1b23;
+            border-top: 1px solid #2d2d3a;
+            font-size: 12px;
+            color: #a1a1aa;
+            display: flex;
+            justify-content: space-between;
+        }
+        .trace-total .time { color: #8b5cf6; font-weight: 600; font-family: monospace; }
+
+        /* Input Area */
+        .input-container {
+            background: #1a1b23; border-top: 1px solid #2d2d3a; padding: 16px 24px;
+            flex-shrink: 0;
+        }
+        .input-wrapper {
+            display: flex; gap: 10px; max-width: 900px; margin: 0 auto;
+        }
+        .input-wrapper textarea {
+            flex: 1; background: #0f1117; border: 1px solid #2d2d3a;
+            border-radius: 10px; padding: 10px 14px; color: #e4e4e7;
+            font-size: 14px; resize: none; outline: none;
+            min-height: 44px; max-height: 120px; font-family: inherit; line-height: 1.5;
+        }
+        .input-wrapper textarea:focus { border-color: #8b5cf6; }
+        .input-wrapper button {
+            background: #8b5cf6; color: white; border: none; border-radius: 10px;
+            padding: 0 20px; cursor: pointer; font-size: 14px; font-weight: 500;
+        }
+        .input-wrapper button:hover { background: #7c3aed; }
+        .input-wrapper button:disabled { background: #3d3d4a; cursor: not-allowed; }
+
+        .welcome { text-align: center; margin: auto; max-width: 500px; }
+        .welcome h2 { color: #8b5cf6; margin-bottom: 12px; font-size: 22px; }
+        .welcome p { color: #71717a; font-size: 14px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>OCP RAG Chatbot</h1>
+        <span class="session-info" id="sessionInfo">New Session</span>
+        <button class="trace-toggle" id="traceToggle" onclick="toggleTrace()">Pipeline Trace</button>
+        <button class="new-chat-btn" onclick="newSession()">+ New Chat</button>
+    </div>
+
+    <div class="main-layout">
+        <div class="chat-area">
+            <div class="chat-container" id="chatContainer">
+                <div class="welcome" id="welcome">
+                    <h2>OCP RAG Chatbot</h2>
+                    <p>OpenShift Container Platform 운영 관련 질문을 해보세요.<br>
+                    문서 기반 RAG 검색으로 정확한 답변을 제공합니다.</p>
+                </div>
+            </div>
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea id="userInput" placeholder="질문을 입력하세요..." rows="1"></textarea>
+                    <button id="sendBtn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="trace-panel" id="tracePanel">
+            <div class="trace-inner">
+                <div class="trace-header">
+                    Pipeline Trace
+                    <button class="clear-btn" onclick="clearTrace()">Clear</button>
+                </div>
+                <div class="trace-content" id="traceContent"></div>
+                <div class="trace-total" id="traceTotal" style="display:none">
+                    <span>Total</span>
+                    <span class="time" id="traceTotalTime">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let sessionId = null;
+        let isStreaming = false;
+        let isComposing = false;
+        let traceOpen = false;
+        let currentTraceGroup = null;
+
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const chatContainer = document.getElementById('chatContainer');
+        const traceContent = document.getElementById('traceContent');
+
+        userInput.addEventListener('compositionstart', () => { isComposing = true; });
+        userInput.addEventListener('compositionend', () => { isComposing = false; });
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        userInput.addEventListener('input', () => {
+            userInput.style.height = 'auto';
+            userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
+        });
+
+        // ========== Trace Panel ==========
+        function toggleTrace() {
+            traceOpen = !traceOpen;
+            document.getElementById('tracePanel').classList.toggle('open', traceOpen);
+            document.getElementById('traceToggle').classList.toggle('active', traceOpen);
+        }
+
+        function clearTrace() {
+            traceContent.innerHTML = '';
+            document.getElementById('traceTotal').style.display = 'none';
+        }
+
+        const STEP_LABELS = {
+            session: { icon: 'S', label: 'Session' },
+            rewrite: { icon: 'R', label: 'Query Rewrite' },
+            embedding: { icon: 'E', label: 'Embedding' },
+            cache: { icon: 'C', label: 'Semantic Cache' },
+            vector_search: { icon: 'V', label: 'Vector Search (IVF)' },
+            reranking: { icon: 'K', label: 'Reranking (Hybrid)' },
+            context: { icon: 'X', label: 'Context Build' },
+            llm: { icon: 'L', label: 'LLM Generate' },
+            complete: { icon: '!', label: 'Pipeline Complete' },
+        };
+
+        function addTraceStep(trace) {
+            const info = STEP_LABELS[trace.step] || { icon: '?', label: trace.step };
+            const div = document.createElement('div');
+            div.className = 'trace-step';
+            div.setAttribute('data-step', trace.step);
+
+            const timeStr = trace.ms > 0 ? `${trace.ms}ms` : '-';
+            let detailHtml = '';
+            if (trace.detail) {
+                detailHtml = `<div class="trace-detail">${formatDetail(trace.detail)}</div>`;
+            }
+
+            div.innerHTML = `
+                <div class="trace-step-header">
+                    <div class="trace-icon ${trace.status}">${info.icon}</div>
+                    <span class="trace-step-name">${info.label}</span>
+                    <span class="trace-step-time">${timeStr}</span>
+                </div>
+                ${detailHtml}
+            `;
+
+            // LLM streaming → done 업데이트
+            const container = currentTraceGroup || traceContent;
+            const existing = container.querySelector(`[data-step="${trace.step}"]`);
+            if (existing && trace.step === 'llm' && trace.status === 'done') {
+                existing.replaceWith(div);
+            } else if (!existing) {
+                container.appendChild(div);
+            }
+            traceContent.scrollTop = traceContent.scrollHeight;
+
+            // Complete step → total time
+            if (trace.step === 'complete') {
+                const total = document.getElementById('traceTotal');
+                total.style.display = 'flex';
+                document.getElementById('traceTotalTime').textContent = `${trace.ms}ms`;
+            }
+        }
+
+        function formatDetail(obj) {
+            return Object.entries(obj).map(([key, val]) => {
+                const k = `<span class="key">${key}</span>`;
+                let v;
+                if (typeof val === 'string') {
+                    v = `<span class="val-str">"${escapeHtml(val.length > 120 ? val.slice(0, 120) + '...' : val)}"</span>`;
+                } else if (typeof val === 'number') {
+                    v = `<span class="val-num">${val}</span>`;
+                } else if (typeof val === 'boolean') {
+                    const cls = val ? 'val-bool-true' : 'val-bool-false';
+                    const icon = val ? '✓' : '—';
+                    v = `<span class="${cls}">${icon} ${val}</span>`;
+                } else if (Array.isArray(val)) {
+                    v = val.map(item => {
+                        if (typeof item === 'object') {
+                            return '\n  ' + Object.entries(item).map(([ik,iv]) =>
+                                `${ik}: ${typeof iv === 'string' ? (iv.length > 60 ? iv.slice(0,60)+'...' : iv) : iv}`
+                            ).join(', ');
+                        }
+                        return String(item);
+                    }).join('');
+                    v = `<span class="val-str">[${v}\n]</span>`;
+                } else {
+                    v = `<span class="val-num">${JSON.stringify(val)}</span>`;
+                }
+                return `${k}: ${v}`;
+            }).join('\n');
+        }
+
+        function startNewTraceGroup(query) {
+            const group = document.createElement('div');
+            group.className = 'trace-group';
+            group.innerHTML = `<div class="trace-group-header">Query: ${escapeHtml(query)}</div>`;
+            traceContent.appendChild(group);
+            return group;
+        }
+
+        // ========== Markdown ==========
+        // 간이 마크다운 렌더러. marked.js 쓸까 했는데 번들 의존성 없이 가고 싶어서 직접 구현.
+        // 규칙 순서 중요함 — 코드블록 먼저 처리 안 하면 내부 마크다운이 변환돼버림
+        const MD_RULES = [
+            // 1) 펜스드 코드블록 (먼저 처리해서 내부 변환 방지)
+            [/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => `<pre><code>${escapeHtml(code.trim())}</code></pre>`],
+            // 2) 인라인 코드
+            [/`([^`]+)`/g, '<code>$1</code>'],
+            // 3) 헤딩 (###부터 처리해야 #이 ###을 잡아먹지 않음)
+            [/^### (.+)$/gm, '<h3>$1</h3>'],
+            [/^## (.+)$/gm, '<h2>$1</h2>'],
+            [/^# (.+)$/gm, '<h1>$1</h1>'],
+            // 4) 인라인
+            [/\*\*(.+?)\*\*/g, '<strong>$1</strong>'],
+            // 5) 리스트 (*, -, 1. 전부 <li>로 통일)
+            [/^\* (.+)$/gm, '<li>$1</li>'],
+            [/^- (.+)$/gm, '<li>$1</li>'],
+            [/^(\d+)\. (.+)$/gm, '<li>$2</li>'],
+            [/((<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>'],
+            // 6) 문단 처리
+            [/\n\n+/g, '</p><p>'],
+            [/\n/g, '<br>'],
+        ];
+        // <p> 안에 블록 요소가 들어가면 깨지니까 정리
+        const MD_CLEANUP = [
+            [/<p>\s*<\/p>/g, ''],
+            [/<p>\s*(<h[1-3]>)/g, '$1'],
+            [/(<\/h[1-3]>)\s*<\/p>/g, '$1'],
+            [/<p>\s*(<pre>)/g, '$1'],
+            [/(<\/pre>)\s*<\/p>/g, '$1'],
+            [/<p>\s*(<ul>)/g, '$1'],
+            [/(<\/ul>)\s*<\/p>/g, '$1'],
+        ];
+
+        function renderMarkdown(text) {
+            let html = text;
+            for (const [pattern, replacement] of MD_RULES) {
+                html = html.replace(pattern, replacement);
+            }
+            html = '<p>' + html + '</p>';
+            for (const [pattern, replacement] of MD_CLEANUP) {
+                html = html.replace(pattern, replacement);
+            }
+            return html;
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // ========== Chat ==========
+        function newSession() {
+            sessionId = null;
+            chatContainer.innerHTML = `
+                <div class="welcome" id="welcome">
+                    <h2>OCP RAG Chatbot</h2>
+                    <p>OpenShift Container Platform 운영 관련 질문을 해보세요.<br>
+                    문서 기반 RAG 검색으로 정확한 답변을 제공합니다.</p>
+                </div>`;
+            document.getElementById('sessionInfo').textContent = 'New Session';
+            clearTrace();
+        }
+
+        function addMessage(role, content) {
+            const welcome = document.getElementById('welcome');
+            if (welcome) welcome.remove();
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            if (role === 'user') div.textContent = content;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return div;
+        }
+
+        function showTypingIndicator() {
+            removeTypingIndicator();
+            const div = document.createElement('div');
+            div.className = 'typing-indicator';
+            div.id = 'typingDots';
+            div.innerHTML = '<span></span><span></span><span></span>';
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const el = document.getElementById('typingDots');
+            if (el) el.remove();
+        }
+
+        function showError(message) {
+            removeTypingIndicator();
+            const div = document.createElement('div');
+            div.className = 'message error';
+            div.textContent = message;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const query = userInput.value.trim();
+            if (!query || isStreaming) return;
+
+            addMessage('user', query);
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            isStreaming = true;
+            sendBtn.disabled = true;
+            showTypingIndicator();
+
+            // Trace 그룹 생성 (이전 trace 유지, 그룹별 분리)
+            if (!traceOpen) toggleTrace(); // 자동으로 열기
+            currentTraceGroup = startNewTraceGroup(query);
+
+            let assistantDiv = null;
+            let fullText = '';
+            let sources = [];
+            let rewrittenQuery = '';
+            let cached = false;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/chat/stream`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, session_id: sessionId, stream: true }),
+                });
+
+                if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let eventType = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('event: ')) {
+                            eventType = line.slice(7).trim();
+                        } else if (line.startsWith('data: ')) {
+                            let parsed;
+                            try { parsed = JSON.parse(line.slice(6)); } catch { continue; }
+
+                            // Trace 이벤트 처리
+                            if (eventType === 'trace') {
+                                addTraceStep(parsed);
+                                continue;
+                            }
+
+                            if (!assistantDiv && (eventType === 'token' || eventType === 'cached')) {
+                                removeTypingIndicator();
+                                assistantDiv = addMessage('assistant', '');
+                            }
+
+                            switch (eventType) {
+                                case 'token':
+                                    fullText += parsed;
+                                    break;
+                                case 'sources':
+                                    sources = parsed;
+                                    break;
+                                case 'rewrite':
+                                    rewrittenQuery = parsed;
+                                    break;
+                                case 'cached':
+                                    fullText = parsed;
+                                    cached = true;
+                                    break;
+                                case 'done':
+                                    if (parsed && parsed.session_id) {
+                                        sessionId = parsed.session_id;
+                                        document.getElementById('sessionInfo').textContent =
+                                            `Session: ${sessionId}`;
+                                    }
+                                    break;
+                            }
+
+                            if (assistantDiv) {
+                                updateAssistantDiv(assistantDiv, fullText, sources, rewrittenQuery, cached);
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                showError(`연결 오류: ${err.message}`);
+            }
+
+            removeTypingIndicator();
+            isStreaming = false;
+            sendBtn.disabled = false;
+            userInput.focus();
+        }
+
+        function updateAssistantDiv(div, text, sources, rewrittenQuery, cached) {
+            let html = '';
+            if (rewrittenQuery) {
+                html += `<div class="rewrite-info">Rewritten: ${escapeHtml(rewrittenQuery)}</div>`;
+            }
+            if (cached) {
+                html += `<div class="cache-badge">cached</div>`;
+            }
+            html += renderMarkdown(text);
+            if (sources && sources.length > 0) {
+                html += '<div class="sources">Sources: ';
+                html += sources.map(s =>
+                    `${escapeHtml(s.source)} (${(s.score * 100).toFixed(1)}%)`
+                ).join(', ');
+                html += '</div>';
+            }
+            div.innerHTML = html;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        userInput.focus();
+    </script>
+</body>
+</html>
