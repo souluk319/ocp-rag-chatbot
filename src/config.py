@@ -1,0 +1,39 @@
+"""전역 설정 관리"""
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# LLM 설정
+LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", "http://localhost:8080/v1/chat/completions")
+LLM_MODEL = os.getenv("LLM_MODEL", "Qwen/Qwen3.5-9B")
+LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "2048"))
+LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))
+
+# Embedding 설정
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+EMBEDDING_DIM = 384  # all-MiniLM-L6-v2의 차원
+
+# Chunking 설정
+CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "512"))
+CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "128"))
+
+# Vector Index 설정
+INDEX_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "index")
+TOP_K = int(os.getenv("TOP_K", "5"))
+IVF_N_CLUSTERS = int(os.getenv("IVF_N_CLUSTERS", "16"))
+
+# Session 설정
+MAX_HISTORY_TURNS = int(os.getenv("MAX_HISTORY_TURNS", "10"))
+SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_SECONDS", "3600"))
+
+# Cache 설정
+CACHE_SIMILARITY_THRESHOLD = float(os.getenv("CACHE_SIMILARITY_THRESHOLD", "0.92"))
+CACHE_MAX_SIZE = int(os.getenv("CACHE_MAX_SIZE", "200"))
+
+# 데이터 경로
+DATA_RAW_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "raw")
+
+# 서버 설정
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", "8000"))

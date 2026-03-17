@@ -1,0 +1,23 @@
+# 환경변수
+.env
+
+# 원본 문서 데이터
+data/raw/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# 벡터 인덱스 저장 (용량 큼)
+data/index/*.npy
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
