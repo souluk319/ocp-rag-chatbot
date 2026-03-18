@@ -34,7 +34,7 @@ OCP(OpenShift Container Platform) 운영 지식 기반 RAG 챗봇
                          └───────┼──────────────┘
                                  ▼
                           [Embedding Engine]
-                          sentence-transformers + LRU 캐싱
+                          multilingual sentence-transformers + LRU 캐싱
                                  │
                                  ▼
                           [IVF Vector Index]
@@ -80,7 +80,7 @@ Complete ✓  1.3s  → total pipeline time
 |------|------|------|
 | Backend | Python 3.11+, FastAPI | REST API + SSE 스트리밍 |
 | LLM | Qwen/Qwen3.5-9B | vLLM 서버, OpenAI-compatible API |
-| Embedding | all-MiniLM-L6-v2 | 384차원 벡터, sentence-transformers |
+| Embedding | paraphrase-multilingual-MiniLM-L12-v2 | 384차원, 다국어(한/영) 지원 |
 | Vector Index | numpy IVF | K-Means 클러스터링 직접 구현 |
 | Reranking | Semantic + BM25 | 하이브리드 스코어링 직접 구현 |
 | Frontend | HTML/CSS/JS | 프레임워크 미사용, 다크 테마 |
@@ -108,9 +108,9 @@ ocp-rag-chatbot/
 │   ├── generate_docs.py          # LLM 기반 합성 문서 생성
 │   └── build_index.py            # 문서 인덱싱 (청킹→임베딩→IVF)
 ├── data/
-│   ├── raw/                      # 원본 문서 (32개 파일)
+│   ├── raw/                      # 원본 문서 (36개 파일)
+│   │   └── cywell/               # Cywell 교육자료 (PPT, PDF)
 │   └── index/                    # 벡터 인덱스 저장소
-├── .env.example                  # 환경 변수 템플릿
 └── requirements.txt              # Python 의존성
 ```
 
@@ -156,7 +156,7 @@ uvicorn src.api:app --reload --host 0.0.0.0 --port 8000
 FAISS 등의 라이브러리 없이 numpy만으로 구현한 벡터 검색 엔진:
 
 ```
-전체 벡터 (1207개)
+전체 벡터 (1278개)
     │
     ▼ K-Means 클러스터링
 [C0] [C1] [C2] ... [C15]    ← 16개 클러스터
@@ -224,7 +224,7 @@ Vector Search (IVF)
 | 직접 작성 | 한국어 기술 문서 | 6개 | 가장 신뢰, OCP 기본 개념 |
 | 웹 스크래핑 | 공식 문서 크롤링 | 17개 | 영어 원문, 전처리 필요 |
 | LLM 합성 | Qwen3.5-9B 생성 | 8개 | 검수 필요, 빈 주제 보완 |
-| 교육 자료 | PPTX 파싱 | 1개 | 슬라이드 텍스트 추출 |
+| 교육 자료 | PPTX/PDF 파싱 | 5개 | Cywell 교육자료 (PPT 1 + PDF 4) |
 
 **텍스트 전처리:**
 - 스크래핑 데이터의 공백 누락 자동 수정 (camelCase 경계 분리)
