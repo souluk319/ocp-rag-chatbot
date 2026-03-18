@@ -80,6 +80,67 @@ OCP_URLS = [
         "filename": "ocp_operators.md",
         "category": "Operators",
     },
+    # === 추가 스크래핑: 실용적 운영 문서 (HOW-TO, YAML 예시, oc 명령어) ===
+    # 워크로드 관리
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/building_applications/deployments",
+        "filename": "ocp_deployments.md",
+        "category": "Workloads",
+    },
+    # 모니터링 & 로깅
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/monitoring/about-openshift-container-platform-monitoring",
+        "filename": "ocp_monitoring.md",
+        "category": "Monitoring",
+    },
+    # CLI 레퍼런스 (oc 명령어)
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/cli_tools/openshift-cli-oc",
+        "filename": "ocp_cli_oc.md",
+        "category": "CLI",
+    },
+    # Route (외부 접근)
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/networking/configuring-ingress-cluster-traffic-using-routes",
+        "filename": "ocp_routes.md",
+        "category": "Networking",
+    },
+    # NetworkPolicy
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/networking/about-network-policy",
+        "filename": "ocp_network_policy.md",
+        "category": "Networking",
+    },
+    # SCC (Security Context Constraints)
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/authentication_and_authorization/managing-pod-security-policies",
+        "filename": "ocp_scc.md",
+        "category": "Security",
+    },
+    # RBAC
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/authentication_and_authorization/using-rbac",
+        "filename": "ocp_rbac.md",
+        "category": "Security",
+    },
+    # ConfigMap & Secret
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/nodes/working-with-pods",
+        "filename": "ocp_pods_operations.md",
+        "category": "Workloads",
+    },
+    # Resource Quota
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/building_applications/setting-quotas-for-resources",
+        "filename": "ocp_resource_quota.md",
+        "category": "Resource Management",
+    },
+    # Autoscaling (HPA)
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/nodes/automatically-scaling-pods-with-the-horizontal-pod-autoscaler",
+        "filename": "ocp_autoscaling.md",
+        "category": "Resource Management",
+    },
 ]
 
 # ============================================================
@@ -130,6 +191,113 @@ K8S_URLS = [
         "url": "https://kubernetes.io/docs/concepts/cluster-administration/",
         "filename": "k8s_cluster_admin.md",
         "category": "Administration",
+    },
+    # === 추가 스크래핑: K8s Tasks (실용적 HOW-TO, YAML 예시) ===
+    # Pod 리소스 제한 설정 (requests/limits YAML)
+    {
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/assign-memory-resource/",
+        "filename": "k8s_task_memory_resource.md",
+        "category": "Tasks - Resources",
+    },
+    {
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/assign-cpu-resource/",
+        "filename": "k8s_task_cpu_resource.md",
+        "category": "Tasks - Resources",
+    },
+    # Probe 설정 (liveness, readiness, startup)
+    {
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/",
+        "filename": "k8s_task_probes.md",
+        "category": "Tasks - Pod Config",
+    },
+    # ConfigMap 사용법
+    {
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/",
+        "filename": "k8s_task_configmap.md",
+        "category": "Tasks - Configuration",
+    },
+    # Secret 사용법
+    {
+        "url": "https://kubernetes.io/docs/tasks/inject-data-application/distribute-credentials-secure/",
+        "filename": "k8s_task_secret.md",
+        "category": "Tasks - Configuration",
+    },
+    # Deployment 관리 (rolling update, rollback)
+    {
+        "url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/",
+        "filename": "k8s_deployment_detail.md",
+        "category": "Workloads - Deployment",
+    },
+    # StatefulSet 상세
+    {
+        "url": "https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/",
+        "filename": "k8s_statefulset_detail.md",
+        "category": "Workloads - StatefulSet",
+    },
+    # DaemonSet 상세
+    {
+        "url": "https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/",
+        "filename": "k8s_daemonset_detail.md",
+        "category": "Workloads - DaemonSet",
+    },
+    # Service 상세 (ClusterIP, NodePort, LoadBalancer)
+    {
+        "url": "https://kubernetes.io/docs/concepts/services-networking/service/",
+        "filename": "k8s_service_detail.md",
+        "category": "Networking - Service",
+    },
+    # NetworkPolicy
+    {
+        "url": "https://kubernetes.io/docs/concepts/services-networking/network-policies/",
+        "filename": "k8s_network_policy.md",
+        "category": "Networking - Policy",
+    },
+    # PV/PVC 사용법
+    {
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/",
+        "filename": "k8s_task_pv_pvc.md",
+        "category": "Tasks - Storage",
+    },
+    # ResourceQuota
+    {
+        "url": "https://kubernetes.io/docs/concepts/policy/resource-quotas/",
+        "filename": "k8s_resource_quota.md",
+        "category": "Policy - ResourceQuota",
+    },
+    # LimitRange
+    {
+        "url": "https://kubernetes.io/docs/concepts/policy/limit-range/",
+        "filename": "k8s_limit_range.md",
+        "category": "Policy - LimitRange",
+    },
+    # HPA (Horizontal Pod Autoscaler)
+    {
+        "url": "https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/",
+        "filename": "k8s_task_hpa.md",
+        "category": "Tasks - Autoscaling",
+    },
+    # kubectl 치트시트 (명령어 모음)
+    {
+        "url": "https://kubernetes.io/docs/reference/kubectl/cheatsheet/",
+        "filename": "k8s_kubectl_cheatsheet.md",
+        "category": "Reference - kubectl",
+    },
+    # RBAC
+    {
+        "url": "https://kubernetes.io/docs/reference/access-authn-authz/rbac/",
+        "filename": "k8s_rbac.md",
+        "category": "Security - RBAC",
+    },
+    # 트러블슈팅 가이드
+    {
+        "url": "https://kubernetes.io/docs/tasks/debug/debug-application/",
+        "filename": "k8s_task_debug_app.md",
+        "category": "Tasks - Troubleshooting",
+    },
+    {
+        "url": "https://kubernetes.io/docs/tasks/debug/debug-application/debug-pods/",
+        "filename": "k8s_task_debug_pods.md",
+        "category": "Tasks - Troubleshooting",
     },
 ]
 
