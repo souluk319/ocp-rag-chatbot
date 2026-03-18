@@ -74,6 +74,7 @@ class LLMClient:
             "chat_template_kwargs": {"enable_thinking": False},
         }
         # 스트리밍은 오래 걸릴 수 있어서 타임아웃 넉넉하게. connect만 짧게.
+        # TODO: connection pool 재사용하면 매 요청마다 TCP 핸드셰이크 안 해도 될 텐데
         async with httpx.AsyncClient(timeout=httpx.Timeout(300.0, connect=10.0)) as client:
             async with client.stream("POST", self.endpoint, json=payload) as resp:
                 resp.raise_for_status()
@@ -86,7 +87,8 @@ class LLMClient:
                     try:
                         chunk = json.loads(data_str)
                         delta = chunk["choices"][0].get("delta", {})
-                        # Qwen3.5: reasoning_content는 무시, content만 yield
+                        # Qwen3.5는 thinking 모드일 때 reasoning_content 필드로 내부 추론을 보내는데
+                        # 사용자한테 보여줄 필요 없으니 content만 취함
                         content = delta.get("content", "")
                         if content:
                             yield content

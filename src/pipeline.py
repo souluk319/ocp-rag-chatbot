@@ -173,6 +173,7 @@ class RAGPipeline:
         }}
 
         # === 4. Vector 검색 ===
+        # top_k*3으로 넉넉히 뽑고 reranker에서 걸러냄. *2로 했을 때 recall 좀 아쉬워서 *3으로.
         t = time.time()
         search_results = self.index.search(query_embedding, top_k=top_k * 3)
         search_ms = round((time.time() - t) * 1000)
@@ -277,6 +278,7 @@ class RAGPipeline:
         session.add_message("user", user_query)
         session.add_message("assistant", answer)
 
+        # 에러 응답은 캐시에 넣으면 안 됨 — 한번 잘못된 응답 캐시되면 계속 나옴
         if not answer.startswith("LLM 응답 오류"):
             self.cache.store(rewritten_query, query_embedding, answer, context)
 

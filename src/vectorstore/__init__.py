@@ -32,7 +32,9 @@ class IVFIndex:
     def __init__(self, dim: int, n_clusters: int = IVF_N_CLUSTERS, n_probe: int = 3):
         self.dim = dim
         self.n_clusters = n_clusters
-        self.n_probe = n_probe  # 검색 시 탐색할 클러스터 수
+        # n_probe: 검색 시 탐색할 클러스터 수. 높이면 정확도↑ 속도↓
+        # 처음에 1로 했다가 경계에 있는 문서를 못 찾는 경우가 있어서 3으로 올림
+        self.n_probe = n_probe
 
         # 클러스터 중심 벡터 (n_clusters x dim)
         self.centroids: Optional[np.ndarray] = None
@@ -79,7 +81,8 @@ class IVFIndex:
         norms = np.where(norms == 0, 1, norms)
         normalized = self.vectors / norms
 
-        # K-Means: 랜덤 초기 중심점 (seed 고정해야 인덱스 재빌드해도 같은 결과)
+        # K-Means: 랜덤 초기 중심점
+        # seed 고정 안 하면 빌드할 때마다 클러스터 배치 달라져서 검색 결과가 흔들림
         rng = np.random.default_rng(42)
         indices = rng.choice(n_vectors, size=actual_clusters, replace=False)
         self.centroids = normalized[indices].copy()
@@ -177,7 +180,7 @@ class IVFIndex:
         return results
 
     def brute_force_search(self, query_vector: np.ndarray, top_k: int = TOP_K) -> list[SearchResult]:
-        """Brute-force 검색 (IVF 비교/폴백용)"""
+        """전수검색. IVF 결과 검증할 때 비교용으로 만들어둠. 실서비스에선 안 씀."""
         if self.vectors is None or len(self.vectors) == 0:
             return []
 
