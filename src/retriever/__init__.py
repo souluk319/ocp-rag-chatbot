@@ -147,7 +147,9 @@ class Retriever:
         total_len = 0
         for i, r in enumerate(results, 1):
             source = r.metadata.get("source", "unknown")
-            part = f"[문서 {i}] (출처: {source}, 관련도: {r.score:.3f})\n{r.text}"
+            # 출처명을 제목처럼 써야 LLM이 답변에서 구체적 문서명을 인용함
+            # 이전에 "[문서 1] (출처: xxx)" 했더니 LLM이 "문서 1에 따르면"으로만 답변해서 변경
+            part = f"[{source}]\n{r.text}"
             if total_len + len(part) > max_chars:
                 # 남은 공간만큼만 추가
                 remaining = max_chars - total_len
