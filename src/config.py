@@ -30,7 +30,8 @@ MAX_HISTORY_TURNS = int(os.getenv("MAX_HISTORY_TURNS", "10"))
 SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_SECONDS", "3600"))
 
 # Cache 설정
-CACHE_SIMILARITY_THRESHOLD = float(os.getenv("CACHE_SIMILARITY_THRESHOLD", "0.92"))
+# 0.92에서 오탐 발생해서 0.95로 올림 (멀티턴 테스트에서 "모니터링"과 "리소스 제한"이 캐시 히트됨)
+CACHE_SIMILARITY_THRESHOLD = float(os.getenv("CACHE_SIMILARITY_THRESHOLD", "0.95"))
 CACHE_MAX_SIZE = int(os.getenv("CACHE_MAX_SIZE", "200"))
 
 # 데이터 경로

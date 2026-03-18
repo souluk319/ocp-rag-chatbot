@@ -140,8 +140,8 @@ class QueryRewriter:
         ]
         needs_rewrite = any(p in query for p in context_dependent_patterns)
 
-        # 짧은 질문(5자 미만)도 맥락 의존 가능성 높음
-        if len(query.strip()) < 5:
+        # 짧은 질문도 맥락 의존 가능성 높음 (5자였는데 "더 알려줘"(6자) 못 잡아서 8로 올림)
+        if len(query.strip()) < 8:
             needs_rewrite = True
 
         if not needs_rewrite:
