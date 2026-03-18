@@ -11,8 +11,10 @@ LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "2048"))
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))
 
 # Embedding 설정
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-EMBEDDING_DIM = 384  # all-MiniLM-L6-v2의 차원
+# 처음에 all-MiniLM-L6-v2 썼는데 한국어 질의 → 영어 문서 매칭이 너무 약해서
+# multilingual 모델로 교체. 차원(384)은 같아서 인덱스 구조 변경 없음.
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "paraphrase-multilingual-MiniLM-L12-v2")
+EMBEDDING_DIM = 384
 
 # Chunking 설정
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "512"))
