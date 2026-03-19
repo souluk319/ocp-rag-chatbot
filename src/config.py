@@ -24,6 +24,8 @@ CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "128"))
 INDEX_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "index")
 TOP_K = int(os.getenv("TOP_K", "5"))
 IVF_N_CLUSTERS = int(os.getenv("IVF_N_CLUSTERS", "16"))
+# n_probe: 검색 시 탐색할 클러스터 수. 문서 5400개에서 3은 recall 부족 → 6으로 상향
+IVF_N_PROBE = int(os.getenv("IVF_N_PROBE", "6"))
 
 # Session 설정
 MAX_HISTORY_TURNS = int(os.getenv("MAX_HISTORY_TURNS", "10"))

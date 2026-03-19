@@ -4,6 +4,7 @@ semantic score와 BM25 keyword score를 섞어서 최종 순위 결정.
 """
 import re
 import math
+import numpy as np
 from collections import Counter
 from dataclasses import dataclass
 
@@ -24,15 +25,80 @@ class RankedResult:
 
 
 class BM25Scorer:
-    """BM25 스타일 키워드 매칭 스코어러
+    """BM25 키워드 매칭 스코어러
 
-    문서 컬렉션 전체가 아닌, 검색된 후보군 내에서의 키워드 관련성을 계산.
-    IDF는 후보군 기준으로 계산하여 희귀 키워드에 더 높은 가중치 부여.
+    두 가지 모드:
+    1. score(): 후보군 내 reranking (기존)
+    2. search_corpus(): 전체 코퍼스에서 독립 검색 (신규)
+       - 임베딩 모델이 못 잡는 키워드 매칭 문서를 보완
     """
 
     def __init__(self, k1: float = 1.5, b: float = 0.75):
         self.k1 = k1
         self.b = b
+        # 전체 코퍼스 인덱스 (서버 시작 시 구축)
+        self._corpus_tokens: list[list[str]] = []
+        self._corpus_doc_lengths: list[int] = []
+        self._corpus_avg_dl: float = 0
+        self._corpus_doc_freq: Counter = Counter()
+        self._corpus_size: int = 0
+        self._indexed = False
+
+    def index_corpus(self, documents: list[dict]):
+        """전체 코퍼스 인덱싱 (서버 시작 시 1회 호출)
+
+        Args:
+            documents: IVFIndex.documents [{chunk_id, text, metadata}, ...]
+        """
+        self._corpus_tokens = [self._tokenize(doc["text"]) for doc in documents]
+        self._corpus_doc_lengths = [len(t) for t in self._corpus_tokens]
+        self._corpus_avg_dl = (
+            sum(self._corpus_doc_lengths) / len(self._corpus_doc_lengths)
+            if self._corpus_doc_lengths else 1
+        )
+        self._corpus_doc_freq = Counter()
+        for tokens in self._corpus_tokens:
+            for token in set(tokens):
+                self._corpus_doc_freq[token] += 1
+        self._corpus_size = len(documents)
+        self._indexed = True
+
+    def search_corpus(self, query: str, top_k: int = 10) -> list[tuple[int, float]]:
+        """전체 코퍼스에서 BM25 상위 top_k 검색
+
+        Returns:
+            [(doc_index, raw_bm25_score), ...] 내림차순
+        """
+        if not self._indexed:
+            return []
+
+        query_tokens = self._tokenize(query)
+        if not query_tokens:
+            return []
+
+        scores = []
+        for i, tokens in enumerate(self._corpus_tokens):
+            tf_counts = Counter(tokens)
+            dl = self._corpus_doc_lengths[i]
+            score = 0.0
+            for qt in query_tokens:
+                tf = tf_counts.get(qt, 0)
+                df = self._corpus_doc_freq.get(qt, 0)
+                if tf == 0 or df == 0:
+                    continue
+                idf = math.log(
+                    (self._corpus_size - df + 0.5) / (df + 0.5) + 1
+                )
+                tf_norm = (tf * (self.k1 + 1)) / (
+                    tf + self.k1 * (1 - self.b + self.b * dl / self._corpus_avg_dl)
+                )
+                score += idf * tf_norm
+            scores.append(score)
+
+        # 상위 top_k 인덱스 (score > 0인 것만)
+        indexed_scores = [(i, s) for i, s in enumerate(scores) if s > 0]
+        indexed_scores.sort(key=lambda x: x[1], reverse=True)
+        return indexed_scores[:top_k]
 
     def _tokenize(self, text: str) -> list[str]:
         """간단한 토크나이저. 형태소 분석기 쓰면 좋겠지만 의존성 늘리기 싫어서 정규식으로 처리"""
@@ -87,8 +153,9 @@ class BM25Scorer:
 
 class Retriever:
     """
-    semantic만으로는 키워드 매칭이 약해서 BM25를 30% 섞음.
-    비율은 몇 번 테스트해보고 7:3이 제일 나았음 (5:5는 키워드에 너무 끌려감).
+    IVF 벡터 검색 + BM25 독립 키워드 검색을 병렬로 돌린 뒤 hybrid reranking.
+    임베딩 모델이 못 잡는 키워드 매칭 문서를 BM25가 보완.
+    비율은 7:3 (semantic:keyword). 5:5는 키워드에 너무 끌려감.
     """
 
     def __init__(
@@ -105,20 +172,49 @@ class Retriever:
         self.bm25 = BM25Scorer()
 
     def retrieve(self, query: str, top_k: int = TOP_K) -> list[RankedResult]:
-        """쿼리로 관련 문서 검색 + 리랭킹"""
+        """쿼리로 관련 문서 검색 + 리랭킹
+
+        경로 1: IVF 벡터 검색 (top_k*3개)
+        경로 2: BM25 전체 코퍼스 키워드 검색 (top_k*2개) — IVF에서 못 잡는 문서 보완
+        두 결과를 합쳐서 hybrid scoring 후 최종 top_k 반환
+        """
         # 1. 쿼리 임베딩
         query_vector = self.embedding_engine.embed(query)
 
-        # 2. IVF 인덱스에서 후보 검색 (over-retrieve)
+        # 2. 경로 1: IVF 벡터 검색
         candidates = self.index.search(query_vector, top_k=top_k * 3)
-        if not candidates:
+
+        # 3. 경로 2: BM25 전체 코퍼스 검색 (IVF에서 못 잡는 키워드 매칭 문서 보완)
+        bm25_hits = self.bm25.search_corpus(query, top_k=top_k * 2)
+
+        # IVF 결과가 없고 BM25도 없으면 빈 결과
+        if not candidates and not bm25_hits:
             return []
 
-        # 3. BM25 키워드 스코어 계산
+        # 4. BM25 전용 후보를 IVF 결과에 합치기 (중복 제거)
+        seen_chunk_ids = {c.chunk_id for c in candidates}
+        for doc_idx, _ in bm25_hits:
+            doc = self.index.documents[doc_idx]
+            if doc["chunk_id"] not in seen_chunk_ids:
+                # BM25로만 찾은 문서 → semantic score 계산
+                vec = self.index.vectors[doc_idx].astype(np.float32)
+                q = query_vector.flatten().astype(np.float32)
+                norm_v = np.linalg.norm(vec)
+                norm_q = np.linalg.norm(q)
+                sem_score = float(np.dot(vec, q) / (norm_v * norm_q)) if norm_v > 0 and norm_q > 0 else 0.0
+                candidates.append(SearchResult(
+                    chunk_id=doc["chunk_id"],
+                    text=doc["text"],
+                    score=sem_score,
+                    metadata=doc.get("metadata", {}),
+                ))
+                seen_chunk_ids.add(doc["chunk_id"])
+
+        # 5. 합쳐진 전체 후보에 BM25 reranking 스코어 계산
         candidate_texts = [c.text for c in candidates]
         keyword_scores = self.bm25.score(query, candidate_texts)
 
-        # 4. 결합 스코어로 리랭킹
+        # 6. hybrid scoring으로 리랭킹
         ranked = []
         for i, candidate in enumerate(candidates):
             combined_score = (
@@ -134,7 +230,6 @@ class Retriever:
                 metadata=candidate.metadata,
             ))
 
-        # 결합 스코어 기준 정렬
         ranked.sort(key=lambda x: x.score, reverse=True)
         return ranked[:top_k]
 

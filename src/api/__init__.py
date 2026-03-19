@@ -53,6 +53,10 @@ async def startup():
         index = IVFIndex(dim=EMBEDDING_DIM)
 
     retriever = Retriever(index=index, embedding_engine=embedding_engine)
+    # BM25 전체 코퍼스 인덱싱 — 임베딩이 못 잡는 키워드 매칭 문서를 독립 검색
+    if index.documents:
+        retriever.bm25.index_corpus(index.documents)
+        print(f"BM25 코퍼스 인덱싱 완료: {len(index.documents)}개 문서")
     pipeline = RAGPipeline(
         llm_client=llm_client,
         embedding_engine=embedding_engine,

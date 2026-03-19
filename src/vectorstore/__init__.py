@@ -8,7 +8,7 @@ import numpy as np
 from dataclasses import dataclass
 from typing import Optional
 
-from src.config import INDEX_DIR, IVF_N_CLUSTERS, TOP_K
+from src.config import INDEX_DIR, IVF_N_CLUSTERS, IVF_N_PROBE, TOP_K
 
 
 @dataclass
@@ -29,7 +29,7 @@ class IVFIndex:
     - save()/load(): 인덱스를 디스크에 저장/로드
     """
 
-    def __init__(self, dim: int, n_clusters: int = IVF_N_CLUSTERS, n_probe: int = 3):
+    def __init__(self, dim: int, n_clusters: int = IVF_N_CLUSTERS, n_probe: int = IVF_N_PROBE):
         self.dim = dim
         self.n_clusters = n_clusters
         # n_probe: 검색 시 탐색할 클러스터 수. 높이면 정확도↑ 속도↓
