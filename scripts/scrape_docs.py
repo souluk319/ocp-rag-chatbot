@@ -141,6 +141,37 @@ OCP_URLS = [
         "filename": "ocp_autoscaling.md",
         "category": "Resource Management",
     },
+    # === 트러블슈팅 & 이미지 관련 ===
+    # 이미지 Pull Secret 관리
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/images/managing-images",
+        "filename": "ocp_managing_images.md",
+        "category": "Troubleshooting - Images",
+    },
+    # ImageStream & 이미지 레지스트리
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/images/image-streams-using",
+        "filename": "ocp_imagestreams.md",
+        "category": "Images",
+    },
+    # Pod 트러블슈팅 (이벤트, 로그 확인)
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/support/troubleshooting-operating-system-issues",
+        "filename": "ocp_troubleshooting_os.md",
+        "category": "Troubleshooting",
+    },
+    # 클러스터 노드 트러블슈팅
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/support/investigating-pod-issues",
+        "filename": "ocp_troubleshooting_pods.md",
+        "category": "Troubleshooting - Pods",
+    },
+    # must-gather 및 지원 데이터 수집
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/support/gathering-cluster-data",
+        "filename": "ocp_must_gather.md",
+        "category": "Troubleshooting - Data Gathering",
+    },
 ]
 
 # ============================================================
@@ -297,6 +328,24 @@ K8S_URLS = [
     {
         "url": "https://kubernetes.io/docs/tasks/debug/debug-application/debug-pods/",
         "filename": "k8s_task_debug_pods.md",
+        "category": "Tasks - Troubleshooting",
+    },
+    # 이미지 풀 에러 트러블슈팅
+    {
+        "url": "https://kubernetes.io/docs/concepts/containers/images/",
+        "filename": "k8s_container_images.md",
+        "category": "Containers - Images",
+    },
+    # Pull Secret 설정
+    {
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/",
+        "filename": "k8s_task_pull_secret.md",
+        "category": "Tasks - Image Pull Secret",
+    },
+    # 클러스터 트러블슈팅
+    {
+        "url": "https://kubernetes.io/docs/tasks/debug/debug-cluster/",
+        "filename": "k8s_task_debug_cluster.md",
         "category": "Tasks - Troubleshooting",
     },
 ]

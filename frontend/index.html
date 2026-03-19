@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OCP RAG Chatbot</title>
+    <title>OCP 온보딩 어시스턴트</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #0f1117;
+            background: #141620;
             color: #e4e4e7;
             height: 100vh;
             display: flex;
@@ -18,18 +18,21 @@
 
         /* Header */
         .header {
-            background: #1a1b23;
-            border-bottom: 1px solid #2d2d3a;
-            padding: 12px 24px;
+            background: #1c1e2e;
+            border-bottom: 1px solid #2e3148;
+            padding: 10px 24px;
             display: flex;
             align-items: center;
             gap: 12px;
             flex-shrink: 0;
         }
-        .header h1 { font-size: 18px; font-weight: 600; color: #8b5cf6; }
+        .header-icon { display: flex; align-items: center; justify-content: center; }
+        .header-icon svg { width: 26px; height: 26px; }
+        .header h1 { font-size: 15px; font-weight: 600; color: #e4e4e7; letter-spacing: -0.3px; white-space: nowrap; }
+        .header .divider { width: 1px; height: 20px; background: #2e3148; }
         .header .session-info { font-size: 12px; color: #71717a; flex: 1; }
         .header .trace-toggle {
-            background: none; border: 1px solid #2d2d3a; color: #a1a1aa;
+            background: none; border: 1px solid #2e3148; color: #a1a1aa;
             padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;
         }
         .header .trace-toggle.active { border-color: #8b5cf6; color: #8b5cf6; }
@@ -67,8 +70,8 @@
             border-bottom-right-radius: 4px; white-space: pre-wrap;
         }
         .message.assistant {
-            align-self: flex-start; background: #1e1f2e;
-            border: 1px solid #2d2d3a; border-bottom-left-radius: 4px;
+            align-self: flex-start; background: #222438;
+            border: 1px solid #2e3148; border-bottom-left-radius: 4px;
         }
         .message.assistant h1, .message.assistant h2, .message.assistant h3 {
             margin: 12px 0 6px 0; color: #c4b5fd;
@@ -80,17 +83,17 @@
         .message.assistant ul, .message.assistant ol { margin: 6px 0; padding-left: 20px; }
         .message.assistant li { margin: 3px 0; }
         .message.assistant code {
-            background: #2d2d3a; padding: 1px 5px; border-radius: 3px;
+            background: #2e3148; padding: 1px 5px; border-radius: 3px;
             font-family: 'SF Mono', 'Consolas', monospace; font-size: 13px;
         }
         .message.assistant pre {
-            background: #0f1117; border: 1px solid #2d2d3a; border-radius: 6px;
+            background: #141620; border: 1px solid #2e3148; border-radius: 6px;
             padding: 10px; margin: 8px 0; overflow-x: auto;
         }
         .message.assistant pre code { background: none; padding: 0; }
         .message.assistant strong { color: #e2e8f0; }
         .message .sources {
-            margin-top: 8px; padding-top: 8px; border-top: 1px solid #3d3d4a;
+            margin-top: 8px; padding-top: 8px; border-top: 1px solid #3a3d54;
             font-size: 12px; color: #a1a1aa;
         }
         .message .rewrite-info {
@@ -104,7 +107,7 @@
         /* Typing Indicator */
         .typing-indicator {
             align-self: flex-start; padding: 12px 16px; background: #1e1f2e;
-            border: 1px solid #2d2d3a; border-radius: 12px; border-bottom-left-radius: 4px;
+            border: 1px solid #2e3148; border-radius: 12px; border-bottom-left-radius: 4px;
             display: flex; align-items: center; gap: 4px;
         }
         .typing-indicator span {
@@ -127,8 +130,8 @@
         .trace-panel {
             width: 0;
             overflow: hidden;
-            background: #12131a;
-            border-left: 1px solid #2d2d3a;
+            background: #181a28;
+            border-left: 1px solid #2e3148;
             transition: width 0.3s ease;
             flex-shrink: 0;
         }
@@ -142,7 +145,7 @@
         }
         .trace-header {
             padding: 12px 16px;
-            border-bottom: 1px solid #2d2d3a;
+            border-bottom: 1px solid #2e3148;
             font-size: 13px;
             font-weight: 600;
             color: #8b5cf6;
@@ -162,20 +165,20 @@
         /* Trace Steps */
         .trace-group {
             margin-bottom: 12px;
-            border: 1px solid #1e1f2e;
+            border: 1px solid #252840;
             border-radius: 8px;
             overflow: hidden;
         }
         .trace-group-header {
             padding: 6px 10px;
-            background: #1a1b23;
+            background: #1c1e2e;
             font-size: 11px;
             color: #71717a;
-            border-bottom: 1px solid #1e1f2e;
+            border-bottom: 1px solid #252840;
         }
         .trace-step {
             padding: 8px 12px;
-            border-bottom: 1px solid #1a1b23;
+            border-bottom: 1px solid #1c1e2e;
             font-size: 12px;
         }
         .trace-step:last-child { border-bottom: none; }
@@ -205,7 +208,7 @@
         .trace-detail {
             margin-top: 4px;
             padding: 6px 8px;
-            background: #0f1117;
+            background: #141620;
             border-radius: 4px;
             font-size: 11px;
             color: #a1a1aa;
@@ -225,8 +228,8 @@
         /* Total time bar */
         .trace-total {
             padding: 8px 12px;
-            background: #1a1b23;
-            border-top: 1px solid #2d2d3a;
+            background: #1c1e2e;
+            border-top: 1px solid #2e3148;
             font-size: 12px;
             color: #a1a1aa;
             display: flex;
@@ -236,14 +239,14 @@
 
         /* Input Area */
         .input-container {
-            background: #1a1b23; border-top: 1px solid #2d2d3a; padding: 16px 24px;
+            background: #1c1e2e; border-top: 1px solid #2e3148; padding: 16px 24px;
             flex-shrink: 0;
         }
         .input-wrapper {
             display: flex; gap: 10px; max-width: 900px; margin: 0 auto;
         }
         .input-wrapper textarea {
-            flex: 1; background: #0f1117; border: 1px solid #2d2d3a;
+            flex: 1; background: #141620; border: 1px solid #2e3148;
             border-radius: 10px; padding: 10px 14px; color: #e4e4e7;
             font-size: 14px; resize: none; outline: none;
             min-height: 44px; max-height: 120px; font-family: inherit; line-height: 1.5;
@@ -254,16 +257,27 @@
             padding: 0 20px; cursor: pointer; font-size: 14px; font-weight: 500;
         }
         .input-wrapper button:hover { background: #7c3aed; }
-        .input-wrapper button:disabled { background: #3d3d4a; cursor: not-allowed; }
+        .input-wrapper button:disabled { background: #3a3d54; cursor: not-allowed; }
 
         .welcome { text-align: center; margin: auto; max-width: 500px; }
-        .welcome h2 { color: #8b5cf6; margin-bottom: 12px; font-size: 22px; }
+        .welcome-icon { margin-bottom: 16px; opacity: 0.9; display: flex; justify-content: center; }
+        .welcome-icon svg { width: 56px; height: 56px; }
+        .welcome h2 { color: #e4e4e7; margin-bottom: 8px; font-size: 22px; font-weight: 600; }
         .welcome p { color: #71717a; font-size: 14px; line-height: 1.6; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>OCP RAG Chatbot</h1>
+        <div class="header-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+                <polyline points="7.5 4.21 12 6.81 16.5 4.21"/>
+                <line x1="12" y1="22" x2="12" y2="6.81"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            </svg>
+        </div>
+        <div class="divider"></div>
+        <h1>OCP 온보딩 어시스턴트</h1>
         <span class="session-info" id="sessionInfo">New Session</span>
         <button class="trace-toggle" id="traceToggle" onclick="toggleTrace()">Pipeline Trace</button>
         <button class="new-chat-btn" onclick="newSession()">+ New Chat</button>
@@ -273,9 +287,17 @@
         <div class="chat-area">
             <div class="chat-container" id="chatContainer">
                 <div class="welcome" id="welcome">
-                    <h2>OCP RAG Chatbot</h2>
-                    <p>OpenShift Container Platform 운영 관련 질문을 해보세요.<br>
-                    문서 기반 RAG 검색으로 정확한 답변을 제공합니다.</p>
+                    <div class="welcome-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+                            <polyline points="7.5 4.21 12 6.81 16.5 4.21"/>
+                            <line x1="12" y1="22" x2="12" y2="6.81"/>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                        </svg>
+                    </div>
+                    <h2>OCP 온보딩 어시스턴트</h2>
+                    <p>OpenShift Container Platform 운영에 관해 궁금한 점을 물어보세요.<br>
+                    사내 문서 기반으로 정확한 답변을 제공합니다.</p>
                 </div>
             </div>
             <div class="input-container">
@@ -482,9 +504,17 @@
             sessionId = null;
             chatContainer.innerHTML = `
                 <div class="welcome" id="welcome">
-                    <h2>OCP RAG Chatbot</h2>
-                    <p>OpenShift Container Platform 운영 관련 질문을 해보세요.<br>
-                    문서 기반 RAG 검색으로 정확한 답변을 제공합니다.</p>
+                    <div class="welcome-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+                            <polyline points="7.5 4.21 12 6.81 16.5 4.21"/>
+                            <line x1="12" y1="22" x2="12" y2="6.81"/>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                        </svg>
+                    </div>
+                    <h2>OCP 온보딩 어시스턴트</h2>
+                    <p>OpenShift Container Platform 운영에 관해 궁금한 점을 물어보세요.<br>
+                    사내 문서 기반으로 정확한 답변을 제공합니다.</p>
                 </div>`;
             document.getElementById('sessionInfo').textContent = 'New Session';
             clearTrace();
