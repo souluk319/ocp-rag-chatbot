@@ -150,19 +150,19 @@ OCP_URLS = [
     },
     # ImageStream & 이미지 레지스트리
     {
-        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/images/image-streams-using",
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/images/managing-image-streams",
         "filename": "ocp_imagestreams.md",
         "category": "Images",
     },
     # Pod 트러블슈팅 (이벤트, 로그 확인)
     {
-        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/support/troubleshooting-operating-system-issues",
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/support/troubleshooting#troubleshooting-operating-system-issues",
         "filename": "ocp_troubleshooting_os.md",
         "category": "Troubleshooting",
     },
     # 클러스터 노드 트러블슈팅
     {
-        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/support/investigating-pod-issues",
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/support/troubleshooting#investigating-pod-issues",
         "filename": "ocp_troubleshooting_pods.md",
         "category": "Troubleshooting - Pods",
     },

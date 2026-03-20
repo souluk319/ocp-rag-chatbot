@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OCP 온보딩 어시스턴트</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -26,21 +31,66 @@
             gap: 12px;
             flex-shrink: 0;
         }
-        .header-icon { display: flex; align-items: center; justify-content: center; }
-        .header-icon svg { width: 26px; height: 26px; }
-        .header h1 { font-size: 15px; font-weight: 600; color: #e4e4e7; letter-spacing: -0.3px; white-space: nowrap; }
-        .header .divider { width: 1px; height: 20px; background: #2e3148; }
-        .header .session-info { font-size: 12px; color: #71717a; flex: 1; }
+
+        .header-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-icon svg {
+            width: 26px;
+            height: 26px;
+        }
+
+        .header h1 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #e4e4e7;
+            letter-spacing: -0.3px;
+            white-space: nowrap;
+        }
+
+        .header .divider {
+            width: 1px;
+            height: 20px;
+            background: #2e3148;
+        }
+
+        .header .session-info {
+            font-size: 12px;
+            color: #71717a;
+            flex: 1;
+        }
+
         .header .trace-toggle {
-            background: none; border: 1px solid #2e3148; color: #a1a1aa;
-            padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;
+            background: none;
+            border: 1px solid #2e3148;
+            color: #a1a1aa;
+            padding: 5px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
         }
-        .header .trace-toggle.active { border-color: #8b5cf6; color: #8b5cf6; }
+
+        .header .trace-toggle.active {
+            border-color: #8b5cf6;
+            color: #8b5cf6;
+        }
+
         .header .new-chat-btn {
-            background: #8b5cf6; color: white; border: none;
-            padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
         }
-        .header .new-chat-btn:hover { background: #7c3aed; }
+
+        .header .new-chat-btn:hover {
+            background: #7c3aed;
+        }
 
         /* Main layout */
         .main-layout {
@@ -56,74 +106,176 @@
             flex-direction: column;
             min-width: 0;
         }
+
         .chat-container {
-            flex: 1; overflow-y: auto; padding: 20px 24px;
-            display: flex; flex-direction: column; gap: 16px;
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
         .message {
-            max-width: 80%; padding: 12px 16px; border-radius: 12px;
-            line-height: 1.7; font-size: 14px; word-break: break-word;
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.7;
+            font-size: 14px;
+            word-break: break-word;
         }
+
         .message.user {
-            align-self: flex-end; background: #8b5cf6; color: white;
-            border-bottom-right-radius: 4px; white-space: pre-wrap;
+            align-self: flex-end;
+            background: #8b5cf6;
+            color: white;
+            border-bottom-right-radius: 4px;
+            white-space: pre-wrap;
         }
+
         .message.assistant {
-            align-self: flex-start; background: #222438;
-            border: 1px solid #2e3148; border-bottom-left-radius: 4px;
+            align-self: flex-start;
+            background: #222438;
+            border: 1px solid #2e3148;
+            border-bottom-left-radius: 4px;
         }
-        .message.assistant h1, .message.assistant h2, .message.assistant h3 {
-            margin: 12px 0 6px 0; color: #c4b5fd;
+
+        .message.assistant h1,
+        .message.assistant h2,
+        .message.assistant h3 {
+            margin: 12px 0 6px 0;
+            color: #c4b5fd;
         }
-        .message.assistant h1 { font-size: 18px; }
-        .message.assistant h2 { font-size: 16px; }
-        .message.assistant h3 { font-size: 15px; }
-        .message.assistant p { margin: 6px 0; }
-        .message.assistant ul, .message.assistant ol { margin: 6px 0; padding-left: 20px; }
-        .message.assistant li { margin: 3px 0; }
+
+        .message.assistant h1 {
+            font-size: 18px;
+        }
+
+        .message.assistant h2 {
+            font-size: 16px;
+        }
+
+        .message.assistant h3 {
+            font-size: 15px;
+        }
+
+        .message.assistant p {
+            margin: 6px 0;
+        }
+
+        .message.assistant ul,
+        .message.assistant ol {
+            margin: 6px 0;
+            padding-left: 20px;
+        }
+
+        .message.assistant li {
+            margin: 3px 0;
+        }
+
         .message.assistant code {
-            background: #2e3148; padding: 1px 5px; border-radius: 3px;
-            font-family: 'SF Mono', 'Consolas', monospace; font-size: 13px;
+            background: #2e3148;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 13px;
         }
+
         .message.assistant pre {
-            background: #141620; border: 1px solid #2e3148; border-radius: 6px;
-            padding: 10px; margin: 8px 0; overflow-x: auto;
+            background: #141620;
+            border: 1px solid #2e3148;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 8px 0;
+            overflow-x: auto;
         }
-        .message.assistant pre code { background: none; padding: 0; }
-        .message.assistant strong { color: #e2e8f0; }
+
+        .message.assistant pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .message.assistant strong {
+            color: #e2e8f0;
+        }
+
         .message .sources {
-            margin-top: 8px; padding-top: 8px; border-top: 1px solid #3a3d54;
-            font-size: 12px; color: #a1a1aa;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #3a3d54;
+            font-size: 12px;
+            color: #a1a1aa;
         }
+
         .message .rewrite-info {
-            font-size: 11px; color: #8b5cf6; margin-bottom: 6px; font-style: italic;
+            font-size: 11px;
+            color: #8b5cf6;
+            margin-bottom: 6px;
+            font-style: italic;
         }
+
         .message .cache-badge {
-            display: inline-block; background: #22c55e; color: white;
-            font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-bottom: 6px;
+            display: inline-block;
+            background: #22c55e;
+            color: white;
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 10px;
+            margin-bottom: 6px;
         }
 
         /* Typing Indicator */
         .typing-indicator {
-            align-self: flex-start; padding: 12px 16px; background: #1e1f2e;
-            border: 1px solid #2e3148; border-radius: 12px; border-bottom-left-radius: 4px;
-            display: flex; align-items: center; gap: 4px;
+            align-self: flex-start;
+            padding: 12px 16px;
+            background: #1e1f2e;
+            border: 1px solid #2e3148;
+            border-radius: 12px;
+            border-bottom-left-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
+
         .typing-indicator span {
-            display: inline-block; width: 8px; height: 8px; background: #8b5cf6;
-            border-radius: 50%; animation: bounce 1.4s ease-in-out infinite;
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #8b5cf6;
+            border-radius: 50%;
+            animation: bounce 1.4s ease-in-out infinite;
         }
-        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
         @keyframes bounce {
-            0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
-            30% { transform: translateY(-8px); opacity: 1; }
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.3;
+            }
+
+            30% {
+                transform: translateY(-8px);
+                opacity: 1;
+            }
         }
 
         .message.error {
-            align-self: center; background: #2d1215; border: 1px solid #7f1d1d;
-            color: #fca5a5; font-size: 13px; max-width: 90%;
+            align-self: center;
+            background: #2d1215;
+            border: 1px solid #7f1d1d;
+            color: #fca5a5;
+            font-size: 13px;
+            max-width: 90%;
         }
 
         /* ========== Trace Panel ========== */
@@ -135,7 +287,10 @@
             transition: width 0.3s ease;
             flex-shrink: 0;
         }
-        .trace-panel.open { width: 380px; }
+
+        .trace-panel.open {
+            width: 380px;
+        }
 
         .trace-inner {
             width: 380px;
@@ -143,6 +298,7 @@
             display: flex;
             flex-direction: column;
         }
+
         .trace-header {
             padding: 12px 16px;
             border-bottom: 1px solid #2e3148;
@@ -153,9 +309,15 @@
             align-items: center;
             justify-content: space-between;
         }
+
         .trace-header .clear-btn {
-            background: none; border: none; color: #71717a; cursor: pointer; font-size: 11px;
+            background: none;
+            border: none;
+            color: #71717a;
+            cursor: pointer;
+            font-size: 11px;
         }
+
         .trace-content {
             flex: 1;
             overflow-y: auto;
@@ -169,6 +331,7 @@
             border-radius: 8px;
             overflow: hidden;
         }
+
         .trace-group-header {
             padding: 6px 10px;
             background: #1c1e2e;
@@ -176,35 +339,80 @@
             color: #71717a;
             border-bottom: 1px solid #252840;
         }
+
         .trace-step {
             padding: 8px 12px;
             border-bottom: 1px solid #1c1e2e;
             font-size: 12px;
         }
-        .trace-step:last-child { border-bottom: none; }
+
+        .trace-step:last-child {
+            border-bottom: none;
+        }
+
         .trace-step-header {
             display: flex;
             align-items: center;
             gap: 8px;
             margin-bottom: 4px;
         }
+
         .trace-icon {
-            width: 18px; height: 18px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 10px; flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            flex-shrink: 0;
         }
-        .trace-icon.done { background: #064e3b; color: #34d399; }
-        .trace-icon.hit { background: #064e3b; color: #34d399; }
-        .trace-icon.miss { background: #422006; color: #fbbf24; }
-        .trace-icon.streaming { background: #1e1b4b; color: #818cf8; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        .trace-icon.done {
+            background: #064e3b;
+            color: #34d399;
+        }
+
+        .trace-icon.hit {
+            background: #064e3b;
+            color: #34d399;
+        }
+
+        .trace-icon.miss {
+            background: #422006;
+            color: #fbbf24;
+        }
+
+        .trace-icon.streaming {
+            background: #1e1b4b;
+            color: #818cf8;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
 
         .trace-step-name {
-            font-weight: 500; color: #e4e4e7; flex: 1;
+            font-weight: 500;
+            color: #e4e4e7;
+            flex: 1;
         }
+
         .trace-step-time {
-            color: #71717a; font-size: 11px; font-family: monospace;
+            color: #71717a;
+            font-size: 11px;
+            font-family: monospace;
         }
+
         .trace-detail {
             margin-top: 4px;
             padding: 6px 8px;
@@ -219,11 +427,26 @@
             max-height: 200px;
             overflow-y: auto;
         }
-        .trace-detail .key { color: #8b5cf6; }
-        .trace-detail .val-str { color: #34d399; }
-        .trace-detail .val-num { color: #fbbf24; }
-        .trace-detail .val-bool-true { color: #34d399; }
-        .trace-detail .val-bool-false { color: #71717a; }
+
+        .trace-detail .key {
+            color: #8b5cf6;
+        }
+
+        .trace-detail .val-str {
+            color: #34d399;
+        }
+
+        .trace-detail .val-num {
+            color: #fbbf24;
+        }
+
+        .trace-detail .val-bool-true {
+            color: #34d399;
+        }
+
+        .trace-detail .val-bool-false {
+            color: #71717a;
+        }
 
         /* Total time bar */
         .trace-total {
@@ -235,45 +458,111 @@
             display: flex;
             justify-content: space-between;
         }
-        .trace-total .time { color: #8b5cf6; font-weight: 600; font-family: monospace; }
+
+        .trace-total .time {
+            color: #8b5cf6;
+            font-weight: 600;
+            font-family: monospace;
+        }
 
         /* Input Area */
         .input-container {
-            background: #1c1e2e; border-top: 1px solid #2e3148; padding: 16px 24px;
+            background: #1c1e2e;
+            border-top: 1px solid #2e3148;
+            padding: 16px 24px;
             flex-shrink: 0;
         }
-        .input-wrapper {
-            display: flex; gap: 10px; max-width: 900px; margin: 0 auto;
-        }
-        .input-wrapper textarea {
-            flex: 1; background: #141620; border: 1px solid #2e3148;
-            border-radius: 10px; padding: 10px 14px; color: #e4e4e7;
-            font-size: 14px; resize: none; outline: none;
-            min-height: 44px; max-height: 120px; font-family: inherit; line-height: 1.5;
-        }
-        .input-wrapper textarea:focus { border-color: #8b5cf6; }
-        .input-wrapper button {
-            background: #8b5cf6; color: white; border: none; border-radius: 10px;
-            padding: 0 20px; cursor: pointer; font-size: 14px; font-weight: 500;
-        }
-        .input-wrapper button:hover { background: #7c3aed; }
-        .input-wrapper button:disabled { background: #3a3d54; cursor: not-allowed; }
 
-        .welcome { text-align: center; margin: auto; max-width: 500px; }
-        .welcome-icon { margin-bottom: 16px; opacity: 0.9; display: flex; justify-content: center; }
-        .welcome-icon svg { width: 56px; height: 56px; }
-        .welcome h2 { color: #e4e4e7; margin-bottom: 8px; font-size: 22px; font-weight: 600; }
-        .welcome p { color: #71717a; font-size: 14px; line-height: 1.6; }
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .input-wrapper textarea {
+            flex: 1;
+            background: #141620;
+            border: 1px solid #2e3148;
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: #e4e4e7;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            min-height: 44px;
+            max-height: 120px;
+            font-family: inherit;
+            line-height: 1.5;
+        }
+
+        .input-wrapper textarea:focus {
+            border-color: #8b5cf6;
+        }
+
+        .input-wrapper button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .input-wrapper button:hover {
+            background: #7c3aed;
+        }
+
+        .input-wrapper button:disabled {
+            background: #3a3d54;
+            cursor: not-allowed;
+        }
+
+        .welcome {
+            text-align: center;
+            margin: auto;
+            max-width: 500px;
+        }
+
+        .welcome-icon {
+            margin-bottom: 16px;
+            opacity: 0.9;
+            display: flex;
+            justify-content: center;
+        }
+
+        .welcome-icon svg {
+            width: 56px;
+            height: 56px;
+        }
+
+        .welcome h2 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .welcome p {
+            color: #71717a;
+            font-size: 14px;
+            line-height: 1.6;
+        }
     </style>
 </head>
+
 <body>
     <div class="header">
         <div class="header-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
-                <polyline points="7.5 4.21 12 6.81 16.5 4.21"/>
-                <line x1="12" y1="22" x2="12" y2="6.81"/>
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path
+                    d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+                <polyline points="7.5 4.21 12 6.81 16.5 4.21" />
+                <line x1="12" y1="22" x2="12" y2="6.81" />
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
             </svg>
         </div>
         <div class="divider"></div>
@@ -288,16 +577,18 @@
             <div class="chat-container" id="chatContainer">
                 <div class="welcome" id="welcome">
                     <div class="welcome-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
-                            <polyline points="7.5 4.21 12 6.81 16.5 4.21"/>
-                            <line x1="12" y1="22" x2="12" y2="6.81"/>
-                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.2" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <path
+                                d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+                            <polyline points="7.5 4.21 12 6.81 16.5 4.21" />
+                            <line x1="12" y1="22" x2="12" y2="6.81" />
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
                         </svg>
                     </div>
                     <h2>OCP 온보딩 어시스턴트</h2>
                     <p>OpenShift Container Platform 운영에 관해 궁금한 점을 물어보세요.<br>
-                    사내 문서 기반으로 정확한 답변을 제공합니다.</p>
+                        OCP 공식 문서와 트러블슈팅 가이드를 기반으로 정확한 답변을 제공합니다.</p>
                 </div>
             </div>
             <div class="input-container">
@@ -427,8 +718,8 @@
                 } else if (Array.isArray(val)) {
                     v = val.map(item => {
                         if (typeof item === 'object') {
-                            return '\n  ' + Object.entries(item).map(([ik,iv]) =>
-                                `${ik}: ${typeof iv === 'string' ? (iv.length > 60 ? iv.slice(0,60)+'...' : iv) : iv}`
+                            return '\n  ' + Object.entries(item).map(([ik, iv]) =>
+                                `${ik}: ${typeof iv === 'string' ? (iv.length > 60 ? iv.slice(0, 60) + '...' : iv) : iv}`
                             ).join(', ');
                         }
                         return String(item);
@@ -514,7 +805,7 @@
                     </div>
                     <h2>OCP 온보딩 어시스턴트</h2>
                     <p>OpenShift Container Platform 운영에 관해 궁금한 점을 물어보세요.<br>
-                    사내 문서 기반으로 정확한 답변을 제공합니다.</p>
+                    OCP 공식 문서와 트러블슈팅 가이드를 기반으로 정확한 답변을 제공합니다.</p>
                 </div>`;
             document.getElementById('sessionInfo').textContent = 'New Session';
             clearTrace();
@@ -678,4 +969,5 @@
         userInput.focus();
     </script>
 </body>
+
 </html>

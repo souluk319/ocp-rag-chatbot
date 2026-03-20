@@ -100,12 +100,101 @@ class BM25Scorer:
         indexed_scores.sort(key=lambda x: x[1], reverse=True)
         return indexed_scores[:top_k]
 
+    # OCP/K8s 한영 동의어 매핑 — BM25가 "파드"로 검색해도 "Pod" 문서를 찾도록
+    _SYNONYMS: dict[str, list[str]] = {
+        "pod": ["파드"],
+        "파드": ["pod"],
+        "node": ["노드"],
+        "노드": ["node"],
+        "openshift": ["오픈시프트", "ocp"],
+        "오픈시프트": ["openshift", "ocp"],
+        "ocp": ["openshift", "오픈시프트"],
+        "login": ["로그인"],
+        "로그인": ["login"],
+        "deploy": ["배포", "디플로이"],
+        "배포": ["deploy"],
+        "container": ["컨테이너"],
+        "컨테이너": ["container"],
+        "cluster": ["클러스터"],
+        "클러스터": ["cluster"],
+        "namespace": ["네임스페이스", "프로젝트"],
+        "네임스페이스": ["namespace"],
+        "service": ["서비스"],
+        "서비스": ["service"],
+        "route": ["라우트"],
+        "라우트": ["route"],
+        "image": ["이미지"],
+        "이미지": ["image"],
+        "registry": ["레지스트리"],
+        "레지스트리": ["registry"],
+        "secret": ["시크릿"],
+        "시크릿": ["secret"],
+        "volume": ["볼륨"],
+        "볼륨": ["volume"],
+        "storage": ["스토리지"],
+        "스토리지": ["storage"],
+        "pending": ["펜딩", "대기"],
+        "troubleshooting": ["트러블슈팅", "문제해결"],
+        "트러블슈팅": ["troubleshooting"],
+        "error": ["에러", "오류"],
+        "에러": ["error"],
+        "cli": ["명령줄"],
+    }
+
     def _tokenize(self, text: str) -> list[str]:
-        """간단한 토크나이저. 형태소 분석기 쓰면 좋겠지만 의존성 늘리기 싫어서 정규식으로 처리"""
-        # TODO: konlpy 같은 거 넣으면 한국어 검색 정확도 올라갈 듯
+        """공백 기반 단어 단위 토크나이저 + 동의어 확장.
+
+        이전 버전은 한글을 글자 단위로 쪼개서("상태" → "상","태") BM25가 무력화됨.
+        개선: 공백 기준으로 분리 후 한글 연속 문자열을 단어로 유지.
+        추가: 동의어 매핑으로 한영 교차 검색 지원 ("파드" 검색 → "pod" 문서 매칭).
+        """
         text = text.lower()
-        tokens = re.findall(r"[a-z0-9]+|[가-힣]+", text)
-        return tokens
+        words = text.split()
+        tokens = []
+        for word in words:
+            # 영문+숫자 토큰 (하이픈 포함 기술용어 대응: crash-loop 등)
+            en_tokens = re.findall(r"[a-z][a-z0-9\-]*[a-z0-9]|[a-z0-9]+", word)
+            # 한국어 연속 문자열 = 단어 단위 유지 (2글자 이상)
+            ko_tokens = re.findall(r"[가-힣]{2,}", word)
+            tokens.extend(en_tokens)
+            tokens.extend(ko_tokens)
+        # 한국어 조사 제거 — "클러스터에" → "클러스터", "로그인하는" → "로그인"
+        stripped = []
+        for token in tokens:
+            s = self._strip_josa(token)
+            stripped.append(s)
+        # 동의어 확장
+        expanded = list(stripped)
+        for token in stripped:
+            synonyms = self._SYNONYMS.get(token, [])
+            for syn in synonyms:
+                if syn not in expanded:
+                    expanded.append(syn)
+        return expanded
+
+    @staticmethod
+    def _strip_josa(token: str) -> str:
+        """한국어 토큰에서 흔한 조사/어미를 제거.
+
+        형태소 분석기 없이 접미사 패턴 매칭으로 처리.
+        완벽하지 않지만 BM25 매칭률을 크게 개선.
+        """
+        if not token or not ('가' <= token[-1] <= '힣'):
+            return token
+        # 긴 접미사부터 매칭 (greedy)
+        suffixes = [
+            "에서는", "으로는", "에서의", "으로의",
+            "하는", "에서", "으로", "이란", "란",
+            "에는", "과는", "와는", "처럼",
+            "에게", "한테", "보다", "까지", "부터", "마다",
+            "이나", "거나", "든지",
+            "의", "에", "를", "을", "은", "는", "이", "가",
+            "와", "과", "로", "도", "만",
+        ]
+        for suffix in suffixes:
+            if len(token) > len(suffix) and token.endswith(suffix):
+                return token[:-len(suffix)]
+        return token
 
     def score(self, query: str, documents: list[str]) -> list[float]:
         """BM25 스코어 계산"""
@@ -231,7 +320,61 @@ class Retriever:
             ))
 
         ranked.sort(key=lambda x: x.score, reverse=True)
-        return ranked[:top_k]
+        top_results = ranked[:top_k]
+
+        # 7. 인접 청크 확장: 검색된 청크의 앞뒤 청크를 포함시켜 문맥 보완
+        return self._expand_adjacent_chunks(top_results)
+
+    def _expand_adjacent_chunks(self, results: list[RankedResult], window: int = 2) -> list[RankedResult]:
+        """검색된 청크의 인접 청크(같은 문서, ±window)를 텍스트에 병합.
+
+        chunk_id 형식: "source::N" (예: "ocp-image-pull-troubleshooting-ko.md::0")
+        같은 source의 N-window ~ N+window 청크를 찾아서 텍스트를 합침.
+        이렇게 하면 chunk 0만 잡혀도 chunk 1,2의 해결 방법까지 LLM이 볼 수 있음.
+        """
+        if not self.index.documents:
+            return results
+
+        # chunk_id → index 매핑 (최초 1회 구축)
+        if not hasattr(self, '_chunk_id_to_idx'):
+            self._chunk_id_to_idx = {}
+            for idx, doc in enumerate(self.index.documents):
+                self._chunk_id_to_idx[doc["chunk_id"]] = idx
+
+        expanded = []
+        for r in results:
+            # chunk_id 파싱: "source::N"
+            if "::" not in r.chunk_id:
+                expanded.append(r)
+                continue
+
+            source, chunk_num_str = r.chunk_id.rsplit("::", 1)
+            try:
+                chunk_num = int(chunk_num_str)
+            except ValueError:
+                expanded.append(r)
+                continue
+
+            # 인접 청크 수집 (현재 청크 포함)
+            texts = []
+            for offset in range(-window, window + 1):
+                adj_id = f"{source}::{chunk_num + offset}"
+                adj_idx = self._chunk_id_to_idx.get(adj_id)
+                if adj_idx is not None:
+                    texts.append(self.index.documents[adj_idx]["text"])
+
+            # 병합된 텍스트로 결과 교체
+            merged_text = "\n\n".join(texts)
+            expanded.append(RankedResult(
+                chunk_id=r.chunk_id,
+                text=merged_text,
+                score=r.score,
+                semantic_score=r.semantic_score,
+                keyword_score=r.keyword_score,
+                metadata=r.metadata,
+            ))
+
+        return expanded
 
     def build_context(self, results: list[RankedResult], max_chars: int = 4000) -> str:
         """검색 결과를 LLM에 전달할 context 문자열로 구성 (길이 제한)"""
