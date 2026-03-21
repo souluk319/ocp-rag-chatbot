@@ -27,4 +27,4 @@ Thumbs.db
 .self_review/
 
 # Claude Code
-.claude/
+.claude/.env.example
