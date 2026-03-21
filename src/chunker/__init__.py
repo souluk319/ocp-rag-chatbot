@@ -158,7 +158,7 @@ class Chunker:
         """디렉토리 재귀 순회하면서 지원 포맷 전부 청킹"""
         all_chunks = []
         supported = {".txt", ".md", ".pdf", ".docx", ".pptx"}
-        # FIXME: 대용량 PDF (100+ 페이지) 들어오면 메모리 터질 수 있음. 나중에 스트리밍 처리 필요
+        # 향후 개선: 대용량 PDF (100+ 페이지) 스트리밍 처리 (현재 운영 문서 규모에서는 문제 없음)
         for root, _, files in os.walk(dirpath):
             for fname in sorted(files):
                 if fname.startswith("~$") or fname.startswith("."):

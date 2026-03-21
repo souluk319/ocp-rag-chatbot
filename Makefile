@@ -1,4 +1,4 @@
-.PHONY: run stop index scrape install
+.PHONY: run stop index scrape install test clean
 
 run:
 	uvicorn src.api:app --reload --host 0.0.0.0 --port 8000
@@ -14,3 +14,11 @@ scrape:
 
 install:
 	pip install -r requirements.txt
+
+test:
+	python3 scripts/test_multiturn.py
+
+clean:
+	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null; \
+	find . -type f -name "*.pyc" -delete 2>/dev/null; \
+	echo "캐시 정리 완료"

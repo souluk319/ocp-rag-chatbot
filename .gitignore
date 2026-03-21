@@ -22,5 +22,6 @@ data/index/*.npy
 .DS_Store
 Thumbs.db
 
-# plan
+# 셀프리뷰
 .plan/
+.self_review/

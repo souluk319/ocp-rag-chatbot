@@ -5,10 +5,10 @@ OCP(OpenShift Container Platform) 운영 지식 기반 RAG 챗봇
 ## 개요
 
 OCP 공식 문서 및 기술 자료를 기반으로 질의응답이 가능한 RAG(Retrieval-Augmented Generation) 챗봇입니다.
-RAG 파이프라인의 각 컴포넌트(인덱싱, 검색, 리랭킹, 캐싱 등)를 개별 모듈로 구현했습니다.
+RAG 파이프라인의 각 컴포넌트(인덱싱, 검색, 리랭킹, 캐싱 등)를 개별 모듈로 구성했습니다.
 
 ### 주요 특징
-- 모듈별 RAG 파이프라인 (인덱싱 → 검색 → 리랭킹 → 응답)
+- RAG 파이프라인 (인덱싱 → 검색 → 리랭킹 → 응답)
 - IVF(Inverted File Index) 벡터 인덱스 설계 (numpy 기반 K-Means)
 - Dual-Path 검색: IVF 벡터 검색 + BM25 독립 코퍼스 키워드 검색
 - Semantic + BM25 하이브리드 Reranking (7:3 가중치)
@@ -118,7 +118,7 @@ ocp-rag-chatbot/
 │   ├── build_index.py            # 문서 인덱싱 (청킹→임베딩→IVF)
 │   └── test_multiturn.py         # 멀티턴 대화 테스트
 ├── data/
-│   ├── raw/                      # 원본 문서 (71개 파일)
+│   ├── raw/                      # 원본 문서 (77개 파일)
 │   │   └── cywell/               # Cywell 교육자료 (PPT, PDF)
 │   └── index/                    # 벡터 인덱스 저장소
 ├── docs/
@@ -161,6 +161,8 @@ make run        # 서버 시작 (uvicorn, port 8000)
 make stop       # 서버 종료
 make index      # 문서 인덱싱 (build_index.py)
 make scrape     # OCP 공식 문서 스크래핑
+make test       # 멀티턴 대화 테스트
+make clean      # __pycache__ 정리
 ```
 
 ## API 엔드포인트
@@ -317,6 +319,15 @@ SSE(Server-Sent Events)를 통한 실시간 응답:
 - [x] 한국어 IME 처리 (compositionstart/end)
 - [x] 마크다운 렌더링
 - [x] 다크 테마 UI
+
+## 향후 과제
+
+- [ ] 단위 테스트 추가 (현재 통합 테스트만 존재)
+- [ ] CORS 제한 (`allow_origins=["*"]` → 배포 환경별 제한)
+- [ ] 대용량 PDF 스트리밍 처리
+- [ ] 프롬프트 인젝션 방어
+- [ ] 동의어 사전 외부 파일 분리 (현재 코드 내 하드코딩)
+- [ ] LLM 호출 재시도 로직 (exponential backoff)
 
 ## 관련 문서
 

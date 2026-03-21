@@ -1,12 +1,14 @@
 """FastAPI 엔드포인트"""
+import asyncio
 import json
+import logging
 import os
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from sse_starlette.sse import EventSourceResponse
 
@@ -18,6 +20,8 @@ from src.session import SessionManager
 from src.cache import SemanticCache
 from src.pipeline import RAGPipeline
 from src.config import INDEX_DIR, EMBEDDING_DIM, HOST, PORT
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="OCP RAG Chatbot", version="1.0.0")
 
@@ -66,13 +70,24 @@ async def startup():
         cache=semantic_cache,
     )
 
+    # 만료 세션 주기적 정리 (10분마다)
+    asyncio.create_task(_cleanup_sessions_periodically())
+
+
+async def _cleanup_sessions_periodically():
+    """백그라운드 세션 정리 태스크"""
+    while True:
+        await asyncio.sleep(600)
+        session_manager.cleanup_expired()
+        logger.debug("만료 세션 정리 완료")
+
 
 # === Request/Response 모델 ===
 
 class ChatRequest(BaseModel):
-    query: str
+    query: str = Field(..., min_length=1, max_length=2000)
     session_id: Optional[str] = None
-    top_k: int = 5
+    top_k: int = Field(default=5, ge=1, le=20)
     stream: bool = True
 
 
