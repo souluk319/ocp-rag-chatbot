@@ -55,7 +55,7 @@ class RAGPipeline:
         rewritten_query = await self.query_rewriter.rewrite(user_query, session)
         query_embedding = self.embedding.embed(rewritten_query)
 
-        cached = await self.cache.async_lookup(query_embedding)
+        cached = await self.cache.async_lookup(rewritten_query, query_embedding)
         if cached:
             session.add_message("user", user_query)
             session.add_message("assistant", cached.response)
@@ -143,7 +143,7 @@ class RAGPipeline:
 
         # === 3. Cache 확인 ===
         t = time.time()
-        cached = await self.cache.async_lookup(query_embedding)
+        cached = await self.cache.async_lookup(rewritten_query, query_embedding)
         cache_ms = round((time.time() - t) * 1000)
         if cached:
             yield {"type": "trace", "data": {
