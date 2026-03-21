@@ -55,7 +55,7 @@ class RAGPipeline:
         rewritten_query = await self.query_rewriter.rewrite(user_query, session)
         query_embedding = self.embedding.embed(rewritten_query)
 
-        cached = self.cache.lookup(query_embedding)
+        cached = await self.cache.async_lookup(query_embedding)
         if cached:
             session.add_message("user", user_query)
             session.add_message("assistant", cached.response)
@@ -76,7 +76,7 @@ class RAGPipeline:
 
         session.add_message("user", user_query)
         session.add_message("assistant", answer)
-        self.cache.store(rewritten_query, query_embedding, answer, context)
+        await self.cache.async_store(rewritten_query, query_embedding, answer, context)
 
         return {
             "session_id": session.session_id,
@@ -143,7 +143,7 @@ class RAGPipeline:
 
         # === 3. Cache 확인 ===
         t = time.time()
-        cached = self.cache.lookup(query_embedding)
+        cached = await self.cache.async_lookup(query_embedding)
         cache_ms = round((time.time() - t) * 1000)
         if cached:
             yield {"type": "trace", "data": {
@@ -256,7 +256,8 @@ class RAGPipeline:
                 token_count += 1
                 yield {"type": "token", "data": token}
         except Exception as e:
-            error_msg = f"LLM 응답 오류: {type(e).__name__}"
+            detail = str(e)[:200] if str(e) else type(e).__name__
+            error_msg = f"LLM 응답 오류: {detail}"
             yield {"type": "token", "data": error_msg}
             full_answer.append(error_msg)
 
@@ -280,7 +281,7 @@ class RAGPipeline:
 
         # 에러 응답은 캐시에 넣으면 안 됨 — 한번 잘못된 응답 캐시되면 계속 나옴
         if not answer.startswith("LLM 응답 오류"):
-            self.cache.store(rewritten_query, query_embedding, answer, context)
+            await self.cache.async_store(rewritten_query, query_embedding, answer, context)
 
         total_ms = round((time.time() - pipeline_start) * 1000)
         yield {"type": "trace", "data": {

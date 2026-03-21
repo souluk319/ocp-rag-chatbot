@@ -5,16 +5,35 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # LLM 설정
-LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", "http://localhost:8080/v1/chat/completions")
+LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", "http://localhost:8080/v1")
 LLM_MODEL = os.getenv("LLM_MODEL", "Qwen/Qwen3.5-9B")
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "2048"))
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))
+
+# LLM 엔드포인트 목록 (UI에서 선택 가능)
+LLM_ENDPOINTS = {
+    "company": {
+        "name": os.getenv("LLM_EP_COMPANY_NAME", "회사 서버"),
+        "url":  os.getenv("LLM_EP_COMPANY_URL", "http://localhost:8080/v1"),
+        "model": os.getenv("LLM_EP_COMPANY_MODEL", "Qwen/Qwen3.5-9B"),
+    },
+    "macmini": {
+        "name": os.getenv("LLM_EP_MACMINI_NAME", "Mac Mini"),
+        "url":  os.getenv("LLM_EP_MACMINI_URL", "http://localhost:8081/v1"),
+        "model": os.getenv("LLM_EP_MACMINI_MODEL", "Qwen/Qwen3.5-9B"),
+    },
+    "rtx": {
+        "name": os.getenv("LLM_EP_RTX_NAME", "RTX Desktop"),
+        "url":  os.getenv("LLM_EP_RTX_URL", "http://localhost:8082/v1"),
+        "model": os.getenv("LLM_EP_RTX_MODEL", "Qwen/Qwen3.5-9B"),
+    },
+}
 
 # Embedding 설정
 # 처음에 all-MiniLM-L6-v2 썼는데 한국어 질의 → 영어 문서 매칭이 너무 약해서
 # multilingual 모델로 교체. 차원(384)은 같아서 인덱스 구조 변경 없음.
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "paraphrase-multilingual-MiniLM-L12-v2")
-EMBEDDING_DIM = 384
+EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "384"))
 
 # Chunking 설정
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "512"))
