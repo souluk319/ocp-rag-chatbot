@@ -63,6 +63,40 @@
             flex: 1;
         }
 
+        /* LLM Selector */
+        .llm-selector {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .llm-selector select {
+            background: #141620;
+            border: 1px solid #2e3148;
+            color: #e4e4e7;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .llm-selector select:focus {
+            border-color: #8b5cf6;
+        }
+
+        .llm-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #71717a;
+            flex-shrink: 0;
+        }
+
+        .llm-status.connected { background: #22c55e; }
+        .llm-status.disconnected { background: #ef4444; }
+        .llm-status.checking { background: #fbbf24; animation: pulse 1s infinite; }
+
         .header .trace-toggle {
             background: none;
             border: 1px solid #2e3148;
@@ -568,6 +602,12 @@
         <div class="divider"></div>
         <h1>OCP 온보딩 어시스턴트</h1>
         <span class="session-info" id="sessionInfo">New Session</span>
+        <div class="llm-selector">
+            <div class="llm-status" id="llmStatus" title="LLM 연결 상태"></div>
+            <select id="llmSelect" onchange="switchEndpoint(this.value)">
+                <option value="">Loading...</option>
+            </select>
+        </div>
         <button class="trace-toggle" id="traceToggle" onclick="toggleTrace()">Pipeline Trace</button>
         <button class="new-chat-btn" onclick="newSession()">+ New Chat</button>
     </div>
@@ -965,6 +1005,63 @@
             div.innerHTML = html;
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
+
+        // ========== LLM Endpoint Selector ==========
+        async function loadEndpoints() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/llm/endpoints`);
+                const data = await resp.json();
+                const select = document.getElementById('llmSelect');
+                select.innerHTML = data.endpoints.map(ep =>
+                    `<option value="${ep.key}" ${ep.active ? 'selected' : ''}>${ep.name}</option>`
+                ).join('');
+                checkLlmHealth();
+            } catch (e) {
+                console.error('엔드포인트 목록 로드 실패:', e);
+            }
+        }
+
+        async function switchEndpoint(key) {
+            if (!key) return;
+            const statusEl = document.getElementById('llmStatus');
+            statusEl.className = 'llm-status checking';
+            statusEl.title = '전환 중...';
+            try {
+                const resp = await fetch(`${API_BASE}/api/llm/endpoint`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key }),
+                });
+                if (!resp.ok) throw new Error('전환 실패');
+                checkLlmHealth();
+            } catch (e) {
+                statusEl.className = 'llm-status disconnected';
+                statusEl.title = '전환 실패: ' + e.message;
+            }
+        }
+
+        async function checkLlmHealth() {
+            const statusEl = document.getElementById('llmStatus');
+            statusEl.className = 'llm-status checking';
+            statusEl.title = '연결 확인 중...';
+            try {
+                const resp = await fetch(`${API_BASE}/api/llm/health`);
+                const data = await resp.json();
+                if (data.status === 'connected') {
+                    statusEl.className = 'llm-status connected';
+                    statusEl.title = `${data.endpoint} - 연결됨`;
+                } else {
+                    statusEl.className = 'llm-status disconnected';
+                    statusEl.title = `${data.endpoint} - 연결 안 됨: ${data.error || ''}`;
+                }
+            } catch (e) {
+                statusEl.className = 'llm-status disconnected';
+                statusEl.title = '서버 연결 실패';
+            }
+        }
+
+        // 페이지 로드 시 엔드포인트 목록 불러오기
+        loadEndpoints();
 
         userInput.focus();
     </script>

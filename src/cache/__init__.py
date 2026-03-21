@@ -2,6 +2,7 @@
 유사 질의 응답 캐시. 같은 의미의 질문이 들어오면 LLM 호출 없이 바로 응답.
 cosine similarity 기반으로 매칭하고, LRU로 오래된 거 날림.
 """
+import asyncio
 import time
 import numpy as np
 from collections import OrderedDict
@@ -27,7 +28,7 @@ class SemanticCache:
 
     처음에 threshold=0.92로 했다가 다른 질문인데 캐시 히트되는 문제가 있어서 0.95로 올림.
     """
-    # TODO: 쿼리 길이에 따라 threshold를 동적으로 조절하면 더 좋을 듯
+    # 향후 개선: 쿼리 길이에 따른 동적 threshold 조절 (현재 0.95 고정)
 
     def __init__(
         self,
@@ -39,6 +40,7 @@ class SemanticCache:
         self._cache: OrderedDict[str, CacheEntry] = OrderedDict()
         self._embeddings: Optional[np.ndarray] = None  # lookup 때마다 재계산하면 느려서 행렬로 캐싱
         self._keys: list[str] = []
+        self._lock = asyncio.Lock()  # 동시 요청 시 캐시 상태 보호
 
     def _rebuild_matrix(self):
         """캐시 임베딩 행렬 재구성"""
@@ -51,6 +53,16 @@ class SemanticCache:
             [self._cache[k].query_embedding for k in self._keys],
             dtype=np.float32,
         )
+
+    async def async_lookup(self, query_embedding: np.ndarray) -> Optional[CacheEntry]:
+        """스레드 안전한 캐시 조회"""
+        async with self._lock:
+            return self.lookup(query_embedding)
+
+    async def async_store(self, query: str, query_embedding: np.ndarray, response: str, context: str):
+        """스레드 안전한 캐시 저장"""
+        async with self._lock:
+            self.store(query, query_embedding, response, context)
 
     def lookup(self, query_embedding: np.ndarray) -> Optional[CacheEntry]:
         """캐시 조회 - 유사한 질의가 있으면 반환"""

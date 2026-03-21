@@ -4,7 +4,7 @@ OCP(OpenShift Container Platform) 운영 지식 기반 RAG 챗봇
 
 ## 개요
 
-사내 OCP 운영 문서 및 기술 자료를 기반으로 질의응답이 가능한 RAG(Retrieval-Augmented Generation) 챗봇입니다.
+OCP 운영 문서 및 기술 자료를 기반으로 질의응답이 가능한 RAG(Retrieval-Augmented Generation) 챗봇입니다.
 오픈소스 프레임워크(LangChain 등)를 사용하지 않고, 모든 RAG 파이프라인 컴포넌트를 직접 구현했습니다.
 
 ### 주요 특징
@@ -49,7 +49,7 @@ OCP(OpenShift Container Platform) 운영 지식 기반 RAG 챗봇
                           Context 구성 (max 4000자)
                                  │
                                  ▼
-                          [LLM Client - Qwen3.5-9B]
+                          [LLM Client - Multi Endpoint]
                           토큰 단위 스트리밍
                                  │
                                  ▼
@@ -79,7 +79,7 @@ Complete ✓  1.3s  → total pipeline time
 | 구분 | 기술 | 설명 |
 |------|------|------|
 | Backend | Python 3.11+, FastAPI | REST API + SSE 스트리밍 |
-| LLM | Qwen/Qwen3.5-9B | vLLM 서버, OpenAI-compatible API |
+| LLM | Qwen/Qwen3.5-9B | 멀티 endpoint 지원. Mac Mini / RTX Desktop 은 4bit 양자화본, OpenAI-compatible API |
 | Embedding | paraphrase-multilingual-MiniLM-L12-v2 | 384차원, 다국어(한/영) 지원 |
 | Vector Index | numpy IVF | K-Means 클러스터링 직접 구현 |
 | Reranking | Semantic + BM25 | 하이브리드 스코어링 직접 구현 |
@@ -94,7 +94,7 @@ ocp-rag-chatbot/
 │   ├── config.py                 # 전역 설정 관리 (.env 로드)
 │   ├── pipeline.py               # RAG 오케스트레이터 + 트레이스
 │   ├── api/                      # FastAPI 엔드포인트 (SSE)
-│   ├── llm/                      # LLM 클라이언트 (Qwen3.5-9B)
+│   ├── llm/                      # LLM 클라이언트 (멀티 endpoint)
 │   ├── embedding/                # 임베딩 엔진 + LRU 캐싱
 │   ├── vectorstore/              # IVF 벡터 인덱스 (직접 구현)
 │   ├── retriever/                # 하이브리드 검색 + BM25 Reranking
@@ -108,8 +108,7 @@ ocp-rag-chatbot/
 │   ├── generate_docs.py          # LLM 기반 합성 문서 생성
 │   └── build_index.py            # 문서 인덱싱 (청킹→임베딩→IVF)
 ├── data/
-│   ├── raw/                      # 원본 문서 (36개 파일)
-│   │   └── cywell/               # Cywell 교육자료 (PPT, PDF)
+│   ├── raw/                      # 원본 문서 및 추가 기술 자료
 │   └── index/                    # 벡터 인덱스 저장소
 └── requirements.txt              # Python 의존성
 ```
@@ -120,6 +119,7 @@ ocp-rag-chatbot/
 # 1. 환경 설정
 cp .env.example .env
 # .env 파일에서 LLM_ENDPOINT를 실제 엔드포인트로 변경
+# Mac Mini / RTX Desktop 엔드포인트는 둘 다 Qwen3.5-9B 4bit 양자화본 기준
 
 # 2. 의존성 설치
 pip install -r requirements.txt
@@ -224,7 +224,7 @@ Vector Search (IVF)
 | 직접 작성 | 한국어 기술 문서 | 6개 | 가장 신뢰, OCP 기본 개념 |
 | 웹 스크래핑 | 공식 문서 크롤링 | 17개 | 영어 원문, 전처리 필요 |
 | LLM 합성 | Qwen3.5-9B 생성 | 8개 | 검수 필요, 빈 주제 보완 |
-| 교육 자료 | PPTX/PDF 파싱 | 5개 | Cywell 교육자료 (PPT 1 + PDF 4) |
+| 추가 문서 | PPTX/PDF 파싱 | 5개 | 운영/교육용 보조 자료 |
 
 **텍스트 전처리:**
 - 스크래핑 데이터의 공백 누락 자동 수정 (camelCase 경계 분리)
@@ -258,7 +258,7 @@ SSE(Server-Sent Events)를 통한 실시간 응답:
 - [x] RAG → LLM 파이프라인 + 웹 UI 직접 구현
 - [x] Vector Index 직접 설계 (IVF - K-Means, numpy)
 - [x] 멀티턴 대화 5턴 이상 (세션 + Query Rewriting)
-- [x] LLM 연동 - Qwen/Qwen3.5-9B (vLLM)
+- [x] LLM 연동 - Qwen/Qwen3.5-9B (멀티 endpoint, Mac Mini / RTX 는 4bit 양자화본)
 - [x] Streaming 응답 (SSE 토큰 스트리밍)
 
 ### 추가 구현
