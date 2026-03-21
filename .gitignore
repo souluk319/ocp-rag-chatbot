@@ -1,5 +1,15 @@
 # 환경변수
 .env
+.env.*
+!.env.example
+
+# 로컬 도구/개인 메모
+.claude/
+CLAUDE.md
+docs/.plan/
+docs/.self_review/
+docs/github-publication-security-plan-2026-03-22.md
+docs/publication-security-remediation-plan-2026-03-22.md
 
 # 원본 문서 데이터
 data/raw/
@@ -13,6 +23,7 @@ venv/
 
 # 벡터 인덱스 저장 (용량 큼)
 data/index/*.npy
+data/index/index_meta.json
 
 # IDE
 .vscode/
@@ -25,6 +36,3 @@ Thumbs.db
 # 셀프리뷰
 .plan/
 .self_review/
-
-# Claude Code
-.claude/.env.example
