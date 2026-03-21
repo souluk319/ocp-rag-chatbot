@@ -19,7 +19,7 @@ from src.retriever import Retriever
 from src.session import SessionManager
 from src.cache import SemanticCache
 from src.pipeline import RAGPipeline
-from src.config import INDEX_DIR, EMBEDDING_DIM, HOST, PORT
+from src.config import INDEX_DIR, EMBEDDING_DIM, HOST, PORT, LLM_ENDPOINTS
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +159,55 @@ async def system_stats():
         "active_sessions": len(session_manager.list_sessions()),
     }
     return stats
+
+
+# === LLM 엔드포인트 관리 API ===
+
+class EndpointRequest(BaseModel):
+    key: str
+
+
+@app.get("/api/llm/endpoints")
+async def list_endpoints():
+    """사용 가능한 LLM 엔드포인트 목록 + 현재 선택"""
+    endpoints = []
+    for key, ep in LLM_ENDPOINTS.items():
+        endpoints.append({
+            "key": key,
+            "name": ep["name"],
+            "model": ep["model"],
+            "active": key == llm_client.current_endpoint_key,
+        })
+    return {"endpoints": endpoints, "current": llm_client.current_endpoint_key}
+
+
+@app.post("/api/llm/endpoint")
+async def switch_endpoint(req: EndpointRequest):
+    """LLM 엔드포인트 전환 + 모델명 자동 감지"""
+    try:
+        ep = llm_client.switch_endpoint(req.key)
+        # 서버에 연결해서 실제 모델명 자동 감지
+        detected = await llm_client.auto_detect_model()
+        return {
+            "status": "ok",
+            "switched_to": ep["name"],
+            "url": ep["url"],
+            "model": detected or ep["model"],
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/llm/health")
+async def llm_health():
+    """현재 LLM 엔드포인트 연결 상태 확인"""
+    result = await llm_client.health_check()
+    current = LLM_ENDPOINTS.get(llm_client.current_endpoint_key, {})
+    return {
+        "endpoint": current.get("name", "unknown"),
+        "key": llm_client.current_endpoint_key,
+        **result,
+    }
 
 
 # Frontend 정적 파일 서빙

@@ -25,3 +25,6 @@ Thumbs.db
 # 셀프리뷰
 .plan/
 .self_review/
+
+# Claude Code
+.claude/
