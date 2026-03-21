@@ -14,17 +14,17 @@ LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))
 LLM_ENDPOINTS = {
     "company": {
         "name": os.getenv("LLM_EP_COMPANY_NAME", "회사 서버"),
-        "url":  os.getenv("LLM_EP_COMPANY_URL", "http://cllm.cywell.co.kr/v1"),
+        "url":  os.getenv("LLM_EP_COMPANY_URL", "http://localhost:8080/v1"),
         "model": os.getenv("LLM_EP_COMPANY_MODEL", "Qwen/Qwen3.5-9B"),
     },
     "macmini": {
         "name": os.getenv("LLM_EP_MACMINI_NAME", "Mac Mini"),
-        "url":  os.getenv("LLM_EP_MACMINI_URL", "http://100.79.168.100:8080/v1"),
+        "url":  os.getenv("LLM_EP_MACMINI_URL", "http://localhost:8081/v1"),
         "model": os.getenv("LLM_EP_MACMINI_MODEL", "Qwen/Qwen3.5-9B"),
     },
     "rtx": {
         "name": os.getenv("LLM_EP_RTX_NAME", "RTX Desktop"),
-        "url":  os.getenv("LLM_EP_RTX_URL", "http://100.99.152.52:8080/v1"),
+        "url":  os.getenv("LLM_EP_RTX_URL", "http://localhost:8082/v1"),
         "model": os.getenv("LLM_EP_RTX_MODEL", "Qwen/Qwen3.5-9B"),
     },
 }
