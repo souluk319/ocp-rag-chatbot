@@ -260,6 +260,65 @@ class Retriever:
         self.keyword_weight = keyword_weight
         self.bm25 = BM25Scorer()
 
+    _OVERVIEW_QUERY_HINTS = {
+        "개요", "설명", "간략", "간략히", "간단", "간단히", "소개", "기본", "핵심", "무엇"
+    }
+    _GENERIC_QUERY_TOKENS = {
+        "개요", "설명", "간략", "간략히", "간단", "간단히", "소개", "기본", "핵심",
+        "무엇", "대해", "대해서", "관해", "알려줘", "설명해봐", "해봐",
+    }
+    _ENTITY_TERMS = {
+        "openshift": {"오픈시프트", "openshift", "ocp"},
+        "kubernetes": {"쿠버네티스", "kubernetes", "k8s"},
+    }
+    _SOURCE_PRIOR = {
+        "openshift": ("ocp-basics", "ocp_architecture_overview", "ocp-core-concepts-ko"),
+        "kubernetes": ("k8s_overview", "k8s_components"),
+    }
+    _INTRO_MARKERS = (
+        "기본 개념", "핵심 개념", "overview", "introduction", "란?", "란",
+        "what is", "architecture overview",
+    )
+
+    def _detect_primary_entity(self, query_tokens: set[str]) -> str | None:
+        for entity, terms in self._ENTITY_TERMS.items():
+            if query_tokens & terms:
+                return entity
+        return None
+
+    def _is_overview_query(self, query: str) -> tuple[bool, str | None]:
+        query_tokens = set(self.bm25._tokenize(query))
+        entity = self._detect_primary_entity(query_tokens)
+        has_overview_hint = bool(query_tokens & self._OVERVIEW_QUERY_HINTS)
+        generic_tokens = set(self._GENERIC_QUERY_TOKENS)
+        if entity:
+            generic_tokens |= self._ENTITY_TERMS[entity]
+        informative_tokens = query_tokens - generic_tokens
+        return has_overview_hint and len(informative_tokens) <= 1, entity
+
+    def _overview_boost(self, query: str, candidate: SearchResult) -> float:
+        is_overview_query, entity = self._is_overview_query(query)
+        if not is_overview_query:
+            return 0.0
+
+        source = candidate.metadata.get("source", "").lower()
+        text_head = candidate.text[:400].lower()
+        boost = 0.0
+
+        if candidate.metadata.get("chunk_index") == 0:
+            boost += 0.04
+
+        if any(marker in source or marker in text_head for marker in self._INTRO_MARKERS):
+            boost += 0.08
+
+        if entity:
+            if any(term in source or term in text_head for term in self._ENTITY_TERMS[entity]):
+                boost += 0.06
+            if any(hint in source for hint in self._SOURCE_PRIOR[entity]):
+                boost += 0.18
+
+        return boost
+
     def retrieve(self, query: str, top_k: int = TOP_K) -> list[RankedResult]:
         """쿼리로 관련 문서 검색 + 리랭킹
 
@@ -310,6 +369,7 @@ class Retriever:
                 self.semantic_weight * candidate.score
                 + self.keyword_weight * keyword_scores[i]
             )
+            combined_score += self._overview_boost(query, candidate)
             ranked.append(RankedResult(
                 chunk_id=candidate.chunk_id,
                 text=candidate.text,

@@ -1,4 +1,5 @@
 """세션 + 쿼리 리라이터. 멀티턴 대화에서 "그거 뭐야?" 같은 질문을 독립적인 질문으로 변환."""
+import re
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -124,8 +125,24 @@ class QueryRewriter:
     def __init__(self, llm_client: LLMClient):
         self.llm_client = llm_client
 
+    _DIRECT_OVERVIEW_PATTERNS = (
+        (r"^(오픈시프트|openshift|ocp)(?:이란|란|은|는|이|가)?(?:뭐야|뭐임|무엇(?:이야|인가)?|설명해줘|설명해봐)?$", "오픈시프트 개요 설명해봐"),
+        (r"^(쿠버네티스|kubernetes|k8s)(?:이란|란|은|는|이|가)?(?:뭐야|뭐임|무엇(?:이야|인가)?|설명해줘|설명해봐)?$", "쿠버네티스 개요 설명해봐"),
+    )
+
+    def _normalize_direct_query(self, query: str) -> str:
+        compact = re.sub(r"[\s?!.,]+", "", query.lower())
+        for pattern, normalized in self._DIRECT_OVERVIEW_PATTERNS:
+            if re.fullmatch(pattern, compact):
+                return normalized
+        return query
+
     async def rewrite(self, query: str, session: Session) -> str:
         """맥락 기반 쿼리 재작성"""
+        normalized_query = self._normalize_direct_query(query)
+        if normalized_query != query:
+            return normalized_query
+
         # 대화 이력이 없으면 원본 반환
         if len(session.messages) < 2:
             return query

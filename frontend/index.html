@@ -331,6 +331,7 @@
             height: 100%;
             display: flex;
             flex-direction: column;
+            position: relative;
         }
 
         .trace-header {
@@ -356,6 +357,36 @@
             flex: 1;
             overflow-y: auto;
             padding: 8px;
+        }
+
+        .scroll-jump-btn {
+            position: absolute;
+            right: 14px;
+            bottom: 54px;
+            z-index: 10;
+            border: 1px solid #3b3f5c;
+            background: rgba(20, 22, 32, 0.96);
+            color: #e4e4e7;
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(6px);
+            transition: opacity 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+        }
+
+        .scroll-jump-btn.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .scroll-jump-btn:hover {
+            border-color: #8b5cf6;
         }
 
         /* Trace Steps */
@@ -646,6 +677,7 @@
                     <button class="clear-btn" onclick="clearTrace()">Clear</button>
                 </div>
                 <div class="trace-content" id="traceContent"></div>
+                <button class="scroll-jump-btn" id="traceJumpBtn" onclick="jumpTraceToBottom()">맨 아래로</button>
                 <div class="trace-total" id="traceTotal" style="display:none">
                     <span>Total</span>
                     <span class="time" id="traceTotalTime">-</span>
@@ -661,11 +693,38 @@
         let isComposing = false;
         let traceOpen = false;
         let currentTraceGroup = null;
+        let chatAutoScroll = true;
+        let traceAutoScroll = true;
 
         const userInput = document.getElementById('userInput');
         const sendBtn = document.getElementById('sendBtn');
         const chatContainer = document.getElementById('chatContainer');
         const traceContent = document.getElementById('traceContent');
+        const traceJumpBtn = document.getElementById('traceJumpBtn');
+
+        function isNearBottom(el, threshold = 40) {
+            return el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
+        }
+
+        function stickToBottom(el) {
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function updateTraceJumpButton() {
+            const shouldShow =
+                traceContent.scrollHeight > traceContent.clientHeight &&
+                !traceAutoScroll;
+            traceJumpBtn.classList.toggle('visible', shouldShow);
+        }
+
+        chatContainer.addEventListener('scroll', () => {
+            chatAutoScroll = isNearBottom(chatContainer);
+        });
+
+        traceContent.addEventListener('scroll', () => {
+            traceAutoScroll = isNearBottom(traceContent);
+            updateTraceJumpButton();
+        });
 
         userInput.addEventListener('compositionstart', () => { isComposing = true; });
         userInput.addEventListener('compositionend', () => { isComposing = false; });
@@ -690,6 +749,14 @@
         function clearTrace() {
             traceContent.innerHTML = '';
             document.getElementById('traceTotal').style.display = 'none';
+            traceAutoScroll = true;
+            updateTraceJumpButton();
+        }
+
+        function jumpTraceToBottom() {
+            traceAutoScroll = true;
+            stickToBottom(traceContent);
+            updateTraceJumpButton();
         }
 
         const STEP_LABELS = {
@@ -733,7 +800,10 @@
             } else if (!existing) {
                 container.appendChild(div);
             }
-            traceContent.scrollTop = traceContent.scrollHeight;
+            if (traceAutoScroll) {
+                stickToBottom(traceContent);
+            }
+            updateTraceJumpButton();
 
             // Complete step → total time
             if (trace.step === 'complete') {
@@ -777,6 +847,10 @@
             group.className = 'trace-group';
             group.innerHTML = `<div class="trace-group-header">Query: ${escapeHtml(query)}</div>`;
             traceContent.appendChild(group);
+            if (traceAutoScroll) {
+                stickToBottom(traceContent);
+            }
+            updateTraceJumpButton();
             return group;
         }
 
@@ -858,7 +932,9 @@
             div.className = `message ${role}`;
             if (role === 'user') div.textContent = content;
             chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            if (chatAutoScroll) {
+                stickToBottom(chatContainer);
+            }
             return div;
         }
 
@@ -869,7 +945,9 @@
             div.id = 'typingDots';
             div.innerHTML = '<span></span><span></span><span></span>';
             chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            if (chatAutoScroll) {
+                stickToBottom(chatContainer);
+            }
         }
 
         function removeTypingIndicator() {
@@ -883,13 +961,18 @@
             div.className = 'message error';
             div.textContent = message;
             chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            if (chatAutoScroll) {
+                stickToBottom(chatContainer);
+            }
         }
 
         async function sendMessage() {
             const query = userInput.value.trim();
             if (!query || isStreaming) return;
 
+            chatAutoScroll = true;
+            traceAutoScroll = true;
+            updateTraceJumpButton();
             addMessage('user', query);
             userInput.value = '';
             userInput.style.height = 'auto';
@@ -1003,7 +1086,9 @@
                 html += '</div>';
             }
             div.innerHTML = html;
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            if (chatAutoScroll) {
+                stickToBottom(chatContainer);
+            }
         }
 
         // ========== LLM Endpoint Selector ==========

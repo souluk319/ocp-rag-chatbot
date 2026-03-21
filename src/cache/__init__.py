@@ -1,9 +1,11 @@
 """
 유사 질의 응답 캐시. 같은 의미의 질문이 들어오면 LLM 호출 없이 바로 응답.
-cosine similarity 기반으로 매칭하고, LRU로 오래된 거 날림.
+cosine similarity 기반으로 매칭하되, 주제가 다른 질문끼리 섞이지 않도록
+간단한 토큰/엔티티 가드도 같이 본다.
 """
 import asyncio
 import time
+import re
 import numpy as np
 from collections import OrderedDict
 from dataclasses import dataclass
@@ -42,6 +44,45 @@ class SemanticCache:
         self._keys: list[str] = []
         self._lock = asyncio.Lock()  # 동시 요청 시 캐시 상태 보호
 
+    _GENERIC_TOKENS = {
+        "개요", "설명", "간략", "간단", "소개", "기본", "핵심",
+        "대해", "대해서", "관해", "알려줘", "설명해봐", "해봐",
+    }
+    _ENTITY_TERMS = {
+        "openshift": {"오픈시프트", "openshift", "ocp"},
+        "kubernetes": {"쿠버네티스", "kubernetes", "k8s"},
+    }
+
+    @classmethod
+    def _tokenize(cls, text: str) -> set[str]:
+        parts = re.findall(r"[a-z0-9\-]+|[가-힣]{2,}", text.lower())
+        return set(parts)
+
+    @classmethod
+    def _detect_entity(cls, tokens: set[str]) -> str | None:
+        for entity, terms in cls._ENTITY_TERMS.items():
+            if tokens & terms:
+                return entity
+        return None
+
+    @classmethod
+    def _is_cache_compatible(cls, query: str, cached_query: str) -> bool:
+        query_tokens = cls._tokenize(query)
+        cached_tokens = cls._tokenize(cached_query)
+
+        query_entity = cls._detect_entity(query_tokens)
+        cached_entity = cls._detect_entity(cached_tokens)
+        if query_entity and cached_entity and query_entity != cached_entity:
+            return False
+
+        informative_query = query_tokens - cls._GENERIC_TOKENS
+        informative_cached = cached_tokens - cls._GENERIC_TOKENS
+        if informative_query and informative_cached:
+            if not (informative_query & informative_cached):
+                return False
+
+        return True
+
     def _rebuild_matrix(self):
         """캐시 임베딩 행렬 재구성"""
         if not self._cache:
@@ -54,27 +95,27 @@ class SemanticCache:
             dtype=np.float32,
         )
 
-    async def async_lookup(self, query_embedding: np.ndarray) -> Optional[CacheEntry]:
+    async def async_lookup(self, query: str, query_embedding: np.ndarray) -> Optional[CacheEntry]:
         """스레드 안전한 캐시 조회"""
         async with self._lock:
-            return self.lookup(query_embedding)
+            return self.lookup(query, query_embedding)
 
     async def async_store(self, query: str, query_embedding: np.ndarray, response: str, context: str):
         """스레드 안전한 캐시 저장"""
         async with self._lock:
             self.store(query, query_embedding, response, context)
 
-    def lookup(self, query_embedding: np.ndarray) -> Optional[CacheEntry]:
+    def lookup(self, query: str, query_embedding: np.ndarray) -> Optional[CacheEntry]:
         """캐시 조회 - 유사한 질의가 있으면 반환"""
         if self._embeddings is None or len(self._embeddings) == 0:
             return None
 
         # cosine similarity 계산
-        query = query_embedding.flatten().astype(np.float32)
-        norm_q = np.linalg.norm(query)
+        query_vector = query_embedding.flatten().astype(np.float32)
+        norm_q = np.linalg.norm(query_vector)
         if norm_q == 0:
             return None
-        query_normalized = query / norm_q
+        query_normalized = query_vector / norm_q
 
         norms = np.linalg.norm(self._embeddings, axis=1)
         norms = np.where(norms == 0, 1, norms)
@@ -88,6 +129,8 @@ class SemanticCache:
         if best_score >= self.threshold:
             key = self._keys[best_idx]
             entry = self._cache[key]
+            if not self._is_cache_compatible(query, entry.query):
+                return None
             entry.hit_count += 1
             self._cache.move_to_end(key)
             return entry
@@ -103,7 +146,7 @@ class SemanticCache:
     ):
         """응답을 캐시에 저장"""
         # 이미 유사한 항목이 있으면 업데이트
-        existing = self.lookup(query_embedding)
+        existing = self.lookup(query, query_embedding)
         if existing:
             existing.response = response
             existing.context = context
