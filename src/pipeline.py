@@ -256,7 +256,8 @@ class RAGPipeline:
                 token_count += 1
                 yield {"type": "token", "data": token}
         except Exception as e:
-            error_msg = f"LLM 응답 오류: {type(e).__name__}"
+            detail = str(e)[:200] if str(e) else type(e).__name__
+            error_msg = f"LLM 응답 오류: {detail}"
             yield {"type": "token", "data": error_msg}
             full_answer.append(error_msg)
 
