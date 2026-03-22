@@ -49,11 +49,13 @@ class RAGPipeline:
         user_query: str,
         session_id: Optional[str] = None,
         top_k: int = TOP_K,
+        endpoint_key: Optional[str] = None,
     ) -> dict:
         """비스트리밍 RAG 응답"""
         session = self.session_mgr.get_or_create(session_id)
         rewritten_query = await self.query_rewriter.rewrite(user_query, session)
         query_embedding = self.embedding.embed(rewritten_query)
+        effective_endpoint_key = endpoint_key or self.llm.current_endpoint_key
 
         cached = await self.cache.async_lookup(rewritten_query, query_embedding)
         if cached:
@@ -62,29 +64,38 @@ class RAGPipeline:
             return {
                 "session_id": session.session_id,
                 "answer": cached.response,
-                "sources": [],
+                "sources": cached.sources,
                 "rewritten_query": rewritten_query,
                 "cached": True,
             }
 
         results = self.retriever.retrieve(rewritten_query, top_k=top_k)
+        sources = [
+            {"chunk_id": r.chunk_id, "score": r.score, "source": r.metadata.get("source", "")}
+            for r in results
+        ]
         context = self.retriever.build_context(results)
 
         prompt = f"참고 문서:\n{context}\n\n질문: {rewritten_query}"
         history = session.get_history()
-        answer = await self.llm.generate(SYSTEM_PROMPT, prompt, history)
+        answer = await self.llm.generate(SYSTEM_PROMPT, prompt, history, endpoint_key=effective_endpoint_key)
 
         session.add_message("user", user_query)
         session.add_message("assistant", answer)
-        await self.cache.async_store(rewritten_query, query_embedding, answer, context)
+        await self.cache.async_store(
+            rewritten_query,
+            query_embedding,
+            answer,
+            context,
+            sources,
+            effective_endpoint_key,
+            self.llm._resolve_target(effective_endpoint_key)["model"],
+        )
 
         return {
             "session_id": session.session_id,
             "answer": answer,
-            "sources": [
-                {"chunk_id": r.chunk_id, "score": r.score, "source": r.metadata.get("source", "")}
-                for r in results
-            ],
+            "sources": sources,
             "rewritten_query": rewritten_query,
             "cached": False,
         }
@@ -94,10 +105,13 @@ class RAGPipeline:
         user_query: str,
         session_id: Optional[str] = None,
         top_k: int = TOP_K,
+        endpoint_key: Optional[str] = None,
     ) -> AsyncGenerator[dict, None]:
         """스트리밍 RAG 응답 - SSE용 이벤트 생성 (트레이스 포함)"""
         pipeline_start = time.time()
         session = self.session_mgr.get_or_create(session_id)
+        effective_endpoint_key = endpoint_key or self.llm.current_endpoint_key
+        target = self.llm._resolve_target(effective_endpoint_key)
 
         # === TRACE: Session 조회 ===
         yield {"type": "trace", "data": {
@@ -113,6 +127,7 @@ class RAGPipeline:
         # === 1. Query Rewriting ===
         t = time.time()
         rewritten_query = await self.query_rewriter.rewrite(user_query, session)
+        query_profile = self.retriever.classify_query(rewritten_query)
         yield {"type": "trace", "data": {
             "step": "rewrite",
             "status": "done",
@@ -120,6 +135,8 @@ class RAGPipeline:
                 "original": user_query,
                 "rewritten": rewritten_query,
                 "changed": user_query != rewritten_query,
+                "query_type": query_profile["type"],
+                "entity": query_profile["entity"],
             },
             "ms": round((time.time() - t) * 1000),
         }}
@@ -152,11 +169,15 @@ class RAGPipeline:
                 "detail": {
                     "cached_query": cached.query[:80],
                     "hit_count": cached.hit_count,
+                    "source_count": len(cached.sources),
+                    "endpoint": cached.endpoint_key,
+                    "model": cached.model,
                 },
                 "ms": cache_ms,
             }}
             session.add_message("user", user_query)
             session.add_message("assistant", cached.response)
+            yield {"type": "sources", "data": cached.sources}
             yield {"type": "cached", "data": cached.response}
             yield {"type": "done", "data": {
                 "session_id": session.session_id,
@@ -239,7 +260,8 @@ class RAGPipeline:
             "step": "llm",
             "status": "streaming",
             "detail": {
-                "model": self.llm.model,
+                "model": target["model"],
+                "endpoint": effective_endpoint_key,
                 "prompt_length": len(prompt),
                 "history_messages": len(history),
                 "max_tokens": self.llm.max_tokens,
@@ -251,7 +273,12 @@ class RAGPipeline:
         llm_start = time.time()
         token_count = 0
         try:
-            async for token in self.llm.generate_stream(SYSTEM_PROMPT, prompt, history):
+            async for token in self.llm.generate_stream(
+                SYSTEM_PROMPT,
+                prompt,
+                history,
+                endpoint_key=effective_endpoint_key,
+            ):
                 full_answer.append(token)
                 token_count += 1
                 yield {"type": "token", "data": token}
@@ -281,7 +308,15 @@ class RAGPipeline:
 
         # 에러 응답은 캐시에 넣으면 안 됨 — 한번 잘못된 응답 캐시되면 계속 나옴
         if not answer.startswith("LLM 응답 오류"):
-            await self.cache.async_store(rewritten_query, query_embedding, answer, context)
+            await self.cache.async_store(
+                rewritten_query,
+                query_embedding,
+                answer,
+                context,
+                sources,
+                effective_endpoint_key,
+                target["model"],
+            )
 
         total_ms = round((time.time() - pipeline_start) * 1000)
         yield {"type": "trace", "data": {

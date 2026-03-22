@@ -116,11 +116,13 @@ ocp-rag-chatbot/
 ├── scripts/
 │   ├── scrape_docs.py            # OCP/K8s 공식 문서 스크래핑
 │   ├── generate_docs.py          # LLM 기반 합성 문서 생성
-│   ├── build_index.py            # 문서 인덱싱 (청킹→임베딩→IVF)
+│   ├── sanitize_corpus.py        # 비공개 raw → 공개 가능한 정제본 변환
+│   ├── build_index.py            # 정제본 인덱싱 (청킹→임베딩→IVF)
 │   └── test_multiturn.py         # 멀티턴 대화 테스트
 ├── data/
-│   ├── raw/                      # 원본 문서 및 추가 기술 자료
-│   └── index/                    # 벡터 인덱스 저장소
+│   ├── raw/                      # 비공개 원본 문서 (Git 제외)
+│   ├── sanitized_raw/            # 챗봇이 읽는 정제본 문서 (Git 포함)
+│   └── index/                    # 정제본 기준 벡터 인덱스 (Git 포함)
 ├── docs/
 │   ├── rag-dependency-guide.md   # 패키지 의존성 맵 & 배포 가이드
 │   ├── README-v1-initial.md      # 초기 버전 README
@@ -140,27 +142,42 @@ cp .env.example .env
 # 2. 의존성 설치
 pip install -r requirements.txt
 
-# 3. 데이터 수집 (선택)
-python3 scripts/scrape_docs.py          # 공식 문서 스크래핑
-python3 scripts/generate_docs.py        # LLM 기반 합성 문서 생성
-
-# 4. 문서 인덱싱
-python3 scripts/build_index.py
-
-# 5. 서버 실행
+# 3. 서버 실행
 uvicorn src.api:app --reload --host 0.0.0.0 --port 8000
 
-# 6. 브라우저 접속
+# 4. 브라우저 접속
 # http://localhost:8000
+```
+
+기본 clone에는 `data/sanitized_raw/`(정제된 코퍼스)가 포함된다.
+벡터 인덱스는 포함되지 않으므로 최초 실행 전 인덱스를 생성해야 한다.
+
+```bash
+# 인덱스 생성 (최초 1회)
+make index
+
+# 서버 실행
+make run
+```
+
+코퍼스를 다시 만들 때만 아래 순서를 사용한다.
+
+```bash
+# 비공개 raw를 정제본으로 변환
+python3 scripts/sanitize_corpus.py
+
+# 정제본 기준으로 인덱스 재생성
+python3 scripts/build_index.py
 ```
 
 ### 단축 명령어 (Makefile)
 
 ```bash
 make install    # pip install -r requirements.txt
+make sanitize   # 비공개 raw → 정제본 변환
+make index      # 정제본 인덱싱 (build_index.py)
 make run        # 서버 시작 (uvicorn, port 8000)
 make stop       # 서버 종료
-make index      # 문서 인덱싱 (build_index.py)
 make scrape     # OCP 공식 문서 스크래핑
 make test       # 멀티턴 대화 테스트
 make clean      # __pycache__ 정리

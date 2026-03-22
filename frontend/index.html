@@ -233,29 +233,106 @@
             color: #e2e8f0;
         }
 
-        .message .sources {
-            margin-top: 8px;
+        .message .answer-meta {
+            margin-top: 10px;
             padding-top: 8px;
             border-top: 1px solid #3a3d54;
-            font-size: 12px;
-            color: #a1a1aa;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
-        .message .rewrite-info {
-            font-size: 11px;
-            color: #8b5cf6;
-            margin-bottom: 6px;
-            font-style: italic;
+        .message .meta-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         .message .cache-badge {
-            display: inline-block;
-            background: #22c55e;
-            color: white;
-            font-size: 10px;
-            padding: 1px 6px;
-            border-radius: 10px;
-            margin-bottom: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(34, 197, 94, 0.08);
+            border: 1px solid rgba(52, 211, 153, 0.22);
+            color: #a7f3d0;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 999px;
+        }
+
+        .message .sources {
+            font-size: 12px;
+            color: #a1a1aa;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .message .sources-label {
+            font-size: 11px;
+            color: #71717a;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .message .source-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .message .source-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #1a1d2d;
+            border: 1px solid #2e3148;
+            color: #d4d4d8;
+        }
+
+        .message .source-score {
+            color: #71717a;
+            font-size: 11px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+
+        .message .rewrite-note {
+            border: 1px solid #30344c;
+            border-radius: 8px;
+            background: #1a1d2d;
+            overflow: hidden;
+        }
+
+        .message .rewrite-note summary {
+            cursor: pointer;
+            list-style: none;
+            padding: 6px 10px;
+            font-size: 11px;
+            color: #8b93b0;
+        }
+
+        .message .rewrite-note summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .message .rewrite-note summary::after {
+            content: '보기';
+            float: right;
+            color: #71717a;
+        }
+
+        .message .rewrite-note[open] summary::after {
+            content: '숨기기';
+        }
+
+        .message .rewrite-note-body {
+            padding: 0 10px 8px;
+            font-size: 12px;
+            color: #a1a1aa;
+            line-height: 1.5;
         }
 
         /* Typing Indicator */
@@ -337,12 +414,27 @@
         .trace-header {
             padding: 12px 16px;
             border-bottom: 1px solid #2e3148;
-            font-size: 13px;
-            font-weight: 600;
-            color: #8b5cf6;
             display: flex;
             align-items: center;
             justify-content: space-between;
+        }
+
+        .trace-header-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .trace-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #8b5cf6;
+        }
+
+        .trace-caption {
+            font-size: 11px;
+            color: #71717a;
+            font-weight: 400;
         }
 
         .trace-header .clear-btn {
@@ -351,6 +443,7 @@
             color: #71717a;
             cursor: pointer;
             font-size: 11px;
+            flex-shrink: 0;
         }
 
         .trace-content {
@@ -673,7 +766,10 @@
         <div class="trace-panel" id="tracePanel">
             <div class="trace-inner">
                 <div class="trace-header">
-                    Pipeline Trace
+                    <div class="trace-header-copy">
+                        <span class="trace-title">Pipeline Trace</span>
+                        <span class="trace-caption">디버그 정보 · 내부 처리 로그</span>
+                    </div>
                     <button class="clear-btn" onclick="clearTrace()">Clear</button>
                 </div>
                 <div class="trace-content" id="traceContent"></div>
@@ -901,7 +997,11 @@
         }
 
         function escapeHtml(text) {
-            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function normalizeForCompare(text) {
+            return text.trim().replace(/\s+/g, ' ');
         }
 
         // ========== Chat ==========
@@ -969,6 +1069,7 @@
         async function sendMessage() {
             const query = userInput.value.trim();
             if (!query || isStreaming) return;
+            const endpointKey = document.getElementById('llmSelect').value || null;
 
             chatAutoScroll = true;
             traceAutoScroll = true;
@@ -981,7 +1082,6 @@
             showTypingIndicator();
 
             // Trace 그룹 생성 (이전 trace 유지, 그룹별 분리)
-            if (!traceOpen) toggleTrace(); // 자동으로 열기
             currentTraceGroup = startNewTraceGroup(query);
 
             let assistantDiv = null;
@@ -994,7 +1094,7 @@
                 const response = await fetch(`${API_BASE}/api/chat/stream`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query, session_id: sessionId, stream: true }),
+                    body: JSON.stringify({ query, session_id: sessionId, stream: true, endpoint_key: endpointKey }),
                 });
 
                 if (!response.ok) throw new Error(`Server error: ${response.status}`);
@@ -1054,7 +1154,7 @@
                             }
 
                             if (assistantDiv) {
-                                updateAssistantDiv(assistantDiv, fullText, sources, rewrittenQuery, cached);
+                                updateAssistantDiv(assistantDiv, fullText, sources, rewrittenQuery, cached, query);
                             }
                         }
                     }
@@ -1069,22 +1169,48 @@
             userInput.focus();
         }
 
-        function updateAssistantDiv(div, text, sources, rewrittenQuery, cached) {
-            let html = '';
-            if (rewrittenQuery) {
-                html += `<div class="rewrite-info">Rewritten: ${escapeHtml(rewrittenQuery)}</div>`;
-            }
+        function updateAssistantDiv(div, text, sources, rewrittenQuery, cached, originalQuery) {
+            let html = renderMarkdown(text);
+            const metaSections = [];
+            const badges = [];
+            const normalizedOriginal = originalQuery ? normalizeForCompare(originalQuery) : '';
+            const normalizedRewrite = rewrittenQuery ? normalizeForCompare(rewrittenQuery) : '';
+
             if (cached) {
-                html += `<div class="cache-badge">cached</div>`;
+                badges.push('<span class="cache-badge">캐시 응답</span>');
             }
-            html += renderMarkdown(text);
+
             if (sources && sources.length > 0) {
-                html += '<div class="sources">Sources: ';
-                html += sources.map(s =>
-                    `${escapeHtml(s.source)} (${(s.score * 100).toFixed(1)}%)`
-                ).join(', ');
+                metaSections.push(
+                    '<div class="sources">' +
+                    '<div class="sources-label">출처</div>' +
+                    '<div class="source-list">' +
+                    sources.map(s =>
+                        `<span class="source-chip">${escapeHtml(s.source)}<span class="source-score">${(s.score * 100).toFixed(1)}%</span></span>`
+                    ).join('') +
+                    '</div>' +
+                    '</div>'
+                );
+            }
+
+            if (normalizedRewrite && normalizedOriginal && normalizedRewrite !== normalizedOriginal) {
+                metaSections.push(
+                    '<details class="rewrite-note">' +
+                    '<summary>질문 해석 보기</summary>' +
+                    `<div class="rewrite-note-body">${escapeHtml(rewrittenQuery)}</div>` +
+                    '</details>'
+                );
+            }
+
+            if (badges.length > 0 || metaSections.length > 0) {
+                html += '<div class="answer-meta">';
+                if (badges.length > 0) {
+                    html += `<div class="meta-badges">${badges.join('')}</div>`;
+                }
+                html += metaSections.join('');
                 html += '</div>';
             }
+
             div.innerHTML = html;
             if (chatAutoScroll) {
                 stickToBottom(chatContainer);
@@ -1100,7 +1226,7 @@
                 select.innerHTML = data.endpoints.map(ep =>
                     `<option value="${ep.key}" ${ep.active ? 'selected' : ''}>${ep.name}</option>`
                 ).join('');
-                checkLlmHealth();
+                checkLlmHealth(select.value || data.current);
             } catch (e) {
                 console.error('엔드포인트 목록 로드 실패:', e);
             }
@@ -1118,19 +1244,22 @@
                     body: JSON.stringify({ key }),
                 });
                 if (!resp.ok) throw new Error('전환 실패');
-                checkLlmHealth();
+                checkLlmHealth(key);
             } catch (e) {
                 statusEl.className = 'llm-status disconnected';
                 statusEl.title = '전환 실패: ' + e.message;
             }
         }
 
-        async function checkLlmHealth() {
+        async function checkLlmHealth(key = null) {
             const statusEl = document.getElementById('llmStatus');
             statusEl.className = 'llm-status checking';
             statusEl.title = '연결 확인 중...';
             try {
-                const resp = await fetch(`${API_BASE}/api/llm/health`);
+                const healthUrl = key
+                    ? `${API_BASE}/api/llm/health?key=${encodeURIComponent(key)}`
+                    : `${API_BASE}/api/llm/health`;
+                const resp = await fetch(healthUrl);
                 const data = await resp.json();
                 if (data.status === 'connected') {
                     statusEl.className = 'llm-status connected';

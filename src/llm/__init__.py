@@ -20,17 +20,46 @@ class LLMClient:
         self.max_tokens = LLM_MAX_TOKENS
         self.temperature = LLM_TEMPERATURE
         self.current_endpoint_key = self._detect_initial_key()
+        self._resolved_models: dict[str, str] = {self.current_endpoint_key: self.model}
         # 커넥션 풀 재사용 — 매 요청마다 TCP 핸드셰이크 방지
         self._client = httpx.AsyncClient(timeout=httpx.Timeout(300.0, connect=10.0))
 
     def _set_endpoint(self, url: str):
         """엔드포인트 URL 정규화"""
+        endpoint, base_url = self._normalize_endpoint(url)
+        self.endpoint = endpoint
+        self._base_url = base_url
+
+    @staticmethod
+    def _normalize_endpoint(url: str) -> tuple[str, str]:
+        """엔드포인트 URL 정규화"""
         base = url.rstrip("/")
         if not base.endswith("/chat/completions"):
             base = base + "/chat/completions"
-        self.endpoint = base
-        # health check 용 base URL (/v1까지)
-        self._base_url = base.replace("/chat/completions", "")
+        return base, base.replace("/chat/completions", "")
+
+    def _resolve_target(self, endpoint_key: Optional[str] = None) -> dict:
+        """요청 단위 endpoint/model 결정"""
+        if endpoint_key:
+            if endpoint_key not in LLM_ENDPOINTS:
+                raise ValueError(f"알 수 없는 엔드포인트: {endpoint_key}")
+            ep = LLM_ENDPOINTS[endpoint_key]
+            endpoint, base_url = self._normalize_endpoint(ep["url"])
+            return {
+                "key": endpoint_key,
+                "name": ep["name"],
+                "endpoint": endpoint,
+                "base_url": base_url,
+                "model": self._resolved_models.get(endpoint_key, ep["model"]),
+            }
+        current = LLM_ENDPOINTS.get(self.current_endpoint_key, {})
+        return {
+            "key": self.current_endpoint_key,
+            "name": current.get("name", self.current_endpoint_key),
+            "endpoint": self.endpoint,
+            "base_url": self._base_url,
+            "model": self.model,
+        }
 
     def _detect_initial_key(self) -> str:
         """현재 endpoint가 어떤 key에 해당하는지 역추적"""
@@ -47,18 +76,24 @@ class LLMClient:
         self._set_endpoint(ep["url"])
         self.model = ep["model"]
         self.current_endpoint_key = key
+        self._resolved_models[key] = ep["model"]
         logger.info("LLM 엔드포인트 전환: %s → %s", key, ep["url"])
         return ep
 
-    async def auto_detect_model(self) -> str | None:
+    async def auto_detect_model(self, endpoint_key: Optional[str] = None) -> str | None:
         """서버에서 실제 사용 가능한 모델명을 가져와서 자동 설정"""
+        target = self._resolve_target(endpoint_key)
         try:
-            resp = await self._client.get(f"{self._base_url}/models", timeout=5.0)
+            resp = await self._client.get(f"{target['base_url']}/models", timeout=5.0)
             resp.raise_for_status()
             data = resp.json()
             models = data.get("data", [])
             if models:
                 actual_model = models[0]["id"]
+                resolved_key = endpoint_key or self.current_endpoint_key
+                self._resolved_models[resolved_key] = actual_model
+                if endpoint_key and endpoint_key != self.current_endpoint_key:
+                    return actual_model
                 if actual_model != self.model:
                     logger.info("모델명 자동 감지: %s → %s", self.model, actual_model)
                     self.model = actual_model
@@ -67,14 +102,15 @@ class LLMClient:
             logger.warning("모델 자동 감지 실패: %s", e)
         return None
 
-    async def health_check(self) -> dict:
+    async def health_check(self, endpoint_key: Optional[str] = None) -> dict:
         """현재 엔드포인트 연결 상태 확인"""
+        target = self._resolve_target(endpoint_key)
         try:
-            resp = await self._client.get(f"{self._base_url}/models", timeout=5.0)
+            resp = await self._client.get(f"{target['base_url']}/models", timeout=5.0)
             resp.raise_for_status()
-            return {"status": "connected", "models": resp.json()}
+            return {"status": "connected", "models": resp.json(), "key": target["key"], "name": target["name"]}
         except Exception as e:
-            return {"status": "disconnected", "error": str(e)}
+            return {"status": "disconnected", "error": str(e), "key": target["key"], "name": target["name"]}
 
     def _build_messages(
         self,
@@ -94,11 +130,17 @@ class LLMClient:
         system_prompt: str,
         user_message: str,
         history: Optional[list[dict]] = None,
+        endpoint_key: Optional[str] = None,
     ) -> str:
         """비스트리밍 응답 생성"""
+        target = self._resolve_target(endpoint_key)
+        if endpoint_key and endpoint_key not in self._resolved_models:
+            detected = await self.auto_detect_model(endpoint_key)
+            if detected:
+                target = self._resolve_target(endpoint_key)
         messages = self._build_messages(system_prompt, user_message, history)
         payload = {
-            "model": self.model,
+            "model": target["model"],
             "messages": messages,
             "max_tokens": self.max_tokens,
             "temperature": self.temperature,
@@ -110,7 +152,7 @@ class LLMClient:
             "reasoning_effort": "none",
         }
         try:
-            resp = await self._client.post(self.endpoint, json=payload)
+            resp = await self._client.post(target["endpoint"], json=payload)
             resp.raise_for_status()
             data = resp.json()
             message = data["choices"][0]["message"]
@@ -120,10 +162,10 @@ class LLMClient:
                 content = message["reasoning"]
             return content
         except httpx.ConnectError:
-            logger.error("LLM 서버 연결 실패: %s", self.endpoint)
+            logger.error("LLM 서버 연결 실패: %s", target["endpoint"])
             raise
         except httpx.TimeoutException:
-            logger.error("LLM 응답 타임아웃: %s", self.endpoint)
+            logger.error("LLM 응답 타임아웃: %s", target["endpoint"])
             raise
 
     async def generate_stream(
@@ -131,11 +173,17 @@ class LLMClient:
         system_prompt: str,
         user_message: str,
         history: Optional[list[dict]] = None,
+        endpoint_key: Optional[str] = None,
     ) -> AsyncGenerator[str, None]:
         """스트리밍 응답 생성 - 토큰 단위로 yield"""
+        target = self._resolve_target(endpoint_key)
+        if endpoint_key and endpoint_key not in self._resolved_models:
+            detected = await self.auto_detect_model(endpoint_key)
+            if detected:
+                target = self._resolve_target(endpoint_key)
         messages = self._build_messages(system_prompt, user_message, history)
         payload = {
-            "model": self.model,
+            "model": target["model"],
             "messages": messages,
             "max_tokens": self.max_tokens,
             "temperature": self.temperature,
@@ -145,7 +193,7 @@ class LLMClient:
             "reasoning_effort": "none",
         }
         try:
-            async with self._client.stream("POST", self.endpoint, json=payload) as resp:
+            async with self._client.stream("POST", target["endpoint"], json=payload) as resp:
                 resp.raise_for_status()
                 async for line in resp.aiter_lines():
                     if not line.startswith("data: "):
@@ -165,8 +213,8 @@ class LLMClient:
                     except (json.JSONDecodeError, KeyError, IndexError):
                         continue
         except httpx.ConnectError:
-            logger.error("LLM 서버 연결 실패 (스트리밍): %s", self.endpoint)
+            logger.error("LLM 서버 연결 실패 (스트리밍): %s", target["endpoint"])
             raise
         except httpx.TimeoutException:
-            logger.error("LLM 스트리밍 타임아웃: %s", self.endpoint)
+            logger.error("LLM 스트리밍 타임아웃: %s", target["endpoint"])
             raise
