@@ -89,7 +89,7 @@ OCP_URLS = [
     },
     # 모니터링 & 로깅
     {
-        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/monitoring/about-openshift-container-platform-monitoring",
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html-single/monitoring/index",
         "filename": "ocp_monitoring.md",
         "category": "Monitoring",
     },
@@ -131,13 +131,13 @@ OCP_URLS = [
     },
     # Resource Quota
     {
-        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/building_applications/setting-quotas-for-resources",
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/building_applications/quotas",
         "filename": "ocp_resource_quota.md",
         "category": "Resource Management",
     },
-    # Autoscaling (HPA)
+    # Autoscaling (Custom Metrics Autoscaler / KEDA)
     {
-        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/nodes/automatically-scaling-pods-with-the-horizontal-pod-autoscaler",
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/nodes/automatically-scaling-pods-with-the-custom-metrics-autoscaler-operator",
         "filename": "ocp_autoscaling.md",
         "category": "Resource Management",
     },
@@ -171,6 +171,55 @@ OCP_URLS = [
         "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/support/gathering-cluster-data",
         "filename": "ocp_must_gather.md",
         "category": "Troubleshooting - Data Gathering",
+    },
+    # === 코퍼스 보강 (2026-03-22) ===
+    # Project / Namespace
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/building_applications/projects",
+        "filename": "ocp_projects.md",
+        "category": "Projects",
+    },
+    # 클러스터 업데이트
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/updating_clusters/understanding-openshift-updates-1",
+        "filename": "ocp_updating.md",
+        "category": "Updating",
+    },
+    # Node 관리
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/nodes/working-with-nodes",
+        "filename": "ocp_nodes.md",
+        "category": "Nodes",
+    },
+    # Pod Autoscaling 심화
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html-single/nodes/index",
+        "filename": "ocp_pod_autoscaling.md",
+        "category": "Nodes",
+    },
+    # 로깅
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/logging/logging-6-0",
+        "filename": "ocp_logging.md",
+        "category": "Logging",
+    },
+    # 빌드 전략
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/builds_using_buildconfig/understanding-image-builds",
+        "filename": "ocp_builds.md",
+        "category": "Builds",
+    },
+    # Route 심화
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/ingress_and_load_balancing/routes",
+        "filename": "ocp_route_config.md",
+        "category": "Networking",
+    },
+    # etcd 운영
+    {
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/scalability_and_performance/recommended-performance-and-scalability-practices-2",
+        "filename": "ocp_etcd.md",
+        "category": "Operations",
     },
 ]
 
@@ -347,6 +396,13 @@ K8S_URLS = [
         "url": "https://kubernetes.io/docs/tasks/debug/debug-cluster/",
         "filename": "k8s_task_debug_cluster.md",
         "category": "Tasks - Troubleshooting",
+    },
+    # === 코퍼스 보강 (2026-03-22) ===
+    # Pod Disruption Budget
+    {
+        "url": "https://kubernetes.io/docs/concepts/workloads/pods/disruptions/",
+        "filename": "k8s_pod_disruptions.md",
+        "category": "Workloads - PDB",
     },
 ]
 
