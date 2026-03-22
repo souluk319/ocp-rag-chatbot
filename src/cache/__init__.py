@@ -21,6 +21,9 @@ class CacheEntry:
     query_embedding: np.ndarray
     response: str
     context: str  # RAG에서 사용된 context
+    sources: list[dict]
+    endpoint_key: str
+    model: str
     created_at: float
     hit_count: int = 0
 
@@ -100,10 +103,19 @@ class SemanticCache:
         async with self._lock:
             return self.lookup(query, query_embedding)
 
-    async def async_store(self, query: str, query_embedding: np.ndarray, response: str, context: str):
+    async def async_store(
+        self,
+        query: str,
+        query_embedding: np.ndarray,
+        response: str,
+        context: str,
+        sources: list[dict],
+        endpoint_key: str,
+        model: str,
+    ):
         """스레드 안전한 캐시 저장"""
         async with self._lock:
-            self.store(query, query_embedding, response, context)
+            self.store(query, query_embedding, response, context, sources, endpoint_key, model)
 
     def lookup(self, query: str, query_embedding: np.ndarray) -> Optional[CacheEntry]:
         """캐시 조회 - 유사한 질의가 있으면 반환"""
@@ -143,6 +155,9 @@ class SemanticCache:
         query_embedding: np.ndarray,
         response: str,
         context: str,
+        sources: list[dict],
+        endpoint_key: str,
+        model: str,
     ):
         """응답을 캐시에 저장"""
         # 이미 유사한 항목이 있으면 업데이트
@@ -150,6 +165,9 @@ class SemanticCache:
         if existing:
             existing.response = response
             existing.context = context
+            existing.sources = sources
+            existing.endpoint_key = endpoint_key
+            existing.model = model
             return
 
         entry = CacheEntry(
@@ -157,6 +175,9 @@ class SemanticCache:
             query_embedding=query_embedding.flatten().astype(np.float32),
             response=response,
             context=context,
+            sources=sources,
+            endpoint_key=endpoint_key,
+            model=model,
             created_at=time.time(),
         )
 

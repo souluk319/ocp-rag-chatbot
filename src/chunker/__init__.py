@@ -152,6 +152,7 @@ class Chunker:
         """파일을 파싱하고 청킹"""
         text = DocumentParser.parse_file(filepath)
         source = os.path.basename(filepath)
+        source, text = self._extract_source_override(source, text)
         return self.chunk_text(text, source=source)
 
     def chunk_directory(self, dirpath: str) -> list[Chunk]:
@@ -179,6 +180,14 @@ class Chunker:
             if p:
                 paragraphs.append(p)
         return paragraphs
+
+    @staticmethod
+    def _extract_source_override(source: str, text: str) -> tuple[str, str]:
+        """정제본 파일 상단에 원본 source 힌트를 넣어두면 source 표기를 유지한다."""
+        match = re.match(r"\A<!--\s*source:\s*(.+?)\s*-->\s*\n?", text)
+        if not match:
+            return source, text
+        return match.group(1).strip(), text[match.end():]
 
     def _sliding_window(self, paragraphs: list[str], source: str) -> list[Chunk]:
         """문단들을 sliding window로 결합하여 청크 생성"""

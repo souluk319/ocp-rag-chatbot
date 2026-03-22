@@ -263,6 +263,19 @@ class Retriever:
     _OVERVIEW_QUERY_HINTS = {
         "개요", "설명", "간략", "간략히", "간단", "간단히", "소개", "기본", "핵심", "무엇"
     }
+    _CONCEPT_QUERY_HINTS = {
+        "뭐야", "무엇", "이란", "란", "정의", "의미", "개념",
+    }
+    _PROCEDURE_QUERY_HINTS = {
+        "방법", "설정", "적용", "생성", "배포", "명령", "절차", "사용법", "하려면", "어떻게",
+    }
+    _COMPARISON_QUERY_HINTS = {
+        "차이", "차", "비교", "vs", "대비", "다른",
+    }
+    _TROUBLESHOOTING_QUERY_HINTS = {
+        "에러", "오류", "실패", "문제", "안됨", "안되", "안돼", "해결",
+        "원인", "pending", "crashloopbackoff", "imagepullbackoff", "로그", "재시작",
+    }
     _GENERIC_QUERY_TOKENS = {
         "개요", "설명", "간략", "간략히", "간단", "간단히", "소개", "기본", "핵심",
         "무엇", "대해", "대해서", "관해", "알려줘", "설명해봐", "해봐",
@@ -318,6 +331,29 @@ class Retriever:
                 boost += 0.18
 
         return boost
+
+    def classify_query(self, query: str) -> dict:
+        query_tokens = set(self.bm25._tokenize(query))
+        entity = self._detect_primary_entity(query_tokens)
+
+        if query_tokens & self._TROUBLESHOOTING_QUERY_HINTS:
+            query_type = "troubleshooting"
+        elif query_tokens & self._COMPARISON_QUERY_HINTS:
+            query_type = "comparison"
+        elif query_tokens & self._PROCEDURE_QUERY_HINTS:
+            query_type = "procedure"
+        elif self._is_overview_query(query)[0]:
+            query_type = "overview"
+        elif query_tokens & self._CONCEPT_QUERY_HINTS:
+            query_type = "concept"
+        else:
+            query_type = "general"
+
+        return {
+            "type": query_type,
+            "entity": entity,
+            "tokens": sorted(query_tokens),
+        }
 
     def retrieve(self, query: str, top_k: int = TOP_K) -> list[RankedResult]:
         """쿼리로 관련 문서 검색 + 리랭킹

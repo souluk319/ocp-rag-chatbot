@@ -19,12 +19,12 @@ LLM_ENDPOINTS = {
     },
     "macmini": {
         "name": os.getenv("LLM_EP_MACMINI_NAME", "Mac Mini"),
-        "url":  os.getenv("LLM_EP_MACMINI_URL", "http://localhost:8081/v1"),
+        "url":  os.getenv("LLM_EP_MACMINI_URL", "http://localhost:8080/v1"),
         "model": os.getenv("LLM_EP_MACMINI_MODEL", "Qwen/Qwen3.5-9B"),
     },
     "rtx": {
         "name": os.getenv("LLM_EP_RTX_NAME", "RTX Desktop"),
-        "url":  os.getenv("LLM_EP_RTX_URL", "http://localhost:8082/v1"),
+        "url":  os.getenv("LLM_EP_RTX_URL", "http://localhost:8080/v1"),
         "model": os.getenv("LLM_EP_RTX_MODEL", "Qwen/Qwen3.5-9B"),
     },
 }
@@ -56,7 +56,11 @@ CACHE_SIMILARITY_THRESHOLD = float(os.getenv("CACHE_SIMILARITY_THRESHOLD", "0.95
 CACHE_MAX_SIZE = int(os.getenv("CACHE_MAX_SIZE", "200"))
 
 # 데이터 경로
-DATA_RAW_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "raw")
+PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
+DATA_PRIVATE_RAW_DIR = os.path.join(PROJECT_ROOT, "data", "raw")
+DATA_SANITIZED_DIR = os.path.join(PROJECT_ROOT, "data", "sanitized_raw")
+# 챗봇과 인덱서는 비공개 raw가 아니라 정제된 최종본만 사용한다.
+DATA_CORPUS_DIR = os.getenv("DATA_CORPUS_DIR", DATA_SANITIZED_DIR)
 
 # 서버 설정
 HOST = os.getenv("HOST", "0.0.0.0")
