@@ -21,9 +21,7 @@ __pycache__/
 venv/
 .venv/
 
-# 벡터 인덱스 저장 (용량 큼)
-data/index/*.npy
-data/index/index_meta.json
+# 공개용 정제 코퍼스와 인덱스는 추적한다.
 
 # IDE
 .vscode/

@@ -1,10 +1,13 @@
-.PHONY: run stop index scrape install test clean
+.PHONY: run stop sanitize index scrape install test clean
 
 run:
 	uvicorn src.api:app --reload --host 0.0.0.0 --port 8000
 
 stop:
 	@pkill -f "uvicorn src.api:app" && echo "서버 종료됨" || echo "실행 중인 서버 없음"
+
+sanitize:
+	python3 scripts/sanitize_corpus.py
 
 index:
 	python3 scripts/build_index.py

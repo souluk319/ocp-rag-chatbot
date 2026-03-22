@@ -52,7 +52,7 @@ async def startup():
         index = IVFIndex.load(INDEX_DIR)
         print(f"인덱스 로드 완료: {index.stats()}")
     except FileNotFoundError:
-        print("인덱스 파일이 없습니다. scripts/build_index.py를 먼저 실행하세요.")
+        print("인덱스 파일이 없습니다. data/sanitized_raw 기준으로 scripts/build_index.py를 먼저 실행하세요.")
         # 빈 인덱스로 시작 (개발용)
         index = IVFIndex(dim=EMBEDDING_DIM)
 
