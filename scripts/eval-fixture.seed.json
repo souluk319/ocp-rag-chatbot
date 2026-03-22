@@ -1,0 +1,458 @@
+[
+  {
+    "id": "overview-ocp-001",
+    "mode_hint": "education",
+    "query_class": "overview",
+    "language": "ko",
+    "conversation": [
+      {
+        "role": "user",
+        "content": "오픈시프트란 무엇인지 개요 수준에서 설명해줘"
+      }
+    ],
+    "expected": {
+      "rewrite": {
+        "should_change": false
+      },
+      "retrieval": {
+        "source_any": [
+          "ocp-basics.md",
+          "ocp_architecture_overview.md",
+          "ocp-core-concepts-ko.md"
+        ],
+        "source_prefer_top3": [
+          "ocp-basics.md",
+          "ocp_architecture_overview.md"
+        ],
+        "min_distinct_sources": 1
+      },
+      "answer": {
+        "must_include_any": [
+          "오픈시프트",
+          "OpenShift"
+        ],
+        "should_include_any": [
+          "쿠버네티스",
+          "플랫폼",
+          "컨테이너"
+        ],
+        "must_not_include_any": [
+          "제공된 문서에서 해당 정보를 찾지 못했습니다"
+        ],
+        "citation_required": true,
+        "requires_step_list": false,
+        "requires_command_example": false
+      }
+    },
+    "tags": [
+      "seed",
+      "concept",
+      "overview"
+    ],
+    "notes": "개요 질문은 소개 문서가 상위로 올라와야 하며, 트러블슈팅 문서가 과도하게 개입하면 실패로 본다."
+  },
+  {
+    "id": "overview-k8s-control-plane-001",
+    "mode_hint": "education",
+    "query_class": "overview",
+    "language": "ko",
+    "conversation": [
+      {
+        "role": "user",
+        "content": "쿠버네티스 control plane 구성 요소를 개요 수준에서 설명해줘"
+      }
+    ],
+    "expected": {
+      "rewrite": {
+        "should_change": false
+      },
+      "retrieval": {
+        "source_any": [
+          "k8s_components.md",
+          "k8s_overview.md",
+          "ocp_control_plane.md"
+        ],
+        "source_prefer_top3": [
+          "k8s_components.md",
+          "ocp_control_plane.md"
+        ],
+        "min_distinct_sources": 1
+      },
+      "answer": {
+        "must_include_any": [
+          "control plane",
+          "컨트롤 플레인",
+          "api server"
+        ],
+        "should_include_any": [
+          "scheduler",
+          "controller",
+          "etcd"
+        ],
+        "must_not_include_any": [
+          "제공된 문서에서 해당 정보를 찾지 못했습니다"
+        ],
+        "citation_required": true,
+        "requires_step_list": false,
+        "requires_command_example": false
+      }
+    },
+    "tags": [
+      "seed",
+      "kubernetes",
+      "overview"
+    ],
+    "notes": "교육형 개요에서 구성 요소를 빠뜨리지 않는지 보는 기본 케이스."
+  },
+  {
+    "id": "education-workload-diff-001",
+    "mode_hint": "education",
+    "query_class": "education",
+    "language": "ko",
+    "conversation": [
+      {
+        "role": "user",
+        "content": "Deployment와 StatefulSet 차이를 예시와 함께 설명해줘"
+      }
+    ],
+    "expected": {
+      "rewrite": {
+        "should_change": false
+      },
+      "retrieval": {
+        "source_any": [
+          "k8s-workload-types-ko.md",
+          "k8s_deployment_detail.md",
+          "k8s_statefulset_detail.md"
+        ],
+        "source_prefer_top3": [
+          "k8s-workload-types-ko.md"
+        ],
+        "min_distinct_sources": 2
+      },
+      "answer": {
+        "must_include_any": [
+          "Deployment",
+          "StatefulSet"
+        ],
+        "should_include_any": [
+          "상태 저장",
+          "고정된 네트워크 식별자",
+          "롤링 업데이트",
+          "예시"
+        ],
+        "must_not_include_any": [
+          "제공된 문서에서 해당 정보를 찾지 못했습니다"
+        ],
+        "citation_required": true,
+        "requires_step_list": false,
+        "requires_command_example": false
+      }
+    },
+    "tags": [
+      "seed",
+      "education",
+      "workloads"
+    ],
+    "notes": "개념 비교형 질문. 단일 문서 요약보다 비교 구조가 나오도록 설계한다."
+  },
+  {
+    "id": "education-configmap-secret-001",
+    "mode_hint": "education",
+    "query_class": "education",
+    "language": "ko",
+    "conversation": [
+      {
+        "role": "user",
+        "content": "ConfigMap이 뭐야?"
+      },
+      {
+        "role": "assistant",
+        "content": "ConfigMap은 설정 데이터를 저장하는 리소스다."
+      },
+      {
+        "role": "user",
+        "content": "그럼 Secret이랑 차이는?"
+      }
+    ],
+    "expected": {
+      "rewrite": {
+        "should_change": true,
+        "must_include_any": [
+          "ConfigMap",
+          "Secret",
+          "차이"
+        ]
+      },
+      "retrieval": {
+        "source_any": [
+          "k8s_task_configmap.md",
+          "k8s_task_secret.md",
+          "k8s_configuration.md"
+        ],
+        "source_prefer_top3": [
+          "k8s_task_configmap.md",
+          "k8s_task_secret.md"
+        ],
+        "min_distinct_sources": 2
+      },
+      "answer": {
+        "must_include_any": [
+          "ConfigMap",
+          "Secret"
+        ],
+        "should_include_any": [
+          "설정 데이터",
+          "민감한 정보",
+          "차이"
+        ],
+        "must_not_include_any": [
+          "제공된 문서에서 해당 정보를 찾지 못했습니다"
+        ],
+        "citation_required": true,
+        "requires_step_list": false,
+        "requires_command_example": false
+      }
+    },
+    "tags": [
+      "seed",
+      "rewrite",
+      "education"
+    ],
+    "notes": "대명사/생략 복원이 실제 비교형 교육 질문으로 연결되는지 본다."
+  },
+  {
+    "id": "operations-resource-limits-001",
+    "mode_hint": "operations",
+    "query_class": "operations",
+    "language": "ko",
+    "conversation": [
+      {
+        "role": "user",
+        "content": "OCP에서 Pod CPU/메모리 requests와 limits를 어떻게 설정해?"
+      }
+    ],
+    "expected": {
+      "rewrite": {
+        "should_change": false
+      },
+      "retrieval": {
+        "source_any": [
+          "ocp-resource-management-ko.md",
+          "k8s-resource-limits-ko.md",
+          "k8s_task_cpu_resource.md",
+          "k8s_task_memory_resource.md"
+        ],
+        "source_prefer_top3": [
+          "ocp-resource-management-ko.md",
+          "k8s-resource-limits-ko.md"
+        ],
+        "min_distinct_sources": 1
+      },
+      "answer": {
+        "must_include_any": [
+          "requests",
+          "limits",
+          "YAML"
+        ],
+        "should_include_any": [
+          "oc",
+          "kubectl",
+          "resources"
+        ],
+        "must_not_include_any": [
+          "제공된 문서에서 해당 정보를 찾지 못했습니다"
+        ],
+        "citation_required": true,
+        "requires_step_list": true,
+        "requires_command_example": true
+      }
+    },
+    "tags": [
+      "seed",
+      "operations",
+      "resource-management"
+    ],
+    "notes": "운영형 답변은 절차와 예시 YAML 또는 명령이 있어야 한다."
+  },
+  {
+    "id": "operations-oc-login-001",
+    "mode_hint": "operations",
+    "query_class": "operations",
+    "language": "ko",
+    "conversation": [
+      {
+        "role": "user",
+        "content": "CLI에서 오픈시프트 클러스터 로그인하는 절차를 알려줘"
+      }
+    ],
+    "expected": {
+      "rewrite": {
+        "should_change": false
+      },
+      "retrieval": {
+        "source_any": [
+          "ocp-commands.md",
+          "ocp_cli_oc.md",
+          "ocp_authentication.md"
+        ],
+        "source_prefer_top3": [
+          "ocp-commands.md",
+          "ocp_cli_oc.md"
+        ],
+        "min_distinct_sources": 1
+      },
+      "answer": {
+        "must_include_any": [
+          "oc login",
+          "로그인"
+        ],
+        "should_include_any": [
+          "API 서버",
+          "토큰",
+          "kubeconfig"
+        ],
+        "must_not_include_any": [
+          "제공된 문서에서 해당 정보를 찾지 못했습니다"
+        ],
+        "citation_required": true,
+        "requires_step_list": true,
+        "requires_command_example": true
+      }
+    },
+    "tags": [
+      "seed",
+      "operations",
+      "cli"
+    ],
+    "notes": "운영형 절차 질문에서 개요 설명으로 빠지지 않는지 확인한다."
+  },
+  {
+    "id": "troubleshooting-image-pull-001",
+    "mode_hint": "operations",
+    "query_class": "troubleshooting",
+    "language": "ko",
+    "conversation": [
+      {
+        "role": "user",
+        "content": "배포 중 ImagePullBackOff가 나면 어떻게 진단하고 해결해?"
+      }
+    ],
+    "expected": {
+      "rewrite": {
+        "should_change": false
+      },
+      "retrieval": {
+        "source_any": [
+          "ocp-image-pull-troubleshooting-ko.md",
+          "k8s_container_images.md",
+          "k8s_task_pull_secret.md",
+          "ocp_managing_images.md"
+        ],
+        "source_prefer_top3": [
+          "ocp-image-pull-troubleshooting-ko.md"
+        ],
+        "source_exclude_top3": [
+          "ocp-basics.md",
+          "k8s_overview.md"
+        ],
+        "min_distinct_sources": 1
+      },
+      "answer": {
+        "must_include_any": [
+          "ImagePullBackOff",
+          "pull secret",
+          "이미지 이름"
+        ],
+        "should_include_any": [
+          "oc describe pod",
+          "레지스트리",
+          "이미지 pull"
+        ],
+        "must_not_include_any": [
+          "제공된 문서에서 해당 정보를 찾지 못했습니다"
+        ],
+        "citation_required": true,
+        "requires_step_list": true,
+        "requires_command_example": true
+      }
+    },
+    "tags": [
+      "seed",
+      "troubleshooting",
+      "images"
+    ],
+    "notes": "대표적인 false-authority 방지 케이스. 원인 후보와 확인 명령이 같이 나와야 한다."
+  },
+  {
+    "id": "troubleshooting-pending-followup-001",
+    "mode_hint": "operations",
+    "query_class": "troubleshooting",
+    "language": "ko",
+    "conversation": [
+      {
+        "role": "user",
+        "content": "새로 배포한 앱의 파드 상태가 Pending이야"
+      },
+      {
+        "role": "assistant",
+        "content": "Pending은 스케줄링 또는 리소스 부족과 관련될 수 있다."
+      },
+      {
+        "role": "user",
+        "content": "어디부터 봐야 해?"
+      }
+    ],
+    "expected": {
+      "rewrite": {
+        "should_change": true,
+        "must_include_any": [
+          "Pending",
+          "파드",
+          "진단"
+        ]
+      },
+      "retrieval": {
+        "source_any": [
+          "ocp-pending-pod-troubleshooting-ko.md",
+          "k8s_task_debug_pods.md",
+          "k8s_resource_quota.md",
+          "k8s_limit_range.md"
+        ],
+        "source_prefer_top3": [
+          "ocp-pending-pod-troubleshooting-ko.md"
+        ],
+        "source_exclude_top3": [
+          "ocp-basics.md",
+          "ocp_architecture_overview.md"
+        ],
+        "min_distinct_sources": 1
+      },
+      "answer": {
+        "must_include_any": [
+          "Pending",
+          "스케줄링",
+          "리소스"
+        ],
+        "should_include_any": [
+          "oc describe pod",
+          "quota",
+          "taint",
+          "node"
+        ],
+        "must_not_include_any": [
+          "제공된 문서에서 해당 정보를 찾지 못했습니다"
+        ],
+        "citation_required": true,
+        "requires_step_list": true,
+        "requires_command_example": true
+      }
+    },
+    "tags": [
+      "seed",
+      "rewrite",
+      "troubleshooting"
+    ],
+    "notes": "후속 질문이 진단 절차로 연결되는지 보는 멀티턴 운영형 케이스."
+  }
+]
