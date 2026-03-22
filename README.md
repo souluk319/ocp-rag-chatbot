@@ -149,8 +149,16 @@ uvicorn src.api:app --reload --host 0.0.0.0 --port 8000
 # http://localhost:8000
 ```
 
-기본 clone에는 `data/sanitized_raw/`와 `data/index/`가 포함된다.  
-즉 일반 사용자는 `make run`만으로 실행 가능하다.
+기본 clone에는 `data/sanitized_raw/`(정제된 코퍼스)가 포함된다.
+벡터 인덱스는 포함되지 않으므로 최초 실행 전 인덱스를 생성해야 한다.
+
+```bash
+# 인덱스 생성 (최초 1회)
+make index
+
+# 서버 실행
+make run
+```
 
 코퍼스를 다시 만들 때만 아래 순서를 사용한다.
 
