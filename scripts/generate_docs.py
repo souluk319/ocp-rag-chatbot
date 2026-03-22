@@ -153,6 +153,97 @@ TOPICS = [
 8. 비용 최적화: 리소스 낭비 식별, requests/limits 튜닝 전략
 9. oc adm top 명령어로 리소스 사용량 모니터링""",
     },
+    # === 코퍼스 보강 (2026-03-22) ===
+    {
+        "filename": "ocp-namespace-project-ko.md",
+        "title": "OCP Namespace & Project 관리",
+        "prompt": """다음 내용을 포함하는 'OCP Namespace & Project 관리 가이드' 문서를 작성하세요:
+
+1. Namespace와 Project 개념: Kubernetes Namespace와 OCP Project의 차이
+2. Project가 Namespace보다 더 제공하는 것: 기본 RBAC, 자동 ServiceAccount 생성 등
+3. Project 생성/삭제/전환: oc new-project, oc delete project, oc project 명령어
+4. Namespace 생성: kubectl create namespace vs oc new-project 비교
+5. ResourceQuota와 LimitRange 연동: Project별 리소스 제한 설정
+6. RBAC 연동: Project admin, edit, view 역할, RoleBinding 예시
+7. Project 템플릿: 기본 Project 템플릿 커스터마이징 방법
+8. 멀티테넌시: Project를 활용한 팀/환경 분리 전략
+9. 실무 팁: 네이밍 컨벤션, 라벨 전략, 불필요한 Project 정리""",
+    },
+    {
+        "filename": "ocp-node-management-ko.md",
+        "title": "OCP Node 관리",
+        "prompt": """다음 내용을 포함하는 'OCP Node 관리 가이드' 문서를 작성하세요:
+
+1. Node 개요: Master/Worker/Infra 노드 역할 구분
+2. 노드 상태 확인: oc get nodes, oc describe node, 노드 조건(Conditions) 해석
+3. drain: oc adm drain 명령어, --ignore-daemonsets, --delete-emptydir-data 옵션
+4. cordon/uncordon: 스케줄링 비활성화/활성화, 유지보수 시 사용 시나리오
+5. Taint와 Toleration: 개념, YAML 예시, 노드 격리 전략
+6. Node Label: 라벨 추가/제거, nodeSelector와 nodeAffinity로 Pod 배치 제어
+7. MachineSet: OCP에서 노드 수 관리, MachineSet 스케일링
+8. 노드 리소스 모니터링: oc adm top nodes, 리소스 압박(Pressure) 상태
+9. 실무 팁: 노드 장애 시 대응 플로우, 롤링 재시작 방법""",
+    },
+    {
+        "filename": "ocp-upgrade-ko.md",
+        "title": "OCP 클러스터 업그레이드",
+        "prompt": """다음 내용을 포함하는 'OCP 클러스터 업그레이드 가이드' 문서를 작성하세요:
+
+1. 업그레이드 채널: stable, fast, candidate, eus 채널 설명
+2. 업그레이드 경로: 마이너 업그레이드 vs 메이저 업그레이드, 지원되는 업그레이드 경로 확인
+3. 사전 점검: oc adm upgrade, ClusterOperator 상태 확인, Deprecated API 체크
+4. 업그레이드 절차: 웹콘솔/CLI를 통한 업그레이드 시작
+5. 업그레이드 모니터링: ClusterVersion, ClusterOperator 상태 추적
+6. 롤백: 업그레이드 실패 시 대응 (OCP는 기본적으로 롤백 미지원, etcd 복구 방법)
+7. Operator 업그레이드: OLM을 통한 Operator 자동/수동 업그레이드
+8. EUS (Extended Update Support): 장기 지원 버전 활용 전략
+9. 실무 체크리스트: 업그레이드 전/중/후 확인 사항""",
+    },
+    {
+        "filename": "ocp-route-ingress-ko.md",
+        "title": "OCP Route & Ingress 심화",
+        "prompt": """다음 내용을 포함하는 'OCP Route & Ingress 심화 가이드' 문서를 작성하세요:
+
+1. Route 개요: OCP Route vs Kubernetes Ingress 차이점
+2. Route 생성: oc expose service, oc create route 명령어
+3. TLS 종류: Edge, Passthrough, Re-encrypt 비교 (각각 언제 사용하는지)
+4. Route YAML 예시: HTTP Route, TLS Edge Route, Passthrough Route
+5. Path 기반 라우팅: 하나의 호스트에서 경로별로 다른 Service 연결
+6. 커스텀 도메인 설정: Route에 커스텀 호스트네임 지정
+7. Ingress Controller: HAProxy 기반 OCP Router, 샤딩(Sharding) 개념
+8. 가중치 기반 라우팅: A/B 테스트를 위한 트래픽 분배
+9. 실무 팁: Route 트러블슈팅 (503 에러, 인증서 문제), 타임아웃 설정""",
+    },
+    {
+        "filename": "ocp-build-deploy-ko.md",
+        "title": "OCP 빌드 & 배포 전략",
+        "prompt": """다음 내용을 포함하는 'OCP 빌드 & 배포 전략 가이드' 문서를 작성하세요:
+
+1. Source-to-Image(S2I): 개념, 동작 원리, Builder Image, S2I 빌드 예시
+2. Docker Build: Dockerfile 기반 빌드, BuildConfig YAML 예시
+3. BuildConfig: 빌드 트리거 (Webhook, ConfigChange, ImageChange)
+4. 빌드 로그 확인: oc logs build/빌드이름, oc start-build
+5. Rolling 배포: 기본 배포 전략, maxSurge/maxUnavailable 설정
+6. Blue-Green 배포: 두 버전 동시 운영, Route 전환으로 무중단 배포
+7. Canary 배포: 일부 트래픽만 새 버전으로 보내기, Route weight 활용
+8. Rollback: oc rollback, oc rollout undo 명령어
+9. 실무 팁: 빌드 캐시 활용, 빌드 리소스 제한, CI/CD 파이프라인과 연동""",
+    },
+    {
+        "filename": "ocp-logging-ko.md",
+        "title": "OCP 로깅 & 로그 수집",
+        "prompt": """다음 내용을 포함하는 'OCP 로깅 & 로그 수집 가이드' 문서를 작성하세요:
+
+1. 로깅 개요: 컨테이너 로그의 특성 (ephemeral), 중앙 집중식 로깅의 필요성
+2. OCP Logging 스택: OpenShift Logging Operator, Elasticsearch/Loki, Fluentd/Vector, Kibana
+3. 로그 종류: 애플리케이션 로그, 인프라 로그, 감사(Audit) 로그
+4. 로그 조회 명령어: oc logs, oc logs -f (실시간), oc logs --previous (이전 컨테이너)
+5. 멀티 컨테이너 Pod 로그: oc logs pod이름 -c 컨테이너이름
+6. Logging Operator 설치: ClusterLogging, ClusterLogForwarder CRD
+7. 로그 포워딩: 외부 시스템(Splunk, CloudWatch, Kafka)으로 로그 전송
+8. 로그 필터링 & 파싱: 구조화된 로그(JSON), 필드 기반 검색
+9. 실무 팁: 로그 보존 기간 설정, 디스크 사용량 관리, 로그 레벨 조정""",
+    },
 ]
 
 

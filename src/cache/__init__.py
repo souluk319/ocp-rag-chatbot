@@ -68,8 +68,18 @@ class SemanticCache:
                 return entity
         return None
 
+    _NUMBER_RE = re.compile(r"\d+")
+
+    @classmethod
+    def _extract_numbers(cls, text: str) -> list[str]:
+        return cls._NUMBER_RE.findall(text)
+
     @classmethod
     def _is_cache_compatible(cls, query: str, cached_query: str) -> bool:
+        # 숫자가 다르면 캐시 미스 ("3줄 요약" vs "4줄 요약")
+        if cls._extract_numbers(query) != cls._extract_numbers(cached_query):
+            return False
+
         query_tokens = cls._tokenize(query)
         cached_tokens = cls._tokenize(cached_query)
 

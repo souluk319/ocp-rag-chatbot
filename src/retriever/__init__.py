@@ -416,7 +416,20 @@ class Retriever:
             ))
 
         ranked.sort(key=lambda x: x.score, reverse=True)
-        top_results = ranked[:top_k]
+
+        # 같은 source에서 최대 2개까지만 (다양성 확보)
+        max_per_source = 2
+        top_results = []
+        source_count: dict[str, int] = {}
+        for r in ranked:
+            src = r.metadata.get("source", "")
+            cnt = source_count.get(src, 0)
+            if cnt >= max_per_source:
+                continue
+            top_results.append(r)
+            source_count[src] = cnt + 1
+            if len(top_results) >= top_k:
+                break
 
         # 7. 인접 청크 확장: 검색된 청크의 앞뒤 청크를 포함시켜 문맥 보완
         return self._expand_adjacent_chunks(top_results)
