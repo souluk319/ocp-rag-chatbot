@@ -21,6 +21,12 @@
             flex-direction: column;
         }
 
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2e3148; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3a3d54; }
+
         /* Header */
         .header {
             background: #1c1e2e;
@@ -30,6 +36,9 @@
             align-items: center;
             gap: 12px;
             flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            position: relative;
+            z-index: 10;
         }
 
         .header-icon {
@@ -105,6 +114,7 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 12px;
+            transition: border-color 0.2s ease, color 0.2s ease;
         }
 
         .header .trace-toggle.active {
@@ -120,6 +130,7 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 13px;
+            transition: background 0.15s ease;
         }
 
         .header .new-chat-btn:hover {
@@ -150,6 +161,11 @@
             gap: 16px;
         }
 
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .message {
             max-width: 80%;
             padding: 12px 16px;
@@ -157,11 +173,12 @@
             line-height: 1.7;
             font-size: 14px;
             word-break: break-word;
+            animation: fadeInUp 0.25s ease-out;
         }
 
         .message.user {
             align-self: flex-end;
-            background: #8b5cf6;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
             color: white;
             border-bottom-right-radius: 4px;
             white-space: pre-wrap;
@@ -172,6 +189,11 @@
             background: #222438;
             border: 1px solid #2e3148;
             border-bottom-left-radius: 4px;
+            transition: border-color 0.2s ease;
+        }
+
+        .message.assistant:hover {
+            border-color: #3a3d54;
         }
 
         .message.assistant h1,
@@ -346,6 +368,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            animation: fadeInUp 0.25s ease-out;
         }
 
         .typing-status {
@@ -355,7 +378,7 @@
             white-space: nowrap;
         }
 
-        .typing-indicator span {
+        .typing-indicator span:not(.typing-status) {
             display: inline-block;
             width: 8px;
             height: 8px;
@@ -636,6 +659,7 @@
             border-top: 1px solid #2e3148;
             padding: 16px 24px;
             flex-shrink: 0;
+            box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.15);
         }
 
         .input-wrapper {
@@ -659,10 +683,12 @@
             max-height: 120px;
             font-family: inherit;
             line-height: 1.5;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .input-wrapper textarea:focus {
             border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
         }
 
         .input-wrapper button {
@@ -674,6 +700,11 @@
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
+            transition: background 0.15s ease, transform 0.1s ease;
+        }
+
+        .input-wrapper button:active:not(:disabled) {
+            transform: scale(0.96);
         }
 
         .input-wrapper button:hover {
@@ -714,6 +745,118 @@
             color: #71717a;
             font-size: 14px;
             line-height: 1.6;
+        }
+
+        /* Chat Jump Button */
+        .chat-jump-btn {
+            position: absolute;
+            left: 50%;
+            bottom: 80px;
+            transform: translateX(-50%) translateY(6px);
+            z-index: 10;
+            border: 1px solid #3b3f5c;
+            background: rgba(20, 22, 32, 0.96);
+            color: #e4e4e7;
+            border-radius: 999px;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+        }
+
+        .chat-jump-btn.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .chat-jump-btn:hover {
+            border-color: #8b5cf6;
+        }
+
+        /* Mode Selector */
+        .mode-selector {
+            background: #141620;
+            border: 1px solid #2e3148;
+            color: #a1a1aa;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            outline: none;
+            flex-shrink: 0;
+            transition: border-color 0.2s ease;
+        }
+
+        .mode-selector:focus {
+            border-color: #8b5cf6;
+        }
+
+        /* Follow-up Suggestions */
+        .followup-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #2e3148;
+        }
+
+        .followup-label {
+            width: 100%;
+            font-size: 11px;
+            color: #71717a;
+            letter-spacing: 0.04em;
+            margin-bottom: 2px;
+        }
+
+        .followup-chip {
+            background: #1c1e2e;
+            border: 1px solid #2e3148;
+            color: #a1a1aa;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: border-color 0.2s ease, color 0.2s ease;
+            text-align: left;
+            line-height: 1.4;
+        }
+
+        .followup-chip:hover {
+            border-color: #8b5cf6;
+            color: #e4e4e7;
+        }
+
+        /* Welcome Suggestions */
+        .welcome-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .suggestion-chip {
+            background: #1c1e2e;
+            border: 1px solid #2e3148;
+            color: #a1a1aa;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: border-color 0.2s ease, color 0.2s ease;
+            text-align: left;
+            line-height: 1.4;
+        }
+
+        .suggestion-chip:hover {
+            border-color: #8b5cf6;
+            color: #e4e4e7;
         }
 
         /* 마크다운 테이블 */
@@ -768,26 +911,17 @@
     </div>
 
     <div class="main-layout">
-        <div class="chat-area">
+        <div class="chat-area" style="position: relative;">
             <div class="chat-container" id="chatContainer">
-                <div class="welcome" id="welcome">
-                    <div class="welcome-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.2" stroke-linecap="round"
-                            stroke-linejoin="round">
-                            <path
-                                d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
-                            <polyline points="7.5 4.21 12 6.81 16.5 4.21" />
-                            <line x1="12" y1="22" x2="12" y2="6.81" />
-                            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                        </svg>
-                    </div>
-                    <h2>OCP 온보딩 어시스턴트</h2>
-                    <p>OpenShift Container Platform 운영에 관해 궁금한 점을 물어보세요.<br>
-                        OCP 공식 문서와 트러블슈팅 가이드를 기반으로 정확한 답변을 제공합니다.</p>
-                </div>
+                <!-- renderWelcome()으로 동적 생성 -->
             </div>
+            <button class="chat-jump-btn" id="chatJumpBtn" onclick="jumpChatToBottom()">↓ 최신 대화</button>
             <div class="input-container">
                 <div class="input-wrapper">
+                    <select class="mode-selector" id="modeSelect" onchange="onModeChange(this.value)">
+                        <option value="ops">🔧 운영</option>
+                        <option value="learn">📖 학습</option>
+                    </select>
                     <textarea id="userInput" placeholder="질문을 입력하세요..." rows="1"></textarea>
                     <button id="sendBtn" onclick="sendMessage()">Send</button>
                 </div>
@@ -822,6 +956,40 @@
         let currentTraceGroup = null;
         let chatAutoScroll = true;
         let traceAutoScroll = true;
+        let currentMode = 'ops';
+
+        const SUGGESTION_POOLS = {
+            ops: [
+                "Pod가 CrashLoopBackOff일 때 해결방법은?",
+                "노드 drain 절차와 주의사항",
+                "PVC가 Pending인 경우 확인할 사항은?",
+                "OCP 클러스터 업그레이드 절차",
+                "etcd 백업 및 복구 명령어",
+                "ResourceQuota 설정 방법",
+                "네트워크 정책으로 Pod 간 통신 제어",
+                "이미지 Pull 실패 트러블슈팅",
+            ],
+            learn: [
+                "OCP와 Kubernetes의 차이점이 뭐야?",
+                "Pod, Deployment, Service 개념 설명해줘",
+                "네임스페이스란 무엇이고 왜 사용해?",
+                "컨테이너와 가상머신의 차이점은?",
+                "OCP에서 애플리케이션 배포 과정",
+                "RBAC 개념과 역할/권한 구조",
+                "PV와 PVC의 관계를 쉽게 설명해줘",
+                "Route와 Ingress의 차이점은?",
+            ],
+        };
+
+        function pickRandom(arr, n) {
+            const shuffled = [...arr].sort(() => Math.random() - 0.5);
+            return shuffled.slice(0, n);
+        }
+
+        function onModeChange(mode) {
+            currentMode = mode;
+            if (document.getElementById('welcome')) renderWelcome();
+        }
 
         const userInput = document.getElementById('userInput');
         const sendBtn = document.getElementById('sendBtn');
@@ -844,8 +1012,24 @@
             traceJumpBtn.classList.toggle('visible', shouldShow);
         }
 
+        const chatJumpBtn = document.getElementById('chatJumpBtn');
+
+        function updateChatJumpButton() {
+            const shouldShow =
+                chatContainer.scrollHeight > chatContainer.clientHeight &&
+                !chatAutoScroll;
+            chatJumpBtn.classList.toggle('visible', shouldShow);
+        }
+
+        function jumpChatToBottom() {
+            chatAutoScroll = true;
+            stickToBottom(chatContainer);
+            updateChatJumpButton();
+        }
+
         chatContainer.addEventListener('scroll', () => {
             chatAutoScroll = isNearBottom(chatContainer);
+            updateChatJumpButton();
         });
 
         traceContent.addEventListener('scroll', () => {
@@ -1056,8 +1240,18 @@
         }
 
         // ========== Chat ==========
-        function newSession() {
-            sessionId = null;
+        function useSuggestion(btn) {
+            userInput.value = btn.textContent;
+            userInput.focus();
+            userInput.style.height = 'auto';
+            userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
+        }
+
+        function renderWelcome() {
+            const suggestions = pickRandom(SUGGESTION_POOLS[currentMode], 3);
+            const modeDesc = currentMode === 'learn'
+                ? 'OCP 개념과 원리를 쉽게 설명해드립니다.'
+                : 'OCP 운영 및 트러블슈팅에 관해 실용적인 답변을 제공합니다.';
             chatContainer.innerHTML = `
                 <div class="welcome" id="welcome">
                     <div class="welcome-icon">
@@ -1069,9 +1263,16 @@
                         </svg>
                     </div>
                     <h2>OCP 온보딩 어시스턴트</h2>
-                    <p>OpenShift Container Platform 운영에 관해 궁금한 점을 물어보세요.<br>
-                    OCP 공식 문서와 트러블슈팅 가이드를 기반으로 정확한 답변을 제공합니다.</p>
+                    <p>${modeDesc}</p>
+                    <div class="welcome-suggestions">
+                        ${suggestions.map(q => `<button class="suggestion-chip" onclick="useSuggestion(this)">${q}</button>`).join('')}
+                    </div>
                 </div>`;
+        }
+
+        function newSession() {
+            sessionId = null;
+            renderWelcome();
             document.getElementById('sessionInfo').textContent = 'New Session';
             clearTrace();
         }
@@ -1125,6 +1326,53 @@
             if (el) el.remove();
         }
 
+        function extractFollowups(text) {
+            // LLM이 다양한 형식으로 출력할 수 있으므로 여러 패턴 매칭
+            const markers = [
+                /\[추천\s*질문\]/i,
+                /추천\s*질문\s*[:：]/,
+                /관련\s*질문\s*[:：]/,
+                /이어서\s*질문/,
+                /다음\s*질문/,
+                /\*\*추천\s*질문\*\*/,
+            ];
+            let idx = -1;
+            let matchLen = 0;
+            for (const re of markers) {
+                const m = text.match(re);
+                if (m) {
+                    idx = m.index;
+                    matchLen = m[0].length;
+                    break;
+                }
+            }
+            if (idx === -1) return { answer: text, followups: [] };
+            const answer = text.substring(0, idx).trim();
+            const followups = text.substring(idx + matchLen)
+                .split('\n')
+                .map(l => l.replace(/^\s*[-*]\s*/, '').replace(/^\d+[\.\)]\s*/, '').trim())
+                .filter(l => l.length > 5 && l.length < 100)
+                .slice(0, 3);
+            return { answer, followups };
+        }
+
+        function appendFollowups(div, followups) {
+            const container = document.createElement('div');
+            container.className = 'followup-suggestions';
+            const label = document.createElement('div');
+            label.className = 'followup-label';
+            label.textContent = '이어서 질문해보세요';
+            container.appendChild(label);
+            followups.forEach(q => {
+                const btn = document.createElement('button');
+                btn.className = 'followup-chip';
+                btn.textContent = q;
+                btn.onclick = () => { userInput.value = q; sendMessage(); };
+                container.appendChild(btn);
+            });
+            div.appendChild(container);
+        }
+
         function showError(message) {
             removeTypingIndicator();
             const div = document.createElement('div');
@@ -1164,7 +1412,7 @@
                 const response = await fetch(`${API_BASE}/api/chat/stream`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query, session_id: sessionId, stream: true, endpoint_key: endpointKey }),
+                    body: JSON.stringify({ query, session_id: sessionId, stream: true, endpoint_key: endpointKey, mode: currentMode }),
                 });
 
                 if (!response.ok) throw new Error(`Server error: ${response.status}`);
@@ -1221,11 +1469,21 @@
                                         document.getElementById('sessionInfo').textContent =
                                             `Session: ${sessionId}`;
                                     }
+                                    // 최종 파싱: [추천 질문] 분리 → 칩 렌더링
+                                    if (assistantDiv) {
+                                        const { answer, followups } = extractFollowups(fullText);
+                                        updateAssistantDiv(assistantDiv, answer, sources, rewrittenQuery, cached, query);
+                                        if (followups.length > 0) {
+                                            appendFollowups(assistantDiv, followups);
+                                        }
+                                    }
                                     break;
                             }
 
-                            if (assistantDiv) {
-                                updateAssistantDiv(assistantDiv, fullText, sources, rewrittenQuery, cached, query);
+                            // 스트리밍 중에는 추천 질문 섹션 이후 부분 숨김
+                            if (assistantDiv && eventType !== 'done') {
+                                const { answer: displayText } = extractFollowups(fullText);
+                                updateAssistantDiv(assistantDiv, displayText, sources, rewrittenQuery, cached, query);
                             }
                         }
                     }
@@ -1345,7 +1603,8 @@
             }
         }
 
-        // 페이지 로드 시 엔드포인트 목록 불러오기
+        // 페이지 로드 시 초기화
+        renderWelcome();
         loadEndpoints();
 
         userInput.focus();

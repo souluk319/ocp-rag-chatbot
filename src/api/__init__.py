@@ -90,6 +90,7 @@ class ChatRequest(BaseModel):
     top_k: int = Field(default=5, ge=1, le=20)
     stream: bool = True
     endpoint_key: Optional[str] = None
+    mode: str = Field(default="ops", pattern="^(learn|ops)$")
 
 
 class ChatResponse(BaseModel):
@@ -108,7 +109,7 @@ async def chat(req: ChatRequest):
     if pipeline is None:
         raise HTTPException(status_code=503, detail="파이프라인이 초기화되지 않았습니다.")
     try:
-        result = await pipeline.query(req.query, req.session_id, req.top_k, req.endpoint_key)
+        result = await pipeline.query(req.query, req.session_id, req.top_k, req.endpoint_key, req.mode)
         return ChatResponse(**result)
     except HTTPException:
         raise
@@ -124,7 +125,7 @@ async def chat_stream(req: ChatRequest):
         raise HTTPException(status_code=503, detail="파이프라인이 초기화되지 않았습니다.")
 
     async def event_generator():
-        async for event in pipeline.query_stream(req.query, req.session_id, req.top_k, req.endpoint_key):
+        async for event in pipeline.query_stream(req.query, req.session_id, req.top_k, req.endpoint_key, req.mode):
             # 모든 데이터를 JSON으로 인코딩 (SSE data 필드에 개행 방지)
             yield {
                 "event": event["type"],
