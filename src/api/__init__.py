@@ -4,7 +4,7 @@ import json
 import logging
 import os
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -89,6 +89,7 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = None
     top_k: int = Field(default=5, ge=1, le=20)
     stream: bool = True
+    endpoint_key: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
@@ -106,8 +107,14 @@ async def chat(req: ChatRequest):
     """비스트리밍 채팅 API"""
     if pipeline is None:
         raise HTTPException(status_code=503, detail="파이프라인이 초기화되지 않았습니다.")
-    result = await pipeline.query(req.query, req.session_id, req.top_k)
-    return ChatResponse(**result)
+    try:
+        result = await pipeline.query(req.query, req.session_id, req.top_k, req.endpoint_key)
+        return ChatResponse(**result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("비스트리밍 채팅 실패")
+        raise HTTPException(status_code=502, detail=f"LLM 응답 오류: {e}")
 
 
 @app.post("/api/chat/stream")
@@ -117,7 +124,7 @@ async def chat_stream(req: ChatRequest):
         raise HTTPException(status_code=503, detail="파이프라인이 초기화되지 않았습니다.")
 
     async def event_generator():
-        async for event in pipeline.query_stream(req.query, req.session_id, req.top_k):
+        async for event in pipeline.query_stream(req.query, req.session_id, req.top_k, req.endpoint_key):
             # 모든 데이터를 JSON으로 인코딩 (SSE data 필드에 개행 방지)
             yield {
                 "event": event["type"],
@@ -199,13 +206,14 @@ async def switch_endpoint(req: EndpointRequest):
 
 
 @app.get("/api/llm/health")
-async def llm_health():
+async def llm_health(key: Optional[str] = Query(default=None)):
     """현재 LLM 엔드포인트 연결 상태 확인"""
-    result = await llm_client.health_check()
-    current = LLM_ENDPOINTS.get(llm_client.current_endpoint_key, {})
+    result = await llm_client.health_check(key)
+    current_key = key or llm_client.current_endpoint_key
+    current = LLM_ENDPOINTS.get(current_key, {})
     return {
         "endpoint": current.get("name", "unknown"),
-        "key": llm_client.current_endpoint_key,
+        "key": current_key,
         **result,
     }
 
