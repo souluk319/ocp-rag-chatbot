@@ -1,6 +1,6 @@
 """문서 인덱싱 스크립트
 
-data/raw/ 디렉토리의 문서들을 청킹 → 임베딩 → IVF 인덱스 구축 → 저장
+data/sanitized_raw/ 디렉토리의 정제본을 청킹 → 임베딩 → IVF 인덱스 구축 → 저장
 """
 import sys
 import os
@@ -9,7 +9,7 @@ import time
 # 프로젝트 루트를 path에 추가
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.config import DATA_RAW_DIR, INDEX_DIR, EMBEDDING_DIM, IVF_N_CLUSTERS
+from src.config import DATA_CORPUS_DIR, INDEX_DIR, EMBEDDING_DIM, IVF_N_CLUSTERS
 from src.chunker import Chunker
 from src.embedding import EmbeddingEngine
 from src.vectorstore import IVFIndex
@@ -21,14 +21,15 @@ def build_index():
     print("=" * 60)
 
     # 1. 문서 청킹
-    print(f"\n[1/4] 문서 청킹 중... (소스: {DATA_RAW_DIR})")
+    print(f"\n[1/4] 문서 청킹 중... (소스: {DATA_CORPUS_DIR})")
     chunker = Chunker()
-    chunks = chunker.chunk_directory(DATA_RAW_DIR)
+    chunks = chunker.chunk_directory(DATA_CORPUS_DIR)
     print(f"  -> {len(chunks)}개 청크 생성")
 
     if not chunks:
-        print("\n문서가 없습니다. data/raw/ 디렉토리에 문서를 추가하세요.")
-        print("지원 형식: .txt, .md, .pdf, .docx")
+        print("\n문서가 없습니다. data/sanitized_raw/ 디렉토리를 확인하세요.")
+        print("필요하면 먼저 python3 scripts/sanitize_corpus.py 를 실행하세요.")
+        print("지원 형식: .txt, .md, .pdf, .docx, .pptx")
         return
 
     # 2. 임베딩 생성
