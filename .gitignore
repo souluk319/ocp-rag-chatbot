@@ -14,6 +14,10 @@ docs/publication-security-remediation-plan-2026-03-22.md
 # 원본 문서 데이터
 data/raw/
 
+# 벡터 인덱스 (clone 후 make index로 생성)
+data/index/
+!data/index/.gitkeep
+
 # Python
 __pycache__/
 *.pyc
