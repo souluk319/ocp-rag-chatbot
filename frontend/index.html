@@ -345,7 +345,14 @@
             border-bottom-left-radius: 4px;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 8px;
+        }
+
+        .typing-status {
+            font-size: 12px;
+            color: #71717a;
+            margin-left: 4px;
+            white-space: nowrap;
         }
 
         .typing-indicator span {
@@ -708,6 +715,30 @@
             font-size: 14px;
             line-height: 1.6;
         }
+
+        /* 마크다운 테이블 */
+        .message table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 12px 0;
+            font-size: 13px;
+        }
+        .message th, .message td {
+            border: 1px solid #3f3f46;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .message th {
+            background: #27272a;
+            font-weight: 600;
+            color: #e4e4e7;
+        }
+        .message td {
+            color: #d4d4d8;
+        }
+        .message tr:nth-child(even) td {
+            background: rgba(39, 39, 42, 0.3);
+        }
     </style>
 </head>
 
@@ -984,8 +1015,25 @@
             [/(<\/ul>)\s*<\/p>/g, '$1'],
         ];
 
+        function renderMarkdownTable(block) {
+            const rows = block.trim().split('\n').filter(r => r.trim());
+            if (rows.length < 2) return block;
+            const parseRow = r => r.replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+            const headers = parseRow(rows[0]);
+            // 2번째 줄이 구분선(|---|---|)인지 확인
+            if (!/^[\s|:\-]+$/.test(rows[1])) return block;
+            let html = '<table><thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
+            for (let i = 2; i < rows.length; i++) {
+                const cells = parseRow(rows[i]);
+                html += '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+            }
+            html += '</tbody></table>';
+            return html;
+        }
+
         function renderMarkdown(text) {
-            let html = text;
+            // 테이블을 먼저 추출해서 변환 (다른 규칙에 의해 깨지는 것 방지)
+            let html = text.replace(/((?:^\|.+\|$\n?){2,})/gm, (match) => renderMarkdownTable(match));
             for (const [pattern, replacement] of MD_RULES) {
                 html = html.replace(pattern, replacement);
             }
@@ -993,6 +1041,9 @@
             for (const [pattern, replacement] of MD_CLEANUP) {
                 html = html.replace(pattern, replacement);
             }
+            // 테이블이 <p> 안에 들어가면 깨지므로 정리
+            html = html.replace(/<p>\s*(<table>)/g, '$1');
+            html = html.replace(/(<\/table>)\s*<\/p>/g, '$1');
             return html;
         }
 
@@ -1038,16 +1089,35 @@
             return div;
         }
 
+        const STEP_STATUS = {
+            session: '세션 확인',
+            rewrite: '질문 분석',
+            embedding: '임베딩 계산',
+            cache: '캐시 확인',
+            vector_search: '문서 검색',
+            rerank: '리랭킹',
+            context: '컨텍스트 구성',
+            llm: '답변 생성 중',
+        };
+
         function showTypingIndicator() {
             removeTypingIndicator();
             const div = document.createElement('div');
             div.className = 'typing-indicator';
             div.id = 'typingDots';
-            div.innerHTML = '<span></span><span></span><span></span>';
+            div.innerHTML = '<span></span><span></span><span></span><span class="typing-status"></span>';
             chatContainer.appendChild(div);
             if (chatAutoScroll) {
                 stickToBottom(chatContainer);
             }
+        }
+
+        function updateTypingStatus(step, ms) {
+            const el = document.querySelector('#typingDots .typing-status');
+            if (!el) return;
+            const label = STEP_STATUS[step];
+            if (!label) return;
+            el.textContent = ms > 0 ? `${label} (${ms}ms)` : label;
         }
 
         function removeTypingIndicator() {
@@ -1122,6 +1192,7 @@
                             // Trace 이벤트 처리
                             if (eventType === 'trace') {
                                 addTraceStep(parsed);
+                                updateTypingStatus(parsed.step, parsed.ms);
                                 continue;
                             }
 
