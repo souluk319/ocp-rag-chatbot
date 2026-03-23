@@ -244,6 +244,72 @@ TOPICS = [
 8. 로그 필터링 & 파싱: 구조화된 로그(JSON), 필드 기반 검색
 9. 실무 팁: 로그 보존 기간 설정, 디스크 사용량 관리, 로그 레벨 조정""",
     },
+    # === 코퍼스 보강 (2026-03-23) ===
+    {
+        "filename": "k8s-core-concepts-ko.md",
+        "title": "Kubernetes 핵심 개념 입문",
+        "prompt": """다음 내용을 포함하는 'Kubernetes 핵심 개념 입문' 문서를 작성하세요:
+
+1. 쿠버네티스란 무엇인가, 왜 필요한가
+2. Pod 개념과 필요성, 컨테이너와 Pod의 관계
+3. ReplicaSet의 역할
+4. DaemonSet은 언제 사용하나
+5. Service 종류 비교 (ClusterIP, NodePort, LoadBalancer)
+6. Secret 개념과 종류 (Opaque, dockerconfigjson, tls), 환경변수 주입 방법
+7. RBAC 개요 (왜 필요한지, Role vs ClusterRole)
+8. Namespace 개념""",
+    },
+    {
+        "filename": "ocp-etcd-overview-ko.md",
+        "title": "etcd 개요 및 운영",
+        "prompt": """다음 내용을 포함하는 'etcd 개요 및 운영' 문서를 작성하세요:
+
+1. etcd가 무엇인지, 왜 중요한지
+2. OCP 아키텍처에서 etcd의 위치
+3. etcd 백업 방법 (구체적 명령어)
+4. etcd 복구 절차
+5. etcd 성능 모니터링
+6. etcd 장애 시 증상과 대응""",
+    },
+    {
+        "filename": "ocp-oomkilled-troubleshooting-ko.md",
+        "title": "OOMKilled 트러블슈팅",
+        "prompt": """다음 내용을 포함하는 'OOMKilled 트러블슈팅' 문서를 작성하세요:
+
+1. OOMKilled란 무엇인가
+2. 발생 원인 (requests/limits 미설정, 메모리 누수)
+3. 진단 방법: oc describe pod, kubectl top, oc adm top
+4. 해결: 리소스 limits 조정 YAML 예시
+5. 클러스터 리소스 사용량 확인 방법
+6. 이전 컨테이너 로그 보는 방법 (--previous)
+7. 실무 팁""",
+    },
+    {
+        "filename": "ocp-service-network-troubleshooting-ko.md",
+        "title": "Service/네트워크 트러블슈팅",
+        "prompt": """다음 내용을 포함하는 'Service/네트워크 트러블슈팅' 문서를 작성하세요:
+
+1. Service에 연결이 안 될 때 확인사항 (Endpoint, Selector, Port)
+2. DNS 이름으로 Pod 간 통신이 안 될 때 (CoreDNS, service.namespace.svc.cluster.local)
+3. NetworkPolicy 때문에 트래픽이 차단되는 경우 진단
+4. 노드가 NotReady 상태일 때 대응방법 (kubelet, 디스크/메모리 압박)
+5. oc debug를 이용한 네트워크 디버깅
+6. 실무 디버깅 명령어 모음""",
+    },
+    {
+        "filename": "ocp-debug-tools-ko.md",
+        "title": "OCP 디버깅 도구 실무 가이드",
+        "prompt": """다음 내용을 포함하는 'OCP 디버깅 도구 실무 가이드' 문서를 작성하세요:
+
+1. oc debug 사용법 (노드 디버깅, Pod 디버깅)
+2. must-gather 사용법 (기본 수집, 특정 네임스페이스)
+3. oc adm inspect 사용법
+4. oc logs 활용 (--previous, --tail, -f, 멀티컨테이너)
+5. oc login 방법 (토큰, 인증서)
+6. Pod 생성 기본 절차 (kubectl run, YAML 적용)
+7. 감사(Audit) 로그 확인 방법
+8. sosreport""",
+    },
 ]
 
 

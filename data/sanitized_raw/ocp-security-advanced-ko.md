@@ -168,9 +168,41 @@ HashiCorp Vault 와 연동하면 Secret 이 etcd 에 영구 저장되지 않고,
 
 ## 8. 감사 (Audit) 로그
 
+> **이 섹션에서 다루는 내용:** 감사 로그 확인 방법, audit-policy, API 서버 감사 로그, Audit Log 분석, 보안 사고 추적
+
 ### 개념 설명
-API 서버의 모든 요청과 응답을 기록하여, 누가 어떤 작업을 수행했는지 추적할 수 있습니다. 이는 보안 사고 조사 및 규정 준수에 필수적입니다.
+API 서버의 모든 요청과 응답을 기록하여, 누가 어떤 작업을 수행했는지 추적할 수 있습니다. 이는 보안 사고 조사 및 규정 준수에 필수적입니다. OpenShift의 감사 로그(Audit Log)는 API 서버에 대한 모든 요청을 기록하며, `audit-policy.yaml` 설정을 통해 감사 수준과 대상 리소스를 세밀하게 제어할 수 있습니다.
+
+### 감사 로그 확인 방법
+API 서버 감사 로그는 마스터 노드의 파일 시스템에 저장되며, 다음 경로에서 확인할 수 있습니다:
+```bash
+# 마스터 노드에서 감사 로그 확인
+ls /var/log/kube-apiserver/audit.log
+
+# 최근 감사 로그 조회 (특정 사용자의 활동 추적)
+cat /var/log/kube-apiserver/audit.log | jq 'select(.user.username=="<username>")'
+
+# 특정 리소스에 대한 감사 로그 필터링
+cat /var/log/kube-apiserver/audit.log | jq 'select(.objectRef.resource=="secrets")'
+```
 
 ### 설정 및 분석
-1.  **Audit Policy 설정**: `audit-policy.yaml` 파일을 생성하여 감사할 리소스와 동작을 정의합니다.
-2.  **Audit Policy 적용**: `oc adm policy` 명령어를 통해 적용합니다.
+1.  **Audit Policy 설정**: `audit-policy.yaml` 파일을 생성하여 감사할 리소스와 동작을 정의합니다. 감사 수준은 None, Metadata, Request, RequestResponse 네 단계로 나뉩니다.
+2.  **Audit Policy 적용**: API 서버 설정에 audit-policy 파일 경로를 지정하여 적용합니다.
+
+```yaml
+# audit-policy.yaml 예시
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+  # Secret 접근은 RequestResponse 수준으로 기록
+  - level: RequestResponse
+    resources:
+    - group: ""
+      resources: ["secrets"]
+  # 일반 리소스는 Metadata 수준으로 기록
+  - level: Metadata
+    resources:
+    - group: ""
+      resources: ["pods", "services", "configmaps"]
+```

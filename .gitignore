@@ -6,6 +6,7 @@
 # 로컬 도구/개인 메모
 .claude/
 CLAUDE.md
+docs/.plan/CLAUDE.md
 docs/.plan/
 docs/.self_review/
 docs/github-publication-security-plan-2026-03-22.md

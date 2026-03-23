@@ -2,6 +2,8 @@
 
 # OpenShift Container Platform 백업 및 재해복구 (DR) 가이드
 
+> **핵심 키워드:** etcd 백업 방법, etcd 백업 명령어, etcd 스냅샷, etcdctl snapshot save, OpenShift 백업 복구, 클러스터 재해복구, etcd 복원 절차
+
 ## 1. etcd 백업의 중요성
 
 OpenShift Cluster 의 핵심은 상태 저장소인 **etcd**입니다. etcd 는 클러스터의 모든 구성 정보 (API Objects, 설정, 인증서, 네트워크 정책 등) 를 Key-Value 형태로 영구적으로 저장합니다. **etcd 가 손상되거나 데이터가 손실되면 클러스터 전체가 마비 (Brick) 되어 재부팅이 불가능한 상태가 됩니다.**

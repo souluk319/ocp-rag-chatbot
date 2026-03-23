@@ -139,6 +139,45 @@ class BM25Scorer:
         "error": ["에러", "오류"],
         "에러": ["error"],
         "cli": ["명령줄"],
+        "drain": ["드레인"],
+        "드레인": ["drain"],
+        "cordon": ["코든"],
+        "oomkilled": ["메모리초과", "oom"],
+        "oom": ["oomkilled", "메모리초과"],
+        "audit": ["감사", "감사로그"],
+        "감사": ["audit"],
+        "notready": ["준비안됨", "not ready"],
+        "gitops": ["깃옵스"],
+        "깃옵스": ["gitops"],
+        "argocd": ["아르고cd", "아르고"],
+        "helm": ["헬름"],
+        "헬름": ["helm"],
+        "tekton": ["텍톤"],
+        "텍톤": ["tekton"],
+        "probe": ["프로브", "헬스체크"],
+        "프로브": ["probe"],
+        "rollback": ["롤백"],
+        "롤백": ["rollback"],
+        "upgrade": ["업그레이드"],
+        "업그레이드": ["upgrade"],
+        "etcd": ["이티시디"],
+        "daemonset": ["데몬셋"],
+        "데몬셋": ["daemonset"],
+        "statefulset": ["스테이트풀셋"],
+        "스테이트풀셋": ["statefulset"],
+        "replicaset": ["레플리카셋"],
+        "레플리카셋": ["replicaset"],
+        "configmap": ["컨피그맵"],
+        "컨피그맵": ["configmap"],
+        "ingress": ["인그레스"],
+        "인그레스": ["ingress"],
+        "pvc": ["퍼시스턴트볼륨클레임"],
+        "hpa": ["오토스케일러", "오토스케일링"],
+        "must-gather": ["머스트개더"],
+        "rbac": ["역할기반접근제어"],
+        "scc": ["시큐리티컨텍스트"],
+        "networkpolicy": ["네트워크정책", "네트워크폴리시"],
+        "네트워크정책": ["networkpolicy"],
     }
 
     def _tokenize(self, text: str) -> list[str]:
@@ -398,14 +437,34 @@ class Retriever:
         candidate_texts = [c.text for c in candidates]
         keyword_scores = self.bm25.score(query, candidate_texts)
 
+        # 5.5 쿼리 유형별 동적 가중치
+        query_info = self.classify_query(query)
+        if query_info["type"] in ("troubleshooting", "procedure"):
+            sem_w, kw_w = 0.6, 0.4  # 키워드 매칭 중요 (명령어, 에러명)
+        elif query_info["type"] == "concept":
+            sem_w, kw_w = 0.8, 0.2  # 의미적 유사성 중요
+        else:
+            sem_w, kw_w = self.semantic_weight, self.keyword_weight
+
+        # 5.6 한국어 쿼리 감지 (한글 포함 여부)
+        has_korean = bool(re.search(r'[\uac00-\ud7af]', query))
+
         # 6. hybrid scoring으로 리랭킹
         ranked = []
         for i, candidate in enumerate(candidates):
             combined_score = (
-                self.semantic_weight * candidate.score
-                + self.keyword_weight * keyword_scores[i]
+                sem_w * candidate.score
+                + kw_w * keyword_scores[i]
             )
             combined_score += self._overview_boost(query, candidate)
+
+            # 한국어 쿼리일 때 한국어 문서 부스트 (+0.08)
+            # 영문 문서가 BM25에서 과도하게 올라오는 것을 보정
+            if has_korean:
+                source = candidate.metadata.get("source", "")
+                if source.endswith("-ko.md"):
+                    combined_score += 0.08
+
             ranked.append(RankedResult(
                 chunk_id=candidate.chunk_id,
                 text=candidate.text,
@@ -417,8 +476,9 @@ class Retriever:
 
         ranked.sort(key=lambda x: x.score, reverse=True)
 
-        # 같은 source에서 최대 2개까지만 (다양성 확보)
-        max_per_source = 2
+        # 같은 source에서 최대 1개 (다양한 문서에서 정보 수집)
+        # 2로 하면 영문 문서가 자리 독점해서 한국어 해결방법 문서가 밀림
+        max_per_source = 1
         top_results = []
         source_count: dict[str, int] = {}
         for r in ranked:
@@ -485,7 +545,7 @@ class Retriever:
 
         return expanded
 
-    def build_context(self, results: list[RankedResult], max_chars: int = 4000) -> str:
+    def build_context(self, results: list[RankedResult], max_chars: int = 6000) -> str:
         """검색 결과를 LLM에 전달할 context 문자열로 구성 (길이 제한)"""
         if not results:
             return "관련 문서를 찾지 못했습니다."

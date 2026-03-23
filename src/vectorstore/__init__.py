@@ -238,7 +238,7 @@ class IVFIndex:
         index = cls(
             dim=meta["dim"],
             n_clusters=meta["n_clusters"],
-            n_probe=meta["n_probe"],
+            n_probe=IVF_N_PROBE,  # config 값 우선 (meta에 저장된 값은 빌드 시점 값이라 무시)
         )
         index.vectors = np.load(os.path.join(dirpath, "vectors.npy"))
         centroids_path = os.path.join(dirpath, "centroids.npy")

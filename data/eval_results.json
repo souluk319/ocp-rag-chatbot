@@ -1,0 +1,1082 @@
+[
+  {
+    "query": "쿠버네티스가 뭐야?",
+    "category": "concept",
+    "status": "⚠️ WEAK",
+    "top_score": 0.4466249465942383,
+    "top_source": "ocp_rbac.md",
+    "sources": [
+      "ocp_rbac.md",
+      "k8s-core-concepts-ko.md",
+      "ocp_must_gather.md",
+      "ocp_pod_autoscaling.md",
+      "ocp_pod_autoscaling.md"
+    ],
+    "time_ms": 9127
+  },
+  {
+    "query": "오픈시프트란 무엇인가?",
+    "category": "concept",
+    "status": "⚠️ WEAK",
+    "top_score": 0.4885268449783325,
+    "top_source": "ocp-oomkilled-troubleshooting-ko.md",
+    "sources": [
+      "ocp-oomkilled-troubleshooting-ko.md",
+      "ocp-cicd-ko.md",
+      "ocp-route-ingress-ko.md",
+      "ocp_control_plane.md",
+      "ocp_route_config.md"
+    ],
+    "time_ms": 109
+  },
+  {
+    "query": "Pod란 무엇이고 왜 필요한가?",
+    "category": "concept",
+    "status": "⚠️ WEAK",
+    "top_score": 0.5772598922252654,
+    "top_source": "k8s-core-concepts-ko.md",
+    "sources": [
+      "k8s-core-concepts-ko.md",
+      "k8s-core-concepts-ko.md",
+      "k8s-pod-operations-ko.md",
+      "애플리케이션.pdf",
+      "ocp-security-advanced-ko.md"
+    ],
+    "time_ms": 122
+  },
+  {
+    "query": "Deployment와 StatefulSet의 차이는?",
+    "category": "concept",
+    "status": "✅ PASS",
+    "top_score": 0.7928796470165252,
+    "top_source": "k8s-workload-types-ko.md",
+    "sources": [
+      "k8s-workload-types-ko.md",
+      "k8s_statefulset_detail.md",
+      "k8s-workload-types-ko.md",
+      "k8s_statefulset_detail.md",
+      "k8s_deployment_detail.md"
+    ],
+    "time_ms": 95
+  },
+  {
+    "query": "DaemonSet은 언제 사용해?",
+    "category": "concept",
+    "status": "✅ PASS",
+    "top_score": 0.6767631292343139,
+    "top_source": "k8s-core-concepts-ko.md",
+    "sources": [
+      "k8s-core-concepts-ko.md",
+      "k8s_daemonset_detail.md",
+      "k8s_daemonset_detail.md",
+      "k8s-workload-types-ko.md",
+      "ocp_pod_autoscaling.md"
+    ],
+    "time_ms": 107
+  },
+  {
+    "query": "Service의 종류와 차이점은?",
+    "category": "concept",
+    "status": "✅ PASS",
+    "top_score": 0.6221497771707747,
+    "top_source": "k8s-core-concepts-ko.md",
+    "sources": [
+      "k8s-core-concepts-ko.md",
+      "ocp-route-ingress-ko.md",
+      "네트워킹.pdf",
+      "k8s_service_detail.md",
+      "k8s_service_detail.md"
+    ],
+    "time_ms": 132
+  },
+  {
+    "query": "ClusterIP, NodePort, LoadBalancer 차이",
+    "category": "concept",
+    "status": "✅ PASS",
+    "top_score": 0.7887824654579162,
+    "top_source": "k8s-core-concepts-ko.md",
+    "sources": [
+      "k8s-core-concepts-ko.md",
+      "네트워킹.pdf",
+      "k8s_service_detail.md",
+      "ocp-core-concepts-ko.md",
+      "ocp-basics.md"
+    ],
+    "time_ms": 113
+  },
+  {
+    "query": "Ingress와 Route의 차이는?",
+    "category": "concept",
+    "status": "✅ PASS",
+    "top_score": 0.7154273986816406,
+    "top_source": "ocp-route-ingress-ko.md",
+    "sources": [
+      "ocp-route-ingress-ko.md",
+      "ocp-route-ingress-ko.md",
+      "ocp_networking.md",
+      "ocp_route_config.md",
+      "ocp_route_config.md"
+    ],
+    "time_ms": 111
+  },
+  {
+    "query": "ConfigMap이란 무엇이고 어떻게 사용해?",
+    "category": "concept",
+    "status": "✅ PASS",
+    "top_score": 0.7882189546049978,
+    "top_source": "변수.pdf",
+    "sources": [
+      "변수.pdf",
+      "변수.pdf",
+      "ocp-monitoring-ko.md",
+      "k8s_task_configmap.md",
+      "k8s_task_configmap.md"
+    ],
+    "time_ms": 97
+  },
+  {
+    "query": "Kubernetes Secret이란 무엇인가?",
+    "category": "concept",
+    "status": "⚠️ WEAK",
+    "top_score": 0.5260624829895969,
+    "top_source": "변수.pdf",
+    "sources": [
+      "변수.pdf",
+      "k8s_task_pull_secret.md",
+      "ocp-oomkilled-troubleshooting-ko.md",
+      "k8s_task_secret.md",
+      "ocp-security-advanced-ko.md"
+    ],
+    "time_ms": 96
+  },
+  {
+    "query": "PV와 PVC의 차이는?",
+    "category": "concept",
+    "status": "✅ PASS",
+    "top_score": 0.7538032483126409,
+    "top_source": "ocp_storage.md",
+    "sources": [
+      "ocp_storage.md",
+      "ocp_storage.md",
+      "스토리지.pdf",
+      "ocp-pending-pod-troubleshooting-ko.md",
+      "스토리지.pdf"
+    ],
+    "time_ms": 115
+  },
+  {
+    "query": "Namespace와 Project의 차이는?",
+    "category": "concept",
+    "status": "✅ PASS",
+    "top_score": 0.6193832668146158,
+    "top_source": "ocp-namespace-project-ko.md",
+    "sources": [
+      "ocp-namespace-project-ko.md",
+      "ocp-namespace-project-ko.md",
+      "ocp_projects.md",
+      "ocp_rbac.md",
+      "ocp_rbac.md"
+    ],
+    "time_ms": 125
+  },
+  {
+    "query": "OCP에서 Operator란 무엇인가?",
+    "category": "concept",
+    "status": "✅ PASS",
+    "top_score": 0.6594353529617853,
+    "top_source": "ocp-core-concepts-ko.md",
+    "sources": [
+      "ocp-core-concepts-ko.md",
+      "ocp-core-concepts-ko.md",
+      "ocp-oomkilled-troubleshooting-ko.md",
+      "ocp-etcd-overview-ko.md",
+      "ocp-etcd-overview-ko.md"
+    ],
+    "time_ms": 144
+  },
+  {
+    "query": "RBAC이란 무엇이고 왜 필요해?",
+    "category": "concept",
+    "status": "✅ PASS",
+    "top_score": 0.7960089162786819,
+    "top_source": "k8s_rbac.md",
+    "sources": [
+      "k8s_rbac.md",
+      "k8s_rbac.md",
+      "ocp_rbac.md",
+      "k8s-core-concepts-ko.md",
+      "ocp-security-advanced-ko.md"
+    ],
+    "time_ms": 145
+  },
+  {
+    "query": "SCC(Security Context Constraints)란?",
+    "category": "concept",
+    "status": "✅ PASS",
+    "top_score": 0.8482632489698942,
+    "top_source": "ocp-security-advanced-ko.md",
+    "sources": [
+      "ocp-security-advanced-ko.md",
+      "ocp_scc.md",
+      "ocp_scc.md",
+      "ocp-security-advanced-ko.md",
+      "ocp-troubleshooting.md"
+    ],
+    "time_ms": 127
+  },
+  {
+    "query": "etcd가 뭐야? 왜 중요해?",
+    "category": "concept",
+    "status": "❌ FAIL",
+    "top_score": 0.29861133098602294,
+    "top_source": "ocp_pod_autoscaling.md",
+    "sources": [
+      "ocp_pod_autoscaling.md",
+      "ocp_pod_autoscaling.md",
+      "ocp_must_gather.md",
+      "ocp_autoscaling.md",
+      "ocp_troubleshooting_pods.md"
+    ],
+    "time_ms": 130
+  },
+  {
+    "query": "컨테이너와 Pod의 관계는?",
+    "category": "concept",
+    "status": "✅ PASS",
+    "top_score": 0.7294593036174775,
+    "top_source": "k8s-core-concepts-ko.md",
+    "sources": [
+      "k8s-core-concepts-ko.md",
+      "k8s-core-concepts-ko.md",
+      "k8s_pods.md",
+      "ocp-core-concepts-ko.md",
+      "k8s_pods.md"
+    ],
+    "time_ms": 156
+  },
+  {
+    "query": "ReplicaSet의 역할은?",
+    "category": "concept",
+    "status": "✅ PASS",
+    "top_score": 0.7211067281916959,
+    "top_source": "k8s-core-concepts-ko.md",
+    "sources": [
+      "k8s-core-concepts-ko.md",
+      "애플리케이션.pdf",
+      "k8s_deployment_detail.md",
+      "k8s_deployment_detail.md",
+      "애플리케이션.pdf"
+    ],
+    "time_ms": 127
+  },
+  {
+    "query": "Label과 Selector는 어떻게 동작해?",
+    "category": "concept",
+    "status": "✅ PASS",
+    "top_score": 0.691573656666004,
+    "top_source": "ocp_deployments.md",
+    "sources": [
+      "ocp_deployments.md",
+      "ocp_pod_autoscaling.md",
+      "k8s_deployment_detail.md",
+      "ocp_pod_autoscaling.md",
+      "ocp_deployments.md"
+    ],
+    "time_ms": 141
+  },
+  {
+    "query": "Helm이란 무엇이고 왜 쓰나?",
+    "category": "concept",
+    "status": "✅ PASS",
+    "top_score": 0.620398070292618,
+    "top_source": "ocp-helm-ko.md",
+    "sources": [
+      "ocp-helm-ko.md",
+      "ocp-helm-ko.md",
+      "ocp_pod_autoscaling.md",
+      "ocp_pods_operations.md",
+      "ocp-cicd-ko.md"
+    ],
+    "time_ms": 150
+  },
+  {
+    "query": "Pod를 생성하는 방법은?",
+    "category": "procedure",
+    "status": "✅ PASS",
+    "top_score": 0.6112604200839996,
+    "top_source": "k8s-core-concepts-ko.md",
+    "sources": [
+      "k8s-core-concepts-ko.md",
+      "ocp-namespace-project-ko.md",
+      "ocp-debug-tools-ko.md",
+      "ocp-route-ingress-ko.md",
+      "k8s_task_secret.md"
+    ],
+    "time_ms": 148
+  },
+  {
+    "query": "Deployment를 롤백하는 방법은?",
+    "category": "procedure",
+    "status": "✅ PASS",
+    "top_score": 0.658246977410113,
+    "top_source": "k8s_deployment_detail.md",
+    "sources": [
+      "k8s_deployment_detail.md",
+      "k8s_deployment_detail.md",
+      "ocp_cli_oc.md",
+      "ocp_deployments.md",
+      "애플리케이션.pdf"
+    ],
+    "time_ms": 146
+  },
+  {
+    "query": "OCP에서 프로젝트를 생성하는 방법은?",
+    "category": "procedure",
+    "status": "✅ PASS",
+    "top_score": 0.8490487813949585,
+    "top_source": "ocp-namespace-project-ko.md",
+    "sources": [
+      "ocp-namespace-project-ko.md",
+      "ocp-namespace-project-ko.md",
+      "ocp-core-concepts-ko.md",
+      "ocp-core-concepts-ko.md",
+      "ocp-resource-management-ko.md"
+    ],
+    "time_ms": 171
+  },
+  {
+    "query": "ConfigMap을 Pod에 마운트하는 방법",
+    "category": "procedure",
+    "status": "✅ PASS",
+    "top_score": 0.6983259473694625,
+    "top_source": "스토리지.pdf",
+    "sources": [
+      "스토리지.pdf",
+      "ocp-helm-ko.md",
+      "변수.pdf",
+      "ocp_pod_autoscaling.md",
+      "k8s_task_configmap.md"
+    ],
+    "time_ms": 165
+  },
+  {
+    "query": "Secret을 환경변수로 주입하는 방법",
+    "category": "procedure",
+    "status": "✅ PASS",
+    "top_score": 0.6062270580466351,
+    "top_source": "k8s-core-concepts-ko.md",
+    "sources": [
+      "k8s-core-concepts-ko.md",
+      "k8s-core-concepts-ko.md",
+      "변수.pdf",
+      "변수.pdf",
+      "ocp-security-advanced-ko.md"
+    ],
+    "time_ms": 150
+  },
+  {
+    "query": "HPA를 설정하는 방법은?",
+    "category": "procedure",
+    "status": "✅ PASS",
+    "top_score": 0.8172086715698242,
+    "top_source": "k8s-pod-operations-ko.md",
+    "sources": [
+      "k8s-pod-operations-ko.md",
+      "ocp_pod_autoscaling.md",
+      "ocp_pods_operations.md",
+      "ocp_pods_operations.md",
+      "ocp_pod_autoscaling.md"
+    ],
+    "time_ms": 130
+  },
+  {
+    "query": "ResourceQuota를 설정하는 YAML 예시",
+    "category": "procedure",
+    "status": "✅ PASS",
+    "top_score": 0.7260377407073975,
+    "top_source": "k8s-resource-limits-ko.md",
+    "sources": [
+      "k8s-resource-limits-ko.md",
+      "ocp-cicd-ko.md",
+      "ocp-namespace-project-ko.md",
+      "ocp-resource-management-ko.md",
+      "ocp_pods_operations.md"
+    ],
+    "time_ms": 145
+  },
+  {
+    "query": "LimitRange 설정 방법",
+    "category": "procedure",
+    "status": "✅ PASS",
+    "top_score": 0.6933857379705062,
+    "top_source": "ocp-resource-management-ko.md",
+    "sources": [
+      "ocp-resource-management-ko.md",
+      "k8s-resource-limits-ko.md",
+      "k8s-resource-limits-ko.md",
+      "k8s_limit_range.md",
+      "k8s_limit_range.md"
+    ],
+    "time_ms": 143
+  },
+  {
+    "query": "NetworkPolicy로 트래픽 제한하는 방법",
+    "category": "procedure",
+    "status": "✅ PASS",
+    "top_score": 0.6395012021064759,
+    "top_source": "ocp-service-network-troubleshooting-ko.md",
+    "sources": [
+      "ocp-service-network-troubleshooting-ko.md",
+      "ocp-service-network-troubleshooting-ko.md",
+      "ocp-network-policy-ko.md",
+      "ocp-network-policy-ko.md",
+      "ocp-security-advanced-ko.md"
+    ],
+    "time_ms": 131
+  },
+  {
+    "query": "TLS Route를 생성하는 방법",
+    "category": "procedure",
+    "status": "✅ PASS",
+    "top_score": 0.7032319903373718,
+    "top_source": "ocp-route-ingress-ko.md",
+    "sources": [
+      "ocp-route-ingress-ko.md",
+      "ocp-core-concepts-ko.md",
+      "ocp-network-policy-ko.md",
+      "ocp-core-concepts-ko.md",
+      "ocp_route_config.md"
+    ],
+    "time_ms": 128
+  },
+  {
+    "query": "이미지 Pull Secret을 설정하는 방법",
+    "category": "procedure",
+    "status": "✅ PASS",
+    "top_score": 0.7261301274326981,
+    "top_source": "ocp-troubleshooting.md",
+    "sources": [
+      "ocp-troubleshooting.md",
+      "변수.pdf",
+      "ocp-image-pull-troubleshooting-ko.md",
+      "ocp_cli_oc.md",
+      "ocp-image-pull-troubleshooting-ko.md"
+    ],
+    "time_ms": 141
+  },
+  {
+    "query": "노드에 Taint와 Toleration 설정하는 방법",
+    "category": "procedure",
+    "status": "✅ PASS",
+    "top_score": 0.6507691800594331,
+    "top_source": "ocp-troubleshooting.md",
+    "sources": [
+      "ocp-troubleshooting.md",
+      "ocp-node-management-ko.md",
+      "ocp-troubleshooting.md",
+      "ocp_pod_autoscaling.md",
+      "ocp_pod_autoscaling.md"
+    ],
+    "time_ms": 152
+  },
+  {
+    "query": "PVC를 생성하고 Pod에 연결하는 방법",
+    "category": "procedure",
+    "status": "✅ PASS",
+    "top_score": 0.6461275513841471,
+    "top_source": "스토리지.pdf",
+    "sources": [
+      "스토리지.pdf",
+      "ocp-troubleshooting.md",
+      "ocp_storage.md",
+      "ocp_storage.md",
+      "ocp-troubleshooting.md"
+    ],
+    "time_ms": 162
+  },
+  {
+    "query": "Liveness Probe와 Readiness Probe 설정 방법",
+    "category": "procedure",
+    "status": "✅ PASS",
+    "top_score": 0.8410789445931519,
+    "top_source": "k8s-probe-config-ko.md",
+    "sources": [
+      "k8s-probe-config-ko.md",
+      "k8s-probe-config-ko.md",
+      "ocp_cli_oc.md",
+      "k8s_task_probes.md",
+      "k8s_task_probes.md"
+    ],
+    "time_ms": 164
+  },
+  {
+    "query": "OCP에서 S2I 빌드하는 방법",
+    "category": "procedure",
+    "status": "✅ PASS",
+    "top_score": 0.7269464112678355,
+    "top_source": "ocp-build-deploy-ko.md",
+    "sources": [
+      "ocp-build-deploy-ko.md",
+      "ocp-core-concepts-ko.md",
+      "ocp-build-deploy-ko.md",
+      "ocp-namespace-project-ko.md",
+      "ocp-etcd-overview-ko.md"
+    ],
+    "time_ms": 165
+  },
+  {
+    "query": "Pod가 CrashLoopBackOff일 때 해결방법은?",
+    "category": "troubleshooting",
+    "status": "✅ PASS",
+    "top_score": 0.7319001083296162,
+    "top_source": "ocp-core-concepts-ko.md",
+    "sources": [
+      "ocp-core-concepts-ko.md",
+      "ocp_troubleshooting_pods.md",
+      "ocp_troubleshooting_os.md",
+      "k8s_pod_disruptions.md",
+      "ocp_troubleshooting_os.md"
+    ],
+    "time_ms": 142
+  },
+  {
+    "query": "Pod가 Pending 상태에서 안 넘어가요",
+    "category": "troubleshooting",
+    "status": "✅ PASS",
+    "top_score": 0.6131114661693573,
+    "top_source": "ocp-pending-pod-troubleshooting-ko.md",
+    "sources": [
+      "ocp-pending-pod-troubleshooting-ko.md",
+      "ocp-core-concepts-ko.md",
+      "k8s_task_debug_pods.md",
+      "ocp-troubleshooting-advanced-ko.md",
+      "ocp-etcd-overview-ko.md"
+    ],
+    "time_ms": 149
+  },
+  {
+    "query": "ImagePullBackOff 에러 해결방법",
+    "category": "troubleshooting",
+    "status": "✅ PASS",
+    "top_score": 0.7140620606392234,
+    "top_source": "ocp-image-pull-troubleshooting-ko.md",
+    "sources": [
+      "ocp-image-pull-troubleshooting-ko.md",
+      "ocp_troubleshooting_os.md",
+      "ocp_troubleshooting_pods.md",
+      "ocp_troubleshooting_os.md",
+      "ocp_troubleshooting_pods.md"
+    ],
+    "time_ms": 142
+  },
+  {
+    "query": "OOMKilled가 발생하면 어떻게 해?",
+    "category": "troubleshooting",
+    "status": "⚠️ WEAK",
+    "top_score": 0.5077117472887039,
+    "top_source": "ocp-oomkilled-troubleshooting-ko.md",
+    "sources": [
+      "ocp-oomkilled-troubleshooting-ko.md",
+      "ocp_pod_autoscaling.md",
+      "ocp_pod_autoscaling.md",
+      "ocp-oomkilled-troubleshooting-ko.md",
+      "ocp-troubleshooting-advanced-ko.md"
+    ],
+    "time_ms": 140
+  },
+  {
+    "query": "Pod 로그를 확인하는 방법은?",
+    "category": "troubleshooting",
+    "status": "✅ PASS",
+    "top_score": 0.6755403703933842,
+    "top_source": "ocp-crashloop-troubleshooting-ko.md",
+    "sources": [
+      "ocp-crashloop-troubleshooting-ko.md",
+      "ocp-debug-tools-ko.md",
+      "ocp-oomkilled-troubleshooting-ko.md",
+      "ocp-troubleshooting-advanced-ko.md",
+      "ocp-debug-tools-ko.md"
+    ],
+    "time_ms": 140
+  },
+  {
+    "query": "이전 컨테이너 로그 보는 방법",
+    "category": "troubleshooting",
+    "status": "⚠️ WEAK",
+    "top_score": 0.49622419971783804,
+    "top_source": "ocp-crashloop-troubleshooting-ko.md",
+    "sources": [
+      "ocp-crashloop-troubleshooting-ko.md",
+      "ocp-oomkilled-troubleshooting-ko.md",
+      "ocp-debug-tools-ko.md",
+      "ocp-crashloop-troubleshooting-ko.md",
+      "ocp-logging-ko.md"
+    ],
+    "time_ms": 146
+  },
+  {
+    "query": "노드가 NotReady 상태일 때 대응방법",
+    "category": "troubleshooting",
+    "status": "⚠️ WEAK",
+    "top_score": 0.45720050930976863,
+    "top_source": "ocp_must_gather.md",
+    "sources": [
+      "ocp_must_gather.md",
+      "ocp_pod_autoscaling.md",
+      "ocp_pod_autoscaling.md",
+      "ocp_must_gather.md",
+      "ocp_troubleshooting_os.md"
+    ],
+    "time_ms": 147
+  },
+  {
+    "query": "PVC가 Pending에서 안 바뀌어요",
+    "category": "troubleshooting",
+    "status": "✅ PASS",
+    "top_score": 0.6273473134856784,
+    "top_source": "ocp-troubleshooting.md",
+    "sources": [
+      "ocp-troubleshooting.md",
+      "ocp-troubleshooting-advanced-ko.md",
+      "ocp-pending-pod-troubleshooting-ko.md",
+      "ocp-troubleshooting-advanced-ko.md",
+      "ocp-troubleshooting.md"
+    ],
+    "time_ms": 161
+  },
+  {
+    "query": "Service에 연결이 안 될 때 확인사항",
+    "category": "troubleshooting",
+    "status": "⚠️ WEAK",
+    "top_score": 0.4926503539085388,
+    "top_source": "ocp-service-network-troubleshooting-ko.md",
+    "sources": [
+      "ocp-service-network-troubleshooting-ko.md",
+      "ocp_troubleshooting_os.md",
+      "ocp_troubleshooting_pods.md",
+      "ocp_pod_autoscaling.md",
+      "ocp_pod_autoscaling.md"
+    ],
+    "time_ms": 158
+  },
+  {
+    "query": "DNS 이름으로 Pod 간 통신이 안 돼요",
+    "category": "troubleshooting",
+    "status": "✅ PASS",
+    "top_score": 0.6128140270709992,
+    "top_source": "ocp-service-network-troubleshooting-ko.md",
+    "sources": [
+      "ocp-service-network-troubleshooting-ko.md",
+      "ocp-troubleshooting-advanced-ko.md",
+      "ocp-service-network-troubleshooting-ko.md",
+      "네트워킹.pdf",
+      "ocp_pod_autoscaling.md"
+    ],
+    "time_ms": 192
+  },
+  {
+    "query": "Pod 이벤트를 확인하는 명령어는?",
+    "category": "troubleshooting",
+    "status": "✅ PASS",
+    "top_score": 0.7368817448616027,
+    "top_source": "k8s-probe-config-ko.md",
+    "sources": [
+      "k8s-probe-config-ko.md",
+      "ocp-oomkilled-troubleshooting-ko.md",
+      "ocp-crashloop-troubleshooting-ko.md",
+      "ocp-crashloop-troubleshooting-ko.md",
+      "ocp-pending-pod-troubleshooting-ko.md"
+    ],
+    "time_ms": 186
+  },
+  {
+    "query": "컨테이너가 계속 재시작되는 원인은?",
+    "category": "troubleshooting",
+    "status": "✅ PASS",
+    "top_score": 0.7455444455146789,
+    "top_source": "ocp-crashloop-troubleshooting-ko.md",
+    "sources": [
+      "ocp-crashloop-troubleshooting-ko.md",
+      "k8s-probe-config-ko.md",
+      "k8s-pod-operations-ko.md",
+      "ocp-oomkilled-troubleshooting-ko.md",
+      "k8s_task_memory_resource.md"
+    ],
+    "time_ms": 180
+  },
+  {
+    "query": "oc debug 사용법",
+    "category": "troubleshooting",
+    "status": "✅ PASS",
+    "top_score": 0.6322855234146119,
+    "top_source": "ocp-cicd-ko.md",
+    "sources": [
+      "ocp-cicd-ko.md",
+      "ocp_cli_oc.md",
+      "ocp_cli_oc.md",
+      "ocp_troubleshooting_pods.md",
+      "ocp_troubleshooting_os.md"
+    ],
+    "time_ms": 160
+  },
+  {
+    "query": "must-gather로 클러스터 정보 수집하는 방법",
+    "category": "troubleshooting",
+    "status": "✅ PASS",
+    "top_score": 0.6567203938961029,
+    "top_source": "ocp-debug-tools-ko.md",
+    "sources": [
+      "ocp-debug-tools-ko.md",
+      "ocp-debug-tools-ko.md",
+      "ocp-monitoring-ko.md",
+      "ocp_must_gather.md",
+      "ocp_managing_images.md"
+    ],
+    "time_ms": 157
+  },
+  {
+    "query": "OCP 클러스터 업그레이드 절차는?",
+    "category": "operations",
+    "status": "✅ PASS",
+    "top_score": 0.8600520331513362,
+    "top_source": "ocp-upgrade-ko.md",
+    "sources": [
+      "ocp-upgrade-ko.md",
+      "ocp-upgrade-ko.md",
+      "ocp_updating.md",
+      "Red Hat OpenShift 교육자료_260317.pptx",
+      "ocp_pod_autoscaling.md"
+    ],
+    "time_ms": 175
+  },
+  {
+    "query": "etcd 백업하는 방법",
+    "category": "operations",
+    "status": "⚠️ WEAK",
+    "top_score": 0.5667928898584331,
+    "top_source": "ocp-backup-recovery-ko.md",
+    "sources": [
+      "ocp-backup-recovery-ko.md",
+      "ocp-etcd-overview-ko.md",
+      "ocp-etcd-overview-ko.md",
+      "ocp-backup-recovery-ko.md",
+      "ocp-upgrade-ko.md"
+    ],
+    "time_ms": 149
+  },
+  {
+    "query": "etcd 복구 절차",
+    "category": "operations",
+    "status": "✅ PASS",
+    "top_score": 0.7443193554878236,
+    "top_source": "ocp-backup-recovery-ko.md",
+    "sources": [
+      "ocp-backup-recovery-ko.md",
+      "ocp-etcd-overview-ko.md",
+      "ocp-backup-recovery-ko.md",
+      "ocp-upgrade-ko.md",
+      "ocp-upgrade-ko.md"
+    ],
+    "time_ms": 153
+  },
+  {
+    "query": "노드를 drain하는 방법과 주의사항",
+    "category": "operations",
+    "status": "✅ PASS",
+    "top_score": 0.6188664495944977,
+    "top_source": "ocp-troubleshooting-advanced-ko.md",
+    "sources": [
+      "ocp-troubleshooting-advanced-ko.md",
+      "ocp-node-management-ko.md",
+      "ocp_nodes.md",
+      "ocp_pod_autoscaling.md",
+      "ocp_pod_autoscaling.md"
+    ],
+    "time_ms": 163
+  },
+  {
+    "query": "노드를 cordon/uncordon하는 방법",
+    "category": "operations",
+    "status": "✅ PASS",
+    "top_score": 0.7472795197964399,
+    "top_source": "ocp-node-management-ko.md",
+    "sources": [
+      "ocp-node-management-ko.md",
+      "ocp-troubleshooting-advanced-ko.md",
+      "ocp-troubleshooting-advanced-ko.md",
+      "ocp_updating.md",
+      "ocp_nodes.md"
+    ],
+    "time_ms": 156
+  },
+  {
+    "query": "클러스터 리소스 사용량 확인 방법",
+    "category": "operations",
+    "status": "⚠️ WEAK",
+    "top_score": 0.5942860819958944,
+    "top_source": "ocp-oomkilled-troubleshooting-ko.md",
+    "sources": [
+      "ocp-oomkilled-troubleshooting-ko.md",
+      "ocp-oomkilled-troubleshooting-ko.md",
+      "ocp-pending-pod-troubleshooting-ko.md",
+      "ocp-pending-pod-troubleshooting-ko.md",
+      "ocp-monitoring-ko.md"
+    ],
+    "time_ms": 156
+  },
+  {
+    "query": "oc adm top nodes 명령어 설명",
+    "category": "operations",
+    "status": "✅ PASS",
+    "top_score": 0.6879787564277648,
+    "top_source": "ocp-monitoring-ko.md",
+    "sources": [
+      "ocp-monitoring-ko.md",
+      "ocp-node-management-ko.md",
+      "k8s-resource-limits-ko.md",
+      "ocp_cli_oc.md",
+      "ocp-pending-pod-troubleshooting-ko.md"
+    ],
+    "time_ms": 148
+  },
+  {
+    "query": "로그를 중앙에서 수집하는 방법",
+    "category": "operations",
+    "status": "⚠️ WEAK",
+    "top_score": 0.5663287699222564,
+    "top_source": "ocp-logging-ko.md",
+    "sources": [
+      "ocp-logging-ko.md",
+      "ocp-monitoring-ko.md",
+      "ocp-logging-ko.md",
+      "ocp-security-advanced-ko.md",
+      "ocp-security-advanced-ko.md"
+    ],
+    "time_ms": 138
+  },
+  {
+    "query": "Prometheus로 모니터링하는 방법",
+    "category": "operations",
+    "status": "✅ PASS",
+    "top_score": 0.7214029176444834,
+    "top_source": "ocp-monitoring-ko.md",
+    "sources": [
+      "ocp-monitoring-ko.md",
+      "ocp-monitoring-ko.md",
+      "ocp-etcd-overview-ko.md",
+      "ocp_etcd.md",
+      "ocp_troubleshooting_os.md"
+    ],
+    "time_ms": 135
+  },
+  {
+    "query": "Alert 규칙을 설정하는 방법",
+    "category": "operations",
+    "status": "✅ PASS",
+    "top_score": 0.7785760641098023,
+    "top_source": "ocp-monitoring-ko.md",
+    "sources": [
+      "ocp-monitoring-ko.md",
+      "ocp-monitoring-ko.md",
+      "ocp-security-advanced-ko.md",
+      "ocp_troubleshooting_os.md",
+      "ocp-cicd-ko.md"
+    ],
+    "time_ms": 142
+  },
+  {
+    "query": "Blue-Green 배포와 Canary 배포의 차이",
+    "category": "cicd",
+    "status": "✅ PASS",
+    "top_score": 0.7533171594142913,
+    "top_source": "ocp-build-deploy-ko.md",
+    "sources": [
+      "ocp-build-deploy-ko.md",
+      "ocp-build-deploy-ko.md",
+      "k8s_deployment_detail.md",
+      "ocp_networking.md",
+      "ocp_deployments.md"
+    ],
+    "time_ms": 136
+  },
+  {
+    "query": "Rolling Update 전략 설명",
+    "category": "cicd",
+    "status": "✅ PASS",
+    "top_score": 0.6684283784204693,
+    "top_source": "ocp-build-deploy-ko.md",
+    "sources": [
+      "ocp-build-deploy-ko.md",
+      "k8s_deployment_detail.md",
+      "ocp_deployments.md",
+      "k8s-workload-types-ko.md",
+      "ocp_deployments.md"
+    ],
+    "time_ms": 140
+  },
+  {
+    "query": "Tekton 파이프라인이란?",
+    "category": "cicd",
+    "status": "✅ PASS",
+    "top_score": 0.7369934662132016,
+    "top_source": "ocp-cicd-ko.md",
+    "sources": [
+      "ocp-cicd-ko.md",
+      "ocp-cicd-ko.md",
+      "ocp_etcd.md",
+      "ocp-network-policy-ko.md",
+      "ocp_networking.md"
+    ],
+    "time_ms": 138
+  },
+  {
+    "query": "ArgoCD로 GitOps 하는 방법",
+    "category": "cicd",
+    "status": "✅ PASS",
+    "top_score": 0.6357050467891665,
+    "top_source": "ocp-cicd-ko.md",
+    "sources": [
+      "ocp-cicd-ko.md",
+      "ocp-cicd-ko.md",
+      "ocp-monitoring-ko.md",
+      "변수.pdf",
+      "ocp_must_gather.md"
+    ],
+    "time_ms": 155
+  },
+  {
+    "query": "ImageStream이란 무엇인가?",
+    "category": "cicd",
+    "status": "⚠️ WEAK",
+    "top_score": 0.5875289720275908,
+    "top_source": "ocp_imagestreams.md",
+    "sources": [
+      "ocp_imagestreams.md",
+      "ocp_imagestreams.md",
+      "ocp-core-concepts-ko.md",
+      "ocp-build-deploy-ko.md",
+      "ocp_managing_images.md"
+    ],
+    "time_ms": 148
+  },
+  {
+    "query": "Pod Security Standards 종류는?",
+    "category": "security",
+    "status": "✅ PASS",
+    "top_score": 0.7246276943424117,
+    "top_source": "k8s_security.md",
+    "sources": [
+      "k8s_security.md",
+      "ocp_pod_autoscaling.md",
+      "k8s-core-concepts-ko.md",
+      "k8s-core-concepts-ko.md",
+      "ocp_pod_autoscaling.md"
+    ],
+    "time_ms": 159
+  },
+  {
+    "query": "최소 권한 원칙으로 RBAC 설정하는 방법",
+    "category": "security",
+    "status": "✅ PASS",
+    "top_score": 0.7835213422775269,
+    "top_source": "k8s-core-concepts-ko.md",
+    "sources": [
+      "k8s-core-concepts-ko.md",
+      "ocp-security-advanced-ko.md",
+      "ocp-namespace-project-ko.md",
+      "ocp-resource-management-ko.md",
+      "ocp-security-advanced-ko.md"
+    ],
+    "time_ms": 148
+  },
+  {
+    "query": "이미지 스캐닝이란?",
+    "category": "security",
+    "status": "✅ PASS",
+    "top_score": 0.7102704465389251,
+    "top_source": "ocp-security-advanced-ko.md",
+    "sources": [
+      "ocp-security-advanced-ko.md",
+      "ocp_managing_images.md",
+      "ocp_operators.md",
+      "ocp_nodes.md",
+      "ocp_pod_autoscaling.md"
+    ],
+    "time_ms": 153
+  },
+  {
+    "query": "감사(Audit) 로그 확인 방법",
+    "category": "security",
+    "status": "✅ PASS",
+    "top_score": 0.6410769462585449,
+    "top_source": "ocp-security-advanced-ko.md",
+    "sources": [
+      "ocp-security-advanced-ko.md",
+      "ocp-debug-tools-ko.md",
+      "ocp-security-advanced-ko.md",
+      "ocp-crashloop-troubleshooting-ko.md",
+      "ocp-debug-tools-ko.md"
+    ],
+    "time_ms": 155
+  },
+  {
+    "query": "자주 쓰는 oc 명령어 모음",
+    "category": "commands",
+    "status": "⚠️ WEAK",
+    "top_score": 0.5352193006156664,
+    "top_source": "ocp-pending-pod-troubleshooting-ko.md",
+    "sources": [
+      "ocp-pending-pod-troubleshooting-ko.md",
+      "ocp-crashloop-troubleshooting-ko.md",
+      "ocp-monitoring-ko.md",
+      "ocp-service-network-troubleshooting-ko.md",
+      "k8s-probe-config-ko.md"
+    ],
+    "time_ms": 160
+  },
+  {
+    "query": "kubectl get pods 옵션들 설명",
+    "category": "commands",
+    "status": "✅ PASS",
+    "top_score": 0.736617386341095,
+    "top_source": "k8s_kubectl_cheatsheet.md",
+    "sources": [
+      "k8s_kubectl_cheatsheet.md",
+      "k8s_kubectl_cheatsheet.md",
+      "k8s_task_cpu_resource.md",
+      "k8s_task_pv_pvc.md",
+      "k8s_rbac.md"
+    ],
+    "time_ms": 148
+  },
+  {
+    "query": "oc login 하는 방법",
+    "category": "commands",
+    "status": "✅ PASS",
+    "top_score": 0.8461939454078675,
+    "top_source": "ocp-debug-tools-ko.md",
+    "sources": [
+      "ocp-debug-tools-ko.md",
+      "ocp-debug-tools-ko.md",
+      "ocp_cli_oc.md",
+      "ocp-commands.md",
+      "ocp-troubleshooting-advanced-ko.md"
+    ],
+    "time_ms": 155
+  },
+  {
+    "query": "kubectl apply와 create의 차이",
+    "category": "commands",
+    "status": "✅ PASS",
+    "top_score": 0.6785392880439758,
+    "top_source": "k8s_kubectl_cheatsheet.md",
+    "sources": [
+      "k8s_kubectl_cheatsheet.md",
+      "k8s_deployment_detail.md",
+      "k8s_task_configmap.md",
+      "k8s_task_secret.md",
+      "k8s_kubectl_cheatsheet.md"
+    ],
+    "time_ms": 160
+  }
+]

@@ -115,6 +115,8 @@ oc create pr simple-app-pipeline --param IMAGE=quay.io/myorg/my-app:latest
 
 ## 6. ArgoCD: 개념 및 OCP 통합
 
+> **이 섹션에서 다루는 내용:** ArgoCD로 GitOps 하는 방법, ArgoCD 설치 및 설정, ArgoCD Application CRD, ArgoCD 자동 동기화, OpenShift GitOps Operator
+
 **ArgoCD**는 Kubernetes 네이티브인 GitOps 오토메이션 도구로, OpenShift 에서 널리 사용됩니다.
 
 *   **작동 원리**: ArgoCD 는 Git 저장소를 지속적으로 스캔하여 `Application` CRD (Custom Resource Definition) 로 정의된 Desired State 와 클러스터의 Actual State 를 비교합니다. 불일치가 감지되면 자동으로 수정 작업을 수행합니다.
