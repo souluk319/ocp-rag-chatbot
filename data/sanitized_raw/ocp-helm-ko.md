@@ -2,6 +2,8 @@
 
 # OCP Helm & 패키지 관리 가이드
 
+> **핵심 키워드:** Helm이란 무엇인가, Helm을 왜 쓰는가, Kubernetes 패키지 매니저, Helm Chart, Helm 설치 방법, Helm 사용법, OpenShift Helm 배포
+
 ## 1. Helm 개요: Kubernetes 패키지 매니저
 
 Helm 은 Kubernetes 의 공식 패키지 매니저로, 복잡한 Kubernetes 리소스 정의 (YAML) 를 관리하고 배포하는 데 필수적인 도구입니다. Kubernetes 가 초기 단계에서부터 존재했지만, 수많은 마이크로서비스와 애플리케이션을 배포할 때 수백 줄에 달하는 YAML 파일을 직접 작성하고 관리하는 것은 실용성이 떨어집니다. Helm 은 이러한 문제를 해결하기 위해 '앱 스토어'의 개념을 도입했습니다.

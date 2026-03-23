@@ -148,6 +148,20 @@ oc get deployment <deploy-name> -o jsonpath='{.spec.template.spec.containers[*].
    - 0 → 정상 종료 반복 → foreground 실행 확인
 5. 수정 후 재배포: `oc rollout restart deployment/<name>`
 
+## 이전 컨테이너 로그 확인 (--previous 옵션)
+
+CrashLoopBackOff 상태에서 가장 중요한 디버깅 기법은 **이전 컨테이너 로그 확인**입니다. 컨테이너가 크래시되면 현재 로그는 사라지므로, `--previous` 옵션을 사용하여 직전에 종료된 컨테이너의 로그를 확인해야 합니다.
+
+```bash
+# --previous 옵션으로 이전 크래시된 컨테이너의 로그 확인
+oc logs <pod-name> --previous -n <namespace>
+
+# 특정 컨테이너 지정 (멀티 컨테이너 Pod인 경우)
+oc logs <pod-name> -c <container-name> --previous -n <namespace>
+```
+
+이 명령어는 Pod가 재시작되기 직전의 로그를 보여주므로, 크래시 원인을 파악하는 데 가장 효과적입니다.
+
 ## 자주 사용하는 명령어 요약
 
 ```bash
