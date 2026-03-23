@@ -98,7 +98,7 @@ Complete ✓  1.3s  → total pipeline time
 
 | 구분 | 기술 | 설명 |
 |------|------|------|
-| Backend | Python 3.11+, FastAPI | REST API + SSE 스트리밍 |
+| Backend | Python 3.13, FastAPI | REST API + SSE 스트리밍 |
 | LLM | Qwen/Qwen3.5-9B | 멀티 endpoint 지원. Mac Mini / RTX Desktop 은 4bit 양자화본, OpenAI-compatible API |
 | Embedding | paraphrase-multilingual-MiniLM-L12-v2 | 384차원, 다국어(한/영) 지원 |
 | Vector Index | numpy IVF | K-Means 클러스터링, 14,373 벡터, 16 클러스터 |
