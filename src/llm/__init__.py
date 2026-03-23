@@ -145,11 +145,8 @@ class LLMClient:
             "max_tokens": self.max_tokens,
             "temperature": self.temperature,
             "stream": False,
-            # Qwen3.5 thinking 비활성화 — 백엔드마다 파라미터가 다름
-            # vLLM: chat_template_kwargs, Ollama: reasoning_effort
-            # 각 백엔드는 모르는 파라미터를 무시하므로 둘 다 보냄
+            # Qwen3.5 thinking 비활성화 — vLLM chat_template_kwargs 사용
             "chat_template_kwargs": {"enable_thinking": False},
-            "reasoning_effort": "none",
         }
         try:
             resp = await self._client.post(target["endpoint"], json=payload)
@@ -188,9 +185,8 @@ class LLMClient:
             "max_tokens": self.max_tokens,
             "temperature": self.temperature,
             "stream": True,
-            # Qwen3.5 thinking 비활성화 — 백엔드마다 파라미터가 다름
+            # Qwen3.5 thinking 비활성화 — vLLM chat_template_kwargs 사용
             "chat_template_kwargs": {"enable_thinking": False},
-            "reasoning_effort": "none",
         }
         try:
             async with self._client.stream("POST", target["endpoint"], json=payload) as resp:

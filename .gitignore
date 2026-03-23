@@ -10,6 +10,9 @@ docs/.plan/
 docs/.self_review/
 docs/github-publication-security-plan-2026-03-22.md
 docs/publication-security-remediation-plan-2026-03-22.md
+docs/handoff-guide.md
+docs/plan-2026-03-23.md
+docs/system-deep-dive-private.md
 
 # 원본 문서 데이터
 data/raw/

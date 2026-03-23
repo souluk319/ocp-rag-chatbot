@@ -10,7 +10,7 @@ sentence-transformers==3.0.0
 httpx==0.27.0
 
 # Math / Vector Operations
-numpy==1.26.0
+numpy>=1.26.0
 
 # Document Parsing
 python-docx==1.1.0
@@ -21,7 +21,7 @@ markdown==3.6
 # Web Scraping
 beautifulsoup4==4.12.3
 requests==2.32.3
-lxml==5.2.2
+lxml>=5.3.0
 
 # Environment
 python-dotenv==1.0.1
