@@ -7,6 +7,10 @@ OCP(OpenShift Container Platform) 운영 지식 기반 RAG 챗봇
 OCP 공식 문서 및 기술 자료를 기반으로 질의응답이 가능한 RAG(Retrieval-Augmented Generation) 챗봇입니다.
 RAG 파이프라인의 각 컴포넌트(인덱싱, 검색, 리랭킹, 캐싱 등)를 개별 모듈로 구성했습니다.
 
+> 📄 **[파이프라인 구조 설명 자료 (PDF)](docs/OCP_Hybrid_RAG.pdf)** — 전체 아키텍처와 설계 의사결정을 정리한 프레젠테이션
+> 🎬 **[프로젝트 설계 영상](https://youtu.be/zeXrMJcLidg)** — 파이프라인 구조와 설계 의사결정 설명
+> 🎬 **[개인 학습 영상](https://youtu.be/MCdhsMPzt5o)** — RAG 개념 및 구현 과정 학습 정리
+
 ### 주요 특징
 - RAG 파이프라인 (인덱싱 → 검색 → 리랭킹 → 응답)
 - IVF(Inverted File Index) 벡터 인덱스 설계 (numpy 기반 K-Means)
@@ -31,7 +35,7 @@ RAG 파이프라인의 각 컴포넌트(인덱싱, 검색, 리랭킹, 캐싱 등
     │
     ▼
 [Web UI] ──SSE 스트리밍──▶ [FastAPI Server]
-(Dark Theme,                     │
+(Warm Light Theme,               │
  Dual Mode,              ┌──────┼──────────────┐
  Pipeline Trace,         ▼      ▼              ▼
  추천 질문,           Session   Semantic        Query
@@ -104,7 +108,7 @@ Complete ✓  1.3s  → total pipeline time
 | Vector Index | numpy IVF | K-Means 클러스터링, 14,373 벡터, 16 클러스터 |
 | Retrieval | Dual-Path (IVF + BM25) | 벡터 검색 + 독립 키워드 검색 병렬, 91쌍 동의어 |
 | Reranking | Dynamic Hybrid | 쿼리 유형별 동적 가중치 + 한국어 부스트 |
-| Frontend | HTML/CSS/JS | 프레임워크 미사용, 다크 테마, Pretendard 폰트 |
+| Frontend | HTML/CSS/JS | 프레임워크 미사용, 웜 라이트 테마, Pretendard 폰트 |
 | 문서 파싱 | PyPDF2, python-docx, python-pptx | 다양한 포맷 지원 |
 | 평가 | eval_questions.py | 72문항 자동 검색 품질 평가 |
 
@@ -124,7 +128,7 @@ ocp-rag-chatbot/
 │   ├── session/                  # 세션 관리 + Few-shot Query Rewriting
 │   └── cache/                    # Semantic Response Cache (3중 호환성 검증)
 ├── frontend/
-│   └── index.html                # 웹 UI (다크테마, 듀얼 모드, Trace 패널, 추천 질문)
+│   └── index.html                # 웹 UI (웜 라이트 테마, 듀얼 모드, Trace 패널, 추천 질문)
 ├── scripts/
 │   ├── scrape_docs.py            # OCP/K8s 공식 문서 스크래핑
 │   ├── generate_docs.py          # LLM 기반 합성 문서 생성
@@ -504,7 +508,7 @@ python scripts/eval_questions.py --category troubleshooting
 - [x] 캐시 초기화 API
 - [x] 한국어 IME 처리 (compositionstart/end)
 - [x] 마크다운 렌더링 (표/코드블록/리스트/볼드)
-- [x] 다크 테마 UI (Pretendard 폰트, 커스텀 스크롤바, fadeIn 애니메이션)
+- [x] 웜 라이트 테마 UI (Pretendard 폰트, 커스텀 스크롤바, fadeIn 애니메이션)
 - [x] 멀티 LLM 엔드포인트 (UI 서버 선택 + 모델 자동 감지)
 - [x] Qwen3.5 thinking 모드 자동 비활성화 (vLLM/Ollama/MLX 호환)
 - [x] Windows 지원 (run.bat / kill.bat / index.bat)
