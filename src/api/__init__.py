@@ -70,6 +70,12 @@ async def startup():
         cache=semantic_cache,
     )
 
+    # 임베딩 모델 워밍업 — lazy loading 대신 서버 시작 시 미리 로드
+    # 첫 요청의 ~37초 콜드스타트를 제거하기 위함
+    print("임베딩 모델 워밍업 시작...")
+    embedding_engine.embed("warmup")
+    print("임베딩 모델 워밍업 완료")
+
     # 만료 세션 주기적 정리 (10분마다)
     asyncio.create_task(_cleanup_sessions_periodically())
 
