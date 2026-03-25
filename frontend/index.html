@@ -137,7 +137,115 @@
         }
 
         .header .new-chat-btn:hover {
-            background: #C4612E;
+            background: #155a94;
+        }
+
+        .trace-guide-toggle {
+            background: none;
+            border: 1px solid #E8E3DC;
+            color: #8C8A87;
+            padding: 3px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: border-color 0.2s ease, color 0.2s ease;
+        }
+
+        .trace-guide-toggle:hover,
+        .trace-guide-toggle.active {
+            border-color: #1A6FB5;
+            color: #1A6FB5;
+        }
+
+        .trace-guide {
+            display: none;
+            background: #FAFBFC;
+            border-bottom: 1px solid #E8E3DC;
+            padding: 14px 16px;
+            font-size: 13px;
+            line-height: 1.7;
+            color: #2D2B28;
+            overflow-y: auto;
+            max-height: 50vh;
+        }
+
+        .trace-guide.open {
+            display: block;
+            animation: guideSlide 0.15s ease;
+        }
+
+        @keyframes guideSlide {
+            from { opacity: 0; max-height: 0; }
+            to { opacity: 1; max-height: 50vh; }
+        }
+
+        .trace-guide h4 {
+            font-size: 13px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            color: #1A6FB5;
+        }
+
+        .manual-step {
+            display: flex;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid #F0EDE8;
+        }
+
+        .manual-step:last-child {
+            border-bottom: none;
+        }
+
+        .manual-step-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: #F0F4F8;
+            color: #1A6FB5;
+            font-weight: 700;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .manual-step-body {
+            flex: 1;
+        }
+
+        .manual-step-title {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+
+        .manual-step-title span {
+            color: #8C8A87;
+            font-weight: 400;
+            font-size: 12px;
+            margin-left: 4px;
+        }
+
+        .manual-step-desc {
+            color: #6B6966;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .manual-step-fields {
+            margin-top: 4px;
+            font-size: 11.5px;
+            color: #8C8A87;
+        }
+
+        .manual-step-fields code {
+            background: #F5F3F0;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 11px;
+            color: #2D2B28;
         }
 
         /* Main layout */
@@ -961,7 +1069,83 @@
                         <span class="trace-title">Pipeline Trace</span>
                         <span class="trace-caption">디버그 정보 · 내부 처리 로그</span>
                     </div>
+                    <button class="trace-guide-toggle" id="guideToggle" onclick="toggleGuide()">📖 가이드</button>
                     <button class="clear-btn" onclick="clearTrace()">Clear</button>
+                </div>
+                <div class="trace-guide" id="traceGuide">
+                    <h4>각 단계별 용어 가이드</h4>
+                    <div class="manual-step">
+                        <div class="manual-step-icon">S</div>
+                        <div class="manual-step-body">
+                            <div class="manual-step-title">Session <span>(세션)</span></div>
+                            <div class="manual-step-desc">대화 세션을 식별하고 이전 대화 이력을 불러오는 단계</div>
+                            <div class="manual-step-fields"><code>session_id</code> 세션 고유ID · <code>history_turns</code> 이전 대화 턴 수</div>
+                        </div>
+                    </div>
+                    <div class="manual-step">
+                        <div class="manual-step-icon">R</div>
+                        <div class="manual-step-body">
+                            <div class="manual-step-title">Query Rewrite <span>(질문 재작성)</span></div>
+                            <div class="manual-step-desc">"그거 삭제하려면?" 같은 맥락 의존 질문을 "OCP Pod를 삭제하려면?" 처럼 독립 질문으로 변환</div>
+                            <div class="manual-step-fields"><code>original</code> 원본 · <code>rewritten</code> 재작성 · <code>query_type</code> 유형 (troubleshooting/concept/procedure 등)</div>
+                        </div>
+                    </div>
+                    <div class="manual-step">
+                        <div class="manual-step-icon">E</div>
+                        <div class="manual-step-body">
+                            <div class="manual-step-title">Embedding <span>(임베딩)</span></div>
+                            <div class="manual-step-desc">질문 텍스트를 384차원 벡터로 변환하여 문서 검색에 사용</div>
+                            <div class="manual-step-fields"><code>dim</code> 벡터 차원 · <code>cache_hit</code> true면 캐시 사용으로 즉시 반환</div>
+                        </div>
+                    </div>
+                    <div class="manual-step">
+                        <div class="manual-step-icon">C</div>
+                        <div class="manual-step-body">
+                            <div class="manual-step-title">Semantic Cache <span>(시맨틱 캐시)</span></div>
+                            <div class="manual-step-desc">유사도 0.95 이상의 이전 질문이 있으면 LLM 호출 없이 캐시 답변 즉시 반환</div>
+                            <div class="manual-step-fields"><code>semantic_cache_size</code> 캐시 항목 수 · hit 시 이후 단계 전부 스킵</div>
+                        </div>
+                    </div>
+                    <div class="manual-step">
+                        <div class="manual-step-icon">V</div>
+                        <div class="manual-step-body">
+                            <div class="manual-step-title">Vector Search <span>(IVF 벡터 검색)</span></div>
+                            <div class="manual-step-desc">K-Means 클러스터 기반 IVF 인덱스에서 유사 문서 청크 검색</div>
+                            <div class="manual-step-fields"><code>candidates</code> 후보 수 · <code>top_score</code> 최고 유사도 · <code>n_probe</code> 탐색 클러스터 수</div>
+                        </div>
+                    </div>
+                    <div class="manual-step">
+                        <div class="manual-step-icon">K</div>
+                        <div class="manual-step-body">
+                            <div class="manual-step-title">Reranking <span>(하이브리드 재정렬)</span></div>
+                            <div class="manual-step-desc">벡터 점수 + BM25 키워드 점수를 질문 유형별 가중치로 합산하여 최종 순위 결정</div>
+                            <div class="manual-step-fields"><code>semantic</code> 벡터 유사도 · <code>keyword</code> BM25 점수 · <code>score</code> 최종 점수 (한국어 +0.08 부스트 포함)</div>
+                        </div>
+                    </div>
+                    <div class="manual-step">
+                        <div class="manual-step-icon">X</div>
+                        <div class="manual-step-body">
+                            <div class="manual-step-title">Context Build <span>(컨텍스트 구성)</span></div>
+                            <div class="manual-step-desc">검색 문서 + 인접 청크(±2) 확장 → LLM에 전달할 참고 문맥 구성 (최대 6000자)</div>
+                            <div class="manual-step-fields"><code>context_length</code> 문맥 길이 · <code>num_documents</code> 참고 문서 수</div>
+                        </div>
+                    </div>
+                    <div class="manual-step">
+                        <div class="manual-step-icon">L</div>
+                        <div class="manual-step-body">
+                            <div class="manual-step-title">LLM Generate <span>(LLM 응답 생성)</span></div>
+                            <div class="manual-step-desc">컨텍스트 + 질문을 LLM에 전달, 토큰 단위 스트리밍으로 답변 생성</div>
+                            <div class="manual-step-fields"><code>tokens</code> 생성 토큰 수 · <code>tokens_per_sec</code> 초당 속도 · <code>answer_length</code> 답변 길이</div>
+                        </div>
+                    </div>
+                    <div class="manual-step">
+                        <div class="manual-step-icon">!</div>
+                        <div class="manual-step-body">
+                            <div class="manual-step-title">Pipeline Complete <span>(완료)</span></div>
+                            <div class="manual-step-desc">전체 파이프라인 소요 시간. 응답 캐시 저장 여부 표시</div>
+                            <div class="manual-step-fields"><code>cached_after</code> 이 응답의 캐시 저장 여부</div>
+                        </div>
+                    </div>
                 </div>
                 <div class="trace-content" id="traceContent"></div>
                 <button class="scroll-jump-btn" id="traceJumpBtn" onclick="jumpTraceToBottom()">맨 아래로</button>
@@ -1083,6 +1267,11 @@
             traceOpen = !traceOpen;
             document.getElementById('tracePanel').classList.toggle('open', traceOpen);
             document.getElementById('traceToggle').classList.toggle('active', traceOpen);
+        }
+
+        function toggleGuide() {
+            document.getElementById('traceGuide').classList.toggle('open');
+            document.getElementById('guideToggle').classList.toggle('active');
         }
 
         function clearTrace() {
