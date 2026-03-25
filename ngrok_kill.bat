@@ -1,19 +1,20 @@
 @echo off
+chcp 65001 >nul 2>&1
 echo ==========================================
-echo OCP RAG Chatbot - ngrok + Server 종료
+echo OCP RAG Chatbot - Kill All
 echo ==========================================
 taskkill /F /IM ngrok.exe /T 2>nul
 if %errorlevel% equ 0 (
-    echo ngrok 종료 완료
+    echo ngrok stopped
 ) else (
-    echo ngrok 프로세스 없음
+    echo ngrok not running
 )
 taskkill /F /IM uvicorn.exe /T 2>nul
 if %errorlevel% equ 0 (
-    echo 서버 종료 완료
+    echo server stopped
 ) else (
-    echo 서버 프로세스 없음
+    echo server not running
 )
 echo ==========================================
-echo 모두 종료되었습니다.
+echo All processes terminated.
 pause

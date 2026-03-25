@@ -232,4 +232,7 @@ if os.path.isdir(frontend_dir):
 
     @app.get("/")
     async def serve_frontend():
-        return FileResponse(os.path.join(frontend_dir, "index.html"))
+        return FileResponse(
+            os.path.join(frontend_dir, "index.html"),
+            headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+        )

@@ -1,6 +1,7 @@
 # OCP RAG Chatbot
 
-OCP(OpenShift Container Platform) 운영 지식 기반 RAG 챗봇
+OCP(OpenShift Container Platform) 운영 지식 기반 RAG 챗봇  
+Mobile 대응
 
 ## 개요
 
@@ -176,6 +177,9 @@ make run
 ### Windows
 
 ```batch
+# 0. 가상환경
+.\venv\Scripts\Activate  
+
 # 1. 환경 설정
 copy .env.example .env
 # .env 파일에서 LLM_ENDPOINT를 실제 엔드포인트로 변경
