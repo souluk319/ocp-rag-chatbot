@@ -2024,13 +2024,16 @@
                             if (eventType === 'trace') {
                                 addTraceStep(parsed);
                                 updateTypingStatus(parsed.step, parsed.ms);
-                                // reranking 결과를 fallback sources로 저장
+                                // reranking 결과를 fallback sources로 저장 + 즉시 적용
                                 if (parsed.step === 'reranking' && parsed.detail && Array.isArray(parsed.detail.results)) {
                                     traceSources = parsed.detail.results.map(r => ({
                                         source: r.source,
                                         score: r.score,
                                         chunk_id: ''
                                     }));
+                                    if (sources.length === 0) {
+                                        sources = traceSources;
+                                    }
                                 }
                                 continue;
                             }
