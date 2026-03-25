@@ -112,17 +112,24 @@ class LLMClient:
         except Exception as e:
             return {"status": "disconnected", "error": str(e), "key": target["key"], "name": target["name"]}
 
+    def _is_ollama(self, target: dict) -> bool:
+        """Ollama 서버인지 판별 (포트 11434)"""
+        return ":11434" in target.get("endpoint", "")
+
     def _build_messages(
         self,
         system_prompt: str,
         user_message: str,
         history: Optional[list[dict]] = None,
+        disable_thinking: bool = False,
     ) -> list[dict]:
         """LLM에 보낼 messages 배열 구성"""
         messages = [{"role": "system", "content": system_prompt}]
         if history:
             messages.extend(history)
-        messages.append({"role": "user", "content": user_message})
+        # Ollama Qwen3.5: /no_think 토큰으로 thinking 모드 비활성화
+        content = f"/no_think\n{user_message}" if disable_thinking else user_message
+        messages.append({"role": "user", "content": content})
         return messages
 
     async def generate(
@@ -138,23 +145,25 @@ class LLMClient:
             detected = await self.auto_detect_model(endpoint_key)
             if detected:
                 target = self._resolve_target(endpoint_key)
-        messages = self._build_messages(system_prompt, user_message, history)
+        is_ollama = self._is_ollama(target)
+        messages = self._build_messages(system_prompt, user_message, history, disable_thinking=is_ollama)
         payload = {
             "model": target["model"],
             "messages": messages,
             "max_tokens": self.max_tokens,
             "temperature": self.temperature,
             "stream": False,
-            # Qwen3.5 thinking 비활성화 — vLLM chat_template_kwargs 사용
-            "chat_template_kwargs": {"enable_thinking": False},
         }
+        # vLLM 전용: chat_template_kwargs로 thinking 비활성화
+        if not is_ollama:
+            payload["chat_template_kwargs"] = {"enable_thinking": False}
         try:
             resp = await self._client.post(target["endpoint"], json=payload)
             resp.raise_for_status()
             data = resp.json()
             message = data["choices"][0]["message"]
             content = message.get("content", "")
-            # Ollama Qwen3.5 thinking 모드: content가 비고 reasoning에 답변이 들어감
+            # Ollama Qwen3.5 thinking 모드 fallback: reasoning 필드 확인
             if not content and message.get("reasoning"):
                 content = message["reasoning"]
             return content
@@ -178,16 +187,18 @@ class LLMClient:
             detected = await self.auto_detect_model(endpoint_key)
             if detected:
                 target = self._resolve_target(endpoint_key)
-        messages = self._build_messages(system_prompt, user_message, history)
+        is_ollama = self._is_ollama(target)
+        messages = self._build_messages(system_prompt, user_message, history, disable_thinking=is_ollama)
         payload = {
             "model": target["model"],
             "messages": messages,
             "max_tokens": self.max_tokens,
             "temperature": self.temperature,
             "stream": True,
-            # Qwen3.5 thinking 비활성화 — vLLM chat_template_kwargs 사용
-            "chat_template_kwargs": {"enable_thinking": False},
         }
+        # vLLM 전용: chat_template_kwargs로 thinking 비활성화
+        if not is_ollama:
+            payload["chat_template_kwargs"] = {"enable_thinking": False}
         try:
             async with self._client.stream("POST", target["endpoint"], json=payload) as resp:
                 resp.raise_for_status()

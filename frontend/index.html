@@ -3,7 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>OCP 온보딩 어시스턴트</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css" />
     <style>
@@ -108,6 +111,22 @@
         .llm-status.connected { background: #16A34A; }
         .llm-status.disconnected { background: #DC2626; }
         .llm-status.checking { background: #D97706; animation: pulse 1s infinite; }
+
+        .header .cache-clear-btn {
+            background: none;
+            border: 1px solid #E8E3DC;
+            color: #B5B3B0;
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: border-color 0.2s ease, color 0.2s ease;
+        }
+
+        .header .cache-clear-btn:hover {
+            border-color: #DC2626;
+            color: #DC2626;
+        }
 
         .header .trace-toggle {
             background: none;
@@ -312,7 +331,8 @@
 
         .message.assistant h1,
         .message.assistant h2,
-        .message.assistant h3 {
+        .message.assistant h3,
+        .message.assistant h4 {
             margin: 12px 0 6px 0;
             color: #1A6FB5;
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -328,6 +348,16 @@
 
         .message.assistant h3 {
             font-size: 15px;
+        }
+
+        .message.assistant h4 {
+            font-size: 14px;
+        }
+
+        .message.assistant hr {
+            border: none;
+            border-top: 1px solid #E8E3DC;
+            margin: 16px 0;
         }
 
         .message.assistant p {
@@ -420,6 +450,13 @@
             gap: 6px;
         }
 
+        .source-annotation {
+            margin: 6px 0 12px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
         .message .source-chip {
             display: inline-flex;
             align-items: center;
@@ -435,6 +472,80 @@
             color: #B5B3B0;
             font-size: 11px;
             font-family: 'SF Mono', 'Consolas', monospace;
+        }
+
+        .inline-source {
+            display: inline;
+            background: rgba(26, 111, 181, 0.08);
+            border: 1px solid rgba(26, 111, 181, 0.25);
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-size: 0.85em;
+            color: #1A6FB5;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .inline-source .source-score {
+            color: rgba(26, 111, 181, 0.6);
+            margin-left: 3px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .message .source-detail {
+            border: 1px solid #E8E3DC;
+            border-radius: 8px;
+            background: #FAFBFC;
+            overflow: hidden;
+        }
+
+        .message .source-detail summary {
+            cursor: pointer;
+            list-style: none;
+            padding: 6px 10px;
+            font-size: 11px;
+            color: #8C8A87;
+        }
+
+        .message .source-detail summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .message .source-detail summary::after {
+            content: '펼치기';
+            float: right;
+            color: #B5B3B0;
+        }
+
+        .message .source-detail[open] summary::after {
+            content: '접기';
+        }
+
+        .message .source-table {
+            width: 100%;
+            font-size: 11px;
+            border-collapse: collapse;
+            margin: 0;
+        }
+
+        .message .source-table th {
+            background: #F0EDE8;
+            padding: 4px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #6B6966;
+            font-size: 10px;
+        }
+
+        .message .source-table td {
+            padding: 4px 8px;
+            border-top: 1px solid #F0EDE8;
+            color: #2D2B28;
+        }
+
+        .message .source-table td:last-child {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            color: #1A6FB5;
         }
 
         .message .rewrite-note {
@@ -589,6 +700,18 @@
             color: #B5B3B0;
             cursor: pointer;
             font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        .trace-close-btn {
+            display: none;
+            background: none;
+            border: 1px solid #E8E3DC;
+            color: #8C8A87;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 6px;
+            padding: 2px 8px;
             flex-shrink: 0;
         }
 
@@ -1023,6 +1146,189 @@
         .message tr:nth-child(even) td {
             background: rgba(240, 235, 228, 0.4);
         }
+
+        /* ========== Mobile Responsive ========== */
+        /* ========== Mobile (≤ 768px) ========== */
+        @media (max-width: 768px) {
+            /* 헤더 컴팩트 */
+            .header {
+                padding: 6px 10px;
+                gap: 6px;
+            }
+
+            .header-icon img { width: 22px; height: 22px; }
+            .header h1 { font-size: 12px; margin-right: auto; }
+            .header .divider { display: none; }
+            .header .session-info { display: none; }
+
+            .header .cache-clear-btn {
+                font-size: 9px;
+                padding: 2px 5px;
+            }
+
+            .header .trace-toggle {
+                font-size: 10px;
+                padding: 3px 6px;
+            }
+
+            .header .new-chat-btn {
+                font-size: 10px;
+                padding: 3px 8px;
+            }
+
+            .llm-selector select {
+                font-size: 10px;
+                padding: 2px 4px;
+                max-width: 80px;
+            }
+
+            .llm-status {
+                width: 6px;
+                height: 6px;
+            }
+
+            /* Trace 패널: 하단 바텀시트 */
+            .trace-panel {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                top: auto;
+                width: 100% !important;
+                height: 55vh;
+                z-index: 200;
+                border-left: none;
+                border-top: 1px solid #E8E3DC;
+                border-radius: 16px 16px 0 0;
+                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
+                transition: transform 0.3s ease;
+                transform: translateY(100%);
+                overflow: visible;
+            }
+
+            .trace-panel.open {
+                transform: translateY(0);
+            }
+
+            .trace-inner {
+                width: 100%;
+                height: 100%;
+            }
+
+            .trace-header {
+                padding: 10px 12px;
+            }
+
+            .trace-title { font-size: 12px; }
+            .trace-caption { font-size: 10px; }
+            .trace-guide-toggle { font-size: 10px; padding: 2px 6px; }
+            .trace-close-btn { display: block; }
+
+            .trace-header .clear-btn {
+                font-size: 10px;
+                padding: 2px 6px;
+            }
+
+            .trace-step-header { font-size: 11px; }
+            .trace-step-name { font-size: 11px; }
+            .trace-step-time { font-size: 10px; }
+            .trace-icon { width: 20px; height: 20px; font-size: 10px; }
+            .trace-detail { font-size: 10.5px; padding: 4px 6px; }
+            .trace-detail .key { font-size: 10px; }
+
+            .trace-total { font-size: 11px; padding: 6px 10px; }
+
+            /* 가이드 */
+            .trace-guide { max-height: 30vh; padding: 10px 12px; font-size: 12px; }
+            .manual-step-icon { width: 22px; height: 22px; font-size: 10px; }
+            .manual-step-title { font-size: 12px; }
+            .manual-step-desc { font-size: 11px; }
+            .manual-step-fields { font-size: 10px; }
+
+            /* 채팅 영역 */
+            .chat-container {
+                padding: 10px;
+                gap: 10px;
+            }
+
+            .message {
+                max-width: 92%;
+                font-size: 13px;
+                padding: 8px 10px;
+            }
+
+            .message.user {
+                border-radius: 16px;
+                border-bottom-right-radius: 4px;
+            }
+
+            .message.assistant h1,
+            .message.assistant h2,
+            .message.assistant h3 {
+                font-size: 14px;
+                margin: 6px 0 3px 0;
+            }
+
+            .message pre { font-size: 11px; }
+            .message table { font-size: 10.5px; }
+            .message code { font-size: 11.5px; }
+
+            /* 입력 영역 */
+            .input-container {
+                padding: 8px 10px;
+                padding-bottom: max(8px, env(safe-area-inset-bottom));
+            }
+
+            .input-wrapper { gap: 6px; }
+
+            .input-wrapper textarea {
+                font-size: 13px;
+                min-height: 36px;
+                padding: 8px 32px 8px 10px;
+                border-radius: 18px;
+            }
+
+            .input-wrapper button {
+                right: 8px;
+                bottom: 8px;
+                font-size: 16px;
+            }
+
+            .mode-selector {
+                font-size: 11px;
+                padding: 5px 22px 5px 8px;
+                border-radius: 16px;
+            }
+
+            /* 웰컴 */
+            .welcome { padding: 0 12px; max-width: 100%; }
+            .welcome-icon img { width: 44px; height: 44px; }
+            .welcome h2 { font-size: 16px; }
+            .welcome p { font-size: 12px; }
+
+            .suggestion-chip {
+                font-size: 11px;
+                padding: 7px 10px;
+            }
+
+            /* 추천 질문 */
+            .followup-suggestions .followup-chip { font-size: 11px; }
+
+            /* 점프 버튼 */
+            .chat-jump-btn {
+                bottom: 65px;
+                font-size: 10px;
+                padding: 5px 12px;
+            }
+        }
+
+        /* ========== 소형 폰 (≤ 400px) ========== */
+        @media (max-width: 400px) {
+            .header h1 { font-size: 11px; }
+            .llm-selector { display: none; }
+            .message { max-width: 95%; font-size: 12.5px; }
+            .input-wrapper textarea { font-size: 13px; }
+        }
     </style>
 </head>
 
@@ -1040,6 +1346,7 @@
                 <option value="">Loading...</option>
             </select>
         </div>
+        <button class="cache-clear-btn" onclick="clearSemanticCache()" title="시맨틱 캐시 초기화">🗑 캐시</button>
         <button class="trace-toggle" id="traceToggle" onclick="toggleTrace()">Pipeline Trace</button>
         <button class="new-chat-btn" onclick="newSession()">+ New Chat</button>
     </div>
@@ -1057,7 +1364,7 @@
                         <option value="learn">💡 학습</option>
                     </select>
                     <textarea id="userInput" placeholder="질문을 입력하세요..." rows="1"></textarea>
-                    <button id="sendBtn" onclick="sendMessage()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+                    <button id="sendBtn" onclick="handleSendStop()"><svg id="sendIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><svg id="stopIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
                 </div>
             </div>
         </div>
@@ -1071,6 +1378,7 @@
                     </div>
                     <button class="trace-guide-toggle" id="guideToggle" onclick="toggleGuide()">📖 가이드</button>
                     <button class="clear-btn" onclick="clearTrace()">Clear</button>
+                    <button class="trace-close-btn" onclick="toggleTrace()">✕</button>
                 </div>
                 <div class="trace-guide" id="traceGuide">
                     <h4>각 단계별 용어 가이드</h4>
@@ -1161,6 +1469,7 @@
         const API_BASE = window.location.origin;
         let sessionId = null;
         let isStreaming = false;
+        let currentAbort = null;
         let isComposing = false;
         let traceOpen = false;
         let currentTraceGroup = null;
@@ -1263,6 +1572,25 @@
         });
 
         // ========== Trace Panel ==========
+        async function clearSemanticCache() {
+            try {
+                const res = await fetch(`${API_BASE}/api/cache/clear`, { method: 'POST' });
+                if (res.ok) {
+                    const btn = document.querySelector('.cache-clear-btn');
+                    btn.textContent = '✓ 초기화됨';
+                    btn.style.color = '#16A34A';
+                    btn.style.borderColor = '#16A34A';
+                    setTimeout(() => {
+                        btn.textContent = '🗑 캐시';
+                        btn.style.color = '';
+                        btn.style.borderColor = '';
+                    }, 1500);
+                }
+            } catch (e) {
+                console.error('캐시 초기화 실패:', e);
+            }
+        }
+
         function toggleTrace() {
             traceOpen = !traceOpen;
             document.getElementById('tracePanel').classList.toggle('open', traceOpen);
@@ -1390,30 +1718,39 @@
             [/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => `<pre><code>${escapeHtml(code.trim())}</code></pre>`],
             // 2) 인라인 코드
             [/`([^`]+)`/g, '<code>$1</code>'],
-            // 3) 헤딩 (###부터 처리해야 #이 ###을 잡아먹지 않음)
+            // 3) 헤딩 (####부터 처리해야 상위가 하위를 잡아먹지 않음)
+            [/^#### (.+)$/gm, '<h4>$1</h4>'],
             [/^### (.+)$/gm, '<h3>$1</h3>'],
             [/^## (.+)$/gm, '<h2>$1</h2>'],
             [/^# (.+)$/gm, '<h1>$1</h1>'],
-            // 4) 인라인
-            [/\*\*(.+?)\*\*/g, '<strong>$1</strong>'],
-            // 5) 리스트 (*, -, 1. 전부 <li>로 통일)
-            [/^\* (.+)$/gm, '<li>$1</li>'],
-            [/^- (.+)$/gm, '<li>$1</li>'],
+            // 4) 수평선
+            [/^---+$/gm, '<hr>'],
+            // 5) 혼자 있는 * 제거 (LLM이 리스트 시작 후 줄바꿈하는 경우)
+            [/^\*\s*$/gm, ''],
+            [/\n\*\s*\n/g, '\n\n'],
+            // 6) 리스트 먼저 (*, -, 1. → 이탤릭 *과 충돌 방지)
+            [/^\s*\* (.+)$/gm, '<li>$1</li>'],
+            [/^\s*- (.+)$/gm, '<li>$1</li>'],
             [/^(\d+)\. (.+)$/gm, '<li>$2</li>'],
             [/((<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>'],
-            // 6) 문단 처리
+            // 7) 인라인 (볼드 먼저, 이탤릭 나중)
+            [/\*\*(.+?)\*\*/g, '<strong>$1</strong>'],
+            [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>'],
+            // 8) 문단 처리
             [/\n\n+/g, '</p><p>'],
             [/\n/g, '<br>'],
         ];
         // <p> 안에 블록 요소가 들어가면 깨지니까 정리
         const MD_CLEANUP = [
             [/<p>\s*<\/p>/g, ''],
-            [/<p>\s*(<h[1-3]>)/g, '$1'],
-            [/(<\/h[1-3]>)\s*<\/p>/g, '$1'],
+            [/<p>\s*(<h[1-4]>)/g, '$1'],
+            [/(<\/h[1-4]>)\s*<\/p>/g, '$1'],
             [/<p>\s*(<pre>)/g, '$1'],
             [/(<\/pre>)\s*<\/p>/g, '$1'],
             [/<p>\s*(<ul>)/g, '$1'],
             [/(<\/ul>)\s*<\/p>/g, '$1'],
+            [/<p>\s*(<hr>)/g, '$1'],
+            [/(<hr>)\s*<\/p>/g, '$1'],
         ];
 
         function renderMarkdownTable(block) {
@@ -1452,16 +1789,19 @@
             return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
 
+        function escapeRegExp(str) {
+            return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
         function normalizeForCompare(text) {
             return text.trim().replace(/\s+/g, ' ');
         }
 
         // ========== Chat ==========
         function useSuggestion(btn) {
-            userInput.value = btn.textContent;
-            userInput.focus();
-            userInput.style.height = 'auto';
-            userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
+            const text = btn.textContent.trim();
+            if (!text || isStreaming) return;
+            sendMessage(text);
         }
 
         function renderWelcome() {
@@ -1579,7 +1919,7 @@
                 const btn = document.createElement('button');
                 btn.className = 'followup-chip';
                 btn.textContent = q;
-                btn.onclick = () => { userInput.value = q; sendMessage(); };
+                btn.onclick = () => sendMessage(q);
                 container.appendChild(btn);
             });
             div.appendChild(container);
@@ -1596,8 +1936,33 @@
             }
         }
 
-        async function sendMessage() {
-            const query = userInput.value.trim();
+        function handleSendStop() {
+            if (isStreaming) {
+                stopStreaming();
+            } else {
+                sendMessage();
+            }
+        }
+
+        function stopStreaming() {
+            if (currentAbort) {
+                currentAbort.abort();
+                currentAbort = null;
+            }
+        }
+
+        function setStreamingUI(streaming) {
+            isStreaming = streaming;
+            document.getElementById('sendIcon').style.display = streaming ? 'none' : '';
+            document.getElementById('stopIcon').style.display = streaming ? '' : 'none';
+            sendBtn.disabled = false;
+            if (streaming) {
+                sendBtn.classList.add('has-text');
+            }
+        }
+
+        async function sendMessage(directQuery) {
+            const query = directQuery || userInput.value.trim();
             if (!query || isStreaming) return;
             const endpointKey = document.getElementById('llmSelect').value || null;
 
@@ -1607,9 +1972,10 @@
             addMessage('user', query);
             userInput.value = '';
             userInput.style.height = 'auto';
-            isStreaming = true;
-            sendBtn.disabled = true;
+            setStreamingUI(true);
             showTypingIndicator();
+
+            currentAbort = new AbortController();
 
             // Trace 그룹 생성 (이전 trace 유지, 그룹별 분리)
             currentTraceGroup = startNewTraceGroup(query);
@@ -1617,6 +1983,7 @@
             let assistantDiv = null;
             let fullText = '';
             let sources = [];
+            let traceSources = [];  // rerank trace에서 추출한 fallback
             let rewrittenQuery = '';
             let cached = false;
 
@@ -1625,6 +1992,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ query, session_id: sessionId, stream: true, endpoint_key: endpointKey, mode: currentMode }),
+                    signal: currentAbort.signal,
                 });
 
                 if (!response.ok) throw new Error(`Server error: ${response.status}`);
@@ -1647,12 +2015,23 @@
                             eventType = line.slice(7).trim();
                         } else if (line.startsWith('data: ')) {
                             let parsed;
-                            try { parsed = JSON.parse(line.slice(6)); } catch { continue; }
+                            try { parsed = JSON.parse(line.slice(6)); } catch (e) {
+                                console.warn(`[SSE] JSON parse failed for ${eventType}:`, line.slice(6, 100), e.message);
+                                continue;
+                            }
 
                             // Trace 이벤트 처리
                             if (eventType === 'trace') {
                                 addTraceStep(parsed);
                                 updateTypingStatus(parsed.step, parsed.ms);
+                                // reranking 결과를 fallback sources로 저장
+                                if (parsed.step === 'reranking' && parsed.detail && Array.isArray(parsed.detail.results)) {
+                                    traceSources = parsed.detail.results.map(r => ({
+                                        source: r.source,
+                                        score: r.score,
+                                        chunk_id: ''
+                                    }));
+                                }
                                 continue;
                             }
 
@@ -1666,7 +2045,9 @@
                                     fullText += parsed;
                                     break;
                                 case 'sources':
-                                    sources = parsed;
+                                    if (Array.isArray(parsed) && parsed.length > 0) {
+                                        sources = parsed;
+                                    }
                                     break;
                                 case 'rewrite':
                                     rewrittenQuery = parsed;
@@ -1680,6 +2061,10 @@
                                         sessionId = parsed.session_id;
                                         document.getElementById('sessionInfo').textContent =
                                             `Session: ${sessionId}`;
+                                    }
+                                    // sources SSE가 유실된 경우 trace rerank 결과로 fallback
+                                    if (sources.length === 0 && traceSources.length > 0) {
+                                        sources = traceSources;
                                     }
                                     // 최종 파싱: [추천 질문] 분리 → 칩 렌더링
                                     if (assistantDiv) {
@@ -1701,16 +2086,37 @@
                     }
                 }
             } catch (err) {
-                showError(`연결 오류: ${err.message}`);
+                if (err.name === 'AbortError') {
+                    // 사용자가 정지한 경우: 현재까지 받은 내용 표시
+                    if (assistantDiv && fullText) {
+                        const { answer, followups } = extractFollowups(fullText);
+                        updateAssistantDiv(assistantDiv, answer + '\n\n*(생성 중단됨)*', sources, rewrittenQuery, cached, query);
+                    }
+                } else {
+                    showError(`연결 오류: ${err.message}`);
+                }
             }
 
             removeTypingIndicator();
-            isStreaming = false;
-            sendBtn.disabled = false;
+            currentAbort = null;
+            setStreamingUI(false);
             userInput.focus();
         }
 
+        /*
+         * ===== updateAssistantDiv 렌더링 지침서 =====
+         *
+         * [답변 내용]
+         *   내용 중 출처 파일명이 언급된 문단 아래에 해당 출처 칩 표시
+         *   텍스트에 언급되지 않은 출처는 답변 끝에 모아서 표시
+         * [검색 점수 상세] ← metaSections → answer-meta 안 (접이식)
+         * [추천 질문]      ← appendFollowups()로 별도 append
+         *
+         * ================================================
+         */
         function updateAssistantDiv(div, text, sources, rewrittenQuery, cached, originalQuery) {
+            // ★ LLM이 생성한 "참고 출처:" / "[문서 요약]" 섹션 제거 (출처 칩으로 대체)
+            text = text.replace(/\n+(?:참고\s*출처|\[문서\s*요약\])[:：]?\s*\n[\s\S]*$/i, '').trim();
             let html = renderMarkdown(text);
             const metaSections = [];
             const badges = [];
@@ -1722,15 +2128,15 @@
             }
 
             if (sources && sources.length > 0) {
+                // 검색 점수 상세 — 접이식 (answer-meta 안)
                 metaSections.push(
-                    '<div class="sources">' +
-                    '<div class="sources-label">출처</div>' +
-                    '<div class="source-list">' +
-                    sources.map(s =>
-                        `<span class="source-chip">${escapeHtml(s.source)}<span class="source-score">${(s.score * 100).toFixed(1)}%</span></span>`
+                    '<details class="source-detail">' +
+                    '<summary>검색 점수 상세</summary>' +
+                    '<table class="source-table"><thead><tr><th>#</th><th>문서</th><th>점수</th></tr></thead><tbody>' +
+                    sources.map((s, i) =>
+                        `<tr><td>${i + 1}</td><td>${escapeHtml(s.source)}</td><td><strong>${(s.score * 100).toFixed(1)}%</strong></td></tr>`
                     ).join('') +
-                    '</div>' +
-                    '</div>'
+                    '</tbody></table></details>'
                 );
             }
 
