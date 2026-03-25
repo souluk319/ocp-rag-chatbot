@@ -7,7 +7,7 @@ OCP(OpenShift Container Platform) 운영 지식 기반 RAG 챗봇
 OCP 공식 문서 및 기술 자료를 기반으로 질의응답이 가능한 RAG(Retrieval-Augmented Generation) 챗봇입니다.
 RAG 파이프라인의 각 컴포넌트(인덱싱, 검색, 리랭킹, 캐싱 등)를 개별 모듈로 구성했습니다.
 
-> 📄 **[파이프라인 구조 설명 자료 (PDF)](docs/OCP_Hybrid_RAG.pdf)** — 전체 아키텍처와 설계 의사결정을 정리한 프레젠테이션
+> 📄 **[파이프라인 구조 설명 자료 (PDF)](docs/OCP_Hybrid_RAG.pdf)** — 전체 아키텍처와 설계 정리 자료
 > 🎬 **[프로젝트 설계 영상](https://youtu.be/zeXrMJcLidg)** — 파이프라인 구조와 설계 의사결정 설명
 > 🎬 **[개인 학습 영상](https://youtu.be/MCdhsMPzt5o)** — RAG 개념 및 구현 과정 학습 정리
 
