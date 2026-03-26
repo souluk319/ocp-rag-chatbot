@@ -46,11 +46,19 @@ FOLLOWUP_SUFFIX = """
 2. (두 번째 추천 질문)
 3. (세 번째 추천 질문)"""
 
+# 소형/양자화 모델은 instruction following이 약해서 한국어 지시를 강화
+SMALL_MODEL_KO_PREFIX = """[최우선 규칙] 모든 답변을 반드시 한국어로 작성하세요. 영어로 된 참고 문서도 한국어로 번역하여 답변하세요. English output is NOT allowed.
 
-def get_system_prompt(mode: str) -> str:
+"""
+
+
+def get_system_prompt(mode: str, force_korean: bool = False) -> str:
     """모드별 시스템 프롬프트 반환 (학습/운영)"""
     base = SYSTEM_PROMPT_LEARN if mode == "learn" else SYSTEM_PROMPT_OPS
-    return base + FOLLOWUP_SUFFIX
+    prompt = base + FOLLOWUP_SUFFIX
+    if force_korean:
+        prompt = SMALL_MODEL_KO_PREFIX + prompt
+    return prompt
 
 
 class RAGPipeline:
@@ -109,7 +117,9 @@ class RAGPipeline:
 
         prompt = f"참고 문서:\n{context}\n\n질문: {rewritten_query}"
         history = session.get_history()
-        system_prompt = get_system_prompt(mode)
+        target = self.llm._resolve_target(effective_endpoint_key)
+        is_small_model = any(tag in target["model"].lower() for tag in ("4bit", "3b", "4b", "2b", "1b", "gguf"))
+        system_prompt = get_system_prompt(mode, force_korean=is_small_model)
         answer = await self.llm.generate(system_prompt, prompt, history, endpoint_key=effective_endpoint_key)
 
         session.add_message("user", user_query)
@@ -145,7 +155,9 @@ class RAGPipeline:
         session = self.session_mgr.get_or_create(session_id)
         effective_endpoint_key = endpoint_key or self.llm.current_endpoint_key
         target = self.llm._resolve_target(effective_endpoint_key)
-        system_prompt = get_system_prompt(mode)
+        # 소형/양자화 모델이면 한국어 지시 강화 (4bit, 3b, 4b 등)
+        is_small_model = any(tag in target["model"].lower() for tag in ("4bit", "3b", "4b", "2b", "1b", "gguf"))
+        system_prompt = get_system_prompt(mode, force_korean=is_small_model)
 
         # === TRACE: Session 조회 ===
         yield {"type": "trace", "data": {
@@ -207,6 +219,7 @@ class RAGPipeline:
                     "source_count": len(cached.sources),
                     "endpoint": cached.endpoint_key,
                     "model": cached.model,
+                    "sources": cached.sources,  # 프론트 fallback용
                 },
                 "ms": cache_ms,
             }}
@@ -217,6 +230,7 @@ class RAGPipeline:
             yield {"type": "done", "data": {
                 "session_id": session.session_id,
                 "cached": True,
+                "query_type": query_profile["type"],
                 "total_ms": round((time.time() - pipeline_start) * 1000),
             }}
             return
@@ -361,4 +375,9 @@ class RAGPipeline:
             "ms": total_ms,
         }}
 
-        yield {"type": "done", "data": {"session_id": session.session_id, "cached": False, "total_ms": total_ms}}
+        yield {"type": "done", "data": {
+            "session_id": session.session_id,
+            "cached": False,
+            "query_type": query_profile["type"],
+            "total_ms": total_ms,
+        }}

@@ -90,6 +90,40 @@ class Chunker:
     4. 각 청크에 소스 파일명, 섹션 제목 등 메타데이터 부착
     """
 
+    # 문서 종류 분류용 키워드
+    _DOC_KIND_KEYWORDS = {
+        "troubleshooting": ["error", "에러", "오류", "장애", "실패", "fail", "crash", "debug", "troubleshoot"],
+        "procedure": ["설치", "설정", "방법", "install", "configure", "setup", "create", "deploy", "생성"],
+        "concept": ["개요", "소개", "아키텍처", "overview", "introduction", "architecture", "concept"],
+        "reference": ["명령어", "옵션", "파라미터", "command", "option", "parameter", "flag", "api"],
+    }
+    _COMMAND_RE = re.compile(r"(?:^|\n)\s*(?:\$|#|oc |kubectl |podman |docker |helm |git )\s*\S+")
+    _YAML_RE = re.compile(r"(?:^|\n)\s*(?:apiVersion|kind|metadata|spec|status)\s*:")
+    _KOREAN_RE = re.compile(r"[가-힣]")
+
+    @classmethod
+    def _detect_chunk_metadata(cls, text: str) -> dict:
+        """청크 텍스트에서 추가 메타데이터 추출 (기록/평가용)"""
+        text_lower = text.lower()
+
+        # doc_kind: 가장 많이 매칭되는 카테고리
+        kind_scores = {}
+        for kind, keywords in cls._DOC_KIND_KEYWORDS.items():
+            kind_scores[kind] = sum(1 for kw in keywords if kw in text_lower)
+        doc_kind = max(kind_scores, key=kind_scores.get) if max(kind_scores.values()) > 0 else "general"
+
+        # lang: 한국어 비율로 판단
+        korean_chars = len(cls._KOREAN_RE.findall(text))
+        total_alpha = max(len(re.findall(r"[a-zA-Z가-힣]", text)), 1)
+        lang = "ko" if korean_chars / total_alpha > 0.3 else "en"
+
+        return {
+            "doc_kind": doc_kind,
+            "lang": lang,
+            "has_command": bool(cls._COMMAND_RE.search(text)),
+            "has_yaml": bool(cls._YAML_RE.search(text)),
+        }
+
     def __init__(self, chunk_size: int = CHUNK_SIZE, chunk_overlap: int = CHUNK_OVERLAP):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
@@ -146,6 +180,11 @@ class Chunker:
 
         # 2단계: 문단들을 chunk_size 이내로 결합 + overlap 슬라이딩
         chunks = self._sliding_window(paragraphs, source)
+
+        # 3단계: 청크별 메타데이터 보강 (기록/평가용)
+        for chunk in chunks:
+            chunk.metadata.update(self._detect_chunk_metadata(chunk.text))
+
         return chunks
 
     def chunk_file(self, filepath: str) -> list[Chunk]:
