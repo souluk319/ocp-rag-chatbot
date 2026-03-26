@@ -7,7 +7,7 @@ load_dotenv()
 # LLM 설정
 LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", "http://localhost:8080/v1")
 LLM_MODEL = os.getenv("LLM_MODEL", "Qwen/Qwen3.5-9B")
-LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "2048"))
+LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "768"))
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))
 
 # LLM 엔드포인트 목록 (UI에서 선택 가능)
@@ -36,16 +36,19 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "paraphrase-multilingual-MiniLM-L
 EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "384"))
 
 # Chunking 설정
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "512"))
-CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "128"))
+# paraphrase-multilingual-MiniLM-L12-v2의 max_seq_length=128 토큰 기준
+# 한국어 1글자 ≈ 1.5~2토큰이므로 200글자 ≈ 100토큰으로 128 이내에 맞춤
+CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "200"))
+CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "60"))
 
 # Vector Index 설정
 INDEX_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "index")
 TOP_K = int(os.getenv("TOP_K", "5"))
 IVF_N_CLUSTERS = int(os.getenv("IVF_N_CLUSTERS", "16"))
-# n_probe: 검색 시 탐색할 클러스터 수. 문서 5400개에서 3은 recall 부족 → 6으로 상향
-# 14373벡터에서 IVF 클러스터 누락 방지 → 16 전수탐색 (26ms로 속도 영향 없음)
-IVF_N_PROBE = int(os.getenv("IVF_N_PROBE", "16"))
+# n_probe: 검색 시 탐색할 클러스터 수.
+# CHUNK_SIZE 축소로 벡터 수가 크게 늘었고, ANN 의미를 살리기 위해 4로 조정
+# (전수탐색=16은 ANN 이점 없음, 4는 빠르고 recall 충분)
+IVF_N_PROBE = int(os.getenv("IVF_N_PROBE", "4"))
 
 # Session 설정
 MAX_HISTORY_TURNS = int(os.getenv("MAX_HISTORY_TURNS", "10"))
