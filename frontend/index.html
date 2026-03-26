@@ -159,6 +159,9 @@
             background: #155a94;
         }
 
+        /* 데스크톱: 축약 텍스트 숨김 */
+        .btn-short { display: none; }
+
         .trace-guide-toggle {
             background: none;
             border: 1px solid #E8E3DC;
@@ -1157,34 +1160,44 @@
             }
 
             .header-icon img { width: 22px; height: 22px; }
-            .header h1 { font-size: 12px; margin-right: auto; }
+            .header h1 { font-size: 11px; margin-right: auto; }
             .header .divider { display: none; }
             .header .session-info { display: none; }
 
             .header .cache-clear-btn {
-                font-size: 9px;
-                padding: 2px 5px;
+                font-size: 0;
+                padding: 3px 5px;
+            }
+            .header .cache-clear-btn::before {
+                content: '🗑';
+                font-size: 12px;
             }
 
             .header .trace-toggle {
-                font-size: 10px;
-                padding: 3px 6px;
+                font-size: 9px;
+                padding: 2px 5px;
+                white-space: nowrap;
             }
+            .header .trace-toggle .btn-full { display: none; }
+            .header .trace-toggle .btn-short { display: inline; }
 
             .header .new-chat-btn {
-                font-size: 10px;
-                padding: 3px 8px;
+                font-size: 9px;
+                padding: 2px 6px;
+                white-space: nowrap;
             }
+            .header .new-chat-btn .btn-full { display: none; }
+            .header .new-chat-btn .btn-short { display: inline; }
 
             .llm-selector select {
-                font-size: 10px;
-                padding: 2px 4px;
-                max-width: 80px;
+                font-size: 9px;
+                padding: 1px 2px;
+                max-width: 65px;
             }
 
             .llm-status {
-                width: 6px;
-                height: 6px;
+                width: 5px;
+                height: 5px;
             }
 
             /* Trace 패널: 하단 바텀시트 */
@@ -1325,7 +1338,7 @@
         /* ========== 소형 폰 (≤ 400px) ========== */
         @media (max-width: 400px) {
             .header h1 { font-size: 11px; }
-            .llm-selector { display: none; }
+            .llm-selector select { max-width: 55px; font-size: 8px; }
             .message { max-width: 95%; font-size: 12.5px; }
             .input-wrapper textarea { font-size: 13px; }
         }
@@ -1347,8 +1360,8 @@
             </select>
         </div>
         <button class="cache-clear-btn" onclick="clearSemanticCache()" title="시맨틱 캐시 초기화">🗑 캐시</button>
-        <button class="trace-toggle" id="traceToggle" onclick="toggleTrace()">Pipeline Trace</button>
-        <button class="new-chat-btn" onclick="newSession()">+ New Chat</button>
+        <button class="trace-toggle" id="traceToggle" onclick="toggleTrace()"><span class="btn-full">Pipeline Trace</span><span class="btn-short">Trace</span></button>
+        <button class="new-chat-btn" onclick="newSession()"><span class="btn-full">+ New Chat</span><span class="btn-short">+ New</span></button>
     </div>
 
     <div class="main-layout">
@@ -2031,6 +2044,13 @@
                                         score: r.score,
                                         chunk_id: ''
                                     }));
+                                    if (sources.length === 0) {
+                                        sources = traceSources;
+                                    }
+                                }
+                                // cache hit trace에 포함된 sources를 fallback으로 저장
+                                if (parsed.step === 'cache' && parsed.status === 'hit' && parsed.detail && Array.isArray(parsed.detail.sources)) {
+                                    traceSources = parsed.detail.sources;
                                     if (sources.length === 0) {
                                         sources = traceSources;
                                     }

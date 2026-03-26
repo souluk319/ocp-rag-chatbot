@@ -15,6 +15,11 @@ docs/handoff-guide.md
 docs/plan-2026-03-23.md
 docs/system-deep-dive-private.md
 docs/presentation-notebooklm.md
+docs/OCP_RAG_중간발표.pptx
+docs/OCP_RAG_기술문서.pdf
+docs/_make_pptx.py
+docs/_make_pdf.py
+docs/team-kugnus-roadmap.md
 
 # 원본 문서 데이터
 data/raw/
