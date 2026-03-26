@@ -50,11 +50,19 @@ class SemanticCache:
     _GENERIC_TOKENS = {
         "개요", "설명", "간략", "간단", "소개", "기본", "핵심",
         "대해", "대해서", "관해", "알려줘", "설명해봐", "해봐",
+        "ops", "learn",
     }
     _ENTITY_TERMS = {
         "openshift": {"오픈시프트", "openshift", "ocp"},
         "kubernetes": {"쿠버네티스", "kubernetes", "k8s"},
     }
+    _COMPARISON_TOKENS = {"차이", "비교", "vs"}
+    _PROCEDURE_TOKENS = {"방법", "설정", "명령", "예시", "yaml", "생성", "적용"}
+    _TROUBLESHOOTING_TOKENS = {
+        "문제", "에러", "오류", "해결", "원인", "pending", "crashloopbackoff",
+        "imagepullbackoff", "oomkilled", "troubleshooting",
+    }
+    _CONCEPT_TOKENS = {"뭐야", "무엇", "정의", "설명", "개념", "overview", "what"}
 
     @classmethod
     def _tokenize(cls, text: str) -> set[str]:
@@ -75,6 +83,19 @@ class SemanticCache:
         return cls._NUMBER_RE.findall(text)
 
     @classmethod
+    def _detect_intent(cls, text: str) -> str:
+        tokens = cls._tokenize(text)
+        if tokens & cls._COMPARISON_TOKENS:
+            return "comparison"
+        if tokens & cls._TROUBLESHOOTING_TOKENS:
+            return "troubleshooting"
+        if tokens & cls._PROCEDURE_TOKENS:
+            return "procedure"
+        if tokens & cls._CONCEPT_TOKENS:
+            return "concept"
+        return "general"
+
+    @classmethod
     def _is_cache_compatible(cls, query: str, cached_query: str) -> bool:
         # 숫자가 다르면 캐시 미스 ("3줄 요약" vs "4줄 요약")
         if cls._extract_numbers(query) != cls._extract_numbers(cached_query):
@@ -88,10 +109,19 @@ class SemanticCache:
         if query_entity and cached_entity and query_entity != cached_entity:
             return False
 
+        query_intent = cls._detect_intent(query)
+        cached_intent = cls._detect_intent(cached_query)
+        if query_intent != cached_intent and "general" not in {query_intent, cached_intent}:
+            return False
+
         informative_query = query_tokens - cls._GENERIC_TOKENS
         informative_cached = cached_tokens - cls._GENERIC_TOKENS
         if informative_query and informative_cached:
-            if not (informative_query & informative_cached):
+            overlap = informative_query & informative_cached
+            if not overlap:
+                return False
+            shorter = min(len(informative_query), len(informative_cached))
+            if shorter >= 2 and len(overlap) < max(1, shorter // 2):
                 return False
 
         return True
@@ -170,14 +200,17 @@ class SemanticCache:
         model: str,
     ):
         """응답을 캐시에 저장"""
-        # 이미 유사한 항목이 있으면 업데이트
-        existing = self.lookup(query, query_embedding)
+        # 정확히 같은 질의만 제자리 업데이트한다.
+        existing = self._cache.get(query)
         if existing:
+            existing.query_embedding = query_embedding.flatten().astype(np.float32)
             existing.response = response
             existing.context = context
             existing.sources = sources
             existing.endpoint_key = endpoint_key
             existing.model = model
+            self._cache.move_to_end(query)
+            self._rebuild_matrix()
             return
 
         entry = CacheEntry(

@@ -38,8 +38,8 @@ class Session:
 
     def get_summary_context(self) -> str:
         """대화 이력 요약 (Query Rewriting 시 사용)"""
-        # 3턴이면 충분. 더 넣으면 rewrite 프롬프트가 길어져서 오히려 결과가 애매해짐
-        recent = self.messages[-6:]
+        # 심사 기준인 5턴 대화를 버티도록 최근 10개 메시지를 유지한다.
+        recent = self.messages[-10:]
         lines = []
         for m in recent:
             prefix = "사용자" if m.role == "user" else "AI"
@@ -57,7 +57,7 @@ class SessionManager:
         self._sessions: dict[str, Session] = {}
 
     def create_session(self) -> Session:
-        session_id = str(uuid.uuid4())[:8]
+        session_id = uuid.uuid4().hex
         session = Session(session_id=session_id)
         self._sessions[session_id] = session
         return session

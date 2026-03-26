@@ -218,6 +218,7 @@ kill.bat
 
 - 기본값은 `SUBMISSION_MODE=1` 이며, UI에서 모델 전환이 숨겨지고 `Qwen/Qwen3.5-9B` 만 사용합니다.
 - 발표용으로 엔드포인트 전환을 보여주고 싶다면 `.env` 에서 `SUBMISSION_MODE=0`, `EXPOSE_LLM_ENDPOINT_SWITCHER=1` 로 실행합니다.
+- 제출 기본값에서는 `/api/sessions`, `/api/session/{id}/history`, `/api/cache/clear` 같은 디버그성 엔드포인트도 403으로 잠깁니다.
 - 브라우저에서 `http://localhost:8000/?presentation=review` 로 열면 심사 모드 UI가 바로 적용됩니다.
 - 웰컴 화면의 데모 카드 3개로 운영형 / 학습형 / 멀티턴 흐름을 즉시 재현할 수 있습니다.
 
@@ -251,6 +252,9 @@ make scrape     # OCP 공식 문서 스크래핑
 make test       # fixture 평가 러너 (HTTP API 경로)
 make test-stream # fixture 평가 러너 (SSE streaming 경로)
 make test-multiturn # 기존 멀티턴 스모크 테스트
+make test-contract # submission-safe 잠금 검증
+make test-fixture # 평가 fixture 무결성 검증
+make test-preflight # 데모 직전 프리플라이트 검증
 make clean      # __pycache__ 정리
 ```
 
@@ -260,10 +264,10 @@ make clean      # __pycache__ 정리
 |--------|------|------|
 | POST | `/api/chat` | 비스트리밍 채팅 |
 | POST | `/api/chat/stream` | SSE 스트리밍 채팅 (mode: "ops" / "learn") |
-| GET | `/api/sessions` | 활성 세션 목록 |
-| GET | `/api/session/{id}/history` | 세션 대화 이력 |
+| GET | `/api/sessions` | 활성 세션 목록 (`SUBMISSION_MODE=1` 에서는 403) |
+| GET | `/api/session/{id}/history` | 세션 대화 이력 (`SUBMISSION_MODE=1` 에서는 403) |
 | GET | `/api/stats` | 시스템 상태 (캐시, 인덱스, n_probe 등) |
-| POST | `/api/cache/clear` | 시맨틱 캐시 초기화 |
+| POST | `/api/cache/clear` | 시맨틱 캐시 초기화 (`SUBMISSION_MODE=1` 에서는 403) |
 | GET | `/api/llm/endpoints` | 현재 노출 가능한 LLM 엔드포인트 목록 + 심사 모드 플래그 |
 | POST | `/api/llm/endpoint` | LLM 엔드포인트 전환 (`SUBMISSION_MODE=1` 에서는 403) |
 | GET | `/api/llm/health` | 현재 LLM 연결 상태 확인 |
@@ -276,10 +280,24 @@ make clean      # __pycache__ 정리
 python scripts/eval_fixture_runner.py --fixture scripts/eval-fixture.seed.json --endpoint http://127.0.0.1:8000 --format both --output data/eval_report.json
 ```
 
+### 제출 잠금 / fixture 무결성 점검
+
+```powershell
+python scripts/check_submission_contract.py
+python scripts/check_fixture_integrity.py
+```
+
 ### 스트리밍 경로까지 포함한 검증
 
 ```powershell
 python scripts/eval_fixture_runner.py --fixture scripts/eval-fixture.seed.json --endpoint http://127.0.0.1:8000 --transport stream --format both --output data/eval_report.json
+```
+
+### 데모 직전 프리플라이트
+
+```powershell
+python scripts/check_demo_preflight.py --endpoint http://127.0.0.1:8000
+python scripts/check_demo_smoke.py --endpoint http://127.0.0.1:8000 --transport both
 ```
 
 - 결과물은 `data/eval_report.json`, `data/eval_report.md` 에 저장됩니다.

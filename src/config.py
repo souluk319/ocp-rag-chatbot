@@ -17,6 +17,7 @@ EXPOSE_LLM_ENDPOINT_SWITCHER = _env_flag(
     "EXPOSE_LLM_ENDPOINT_SWITCHER",
     "0" if SUBMISSION_MODE else "1",
 )
+EXPOSE_DEBUG_ENDPOINTS = (not SUBMISSION_MODE) and _env_flag("EXPOSE_DEBUG_ENDPOINTS", "1")
 
 # Lock the project to the allowed grading model.
 LOCKED_LLM_MODEL = "Qwen/Qwen3.5-9B"

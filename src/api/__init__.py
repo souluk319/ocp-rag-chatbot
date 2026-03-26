@@ -15,6 +15,7 @@ from sse_starlette.sse import EventSourceResponse
 from src.cache import SemanticCache
 from src.config import (
     EMBEDDING_DIM,
+    EXPOSE_DEBUG_ENDPOINTS,
     EXPOSE_LLM_ENDPOINT_SWITCHER,
     INDEX_DIR,
     LOCKED_LLM_MODEL,
@@ -50,6 +51,10 @@ pipeline: Optional[RAGPipeline] = None
 
 def endpoint_switching_enabled() -> bool:
     return (not SUBMISSION_MODE) and EXPOSE_LLM_ENDPOINT_SWITCHER
+
+
+def debug_api_enabled() -> bool:
+    return EXPOSE_DEBUG_ENDPOINTS
 
 
 def _public_endpoint_keys() -> list[str]:
@@ -156,11 +161,15 @@ async def chat_stream(req: ChatRequest):
 
 @app.get("/api/sessions")
 async def list_sessions():
+    if not debug_api_enabled():
+        raise HTTPException(status_code=403, detail="Session inspection is disabled in submission mode.")
     return {"sessions": session_manager.list_sessions()}
 
 
 @app.get("/api/session/{session_id}/history")
 async def session_history(session_id: str):
+    if not debug_api_enabled():
+        raise HTTPException(status_code=403, detail="Session inspection is disabled in submission mode.")
     session = session_manager.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found.")
@@ -169,6 +178,8 @@ async def session_history(session_id: str):
 
 @app.post("/api/cache/clear")
 async def clear_cache():
+    if not debug_api_enabled():
+        raise HTTPException(status_code=403, detail="Cache controls are disabled in submission mode.")
     semantic_cache.clear()
     return {"status": "ok", "message": "Cache cleared."}
 
@@ -182,6 +193,7 @@ async def system_stats():
         "active_sessions": len(session_manager.list_sessions()),
         "submission_mode": SUBMISSION_MODE,
         "endpoint_switching": endpoint_switching_enabled(),
+        "debug_api_enabled": debug_api_enabled(),
         "locked_model": LOCKED_LLM_MODEL,
     }
     return stats

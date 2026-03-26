@@ -662,9 +662,8 @@ class Retriever:
 
         ranked.sort(key=lambda x: x.score, reverse=True)
 
-        # 같은 source에서 최대 1개 (다양한 문서에서 정보 수집)
-        # 2로 하면 영문 문서가 자리 독점해서 한국어 해결방법 문서가 밀림
-        max_per_source = 1
+        # 문제 해결/절차형 질의는 같은 문서의 비인접 핵심 구간이 둘 다 필요할 수 있다.
+        max_per_source = 2 if query_info["type"] in ("troubleshooting", "procedure", "comparison") else 1
         top_results = []
         source_count: dict[str, int] = {}
         for r in ranked:
@@ -742,19 +741,26 @@ class Retriever:
 
         context_parts = []
         total_len = 0
+        truncated = False
         for i, r in enumerate(results, 1):
             source = r.metadata.get("source", "unknown")
+            chunk_label = r.chunk_id.rsplit("::", 1)[-1] if "::" in r.chunk_id else "0"
             excerpt_budget = 1500 if i <= 2 else 950
             text = r.text[:excerpt_budget].strip()
             # 출처명을 제목처럼 써야 LLM이 답변에서 구체적 문서명을 인용함
             # 이전에 "[문서 1] (출처: xxx)" 했더니 LLM이 "문서 1에 따르면"으로만 답변해서 변경
-            part = f"[{source} | relevance={r.score:.3f}]\n{text}"
+            part = f"[source={source} | chunk={chunk_label} | relevance={r.score:.3f}]\n{text}"
             if total_len + len(part) > max_chars:
                 # 남은 공간만큼만 추가
                 remaining = max_chars - total_len
                 if remaining > 100:
-                    context_parts.append(part[:remaining] + "...")
+                    suffix = "\n[context truncated]"
+                    body = part[: max(0, remaining - len(suffix) - 3)].rstrip()
+                    context_parts.append(body + "..." + suffix)
+                truncated = True
                 break
             context_parts.append(part)
             total_len += len(part) + 7  # "\n\n---\n\n"
+        if truncated and context_parts and "[context truncated]" not in context_parts[-1]:
+            context_parts[-1] += "\n[context truncated]"
         return "\n\n---\n\n".join(context_parts)

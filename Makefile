@@ -1,4 +1,7 @@
-.PHONY: run stop sanitize index scrape install test test-stream test-multiturn clean
+PYTHON ?= python
+PIP ?= pip
+
+.PHONY: run stop sanitize index scrape install test test-stream test-multiturn test-contract test-fixture test-preflight clean
 
 run:
 	uvicorn src.api:app --reload --host 0.0.0.0 --port 8000
@@ -7,25 +10,34 @@ stop:
 	@pkill -f "uvicorn src.api:app" && echo "서버 종료됨" || echo "실행 중인 서버 없음"
 
 sanitize:
-	python3 scripts/sanitize_corpus.py
+	$(PYTHON) scripts/sanitize_corpus.py
 
 index:
-	python3 scripts/build_index.py
+	$(PYTHON) scripts/build_index.py
 
 scrape:
-	python3 scripts/scrape_docs.py
+	$(PYTHON) scripts/scrape_docs.py
 
 install:
-	pip install -r requirements.txt
+	$(PIP) install -r requirements.txt
 
 test:
-	python3 scripts/eval_fixture_runner.py --fixture scripts/eval-fixture.seed.json --endpoint http://127.0.0.1:8000 --format both --output data/eval_report.json
+	$(PYTHON) scripts/eval_fixture_runner.py --fixture scripts/eval-fixture.seed.json --endpoint http://127.0.0.1:8000 --format both --output data/eval_report.json
 
 test-stream:
-	python3 scripts/eval_fixture_runner.py --fixture scripts/eval-fixture.seed.json --endpoint http://127.0.0.1:8000 --transport stream --format both --output data/eval_report_stream.json
+	$(PYTHON) scripts/eval_fixture_runner.py --fixture scripts/eval-fixture.seed.json --endpoint http://127.0.0.1:8000 --transport stream --format both --output data/eval_report_stream.json
 
 test-multiturn:
-	python3 scripts/test_multiturn.py
+	$(PYTHON) scripts/test_multiturn.py
+
+test-contract:
+	$(PYTHON) scripts/check_submission_contract.py
+
+test-fixture:
+	$(PYTHON) scripts/check_fixture_integrity.py
+
+test-preflight:
+	$(PYTHON) scripts/check_demo_preflight.py --endpoint http://127.0.0.1:8000
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null; \
