@@ -134,6 +134,11 @@ class BM25Scorer:
         "storage": ["스토리지"],
         "스토리지": ["storage"],
         "pending": ["펜딩", "대기"],
+        "imagepull": ["image", "pull", "이미지풀"],
+        "imagepullbackoff": ["image", "pull", "back", "off", "backoff", "imagepull", "이미지풀", "이미지풀백오프"],
+        "errimagepull": ["image", "pull", "이미지풀"],
+        "crashloop": ["crash", "loop", "크래시루프"],
+        "crashloopbackoff": ["crash", "loop", "back", "off", "backoff", "crashloop", "크래시루프", "크래시루프백오프"],
         "troubleshooting": ["트러블슈팅", "문제해결"],
         "트러블슈팅": ["troubleshooting"],
         "error": ["에러", "오류"],
@@ -169,6 +174,8 @@ class BM25Scorer:
         "레플리카셋": ["replicaset"],
         "configmap": ["컨피그맵"],
         "컨피그맵": ["configmap"],
+        "pullsecret": ["pull", "secret", "이미지풀시크릿", "풀시크릿"],
+        "serviceaccount": ["service", "account", "서비스어카운트"],
         "ingress": ["인그레스"],
         "인그레스": ["ingress"],
         "pvc": ["퍼시스턴트볼륨클레임"],
@@ -300,10 +307,10 @@ class Retriever:
         self.bm25 = BM25Scorer()
 
     _OVERVIEW_QUERY_HINTS = {
-        "개요", "설명", "간략", "간략히", "간단", "간단히", "소개", "기본", "핵심", "무엇"
+        "개요", "설명", "설명해줘", "간략", "간략히", "간단", "간단히", "소개", "기본", "핵심", "무엇", "무엇인지"
     }
     _CONCEPT_QUERY_HINTS = {
-        "뭐야", "무엇", "이란", "란", "정의", "의미", "개념",
+        "뭐야", "무엇", "무엇인지", "이란", "란", "정의", "의미", "개념",
     }
     _PROCEDURE_QUERY_HINTS = {
         "방법", "설정", "적용", "생성", "배포", "명령", "절차", "사용법", "하려면", "어떻게",
@@ -317,7 +324,7 @@ class Retriever:
     }
     _GENERIC_QUERY_TOKENS = {
         "개요", "설명", "간략", "간략히", "간단", "간단히", "소개", "기본", "핵심",
-        "무엇", "대해", "대해서", "관해", "알려줘", "설명해봐", "해봐",
+        "무엇", "무엇인지", "대해", "대해서", "관해", "알려줘", "설명해줘", "설명해봐", "해봐", "수준",
     }
     _ENTITY_TERMS = {
         "openshift": {"오픈시프트", "openshift", "ocp"},
@@ -330,6 +337,41 @@ class Retriever:
     _INTRO_MARKERS = (
         "기본 개념", "핵심 개념", "overview", "introduction", "란?", "란",
         "what is", "architecture overview",
+    )
+
+    _STUB_SOURCES = {
+        "ocp_routes.md",
+        "ocp_network_policy.md",
+        "ocp_logging.md",
+    }
+    _LARGE_GENERIC_SOURCES = {
+        "ocp_troubleshooting_os.md",
+        "ocp_troubleshooting_pods.md",
+        "ocp_pods_operations.md",
+        "ocp_pod_autoscaling.md",
+        "ocp_cli_oc.md",
+    }
+    _CONCEPT_SOURCE_HINTS = (
+        "overview",
+        "basics",
+        "core-concepts",
+        "namespace-project",
+        "route-ingress",
+        "build-deploy",
+        "logging-ko",
+        "node-management",
+        "etcd-overview",
+    )
+    _QUERY_SOURCE_PRIORS = (
+        (("crashloopbackoff", "crashloop"), ("ocp-crashloop-troubleshooting-ko",)),
+        (("imagepullbackoff", "imagepull"), ("ocp-image-pull-troubleshooting-ko",)),
+        (("oomkilled", "oom"), ("ocp-oomkilled-troubleshooting-ko", "ocp-resource-management-ko")),
+        (("pending",), ("ocp-pending-pod-troubleshooting-ko", "ocp-node-management-ko")),
+        (("route", "ingress", "tls", "reencrypt", "passthrough"), ("ocp-route-ingress-ko", "ocp_route_config")),
+        (("namespace", "project"), ("ocp-namespace-project-ko", "ocp_projects")),
+        (("logging", "audit", "loki", "prometheus", "alert"), ("ocp-logging-ko", "ocp-monitoring-ko")),
+        (("deploy", "build", "s2i", "rollout", "rollback"), ("ocp-build-deploy-ko", "ocp_deployments")),
+        (("networkpolicy", "service", "dns"), ("ocp-service-network-troubleshooting-ko", "ocp-network-policy-ko")),
     )
 
     def _detect_primary_entity(self, query_tokens: set[str]) -> str | None:
@@ -371,6 +413,125 @@ class Retriever:
 
         return boost
 
+    @staticmethod
+    def _compact_text(text: str) -> str:
+        return re.sub(r"[^a-z0-9\uac00-\ud7af]+", "", text.lower())
+
+    @staticmethod
+    def _looks_like_command_doc(text: str) -> bool:
+        lowered = text.lower()
+        return bool(
+            re.search(r"(?mi)^\s*(oc|kubectl)\s+\S+", text)
+            or "```yaml" in lowered
+            or "apiversion:" in lowered
+        )
+
+    def _query_source_boost(self, query: str, query_info: dict, candidate: SearchResult) -> float:
+        source = candidate.metadata.get("source", "").lower()
+        compact_query = self._compact_text(query)
+        text_head = candidate.text[:1200].lower()
+        bonus = 0.0
+
+        if source in self._STUB_SOURCES:
+            bonus -= 0.10
+
+        if query_info["type"] == "troubleshooting":
+            if "troubleshooting" in source:
+                bonus += 0.08
+            if self._looks_like_command_doc(candidate.text):
+                bonus += 0.05
+            if source in self._LARGE_GENERIC_SOURCES:
+                bonus -= 0.05
+
+        if query_info["type"] == "procedure" and self._looks_like_command_doc(candidate.text):
+            bonus += 0.06
+
+        if query_info["type"] in ("concept", "overview", "comparison"):
+            if any(hint in source for hint in self._CONCEPT_SOURCE_HINTS):
+                bonus += 0.07
+
+        entity = query_info.get("entity")
+        if entity and query_info["type"] in ("overview", "concept"):
+            if any(hint in source for hint in self._SOURCE_PRIOR[entity]):
+                bonus += 0.22
+
+        if query_info["type"] == "comparison" and any(token in text_head for token in ("difference", "versus", "vs", "차이")):
+            bonus += 0.05
+
+        if all(token in compact_query for token in ("configmap", "secret")):
+            if any(
+                preferred in source
+                for preferred in ("k8s_task_configmap", "k8s_task_secret", "ocp-core-concepts-ko")
+            ):
+                bonus += 0.16
+
+        if all(token in compact_query for token in ("requests", "limits")):
+            if any(
+                preferred in source
+                for preferred in (
+                    "k8s-resource-limits-ko",
+                    "k8s_task_cpu_resource",
+                    "k8s_task_memory_resource",
+                    "ocp-resource-management-ko",
+                )
+            ):
+                bonus += 0.16
+
+        for signals, preferred_sources in self._QUERY_SOURCE_PRIORS:
+            if any(signal in compact_query for signal in signals):
+                if any(preferred in source for preferred in preferred_sources):
+                    bonus += 0.18 if query_info["type"] == "troubleshooting" else 0.12
+
+        return bonus
+
+    def _expansion_window(self, query_type: str, rank_index: int, source: str) -> int:
+        if rank_index >= 2:
+            return 0
+        if source.lower() in self._STUB_SOURCES:
+            return 0
+        if query_type in ("troubleshooting", "procedure", "comparison"):
+            return 1
+        return 0
+
+    @staticmethod
+    def _semantic_score(query_vector: np.ndarray, doc_vector: np.ndarray) -> float:
+        vec = doc_vector.astype(np.float32)
+        q = query_vector.flatten().astype(np.float32)
+        norm_v = np.linalg.norm(vec)
+        norm_q = np.linalg.norm(q)
+        if norm_v <= 0 or norm_q <= 0:
+            return 0.0
+        return float(np.dot(vec, q) / (norm_v * norm_q))
+
+    def _preferred_sources_for_query(self, query: str, query_info: dict) -> list[str]:
+        compact_query = self._compact_text(query)
+        preferred: list[str] = []
+
+        entity = query_info.get("entity")
+        if entity and query_info["type"] in ("overview", "concept"):
+            preferred.extend(self._SOURCE_PRIOR[entity])
+
+        if all(token in compact_query for token in ("configmap", "secret")):
+            preferred.extend(["k8s_task_configmap", "k8s_task_secret", "ocp-core-concepts-ko"])
+
+        if all(token in compact_query for token in ("requests", "limits")):
+            preferred.extend([
+                "k8s-resource-limits-ko",
+                "k8s_task_cpu_resource",
+                "k8s_task_memory_resource",
+                "ocp-resource-management-ko",
+            ])
+
+        for signals, source_hints in self._QUERY_SOURCE_PRIORS:
+            if any(signal in compact_query for signal in signals):
+                preferred.extend(source_hints)
+
+        deduped: list[str] = []
+        for item in preferred:
+            if item not in deduped:
+                deduped.append(item)
+        return deduped
+
     def classify_query(self, query: str) -> dict:
         query_tokens = set(self.bm25._tokenize(query))
         entity = self._detect_primary_entity(query_tokens)
@@ -402,6 +563,7 @@ class Retriever:
         두 결과를 합쳐서 hybrid scoring 후 최종 top_k 반환
         """
         # 1. 쿼리 임베딩
+        query_info = self.classify_query(query)
         query_vector = self.embedding_engine.embed(query)
 
         # 2. 경로 1: IVF 벡터 검색
@@ -420,11 +582,7 @@ class Retriever:
             doc = self.index.documents[doc_idx]
             if doc["chunk_id"] not in seen_chunk_ids:
                 # BM25로만 찾은 문서 → semantic score 계산
-                vec = self.index.vectors[doc_idx].astype(np.float32)
-                q = query_vector.flatten().astype(np.float32)
-                norm_v = np.linalg.norm(vec)
-                norm_q = np.linalg.norm(q)
-                sem_score = float(np.dot(vec, q) / (norm_v * norm_q)) if norm_v > 0 and norm_q > 0 else 0.0
+                sem_score = self._semantic_score(query_vector, self.index.vectors[doc_idx])
                 candidates.append(SearchResult(
                     chunk_id=doc["chunk_id"],
                     text=doc["text"],
@@ -433,12 +591,38 @@ class Retriever:
                 ))
                 seen_chunk_ids.add(doc["chunk_id"])
 
+        # 4.5 특정 질의는 전용 개요/트러블슈팅 문서를 후보군에 강제 주입
+        preferred_sources = self._preferred_sources_for_query(query, query_info)
+        if preferred_sources:
+            for source_hint in preferred_sources:
+                injected = False
+                for doc_idx, doc in enumerate(self.index.documents):
+                    source = doc.get("metadata", {}).get("source", "").lower()
+                    if source_hint not in source:
+                        continue
+                    if doc["chunk_id"] in seen_chunk_ids:
+                        injected = True
+                        break
+                    if doc.get("metadata", {}).get("chunk_index", 0) != 0:
+                        continue
+                    sem_score = self._semantic_score(query_vector, self.index.vectors[doc_idx])
+                    candidates.append(SearchResult(
+                        chunk_id=doc["chunk_id"],
+                        text=doc["text"],
+                        score=sem_score,
+                        metadata=doc.get("metadata", {}),
+                    ))
+                    seen_chunk_ids.add(doc["chunk_id"])
+                    injected = True
+                    break
+                if len(candidates) >= top_k * 3 + len(preferred_sources):
+                    break
+
         # 5. 합쳐진 전체 후보에 BM25 reranking 스코어 계산
         candidate_texts = [c.text for c in candidates]
         keyword_scores = self.bm25.score(query, candidate_texts)
 
         # 5.5 쿼리 유형별 동적 가중치
-        query_info = self.classify_query(query)
         if query_info["type"] in ("troubleshooting", "procedure"):
             sem_w, kw_w = 0.6, 0.4  # 키워드 매칭 중요 (명령어, 에러명)
         elif query_info["type"] == "concept":
@@ -464,6 +648,8 @@ class Retriever:
                 source = candidate.metadata.get("source", "")
                 if source.endswith("-ko.md"):
                     combined_score += 0.08
+
+            combined_score += self._query_source_boost(query, query_info, candidate)
 
             ranked.append(RankedResult(
                 chunk_id=candidate.chunk_id,
@@ -492,9 +678,9 @@ class Retriever:
                 break
 
         # 7. 인접 청크 확장: 검색된 청크의 앞뒤 청크를 포함시켜 문맥 보완
-        return self._expand_adjacent_chunks(top_results)
+        return self._expand_adjacent_chunks(top_results, query_info["type"])
 
-    def _expand_adjacent_chunks(self, results: list[RankedResult], window: int = 2) -> list[RankedResult]:
+    def _expand_adjacent_chunks(self, results: list[RankedResult], query_type: str) -> list[RankedResult]:
         """검색된 청크의 인접 청크(같은 문서, ±window)를 텍스트에 병합.
 
         chunk_id 형식: "source::N" (예: "ocp-image-pull-troubleshooting-ko.md::0")
@@ -511,13 +697,17 @@ class Retriever:
                 self._chunk_id_to_idx[doc["chunk_id"]] = idx
 
         expanded = []
-        for r in results:
+        for rank_index, r in enumerate(results):
             # chunk_id 파싱: "source::N"
             if "::" not in r.chunk_id:
                 expanded.append(r)
                 continue
 
             source, chunk_num_str = r.chunk_id.rsplit("::", 1)
+            window = self._expansion_window(query_type, rank_index, source)
+            if window <= 0:
+                expanded.append(r)
+                continue
             try:
                 chunk_num = int(chunk_num_str)
             except ValueError:
@@ -545,7 +735,7 @@ class Retriever:
 
         return expanded
 
-    def build_context(self, results: list[RankedResult], max_chars: int = 6000) -> str:
+    def build_context(self, results: list[RankedResult], max_chars: int = 5600) -> str:
         """검색 결과를 LLM에 전달할 context 문자열로 구성 (길이 제한)"""
         if not results:
             return "관련 문서를 찾지 못했습니다."
@@ -554,9 +744,11 @@ class Retriever:
         total_len = 0
         for i, r in enumerate(results, 1):
             source = r.metadata.get("source", "unknown")
+            excerpt_budget = 1500 if i <= 2 else 950
+            text = r.text[:excerpt_budget].strip()
             # 출처명을 제목처럼 써야 LLM이 답변에서 구체적 문서명을 인용함
             # 이전에 "[문서 1] (출처: xxx)" 했더니 LLM이 "문서 1에 따르면"으로만 답변해서 변경
-            part = f"[{source}]\n{r.text}"
+            part = f"[{source} | relevance={r.score:.3f}]\n{text}"
             if total_len + len(part) > max_chars:
                 # 남은 공간만큼만 추가
                 remaining = max_chars - total_len

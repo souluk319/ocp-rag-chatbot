@@ -131,6 +131,12 @@ class QueryRewriter:
         (r"^(오픈시프트|openshift|ocp)(?:이란|란|은|는|이|가)?(?:뭐야|뭐임|무엇(?:이야|인가)?|설명해줘|설명해봐)?$", "오픈시프트 개요 설명해봐"),
         (r"^(쿠버네티스|kubernetes|k8s)(?:이란|란|은|는|이|가)?(?:뭐야|뭐임|무엇(?:이야|인가)?|설명해줘|설명해봐)?$", "쿠버네티스 개요 설명해봐"),
     )
+    _STATUS_REWRITE_HINTS = (
+        ("pending", "Pending 상태인 파드"),
+        ("crashloopbackoff", "CrashLoopBackOff 상태인 파드"),
+        ("imagepullbackoff", "ImagePullBackOff 상태인 파드"),
+        ("oomkilled", "OOMKilled 상태인 파드"),
+    )
 
     def _normalize_direct_query(self, query: str) -> str:
         compact = re.sub(r"[\s?!.,]+", "", query.lower())
@@ -138,6 +144,36 @@ class QueryRewriter:
             if re.fullmatch(pattern, compact):
                 return normalized
         return query
+
+    def _heuristic_rewrite(self, query: str, session: Session) -> str | None:
+        recent_text = " ".join(m.content for m in session.messages[-6:])
+        recent_lower = recent_text.lower()
+        compact_query = re.sub(r"\s+", "", query.lower())
+
+        generic_followup = any(
+            token in compact_query
+            for token in ("어디부터", "뭐부터", "무엇부터", "뭘봐야", "뭐봐야", "그다음", "다음엔", "마지막으로")
+        )
+        if not generic_followup:
+            return None
+
+        for signal, subject in self._STATUS_REWRITE_HINTS:
+            if signal in recent_lower:
+                if any(token in compact_query for token in ("어디부터", "뭐부터", "무엇부터")):
+                    return f"{subject}를 진단할 때 어디부터 봐야 해?"
+                if any(token in compact_query for token in ("뭘봐야", "뭐봐야")):
+                    return f"{subject}를 진단할 때 무엇을 먼저 봐야 해?"
+                if "그다음" in compact_query or "다음엔" in compact_query:
+                    return f"{subject}를 진단한 다음에는 무엇을 더 확인해야 해?"
+                if "마지막으로" in compact_query and "명령" in compact_query:
+                    return f"{subject}를 해결하기 위해 마지막으로 현장에서 바로 확인할 명령만 짧게 정리해줘"
+                return f"{subject}를 진단할 때 무엇부터 확인해야 해?"
+
+        if "configmap" in recent_lower and "secret" in compact_query and "차이" in query:
+            return "ConfigMap과 Secret의 차이는?"
+        if "secret" in recent_lower and "configmap" in compact_query and "차이" in query:
+            return "ConfigMap과 Secret의 차이는?"
+        return None
 
     async def rewrite(self, query: str, session: Session) -> str:
         """맥락 기반 쿼리 재작성"""
@@ -153,7 +189,9 @@ class QueryRewriter:
         # 향후 개선: "왜", "어떻게"는 독립 질문에서도 등장하여 오탐 가능성 있음 (현재까지 문제 없음)
         context_dependent_patterns = [
             "그것", "그건", "이것", "이건", "거기", "여기",
-            "그거", "이거", "위에", "아까", "그러면",
+            "그거", "이거", "위에", "아까", "그러면", "그럼",
+            "그다음", "그 다음", "다음엔", "다음은", "마지막으로",
+            "어디부터", "뭐부터", "무엇부터", "뭘 봐야", "뭐 봐야",
             "더 알려", "자세히", "예시", "다른",
             "왜", "어떻게",  # 단독 사용 시
         ]
@@ -165,6 +203,10 @@ class QueryRewriter:
 
         if not needs_rewrite:
             return query
+
+        heuristic = self._heuristic_rewrite(query, session)
+        if heuristic:
+            return heuristic
 
         # LLM으로 재작성
         history_context = session.get_summary_context()
@@ -179,6 +221,8 @@ class QueryRewriter:
             # 결과가 비어있거나 너무 길면 원본 사용
             if not rewritten or len(rewritten) > len(query) * 3:
                 return query
+            if rewritten == query:
+                return heuristic or query
             return rewritten
         except Exception:
-            return query
+            return heuristic or query

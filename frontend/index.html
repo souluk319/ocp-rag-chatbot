@@ -160,6 +160,57 @@
         }
 
         /* 데스크톱: 축약 텍스트 숨김 */
+        .header .presentation-toggle {
+            background: #F5F3F0;
+            color: #6B6966;
+            border: 1px solid #E8E3DC;
+            padding: 6px 12px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .header .presentation-toggle:hover {
+            border-color: #1A6FB5;
+            color: #1A6FB5;
+        }
+
+        .header .presentation-toggle.active {
+            background: rgba(26, 111, 181, 0.08);
+            border-color: rgba(26, 111, 181, 0.3);
+            color: #1A6FB5;
+        }
+
+        .header .presentation-note {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: #F5F3F0;
+            border: 1px solid #E8E3DC;
+            color: #6B6966;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        body.review-mode .llm-selector {
+            display: none;
+        }
+
+        body.review-mode .presentation-note {
+            display: inline-flex;
+        }
+
+        body.review-mode .presentation-toggle {
+            background: rgba(26, 111, 181, 0.08);
+            border-color: rgba(26, 111, 181, 0.3);
+            color: #1A6FB5;
+        }
+
         .btn-short { display: none; }
 
         .trace-guide-toggle {
@@ -417,6 +468,29 @@
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
+        }
+
+        .message .mode-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            border: 1px solid transparent;
+        }
+
+        .message .mode-badge.ops {
+            background: rgba(220, 38, 38, 0.08);
+            border-color: rgba(220, 38, 38, 0.18);
+            color: #B91C1C;
+        }
+
+        .message .mode-badge.learn {
+            background: rgba(22, 163, 74, 0.08);
+            border-color: rgba(22, 163, 74, 0.18);
+            color: #15803D;
         }
 
         .message .cache-badge {
@@ -1002,6 +1076,139 @@
             line-height: 1.6;
         }
 
+        .mode-legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .mode-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid #E8E3DC;
+            background: #FFFFFF;
+            color: #6B6966;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        .mode-pill strong {
+            color: #2D2B28;
+            font-weight: 600;
+        }
+
+        .mode-pill.ops {
+            background: rgba(220, 38, 38, 0.05);
+            border-color: rgba(220, 38, 38, 0.18);
+        }
+
+        .mode-pill.learn {
+            background: rgba(22, 163, 74, 0.05);
+            border-color: rgba(22, 163, 74, 0.18);
+        }
+
+        .mode-pill.trace {
+            background: rgba(26, 111, 181, 0.06);
+            border-color: rgba(26, 111, 181, 0.18);
+        }
+
+        .demo-launchpad {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .demo-card {
+            text-align: left;
+            background: #FFFFFF;
+            border: 1px solid #E8E3DC;
+            border-radius: 18px;
+            padding: 14px 14px 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 190px;
+        }
+
+        .demo-card.highlight {
+            border-color: rgba(26, 111, 181, 0.32);
+            box-shadow: 0 10px 24px rgba(26, 111, 181, 0.08);
+        }
+
+        .demo-card-label {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #F5F3F0;
+            color: #6B6966;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .demo-card h3 {
+            font-size: 16px;
+            line-height: 1.4;
+            color: #2D2B28;
+        }
+
+        .demo-card p {
+            color: #6B6966;
+            font-size: 12px;
+            line-height: 1.65;
+            text-align: left;
+        }
+
+        .demo-card .demo-query {
+            border: 1px solid #E8E3DC;
+            background: #FAF9F6;
+            border-radius: 12px;
+            padding: 10px 12px;
+            color: #2D2B28;
+            font-size: 12px;
+            line-height: 1.55;
+            text-align: left;
+        }
+
+        .demo-card button {
+            margin-top: auto;
+            border: 1px solid #1A6FB5;
+            background: #1A6FB5;
+            color: #FFFFFF;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .demo-card button:hover {
+            background: #155a94;
+            border-color: #155a94;
+            transform: translateY(-1px);
+        }
+
+        .demo-card button.secondary {
+            background: #F5F3F0;
+            color: #2D2B28;
+            border-color: #E8E3DC;
+        }
+
+        .demo-card button.secondary:hover {
+            background: #EFEAE3;
+            border-color: #D8D1C8;
+        }
+
         /* Chat Jump Button */
         .chat-jump-btn {
             position: absolute;
@@ -1315,6 +1522,9 @@
 
             /* 웰컴 */
             .welcome { padding: 0 12px; max-width: 100%; }
+            .mode-legend { justify-content: flex-start; }
+            .demo-launchpad { grid-template-columns: 1fr; }
+            .demo-card { min-height: auto; }
             .welcome-icon img { width: 44px; height: 44px; }
             .welcome h2 { font-size: 16px; }
             .welcome p { font-size: 12px; }
@@ -1353,6 +1563,9 @@
         <div class="divider"></div>
         <h1>OCP 온보딩 어시스턴트</h1>
         <span class="session-info" id="sessionInfo">New Session</span>
+        <button class="presentation-toggle" id="presentationToggle" onclick="togglePresentationMode()" aria-pressed="false" title="심사 모드에서는 엔드포인트 전환을 숨깁니다.">
+            <span class="btn-full">심사 모드</span><span class="btn-short">심사</span>
+        </button>
         <div class="llm-selector">
             <div class="llm-status" id="llmStatus" title="LLM 연결 상태"></div>
             <select id="llmSelect" onchange="switchEndpoint(this.value)">
@@ -1360,6 +1573,7 @@
             </select>
         </div>
         <button class="cache-clear-btn" onclick="clearSemanticCache()" title="시맨틱 캐시 초기화">🗑 캐시</button>
+        <span class="presentation-note" id="presentationNote">심사 모드: 모델 전환 숨김 · Qwen/Qwen3.5-9B 고정</span>
         <button class="trace-toggle" id="traceToggle" onclick="toggleTrace()"><span class="btn-full">Pipeline Trace</span><span class="btn-short">Trace</span></button>
         <button class="new-chat-btn" onclick="newSession()"><span class="btn-full">+ New Chat</span><span class="btn-short">+ New</span></button>
     </div>
@@ -1489,6 +1703,36 @@
         let chatAutoScroll = true;
         let traceAutoScroll = true;
         let currentMode = 'ops';
+        const PRESENTATION_STORAGE_KEY = 'ocp-rag-chatbot.presentationMode';
+        const DEMO_SCENARIOS = {
+            ops: {
+                label: '운영 질문 1개',
+                title: '장애 대응 흐름',
+                query: 'CrashLoopBackOff 원인과 바로 확인할 명령 알려줘',
+                description: '증상 요약부터 원인 후보, 확인 명령, 즉시 조치까지 한 번에 보여주는 운영형 데모입니다.',
+                mode: 'ops',
+                button: '운영 질문 시작',
+                highlight: true,
+            },
+            learn: {
+                label: '학습 질문 1개',
+                title: '개념 비교 흐름',
+                query: 'OpenShift Route와 Ingress 차이가 뭐야?',
+                description: '정의, 차이점, 선택 기준을 같이 보여주는 학습형 데모입니다.',
+                mode: 'learn',
+                button: '학습 질문 시작',
+                highlight: false,
+            },
+            multiturn: {
+                label: '멀티턴 질문 1개',
+                title: '5턴 이상 맥락 유지',
+                query: 'Pod가 Pending인데 처음에 무엇부터 확인해야 해?',
+                description: '같은 세션에서 후속 질문을 이어가며 memory와 context 유지가 어떻게 동작하는지 보여줍니다.',
+                mode: 'ops',
+                button: '멀티턴 데모 시작',
+                highlight: false,
+            },
+        };
 
         const SUGGESTION_POOLS = {
             ops: [
@@ -1520,7 +1764,58 @@
 
         function onModeChange(mode) {
             currentMode = mode;
+            const modeSelect = document.getElementById('modeSelect');
+            if (modeSelect && modeSelect.value !== mode) {
+                modeSelect.value = mode;
+            }
             if (document.getElementById('welcome')) renderWelcome();
+        }
+
+        function getPresentationMode() {
+            const params = new URLSearchParams(window.location.search);
+            const queryMode = params.get('presentation') || params.get('mode');
+            const savedMode = localStorage.getItem(PRESENTATION_STORAGE_KEY);
+            const value = (queryMode || savedMode || 'standard').toLowerCase();
+            return value === 'review' || value === 'submission' ? 'review' : 'standard';
+        }
+
+        function applyPresentationMode(mode, persist = true) {
+            const normalized = mode === 'review' ? 'review' : 'standard';
+            document.body.classList.toggle('review-mode', normalized === 'review');
+
+            const toggle = document.getElementById('presentationToggle');
+            if (toggle) {
+                toggle.classList.toggle('active', normalized === 'review');
+                toggle.setAttribute('aria-pressed', normalized === 'review' ? 'true' : 'false');
+                toggle.title = normalized === 'review'
+                    ? '심사 모드: 엔드포인트 전환을 숨깁니다.'
+                    : '발표 모드: 엔드포인트 전환을 표시합니다.';
+            }
+
+            const note = document.getElementById('presentationNote');
+            if (note) {
+                note.textContent = normalized === 'review'
+                    ? '심사 모드: 모델 전환 숨김 · Qwen/Qwen3.5-9B 고정'
+                    : '발표 모드: 엔드포인트 전환 가능';
+            }
+
+            if (persist) {
+                localStorage.setItem(PRESENTATION_STORAGE_KEY, normalized);
+            }
+        }
+
+        function togglePresentationMode() {
+            const nextMode = document.body.classList.contains('review-mode') ? 'standard' : 'review';
+            applyPresentationMode(nextMode);
+        }
+
+        function launchDemo(key) {
+            const scenario = DEMO_SCENARIOS[key];
+            if (!scenario) return;
+            if (currentMode !== scenario.mode) {
+                onModeChange(scenario.mode);
+            }
+            sendMessage(scenario.query);
         }
 
         const userInput = document.getElementById('userInput');
@@ -1819,6 +2114,19 @@
 
         function renderWelcome() {
             const suggestions = pickRandom(SUGGESTION_POOLS[currentMode], 3);
+            const scenarioCards = Object.entries(DEMO_SCENARIOS).map(([key, scenario]) => {
+                const isActive = currentMode === scenario.mode && key !== 'multiturn';
+                const buttonClass = scenario.mode === 'learn' ? 'secondary' : '';
+                return `
+                    <article class="demo-card ${isActive ? 'highlight' : ''}">
+                        <div class="demo-card-label">${escapeHtml(scenario.label)}</div>
+                        <h3>${escapeHtml(scenario.title)}</h3>
+                        <p>${escapeHtml(scenario.description)}</p>
+                        <div class="demo-query">${escapeHtml(scenario.query)}</div>
+                        <button class="${buttonClass}" onclick="launchDemo('${key}')">${escapeHtml(scenario.button)}</button>
+                    </article>
+                `;
+            }).join('');
             const modeDesc = currentMode === 'learn'
                 ? 'OCP 개념과 원리를 쉽게 설명해드립니다.'
                 : 'OCP 운영 및 트러블슈팅에 관해 실용적인 답변을 제공합니다.';
@@ -1829,6 +2137,15 @@
                     </div>
                     <h2>OCP 온보딩 어시스턴트</h2>
                     <p>${modeDesc}</p>
+                    <div class="mode-legend">
+                        <span class="mode-pill ops"><strong>운영형</strong> 증상 → 원인 → 명령 → 조치</span>
+                        <span class="mode-pill learn"><strong>학습형</strong> 정의 → 예시 → 비교 → 정리</span>
+                        <span class="mode-pill trace"><strong>Trace</strong> rewrite · search · rerank · context · stream</span>
+                        <span class="mode-pill"><strong>Sources</strong> 검색 근거 문서 + 점수</span>
+                    </div>
+                    <div class="demo-launchpad">
+                        ${scenarioCards}
+                    </div>
                     <div class="welcome-suggestions">
                         ${suggestions.map(q => `<button class="suggestion-chip" onclick="useSuggestion(this)">${q}</button>`).join('')}
                     </div>
@@ -1977,7 +2294,9 @@
         async function sendMessage(directQuery) {
             const query = directQuery || userInput.value.trim();
             if (!query || isStreaming) return;
-            const endpointKey = document.getElementById('llmSelect').value || null;
+            const endpointKey = document.body.classList.contains('review-mode')
+                ? null
+                : document.getElementById('llmSelect').value || null;
 
             chatAutoScroll = true;
             traceAutoScroll = true;
@@ -2146,6 +2465,8 @@
             const normalizedOriginal = originalQuery ? normalizeForCompare(originalQuery) : '';
             const normalizedRewrite = rewrittenQuery ? normalizeForCompare(rewrittenQuery) : '';
 
+            badges.push(`<span class="mode-badge ${currentMode}">${currentMode === 'learn' ? '학습형' : '운영형'}</span>`);
+
             if (cached) {
                 badges.push('<span class="cache-badge">캐시 응답</span>');
             }
@@ -2196,6 +2517,7 @@
                 select.innerHTML = data.endpoints.map(ep =>
                     `<option value="${ep.key}" ${ep.active ? 'selected' : ''}>${ep.name}</option>`
                 ).join('');
+                select.disabled = document.body.classList.contains('review-mode');
                 checkLlmHealth(select.value || data.current);
             } catch (e) {
                 console.error('엔드포인트 목록 로드 실패:', e);
@@ -2203,7 +2525,7 @@
         }
 
         async function switchEndpoint(key) {
-            if (!key) return;
+            if (!key || document.body.classList.contains('review-mode')) return;
             const statusEl = document.getElementById('llmStatus');
             statusEl.className = 'llm-status checking';
             statusEl.title = '전환 중...';
@@ -2245,6 +2567,7 @@
         }
 
         // 페이지 로드 시 초기화
+        applyPresentationMode(getPresentationMode(), false);
         renderWelcome();
         loadEndpoints();
 
