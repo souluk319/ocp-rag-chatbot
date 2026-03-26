@@ -1,4 +1,4 @@
-.PHONY: run stop sanitize index scrape install test clean
+.PHONY: run stop sanitize index scrape install test test-stream test-multiturn clean
 
 run:
 	uvicorn src.api:app --reload --host 0.0.0.0 --port 8000
@@ -19,6 +19,12 @@ install:
 	pip install -r requirements.txt
 
 test:
+	python3 scripts/eval_fixture_runner.py --fixture scripts/eval-fixture.seed.json --endpoint http://127.0.0.1:8000 --format both --output data/eval_report.json
+
+test-stream:
+	python3 scripts/eval_fixture_runner.py --fixture scripts/eval-fixture.seed.json --endpoint http://127.0.0.1:8000 --transport stream --format both --output data/eval_report_stream.json
+
+test-multiturn:
 	python3 scripts/test_multiturn.py
 
 clean:

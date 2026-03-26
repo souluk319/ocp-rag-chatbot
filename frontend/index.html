@@ -1124,6 +1124,177 @@
             gap: 12px;
         }
 
+        .presenter-helper {
+            margin-top: 18px;
+            padding: 14px 16px;
+            border: 1px solid #E8E3DC;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #FFFFFF 0%, #FCFBF8 100%);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.05);
+        }
+
+        .presenter-helper-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .presenter-helper-title {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .presenter-helper-kicker {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: rgba(26, 111, 181, 0.06);
+            color: #1A6FB5;
+            border: 1px solid rgba(26, 111, 181, 0.16);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+
+        .presenter-helper h3 {
+            font-size: 15px;
+            color: #2D2B28;
+            letter-spacing: -0.02em;
+        }
+
+        .presenter-helper p {
+            font-size: 12px;
+            line-height: 1.6;
+            color: #6B6966;
+        }
+
+        .presenter-helper-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: flex-end;
+        }
+
+        .presenter-mini-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 8px;
+            border-radius: 999px;
+            border: 1px solid #E8E3DC;
+            background: #F8F7F4;
+            color: #6B6966;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        .presenter-flow-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .presenter-flow {
+            display: grid;
+            grid-template-columns: 26px 1fr auto;
+            gap: 12px;
+            align-items: center;
+            padding: 11px 12px;
+            border: 1px solid #E8E3DC;
+            border-radius: 14px;
+            background: #FAF9F6;
+        }
+
+        .presenter-flow.highlight {
+            border-color: rgba(26, 111, 181, 0.28);
+            background: rgba(26, 111, 181, 0.04);
+        }
+
+        .presenter-flow-badge {
+            width: 26px;
+            height: 26px;
+            border-radius: 999px;
+            background: #1A6FB5;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .presenter-flow-body {
+            min-width: 0;
+        }
+
+        .presenter-flow-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #2D2B28;
+            margin-bottom: 2px;
+        }
+
+        .presenter-flow-desc {
+            font-size: 12px;
+            line-height: 1.55;
+            color: #6B6966;
+        }
+
+        .presenter-flow-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 6px;
+        }
+
+        .presenter-flow-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 7px;
+            border-radius: 999px;
+            background: #FFFFFF;
+            border: 1px solid #E8E3DC;
+            color: #7A7875;
+            font-size: 10px;
+            letter-spacing: 0.01em;
+        }
+
+        .presenter-flow button {
+            border: 1px solid #1A6FB5;
+            background: #1A6FB5;
+            color: #FFFFFF;
+            padding: 7px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .presenter-flow button:hover {
+            background: #155a94;
+            border-color: #155a94;
+            transform: translateY(-1px);
+        }
+
+        .presenter-flow button.secondary {
+            background: #F5F3F0;
+            color: #2D2B28;
+            border-color: #E8E3DC;
+        }
+
+        .presenter-flow button.secondary:hover {
+            background: #EFEAE3;
+            border-color: #D8D1C8;
+        }
+
         .demo-card {
             text-align: left;
             background: #FFFFFF;
@@ -1523,6 +1694,11 @@
             /* 웰컴 */
             .welcome { padding: 0 12px; max-width: 100%; }
             .mode-legend { justify-content: flex-start; }
+            .presenter-helper { padding: 12px 14px; }
+            .presenter-helper-header { flex-direction: column; }
+            .presenter-helper-badges { justify-content: flex-start; }
+            .presenter-flow { grid-template-columns: 1fr; }
+            .presenter-flow button { width: 100%; }
             .demo-launchpad { grid-template-columns: 1fr; }
             .demo-card { min-height: auto; }
             .welcome-icon img { width: 44px; height: 44px; }
@@ -1703,6 +1879,13 @@
         let chatAutoScroll = true;
         let traceAutoScroll = true;
         let currentMode = 'ops';
+        let llmPolicy = {
+            submissionMode: false,
+            allowEndpointSwitch: true,
+            showEndpointSelector: true,
+            lockedModel: 'Qwen/Qwen3.5-9B',
+            currentKey: null,
+        };
         const PRESENTATION_STORAGE_KEY = 'ocp-rag-chatbot.presentationMode';
         const DEMO_SCENARIOS = {
             ops: {
@@ -1710,6 +1893,7 @@
                 title: '장애 대응 흐름',
                 query: 'CrashLoopBackOff 원인과 바로 확인할 명령 알려줘',
                 description: '증상 요약부터 원인 후보, 확인 명령, 즉시 조치까지 한 번에 보여주는 운영형 데모입니다.',
+                watch: 'trace에서 rewrite, reranking, context 순서를 확인',
                 mode: 'ops',
                 button: '운영 질문 시작',
                 highlight: true,
@@ -1719,6 +1903,7 @@
                 title: '개념 비교 흐름',
                 query: 'OpenShift Route와 Ingress 차이가 뭐야?',
                 description: '정의, 차이점, 선택 기준을 같이 보여주는 학습형 데모입니다.',
+                watch: 'mode badge, source chips, 비교형 답변 포맷 확인',
                 mode: 'learn',
                 button: '학습 질문 시작',
                 highlight: false,
@@ -1728,11 +1913,14 @@
                 title: '5턴 이상 맥락 유지',
                 query: 'Pod가 Pending인데 처음에 무엇부터 확인해야 해?',
                 description: '같은 세션에서 후속 질문을 이어가며 memory와 context 유지가 어떻게 동작하는지 보여줍니다.',
+                watch: '5턴 동안 session_id 유지와 rewrite 보정을 확인',
                 mode: 'ops',
                 button: '멀티턴 데모 시작',
                 highlight: false,
             },
         };
+
+        const PRESENTER_FLOW_ORDER = ['ops', 'learn', 'multiturn'];
 
         const SUGGESTION_POOLS = {
             ops: [
@@ -1795,18 +1983,48 @@
             const note = document.getElementById('presentationNote');
             if (note) {
                 note.textContent = normalized === 'review'
-                    ? '심사 모드: 모델 전환 숨김 · Qwen/Qwen3.5-9B 고정'
-                    : '발표 모드: 엔드포인트 전환 가능';
+                    ? `심사 모드: 모델 전환 숨김 · ${llmPolicy.lockedModel} 고정`
+                    : (llmPolicy.allowEndpointSwitch ? '발표 모드: 엔드포인트 전환 가능' : `제출 모드: ${llmPolicy.lockedModel} 고정`);
             }
 
             if (persist) {
                 localStorage.setItem(PRESENTATION_STORAGE_KEY, normalized);
             }
+            applyLlmPolicy(llmPolicy);
         }
 
         function togglePresentationMode() {
             const nextMode = document.body.classList.contains('review-mode') ? 'standard' : 'review';
             applyPresentationMode(nextMode);
+        }
+
+        function endpointSwitchAllowed() {
+            return llmPolicy.allowEndpointSwitch && !document.body.classList.contains('review-mode');
+        }
+
+        function applyLlmPolicy(data = {}) {
+            llmPolicy = {
+                submissionMode: Boolean(data.submission_mode ?? llmPolicy.submissionMode),
+                allowEndpointSwitch: Boolean(data.allow_endpoint_switch ?? llmPolicy.allowEndpointSwitch),
+                showEndpointSelector: Boolean(data.show_endpoint_selector ?? llmPolicy.showEndpointSelector),
+                lockedModel: data.locked_model || llmPolicy.lockedModel,
+                currentKey: data.current || llmPolicy.currentKey,
+            };
+
+            const selector = document.querySelector('.llm-selector');
+            const select = document.getElementById('llmSelect');
+            const note = document.getElementById('presentationNote');
+            const shouldShowSelector = llmPolicy.showEndpointSelector && !document.body.classList.contains('review-mode');
+
+            if (selector) {
+                selector.style.display = shouldShowSelector ? 'flex' : 'none';
+            }
+            if (select) {
+                select.disabled = !endpointSwitchAllowed();
+            }
+            if (note && llmPolicy.submissionMode) {
+                note.textContent = `심사 모드: 모델 전환 숨김 · ${llmPolicy.lockedModel} 고정`;
+            }
         }
 
         function launchDemo(key) {
@@ -1816,6 +2034,22 @@
                 onModeChange(scenario.mode);
             }
             sendMessage(scenario.query);
+        }
+
+        async function runMultiturnShowcase() {
+            if (isStreaming) return;
+            onModeChange('ops');
+            newSession();
+            const prompts = [
+                '새로 배포한 앱의 파드 상태가 Pending이야',
+                '어디부터 봐야 해?',
+                '그다음엔 노드 쪽에서 뭐 봐야 해?',
+                'drain이랑 cordon이랑 차이는 뭐야?',
+                '마지막으로 현장에서 바로 확인할 명령만 짧게 정리해줘',
+            ];
+            for (const prompt of prompts) {
+                await sendMessage(prompt);
+            }
         }
 
         const userInput = document.getElementById('userInput');
@@ -2114,6 +2348,26 @@
 
         function renderWelcome() {
             const suggestions = pickRandom(SUGGESTION_POOLS[currentMode], 3);
+            const presenterRows = PRESENTER_FLOW_ORDER.map((key, index) => {
+                const scenario = DEMO_SCENARIOS[key];
+                const buttonClass = scenario.mode === 'learn' ? 'secondary' : '';
+                const action = key === 'multiturn' ? '5턴 자동 실행' : `${scenario.mode === 'learn' ? '학습' : '운영'} 실행`;
+                const actionHandler = key === 'multiturn' ? 'runMultiturnShowcase()' : `launchDemo('${key}')`;
+                return `
+                    <div class="presenter-flow ${scenario.highlight ? 'highlight' : ''}">
+                        <div class="presenter-flow-badge">${index + 1}</div>
+                        <div class="presenter-flow-body">
+                            <div class="presenter-flow-title">${escapeHtml(scenario.title)}</div>
+                            <div class="presenter-flow-desc">${escapeHtml(scenario.watch)}</div>
+                            <div class="presenter-flow-meta">
+                                <span class="presenter-flow-tag">${escapeHtml(scenario.label)}</span>
+                                <span class="presenter-flow-tag">${escapeHtml(scenario.mode === 'learn' ? '학습형' : '운영형')}</span>
+                            </div>
+                        </div>
+                        <button class="${buttonClass}" onclick="${actionHandler}">${escapeHtml(action)}</button>
+                    </div>
+                `;
+            }).join('');
             const scenarioCards = Object.entries(DEMO_SCENARIOS).map(([key, scenario]) => {
                 const isActive = currentMode === scenario.mode && key !== 'multiturn';
                 const buttonClass = scenario.mode === 'learn' ? 'secondary' : '';
@@ -2143,6 +2397,23 @@
                         <span class="mode-pill trace"><strong>Trace</strong> rewrite · search · rerank · context · stream</span>
                         <span class="mode-pill"><strong>Sources</strong> 검색 근거 문서 + 점수</span>
                     </div>
+                    <section class="presenter-helper">
+                        <div class="presenter-helper-header">
+                            <div class="presenter-helper-title">
+                                <span class="presenter-helper-kicker">Presenter Helper</span>
+                                <h3>리뷰어가 바로 보면 되는 3개 흐름</h3>
+                                <p>운영형은 증상에서 조치까지, 학습형은 개념 비교까지, 멀티턴은 5턴 memory 유지와 rewrite 보정이 핵심입니다.</p>
+                            </div>
+                            <div class="presenter-helper-badges">
+                                <span class="presenter-mini-pill">3 flows</span>
+                                <span class="presenter-mini-pill">streaming</span>
+                                <span class="presenter-mini-pill">session memory</span>
+                            </div>
+                        </div>
+                        <div class="presenter-flow-list">
+                            ${presenterRows}
+                        </div>
+                    </section>
                     <div class="demo-launchpad">
                         ${scenarioCards}
                     </div>
@@ -2294,7 +2565,7 @@
         async function sendMessage(directQuery) {
             const query = directQuery || userInput.value.trim();
             if (!query || isStreaming) return;
-            const endpointKey = document.body.classList.contains('review-mode')
+            const endpointKey = !endpointSwitchAllowed()
                 ? null
                 : document.getElementById('llmSelect').value || null;
 
@@ -2514,10 +2785,11 @@
                 const resp = await fetch(`${API_BASE}/api/llm/endpoints`);
                 const data = await resp.json();
                 const select = document.getElementById('llmSelect');
+                applyLlmPolicy(data);
                 select.innerHTML = data.endpoints.map(ep =>
                     `<option value="${ep.key}" ${ep.active ? 'selected' : ''}>${ep.name}</option>`
                 ).join('');
-                select.disabled = document.body.classList.contains('review-mode');
+                select.disabled = !endpointSwitchAllowed();
                 checkLlmHealth(select.value || data.current);
             } catch (e) {
                 console.error('엔드포인트 목록 로드 실패:', e);
@@ -2525,7 +2797,7 @@
         }
 
         async function switchEndpoint(key) {
-            if (!key || document.body.classList.contains('review-mode')) return;
+            if (!key || !endpointSwitchAllowed()) return;
             const statusEl = document.getElementById('llmStatus');
             statusEl.className = 'llm-status checking';
             statusEl.title = '전환 중...';
@@ -2553,12 +2825,13 @@
                     : `${API_BASE}/api/llm/health`;
                 const resp = await fetch(healthUrl);
                 const data = await resp.json();
+                const healthLabel = [data.name, data.model].filter(Boolean).join(' · ') || 'LLM';
                 if (data.status === 'connected') {
                     statusEl.className = 'llm-status connected';
-                    statusEl.title = `${data.endpoint} - 연결됨`;
+                    statusEl.title = `${healthLabel} - 연결됨`;
                 } else {
                     statusEl.className = 'llm-status disconnected';
-                    statusEl.title = `${data.endpoint} - 연결 안 됨: ${data.error || ''}`;
+                    statusEl.title = `${healthLabel} - 연결 안 됨: ${data.error || ''}`;
                 }
             } catch (e) {
                 statusEl.className = 'llm-status disconnected';

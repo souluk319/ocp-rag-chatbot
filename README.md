@@ -14,6 +14,16 @@ RAG 파이프라인의 각 컴포넌트(인덱싱, 검색, 리랭킹, 캐싱 등
 > 🎬 **[프로젝트 설계 영상](https://youtu.be/zeXrMJcLidg)** — 파이프라인 구조와 설계 의사결정 설명  
 > 🎬 **[개인 학습 영상](https://youtu.be/MCdhsMPzt5o)** — RAG 개념 및 구현 과정 학습 정리  
 
+## 심사 준비 문서
+
+- [docs/defense-guide.md](docs/defense-guide.md) : 30초 요약, 아키텍처, retrieval/memory/streaming/model lock 방어 포인트
+- [docs/code-walkthrough.md](docs/code-walkthrough.md) : 실제 코드 파일 기준 설명 순서와 발표용 워크스루
+- [docs/judge-qa.md](docs/judge-qa.md) : 심사관 예상 질문과 모범 답변
+- [docs/demo-script.md](docs/demo-script.md) : 운영형 / 학습형 / 5턴 멀티턴 데모 스크립트
+- [docs/evaluation-runner.md](docs/evaluation-runner.md) : fixture runner 사용법
+- [data/eval_report.md](data/eval_report.md) : HTTP API 기준 평가 리포트
+- [data/eval_report_stream.md](data/eval_report_stream.md) : SSE streaming 기준 평가 리포트
+
 ### 주요 특징
 - RAG 파이프라인 (인덱싱 → 검색 → 리랭킹 → 응답)
 - IVF(Inverted File Index) 벡터 인덱스 설계 (numpy 기반 K-Means)
@@ -148,11 +158,13 @@ ocp-rag-chatbot/
 │   ├── sanitized_raw/            # 챗봇이 읽는 정제본 문서 (Git 포함, 98개)
 │   └── index/                    # 벡터 인덱스 (Git 제외, make index로 재생성)
 ├── docs/
-│   ├── worklog-*.md              # 일별 워크로그
+│   ├── defense-guide.md          # 심사 방어용 요약 가이드
+│   ├── code-walkthrough.md       # 코드 설명용 워크스루
+│   ├── judge-qa.md               # 예상 질문 / 답변
+│   ├── demo-script.md            # 실전 시연 스크립트
 │   ├── troubleshooting/          # 일별 트러블슈팅 기록
-│   ├── plan-*.md                 # 고도화 계획
 │   ├── rag-dependency-guide.md   # 패키지 의존성 맵 & 배포 가이드
-│   └── README-v1-initial.md      # 초기 버전 README
+│   └── worklog-*.md              # 일별 워크로그
 ├── Makefile                      # 단축 명령어 (make run/stop/index) — Mac/Linux
 ├── run.bat / kill.bat / index.bat  # Windows 실행 스크립트
 └── requirements.txt              # Python 의존성
@@ -236,7 +248,9 @@ make index      # 정제본 인덱싱 (build_index.py)
 make run        # 서버 시작 (uvicorn, port 8000)
 make stop       # 서버 종료
 make scrape     # OCP 공식 문서 스크래핑
-make test       # 멀티턴 대화 테스트
+make test       # fixture 평가 러너 (HTTP API 경로)
+make test-stream # fixture 평가 러너 (SSE streaming 경로)
+make test-multiturn # 기존 멀티턴 스모크 테스트
 make clean      # __pycache__ 정리
 ```
 
