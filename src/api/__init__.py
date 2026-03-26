@@ -47,6 +47,17 @@ async def startup():
     """서버 시작 시 인덱스 로드"""
     global pipeline
 
+    # Redis 연결 (REDIS_URL 없으면 None — 인메모리 모드)
+    from src.redis_client import get_redis
+    redis_client = get_redis()
+    if redis_client:
+        session_manager.set_redis(redis_client)
+        semantic_cache.set_redis(redis_client)
+        embedding_engine.set_redis(redis_client)
+        print("Redis 연결됨 — 세션/캐시 영속화 활성화")
+    else:
+        print("Redis 없음 — 인메모리 모드로 동작")
+
     # 인덱스 로드 시도
     try:
         index = IVFIndex.load(INDEX_DIR)

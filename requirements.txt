@@ -28,3 +28,6 @@ python-dotenv==1.0.1
 
 # CORS
 pydantic==2.9.0
+
+# Redis (세션/캐시 영속화 — 없어도 인메모리 모드로 동작)
+redis[hiredis]>=5.0.0

@@ -66,3 +66,6 @@ DATA_CORPUS_DIR = os.getenv("DATA_CORPUS_DIR", DATA_SANITIZED_DIR)
 # 서버 설정
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8000"))
+
+# Redis 설정 (미설정 시 인메모리 모드로 동작)
+REDIS_URL = os.getenv("REDIS_URL", "")
