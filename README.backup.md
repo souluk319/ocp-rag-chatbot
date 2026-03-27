@@ -16,7 +16,7 @@ RAG 파이프라인의 각 컴포넌트(인덱싱, 검색, 리랭킹, 캐싱 등
 
 ### 주요 특징
 - RAG 파이프라인 (인덱싱 → 검색 → 리랭킹 → 응답)
-- IVF(Inverted File Index) 벡터 인덱스 설계 (numpy 기반 K-Means, 32 클러스터, n_probe=4 근사탐색)
+- IVF(Inverted File Index) 벡터 인덱스 설계 (numpy 기반 K-Means)
 - Dual-Path 검색: IVF 벡터 검색 + BM25 독립 코퍼스 키워드 검색
 - **쿼리 유형별 동적 하이브리드 Reranking** (트러블슈팅 6:4, 개념 8:2, 기본 7:3)
 - **한국어 쿼리 시 한국어 문서 부스트** (+0.08 스코어 보정)
@@ -25,13 +25,11 @@ RAG 파이프라인의 각 컴포넌트(인덱싱, 검색, 리랭킹, 캐싱 등
 - SSE 기반 실시간 토큰 스트리밍
 - Pipeline Trace 패널 (LangSmith 유사 관찰가능성)
 - 2단계 캐싱 (Embedding LRU + Semantic Response Cache, 3중 호환성 검증)
-- **Redis 영속화** — 세션·캐시 컨테이너 재시작 후 복원 (RDB 스냅샷)
 - **듀얼 모드 시스템** (운영 모드 / 학습 모드, 모드별 시스템 프롬프트)
 - **Perplexity 스타일 후속 추천 질문** (클릭으로 이어서 질문)
 - LLM 기반 합성 문서 자동 생성 (Synthetic Data Generation)
 - **72문항 검색 품질 평가 프레임워크**
 - 멀티 LLM 엔드포인트 지원 (UI에서 서버 전환 + 연결 상태 표시)
-- Docker 컨테이너화 (multi-stage build) + pytest 단위 테스트
 
 ## 아키텍처
 
@@ -56,7 +54,7 @@ RAG 파이프라인의 각 컴포넌트(인덱싱, 검색, 리랭킹, 캐싱 등
                     ▼                         ▼
              [IVF Vector Index]        [BM25 Corpus Search]
              K-Means 클러스터링         전체 코퍼스 키워드 검색
-             n_probe=4 근사탐색        91쌍 동의어 + 쿼리 확장
+             n_probe=16 전수탐색       91쌍 동의어 + 쿼리 확장
                     │                         │
                     └────────────┬────────────┘
                                  ▼
@@ -96,7 +94,7 @@ Session  ✓  0ms   → session_id, history_turns
 Rewrite  ✓  15ms  → original vs rewritten query, query_type, entity
 Embed    ✓  7ms   → dimension, cache_hit
 Cache    — miss   → semantic_cache_size
-Search   ✓  26ms  → candidates, top_score, IVF n_probe=4
+Search   ✓  26ms  → candidates, top_score, IVF n_probe=16
 Rerank   ✓  120ms → hybrid scores per document (semantic + keyword + ko_boost)
 Context  ✓  0ms   → context_length, num_documents
 LLM      ✓  1.2s  → model, tokens, tokens/sec
@@ -107,17 +105,15 @@ Complete ✓  1.3s  → total pipeline time
 
 | 구분 | 기술 | 설명 |
 |------|------|------|
-| Backend | Python 3.11, FastAPI | REST API + SSE 스트리밍 |
+| Backend | Python 3.13, FastAPI | REST API + SSE 스트리밍 |
 | LLM | Qwen/Qwen3.5-9B | 멀티 endpoint 지원. Mac Mini / RTX Desktop 은 4bit 양자화본, OpenAI-compatible API |
 | Embedding | paraphrase-multilingual-MiniLM-L12-v2 | 384차원, 다국어(한/영) 지원 |
-| Vector Index | numpy IVF | K-Means 클러스터링, 32 클러스터, n_probe=4 (근사 탐색) |
+| Vector Index | numpy IVF | K-Means 클러스터링, 14,373 벡터, 16 클러스터 |
 | Retrieval | Dual-Path (IVF + BM25) | 벡터 검색 + 독립 키워드 검색 병렬, 91쌍 동의어 |
 | Reranking | Dynamic Hybrid | 쿼리 유형별 동적 가중치 + 한국어 부스트 |
 | Frontend | HTML/CSS/JS | 프레임워크 미사용, 웜 라이트 테마, Pretendard 폰트 |
 | 문서 파싱 | PyPDF2, python-docx, python-pptx | 다양한 포맷 지원 |
 | 평가 | eval_questions.py | 72문항 자동 검색 품질 평가 |
-| 인프라 | Docker, docker-compose | multi-stage 빌드, Redis 영속화 |
-| 테스트 | pytest | 단위 테스트 (chunker/vectorstore/cache/retriever) |
 
 ## 프로젝트 구조
 
@@ -153,15 +149,6 @@ ocp-rag-chatbot/
 │   ├── plan-*.md                 # 고도화 계획
 │   ├── rag-dependency-guide.md   # 패키지 의존성 맵 & 배포 가이드
 │   └── README-v1-initial.md      # 초기 버전 README
-├── tests/                        # pytest 단위 테스트
-│   ├── conftest.py               # 공통 fixture (IVFIndex, Retriever, SemanticCache 등)
-│   ├── test_chunker.py           # Chunker 단위 테스트
-│   ├── test_vectorstore.py       # IVFIndex 단위 테스트
-│   ├── test_cache.py             # SemanticCache 단위 테스트
-│   └── test_retriever.py         # Retriever 단위 테스트
-├── Dockerfile                    # multi-stage 빌드 (python:3.11-slim)
-├── docker-compose.yml            # app + redis 구성, 볼륨 영속화
-├── pytest.ini                    # pytest 설정
 ├── Makefile                      # 단축 명령어 (make run/stop/index) — Mac/Linux
 ├── run.bat / kill.bat / index.bat  # Windows 실행 스크립트
 └── requirements.txt              # Python 의존성
@@ -211,29 +198,6 @@ run.bat
 kill.bat
 ```
 
-### Docker (권장)
-
-```bash
-# 1. 환경 설정
-cp .env.example .env
-# .env 파일에서 LLM_ENDPOINT를 실제 엔드포인트로 변경
-
-# 2. 인덱스 생성 (최초 1회 — 호스트에서 실행 후 data/index/ 생성)
-pip install -r requirements.txt && python scripts/build_index.py
-
-# 3. Docker 이미지 빌드 + 실행 (app + Redis)
-docker-compose up --build -d
-# → http://localhost:8000
-
-# 서버 종료
-docker-compose down
-```
-
-> **볼륨 구성:**
-> - `./data` → `/app/data` : 벡터 인덱스 + 코퍼스 영속화
-> - `hf-cache` : HuggingFace 모델 캐시 (재시작해도 재다운로드 없음)
-> - `redis-data` : Redis RDB 스냅샷 (세션·캐시 영속화)
-
 ### 코퍼스 재생성
 
 코퍼스를 수정하거나 새 문서를 추가할 때:
@@ -263,9 +227,6 @@ make stop       # 서버 종료
 make scrape     # OCP 공식 문서 스크래핑
 make test       # 멀티턴 대화 테스트
 make clean      # __pycache__ 정리
-
-# 단위 테스트
-pytest tests/
 ```
 
 ## API 엔드포인트
@@ -289,21 +250,21 @@ pytest tests/
 numpy 기반 벡터 검색 엔진:
 
 ```
-전체 벡터
+전체 벡터 (14,373개)
     │
     ▼ K-Means 클러스터링 (Lloyd's algorithm, seed=42)
-[C0] [C1] [C2] ... [C31]    ← 32개 클러스터
+[C0] [C1] [C2] ... [C15]    ← 16개 클러스터
                              ← 클러스터별 벡터 분배
 
 검색 시:
-Query 벡터 → n_probe=4 (32개 중 4개 클러스터 탐색, ~87.5% 근사)
+Query 벡터 → n_probe=16 (전체 클러스터 탐색)
 → Cosine Similarity 계산
-→ recall과 속도의 균형점 (전수탐색 대비 빠르면서 품질 유지)
+→ ~26ms (14K 벡터 규모에서 전수탐색 성능 영향 없음)
 ```
 
 - K-Means 클러스터링 (Lloyd's algorithm, seed=42 고정으로 재현성 보장)
 - Cosine Similarity 기반 유사도 계산 (벡터 정규화 → dot product)
-- `n_probe=4` — 32개 클러스터 중 4개 탐색 (ANN 근사 탐색, recall/속도 균형)
+- `n_probe=16` — 14K 벡터 규모에서는 전수탐색이 안전 (클러스터 누락 방지, 26ms)
 - `IVFIndex.load()` 시 config의 `IVF_N_PROBE` 우선 적용 (저장된 meta 값 무시)
 - 인덱스 저장/로드 지원 (vectors.npy, centroids.npy, index_meta.json)
 
@@ -517,14 +478,14 @@ python scripts/eval_questions.py --category troubleshooting
 
 | 파라미터 | 기본값 | 설명 |
 |---------|--------|------|
-| CHUNK_SIZE | 256 | 청크 크기 (문자 수, 임베딩 모델 128토큰 창에 최적화) |
-| CHUNK_OVERLAP | 64 | 청크 간 겹침 크기 |
-| TOP_K | 3 | 최종 검색 결과 수 (context 과다 방지) |
-| IVF_N_CLUSTERS | 32 | IVF 클러스터 수 |
-| IVF_N_PROBE | 4 | 검색 시 탐색 클러스터 수 (근사 탐색, ~87.5%) |
+| CHUNK_SIZE | 512 | 청크 크기 (문자 수) |
+| CHUNK_OVERLAP | 128 | 청크 간 겹침 크기 |
+| TOP_K | 5 | 최종 검색 결과 수 |
+| IVF_N_CLUSTERS | 16 | IVF 클러스터 수 |
+| IVF_N_PROBE | 16 | 검색 시 탐색 클러스터 수 (16=전수탐색) |
 | CACHE_SIMILARITY_THRESHOLD | 0.95 | 캐시 히트 유사도 임계값 |
 | MAX_HISTORY_TURNS | 10 | 최대 대화 이력 턴 수 |
-| LLM_MAX_TOKENS | 1024 | LLM 최대 생성 토큰 (간결한 답변 유도) |
+| LLM_MAX_TOKENS | 2048 | LLM 최대 생성 토큰 |
 | LLM_TEMPERATURE | 0.7 | LLM 생성 온도 |
 
 ## 주요 구현 체크리스트
@@ -557,9 +518,6 @@ python scripts/eval_questions.py --category troubleshooting
 - [x] 멀티 LLM 엔드포인트 (UI 서버 선택 + 모델 자동 감지)
 - [x] Qwen3.5 thinking 모드 자동 비활성화 (vLLM/Ollama/MLX 호환)
 - [x] Windows 지원 (run.bat / kill.bat / index.bat)
-- [x] Docker 컨테이너화 (multi-stage build, python:3.11-slim)
-- [x] Redis 세션/캐시 영속화 (RDB 스냅샷, 컨테이너 재시작 후 복원)
-- [x] pytest 단위 테스트 (chunker / vectorstore / cache / retriever, 4개 모듈)
 
 ## 향후 과제
 
@@ -569,6 +527,7 @@ python scripts/eval_questions.py --category troubleshooting
 - [ ] 사용자 피드백 👍👎 (SQLite 저장)
 - [ ] 시맨틱 청킹 (마크다운 헤딩 기반)
 - [ ] 세션 영속화 + 대화 히스토리 (SQLite → 사이드바 목록)
+- [ ] 단위 테스트 추가 (현재 통합 테스트만 존재)
 - [ ] CORS 제한 (`allow_origins=["*"]` → 배포 환경별 제한)
 - [ ] 프롬프트 인젝션 방어
 - [ ] 동의어 사전 외부 파일 분리 (현재 코드 내 하드코딩)
