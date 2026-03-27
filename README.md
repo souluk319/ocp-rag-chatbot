@@ -130,6 +130,27 @@ Complete ✓  1.3s  → total pipeline time
 | 인프라 | Docker, docker-compose | multi-stage 빌드, Redis 영속화 |
 | 테스트 | pytest | 단위 테스트 (chunker/vectorstore/cache/retriever) |
 
+## 주요 기능별 담당 파일
+
+README만 보고 빠르게 코드를 따라가려면 아래 파일부터 보면 됩니다.
+
+| 기능 | 먼저 볼 파일 | 보조 파일 | 설명 |
+|------|-------------|----------|------|
+| 웹 UI / 사용자 입력 | [`frontend/index.html`](frontend/index.html) | [`frontend/assets/cywell-logo.png`](frontend/assets/cywell-logo.png) | 채팅 UI, 모드 전환, SSE 응답 렌더링, Trace 패널 |
+| FastAPI 진입점 / API / SSE | [`src/api/__init__.py`](src/api/__init__.py) | [`src/config.py`](src/config.py) | 서버 시작, 라우팅, 정적 파일 서빙, 스트리밍 엔드포인트 |
+| RAG 전체 오케스트레이션 | [`src/pipeline.py`](src/pipeline.py) | [`src/api/__init__.py`](src/api/__init__.py) | 세션 조회, 리라이트, 캐시, 검색, 컨텍스트 구성, LLM 호출, Trace 생성 |
+| 세션 관리 / 멀티턴 질의 재작성 | [`src/session/__init__.py`](src/session/__init__.py) | [`src/llm/__init__.py`](src/llm/__init__.py) | 세션 TTL, 히스토리 관리, Query Rewriter |
+| LLM 호출 / 엔드포인트 전환 | [`src/llm/__init__.py`](src/llm/__init__.py) | [`src/config.py`](src/config.py) | OpenAI-compatible API 호출, 스트리밍, 헬스체크, 모델 자동 감지 |
+| 임베딩 / 임베딩 캐시 | [`src/embedding/__init__.py`](src/embedding/__init__.py) | [`src/redis_client.py`](src/redis_client.py) | sentence-transformers 로딩, L1/L2 캐시, 배치 임베딩 |
+| 벡터 인덱스 / IVF 검색 | [`src/vectorstore/__init__.py`](src/vectorstore/__init__.py) | [`scripts/build_index.py`](scripts/build_index.py) | K-Means 기반 IVF 빌드, 저장/로드, ANN 검색 |
+| 하이브리드 검색 / BM25 / 리랭킹 | [`src/retriever/__init__.py`](src/retriever/__init__.py) | [`src/vectorstore/__init__.py`](src/vectorstore/__init__.py) | 쿼리 분류, BM25 동의어 확장, hybrid reranking, adjacent chunk expansion |
+| 시맨틱 응답 캐시 | [`src/cache/__init__.py`](src/cache/__init__.py) | [`src/embedding/__init__.py`](src/embedding/__init__.py) | 의미 기반 캐시 히트 판정, Redis 복원, LRU 관리 |
+| Redis 연동 / 영속화 fallback | [`src/redis_client.py`](src/redis_client.py) | [`docker-compose.yml`](docker-compose.yml) | Redis 연결, 세션/캐시/임베딩 영속화 |
+| 문서 파싱 / 청킹 | [`src/chunker/__init__.py`](src/chunker/__init__.py) | [`src/sanitizer.py`](src/sanitizer.py) | PDF/DOCX/PPTX 파싱, sliding window 청킹, 메타데이터 추출 |
+| 인덱스 생성 배치 | [`scripts/build_index.py`](scripts/build_index.py) | [`src/chunker/__init__.py`](src/chunker/__init__.py), [`src/embedding/__init__.py`](src/embedding/__init__.py), [`src/vectorstore/__init__.py`](src/vectorstore/__init__.py) | 정제 문서 → 청킹 → 임베딩 → IVF 인덱스 저장 |
+| 코퍼스 수집 / 정제 | [`scripts/scrape_docs.py`](scripts/scrape_docs.py) | [`scripts/sanitize_corpus.py`](scripts/sanitize_corpus.py), [`scripts/generate_docs.py`](scripts/generate_docs.py) | 외부 문서 수집, 비공개 원문 정제, 합성 문서 생성 |
+| 평가 / 테스트 | [`scripts/eval_questions.py`](scripts/eval_questions.py) | [`tests/test_retriever.py`](tests/test_retriever.py), [`tests/test_cache.py`](tests/test_cache.py), [`tests/test_vectorstore.py`](tests/test_vectorstore.py), [`tests/test_chunker.py`](tests/test_chunker.py) | 검색 품질 평가와 핵심 모듈 회귀 테스트 |
+
 ## 프로젝트 구조
 
 ```
