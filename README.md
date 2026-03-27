@@ -35,57 +35,68 @@ RAG 파이프라인의 각 컴포넌트(인덱싱, 검색, 리랭킹, 캐싱 등
 
 ## 아키텍처
 
+### 1. 온라인 질의 처리 플로우
+
+```mermaid
+flowchart LR
+    U[사용자] --> UI[Web UI<br/>frontend/index.html]
+    UI -->|POST /api/chat/stream<br/>SSE 스트리밍| API[FastAPI API<br/>src/api]
+    API --> PIPE[RAGPipeline<br/>src/pipeline.py]
+
+    PIPE --> SES[Session Manager<br/>대화 이력 관리]
+    PIPE --> REWRITE[Query Rewriter<br/>맥락 기반 질문 재작성]
+    REWRITE --> SES
+
+    PIPE --> EMB[Embedding Engine<br/>SentenceTransformer + L1 LRU]
+    EMB --> CACHE[Semantic Cache<br/>의미 기반 응답 캐시]
+    CACHE -->|cache hit| PIPE
+
+    PIPE --> RET[Retriever<br/>Query Classifier + Hybrid Reranker]
+    EMB --> RET
+    RET --> IVF[IVF Vector Index<br/>numpy ANN search]
+    RET --> BM25[BM25 Corpus Search<br/>동의어 확장 키워드 검색]
+    RET --> EXPAND[Adjacent Chunk Expansion<br/>앞뒤 청크 병합]
+    EXPAND --> CTX[Context Builder<br/>max 6000자]
+    CTX --> LLM[LLM Client<br/>다중 엔드포인트 전환]
+
+    LLM -->|토큰 스트리밍| PIPE
+    PIPE -->|answer sources trace| API
+    API --> UI
+
+    PIPE -->|대화 저장| SES
+    PIPE -->|정상 응답 저장| CACHE
+
+    REDIS[(Redis<br/>optional persistence)]
+    REDIS -. session .-> SES
+    REDIS -. cache .-> CACHE
+    REDIS -. embedding L2 .-> EMB
 ```
-사용자 질의
-    │
-    ▼
-[Web UI] ──SSE 스트리밍──▶ [FastAPI Server]
-(Warm Light Theme,               │
- Dual Mode,              ┌──────┼──────────────┐
- Pipeline Trace,         ▼      ▼              ▼
- 추천 질문,           Session   Semantic        Query
- 마크다운 렌더링)     Manager   Cache           Rewriter
-                    (대화 이력) (3중 호환성 검증)  (Few-shot 기반)
-                         │       │              │
-                         └───────┼──────────────┘
-                                 ▼
-                          [Embedding Engine]
-                          multilingual sentence-transformers + LRU 캐싱
-                                 │
-                    ┌────────────┼────────────┐
-                    ▼                         ▼
-             [IVF Vector Index]        [BM25 Corpus Search]
-             K-Means 클러스터링         전체 코퍼스 키워드 검색
-             n_probe=4 근사탐색        91쌍 동의어 + 쿼리 확장
-                    │                         │
-                    └────────────┬────────────┘
-                                 ▼
-                    [Query Classifier]
-                    쿼리 유형 자동 분류 (6가지)
-                                 │
-                                 ▼
-                    [Hybrid Retriever + Reranker]
-                    쿼리 유형별 동적 가중치 + 한국어 문서 부스트
-                    + 소스 다양성 제어 (max_per_source=1)
-                                 │
-                                 ▼
-                    [Adjacent Chunk Expansion]
-                    검색된 청크의 앞뒤 ±2 청크 병합
-                                 │
-                                 ▼
-                    Context 구성 (max 6000자)
-                                 │
-                                 ▼
-                    [LLM Client - Multi Endpoint]
-                    듀얼 모드 시스템 프롬프트 (운영/학습)
-                    토큰 단위 스트리밍
-                                 │
-                                 ▼
-                   ┌─────────────┼───────────┐
-                   ▼             ▼           ▼
-               응답 반환      세션 저장    캐시 저장
-               + 추천 질문                (실패 응답 제외)
+
+### 2. 오프라인 인덱싱 및 문서 준비 플로우
+
+```mermaid
+flowchart LR
+    RAW[원천 문서<br/>data/raw 또는 외부 문서] --> PREP[문서 준비 스크립트<br/>scrape_docs.py<br/>generate_docs.py<br/>sanitize_corpus.py]
+    PREP --> CORPUS[정제 코퍼스<br/>data/sanitized_raw]
+
+    CORPUS --> BUILD[build_index.py]
+    BUILD --> CHUNK[Chunker<br/>문단 분리 + sliding window]
+    CHUNK --> EMBATCH[EmbeddingEngine.embed_batch]
+    EMBATCH --> IVFBUILD[IVFIndex.build<br/>K-Means clustering]
+    IVFBUILD --> INDEX[data/index<br/>vectors.npy<br/>centroids.npy<br/>index_meta.json]
+
+    INDEX --> STARTUP[FastAPI startup]
+    STARTUP --> LOAD[IVFIndex.load]
+    LOAD --> BM25INIT[Retriever BM25 corpus indexing]
+    BM25INIT --> PIPELIVE[실시간 질의 파이프라인에서 사용]
 ```
+
+### 핵심 포인트
+
+- `src/api`는 FastAPI 엔드포인트와 SSE 스트리밍을 담당하고, 실제 질의 오케스트레이션은 `src/pipeline.py`의 `RAGPipeline`이 수행합니다.
+- 검색은 `IVF 벡터 검색 + BM25 전체 코퍼스 검색`을 함께 사용하고, `Retriever`가 쿼리 유형별 가중치로 최종 재정렬합니다.
+- `SessionManager`, `SemanticCache`, `EmbeddingEngine`은 Redis가 있으면 영속화되고, 없으면 인메모리 모드로 graceful fallback 합니다.
+- 오프라인에서 `data/sanitized_raw`를 청킹하고 IVF 인덱스를 생성해 두며, 서버 시작 시 이를 로드해 온라인 질의 처리에 사용합니다.
 
 ### Pipeline Trace (관찰가능성)
 
