@@ -2,8 +2,16 @@
 유사 질의 응답 캐시. 같은 의미의 질문이 들어오면 LLM 호출 없이 바로 응답.
 cosine similarity 기반으로 매칭하되, 주제가 다른 질문끼리 섞이지 않도록
 간단한 토큰/엔티티 가드도 같이 본다.
+
+Redis 연동:
+- set_redis(client) 호출 시 기존 캐시를 Redis에서 복원한다.
+- store() 시 Redis에도 함께 저장한다 (pickle 직렬화).
+- clear() 시 Redis 키도 삭제한다.
+- Redis 없이도 기존 인메모리 모드로 정상 동작한다.
 """
 import asyncio
+import hashlib
+import pickle
 import time
 import re
 import numpy as np
@@ -12,6 +20,9 @@ from dataclasses import dataclass
 from typing import Optional
 
 from src.config import CACHE_SIMILARITY_THRESHOLD, CACHE_MAX_SIZE
+
+_REDIS_KEY_PREFIX = "ocp-rag:cache:"
+_REDIS_CACHE_TTL = 7 * 24 * 3600  # 7일
 
 
 @dataclass
@@ -32,6 +43,10 @@ class SemanticCache:
     """의미 기반 응답 캐시
 
     처음에 threshold=0.92로 했다가 다른 질문인데 캐시 히트되는 문제가 있어서 0.95로 올림.
+
+    Redis 연동:
+    - 인메모리 행렬이 기본 (cosine similarity 계산은 in-process)
+    - Redis는 재시작 후 캐시 복원을 위한 영속 계층으로 사용
     """
     # 향후 개선: 쿼리 길이에 따른 동적 threshold 조절 (현재 0.95 고정)
 
@@ -46,6 +61,57 @@ class SemanticCache:
         self._embeddings: Optional[np.ndarray] = None  # lookup 때마다 재계산하면 느려서 행렬로 캐싱
         self._keys: list[str] = []
         self._lock = asyncio.Lock()  # 동시 요청 시 캐시 상태 보호
+        self._redis = None
+
+    def set_redis(self, redis_client) -> None:
+        """Redis 클라이언트 주입 + 기존 캐시 복원"""
+        self._redis = redis_client
+        self._load_from_redis()
+
+    def _load_from_redis(self):
+        """Redis에 저장된 캐시 항목을 인메모리로 복원"""
+        if not self._redis:
+            return
+        try:
+            pattern = f"{_REDIS_KEY_PREFIX}*"
+            keys = self._redis.keys(pattern)
+            loaded = 0
+            for key in keys:
+                raw = self._redis.get(key)
+                if not raw:
+                    continue
+                entry: CacheEntry = pickle.loads(raw)
+                if len(self._cache) < self.max_size:
+                    self._cache[entry.query] = entry
+                    loaded += 1
+            if loaded:
+                self._rebuild_matrix()
+                import logging
+                logging.getLogger(__name__).info("Redis에서 캐시 항목 %d개 복원", loaded)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning("Redis 캐시 복원 실패: %s", e)
+
+    def _query_redis_key(self, query: str) -> str:
+        digest = hashlib.sha256(query.encode("utf-8")).hexdigest()[:16]
+        return f"{_REDIS_KEY_PREFIX}{digest}"
+
+    def _save_entry_to_redis(self, entry: CacheEntry):
+        if not self._redis:
+            return
+        try:
+            key = self._query_redis_key(entry.query)
+            self._redis.set(key, pickle.dumps(entry), ex=_REDIS_CACHE_TTL)
+        except Exception:
+            pass
+
+    def _delete_entry_from_redis(self, query: str):
+        if not self._redis:
+            return
+        try:
+            self._redis.delete(self._query_redis_key(query))
+        except Exception:
+            pass
 
     _GENERIC_TOKENS = {
         "개요", "설명", "간략", "간단", "소개", "기본", "핵심",
@@ -178,6 +244,7 @@ class SemanticCache:
             existing.sources = sources
             existing.endpoint_key = endpoint_key
             existing.model = model
+            self._save_entry_to_redis(existing)
             return
 
         entry = CacheEntry(
@@ -193,13 +260,22 @@ class SemanticCache:
 
         # LRU: 최대 크기 초과 시 가장 오래된 항목 제거
         if len(self._cache) >= self.max_size:
-            self._cache.popitem(last=False)
+            evicted_query, _ = self._cache.popitem(last=False)
+            self._delete_entry_from_redis(evicted_query)
 
         self._cache[query] = entry
         self._rebuild_matrix()
+        self._save_entry_to_redis(entry)
 
     def clear(self):
         """캐시 초기화"""
+        if self._redis:
+            try:
+                keys = self._redis.keys(f"{_REDIS_KEY_PREFIX}*")
+                if keys:
+                    self._redis.delete(*keys)
+            except Exception:
+                pass
         self._cache.clear()
         self._embeddings = None
         self._keys = []
