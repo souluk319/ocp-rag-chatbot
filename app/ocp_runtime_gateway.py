@@ -114,10 +114,10 @@ def ensure_session_id(
     return create_upstream_conversation(config, headers, title=title)
 
 
-def upstream_headers(request: Request) -> dict[str, str]:
+def upstream_headers(request: Request, config: RuntimeConfig) -> dict[str, str]:
     headers = {"Content-Type": "application/json"}
     auth = request.headers.get("authorization", "").strip()
-    if auth:
+    if auth and config.forward_client_auth:
         headers["Authorization"] = auth
     return headers
 
@@ -230,7 +230,7 @@ async def chat(request: Request) -> Response:
         raise HTTPException(status_code=400, detail="query is required")
 
     reset_active_source_catalog()
-    headers = upstream_headers(request)
+    headers = upstream_headers(request, config)
     session_id = ensure_session_id(
         request,
         config,
@@ -310,7 +310,7 @@ async def stream_chat(request: Request) -> Response:
         raise HTTPException(status_code=400, detail="query is required")
 
     reset_active_source_catalog()
-    headers = upstream_headers(request)
+    headers = upstream_headers(request, config)
     session_id = ensure_session_id(
         request,
         config,
@@ -426,7 +426,7 @@ async def chat_feedback(request: Request) -> Response:
     try:
         upstream = requests.post(
             upstream_url,
-            headers=upstream_headers(request),
+            headers=upstream_headers(request, config),
             data=body,
             timeout=config.request_timeout_seconds,
         )

@@ -84,6 +84,50 @@ Purpose:
 
 This is the recommended first-release scope even though the currently validated ingest slice is still smaller.
 
+### Core validation profile before target minor approval
+
+Before an operator-facing target minor is approved, we still need a wider validation corpus that exercises the real pipeline more aggressively than P0.
+
+That profile is now represented as:
+
+- `ocp-validation-main-core`
+
+Purpose:
+
+- expand retrieval, citation, runtime, and refresh-loop pressure without hard-pinning the system to one minor version too early
+- keep the source-profile and lineage layer stable while the real operator-facing target minor is still undecided
+
+Recommended active directories for this profile:
+
+- `installing`
+- `post_installation_configuration`
+- `updating`
+- `upgrading`
+- `backup_and_restore`
+- `networking`
+- `security`
+- `storage`
+- `nodes`
+- `operators`
+- `observability`
+- `etcd`
+- `disconnected`
+- `registry`
+- `cli_reference`
+- `support`
+- `authentication`
+- `architecture`
+- `machine_configuration`
+- `machine_management`
+- `web_console`
+- `applications`
+- `cicd`
+
+Validation-core note:
+
+- `release_notes` remain outside this profile because they are version-sensitive and should follow an approved target minor, not `main`
+- `rest_api` also remains outside this profile because it is large, noisy, and better introduced after the core operator-facing corpus is stable
+
 Version rule for the first operational release:
 
 - the release must declare one approved target minor explicitly

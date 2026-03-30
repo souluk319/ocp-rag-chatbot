@@ -88,6 +88,42 @@ sources:
     include_patterns:
       - "**/*.adoc"
 
+  - id: openshift-docs-core-validation
+    enabled: false
+    type: git_mirror
+    source_url: https://github.com/openshift/openshift-docs
+    local_path: ../openshift-docs
+    trust_level: official
+    product: ocp
+    version_label: 4.x
+    language: en
+    include_dirs:
+      - installing
+      - post_installation_configuration
+      - updating
+      - upgrading
+      - backup_and_restore
+      - networking
+      - security
+      - storage
+      - nodes
+      - operators
+      - observability
+      - etcd
+      - disconnected
+      - registry
+      - cli_reference
+      - support
+      - authentication
+      - architecture
+      - machine_configuration
+      - machine_management
+      - web_console
+      - applications
+      - cicd
+    include_patterns:
+      - "**/*.adoc"
+
   - id: openshift-docs-p2
     enabled: false
     type: git_mirror

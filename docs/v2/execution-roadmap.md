@@ -48,6 +48,7 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 12: complete for the live runtime baseline (`bridge -> OpenDocuments -> gateway -> viewer`)
 - Stage 13: complete for source-profile and git-lineage abstraction (`mirror -> profile -> target release -> normalized manifest lineage`)
 - Stage 14: complete for repeatable operator launch (`one-command runtime startup -> startup health -> viewer click-through -> launch report`)
+- Stage 15: complete for core-validation corpus expansion (`main-based core profile -> 1201 docs -> duplicate-anchor cleanup -> delta activation -> live runtime smoke`)
 
 ## Stage 0. Freeze the rewrite baseline
 
@@ -825,6 +826,82 @@ Interpretation:
 - Stage 14 closes the operator launch path for the validated slice
 - Stage 9 and Stage 10 still remain the authority for retrieval quality
 - Stage 11 still remains the authority for refresh / activate / rollback
+
+## Stage 15. Widen the validation corpus before target-minor pinning
+
+### Goal
+
+Build and activate a broader `main`-based validation corpus so the system pipeline can be exercised on a more realistic OCP operations surface before a target minor is approved.
+
+### Why it matters
+
+The project must stay version-flexible, but the validated P0 slice is too small to pressure retrieval, citation, refresh, and runtime behavior realistically.
+
+### Primary owners
+
+- Data / Document Onboarding Engineer
+- RAG / Search Engineer
+- OCP / Air-gapped Infrastructure Engineer
+
+### Inputs
+
+- `docs/v2/source-scope.md`
+- `configs/source-profiles.yaml`
+- `ingest/normalize_openshift_docs.py`
+- `deployment/build_outbound_bundle.py`
+- `deployment/run_activation_smoke.py`
+
+### Work items
+
+- add a `main`-based core validation source profile
+- normalize the wider core corpus into text, HTML, and manifest artifacts
+- remove duplicate HTML anchor ids inside documents
+- build a delta bundle against the approved P0 baseline
+- stage, reindex, smoke, and activate the widened corpus
+- re-run live runtime smoke on the widened active index
+
+### Deliverables
+
+- `configs/source-profiles.yaml`
+- `docs/v2/stage15-core-validation-corpus.md`
+- `data/manifests/generated/openshift-docs-core-validation.json`
+- `data/manifests/generated/core-duplicate-anchor-report.json`
+- `data/manifests/generated/s15c-core-reindex-report.json`
+- `data/manifests/generated/s15c-core-smoke-report.json`
+- `data/manifests/generated/s15c-core-activation-report.json`
+- `data/manifests/generated/s15c-core-live-runtime-report.json`
+
+### Exit criteria
+
+- the wider validation profile normalizes successfully
+- duplicate HTML anchors are reduced to zero
+- the widened corpus can pass Stage 11 mechanics
+- the widened active index can pass Stage 12 live runtime smoke
+
+### Current completion note
+
+Local evidence now exists for:
+
+- `ocp-validation-main-core` profile creation
+- `1201` normalized documents from the widened validation corpus
+- `0` duplicate HTML anchors after section-anchor deduplication
+- delta bundle generation from the approved P0 baseline (`added=920`, `changed=281`, `removed=0`)
+- Stage 11 activation onto `s15c-core`
+- Stage 12 live runtime smoke on `s15c-core`
+
+See:
+
+- `docs/v2/stage15-core-validation-corpus.md`
+- `data/manifests/generated/openshift-docs-core-validation.json`
+- `data/manifests/generated/core-duplicate-anchor-report.json`
+- `data/manifests/generated/s15c-core-activation-report.json`
+- `data/manifests/generated/s15c-core-live-runtime-report.json`
+
+Interpretation:
+
+- the system pipeline is now validated on a much wider corpus without pinning to one minor version
+- retrieval quality still needs a dedicated regression pass on the widened corpus
+- the current Stage 11 activation smoke uses a weaker OpenDocuments bootstrap path than the approved bridge-driven runtime, so retrieval alignment results remain conservative
 
 ## Stage advancement rule
 

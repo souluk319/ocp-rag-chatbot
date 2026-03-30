@@ -481,6 +481,15 @@ def slugify(text: str) -> str:
     return lowered or "section"
 
 
+def unique_anchor_id(preferred: str, used: dict[str, int]) -> str:
+    base = preferred or "section"
+    count = used.get(base, 0) + 1
+    used[base] = count
+    if count == 1:
+        return base
+    return f"{base}-{count}"
+
+
 def parse_condition_tokens(raw_tokens: str) -> list[str]:
     return [token.strip() for token in raw_tokens.split(",") if token.strip()]
 
@@ -600,6 +609,7 @@ def build_sections(lines: list[str], fallback_title: str, document_id: str) -> l
     sections: list[RenderSection] = []
     hierarchy: list[str] = []
     pending_anchor: str | None = None
+    used_anchors: dict[str, int] = {}
 
     def start_section(title: str, level: int, anchor_id: str) -> RenderSection:
         nonlocal hierarchy
@@ -637,23 +647,28 @@ def build_sections(lines: list[str], fallback_title: str, document_id: str) -> l
         if heading_match := HEADING_RE.match(stripped):
             title = heading_match.group(2).strip() or fallback_title
             level = len(heading_match.group(1))
-            anchor_id = pending_anchor or slugify(title)
+            anchor_id = unique_anchor_id(pending_anchor or slugify(title), used_anchors)
             current_section = start_section(title, level, anchor_id)
             pending_anchor = None
             continue
 
         if current_section is None:
-            current_section = start_section(fallback_title, 1, pending_anchor or slugify(fallback_title))
+            current_section = start_section(
+                fallback_title,
+                1,
+                unique_anchor_id(pending_anchor or slugify(fallback_title), used_anchors),
+            )
             pending_anchor = None
 
         current_section.body_lines.append(line.rstrip())
 
     if not sections:
+        anchor_id = unique_anchor_id(slugify(fallback_title), used_anchors)
         sections.append(
             RenderSection(
-                section_id=stable_section_id(document_id, slugify(fallback_title), 0),
+                section_id=stable_section_id(document_id, anchor_id, 0),
                 title=fallback_title,
-                anchor_id=slugify(fallback_title),
+                anchor_id=anchor_id,
                 level=1,
                 heading_hierarchy=[fallback_title],
                 section_index=0,

@@ -15,6 +15,10 @@ def _normalize_path(value: str) -> str:
     return value.replace("\\", "/").strip().lower()
 
 
+def _normalize_heading_value(value: str) -> str:
+    return " ".join(value.strip().lower().split())
+
+
 def _load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -32,16 +36,36 @@ def _guess_product(document_path: str) -> str:
     return "ocp"
 
 
-def _section_anchor(document: dict[str, Any], section_title: str) -> str:
-    normalized_section = section_title.strip().lower()
-    if not normalized_section:
-        return ""
+def _resolve_section(document: dict[str, Any], heading_hierarchy: list[str]) -> dict[str, str]:
+    sections = document.get("sections", []) or []
+    normalized_hierarchy = [_normalize_heading_value(item) for item in heading_hierarchy if _normalize_heading_value(item)]
+    normalized_section = normalized_hierarchy[-1] if normalized_hierarchy else ""
 
-    for section in document.get("sections", []) or []:
-        title = str(section.get("section_title", "")).strip().lower()
-        if title == normalized_section:
-            return str(section.get("section_anchor", "")).strip()
-    return ""
+    if normalized_hierarchy:
+        for section in sections:
+            section_hierarchy = [
+                _normalize_heading_value(str(item))
+                for item in (section.get("heading_hierarchy") or [])
+                if _normalize_heading_value(str(item))
+            ]
+            if section_hierarchy == normalized_hierarchy:
+                return {
+                    "section_id": str(section.get("section_id", "")).strip(),
+                    "section_title": str(section.get("section_title", "")).strip(),
+                    "section_anchor": str(section.get("section_anchor", "")).strip(),
+                }
+
+    if normalized_section:
+        for section in sections:
+            title = _normalize_heading_value(str(section.get("section_title", "")))
+            if title == normalized_section:
+                return {
+                    "section_id": str(section.get("section_id", "")).strip(),
+                    "section_title": str(section.get("section_title", "")).strip(),
+                    "section_anchor": str(section.get("section_anchor", "")).strip(),
+                }
+
+    return {"section_id": "", "section_title": "", "section_anchor": ""}
 
 
 @dataclass(frozen=True)
@@ -141,8 +165,10 @@ class SourceCatalog:
         source_path = str(source.get("sourcePath", "")).strip()
         document = self.resolve_document(source_path)
         heading_hierarchy = [str(item).strip() for item in (source.get("headingHierarchy") or []) if str(item).strip()]
-        section_title = heading_hierarchy[-1] if heading_hierarchy else ""
-        section_anchor = _section_anchor(document, section_title)
+        resolved_section = _resolve_section(document, heading_hierarchy)
+        section_title = resolved_section.get("section_title", "") or (heading_hierarchy[-1] if heading_hierarchy else "")
+        section_anchor = resolved_section.get("section_anchor", "")
+        section_id = resolved_section.get("section_id", "")
 
         viewer_url = str(document.get("viewer_url", "")).strip() or source_path
         if section_anchor and "#" not in viewer_url:
@@ -170,6 +196,11 @@ class SourceCatalog:
             "viewer_url": viewer_url,
             "html_path": str(document.get("html_path", "")).strip(),
             "source_url": str(document.get("source_url", "")).strip(),
+            "source_profile_id": str(document.get("source_profile_id", "")).strip(),
+            "source_git_ref": str(document.get("source_git_ref", "")).strip(),
+            "source_git_commit": str(document.get("source_git_commit", "")).strip(),
+            "target_minor": str(document.get("target_minor", "")).strip(),
+            "section_id": section_id,
             "section_title": section_title,
             "section_anchor": section_anchor,
             "heading_hierarchy": heading_hierarchy,

@@ -17,6 +17,7 @@
 - Stage 12 live runtime baseline 검증 완료
 - Stage 13 source profile / git lineage abstraction 완료
 - Stage 14 one-command operator launch path 검증 완료
+- Stage 15 core validation corpus 확대 및 delta activation 완료
 
 현재 확보된 기준은 다음과 같습니다.
 
@@ -26,14 +27,16 @@
 - runtime endpoint / model 설정은 env 기반으로만 사용
 - validation mode 와 future operator-release mode 를 source profile 로 분리
 - active Stage 11 index 를 기준으로 bridge -> OpenDocuments -> gateway 를 한 번에 띄우는 운영 진입점 확보
+- `main` 기반 core validation corpus `1201`문서 생성 및 `s15c-core` 활성화 검증 완료
 
 ## 다음 마일스톤
 
-1. 운영 대상 minor 버전이 확정되면 target-minor source profile 활성화
-2. validated P0 이후 core corpus 확장
-3. corpus 확대 후 Stage 9 ~ Stage 12 게이트 재검증
+1. widened core corpus 기준 retrieval 회귀 검증 강화
+2. Stage 11 activation smoke 를 bridge / bge-m3 기준에 더 가깝게 보강
+3. Stage 9 ~ Stage 12 게이트를 widened corpus 기준으로 다시 집계
 4. Stage 11 delta refresh 실데이터 기준 재실행
-5. 필요 시 최소 UI hardening
+5. 운영 대상 minor 버전이 확정되면 target-minor source profile 활성화
+6. 필요 시 최소 UI hardening
 
 ## 핵심 설계 문서
 
