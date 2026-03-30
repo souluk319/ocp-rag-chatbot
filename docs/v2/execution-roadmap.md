@@ -35,7 +35,8 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 0: complete
 - Stage 1: complete
 - Stage 2: complete for first pass
-- Stage 3: next active implementation stage
+- Stage 3: complete
+- Stage 4: next active implementation stage
 
 ## Stage 0. Freeze the rewrite baseline
 
@@ -186,7 +187,8 @@ The first presentation feedback explicitly called out weak chunking.
 
 ### Deliverables
 
-- chunking contract document or section update
+- `docs/v2/chunking-contract.md`
+- `configs/chunk-schema.yaml`
 - implementation plan for chunk emission
 - sample chunk schema for one normalized document
 

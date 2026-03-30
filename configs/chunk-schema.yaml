@@ -1,0 +1,49 @@
+version: 1
+
+required_fields:
+  - chunk_id
+  - document_id
+  - section_id
+  - chunk_type
+  - chunk_index
+  - token_count
+  - section_title
+  - heading_hierarchy
+  - section_anchor
+  - viewer_url
+  - source_url
+  - product
+  - version
+  - category
+  - trust_level
+
+recommended_fields:
+  - char_start
+  - char_end
+  - excerpt
+  - prev_chunk_id
+  - next_chunk_id
+  - top_level_dir
+
+field_notes:
+  chunk_id: stable unique identifier for the chunk record
+  document_id: parent document identifier from the normalized manifest
+  section_id: stable section identifier within one document
+  chunk_type: prose, procedure, code, or reference
+  chunk_index: chunk order inside the document or section stream
+  token_count: approximate token count after chunk assembly
+  section_title: human-readable section title used in citations
+  heading_hierarchy: ordered heading path used for retrieval and citation alignment
+  section_anchor: HTML anchor target for the cited section
+  viewer_url: internal HTML citation target for the chunk source
+  source_url: original source repository URL
+  product: ocp, okd, rosa, osd, or internal
+  version: approved target version or source stream label
+  category: install, upgrade, networking, security, storage, troubleshooting, or other
+  trust_level: official, internal_runbook, training, or reference
+  char_start: character offset of the chunk in the normalized section text
+  char_end: end character offset of the chunk in the normalized section text
+  excerpt: short representative text used for debugging and citation previews
+  prev_chunk_id: previous adjacent chunk identifier when present
+  next_chunk_id: next adjacent chunk identifier when present
+  top_level_dir: first source directory segment from openshift-docs
