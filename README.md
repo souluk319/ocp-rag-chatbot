@@ -45,6 +45,7 @@ ingest/        document onboarding pipeline notes
 ## Design docs
 
 - `docs/v2/architecture-blueprint.md`
+- `docs/v2/execution-roadmap.md`
 - `docs/v2/source-scope.md`
 - `docs/v2/requirements-traceability.md`
 - `docs/v2/evaluation-spec.md`
