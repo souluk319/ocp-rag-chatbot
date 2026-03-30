@@ -177,6 +177,11 @@ However:
 - `_converters`
 - `_gemfiles`
 
+These exclusions must apply at two levels:
+
+- top-level directories
+- path fragments inside mixed directories such as `support`
+
 ## 10. Metadata Contract
 
 Every normalized document must carry stable metadata.

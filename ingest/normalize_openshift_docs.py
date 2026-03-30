@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import re
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,6 +23,22 @@ DEFAULT_EXCLUDE_PREFIXES = (
     "rosa_",
     "microshift_",
     "cloud_experts_",
+)
+
+DEFAULT_EXCLUDE_PATH_FRAGMENTS = (
+    "/rosa-",
+    "/rosa_",
+    "-rosa-",
+    "_rosa_",
+    "/osd-",
+    "/osd_",
+    "-osd-",
+    "_osd_",
+    "/microshift-",
+    "/microshift_",
+    "-microshift-",
+    "_microshift_",
+    "/support/troubleshooting/sd-",
 )
 
 DEFAULT_EXCLUDE_DIRS = {
@@ -96,6 +113,12 @@ def parse_args() -> argparse.Namespace:
         help="Source identifier written to the manifest",
     )
     parser.add_argument(
+        "--exclude-fragment",
+        action="append",
+        dest="exclude_fragments",
+        help="Case-insensitive path fragment to exclude. Repeat to add more.",
+    )
+    parser.add_argument(
         "--version-label",
         default="4.x",
         help="Version label stored in the manifest",
@@ -105,6 +128,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="List selected files without writing output",
     )
+    parser.add_argument(
+        "--show-documents",
+        action="store_true",
+        help="When used with --dry-run, print the full document list instead of a summary.",
+    )
     return parser.parse_args()
 
 
@@ -112,6 +140,22 @@ def should_skip_top_level(name: str) -> bool:
     if name in DEFAULT_EXCLUDE_DIRS:
         return True
     return any(name.startswith(prefix) for prefix in DEFAULT_EXCLUDE_PREFIXES)
+
+
+def normalize_match_path(relative_path: Path) -> str:
+    return f"/{relative_path.as_posix().lower()}"
+
+
+def skip_reason_for_path(relative_path: Path, exclude_fragments: list[str]) -> str | None:
+    top_level = relative_path.parts[0]
+    if should_skip_top_level(top_level):
+        return f"top_level:{top_level}"
+
+    normalized_path = normalize_match_path(relative_path)
+    for fragment in exclude_fragments:
+        if fragment.lower() in normalized_path:
+            return f"path_fragment:{fragment}"
+    return None
 
 
 def collect_source_files(source_root: Path, include_dirs: list[str]) -> list[Path]:
@@ -200,6 +244,7 @@ def normalize_documents(args: argparse.Namespace) -> int:
     output_dir = args.output_dir.resolve()
     manifest_out = args.manifest_out.resolve()
     include_dirs = args.include_dirs or DEFAULT_INCLUDE_DIRS
+    exclude_fragments = args.exclude_fragments or list(DEFAULT_EXCLUDE_PATH_FRAGMENTS)
     collected_at = datetime.now(timezone.utc).isoformat()
 
     if not source_root.exists():
@@ -207,16 +252,20 @@ def normalize_documents(args: argparse.Namespace) -> int:
 
     source_files = collect_source_files(source_root, include_dirs)
     documents: list[NormalizedDocument] = []
+    skipped = Counter()
 
     for source_file in source_files:
         relative_path = source_file.relative_to(source_root)
-        if should_skip_top_level(relative_path.parts[0]):
+        skip_reason = skip_reason_for_path(relative_path, exclude_fragments)
+        if skip_reason:
+            skipped[skip_reason] += 1
             continue
 
         source_text = source_file.read_text(encoding="utf-8", errors="ignore")
         title = extract_title(source_text, source_file.stem)
         body = strip_asciidoc(source_text)
         if not body:
+            skipped["empty_body"] += 1
             continue
 
         normalized_path = output_dir / relative_path.with_suffix(".txt")
@@ -248,12 +297,30 @@ def normalize_documents(args: argparse.Namespace) -> int:
         "source_root": str(source_root),
         "source_id": args.source_id,
         "collected_at": collected_at,
+        "scanned_adoc_count": len(source_files),
         "document_count": len(documents),
+        "top_level_counts": dict(sorted(Counter(doc.top_level_dir for doc in documents).items())),
+        "category_counts": dict(sorted(Counter(doc.category for doc in documents).items())),
+        "skipped_counts": dict(sorted(skipped.items())),
         "documents": [document.__dict__ for document in documents],
     }
 
     if args.dry_run:
-        print(json.dumps(manifest, indent=2))
+        if args.show_documents:
+            print(json.dumps(manifest, indent=2))
+            return 0
+
+        summary = {key: value for key, value in manifest.items() if key != "documents"}
+        summary["sample_documents"] = [
+            {
+                "title": document.title,
+                "category": document.category,
+                "top_level_dir": document.top_level_dir,
+                "local_path": document.local_path,
+            }
+            for document in documents[:15]
+        ]
+        print(json.dumps(summary, indent=2))
         return 0
 
     manifest_out.parent.mkdir(parents=True, exist_ok=True)

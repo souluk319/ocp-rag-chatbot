@@ -35,6 +35,20 @@ sources:
       - rosa_
       - microshift_
       - cloud_experts_
+    exclude_path_fragments:
+      - /rosa-
+      - /rosa_
+      - -rosa-
+      - _rosa_
+      - /osd-
+      - /osd_
+      - -osd-
+      - _osd_
+      - /microshift-
+      - /microshift_
+      - -microshift-
+      - _microshift_
+      - /support/troubleshooting/sd-
     exclude_exact:
       - ocm
       - hosted_control_planes
