@@ -33,7 +33,7 @@ The goal is to make it obvious which requirements are already defined, which are
 | Korean answer policy | Users will ask in Korean while official documents stay mostly English | LLM Serving / Backend Engineer | `configs/rag-policy.yaml` | defined | Korean answers remain grounded and preserve technical terms correctly |
 | Citation rendering | Answers must always disclose evidence | RAG / Search Engineer | `configs/rag-policy.yaml`, `docs/v2/architecture-blueprint.md` | defined | Every answer includes source references |
 | Citation click-through | Clicking a citation must open a real readable document | UI / UX Engineer | `docs/v2/architecture-blueprint.md`, `ingest/normalize_openshift_docs.py` | defined with generated HTML targets | A cited source resolves to a human-readable HTML document or section target |
-| Multi-turn memory and follow-up rewrite | Feedback requires grounded continuity across more than one turn | LLM Serving / Backend Engineer | `docs/v2/architecture-blueprint.md`, `docs/v2/evaluation-spec.md` | planned next | Session memory, rewrite rules, and 5-turn scenarios are defined and tested |
+| Multi-turn memory and follow-up rewrite | Feedback requires grounded continuity across more than one turn | LLM Serving / Backend Engineer | `docs/v2/multiturn-memory-plan.md`, `app/multiturn_memory.py`, `eval/benchmarks/p0_multiturn_scenarios.json`, `eval/multiturn_rewrite_report.py` | implemented for Stage 7 baseline | Session memory, rewrite rules, and 5-turn scenarios are defined and replayable |
 | Company-approved model usage | The runtime must not drift to local or public providers | LLM Serving / Backend Engineer | `.env`, future runtime config under `app/` | partially defined | Runtime only uses the approved company endpoint |
 | Streaming response | OpenDocuments behavior and user experience expect streaming output | LLM Serving / Backend Engineer | `docs/v2/architecture-blueprint.md` | planned | Chat answers stream to the client in chunks |
 | Air-gapped update loop | The system must survive document refreshes in a closed network | OCP / Air-gapped Infrastructure Engineer | `deployment/airgap-flow.md`, `deployment/bundle-schema.yaml` | defined | Approved bundle import and rollback are documented and repeatable |
@@ -54,7 +54,6 @@ The goal is to make it obvious which requirements are already defined, which are
 - section-aware chunk generation
 - OpenDocuments ingestion validation using the normalized P0 corpus
 - additional evaluation dataset assets under `eval/`
-- multi-turn memory rules and follow-up rewrite logic
 - company-endpoint runtime wiring for the integrated chatbot path
 
 ## Interpretation rule

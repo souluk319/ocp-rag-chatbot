@@ -12,6 +12,7 @@ Planned contents:
 - version correctness checks
 - retrieval benchmark datasets and result summaries
 - multi-turn scenario datasets
+- session memory and follow-up rewrite reports
 - red-team prompts for unsafe or weakly grounded answers
 
 The controlling evaluation document is:

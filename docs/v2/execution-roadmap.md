@@ -40,7 +40,8 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 4.5: complete
 - Stage 5: complete
 - Stage 6: complete
-- Stage 7: next active implementation stage
+- Stage 7: complete
+- Stage 8: next active implementation stage
 
 ## Stage 0. Freeze the rewrite baseline
 
@@ -399,14 +400,18 @@ The earlier review explicitly said multi-turn support was weak.
 
 ### Deliverables
 
-- memory and rewrite implementation plan
-- first multi-turn test scenarios
+- `docs/v2/multiturn-memory-plan.md`
+- `app/multiturn_memory.py`
+- `eval/benchmarks/p0_multiturn_scenarios.json`
+- `eval/multiturn-scenario-schema.yaml`
+- `eval/multiturn_rewrite_report.py`
 
 ### Exit criteria
 
 - at least one 5-turn scenario remains grounded
 - version continuity does not drift silently
-- follow-up turns still retrieve relevant sources
+- follow-up turns still rewrite into retrieval-ready standalone queries
+- scenario replay results are inspectable and reproducible
 
 ## Stage 8. Lock the runtime to the approved company endpoint
 

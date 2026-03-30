@@ -1,0 +1,731 @@
+{
+  "summary": {
+    "scenario_count": 2,
+    "turn_count": 10,
+    "rewrite_term_pass_rate": 1.0,
+    "source_dir_pass_rate": 1.0,
+    "version_pass_rate": 1.0,
+    "classification_pass_rate": 1.0,
+    "topic_pass_rate": 1.0,
+    "fully_passing_scenarios": 2
+  },
+  "scenarios": [
+    {
+      "scenario_id": "MT-001",
+      "title": "Update preparation continuity and version switch",
+      "turn_count": 5,
+      "all_turns_pass": true,
+      "turns": [
+        {
+          "turn_index": 1,
+          "question_ko": "CNF 클러스터 업데이트 전에 무엇을 준비해야 해?",
+          "expected_classification": "standalone",
+          "expected_source_dir": "post_installation_configuration",
+          "expected_topic": "update_prereq",
+          "expected_version": "4.x",
+          "rewritten_query": "CNF 클러스터 업데이트 전에 무엇을 준비해야 해? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.x ; hints OpenShift update, before the update, CNF, etcd backup, application pods",
+          "checks": {
+            "classification_match": true,
+            "source_dir_match": true,
+            "topic_match": true,
+            "version_match": true,
+            "rewrite_terms_match": true,
+            "forbidden_terms_absent": true,
+            "turn_pass": true
+          },
+          "issues": [],
+          "state_after": {
+            "session_id": "MT-001",
+            "active_topic": "update_prereq",
+            "source_dir": "post_installation_configuration",
+            "active_version": "4.x",
+            "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc",
+            "retrieval_hints": [
+              "OpenShift update",
+              "before the update",
+              "CNF",
+              "etcd backup",
+              "application pods"
+            ],
+            "turn_count": 1,
+            "last_updated_epoch": 1774849091.9890478,
+            "recent_turns": [
+              {
+                "turn_index": 1,
+                "question_ko": "CNF 클러스터 업데이트 전에 무엇을 준비해야 해?",
+                "classification": "standalone",
+                "rewritten_query": "CNF 클러스터 업데이트 전에 무엇을 준비해야 해? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.x ; hints OpenShift update, before the update, CNF, etcd backup, application pods",
+                "active_topic": "update_prereq",
+                "source_dir": "post_installation_configuration",
+                "active_version": "4.x",
+                "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc",
+                "issues": []
+              }
+            ]
+          }
+        },
+        {
+          "turn_index": 2,
+          "question_ko": "그 전에 etcd 백업도 해야 하나?",
+          "expected_classification": "follow_up",
+          "expected_source_dir": "post_installation_configuration",
+          "expected_topic": "update_prereq",
+          "expected_version": "4.x",
+          "rewritten_query": "그 전에 etcd 백업도 해야 하나? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.x ; last_document post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc ; hints OpenShift update, before the update, CNF, etcd backup, application pods",
+          "checks": {
+            "classification_match": true,
+            "source_dir_match": true,
+            "topic_match": true,
+            "version_match": true,
+            "rewrite_terms_match": true,
+            "forbidden_terms_absent": true,
+            "turn_pass": true
+          },
+          "issues": [],
+          "state_after": {
+            "session_id": "MT-001",
+            "active_topic": "update_prereq",
+            "source_dir": "post_installation_configuration",
+            "active_version": "4.x",
+            "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc",
+            "retrieval_hints": [
+              "OpenShift update",
+              "before the update",
+              "CNF",
+              "etcd backup",
+              "application pods"
+            ],
+            "turn_count": 2,
+            "last_updated_epoch": 1774849091.9891193,
+            "recent_turns": [
+              {
+                "turn_index": 1,
+                "question_ko": "CNF 클러스터 업데이트 전에 무엇을 준비해야 해?",
+                "classification": "standalone",
+                "rewritten_query": "CNF 클러스터 업데이트 전에 무엇을 준비해야 해? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.x ; hints OpenShift update, before the update, CNF, etcd backup, application pods",
+                "active_topic": "update_prereq",
+                "source_dir": "post_installation_configuration",
+                "active_version": "4.x",
+                "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 2,
+                "question_ko": "그 전에 etcd 백업도 해야 하나?",
+                "classification": "follow_up",
+                "rewritten_query": "그 전에 etcd 백업도 해야 하나? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.x ; last_document post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc ; hints OpenShift update, before the update, CNF, etcd backup, application pods",
+                "active_topic": "update_prereq",
+                "source_dir": "post_installation_configuration",
+                "active_version": "4.x",
+                "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc",
+                "issues": []
+              }
+            ]
+          }
+        },
+        {
+          "turn_index": 3,
+          "question_ko": "백업 말고 애플리케이션 pod 준비는?",
+          "expected_classification": "follow_up",
+          "expected_source_dir": "post_installation_configuration",
+          "expected_topic": "update_prereq",
+          "expected_version": "4.x",
+          "rewritten_query": "백업 말고 애플리케이션 pod 준비는? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.x ; last_document post_installation_configuration/day_2_core_cnf_clusters/updating/update-cnf-update-prep.adoc ; hints OpenShift update, before the update, CNF, etcd backup, application pods",
+          "checks": {
+            "classification_match": true,
+            "source_dir_match": true,
+            "topic_match": true,
+            "version_match": true,
+            "rewrite_terms_match": true,
+            "forbidden_terms_absent": true,
+            "turn_pass": true
+          },
+          "issues": [],
+          "state_after": {
+            "session_id": "MT-001",
+            "active_topic": "update_prereq",
+            "source_dir": "post_installation_configuration",
+            "active_version": "4.x",
+            "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-cnf-update-prep.adoc",
+            "retrieval_hints": [
+              "OpenShift update",
+              "before the update",
+              "CNF",
+              "etcd backup",
+              "application pods"
+            ],
+            "turn_count": 3,
+            "last_updated_epoch": 1774849091.9891686,
+            "recent_turns": [
+              {
+                "turn_index": 1,
+                "question_ko": "CNF 클러스터 업데이트 전에 무엇을 준비해야 해?",
+                "classification": "standalone",
+                "rewritten_query": "CNF 클러스터 업데이트 전에 무엇을 준비해야 해? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.x ; hints OpenShift update, before the update, CNF, etcd backup, application pods",
+                "active_topic": "update_prereq",
+                "source_dir": "post_installation_configuration",
+                "active_version": "4.x",
+                "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 2,
+                "question_ko": "그 전에 etcd 백업도 해야 하나?",
+                "classification": "follow_up",
+                "rewritten_query": "그 전에 etcd 백업도 해야 하나? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.x ; last_document post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc ; hints OpenShift update, before the update, CNF, etcd backup, application pods",
+                "active_topic": "update_prereq",
+                "source_dir": "post_installation_configuration",
+                "active_version": "4.x",
+                "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 3,
+                "question_ko": "백업 말고 애플리케이션 pod 준비는?",
+                "classification": "follow_up",
+                "rewritten_query": "백업 말고 애플리케이션 pod 준비는? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.x ; last_document post_installation_configuration/day_2_core_cnf_clusters/updating/update-cnf-update-prep.adoc ; hints OpenShift update, before the update, CNF, etcd backup, application pods",
+                "active_topic": "update_prereq",
+                "source_dir": "post_installation_configuration",
+                "active_version": "4.x",
+                "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-cnf-update-prep.adoc",
+                "issues": []
+              }
+            ]
+          }
+        },
+        {
+          "turn_index": 4,
+          "question_ko": "같은 흐름으로 4.16에서도 봐도 돼?",
+          "expected_classification": "follow_up",
+          "expected_source_dir": "post_installation_configuration",
+          "expected_topic": "update_prereq",
+          "expected_version": "4.16",
+          "rewritten_query": "같은 흐름으로 4.16에서도 봐도 돼? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.16 ; last_document post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc ; hints OpenShift update, before the update, CNF, etcd backup, application pods, version specific guidance",
+          "checks": {
+            "classification_match": true,
+            "source_dir_match": true,
+            "topic_match": true,
+            "version_match": true,
+            "rewrite_terms_match": true,
+            "forbidden_terms_absent": true,
+            "turn_pass": true
+          },
+          "issues": [
+            "version_switch"
+          ],
+          "state_after": {
+            "session_id": "MT-001",
+            "active_topic": "update_prereq",
+            "source_dir": "post_installation_configuration",
+            "active_version": "4.16",
+            "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc",
+            "retrieval_hints": [
+              "OpenShift update",
+              "before the update",
+              "CNF",
+              "etcd backup",
+              "application pods"
+            ],
+            "turn_count": 4,
+            "last_updated_epoch": 1774849091.9892118,
+            "recent_turns": [
+              {
+                "turn_index": 1,
+                "question_ko": "CNF 클러스터 업데이트 전에 무엇을 준비해야 해?",
+                "classification": "standalone",
+                "rewritten_query": "CNF 클러스터 업데이트 전에 무엇을 준비해야 해? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.x ; hints OpenShift update, before the update, CNF, etcd backup, application pods",
+                "active_topic": "update_prereq",
+                "source_dir": "post_installation_configuration",
+                "active_version": "4.x",
+                "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 2,
+                "question_ko": "그 전에 etcd 백업도 해야 하나?",
+                "classification": "follow_up",
+                "rewritten_query": "그 전에 etcd 백업도 해야 하나? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.x ; last_document post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc ; hints OpenShift update, before the update, CNF, etcd backup, application pods",
+                "active_topic": "update_prereq",
+                "source_dir": "post_installation_configuration",
+                "active_version": "4.x",
+                "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 3,
+                "question_ko": "백업 말고 애플리케이션 pod 준비는?",
+                "classification": "follow_up",
+                "rewritten_query": "백업 말고 애플리케이션 pod 준비는? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.x ; last_document post_installation_configuration/day_2_core_cnf_clusters/updating/update-cnf-update-prep.adoc ; hints OpenShift update, before the update, CNF, etcd backup, application pods",
+                "active_topic": "update_prereq",
+                "source_dir": "post_installation_configuration",
+                "active_version": "4.x",
+                "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-cnf-update-prep.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 4,
+                "question_ko": "같은 흐름으로 4.16에서도 봐도 돼?",
+                "classification": "follow_up",
+                "rewritten_query": "같은 흐름으로 4.16에서도 봐도 돼? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.16 ; last_document post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc ; hints OpenShift update, before the update, CNF, etcd backup, application pods, version specific guidance",
+                "active_topic": "update_prereq",
+                "source_dir": "post_installation_configuration",
+                "active_version": "4.16",
+                "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc",
+                "issues": [
+                  "version_switch"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "turn_index": 5,
+          "question_ko": "아니, 인증서 maintenance 쪽은 어디 문서 봐야 해?",
+          "expected_classification": "topic_shift",
+          "expected_source_dir": "post_installation_configuration",
+          "expected_topic": "certificate_maintenance",
+          "expected_version": "4.16",
+          "rewritten_query": "아니, 인증서 maintenance 쪽은 어디 문서 봐야 해? ; source post_installation_configuration ; topic certificate_maintenance ; OpenShift 4.16 ; hints certificate maintenance, certificate troubleshooting",
+          "checks": {
+            "classification_match": true,
+            "source_dir_match": true,
+            "topic_match": true,
+            "version_match": true,
+            "rewrite_terms_match": true,
+            "forbidden_terms_absent": true,
+            "turn_pass": true
+          },
+          "issues": [
+            "topic_reset"
+          ],
+          "state_after": {
+            "session_id": "MT-001",
+            "active_topic": "certificate_maintenance",
+            "source_dir": "post_installation_configuration",
+            "active_version": "4.16",
+            "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/troubleshooting/troubleshooting-cert-maintenance.adoc",
+            "retrieval_hints": [
+              "certificate maintenance",
+              "certificate troubleshooting"
+            ],
+            "turn_count": 5,
+            "last_updated_epoch": 1774849091.9892533,
+            "recent_turns": [
+              {
+                "turn_index": 1,
+                "question_ko": "CNF 클러스터 업데이트 전에 무엇을 준비해야 해?",
+                "classification": "standalone",
+                "rewritten_query": "CNF 클러스터 업데이트 전에 무엇을 준비해야 해? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.x ; hints OpenShift update, before the update, CNF, etcd backup, application pods",
+                "active_topic": "update_prereq",
+                "source_dir": "post_installation_configuration",
+                "active_version": "4.x",
+                "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 2,
+                "question_ko": "그 전에 etcd 백업도 해야 하나?",
+                "classification": "follow_up",
+                "rewritten_query": "그 전에 etcd 백업도 해야 하나? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.x ; last_document post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc ; hints OpenShift update, before the update, CNF, etcd backup, application pods",
+                "active_topic": "update_prereq",
+                "source_dir": "post_installation_configuration",
+                "active_version": "4.x",
+                "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 3,
+                "question_ko": "백업 말고 애플리케이션 pod 준비는?",
+                "classification": "follow_up",
+                "rewritten_query": "백업 말고 애플리케이션 pod 준비는? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.x ; last_document post_installation_configuration/day_2_core_cnf_clusters/updating/update-cnf-update-prep.adoc ; hints OpenShift update, before the update, CNF, etcd backup, application pods",
+                "active_topic": "update_prereq",
+                "source_dir": "post_installation_configuration",
+                "active_version": "4.x",
+                "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-cnf-update-prep.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 4,
+                "question_ko": "같은 흐름으로 4.16에서도 봐도 돼?",
+                "classification": "follow_up",
+                "rewritten_query": "같은 흐름으로 4.16에서도 봐도 돼? ; source post_installation_configuration ; topic update_prereq ; OpenShift 4.16 ; last_document post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc ; hints OpenShift update, before the update, CNF, etcd backup, application pods, version specific guidance",
+                "active_topic": "update_prereq",
+                "source_dir": "post_installation_configuration",
+                "active_version": "4.16",
+                "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc",
+                "issues": [
+                  "version_switch"
+                ]
+              },
+              {
+                "turn_index": 5,
+                "question_ko": "아니, 인증서 maintenance 쪽은 어디 문서 봐야 해?",
+                "classification": "topic_shift",
+                "rewritten_query": "아니, 인증서 maintenance 쪽은 어디 문서 봐야 해? ; source post_installation_configuration ; topic certificate_maintenance ; OpenShift 4.16 ; hints certificate maintenance, certificate troubleshooting",
+                "active_topic": "certificate_maintenance",
+                "source_dir": "post_installation_configuration",
+                "active_version": "4.16",
+                "reference_doc_path": "post_installation_configuration/day_2_core_cnf_clusters/troubleshooting/troubleshooting-cert-maintenance.adoc",
+                "issues": [
+                  "topic_reset"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "scenario_id": "MT-002",
+      "title": "Disconnected mirroring continuity with support reset",
+      "turn_count": 5,
+      "all_turns_pass": true,
+      "turns": [
+        {
+          "turn_index": 1,
+          "question_ko": "폐쇄망에서 oc-mirror v2 개요를 먼저 보고 싶어.",
+          "expected_classification": "standalone",
+          "expected_source_dir": "disconnected",
+          "expected_topic": "disconnected_mirroring",
+          "expected_version": "4.x",
+          "rewritten_query": "폐쇄망에서 oc-mirror v2 개요를 먼저 보고 싶어. ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; hints disconnected mirroring, oc-mirror, mirror registry",
+          "checks": {
+            "classification_match": true,
+            "source_dir_match": true,
+            "topic_match": true,
+            "version_match": true,
+            "rewrite_terms_match": true,
+            "forbidden_terms_absent": true,
+            "turn_pass": true
+          },
+          "issues": [],
+          "state_after": {
+            "session_id": "MT-002",
+            "active_topic": "disconnected_mirroring",
+            "source_dir": "disconnected",
+            "active_version": "4.x",
+            "reference_doc_path": "disconnected/about-installing-oc-mirror-v2.adoc",
+            "retrieval_hints": [
+              "disconnected mirroring",
+              "oc-mirror",
+              "mirror registry"
+            ],
+            "turn_count": 1,
+            "last_updated_epoch": 1774849091.989576,
+            "recent_turns": [
+              {
+                "turn_index": 1,
+                "question_ko": "폐쇄망에서 oc-mirror v2 개요를 먼저 보고 싶어.",
+                "classification": "standalone",
+                "rewritten_query": "폐쇄망에서 oc-mirror v2 개요를 먼저 보고 싶어. ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; hints disconnected mirroring, oc-mirror, mirror registry",
+                "active_topic": "disconnected_mirroring",
+                "source_dir": "disconnected",
+                "active_version": "4.x",
+                "reference_doc_path": "disconnected/about-installing-oc-mirror-v2.adoc",
+                "issues": []
+              }
+            ]
+          }
+        },
+        {
+          "turn_index": 2,
+          "question_ko": "그럼 mirror registry는 어떻게 준비해?",
+          "expected_classification": "follow_up",
+          "expected_source_dir": "disconnected",
+          "expected_topic": "disconnected_mirroring",
+          "expected_version": "4.x",
+          "rewritten_query": "그럼 mirror registry는 어떻게 준비해? ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; last_document disconnected/installing-mirroring-creating-registry.adoc ; hints disconnected mirroring, oc-mirror, mirror registry",
+          "checks": {
+            "classification_match": true,
+            "source_dir_match": true,
+            "topic_match": true,
+            "version_match": true,
+            "rewrite_terms_match": true,
+            "forbidden_terms_absent": true,
+            "turn_pass": true
+          },
+          "issues": [],
+          "state_after": {
+            "session_id": "MT-002",
+            "active_topic": "disconnected_mirroring",
+            "source_dir": "disconnected",
+            "active_version": "4.x",
+            "reference_doc_path": "disconnected/installing-mirroring-creating-registry.adoc",
+            "retrieval_hints": [
+              "disconnected mirroring",
+              "oc-mirror",
+              "mirror registry"
+            ],
+            "turn_count": 2,
+            "last_updated_epoch": 1774849091.9896097,
+            "recent_turns": [
+              {
+                "turn_index": 1,
+                "question_ko": "폐쇄망에서 oc-mirror v2 개요를 먼저 보고 싶어.",
+                "classification": "standalone",
+                "rewritten_query": "폐쇄망에서 oc-mirror v2 개요를 먼저 보고 싶어. ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; hints disconnected mirroring, oc-mirror, mirror registry",
+                "active_topic": "disconnected_mirroring",
+                "source_dir": "disconnected",
+                "active_version": "4.x",
+                "reference_doc_path": "disconnected/about-installing-oc-mirror-v2.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 2,
+                "question_ko": "그럼 mirror registry는 어떻게 준비해?",
+                "classification": "follow_up",
+                "rewritten_query": "그럼 mirror registry는 어떻게 준비해? ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; last_document disconnected/installing-mirroring-creating-registry.adoc ; hints disconnected mirroring, oc-mirror, mirror registry",
+                "active_topic": "disconnected_mirroring",
+                "source_dir": "disconnected",
+                "active_version": "4.x",
+                "reference_doc_path": "disconnected/installing-mirroring-creating-registry.adoc",
+                "issues": []
+              }
+            ]
+          }
+        },
+        {
+          "turn_index": 3,
+          "question_ko": "public internet 없이 설치할 때 주의사항은?",
+          "expected_classification": "follow_up",
+          "expected_source_dir": "disconnected",
+          "expected_topic": "disconnected_mirroring",
+          "expected_version": "4.x",
+          "rewritten_query": "public internet 없이 설치할 때 주의사항은? ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; last_document disconnected/installing-mirroring-disconnected.adoc ; hints disconnected mirroring, oc-mirror, mirror registry",
+          "checks": {
+            "classification_match": true,
+            "source_dir_match": true,
+            "topic_match": true,
+            "version_match": true,
+            "rewrite_terms_match": true,
+            "forbidden_terms_absent": true,
+            "turn_pass": true
+          },
+          "issues": [],
+          "state_after": {
+            "session_id": "MT-002",
+            "active_topic": "disconnected_mirroring",
+            "source_dir": "disconnected",
+            "active_version": "4.x",
+            "reference_doc_path": "disconnected/installing-mirroring-disconnected.adoc",
+            "retrieval_hints": [
+              "disconnected mirroring",
+              "oc-mirror",
+              "mirror registry"
+            ],
+            "turn_count": 3,
+            "last_updated_epoch": 1774849091.989653,
+            "recent_turns": [
+              {
+                "turn_index": 1,
+                "question_ko": "폐쇄망에서 oc-mirror v2 개요를 먼저 보고 싶어.",
+                "classification": "standalone",
+                "rewritten_query": "폐쇄망에서 oc-mirror v2 개요를 먼저 보고 싶어. ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; hints disconnected mirroring, oc-mirror, mirror registry",
+                "active_topic": "disconnected_mirroring",
+                "source_dir": "disconnected",
+                "active_version": "4.x",
+                "reference_doc_path": "disconnected/about-installing-oc-mirror-v2.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 2,
+                "question_ko": "그럼 mirror registry는 어떻게 준비해?",
+                "classification": "follow_up",
+                "rewritten_query": "그럼 mirror registry는 어떻게 준비해? ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; last_document disconnected/installing-mirroring-creating-registry.adoc ; hints disconnected mirroring, oc-mirror, mirror registry",
+                "active_topic": "disconnected_mirroring",
+                "source_dir": "disconnected",
+                "active_version": "4.x",
+                "reference_doc_path": "disconnected/installing-mirroring-creating-registry.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 3,
+                "question_ko": "public internet 없이 설치할 때 주의사항은?",
+                "classification": "follow_up",
+                "rewritten_query": "public internet 없이 설치할 때 주의사항은? ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; last_document disconnected/installing-mirroring-disconnected.adoc ; hints disconnected mirroring, oc-mirror, mirror registry",
+                "active_topic": "disconnected_mirroring",
+                "source_dir": "disconnected",
+                "active_version": "4.x",
+                "reference_doc_path": "disconnected/installing-mirroring-disconnected.adoc",
+                "issues": []
+              }
+            ]
+          }
+        },
+        {
+          "turn_index": 4,
+          "question_ko": "같은 disconnected 흐름으로 업데이트 mirror도 반영해야 해?",
+          "expected_classification": "follow_up",
+          "expected_source_dir": "disconnected",
+          "expected_topic": "disconnected_mirroring",
+          "expected_version": "4.x",
+          "rewritten_query": "같은 disconnected 흐름으로 업데이트 mirror도 반영해야 해? ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; last_document disconnected/updating/mirroring-image-repository.adoc ; hints disconnected mirroring, oc-mirror, mirror registry",
+          "checks": {
+            "classification_match": true,
+            "source_dir_match": true,
+            "topic_match": true,
+            "version_match": true,
+            "rewrite_terms_match": true,
+            "forbidden_terms_absent": true,
+            "turn_pass": true
+          },
+          "issues": [],
+          "state_after": {
+            "session_id": "MT-002",
+            "active_topic": "disconnected_mirroring",
+            "source_dir": "disconnected",
+            "active_version": "4.x",
+            "reference_doc_path": "disconnected/updating/mirroring-image-repository.adoc",
+            "retrieval_hints": [
+              "disconnected mirroring",
+              "oc-mirror",
+              "mirror registry"
+            ],
+            "turn_count": 4,
+            "last_updated_epoch": 1774849091.9896827,
+            "recent_turns": [
+              {
+                "turn_index": 1,
+                "question_ko": "폐쇄망에서 oc-mirror v2 개요를 먼저 보고 싶어.",
+                "classification": "standalone",
+                "rewritten_query": "폐쇄망에서 oc-mirror v2 개요를 먼저 보고 싶어. ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; hints disconnected mirroring, oc-mirror, mirror registry",
+                "active_topic": "disconnected_mirroring",
+                "source_dir": "disconnected",
+                "active_version": "4.x",
+                "reference_doc_path": "disconnected/about-installing-oc-mirror-v2.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 2,
+                "question_ko": "그럼 mirror registry는 어떻게 준비해?",
+                "classification": "follow_up",
+                "rewritten_query": "그럼 mirror registry는 어떻게 준비해? ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; last_document disconnected/installing-mirroring-creating-registry.adoc ; hints disconnected mirroring, oc-mirror, mirror registry",
+                "active_topic": "disconnected_mirroring",
+                "source_dir": "disconnected",
+                "active_version": "4.x",
+                "reference_doc_path": "disconnected/installing-mirroring-creating-registry.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 3,
+                "question_ko": "public internet 없이 설치할 때 주의사항은?",
+                "classification": "follow_up",
+                "rewritten_query": "public internet 없이 설치할 때 주의사항은? ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; last_document disconnected/installing-mirroring-disconnected.adoc ; hints disconnected mirroring, oc-mirror, mirror registry",
+                "active_topic": "disconnected_mirroring",
+                "source_dir": "disconnected",
+                "active_version": "4.x",
+                "reference_doc_path": "disconnected/installing-mirroring-disconnected.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 4,
+                "question_ko": "같은 disconnected 흐름으로 업데이트 mirror도 반영해야 해?",
+                "classification": "follow_up",
+                "rewritten_query": "같은 disconnected 흐름으로 업데이트 mirror도 반영해야 해? ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; last_document disconnected/updating/mirroring-image-repository.adoc ; hints disconnected mirroring, oc-mirror, mirror registry",
+                "active_topic": "disconnected_mirroring",
+                "source_dir": "disconnected",
+                "active_version": "4.x",
+                "reference_doc_path": "disconnected/updating/mirroring-image-repository.adoc",
+                "issues": []
+              }
+            ]
+          }
+        },
+        {
+          "turn_index": 5,
+          "question_ko": "다른 질문인데 노드 상태는 어디부터 확인해?",
+          "expected_classification": "topic_shift",
+          "expected_source_dir": "support",
+          "expected_topic": "node_health",
+          "expected_version": "4.x",
+          "rewritten_query": "다른 질문인데 노드 상태는 어디부터 확인해? ; source support ; topic node_health ; OpenShift 4.x ; hints verifying node health, node health, kubelet",
+          "checks": {
+            "classification_match": true,
+            "source_dir_match": true,
+            "topic_match": true,
+            "version_match": true,
+            "rewrite_terms_match": true,
+            "forbidden_terms_absent": true,
+            "turn_pass": true
+          },
+          "issues": [
+            "topic_reset"
+          ],
+          "state_after": {
+            "session_id": "MT-002",
+            "active_topic": "node_health",
+            "source_dir": "support",
+            "active_version": "4.x",
+            "reference_doc_path": "support/troubleshooting/verifying-node-health.adoc",
+            "retrieval_hints": [
+              "verifying node health",
+              "node health",
+              "kubelet"
+            ],
+            "turn_count": 5,
+            "last_updated_epoch": 1774849091.9897094,
+            "recent_turns": [
+              {
+                "turn_index": 1,
+                "question_ko": "폐쇄망에서 oc-mirror v2 개요를 먼저 보고 싶어.",
+                "classification": "standalone",
+                "rewritten_query": "폐쇄망에서 oc-mirror v2 개요를 먼저 보고 싶어. ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; hints disconnected mirroring, oc-mirror, mirror registry",
+                "active_topic": "disconnected_mirroring",
+                "source_dir": "disconnected",
+                "active_version": "4.x",
+                "reference_doc_path": "disconnected/about-installing-oc-mirror-v2.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 2,
+                "question_ko": "그럼 mirror registry는 어떻게 준비해?",
+                "classification": "follow_up",
+                "rewritten_query": "그럼 mirror registry는 어떻게 준비해? ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; last_document disconnected/installing-mirroring-creating-registry.adoc ; hints disconnected mirroring, oc-mirror, mirror registry",
+                "active_topic": "disconnected_mirroring",
+                "source_dir": "disconnected",
+                "active_version": "4.x",
+                "reference_doc_path": "disconnected/installing-mirroring-creating-registry.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 3,
+                "question_ko": "public internet 없이 설치할 때 주의사항은?",
+                "classification": "follow_up",
+                "rewritten_query": "public internet 없이 설치할 때 주의사항은? ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; last_document disconnected/installing-mirroring-disconnected.adoc ; hints disconnected mirroring, oc-mirror, mirror registry",
+                "active_topic": "disconnected_mirroring",
+                "source_dir": "disconnected",
+                "active_version": "4.x",
+                "reference_doc_path": "disconnected/installing-mirroring-disconnected.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 4,
+                "question_ko": "같은 disconnected 흐름으로 업데이트 mirror도 반영해야 해?",
+                "classification": "follow_up",
+                "rewritten_query": "같은 disconnected 흐름으로 업데이트 mirror도 반영해야 해? ; source disconnected ; topic disconnected_mirroring ; OpenShift 4.x ; last_document disconnected/updating/mirroring-image-repository.adoc ; hints disconnected mirroring, oc-mirror, mirror registry",
+                "active_topic": "disconnected_mirroring",
+                "source_dir": "disconnected",
+                "active_version": "4.x",
+                "reference_doc_path": "disconnected/updating/mirroring-image-repository.adoc",
+                "issues": []
+              },
+              {
+                "turn_index": 5,
+                "question_ko": "다른 질문인데 노드 상태는 어디부터 확인해?",
+                "classification": "topic_shift",
+                "rewritten_query": "다른 질문인데 노드 상태는 어디부터 확인해? ; source support ; topic node_health ; OpenShift 4.x ; hints verifying node health, node health, kubelet",
+                "active_topic": "node_health",
+                "source_dir": "support",
+                "active_version": "4.x",
+                "reference_doc_path": "support/troubleshooting/verifying-node-health.adoc",
+                "issues": [
+                  "topic_reset"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

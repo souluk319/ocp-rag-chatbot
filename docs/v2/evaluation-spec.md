@@ -219,6 +219,14 @@ Pass expectation for the first working slice:
 - version drift does not occur silently
 - follow-up turns still produce valid citations
 
+Required Stage 7 artifacts:
+
+- `docs/v2/multiturn-memory-plan.md`
+- `app/multiturn_memory.py`
+- `eval/benchmarks/p0_multiturn_scenarios.json`
+- `eval/multiturn-scenario-schema.yaml`
+- `eval/multiturn_rewrite_report.py`
+
 ## Baseline scenario groups
 
 The first baseline dataset must include at least these groups:
