@@ -9,3 +9,7 @@ Planned contents:
 - citation checks
 - version correctness checks
 - red-team prompts for unsafe or weakly grounded answers
+
+The controlling evaluation document is:
+
+- `docs/v2/evaluation-spec.md`

@@ -38,6 +38,9 @@ DEFAULT_EXCLUDE_PATH_FRAGMENTS = (
     "/microshift_",
     "-microshift-",
     "_microshift_",
+    "/support/remote_health_monitoring/",
+    "/support/troubleshooting/rosa-",
+    "/support/troubleshooting/troubleshooting-osd-",
     "/support/troubleshooting/sd-",
 )
 

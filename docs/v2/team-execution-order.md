@@ -32,39 +32,13 @@ Tasks:
 - finalize the first ingestion subset
 - finalize metadata and source manifests in `configs/`
 
-Initial include set:
-- `architecture`
-- `authentication`
-- `backup_and_restore`
-- `disconnected`
-- `etcd`
-- `installing`
-- `machine_configuration`
-- `machine_management`
-- `networking`
-- `nodes`
-- `observability`
-- `operators`
-- `post_installation_configuration`
-- `registry`
-- `release_notes`
-- `rest_api`
-- `security`
-- `storage`
-- `support`
-- `updating`
-- `upgrading`
-- `web_console`
-- `welcome`
-- `whats_new`
+Authoritative scope reference:
+- `docs/v2/source-scope.md`
 
-Initial exclude set:
-- `microshift_*`
-- `osd_*`
-- `rosa_*`
-- `ocm`
-- `cloud_experts_*`
-- `hosted_control_planes`
+Current rule:
+- the active ingest slice starts with the `P0 validation slice`
+- the first operator-facing scope should promote toward the `first operational release target`
+- P1 and P2 remain planned expansion sets, not default ingest targets
 
 Exit criteria:
 - source scope is fixed
@@ -198,8 +172,8 @@ Do not start with:
 
 ## Current next moves
 
-1. finalize the first `openshift-docs` directory set
-2. turn `configs/source-manifest.example.yaml` into the real v2 manifest
-3. create the first ingestion script for the chosen subset
-4. validate OpenDocuments against that subset
-5. freeze the first evaluation checklist
+1. keep `docs/v2/source-scope.md` as the single source of truth for corpus boundary changes
+2. add section-aware chunking and stable section metadata
+3. add citation click-through metadata such as `viewer_url`
+4. validate OpenDocuments against the normalized P0 subset
+5. freeze the first evaluation checklist from `docs/v2/evaluation-spec.md`
