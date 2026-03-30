@@ -43,7 +43,7 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 7: complete
 - Stage 8: complete
 - Stage 9: complete
-- Stage 10: next active implementation stage
+- Stage 10: evaluation executed, no-go hold
 
 ## Stage 0. Freeze the rewrite baseline
 
@@ -533,11 +533,28 @@ Without this stage, scope expands before the baseline is trustworthy.
 - benchmark report
 - red-team notes
 - go/no-go decision for widening scope
+- `eval/benchmarks/p0_red_team_cases.jsonl`
+- `eval/red-team-schema.yaml`
+- `eval/stage10_red_team_report.py`
+- `eval/stage10_suite.py`
+- `docs/v2/stage10-evaluation-report.md`
 
 ### Exit criteria
 
 - first-slice gates in `docs/v2/evaluation-spec.md` pass
 - known blockers are documented if any remain
+
+### Current status note
+
+Stage 10 has been executed.
+
+Current decision:
+
+- `no-go` for widening scope
+
+Current blocker:
+
+- `RB-011` follow-up retrieval gap remains open
 
 ## Stage 11. Build the approved air-gap refresh loop
 

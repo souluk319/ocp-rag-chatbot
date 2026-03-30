@@ -14,8 +14,10 @@ Planned contents:
 - multi-turn scenario datasets
 - session memory and follow-up rewrite reports
 - red-team prompts for unsafe or weakly grounded answers
+- Stage 10 suite aggregation reports and go/no-go evidence
 
 The controlling evaluation document is:
 
 - `docs/v2/evaluation-spec.md`
 - `docs/v2/context-retention-harness.md`
+- `docs/v2/stage10-evaluation-report.md`

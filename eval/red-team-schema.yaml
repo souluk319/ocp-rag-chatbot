@@ -1,0 +1,23 @@
+version: 1
+
+required_fields:
+  - id
+  - case_type
+  - group
+  - title
+  - expected
+
+policy_case_required_fields:
+  - question_ko
+  - mode
+  - candidates
+
+memory_case_required_fields:
+  - session_id
+  - turns
+
+field_notes:
+  case_type: policy or memory
+  expected: expected pass/fail signals for the red-team check
+  candidates: synthetic retrieval candidates used to verify policy behavior without requiring a live runtime
+  turns: ordered memory turns used to verify topic shift and follow-up continuity
