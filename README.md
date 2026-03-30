@@ -83,5 +83,4 @@ python deployment/initialize_stage11_baseline.py
 python deployment/check_stage11_readiness.py
 ```
 
-If readiness still fails only because `indexes/current.txt` is uninitialized, the repository is prepared and the remaining blocker is the missing real local index seed.
-If readiness passes with only that warning left, Stage 11 can start and the real index seed must be supplied before the first activation cutover.
+The current expected result is `ready_for_stage11 = true` with a warning that `indexes/current.txt` is still uninitialized. That warning is acceptable for starting Stage 11, but it must be closed before the first real activation cutover.

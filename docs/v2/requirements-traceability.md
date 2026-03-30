@@ -51,6 +51,7 @@ The goal is to make it obvious which requirements are already defined, which are
 - Stage 9 policy-shaped retrieval benchmark on the fixed dataset
 - Stage 10 evaluation and red-team execution path
 - validation-slice follow-up analysis for `RB-011`
+- Stage 11 repository-side preflight contracts and readiness gate
 - air-gap bundle direction
 
 ## What still needs implementation

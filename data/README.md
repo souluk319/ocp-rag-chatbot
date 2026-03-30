@@ -9,5 +9,6 @@ Working directories:
 - `views/` for generated HTML citation documents kept out of Git
 - `manifests/` for tracked schema examples and source manifests
 - `packages/` for outbound, inbound, approved, and archived closed-network transfer bundles
+- `staging/` for inbound bundle expansion before closed-network reindexing
 
 Do not commit generated corpora or built indexes to this branch.
