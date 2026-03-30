@@ -1,15 +1,23 @@
 import { defineConfig } from 'opendocuments-core'
 
+const requireEnv = (name: string) => {
+  const value = process.env[name]?.trim()
+  if (!value) {
+    throw new Error(`Missing required env: ${name}`)
+  }
+  return value
+}
+
 export default defineConfig({
   workspace: 'ocp-stage6',
   mode: 'personal',
 
   model: {
     provider: 'openai',
-    llm: process.env.OD_CHAT_MODEL || 'Qwen/Qwen3.5-9B',
-    embedding: process.env.OD_EMBEDDING_MODEL || 'paraphrase-multilingual-MiniLM-L12-v2',
-    apiKey: process.env.OPENAI_API_KEY || 'dummy',
-    baseUrl: process.env.OPENAI_BASE_URL || 'http://127.0.0.1:18080/v1',
+    llm: requireEnv('OD_CHAT_MODEL'),
+    embedding: requireEnv('OD_EMBEDDING_MODEL'),
+    apiKey: requireEnv('OPENAI_API_KEY'),
+    baseUrl: requireEnv('OPENAI_BASE_URL'),
     embeddingDimensions: 384,
   },
 

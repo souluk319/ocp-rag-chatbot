@@ -41,7 +41,8 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 5: complete
 - Stage 6: complete
 - Stage 7: complete
-- Stage 8: next active implementation stage
+- Stage 8: complete
+- Stage 9: next active implementation stage
 
 ## Stage 0. Freeze the rewrite baseline
 
@@ -443,10 +444,14 @@ Closed-network operation and evaluation consistency both depend on controlled ru
 
 - runtime configuration notes
 - single-endpoint assumption documented in the integrated path
+- env-driven bridge runtime contract
+- runtime contract validation script
 
 ### Exit criteria
 
 - one approved endpoint is the only supported runtime target
+- endpoint and model values are no longer hardcoded in the integrated path
+- local fallback is disabled by default and only enabled explicitly
 
 ## Stage 9. Apply OCP retrieval and answer policies
 

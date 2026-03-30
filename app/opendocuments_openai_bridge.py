@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import time
 from functools import lru_cache
 from typing import Any
@@ -12,37 +11,57 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from sentence_transformers import SentenceTransformer
 
+from app.runtime_config import RuntimeConfig, load_runtime_config
 
-COMPANY_BASE_URL = os.getenv("OD_COMPANY_BASE_URL", "http://cllm.cywell.co.kr/v1").rstrip("/")
-CHAT_MODEL = os.getenv("OD_CHAT_MODEL", "Qwen/Qwen3.5-9B")
-EMBEDDING_MODEL = os.getenv("OD_EMBEDDING_MODEL", "paraphrase-multilingual-MiniLM-L12-v2")
-REQUEST_TIMEOUT = float(os.getenv("OD_BRIDGE_TIMEOUT_SECONDS", "120"))
-COMPANY_BEARER_TOKEN = os.getenv("OD_COMPANY_BEARER_TOKEN", "").strip()
-ALLOW_LOCAL_CHAT_FALLBACK = os.getenv("OD_ALLOW_LOCAL_CHAT_FALLBACK", "1").strip().lower() not in {"0", "false", "no"}
+app = FastAPI(title="OpenDocuments Stage8 OpenAI Bridge")
 
-app = FastAPI(title="OpenDocuments Stage6 OpenAI Bridge")
+
+@lru_cache(maxsize=1)
+def get_runtime_config() -> RuntimeConfig:
+    return load_runtime_config()
+
+
+def require_runtime_config() -> RuntimeConfig:
+    config = get_runtime_config()
+    missing = config.missing_required_keys()
+    if missing:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "message": "Runtime configuration is incomplete for the approved company path.",
+                "missing_required_keys": missing,
+            },
+        )
+    return config
 
 
 @lru_cache(maxsize=1)
 def get_embedder() -> SentenceTransformer:
-    return SentenceTransformer(EMBEDDING_MODEL)
+    config = require_runtime_config()
+    return SentenceTransformer(config.embedding_model)
 
 
-def proxy_headers(request: Request) -> dict[str, str]:
+def proxy_headers(request: Request, config: RuntimeConfig) -> dict[str, str]:
     headers = {}
     auth = request.headers.get("authorization", "").strip()
-    if COMPANY_BEARER_TOKEN:
-        token = COMPANY_BEARER_TOKEN
+    if config.company_bearer_token:
+        token = config.company_bearer_token
         headers["Authorization"] = token if token.lower().startswith("bearer ") else f"Bearer {token}"
     elif auth:
         headers["Authorization"] = auth
     return headers
 
 
-def proxy_response_json(method: str, path: str, *, headers: dict[str, str] | None = None, json_body: Any = None) -> Response:
-    url = f"{COMPANY_BASE_URL}{path}"
-    response = requests.request(method, url, headers=headers, json=json_body, timeout=REQUEST_TIMEOUT)
-    return JSONResponse(status_code=response.status_code, content=response.json())
+def proxy_response(method: str, path: str, config: RuntimeConfig, *, headers: dict[str, str] | None = None, json_body: Any = None) -> Response:
+    url = f"{config.company_base_url.rstrip('/')}{path}"
+    response = requests.request(method, url, headers=headers, json=json_body, timeout=config.request_timeout_seconds)
+    content_type = response.headers.get("content-type", "application/json")
+    if "application/json" in content_type.lower():
+        try:
+            return JSONResponse(status_code=response.status_code, content=response.json())
+        except ValueError:
+            pass
+    return Response(status_code=response.status_code, content=response.content, media_type=content_type)
 
 
 def extract_prompt_text(payload: dict[str, Any]) -> str:
@@ -103,7 +122,7 @@ def build_local_fallback_answer(prompt: str) -> str:
     return "\n".join(lines)
 
 
-def make_fallback_completion(payload: dict[str, Any]) -> dict[str, Any]:
+def make_fallback_completion(payload: dict[str, Any], config: RuntimeConfig) -> dict[str, Any]:
     prompt = extract_prompt_text(payload)
     content = build_local_fallback_answer(prompt)
     token_estimate = max(1, len(content.split()))
@@ -111,7 +130,7 @@ def make_fallback_completion(payload: dict[str, Any]) -> dict[str, Any]:
         "id": f"stage6-fallback-{int(time.time() * 1000)}",
         "object": "chat.completion",
         "created": int(time.time()),
-        "model": payload.get("model", CHAT_MODEL),
+        "model": payload.get("model", config.chat_model),
         "choices": [
             {
                 "index": 0,
@@ -130,8 +149,8 @@ def make_fallback_completion(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def stream_fallback_completion(payload: dict[str, Any]):
-    completion = make_fallback_completion(payload)
+def stream_fallback_completion(payload: dict[str, Any], config: RuntimeConfig):
+    completion = make_fallback_completion(payload, config)
     content = completion["choices"][0]["message"]["content"]
     model = completion["model"]
     chunks = [content[i : i + 120] for i in range(0, len(content), 120)] or [""]
@@ -159,28 +178,26 @@ def stream_fallback_completion(payload: dict[str, Any]):
 
 @app.get("/health")
 def health() -> dict[str, Any]:
+    config = get_runtime_config()
     return {
-        "ok": True,
-        "company_base_url": COMPANY_BASE_URL,
-        "chat_model": CHAT_MODEL,
-        "embedding_model": EMBEDDING_MODEL,
-        "company_token_configured": bool(COMPANY_BEARER_TOKEN),
-        "local_chat_fallback": ALLOW_LOCAL_CHAT_FALLBACK,
+        "ok": not config.missing_required_keys(),
+        **config.to_health_dict(),
     }
 
 
 @app.get("/v1/models")
 def list_models(request: Request) -> Response:
-    response = proxy_response_json("GET", "/models", headers=proxy_headers(request))
-    if response.status_code in {401, 403} and ALLOW_LOCAL_CHAT_FALLBACK:
+    config = require_runtime_config()
+    response = proxy_response("GET", "/models", config, headers=proxy_headers(request, config))
+    if response.status_code in {401, 403} and config.allow_local_chat_fallback:
         return JSONResponse(
             {
                 "object": "list",
                 "data": [
                     {
-                        "id": CHAT_MODEL,
+                        "id": config.chat_model,
                         "object": "model",
-                        "owned_by": "stage6-local-fallback",
+                        "owned_by": "stage8-explicit-local-fallback",
                     }
                 ],
             }
@@ -190,22 +207,23 @@ def list_models(request: Request) -> Response:
 
 @app.post("/v1/chat/completions")
 async def chat_completions(request: Request) -> Response:
+    config = require_runtime_config()
     payload = await request.json()
-    url = f"{COMPANY_BASE_URL}/chat/completions"
-    headers = proxy_headers(request)
+    url = f"{config.company_base_url.rstrip('/')}/chat/completions"
+    headers = proxy_headers(request, config)
     headers["Content-Type"] = "application/json"
 
     try:
         if payload.get("stream"):
-            upstream = requests.post(url, headers=headers, json=payload, stream=True, timeout=REQUEST_TIMEOUT)
+            upstream = requests.post(url, headers=headers, json=payload, stream=True, timeout=config.request_timeout_seconds)
             if upstream.status_code >= 400:
                 try:
                     detail = upstream.json()
                 except Exception:
                     detail = {"error": upstream.text}
-                if upstream.status_code in {401, 403} and ALLOW_LOCAL_CHAT_FALLBACK:
+                if upstream.status_code in {401, 403} and config.allow_local_chat_fallback:
                     upstream.close()
-                    return StreamingResponse(stream_fallback_completion(payload), media_type="text/event-stream")
+                    return StreamingResponse(stream_fallback_completion(payload, config), media_type="text/event-stream")
                 return JSONResponse(status_code=upstream.status_code, content=detail)
 
             def event_stream():
@@ -219,20 +237,21 @@ async def chat_completions(request: Request) -> Response:
             media_type = upstream.headers.get("content-type", "text/event-stream")
             return StreamingResponse(event_stream(), media_type=media_type)
 
-        response = proxy_response_json("POST", "/chat/completions", headers=headers, json_body=payload)
-        if response.status_code in {401, 403} and ALLOW_LOCAL_CHAT_FALLBACK:
-            return JSONResponse(make_fallback_completion(payload))
+        response = proxy_response("POST", "/chat/completions", config, headers=headers, json_body=payload)
+        if response.status_code in {401, 403} and config.allow_local_chat_fallback:
+            return JSONResponse(make_fallback_completion(payload, config))
         return response
     except requests.RequestException as exc:
-        if ALLOW_LOCAL_CHAT_FALLBACK:
+        if config.allow_local_chat_fallback:
             if payload.get("stream"):
-                return StreamingResponse(stream_fallback_completion(payload), media_type="text/event-stream")
-            return JSONResponse(make_fallback_completion(payload))
+                return StreamingResponse(stream_fallback_completion(payload, config), media_type="text/event-stream")
+            return JSONResponse(make_fallback_completion(payload, config))
         raise HTTPException(status_code=502, detail=f"Company LLM proxy failed: {exc}") from exc
 
 
 @app.post("/v1/embeddings")
 async def embeddings(request: Request) -> Response:
+    config = require_runtime_config()
     try:
         payload = await request.json()
     except Exception as exc:  # pragma: no cover - defensive
@@ -267,7 +286,7 @@ async def embeddings(request: Request) -> Response:
         {
             "object": "list",
             "data": data,
-            "model": payload.get("model", EMBEDDING_MODEL),
+            "model": payload.get("model", config.embedding_model),
             "usage": {
                 "prompt_tokens": token_estimate,
                 "total_tokens": token_estimate,
