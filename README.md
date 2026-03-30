@@ -18,6 +18,8 @@
 
 - OCP 공식 문서 원본인 `.adoc` 를 정규화해 검색용 텍스트와 HTML 출처 문서를 동시에 생성
 - OpenDocuments 기반 인덱싱 및 질의 흐름
+- 한국어 질의와 영어 원문 문서를 함께 다루기 위한 다국어 임베더 baseline
+  `BAAI/bge-m3`
 - OCP 전용 retrieval policy
   공식 문서 우선, 버전 연속성 유지, 보수적 답변 규칙
 - 멀티턴 메모리와 follow-up rewrite

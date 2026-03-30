@@ -9,6 +9,7 @@ The target operating path is:
 - OpenDocuments uses a local OpenAI-compatible bridge
 - the bridge proxies chat requests to the approved company endpoint
 - the bridge serves embeddings locally for the current validation setup
+- the current embedding baseline is `BAAI/bge-m3` so Korean questions and English source documents share one multilingual embedding space
 - endpoint and model values come from `.env` or process environment, never from committed code defaults
 
 ## Why this stage exists
@@ -32,6 +33,7 @@ These are used by the OpenDocuments config template.
 - `OPENAI_API_KEY`
 - `OD_CHAT_MODEL`
 - `OD_EMBEDDING_MODEL`
+- `OD_EMBEDDING_DIMENSIONS`
 
 `OPENAI_BASE_URL` should point to the local bridge that exposes `/v1/chat/completions` and `/v1/embeddings`.
 
@@ -56,6 +58,12 @@ If `OD_*` values are not set, the bridge can read these project-level names:
 - `EMBEDDING_MODEL`
 
 This keeps Stage 8 compatible with the existing project `.env` layout without hardcoding values in source files.
+
+Current baseline:
+
+- chat model: company-provided `Qwen/Qwen3.5-9B`
+- embedding model: `BAAI/bge-m3`
+- embedding dimensions: `1024`
 
 ## Approved behavior
 

@@ -24,15 +24,15 @@ The Stage 12 baseline added:
 
 The active Stage 11 baseline index was built with LanceDB vectors at dimension `1024`.
 
-The approved embedding model path exposed through the bridge currently produces `384`-dimension vectors before compatibility adjustment.
+The embedding baseline is now standardized on `BAAI/bge-m3`, which produces `1024`-dimension dense vectors and fits the active Stage 11 baseline without the earlier 384-to-1024 mismatch.
 
-Without an explicit compatibility layer, the live OpenDocuments runtime fails at query time with a vector-dimension mismatch.
+The compatibility layer remains in place so the live runtime can still defend itself if a future staged index and the currently configured embedding path drift out of alignment.
 
 Stage 12 therefore:
 
 - detects the active index vector dimension from the live LanceDB schema
 - injects that dimension into the bridge and OpenDocuments runtime
-- pads or truncates bridge-produced embeddings to the active index dimension
+- pads or truncates bridge-produced embeddings to the active index dimension when a mismatch is detected
 
 This is a runtime compatibility step, not a retrieval-quality claim.
 
