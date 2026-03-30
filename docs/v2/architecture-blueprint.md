@@ -141,6 +141,34 @@ The required shape is:
 
 This design keeps retrieval chunks and citation targets aligned to the same source structure.
 
+### 7.2 Chunking contract
+
+Chunking must be explicit enough to answer the "chunking strategy is weak" feedback.
+
+Required rules:
+
+- primary chunk unit is the section or subsection under one heading path
+- narrative chunks should target `350-650` tokens
+- soft overlap of `60-100` tokens is allowed only for long narrative sections
+- ordered procedures should stay intact whenever possible
+- code blocks should become their own chunk type but keep the nearest heading and short explanatory context
+- a chunk must not cross unrelated sections just to satisfy a size target
+- every chunk must map back to one `document_id`, one section identity, and one citation target
+
+This is the minimum design bar for saying the chunking plan is no longer underspecified.
+
+### 7.3 Multi-turn context policy
+
+Multi-turn support must be treated as a design requirement, not as incidental model behavior.
+
+The assistant should:
+
+- keep structured memory for at least the last `5` turns
+- retain active topic and version context across follow-up questions
+- rewrite referential follow-up questions when the user omits the subject
+- preserve citation continuity when follow-up answers depend on the same source family
+- warn or reset context when the conversation shifts to a conflicting version or topic
+
 ### 7.2 Chunking strategy requirements
 
 Chunking must be explicit in the design, not left to an implicit library default.

@@ -84,7 +84,24 @@ Exit criteria:
 - a question can be answered with sources
 - the system works without touching the old v1 code
 
-### Phase 4. Lock the backend to the company model endpoint
+### Phase 4. Lock retrieval and multi-turn acceptance before tuning
+
+Owners:
+- QA / Evaluation / Red Team
+- RAG / Search Engineer
+- LLM Serving / Backend Engineer
+
+Tasks:
+- define retrieval benchmark metrics
+- define rerank comparison rules
+- define 5-turn multi-turn scenarios
+- define session continuity and follow-up rewrite checks
+
+Exit criteria:
+- retrieval quality has measurable gates
+- multi-turn behavior has measurable gates
+
+### Phase 5. Lock the backend to the company model endpoint
 
 Owners:
 - LLM Serving / Backend Engineer
@@ -104,7 +121,7 @@ Exit criteria:
 - v2 assumes one approved internal model endpoint
 - backend startup path is documented
 
-### Phase 5. Add OCP retrieval policy
+### Phase 6. Add OCP retrieval policy
 
 Owners:
 - RAG / Search Engineer
@@ -122,7 +139,7 @@ Exit criteria:
 - source trust ordering is documented
 - version handling is documented
 
-### Phase 6. Build evaluation before UI work
+### Phase 7. Build evaluation before UI work
 
 Owners:
 - QA / Evaluation / Red Team
@@ -138,7 +155,7 @@ Tasks:
 Exit criteria:
 - the assistant has a measurable acceptance bar
 
-### Phase 7. Design the air-gapped update loop
+### Phase 8. Design the air-gapped update loop
 
 Owners:
 - OCP / Air-gapped Infrastructure Engineer
@@ -155,7 +172,7 @@ Tasks:
 Exit criteria:
 - update flow is documented and repeatable
 
-### Phase 8. Touch UI last
+### Phase 9. Touch UI last
 
 Owners:
 - UI / UX Engineer
@@ -175,5 +192,7 @@ Do not start with:
 1. keep `docs/v2/source-scope.md` as the single source of truth for corpus boundary changes
 2. add section-aware chunking and stable section metadata
 3. add citation click-through metadata such as `viewer_url`
-4. validate OpenDocuments against the normalized P0 subset
-5. freeze the first evaluation checklist from `docs/v2/evaluation-spec.md`
+4. define retrieval benchmark and rerank comparison rules
+5. define 5-turn multi-turn chains and session continuity rules
+6. validate OpenDocuments against the normalized P0 subset
+7. freeze the first evaluation checklist from `docs/v2/evaluation-spec.md`
