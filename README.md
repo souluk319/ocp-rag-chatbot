@@ -218,6 +218,7 @@ kill.bat
 
 - 기본값은 `SUBMISSION_MODE=1` 이며, UI에서 모델 전환이 숨겨지고 `Qwen/Qwen3.5-9B` 만 사용합니다.
 - 발표용으로 엔드포인트 전환을 보여주고 싶다면 `.env` 에서 `SUBMISSION_MODE=0`, `EXPOSE_LLM_ENDPOINT_SWITCHER=1` 로 실행합니다.
+- 기본 제출 설정에서는 `.env.example` 기준으로 `EXPOSE_DEBUG_ENDPOINTS=0` 이며, 캐시 초기화/세션 조회 같은 디버그 제어도 UI와 API에서 함께 숨깁니다.
 - 제출 기본값에서는 `/api/sessions`, `/api/session/{id}/history`, `/api/cache/clear` 같은 디버그성 엔드포인트도 403으로 잠깁니다.
 - 브라우저에서 `http://localhost:8000/?presentation=review` 로 열면 심사 모드 UI가 바로 적용됩니다.
 - 웰컴 화면의 데모 카드 3개로 운영형 / 학습형 / 멀티턴 흐름을 즉시 재현할 수 있습니다.
@@ -257,6 +258,8 @@ make test-fixture # 평가 fixture 무결성 검증
 make test-preflight # 데모 직전 프리플라이트 검증
 make clean      # __pycache__ 정리
 ```
+
+Windows에서는 `preflight.bat` 으로 같은 점검을 한 번에 실행할 수 있습니다.
 
 ## API 엔드포인트
 

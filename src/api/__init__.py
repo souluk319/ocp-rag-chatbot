@@ -225,6 +225,7 @@ async def list_endpoints():
         "submission_mode": SUBMISSION_MODE,
         "allow_endpoint_switch": endpoint_switching_enabled(),
         "show_endpoint_selector": endpoint_switching_enabled() and len(visible_keys) > 1,
+        "debug_api_enabled": debug_api_enabled(),
         "locked_model": LOCKED_LLM_MODEL,
     }
 

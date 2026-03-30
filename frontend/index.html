@@ -1883,6 +1883,7 @@
             submissionMode: false,
             allowEndpointSwitch: true,
             showEndpointSelector: true,
+            debugApiEnabled: true,
             lockedModel: 'Qwen/Qwen3.5-9B',
             currentKey: null,
         };
@@ -2002,17 +2003,23 @@
             return llmPolicy.allowEndpointSwitch && !document.body.classList.contains('review-mode');
         }
 
+        function debugControlsAllowed() {
+            return Boolean(llmPolicy.debugApiEnabled);
+        }
+
         function applyLlmPolicy(data = {}) {
             llmPolicy = {
                 submissionMode: Boolean(data.submission_mode ?? llmPolicy.submissionMode),
                 allowEndpointSwitch: Boolean(data.allow_endpoint_switch ?? llmPolicy.allowEndpointSwitch),
                 showEndpointSelector: Boolean(data.show_endpoint_selector ?? llmPolicy.showEndpointSelector),
+                debugApiEnabled: Boolean(data.debug_api_enabled ?? llmPolicy.debugApiEnabled),
                 lockedModel: data.locked_model || llmPolicy.lockedModel,
                 currentKey: data.current || llmPolicy.currentKey,
             };
 
             const selector = document.querySelector('.llm-selector');
             const select = document.getElementById('llmSelect');
+            const cacheBtn = document.querySelector('.cache-clear-btn');
             const note = document.getElementById('presentationNote');
             const shouldShowSelector = llmPolicy.showEndpointSelector && !document.body.classList.contains('review-mode');
 
@@ -2021,6 +2028,13 @@
             }
             if (select) {
                 select.disabled = !endpointSwitchAllowed();
+            }
+            if (cacheBtn) {
+                cacheBtn.style.display = debugControlsAllowed() ? 'inline-flex' : 'none';
+                cacheBtn.disabled = !debugControlsAllowed();
+                cacheBtn.title = debugControlsAllowed()
+                    ? '시맨틱 캐시 초기화'
+                    : '제출 모드에서는 캐시 제어가 비활성화됩니다.';
             }
             if (note && llmPolicy.submissionMode) {
                 note.textContent = `심사 모드: 모델 전환 숨김 · ${llmPolicy.lockedModel} 고정`;
@@ -2115,6 +2129,9 @@
 
         // ========== Trace Panel ==========
         async function clearSemanticCache() {
+            if (!debugControlsAllowed()) {
+                return;
+            }
             try {
                 const res = await fetch(`${API_BASE}/api/cache/clear`, { method: 'POST' });
                 if (res.ok) {
@@ -2127,6 +2144,8 @@
                         btn.style.color = '';
                         btn.style.borderColor = '';
                     }, 1500);
+                } else {
+                    console.warn('캐시 초기화가 비활성화되어 있습니다.');
                 }
             } catch (e) {
                 console.error('캐시 초기화 실패:', e);
