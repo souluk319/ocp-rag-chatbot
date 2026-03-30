@@ -163,7 +163,20 @@ The first chunking contract should include:
 
 This is the minimum design bar for saying the chunking plan is no longer underspecified.
 
-### 7.3 Multi-turn context flow
+### 7.3 Retrieval benchmark requirements
+
+The design must not rely on answer fluency alone to claim retrieval quality.
+
+The first benchmark contract should record:
+
+- top-k hit rate against expected supporting documents
+- expected source-directory hit rate
+- version-match rate for version-sensitive questions
+- citation correctness on grounded answers
+- rerank delta between pre-rerank and post-rerank ordering
+- query classes such as install, update, troubleshooting, disconnected, and follow-up queries
+
+### 7.4 Multi-turn context flow
 
 Multi-turn behavior is a product requirement, not a later enhancement.
 
