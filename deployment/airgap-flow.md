@@ -44,3 +44,17 @@ Move approved document updates from a connected collection environment into the 
 - No index activation without an approved manifest
 - No destructive replacement of the currently active index before validation
 - Every bundle must be versioned and reproducible
+
+## Pre-Stage 11 assets
+
+These assets now exist to make Stage 11 start from a fixed baseline instead of a placeholder:
+
+- `deployment/initialize_stage11_baseline.py`
+- `deployment/check_stage11_readiness.py`
+- `deployment/activation-smoke-case-ids.json`
+
+They establish:
+
+- the approved manifest baseline
+- the activation smoke set
+- the repository-side preflight gate before the first real bundle/import cycle

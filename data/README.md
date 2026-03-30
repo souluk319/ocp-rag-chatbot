@@ -8,6 +8,6 @@ Working directories:
 - `normalized/` for parsed text prepared for indexing
 - `views/` for generated HTML citation documents kept out of Git
 - `manifests/` for tracked schema examples and source manifests
-- `packages/` for outbound and inbound closed-network transfer bundles
+- `packages/` for outbound, inbound, approved, and archived closed-network transfer bundles
 
 Do not commit generated corpora or built indexes to this branch.

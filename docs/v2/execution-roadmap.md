@@ -44,7 +44,7 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 8: complete
 - Stage 9: complete
 - Stage 10: complete (`go` for widening scope on the validated slice)
-- Stage 11: ready to activate
+- Stage 11: preflight complete (`ready_for_stage11 = true`); activation warning remains for `indexes/current.txt`
 
 ## Stage 0. Freeze the rewrite baseline
 
@@ -583,6 +583,15 @@ The target product is not just a demo; it must survive document updates.
 
 - `deployment/airgap-flow.md`
 - `deployment/bundle-schema.yaml`
+- `deployment/stage11-readiness.md`
+- `deployment/check_stage11_readiness.py`
+- `deployment/activation-smoke-case-ids.json`
+- `deployment/approval-record-schema.yaml`
+- `deployment/bundle-layout-contract.md`
+- `deployment/manifest-lineage-contract.md`
+- `deployment/index-activation-contract.md`
+- `deployment/operator-runbook-stage11.md`
+- `deployment/initialize_stage11_baseline.py`
 
 ### Work items
 
@@ -595,10 +604,25 @@ The target product is not just a demo; it must survive document updates.
 
 - repeatable bundle workflow
 - documented approval and rollback path
+- preflight readiness evidence and baseline initialization path
+- Stage 11 bundle, lineage, and activation contracts
 
 ### Exit criteria
 
 - one document refresh cycle can be performed end to end
+- `deployment/check_stage11_readiness.py` reports `ready_for_stage11 = true` before the first real bundle cycle
+- bundle validation, approval, import, reindex, activation, and rollback evidence are recorded
+
+### Current readiness note
+
+The current preflight report lives in:
+
+- `data/manifests/generated/stage11-readiness-report.json`
+
+Current state:
+
+- `ready_for_stage11 = true`
+- first-bundle activation warning remains for `indexes/current.txt`
 
 ## Stage 12. Touch UI last
 

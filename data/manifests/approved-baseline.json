@@ -1,5 +1,27 @@
 {
-  "manifest_id": "baseline-uninitialized",
-  "approved_at": null,
-  "documents": []
+  "baseline_id": "approved-openshift-docs-p0-20260330T040749Z",
+  "manifest_id": "openshift-docs-p0-20260330T040749Z",
+  "source_id": "openshift-docs-p0",
+  "approved_at": "2026-03-30T06:24:16Z",
+  "stage10_overall_decision": "go",
+  "stage10_suite_report": "data\\manifests\\generated\\stage10-suite-report.json",
+  "document_count": 281,
+  "top_level_counts": {
+    "disconnected": 15,
+    "installing": 186,
+    "post_installation_configuration": 43,
+    "support": 19,
+    "updating": 18
+  },
+  "category_counts": {
+    "install": 229,
+    "other": 15,
+    "troubleshooting": 19,
+    "upgrade": 18
+  },
+  "activation_smoke_set": "deployment\\activation-smoke-case-ids.json",
+  "active_index_id": null,
+  "notes": [
+    "Seed indexes/current.txt with a real validated local index id before starting Stage 11 activation work."
+  ]
 }

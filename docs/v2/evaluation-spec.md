@@ -208,6 +208,29 @@ Pass expectation for the first working slice:
 
 - one approved refresh cycle can be repeated without ambiguous state
 
+Required Stage 11 artifacts:
+
+- `deployment/airgap-flow.md`
+- `deployment/bundle-schema.yaml`
+- `deployment/approval-record-schema.yaml`
+- `deployment/bundle-layout-contract.md`
+- `deployment/manifest-lineage-contract.md`
+- `deployment/index-activation-contract.md`
+- `deployment/operator-runbook-stage11.md`
+- `deployment/activation-smoke-case-ids.json`
+- `deployment/check_stage11_readiness.py`
+
+Required Stage 11 evidence:
+
+- baseline manifest ID and normalized manifest ID used for the refresh
+- outbound bundle manifest and checksum validation result
+- approval record with reviewer and timestamp
+- inbound validation result with zero missing files
+- reindex result for the staged bundle
+- smoke-query result before activation
+- activation record showing previous and current index pointers
+- rollback result for one controlled rollback test or a documented dry-run proof
+
 ### Track I. Multi-turn continuity
 
 This track exists specifically to answer the "multi-turn behavior is weak" feedback.
@@ -285,6 +308,10 @@ The first working slice is acceptable only if all of the following are true:
 7. retrieval benchmark meets the first-slice gate
 8. 5-turn multi-turn scenarios stay grounded
 9. failing benchmark cases can be traced through the context-retention harness
+
+Closed-network release readiness additionally requires:
+
+10. Track H evidence exists for one approved refresh cycle before production activation
 
 ## Red-team checks
 

@@ -52,6 +52,7 @@ ingest/        document onboarding pipeline notes
 
 - `docs/v2/architecture-blueprint.md`
 - `docs/v2/execution-roadmap.md`
+- `docs/v2/stage11-readiness.md`
 - `docs/v2/chunking-contract.md`
 - `docs/v2/context-retention-harness.md`
 - `docs/v2/company-runtime-lock.md`
@@ -72,3 +73,15 @@ ingest/        document onboarding pipeline notes
 - `release/v1` stores the legacy implementation
 - `rewrite/opendoc-v2` is the only branch for this rewrite
 - Do not reintroduce the v1 runtime into this branch
+
+## Stage 11 preflight
+
+Before Stage 11 activation work starts, initialize the approved baseline and run the readiness gate:
+
+```powershell
+python deployment/initialize_stage11_baseline.py
+python deployment/check_stage11_readiness.py
+```
+
+If readiness still fails only because `indexes/current.txt` is uninitialized, the repository is prepared and the remaining blocker is the missing real local index seed.
+If readiness passes with only that warning left, Stage 11 can start and the real index seed must be supplied before the first activation cutover.
