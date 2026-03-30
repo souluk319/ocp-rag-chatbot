@@ -51,21 +51,46 @@ This runbook turns the Stage 11 contracts into an operator sequence.
 
 - build the new index under `indexes/<bundle-id>/`
 - record indexing failures before activation is considered
+- local entry point:
+
+```powershell
+python deployment/reindex_staged_bundle.py data/staging/<bundle-id> --index-id <bundle-id>
+```
 
 ### 8. Smoke test before activation
 
 - run the minimum smoke-query subset
 - verify citation click-through
 - confirm the currently active index is still unchanged
+- interpret this as a runtime health gate, not the main retrieval-quality benchmark
+- local entry point:
+
+```powershell
+python deployment/run_activation_smoke.py --index <bundle-id>
+```
+
+Retrieval quality remains governed by the Stage 10 benchmark suite. Stage 11 smoke only blocks cutover when the staged runtime cannot ingest, ground, or cite correctly.
 
 ### 9. Activate
 
 - update `indexes/previous.txt`
 - update `indexes/current.txt`
 - record operator, time, and activated bundle ID
+- archive the displaced current index metadata under `indexes/archive/`
+- local entry point:
+
+```powershell
+python deployment/activate_index.py --index <bundle-id> --operator <operator-name>
+```
 
 ### 10. Roll back if needed
 
 - restore the previous pointer
 - rerun the smoke subset
 - record rollback time and operator
+- archive the displaced current index metadata under `indexes/archive/`
+- local entry point:
+
+```powershell
+python deployment/rollback_index.py --operator <operator-name>
+```

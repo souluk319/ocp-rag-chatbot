@@ -42,13 +42,16 @@ ingest/        document onboarding pipeline notes
 - multi-turn replay passes `2/2` five-turn scenarios with explicit version continuity
 - runtime endpoint and model selection stay env-driven and company-only by default
 - Stage 11 front-half dry-run passes for `build -> approve -> validate -> stage` on the validated seed bundle
+- Stage 11 back-half local drill passes for `reindex -> runtime smoke -> activate -> rollback`
+- Stage 11 archive snapshots are created for displaced active indexes during cutover and rollback
 - Stage 11 delta diff path also validates cleanly when the approved baseline and normalized manifest are identical
+- Stage 11 runtime smoke verifies ingest, grounding, citation presence, and click-through; retrieval quality itself still follows the Stage 9/10 benchmark gates
 
 ## Next milestones
 
 1. Wire the validated memory and policy path into the live runtime end to end
-2. Finish Stage 11 back-half work: reindex, smoke, activate, and rollback evidence
-3. Finish streaming and minimal operator-facing UI hardening in Stage 12
+2. Finish streaming and minimal operator-facing UI hardening in Stage 12
+3. Expand the approved corpus beyond the validated P0 slice without regressing Stage 10 and Stage 11 gates
 
 ## Design docs
 
@@ -56,6 +59,7 @@ ingest/        document onboarding pipeline notes
 - `docs/v2/execution-roadmap.md`
 - `docs/v2/stage11-readiness.md`
 - `docs/v2/stage11-front-half-report.md`
+- `docs/v2/stage11-back-half-report.md`
 - `docs/v2/chunking-contract.md`
 - `docs/v2/context-retention-harness.md`
 - `docs/v2/company-runtime-lock.md`
@@ -86,7 +90,7 @@ python deployment/initialize_stage11_baseline.py
 python deployment/check_stage11_readiness.py
 ```
 
-The current expected result is `ready_for_stage11 = true` with a warning that `indexes/current.txt` is still uninitialized. That warning is acceptable for starting Stage 11, but it must be closed before the first real activation cutover.
+The readiness gate is still the correct way to start Stage 11. The local validated drill then closes the first-activation warning by seeding a real baseline index before switching and rolling back.
 
 The currently verified local Stage 11 front-half flow is:
 
@@ -97,4 +101,16 @@ python deployment/validate_bundle.py data/packages/outbound/stage11-local-seed -
 Copy-Item -Recurse -Force data/packages/outbound/stage11-local-seed data/packages/inbound/stage11-local-seed
 python deployment/validate_bundle.py data/packages/inbound/stage11-local-seed --require-approved
 python deployment/stage_bundle_for_indexing.py data/packages/inbound/stage11-local-seed --force
+```
+
+The verified local Stage 11 back-half flow is:
+
+```powershell
+python deployment/reindex_staged_bundle.py data/staging/stage11-local-seed --index-id baseline-openshift-docs-p0 --force --output data/manifests/generated/stage11-baseline-reindex-report.json
+python deployment/run_activation_smoke.py --index baseline-openshift-docs-p0 --output data/manifests/generated/stage11-baseline-smoke-report.json
+python deployment/activate_index.py --index baseline-openshift-docs-p0 --bootstrap-current --operator codex-local --smoke-report data/manifests/generated/stage11-baseline-smoke-report.json --reindex-report data/manifests/generated/stage11-baseline-reindex-report.json --output data/manifests/generated/stage11-baseline-activation-report.json
+python deployment/reindex_staged_bundle.py data/staging/stage11-local-seed --index-id stage11-local-seed --force --output data/manifests/generated/stage11-seed-reindex-report.json
+python deployment/run_activation_smoke.py --index stage11-local-seed --output data/manifests/generated/stage11-seed-smoke-report.json
+python deployment/activate_index.py --index stage11-local-seed --operator codex-local --smoke-report data/manifests/generated/stage11-seed-smoke-report.json --reindex-report data/manifests/generated/stage11-seed-reindex-report.json --output data/manifests/generated/stage11-seed-activation-report.json
+python deployment/rollback_index.py --operator codex-local --output data/manifests/generated/stage11-seed-rollback-report.json
 ```

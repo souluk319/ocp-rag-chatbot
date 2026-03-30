@@ -52,6 +52,38 @@ def main() -> int:
     shutil.copy2(bundle_root / "approval.json", staging_path / "manifests" / "approval.json")
     shutil.copy2(bundle_root / "checksums.sha256", staging_path / "reports" / "checksums.sha256")
 
+    normalized_manifest_path = staging_path / "manifests" / "normalized-manifest.json"
+    bundle_manifest_path = staging_path / "manifests" / "bundle-manifest.json"
+    if normalized_manifest_path.exists() and bundle_manifest_path.exists():
+        normalized_manifest = json.loads(normalized_manifest_path.read_text(encoding="utf-8"))
+        bundle_manifest = json.loads(bundle_manifest_path.read_text(encoding="utf-8"))
+        bundle_entries = {
+            str(item.get("document_id", "")): item
+            for item in bundle_manifest.get("files", [])
+            if str(item.get("document_id", "")).strip()
+        }
+        staged_documents = []
+        for document in normalized_manifest.get("documents", []):
+            document_id = str(document.get("document_id", "")).strip()
+            entry = bundle_entries.get(document_id)
+            if not entry:
+                continue
+            relative_path = str(entry.get("relative_path", "")).strip()
+            view_relative_path = str(entry.get("view_relative_path", "")).strip()
+            if not relative_path:
+                continue
+            staged_document = dict(document)
+            staged_document["normalized_path"] = str((staging_path / relative_path).resolve())
+            if view_relative_path:
+                staged_document["html_path"] = str((staging_path / view_relative_path).resolve())
+            staged_documents.append(staged_document)
+
+        staged_manifest = dict(normalized_manifest)
+        staged_manifest["documents"] = staged_documents
+        staged_manifest["document_count"] = len(staged_documents)
+        staged_manifest["staged_from_bundle_id"] = bundle_id
+        write_json(staging_path / "manifests" / "staged-manifest.json", staged_manifest)
+
     staging_report = {
         "bundle_id": bundle_id,
         "bundle_path": repo_relative(bundle_root),
@@ -60,6 +92,7 @@ def main() -> int:
         "approved_for_import": approval_payload.get("approved_for_import"),
         "file_count": report.get("file_count", 0),
         "summary": report.get("summary", {}),
+        "staged_manifest_path": repo_relative(staging_path / "manifests" / "staged-manifest.json"),
     }
     write_json(staging_path / "reports" / "staging-report.json", staging_report)
     if args.output:

@@ -44,7 +44,8 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 8: complete
 - Stage 9: complete
 - Stage 10: complete (`go` for widening scope on the validated slice)
-- Stage 11: front half implemented and locally verified (`build -> approve -> validate -> stage`); activation warning remains for `indexes/current.txt`
+- Stage 11: complete for the validated slice (`build -> approve -> validate -> stage -> reindex -> smoke -> activate -> rollback`)
+- Stage 12: next active stage
 
 ## Stage 0. Freeze the rewrite baseline
 
@@ -613,17 +614,27 @@ The target product is not just a demo; it must survive document updates.
 - `deployment/check_stage11_readiness.py` reports `ready_for_stage11 = true` before the first real bundle cycle
 - bundle validation, approval, import, reindex, activation, and rollback evidence are recorded
 
-### Current readiness note
+### Current completion note
 
-The current preflight report lives in:
+Local evidence now exists for:
 
-- `data/manifests/generated/stage11-readiness-report.json`
+- baseline bootstrap activation on `baseline-openshift-docs-p0`
+- switch activation onto `stage11-local-seed`
+- rollback back to `baseline-openshift-docs-p0`
+- runtime OpenDocuments smoke on both baseline and incoming seed indexes
 
-Current state:
+See:
 
-- `ready_for_stage11 = true`
-- Stage 11 front-half dry-run is verified on `stage11-local-seed`
-- first-bundle activation warning remains for `indexes/current.txt`
+- `docs/v2/stage11-front-half-report.md`
+- `docs/v2/stage11-back-half-report.md`
+- `data/manifests/generated/stage11-baseline-activation-report.json`
+- `data/manifests/generated/stage11-seed-activation-report.json`
+- `data/manifests/generated/stage11-seed-rollback-report.json`
+
+Interpretation:
+
+- Stage 11 is closed for cutover mechanics on the validated slice
+- Stage 10 remains the authority for retrieval quality
 
 ## Stage 12. Touch UI last
 

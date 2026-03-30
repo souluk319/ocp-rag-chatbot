@@ -28,18 +28,15 @@ Stage 11 should only start after two things are true:
 - `data/staging/.gitkeep`
 - `indexes/previous.txt`
 
-These assets no longer stop at preflight. The repository now implements the Stage 11 front half:
+These assets no longer stop at preflight. The repository now implements the full local Stage 11 loop:
 
 - outbound bundle build
 - approval record update
 - inbound validation
 - staging for indexing
-
-The remaining gap is the back half:
-
-- reindex
-- smoke before cutover
-- activation pointer update
+- reindex artifact generation
+- activation smoke
+- pointer cutover
 - rollback drill
 
 ## Repository-side prerequisites
@@ -50,7 +47,7 @@ The repository is considered Stage 11-ready only when all of the following are t
 2. `deployment/activation-smoke-case-ids.json` exists and references fixed benchmark ids
 3. `data/packages/inbound/` and `data/packages/outbound/` exist as stable handoff locations
 4. `deployment/check_stage11_readiness.py` reports no repository-side blockers
-5. `indexes/current.txt` points to a real validated local index directory
+5. `indexes/current.txt` points to a real validated local index directory before activation is attempted
 
 ## Current status
 
@@ -62,9 +59,8 @@ Current interpretation:
 
 - `ready_for_stage11 = true`
 - repository-side preflight passes
-- `indexes/current.txt` is still `uninitialized`, but this is currently treated as an activation warning rather than a Stage 11 start blocker
-
-That warning still matters. Before the first real index flip or rollback drill, `indexes/current.txt` must be seeded with the id of a real validated local index.
+- the readiness warning about `indexes/current.txt` was closed locally by bootstrapping `baseline-openshift-docs-p0`
+- a full local Stage 11 cutover and rollback drill has now been executed
 
 ## Commands
 
@@ -97,12 +93,28 @@ python deployment/validate_bundle.py data/packages/inbound/stage11-local-seed --
 python deployment/stage_bundle_for_indexing.py data/packages/inbound/stage11-local-seed --force
 ```
 
+Run the verified local back-half drill:
+
+```powershell
+python deployment/reindex_staged_bundle.py data/staging/stage11-local-seed --index-id baseline-openshift-docs-p0 --force --output data/manifests/generated/stage11-baseline-reindex-report.json
+python deployment/run_activation_smoke.py --index baseline-openshift-docs-p0 --output data/manifests/generated/stage11-baseline-smoke-report.json
+python deployment/activate_index.py --index baseline-openshift-docs-p0 --bootstrap-current --operator codex-local --smoke-report data/manifests/generated/stage11-baseline-smoke-report.json --reindex-report data/manifests/generated/stage11-baseline-reindex-report.json --output data/manifests/generated/stage11-baseline-activation-report.json
+python deployment/reindex_staged_bundle.py data/staging/stage11-local-seed --index-id stage11-local-seed --force --output data/manifests/generated/stage11-seed-reindex-report.json
+python deployment/run_activation_smoke.py --index stage11-local-seed --output data/manifests/generated/stage11-seed-smoke-report.json
+python deployment/activate_index.py --index stage11-local-seed --operator codex-local --smoke-report data/manifests/generated/stage11-seed-smoke-report.json --reindex-report data/manifests/generated/stage11-seed-reindex-report.json --output data/manifests/generated/stage11-seed-activation-report.json
+python deployment/rollback_index.py --operator codex-local --output data/manifests/generated/stage11-seed-rollback-report.json
+```
+
 ## Interpretation
 
-If readiness passes with only the `indexes/current.txt` warning left, Stage 11 can start and the front-half bundle path can be exercised safely.
+Stage 11 is now considered closed for the validated slice because:
 
-It is still not production-safe for cutover until:
-
-- a real local index id seeds `indexes/current.txt`
-- reindex and smoke are recorded against a staged bundle
+- a real local index id seeded `indexes/current.txt`
+- reindex and runtime smoke were recorded against a staged bundle
 - activation and rollback evidence exist
+- archive snapshots exist for both the displaced baseline and the rolled-back seed index
+
+Important interpretation:
+
+- Stage 11 smoke validates runtime ingest, grounding, citation presence, and citation click-through on the staged index
+- Stage 9 and Stage 10 remain the authoritative retrieval-quality benchmark for the validated slice

@@ -11,6 +11,7 @@ Current contents cover:
 - operator runbook and baseline seed helper for the first approved refresh cycle
 - Stage 11 readiness preflight
 - Stage 11 front-half bundle build, approval, validation, and staging scripts
+- Stage 11 back-half reindex, runtime smoke, activation, and rollback scripts
 
 Key entry points:
 
@@ -22,6 +23,11 @@ Key entry points:
 - `deployment/validate_bundle.py`
 - `deployment/stage_bundle_for_indexing.py`
 - `deployment/stage11_bundle_utils.py`
+- `deployment/stage11_activation_utils.py`
+- `deployment/reindex_staged_bundle.py`
+- `deployment/run_activation_smoke.py`
+- `deployment/activate_index.py`
+- `deployment/rollback_index.py`
 - `deployment/activation-smoke-case-ids.json`
 - `deployment/airgap-flow.md`
 - `deployment/bundle-schema.yaml`
