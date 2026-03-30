@@ -39,7 +39,8 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 4: complete
 - Stage 4.5: complete
 - Stage 5: complete
-- Stage 6: next active implementation stage
+- Stage 6: complete
+- Stage 7: next active implementation stage
 
 ## Stage 0. Freeze the rewrite baseline
 
