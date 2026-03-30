@@ -24,6 +24,9 @@ recommended_fields:
   - audience
   - visibility
   - top_level_dir
+  - html_path
+  - section_count
+  - sections
   - section_title
   - heading_hierarchy
   - viewer_url
@@ -43,6 +46,9 @@ field_notes:
   trust_level: official, internal_runbook, training, or reference
   collected_at: ISO-8601 collection timestamp
   checksum: SHA-256 of normalized content
+  html_path: absolute or workspace-local path to the generated HTML citation document
+  section_count: number of extracted sections in the canonical document model
+  sections: section metadata records used for citation alignment and future chunk emission
   section_title: nearest section title for citation targeting
   heading_hierarchy: ordered heading path used for chunk and citation alignment
   viewer_url: internal HTML document path used when a citation is clicked

@@ -35,6 +35,8 @@ data/raw/*
 !data/raw/.gitkeep
 data/normalized/*
 !data/normalized/.gitkeep
+data/views/*
+!data/views/.gitkeep
 data/packages/*
 !data/packages/.gitkeep
 data/manifests/generated/*

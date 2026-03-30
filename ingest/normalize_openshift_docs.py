@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import html
 import json
 import re
+import shutil
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -62,6 +64,36 @@ DEFAULT_EXCLUDE_DIRS = {
     "contributing_to_docs",
 }
 
+HEADING_RE = re.compile(r"^(=+)\s+(.*)$")
+ID_RE = re.compile(r'^\[id="([^"]+)"\]\s*$')
+ATTR_RE = re.compile(r"^:([A-Za-z0-9_.!-]+):\s*(.*)$")
+IFDEF_RE = re.compile(r"^ifdef::([^\[]+)\[\]\s*$")
+IFNDEF_RE = re.compile(r"^ifndef::([^\[]+)\[\]\s*$")
+ENDIF_RE = re.compile(r"^endif::(?:[^\[]*)\[\]\s*$")
+IFEVAL_CONTEXT_RE = re.compile(r'^ifeval::\["\{context\}"\s*==\s*"([^"]+)"\]\s*$')
+INCLUDE_RE = re.compile(r"^include::([^\[]+)\[([^\]]*)\]\s*$")
+LEVEL_OFFSET_RE = re.compile(r"leveloffset=([+-]?\d+)")
+ADMONITION_RE = re.compile(r"^\[(NOTE|IMPORTANT|WARNING|TIP|CAUTION)\]\s*$")
+SOURCE_BLOCK_RE = re.compile(r"^\[source(?:,([^\]]+))?\]\s*$")
+
+
+@dataclass
+class ParserState:
+    context_value: str = ""
+    attrs: set[str] = field(default_factory=set)
+    attr_values: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class RenderSection:
+    section_id: str
+    title: str
+    anchor_id: str
+    level: int
+    heading_hierarchy: list[str]
+    section_index: int
+    body_lines: list[str] = field(default_factory=list)
+
 
 @dataclass
 class NormalizedDocument:
@@ -72,6 +104,8 @@ class NormalizedDocument:
     source_url: str
     local_path: str
     normalized_path: str
+    html_path: str
+    viewer_url: str
     product: str
     version: str
     category: str
@@ -80,11 +114,13 @@ class NormalizedDocument:
     collected_at: str
     checksum: str
     top_level_dir: str
+    section_count: int
+    sections: list[dict[str, object]]
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Normalize selected openshift-docs AsciiDoc content into plain text files for OpenDocuments indexing."
+        description="Normalize selected openshift-docs AsciiDoc content into text plus HTML citation views."
     )
     parser.add_argument(
         "--source-root",
@@ -97,6 +133,12 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path("./data/normalized/openshift-docs-p0"),
         help="Directory where normalized text files will be written",
+    )
+    parser.add_argument(
+        "--html-dir",
+        type=Path,
+        default=Path("./data/views/openshift-docs-p0"),
+        help="Directory where HTML citation views will be written",
     )
     parser.add_argument(
         "--manifest-out",
@@ -172,41 +214,12 @@ def collect_source_files(source_root: Path, include_dirs: list[str]) -> list[Pat
     return files
 
 
-def strip_asciidoc(text: str) -> str:
-    lines: list[str] = []
-    for raw_line in text.splitlines():
-        line = raw_line.rstrip()
-        if line.startswith(":"):
-            continue
-        if line.startswith("//"):
-            continue
-        if line.startswith("include::"):
-            continue
-        if line.startswith("ifdef::") or line.startswith("ifndef::") or line.startswith("endif::"):
-            continue
-        line = re.sub(r"^=+\s+", "", line)
-        line = re.sub(r"xref:([^\[]+)\[([^\]]*)\]", r"\2", line)
-        line = re.sub(r"link:([^\[]+)\[([^\]]*)\]", r"\2", line)
-        line = re.sub(r"<<[^,>]+,([^>]+)>>", r"\1", line)
-        line = re.sub(r"\{[^}]+\}", "", line)
-        line = line.replace("`", "")
-        lines.append(line)
-
-    cleaned = "\n".join(lines)
-    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
-    return cleaned.strip()
-
-
-def extract_title(source_text: str, fallback: str) -> str:
-    for line in source_text.splitlines():
-        if line.startswith("="):
-            return re.sub(r"^=+\s+", "", line).strip() or fallback
-    return fallback
-
-
 def build_source_url(relative_path: Path) -> str:
-    relative = relative_path.as_posix()
-    return f"https://github.com/openshift/openshift-docs/blob/main/{relative}"
+    return f"https://github.com/openshift/openshift-docs/blob/main/{relative_path.as_posix()}"
+
+
+def build_viewer_url(source_id: str, relative_path: Path) -> str:
+    return f"/viewer/{source_id}/{relative_path.with_suffix('.html').as_posix()}"
 
 
 def sha256_text(text: str) -> str:
@@ -215,6 +228,11 @@ def sha256_text(text: str) -> str:
 
 def stable_document_id(relative_path: Path) -> str:
     return hashlib.sha1(relative_path.as_posix().encode("utf-8")).hexdigest()
+
+
+def stable_section_id(document_id: str, anchor_id: str, section_index: int) -> str:
+    payload = f"{document_id}:{anchor_id}:{section_index}"
+    return hashlib.sha1(payload.encode("utf-8")).hexdigest()
 
 
 def classify_category(relative_path: Path) -> str:
@@ -234,17 +252,517 @@ def classify_category(relative_path: Path) -> str:
     return mapping.get(top_level, "other")
 
 
-def write_normalized_file(output_dir: Path, relative_path: Path, title: str, body: str) -> Path:
-    target = output_dir / relative_path.with_suffix(".txt")
+def build_default_attr_values(version_label: str) -> dict[str, str]:
+    return {
+        "product-title": "OpenShift Container Platform",
+        "product-version": version_label,
+    }
+
+
+def replace_attrs(text: str, state: ParserState) -> str:
+    def replace_match(match: re.Match[str]) -> str:
+        key = match.group(1)
+        if key == "context":
+            return state.context_value
+        if key in state.attr_values:
+            return state.attr_values[key]
+        return ""
+
+    return re.sub(r"\{([^}]+)\}", replace_match, text)
+
+
+def clean_inline_text(text: str, state: ParserState) -> str:
+    text = replace_attrs(text, state)
+    text = re.sub(r"xref:([^\[]+)\[([^\]]*)\]", r"\2", text)
+    text = re.sub(r"link:([^\[]+)\[([^\]]*)\]", r"\2", text)
+    text = re.sub(r"<<[^,>]+,([^>]+)>>", r"\1", text)
+    text = text.replace("{nbsp}", " ")
+    text = text.replace("`", "")
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+
+def slugify(text: str) -> str:
+    lowered = text.lower()
+    lowered = re.sub(r"[^a-z0-9\s_-]", "", lowered)
+    lowered = re.sub(r"[\s_]+", "-", lowered)
+    lowered = re.sub(r"-{2,}", "-", lowered).strip("-")
+    return lowered or "section"
+
+
+def parse_condition_tokens(raw_tokens: str) -> list[str]:
+    return [token.strip() for token in raw_tokens.split(",") if token.strip()]
+
+
+def parse_level_offset(options: str) -> int:
+    match = LEVEL_OFFSET_RE.search(options)
+    if not match:
+        return 0
+    return int(match.group(1))
+
+
+def resolve_include_target(current_file: Path, include_target: str, source_root: Path) -> Path | None:
+    candidate = (current_file.parent / include_target).resolve()
+    if candidate.exists():
+        return candidate
+    root_candidate = (source_root / include_target).resolve()
+    if root_candidate.exists():
+        return root_candidate
+    return None
+
+
+def resolve_document_lines(
+    source_file: Path,
+    source_root: Path,
+    state: ParserState,
+    heading_offset: int = 0,
+    include_stack: set[Path] | None = None,
+) -> list[str]:
+    include_stack = include_stack or set()
+    if source_file in include_stack:
+        return []
+
+    include_stack.add(source_file)
+    lines_out: list[str] = []
+    condition_stack: list[bool] = []
+
+    for raw_line in source_file.read_text(encoding="utf-8", errors="ignore").splitlines():
+        stripped = raw_line.strip()
+
+        if ENDIF_RE.match(stripped):
+            if condition_stack:
+                condition_stack.pop()
+            continue
+
+        if eval_match := IFEVAL_CONTEXT_RE.match(stripped):
+            condition_stack.append(state.context_value == eval_match.group(1))
+            continue
+
+        if ifdef_match := IFDEF_RE.match(stripped):
+            tokens = parse_condition_tokens(ifdef_match.group(1))
+            condition_stack.append(any(token in state.attrs for token in tokens))
+            continue
+
+        if ifndef_match := IFNDEF_RE.match(stripped):
+            tokens = parse_condition_tokens(ifndef_match.group(1))
+            condition_stack.append(not any(token in state.attrs for token in tokens))
+            continue
+
+        if condition_stack and not all(condition_stack):
+            continue
+
+        if attr_match := ATTR_RE.match(stripped):
+            attr_name = attr_match.group(1)
+            attr_value = attr_match.group(2).strip()
+            if attr_name.endswith("!"):
+                clean_name = attr_name[:-1]
+                state.attrs.discard(clean_name)
+                state.attr_values.pop(clean_name, None)
+                continue
+            if attr_name == "context":
+                state.context_value = attr_value
+                state.attrs.add("context")
+                state.attr_values["context"] = attr_value
+            else:
+                state.attrs.add(attr_name)
+                resolved_attr_value = replace_attrs(attr_value, state)
+                state.attr_values[attr_name] = resolved_attr_value
+            continue
+
+        if stripped.startswith("//") or stripped == "toc::[]":
+            continue
+
+        if include_match := INCLUDE_RE.match(stripped):
+            include_target = include_match.group(1)
+            options = include_match.group(2)
+            include_path = resolve_include_target(source_file, include_target, source_root)
+            if not include_path:
+                continue
+            lines_out.extend(
+                resolve_document_lines(
+                    include_path,
+                    source_root,
+                    state,
+                    heading_offset=heading_offset + parse_level_offset(options),
+                    include_stack=include_stack.copy(),
+                )
+            )
+            continue
+
+        if id_match := ID_RE.match(stripped):
+            resolved_id = replace_attrs(id_match.group(1), state)
+            lines_out.append(f'[id="{resolved_id}"]')
+            continue
+
+        if heading_match := HEADING_RE.match(raw_line):
+            new_level = max(1, min(6, len(heading_match.group(1)) + heading_offset))
+            heading_title = clean_inline_text(heading_match.group(2), state)
+            lines_out.append(f'{"=" * new_level} {heading_title}')
+            continue
+
+        lines_out.append(replace_attrs(raw_line.rstrip(), state))
+
+    return lines_out
+
+
+def build_sections(lines: list[str], fallback_title: str, document_id: str) -> list[RenderSection]:
+    sections: list[RenderSection] = []
+    hierarchy: list[str] = []
+    pending_anchor: str | None = None
+
+    def start_section(title: str, level: int, anchor_id: str) -> RenderSection:
+        nonlocal hierarchy
+        if len(hierarchy) < level:
+            hierarchy.extend([""] * (level - len(hierarchy)))
+        hierarchy = hierarchy[:level]
+        hierarchy[level - 1] = title
+        heading_hierarchy = [item for item in hierarchy if item]
+        section_index = len(sections)
+        section_id = stable_section_id(document_id, anchor_id, section_index)
+        section = RenderSection(
+            section_id=section_id,
+            title=title,
+            anchor_id=anchor_id,
+            level=level,
+            heading_hierarchy=heading_hierarchy,
+            section_index=section_index,
+        )
+        sections.append(section)
+        return section
+
+    current_section: RenderSection | None = None
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            if current_section:
+                current_section.body_lines.append("")
+            continue
+
+        if id_match := ID_RE.match(stripped):
+            pending_anchor = slugify(id_match.group(1))
+            continue
+
+        if heading_match := HEADING_RE.match(stripped):
+            title = heading_match.group(2).strip() or fallback_title
+            level = len(heading_match.group(1))
+            anchor_id = pending_anchor or slugify(title)
+            current_section = start_section(title, level, anchor_id)
+            pending_anchor = None
+            continue
+
+        if current_section is None:
+            current_section = start_section(fallback_title, 1, pending_anchor or slugify(fallback_title))
+            pending_anchor = None
+
+        current_section.body_lines.append(line.rstrip())
+
+    if not sections:
+        sections.append(
+            RenderSection(
+                section_id=stable_section_id(document_id, slugify(fallback_title), 0),
+                title=fallback_title,
+                anchor_id=slugify(fallback_title),
+                level=1,
+                heading_hierarchy=[fallback_title],
+                section_index=0,
+                body_lines=[],
+            )
+        )
+
+    return sections
+
+
+def render_section_lines_to_text(lines: list[str], state: ParserState) -> str:
+    output_lines: list[str] = []
+    in_code = False
+    code_lines: list[str] = []
+    pending_code_language = ""
+    in_table = False
+    table_lines: list[str] = []
+
+    def flush_code() -> None:
+        nonlocal code_lines
+        if code_lines:
+            output_lines.append("```")
+            output_lines.extend(code_lines)
+            output_lines.append("```")
+            code_lines = []
+
+    def flush_table() -> None:
+        nonlocal table_lines
+        if table_lines:
+            output_lines.extend(table_lines)
+            table_lines = []
+
+    for raw_line in lines:
+        stripped = raw_line.strip()
+
+        if source_match := SOURCE_BLOCK_RE.match(stripped):
+            pending_code_language = source_match.group(1) or ""
+            continue
+
+        if stripped == "----":
+            if in_code:
+                flush_code()
+                in_code = False
+            else:
+                in_code = True
+            continue
+
+        if in_code:
+            code_lines.append(raw_line.rstrip())
+            continue
+
+        if stripped == "|===":
+            if in_table:
+                flush_table()
+                in_table = False
+            else:
+                in_table = True
+            continue
+
+        if in_table:
+            table_lines.append(clean_inline_text(stripped, state))
+            continue
+
+        if stripped == "+":
+            continue
+
+        if stripped.startswith("[") and stripped.endswith("]"):
+            if admonition_match := ADMONITION_RE.match(stripped):
+                output_lines.append(f"{admonition_match.group(1).title()}:")
+            continue
+
+        if not stripped:
+            output_lines.append("")
+            continue
+
+        output_lines.append(clean_inline_text(raw_line, state))
+
+    flush_code()
+    flush_table()
+    text = "\n".join(output_lines)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def render_section_lines_to_html(lines: list[str], state: ParserState) -> str:
+    html_parts: list[str] = []
+    paragraph_lines: list[str] = []
+    ul_items: list[str] = []
+    ol_items: list[str] = []
+    code_lines: list[str] = []
+    table_lines: list[str] = []
+    in_code = False
+    in_table = False
+    pending_code_language = ""
+
+    def flush_paragraph() -> None:
+        nonlocal paragraph_lines
+        if paragraph_lines:
+            text = clean_inline_text(" ".join(paragraph_lines), state)
+            if text:
+                html_parts.append(f"<p>{html.escape(text)}</p>")
+            paragraph_lines = []
+
+    def flush_ul() -> None:
+        nonlocal ul_items
+        if ul_items:
+            html_parts.append("<ul>")
+            html_parts.extend(f"<li>{html.escape(item)}</li>" for item in ul_items)
+            html_parts.append("</ul>")
+            ul_items = []
+
+    def flush_ol() -> None:
+        nonlocal ol_items
+        if ol_items:
+            html_parts.append("<ol>")
+            html_parts.extend(f"<li>{html.escape(item)}</li>" for item in ol_items)
+            html_parts.append("</ol>")
+            ol_items = []
+
+    def flush_code() -> None:
+        nonlocal code_lines
+        if code_lines:
+            class_attr = f' class="language-{pending_code_language}"' if pending_code_language else ""
+            payload = html.escape("\n".join(code_lines))
+            html_parts.append(f"<pre><code{class_attr}>{payload}</code></pre>")
+            code_lines = []
+
+    def flush_table() -> None:
+        nonlocal table_lines
+        if table_lines:
+            payload = html.escape("\n".join(table_lines))
+            html_parts.append(f'<pre class="table">{payload}</pre>')
+            table_lines = []
+
+    def flush_all() -> None:
+        flush_paragraph()
+        flush_ul()
+        flush_ol()
+
+    for raw_line in lines:
+        stripped = raw_line.strip()
+
+        if source_match := SOURCE_BLOCK_RE.match(stripped):
+            pending_code_language = (source_match.group(1) or "").strip()
+            continue
+
+        if stripped == "----":
+            flush_all()
+            if in_code:
+                flush_code()
+                in_code = False
+                pending_code_language = ""
+            else:
+                in_code = True
+            continue
+
+        if in_code:
+            code_lines.append(raw_line.rstrip())
+            continue
+
+        if stripped == "|===":
+            flush_all()
+            if in_table:
+                flush_table()
+                in_table = False
+            else:
+                in_table = True
+            continue
+
+        if in_table:
+            table_lines.append(clean_inline_text(stripped, state))
+            continue
+
+        if stripped == "+":
+            continue
+
+        if admonition_match := ADMONITION_RE.match(stripped):
+            flush_all()
+            html_parts.append(f'<p class="admonition-label">{html.escape(admonition_match.group(1).title())}</p>')
+            continue
+
+        if stripped.startswith("[") and stripped.endswith("]"):
+            continue
+
+        if not stripped:
+            flush_all()
+            continue
+
+        if stripped.startswith("* "):
+            flush_paragraph()
+            flush_ol()
+            ul_items.append(clean_inline_text(stripped[2:], state))
+            continue
+
+        if stripped.startswith(". "):
+            flush_paragraph()
+            flush_ul()
+            ol_items.append(clean_inline_text(stripped[2:], state))
+            continue
+
+        flush_ul()
+        flush_ol()
+        paragraph_lines.append(stripped)
+
+    flush_all()
+    flush_code()
+    flush_table()
+    return "\n".join(html_parts)
+
+
+def render_html_document(
+    title: str,
+    source_path: str,
+    source_url: str,
+    sections: list[RenderSection],
+    state: ParserState,
+) -> str:
+    section_markup: list[str] = []
+    for section in sections:
+        heading_tag = f"h{min(max(section.level, 1), 6)}"
+        body_markup = render_section_lines_to_html(section.body_lines, state)
+        section_markup.append(
+            "\n".join(
+                [
+                    f'<section class="doc-section" data-section-id="{html.escape(section.section_id)}">',
+                    f'<{heading_tag} id="{html.escape(section.anchor_id)}">{html.escape(section.title)}</{heading_tag}>',
+                    body_markup,
+                    "</section>",
+                ]
+            )
+        )
+
+    return "\n".join(
+        [
+            "<!doctype html>",
+            '<html lang="en">',
+            "<head>",
+            '  <meta charset="utf-8">',
+            f"  <title>{html.escape(title)}</title>",
+            "  <style>",
+            "    body { font-family: Segoe UI, Arial, sans-serif; max-width: 960px; margin: 0 auto; padding: 32px; line-height: 1.6; color: #1f2933; }",
+            "    h1, h2, h3, h4, h5, h6 { margin-top: 1.5em; color: #102a43; }",
+            "    pre { background: #f5f7fa; padding: 12px; overflow-x: auto; border-radius: 6px; }",
+            "    code { font-family: Consolas, monospace; }",
+            "    .doc-meta { color: #52606d; margin-bottom: 24px; }",
+            "    .doc-section { margin-bottom: 24px; }",
+            "    .admonition-label { font-weight: 700; color: #9f1239; margin-bottom: 0; }",
+            "    .table { white-space: pre-wrap; }",
+            "  </style>",
+            "</head>",
+            "<body>",
+            f"  <h1>{html.escape(title)}</h1>",
+            f'  <p class="doc-meta">Source path: {html.escape(source_path)}<br>Source URL: <a href="{html.escape(source_url)}">{html.escape(source_url)}</a></p>',
+            *section_markup,
+            "</body>",
+            "</html>",
+        ]
+    )
+
+
+def build_normalized_payload(title: str, relative_path: Path, viewer_url: str, sections: list[RenderSection], state: ParserState) -> str:
+    blocks = [
+        f"Title: {title}",
+        f"Source Path: {relative_path.as_posix()}",
+        f"Viewer URL: {viewer_url}",
+        "",
+    ]
+    for section in sections:
+        heading_path = " > ".join(section.heading_hierarchy)
+        blocks.append(f"[Section] {heading_path}")
+        section_text = render_section_lines_to_text(section.body_lines, state)
+        if section_text:
+            blocks.append(section_text)
+        blocks.append("")
+    payload = "\n".join(blocks)
+    payload = re.sub(r"\n{3,}", "\n\n", payload)
+    return payload.strip() + "\n"
+
+
+def write_text_file(target: Path, payload: str) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
-    payload = f"Title: {title}\nSource Path: {relative_path.as_posix()}\n\n{body}\n"
     target.write_text(payload, encoding="utf-8")
-    return target
+
+
+def section_manifest(section: RenderSection, viewer_url: str) -> dict[str, object]:
+    return {
+        "section_id": section.section_id,
+        "section_title": section.title,
+        "section_anchor": section.anchor_id,
+        "heading_hierarchy": section.heading_hierarchy,
+        "level": section.level,
+        "section_index": section.section_index,
+        "viewer_url": viewer_url,
+    }
 
 
 def normalize_documents(args: argparse.Namespace) -> int:
     source_root = args.source_root.resolve()
     output_dir = args.output_dir.resolve()
+    html_dir = args.html_dir.resolve()
     manifest_out = args.manifest_out.resolve()
     include_dirs = args.include_dirs or DEFAULT_INCLUDE_DIRS
     exclude_fragments = args.exclude_fragments or list(DEFAULT_EXCLUDE_PATH_FRAGMENTS)
@@ -257,6 +775,10 @@ def normalize_documents(args: argparse.Namespace) -> int:
     documents: list[NormalizedDocument] = []
     skipped = Counter()
 
+    if not args.dry_run:
+        shutil.rmtree(output_dir, ignore_errors=True)
+        shutil.rmtree(html_dir, ignore_errors=True)
+
     for source_file in source_files:
         relative_path = source_file.relative_to(source_root)
         skip_reason = skip_reason_for_path(relative_path, exclude_fragments)
@@ -264,23 +786,34 @@ def normalize_documents(args: argparse.Namespace) -> int:
             skipped[skip_reason] += 1
             continue
 
-        source_text = source_file.read_text(encoding="utf-8", errors="ignore")
-        title = extract_title(source_text, source_file.stem)
-        body = strip_asciidoc(source_text)
-        if not body:
-            skipped["empty_body"] += 1
-            continue
+        parser_state = ParserState(attr_values=build_default_attr_values(args.version_label))
+        resolved_lines = resolve_document_lines(source_file, source_root, parser_state)
+        title = source_file.stem
+        for line in resolved_lines:
+            heading_match = HEADING_RE.match(line.strip())
+            if heading_match:
+                title = clean_inline_text(heading_match.group(2), parser_state) or title
+                break
+
+        document_id = stable_document_id(relative_path)
+        sections = build_sections(resolved_lines, title, document_id)
+        viewer_url = build_viewer_url(args.source_id, relative_path)
+        normalized_payload = build_normalized_payload(title, relative_path, viewer_url, sections, parser_state)
+        checksum = sha256_text(normalized_payload)
 
         normalized_path = output_dir / relative_path.with_suffix(".txt")
-        checksum = sha256_text(body)
+        html_path = html_dir / relative_path.with_suffix(".html")
+
         document = NormalizedDocument(
-            document_id=stable_document_id(relative_path),
+            document_id=document_id,
             title=title,
             source_id=args.source_id,
             source_type="git_mirror",
             source_url=build_source_url(relative_path),
             local_path=str(source_file),
             normalized_path=str(normalized_path),
+            html_path=str(html_path),
+            viewer_url=viewer_url,
             product="ocp",
             version=args.version_label,
             category=classify_category(relative_path),
@@ -289,11 +822,15 @@ def normalize_documents(args: argparse.Namespace) -> int:
             collected_at=collected_at,
             checksum=checksum,
             top_level_dir=relative_path.parts[0],
+            section_count=len(sections),
+            sections=[section_manifest(section, viewer_url) for section in sections],
         )
         documents.append(document)
 
         if not args.dry_run:
-            write_normalized_file(output_dir, relative_path, title, body)
+            write_text_file(normalized_path, normalized_payload)
+            html_payload = render_html_document(title, relative_path.as_posix(), document.source_url, sections, parser_state)
+            write_text_file(html_path, html_payload)
 
     manifest = {
         "manifest_id": f"{args.source_id}-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}",
@@ -305,7 +842,7 @@ def normalize_documents(args: argparse.Namespace) -> int:
         "top_level_counts": dict(sorted(Counter(doc.top_level_dir for doc in documents).items())),
         "category_counts": dict(sorted(Counter(doc.category for doc in documents).items())),
         "skipped_counts": dict(sorted(skipped.items())),
-        "documents": [document.__dict__ for document in documents],
+        "documents": [asdict(document) for document in documents],
     }
 
     if args.dry_run:
@@ -319,6 +856,8 @@ def normalize_documents(args: argparse.Namespace) -> int:
                 "title": document.title,
                 "category": document.category,
                 "top_level_dir": document.top_level_dir,
+                "viewer_url": document.viewer_url,
+                "section_count": document.section_count,
                 "local_path": document.local_path,
             }
             for document in documents[:15]
@@ -329,6 +868,7 @@ def normalize_documents(args: argparse.Namespace) -> int:
     manifest_out.parent.mkdir(parents=True, exist_ok=True)
     manifest_out.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"[ok] normalized {len(documents)} documents")
+    print(f"[ok] html views written to {html_dir}")
     print(f"[ok] manifest written to {manifest_out}")
     return 0
 

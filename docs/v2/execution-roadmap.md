@@ -36,7 +36,8 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 1: complete
 - Stage 2: complete for first pass
 - Stage 3: complete
-- Stage 4: next active implementation stage
+- Stage 4: complete
+- Stage 5: next active implementation stage
 
 ## Stage 0. Freeze the rewrite baseline
 
@@ -228,8 +229,9 @@ Citation click-through is a hard product requirement.
 
 ### Deliverables
 
-- HTML citation output strategy
+- generated HTML citation views under `data/views/openshift-docs-p0/`
 - metadata fields including `viewer_url`, `section_title`, and `heading_hierarchy`
+- manifest records with `html_path`, `section_count`, and section metadata
 - one sample rendered document with working anchors
 
 ### Exit criteria
