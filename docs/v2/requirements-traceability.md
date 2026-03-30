@@ -29,10 +29,10 @@ The goal is to make it obvious which requirements are already defined, which are
 | Section-aware chunking | Answers and citations must point to meaningful sections, not arbitrary text blobs | RAG / Search Engineer | `docs/v2/architecture-blueprint.md`, `docs/v2/chunking-contract.md`, `configs/chunk-schema.yaml` | defined | Chunks preserve heading hierarchy, type, and section identity |
 | Hybrid retrieval and reranking | OpenDocuments PRD expects retrieval quality beyond naive vector lookup | RAG / Search Engineer | `docs/v2/architecture-blueprint.md`, `configs/rag-policy.yaml` | planned | Relevant chunks rank ahead of weak lexical or noisy matches |
 | Context-retention harness | We need to localize context loss before Stage 5 benchmark failures become opaque | QA / Evaluation / Red Team | `docs/v2/context-retention-harness.md`, `eval/context-harness-schema.yaml`, `eval/context_harness_report.py` | defined | A failing turn can be classified as retrieval miss, rerank loss, assembly loss, citation loss, or version drift |
-| Retrieval benchmark and rerank validation | Feedback requires proof that vector retrieval quality is measured, not assumed | QA / Evaluation / Red Team | `docs/v2/evaluation-spec.md` | planned next | Top-k, source-dir, citation, and rerank metrics are tracked on a fixed dataset |
+| Retrieval benchmark and rerank validation | Feedback requires proof that vector retrieval quality is measured, not assumed | QA / Evaluation / Red Team | `docs/v2/evaluation-spec.md`, `docs/v2/retrieval-benchmark-plan.md`, `eval/benchmarks/p0_retrieval_benchmark_cases.jsonl`, `eval/retrieval_benchmark_report.py` | defined with first dataset | Top-k, source-dir, citation, and rerank metrics are tracked on a fixed dataset |
 | Korean answer policy | Users will ask in Korean while official documents stay mostly English | LLM Serving / Backend Engineer | `configs/rag-policy.yaml` | defined | Korean answers remain grounded and preserve technical terms correctly |
 | Citation rendering | Answers must always disclose evidence | RAG / Search Engineer | `configs/rag-policy.yaml`, `docs/v2/architecture-blueprint.md` | defined | Every answer includes source references |
-| Citation click-through | Clicking a citation must open a real readable document | UI / UX Engineer | `docs/v2/architecture-blueprint.md` | planned | A cited source opens a human-readable document or section |
+| Citation click-through | Clicking a citation must open a real readable document | UI / UX Engineer | `docs/v2/architecture-blueprint.md`, `ingest/normalize_openshift_docs.py` | defined with generated HTML targets | A cited source resolves to a human-readable HTML document or section target |
 | Multi-turn memory and follow-up rewrite | Feedback requires grounded continuity across more than one turn | LLM Serving / Backend Engineer | `docs/v2/architecture-blueprint.md`, `docs/v2/evaluation-spec.md` | planned next | Session memory, rewrite rules, and 5-turn scenarios are defined and tested |
 | Company-approved model usage | The runtime must not drift to local or public providers | LLM Serving / Backend Engineer | `.env`, future runtime config under `app/` | partially defined | Runtime only uses the approved company endpoint |
 | Streaming response | OpenDocuments behavior and user experience expect streaming output | LLM Serving / Backend Engineer | `docs/v2/architecture-blueprint.md` | planned | Chat answers stream to the client in chunks |
@@ -52,11 +52,8 @@ The goal is to make it obvious which requirements are already defined, which are
 ## What still needs implementation
 
 - section-aware chunk generation
-- context-retention harness traces and diagnostics
-- retrieval benchmark dataset and metrics
-- viewer-friendly HTML output with stable `viewer_url`
 - OpenDocuments ingestion validation using the normalized P0 corpus
-- evaluation dataset assets under `eval/`
+- additional evaluation dataset assets under `eval/`
 - multi-turn memory rules and follow-up rewrite logic
 - company-endpoint runtime wiring for the integrated chatbot path
 

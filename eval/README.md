@@ -8,6 +8,7 @@ Planned contents:
 - expected answer guidance
 - citation checks
 - context-retention harness traces and reports
+- retrieval benchmark case sets and scoring reports
 - version correctness checks
 - retrieval benchmark datasets and result summaries
 - multi-turn scenario datasets

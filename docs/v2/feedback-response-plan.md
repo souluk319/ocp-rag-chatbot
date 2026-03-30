@@ -57,10 +57,17 @@ The benchmark must include:
 - query classes by operational intent
 - vector retrieval hit rates
 - source directory hit rates
+- expected supporting document paths
 - citation correctness
 - rerank before and after comparison
 
 This is the minimum proof that retrieval quality is improving, not just changing.
+
+The Stage 5 dataset and reporter are:
+
+- `docs/v2/retrieval-benchmark-plan.md`
+- `eval/benchmarks/p0_retrieval_benchmark_cases.jsonl`
+- `eval/retrieval_benchmark_report.py`
 
 ### 4. Multi-turn behavior
 
@@ -98,9 +105,8 @@ We must not widen corpus scope beyond the current validation slice until all of 
 
 ## Immediate next implementation order
 
-1. formalize chunking contract
-2. formalize retrieval benchmark metrics
-3. add the context-retention harness
-4. formalize multi-turn memory and rewrite rules
-5. validate OpenDocuments against the normalized validation slice
-6. build the first benchmark dataset
+1. validate OpenDocuments against the normalized validation slice
+2. run the Stage 5 benchmark against the first OpenDocuments baseline
+3. formalize multi-turn memory and follow-up rewrite rules
+4. attach Stage 4.5 traces to failing benchmark cases
+5. lock the runtime to the approved company endpoint

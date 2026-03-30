@@ -58,6 +58,13 @@ Required metrics:
 - `citation_correctness`
 - `rerank_lift@5`
 
+Required Stage 5 artifacts:
+
+- `docs/v2/retrieval-benchmark-plan.md`
+- `eval/benchmarks/p0_retrieval_benchmark_cases.jsonl`
+- `eval/retrieval-benchmark-schema.yaml`
+- `eval/retrieval_benchmark_report.py`
+
 Recommended first-slice gates:
 
 - `source_dir_hit@5 >= 0.85`
@@ -246,6 +253,9 @@ Each evaluation item should record:
 - `turn_index`
 - `notes`
 - `context_harness_required`
+- `expected_document_paths`
+- `scenario_id`
+- `turn_type`
 
 ## Minimum release gate for the first working slice
 

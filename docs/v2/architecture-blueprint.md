@@ -171,6 +171,7 @@ The first benchmark contract should record:
 
 - top-k hit rate against expected supporting documents
 - expected source-directory hit rate
+- expected supporting document path
 - version-match rate for version-sensitive questions
 - citation correctness on grounded answers
 - rerank delta between pre-rerank and post-rerank ordering

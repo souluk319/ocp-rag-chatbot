@@ -38,7 +38,8 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 3: complete
 - Stage 4: complete
 - Stage 4.5: complete
-- Stage 5: next active implementation stage
+- Stage 5: complete
+- Stage 6: next active implementation stage
 
 ## Stage 0. Freeze the rewrite baseline
 
@@ -315,8 +316,11 @@ The earlier review explicitly said vector search quality was not validated.
 
 ### Deliverables
 
-- first retrieval benchmark dataset under `eval/`
-- benchmark template and scoring notes
+- `docs/v2/retrieval-benchmark-plan.md`
+- `eval/benchmarks/p0_retrieval_benchmark_cases.jsonl`
+- `eval/retrieval-benchmark-schema.yaml`
+- `eval/retrieval_benchmark_report.py`
+- `eval/fixtures/retrieval_benchmark_sample_results.jsonl`
 
 ### Exit criteria
 
