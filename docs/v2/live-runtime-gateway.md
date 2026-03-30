@@ -20,7 +20,8 @@ It owns:
 2. follow-up rewrite before the request reaches OpenDocuments
 3. policy-shaped source reranking after OpenDocuments retrieval
 4. citation normalization against the active Stage 11 index manifest
-5. conservative answer shaping for operator-facing output
+5. product-owned HTML viewer delivery for citation click-through
+6. conservative answer shaping for operator-facing output
 
 ## Why it exists
 
@@ -97,6 +98,31 @@ Instead it applies the already validated policy logic in the runtime path:
 
 This means Stage 9 policy behavior is no longer isolated to offline reports.
 
+## Citation viewer strategy
+
+The gateway now serves the HTML citation targets directly through:
+
+- `GET /viewer/{source_id}/{document_path}`
+
+This route resolves the requested viewer URL against the active Stage 11 manifest and serves the generated HTML file from disk.
+
+The goal is simple:
+
+- citations returned on the live path must be openable without exposing raw filesystem paths to the client
+
+## Bridge contract additions
+
+The bridge now adds two runtime controls that matter for Stage 12:
+
+- `OD_FORWARD_CLIENT_AUTH`
+- `OD_EMBEDDING_DIMENSIONS`
+
+`OD_FORWARD_CLIENT_AUTH` defaults to off so the OpenDocuments-side placeholder API key is not accidentally forwarded to the company server.
+
+`OD_EMBEDDING_DIMENSIONS` exists because the active Stage 11 baseline currently uses `1024`-dimension vectors, while the approved bridge embedding model path starts at `384` dimensions before compatibility adjustment.
+
+This is a runtime compatibility contract, not a retrieval-quality claim.
+
 ## Runtime contracts
 
 Required env values for the gateway path:
@@ -114,6 +140,31 @@ Optional:
 
 ## Current scope
 
-This gateway is the runtime integration layer for Stage 12 preparation.
+## Acceptance evidence
 
-It does not yet replace the OpenDocuments web UI. Instead it makes the backend behavior ready so that Stage 12 UI work can point to a stable, policy-aware runtime path.
+The authoritative live-runtime evidence now lives in:
+
+- `docs/v2/stage12-live-runtime-report.md`
+- `data/manifests/generated/stage12-live-runtime-report.json`
+
+That evidence proves:
+
+- bridge health and model listing
+- OpenDocuments live HTTP startup
+- gateway streaming on the real path
+- session continuity across two turns
+- `last_document` follow-up rewrite on the live path
+- HTML viewer click-through through the gateway
+
+## Current scope
+
+This gateway is no longer only a Stage 12 preparation artifact.
+
+It is the validated live runtime baseline for:
+
+- bridge -> OpenDocuments -> gateway streaming
+- session-aware follow-up rewrite
+- policy-shaped citations
+- product-owned HTML source viewing
+
+Stage 9 and Stage 10 still remain the authority for retrieval quality.

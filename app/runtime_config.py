@@ -55,11 +55,13 @@ class RuntimeConfig:
     company_base_url: str
     chat_model: str
     embedding_model: str
+    embedding_dimensions: int
     company_bearer_token: str
     opendocuments_base_url: str
     default_chat_mode: str
     request_timeout_seconds: float
     allow_local_chat_fallback: bool
+    forward_client_auth: bool
 
     def runtime_mode(self) -> str:
         if self.allow_local_chat_fallback:
@@ -87,10 +89,12 @@ class RuntimeConfig:
             "company_base_url_configured": bool(self.company_base_url),
             "chat_model_configured": bool(self.chat_model),
             "embedding_model_configured": bool(self.embedding_model),
+            "embedding_dimensions": self.embedding_dimensions,
             "company_token_configured": bool(self.company_bearer_token),
             "opendocuments_base_url_configured": bool(self.opendocuments_base_url),
             "default_chat_mode": self.default_chat_mode,
             "local_chat_fallback": self.allow_local_chat_fallback,
+            "forward_client_auth": self.forward_client_auth,
             "runtime_mode": self.runtime_mode(),
             "missing_required_keys": self.missing_required_keys(),
             "missing_gateway_keys": self.missing_gateway_keys(),
@@ -104,13 +108,21 @@ def load_runtime_config() -> RuntimeConfig:
     except ValueError:
         timeout_value = 120.0
 
+    embedding_dimensions_raw = _get_env("OD_EMBEDDING_DIMENSIONS", default="384")
+    try:
+        embedding_dimensions = int(embedding_dimensions_raw)
+    except ValueError:
+        embedding_dimensions = 384
+
     return RuntimeConfig(
         company_base_url=_get_env("OD_COMPANY_BASE_URL", "LLM_EP_COMPANY_URL", "LLM_ENDPOINT"),
         chat_model=_get_env("OD_CHAT_MODEL", "LLM_EP_COMPANY_MODEL", "LLM_MODEL"),
         embedding_model=_get_env("OD_EMBEDDING_MODEL", "EMBEDDING_MODEL"),
+        embedding_dimensions=embedding_dimensions,
         company_bearer_token=_get_env("OD_COMPANY_BEARER_TOKEN", "LLM_EP_COMPANY_BEARER_TOKEN"),
         opendocuments_base_url=_get_env("OD_SERVER_BASE_URL"),
         default_chat_mode=_get_env("OD_DEFAULT_MODE", "DEFAULT_MODE", default="operations"),
         request_timeout_seconds=timeout_value,
         allow_local_chat_fallback=_get_bool("OD_ALLOW_LOCAL_CHAT_FALLBACK", default=False),
+        forward_client_auth=_get_bool("OD_FORWARD_CLIENT_AUTH", default=False),
     )

@@ -47,12 +47,13 @@ ingest/        document onboarding pipeline notes
 - Stage 11 delta diff path also validates cleanly when the approved baseline and normalized manifest are identical
 - Stage 11 runtime smoke verifies ingest, grounding, citation presence, and click-through; retrieval quality itself still follows the Stage 9/10 benchmark gates
 - a product-owned runtime gateway now exists to apply Stage 7 multi-turn rewrite and Stage 9 source policy on the live OpenDocuments HTTP path
+- Stage 12 live runtime smoke now passes through `bridge -> OpenDocuments -> gateway -> /viewer/...` with stable session cookies, live `last_document` follow-up rewrite, and HTML citation click-through
 
 ## Next milestones
 
 1. Verify the new runtime gateway against a live OpenDocuments server path
-2. Finish minimal operator-facing UI hardening in Stage 12
-3. Expand the approved corpus beyond the validated P0 slice without regressing Stage 10 and Stage 11 gates
+2. Expand the approved corpus beyond the validated P0 slice without regressing Stage 9, Stage 10, and Stage 11 gates
+3. Add optional operator-facing UI polish on top of the validated citation viewer baseline
 
 ## Design docs
 
@@ -65,6 +66,7 @@ ingest/        document onboarding pipeline notes
 - `docs/v2/context-retention-harness.md`
 - `docs/v2/company-runtime-lock.md`
 - `docs/v2/live-runtime-gateway.md`
+- `docs/v2/stage12-live-runtime-report.md`
 - `docs/v2/ocp-policy-application.md`
 - `docs/v2/stage10-evaluation-report.md`
 - `docs/v2/retrieval-benchmark-plan.md`

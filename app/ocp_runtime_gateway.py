@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import json
 from functools import lru_cache
+from pathlib import Path
 from typing import Any, Iterator
 
 import requests
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 
 from app.runtime_config import RuntimeConfig, load_runtime_config
 from app.runtime_gateway_support import (
@@ -131,7 +132,31 @@ def set_session_cookie(response: Response, session_id: str) -> None:
     )
 
 
+def resolve_viewer_html(request_path: str) -> Path:
+    document = load_active_source_catalog().resolve_viewer_document(request_path)
+    html_path = str(document.get("html_path", "")).strip()
+    if not html_path:
+        raise HTTPException(status_code=404, detail="Viewer document not found.")
+
+    candidate = Path(html_path)
+    if not candidate.exists() or not candidate.is_file():
+        raise HTTPException(status_code=404, detail="Viewer HTML is missing on disk.")
+    return candidate
+
+
 def iter_sse_events(response: requests.Response) -> Iterator[tuple[str, Any]]:
+    def decode_payload(event_name: str, payload_text: str) -> Any:
+        try:
+            return json.loads(payload_text)
+        except json.JSONDecodeError:
+            normalized = payload_text.replace("\n", "\\n")
+            try:
+                return json.loads(normalized)
+            except json.JSONDecodeError:
+                if event_name == "chunk":
+                    return payload_text.strip('"')
+                return payload_text
+
     event_type = ""
     data_lines: list[str] = []
     for raw_line in response.iter_lines(decode_unicode=True):
@@ -141,7 +166,8 @@ def iter_sse_events(response: requests.Response) -> Iterator[tuple[str, Any]]:
         if not line:
             if data_lines:
                 payload = "\n".join(data_lines)
-                yield event_type or "message", json.loads(payload)
+                current_event = event_type or "message"
+                yield current_event, decode_payload(current_event, payload)
             event_type = ""
             data_lines = []
             continue
@@ -155,7 +181,8 @@ def iter_sse_events(response: requests.Response) -> Iterator[tuple[str, Any]]:
 
     if data_lines:
         payload = "\n".join(data_lines)
-        yield event_type or "message", json.loads(payload)
+        current_event = event_type or "message"
+        yield current_event, decode_payload(current_event, payload)
 
 
 def serialize_sse(event: str, payload: Any) -> str:
@@ -181,6 +208,13 @@ def health() -> dict[str, Any]:
         "ok": not config.missing_gateway_keys(),
         **health_payload(config),
     }
+
+
+@app.get("/viewer/{source_id}/{document_path:path}")
+def viewer_document(source_id: str, document_path: str) -> Response:
+    request_path = f"/viewer/{source_id}/{document_path}"
+    html_path = resolve_viewer_html(request_path)
+    return FileResponse(html_path, media_type="text/html")
 
 
 @app.post("/api/v1/chat")

@@ -47,7 +47,7 @@ def proxy_headers(request: Request, config: RuntimeConfig) -> dict[str, str]:
     if config.company_bearer_token:
         token = config.company_bearer_token
         headers["Authorization"] = token if token.lower().startswith("bearer ") else f"Bearer {token}"
-    elif auth:
+    elif config.forward_client_auth and auth:
         headers["Authorization"] = auth
     return headers
 
@@ -85,6 +85,17 @@ def clean_excerpt(text: str, *, limit: int = 220) -> str:
     if len(stripped) <= limit:
         return stripped
     return stripped[: limit - 3].rstrip() + "..."
+
+
+def adjust_embedding_dimensions(vector: list[float], *, target_dimensions: int) -> list[float]:
+    if target_dimensions <= 0:
+        return vector
+    current_dimensions = len(vector)
+    if current_dimensions == target_dimensions:
+        return vector
+    if current_dimensions > target_dimensions:
+        return vector[:target_dimensions]
+    return vector + [0.0] * (target_dimensions - current_dimensions)
 
 
 def build_local_fallback_answer(prompt: str) -> str:
@@ -269,7 +280,11 @@ async def embeddings(request: Request) -> Response:
         raise HTTPException(status_code=400, detail="'input' must be a string or a list of strings")
 
     model = get_embedder()
-    dense_vectors = model.encode(texts, normalize_embeddings=False).tolist()
+    raw_dense_vectors = model.encode(texts, normalize_embeddings=False).tolist()
+    dense_vectors = [
+        adjust_embedding_dimensions(vector, target_dimensions=config.embedding_dimensions)
+        for vector in raw_dense_vectors
+    ]
 
     data = [
         {

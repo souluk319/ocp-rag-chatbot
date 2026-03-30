@@ -134,6 +134,9 @@ class SourceCatalog:
         normalized = _normalize_path(source_path)
         return self.by_html_path.get(normalized) or self.by_viewer_url.get(normalized) or {}
 
+    def resolve_viewer_document(self, viewer_url: str) -> dict[str, Any]:
+        return self.by_viewer_url.get(_normalize_path(viewer_url), {})
+
     def normalize_search_result(self, source: dict[str, Any], *, rank: int) -> dict[str, Any]:
         source_path = str(source.get("sourcePath", "")).strip()
         document = self.resolve_document(source_path)
@@ -165,6 +168,8 @@ class SourceCatalog:
             "source_dir": source_dir,
             "document_path": document_path,
             "viewer_url": viewer_url,
+            "html_path": str(document.get("html_path", "")).strip(),
+            "source_url": str(document.get("source_url", "")).strip(),
             "section_title": section_title,
             "section_anchor": section_anchor,
             "heading_hierarchy": heading_hierarchy,

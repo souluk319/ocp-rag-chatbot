@@ -257,6 +257,31 @@ Required Stage 7 artifacts:
 - `eval/multiturn-scenario-schema.yaml`
 - `eval/multiturn_rewrite_report.py`
 
+### Track J. Live runtime serving parity
+
+This track exists to prove that the validated offline behavior still survives the real serving stack.
+
+Checks:
+
+- the bridge, OpenDocuments server, and gateway all start with env-driven configuration
+- the live streaming path returns `sources`, `chunk`, and `done` events without dropping the session
+- follow-up turns reuse the same gateway-backed conversation state
+- follow-up rewrite on the live path carries `last_document` when grounding is available
+- returned citation viewer URLs resolve through the product-owned HTML viewer route
+
+Pass expectation for the first working slice:
+
+- a two-turn live streaming smoke passes end to end
+- session continuity is visible through a stable `conversationId`
+- citation click-through works on the live path
+
+Required Stage 12 artifacts:
+
+- `deployment/live_runtime_smoke_cases.json`
+- `deployment/run_live_runtime_smoke.py`
+- `docs/v2/live-runtime-gateway.md`
+- `docs/v2/stage12-live-runtime-report.md`
+
 ## Baseline scenario groups
 
 The first baseline dataset must include at least these groups:
@@ -312,6 +337,7 @@ The first working slice is acceptable only if all of the following are true:
 Closed-network release readiness additionally requires:
 
 10. Track H evidence exists for one approved refresh cycle before production activation
+11. Track J evidence exists for the live runtime path and citation viewer baseline
 
 ## Red-team checks
 

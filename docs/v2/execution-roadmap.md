@@ -45,7 +45,7 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 9: complete
 - Stage 10: complete (`go` for widening scope on the validated slice)
 - Stage 11: complete for the validated slice (`build -> approve -> validate -> stage -> reindex -> smoke -> activate -> rollback`)
-- Stage 12: next active stage
+- Stage 12: complete for the live runtime baseline (`bridge -> OpenDocuments -> gateway -> viewer`)
 
 ## Stage 0. Freeze the rewrite baseline
 
@@ -636,15 +636,15 @@ Interpretation:
 - Stage 11 is closed for cutover mechanics on the validated slice
 - Stage 10 remains the authority for retrieval quality
 
-## Stage 12. Touch UI last
+## Stage 12. Validate the live runtime path and harden the operator surface
 
 ### Goal
 
-Make the working assistant usable without distracting from core retrieval quality.
+Prove that the validated offline logic survives the real HTTP serving path and expose the minimum operator-facing citation surface.
 
 ### Why it matters
 
-UI polish before retrieval quality wastes time and hides core problems.
+If the live runtime path drops session state, breaks streaming, or returns dead citation links, offline benchmark quality alone is not enough.
 
 ### Primary owners
 
@@ -653,30 +653,60 @@ UI polish before retrieval quality wastes time and hides core problems.
 
 ### Inputs
 
-- stable citation flow
-- stable benchmark baseline
+- stable Stage 9 and Stage 10 benchmark baseline
+- active Stage 11 index manifest lineage
+- generated HTML citation views
 
 ### Work items
 
 - keep the default OpenDocuments UI first
-- put a product-owned runtime gateway in front of the OpenDocuments server
+- validate the product-owned runtime gateway against a real OpenDocuments HTTP server
 - carry Stage 7 memory rewrite and Stage 9 policy behavior into the live HTTP path
-- add only the minimum OCP-specific UX
-- surface citations and HTML document links clearly
+- add a product-owned HTML viewer route for citation click-through
+- add only the minimum operator-facing hardening needed to inspect sources safely
+- record live runtime evidence instead of assuming parity from offline results
 
 ### Deliverables
 
-- minimal operator-facing UI improvements
 - `app/ocp_runtime_gateway.py`
 - `app/runtime_gateway_support.py`
 - `app/runtime_source_index.py`
+- `app/opendocuments_openai_bridge.py`
+- `deployment/live_runtime_smoke_cases.json`
+- `deployment/run_live_runtime_smoke.py`
 - `docs/v2/live-runtime-gateway.md`
+- `docs/v2/stage12-live-runtime-report.md`
+- `data/manifests/generated/stage12-live-runtime-report.json`
 
 ### Exit criteria
 
 - the live runtime path uses session-aware rewrite before upstream retrieval
 - the live runtime path normalizes and reranks sources against the active index manifest
-- users can ask questions, inspect citations, and open supporting documents easily
+- the live runtime path serves citation HTML through a product-owned viewer route
+- a two-turn live streaming smoke proves session continuity, follow-up rewrite, and citation click-through
+- Stage 12 evidence is written down separately from Stage 9 and Stage 10 retrieval-quality authority
+
+### Current completion note
+
+The Stage 12 live runtime baseline is now closed for:
+
+- bridge health and model listing
+- OpenDocuments live HTTP startup on the active Stage 11 workspace
+- gateway-backed streaming through `/api/v1/chat/stream`
+- cookie-backed session continuity across two turns
+- `last_document` follow-up rewrite on the live path
+- citation click-through through `/viewer/...`
+
+See:
+
+- `docs/v2/live-runtime-gateway.md`
+- `docs/v2/stage12-live-runtime-report.md`
+- `data/manifests/generated/stage12-live-runtime-report.json`
+
+Interpretation:
+
+- Stage 12 proves serving-path and citation-viewer parity
+- Stage 9 and Stage 10 remain the authority for retrieval quality
 
 ## Stage advancement rule
 
