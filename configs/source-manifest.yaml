@@ -1,0 +1,86 @@
+version: 1
+project: ocp-operations-assistant-v2
+
+sources:
+  - id: openshift-docs-p0
+    enabled: true
+    type: git_mirror
+    source_url: https://github.com/openshift/openshift-docs
+    local_path: ../openshift-docs
+    trust_level: official
+    product: ocp
+    version_label: 4.x
+    language: en
+    include_dirs:
+      - installing
+      - post_installation_configuration
+      - updating
+      - disconnected
+      - support
+    include_patterns:
+      - "**/*.adoc"
+    exclude_dirs:
+      - modules
+      - snippets
+      - _topic_maps
+      - _images
+      - _templates
+      - _attributes
+      - _stylesheets
+      - _javascripts
+      - _converters
+      - _gemfiles
+    exclude_prefixes:
+      - osd_
+      - rosa_
+      - microshift_
+      - cloud_experts_
+    exclude_exact:
+      - ocm
+      - hosted_control_planes
+      - lightspeed
+      - migration_toolkit_for_containers
+      - contributing_to_docs
+
+  - id: openshift-docs-p1
+    enabled: false
+    type: git_mirror
+    source_url: https://github.com/openshift/openshift-docs
+    local_path: ../openshift-docs
+    trust_level: official
+    product: ocp
+    version_label: 4.x
+    language: en
+    include_dirs:
+      - networking
+      - nodes
+      - operators
+      - storage
+      - security
+      - authentication
+      - observability
+      - backup_and_restore
+      - etcd
+    include_patterns:
+      - "**/*.adoc"
+
+  - id: openshift-docs-p2
+    enabled: false
+    type: git_mirror
+    source_url: https://github.com/openshift/openshift-docs
+    local_path: ../openshift-docs
+    trust_level: official
+    product: ocp
+    version_label: 4.x
+    language: en
+    include_dirs:
+      - release_notes
+      - cli_reference
+      - rest_api
+    include_patterns:
+      - "**/*.adoc"
+
+collection:
+  normalized_root: ./data/normalized
+  manifest_root: ./data/manifests
+  package_root: ./data/packages

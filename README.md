@@ -42,6 +42,13 @@ ingest/        document onboarding pipeline notes
 4. Define closed-network bundle packaging and approval checkpoints
 5. Create the first OCP operations evaluation set
 
+## Design docs
+
+- `docs/v2/architecture-blueprint.md`
+- `docs/v2/plan.md`
+- `docs/v2/team-execution-order.md`
+- `docs/v2/workspace-guide.md`
+
 ## Branch rules
 
 - `main` remains the stable line until v2 is ready

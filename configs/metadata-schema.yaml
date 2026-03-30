@@ -1,0 +1,42 @@
+version: 1
+
+required_fields:
+  - document_id
+  - title
+  - source_id
+  - source_type
+  - source_url
+  - local_path
+  - normalized_path
+  - product
+  - version
+  - category
+  - language
+  - trust_level
+  - collected_at
+  - checksum
+
+recommended_fields:
+  - summary
+  - tags
+  - last_modified_at
+  - release_stream
+  - audience
+  - visibility
+  - top_level_dir
+
+field_notes:
+  document_id: stable identifier derived from source path
+  title: normalized document title
+  source_id: source name from source-manifest.yaml
+  source_type: git_mirror, file_tree, export_bundle, or manual
+  source_url: original retrieval URL when available
+  local_path: absolute or workspace-local path to source document
+  normalized_path: path to normalized file used for indexing
+  product: ocp, okd, rosa, osd, or internal
+  version: source document version label or approved stream label
+  category: install, upgrade, networking, security, storage, troubleshooting, or other
+  language: ko, en, or other ISO language code
+  trust_level: official, internal_runbook, training, or reference
+  collected_at: ISO-8601 collection timestamp
+  checksum: SHA-256 of normalized content
