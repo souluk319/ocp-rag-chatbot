@@ -23,6 +23,7 @@ CLAUDE.md
 docs/*
 !docs/v2/
 !docs/v2/**
+docs/internal/
 
 # Local mirrors, workspaces, and generated artifacts
 workspace/

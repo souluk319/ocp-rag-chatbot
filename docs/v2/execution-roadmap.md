@@ -47,6 +47,7 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 11: complete for the validated slice (`build -> approve -> validate -> stage -> reindex -> smoke -> activate -> rollback`)
 - Stage 12: complete for the live runtime baseline (`bridge -> OpenDocuments -> gateway -> viewer`)
 - Stage 13: complete for source-profile and git-lineage abstraction (`mirror -> profile -> target release -> normalized manifest lineage`)
+- Stage 14: complete for repeatable operator launch (`one-command runtime startup -> startup health -> viewer click-through -> launch report`)
 
 ## Stage 0. Freeze the rewrite baseline
 
@@ -756,6 +757,74 @@ The product will eventually need an operator-facing minor-version pin, but the p
 - normalized manifests record source profile and git lineage explicitly
 - Stage 11 lineage survives source-profile selection
 - the repository can stay on `main` for validation while making future target-minor pinning configuration-driven
+
+## Stage 14. Lock the operator launch path
+
+### Goal
+
+Turn the validated live-runtime baseline into a repeatable operator launch flow that can be started with one command.
+
+### Why it matters
+
+Stage 12 proved runtime-path parity, but operators still need a predictable way to bring the stack up without reconstructing the smoke-test wiring by hand.
+
+### Primary owners
+
+- LLM Serving / Backend Engineer
+- OCP / Air-gapped Infrastructure Engineer
+- QA / Evaluation / Red Team
+
+### Inputs
+
+- `docs/v2/stage12-live-runtime-report.md`
+- `deployment/check_runtime_contract.py`
+- `indexes/current.txt`
+- active Stage 11 workspace and manifest lineage
+
+### Work items
+
+- add a one-command runtime launcher
+- resolve the active index and Stage 11 workspace automatically
+- detect active vector dimensions from the live LanceDB store
+- inject `OD_SERVER_BASE_URL` for the managed gateway process
+- verify bridge, OpenDocuments, gateway, and viewer startup health
+- persist launch evidence and logs for operator inspection
+
+### Deliverables
+
+- `deployment/start_runtime_stack.py`
+- `deployment/operator-runbook-stage14.md`
+- `docs/v2/stage14-runtime-launch.md`
+- generated launch report under `data/manifests/generated/stage14-runtime-launch-report.json`
+
+### Exit criteria
+
+- one command can start the runtime stack for the active index
+- startup health checks pass for bridge, OpenDocuments, and gateway
+- citation HTML is reachable through the product-owned viewer route
+- launch logs and report are written for operator review
+
+### Current completion note
+
+Local launch evidence now exists for:
+
+- active-index resolution on `baseline-openshift-docs-p0`
+- vector-dimension detection against the active Stage 11 LanceDB store
+- bridge, OpenDocuments, and gateway startup health
+- viewer click-through on `/viewer/openshift-docs-p0/...`
+- a reproducible runtime launch report and log bundle
+
+See:
+
+- `docs/v2/stage14-runtime-launch.md`
+- `deployment/operator-runbook-stage14.md`
+- `data/manifests/generated/stage14-runtime-launch-report.json`
+
+Interpretation:
+
+- Stage 14 closes the operator launch path for the validated slice
+- Stage 9 and Stage 10 still remain the authority for retrieval quality
+- Stage 11 still remains the authority for refresh / activate / rollback
 
 ## Stage advancement rule
 
