@@ -19,11 +19,21 @@ It exists to prevent scope drift between:
 
 We treat this repository as the official authoring source for public OCP documentation.
 
+This trust decision should be justified by:
+
+1. repository ownership under the `openshift` organization
+2. repository README text stating that OpenShift documentation is sourced there and published to `docs.openshift.com`
+
 ## Scope policy
 
 ### P0 validation slice
 
 This is the smallest active slice that must work end to end before we widen the corpus.
+
+Purpose:
+
+- prove that normalization, metadata, indexing, citation, and Korean answering work together
+- keep the corpus small enough to diagnose retrieval and grounding issues quickly
 
 - `installing`
 - `post_installation_configuration`
@@ -33,9 +43,19 @@ This is the smallest active slice that must work end to end before we widen the 
 
 This boundary has already been validated through the local normalization pipeline.
 
+Validation-slice note:
+
+- `support` remains top-level during validation so the pipeline sees realistic troubleshooting material
+- exclusion filters are required because `support` is a mixed directory
+
 ### First operational release target
 
 Once the validation slice is stable, the first real operator-facing release should widen to the core OCP operations surface.
+
+Purpose:
+
+- cover the most common install, update, troubleshooting, and operations questions from real OCP usage
+- move from pipeline validation to operator usefulness
 
 - `installing`
 - `post_installation_configuration`
@@ -56,6 +76,12 @@ Once the validation slice is stable, the first real operator-facing release shou
 - selected `release_notes` documents for the current target version
 
 This is the recommended first-release scope even though the currently validated ingest slice is still smaller.
+
+Version rule for the first operational release:
+
+- the release must declare one approved target minor explicitly
+- `release_notes` should prefer the current approved target minor only
+- broader `4.x` labeling is acceptable for validation, not for operator-facing release guidance
 
 ### P1 immediate expansion
 

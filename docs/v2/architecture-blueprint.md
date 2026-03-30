@@ -143,51 +143,25 @@ This design keeps retrieval chunks and citation targets aligned to the same sour
 
 ### 7.2 Chunking contract
 
-Chunking must be explicit enough to answer the "chunking strategy is weak" feedback.
+Chunking must be explicit in the design, not left to an implicit library default.
 
-Required rules:
+The default rules are:
 
 - primary chunk unit is the section or subsection under one heading path
 - narrative chunks should target `350-650` tokens
 - soft overlap of `60-100` tokens is allowed only for long narrative sections
+- chunk boundaries must respect heading hierarchy
 - ordered procedures should stay intact whenever possible
 - code blocks should become their own chunk type but keep the nearest heading and short explanatory context
 - a chunk must not cross unrelated sections just to satisfy a size target
 - every chunk must map back to one `document_id`, one section identity, and one citation target
 
-This is the minimum design bar for saying the chunking plan is no longer underspecified.
-
-### 7.3 Multi-turn context policy
-
-Multi-turn support must be treated as a design requirement, not as incidental model behavior.
-
-The assistant should:
-
-- keep structured memory for at least the last `5` turns
-- retain active topic and version context across follow-up questions
-- rewrite referential follow-up questions when the user omits the subject
-- preserve citation continuity when follow-up answers depend on the same source family
-- warn or reset context when the conversation shifts to a conflicting version or topic
-
-### 7.2 Chunking strategy requirements
-
-Chunking must be explicit in the design, not left to an implicit library default.
-
-The default rules are:
-
-- chunk unit starts at the section or subsection level
-- chunk boundaries must respect heading hierarchy
-- long sections may split further, but should keep a small overlap for continuity
-- ordered procedures should stay intact whenever possible
-- fenced code blocks should be separated from prose but retain nearby explanatory context
-- chunk metadata must preserve section identity for citation click-through
-
 The first chunking contract should include:
 
-- target size range for prose chunks
-- overlap rule for split sections
 - chunk types such as `prose`, `procedure`, `code`, and `reference`
 - required metadata such as `section_title`, `heading_hierarchy`, `position`, and `viewer_url`
+
+This is the minimum design bar for saying the chunking plan is no longer underspecified.
 
 ### 7.3 Multi-turn context flow
 
@@ -195,11 +169,13 @@ Multi-turn behavior is a product requirement, not a later enhancement.
 
 The system should support grounded follow-up turns by:
 
-1. storing session-local turn history
-2. classifying each new turn as standalone or follow-up
-3. rewriting follow-up turns into a standalone retrieval query when needed
-4. preserving version context unless the user explicitly changes it
-5. preserving citation continuity across related turns
+1. storing a bounded session-local turn history
+2. keeping structured memory for at least the last `5` turns
+3. classifying each new turn as standalone or follow-up
+4. rewriting referential follow-up turns into a standalone retrieval query when needed
+5. preserving version context unless the user explicitly changes it
+6. preserving citation continuity across related turns
+7. warning or resetting context when the conversation shifts to a conflicting version or topic
 
 The design goal is grounded continuity, not unrestricted memory growth.
 
@@ -221,6 +197,16 @@ However:
 
 - OpenDocuments does not cleanly ingest `openshift-docs` directly as-is
 - phase 1 therefore requires our own normalization step before indexing
+
+## 8.1 Official source trust rule
+
+This repository is treated as an official source only when all of the following are true:
+
+1. the repository is owned by the `openshift` organization
+2. the repository README states that OpenShift documentation is sourced there
+3. the repository README states that the published output is delivered through `docs.openshift.com`
+
+Repository avatars or profile images are not used as a trust signal.
 
 ## 9. Phase 1 Source Boundary
 
