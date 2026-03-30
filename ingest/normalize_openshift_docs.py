@@ -6,10 +6,15 @@ import html
 import json
 import re
 import shutil
+import subprocess
 from collections import Counter
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+
+import yaml
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 DEFAULT_INCLUDE_DIRS = [
@@ -101,13 +106,18 @@ class NormalizedDocument:
     title: str
     source_id: str
     source_type: str
+    source_mirror_id: str
+    source_profile_id: str
     source_url: str
+    source_git_ref: str
+    source_git_commit: str
     local_path: str
     normalized_path: str
     html_path: str
     viewer_url: str
     product: str
     version: str
+    target_minor: str | None
     category: str
     language: str
     trust_level: str
@@ -121,6 +131,28 @@ class NormalizedDocument:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Normalize selected openshift-docs AsciiDoc content into text plus HTML citation views."
+    )
+    parser.add_argument(
+        "--profile-catalog",
+        type=Path,
+        default=Path("./configs/source-profiles.yaml"),
+        help="Path to the source profile catalog.",
+    )
+    parser.add_argument(
+        "--active-profile-config",
+        type=Path,
+        default=Path("./configs/active-source-profile.yaml"),
+        help="Path to the active source profile selection file.",
+    )
+    parser.add_argument(
+        "--profile-id",
+        default="",
+        help="Explicit source profile id. Overrides active-source-profile.yaml when set.",
+    )
+    parser.add_argument(
+        "--target-minor",
+        default="",
+        help="Target OCP minor such as 4.17. Required for target-minor profiles.",
     )
     parser.add_argument(
         "--source-root",
@@ -143,7 +175,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--manifest-out",
         type=Path,
-        default=Path("./data/manifests/openshift-docs-p0.json"),
+        default=Path("./data/manifests/generated/openshift-docs-p0.json"),
         help="Path to the generated manifest JSON file",
     )
     parser.add_argument(
@@ -169,6 +201,11 @@ def parse_args() -> argparse.Namespace:
         help="Version label stored in the manifest",
     )
     parser.add_argument(
+        "--allow-ref-mismatch",
+        action="store_true",
+        help="Allow normalization even when the checked-out git ref does not match the resolved profile ref.",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="List selected files without writing output",
@@ -181,19 +218,24 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def should_skip_top_level(name: str) -> bool:
-    if name in DEFAULT_EXCLUDE_DIRS:
+def should_skip_top_level(name: str, exclude_dirs: set[str], exclude_prefixes: tuple[str, ...]) -> bool:
+    if name in exclude_dirs:
         return True
-    return any(name.startswith(prefix) for prefix in DEFAULT_EXCLUDE_PREFIXES)
+    return any(name.startswith(prefix) for prefix in exclude_prefixes)
 
 
 def normalize_match_path(relative_path: Path) -> str:
     return f"/{relative_path.as_posix().lower()}"
 
 
-def skip_reason_for_path(relative_path: Path, exclude_fragments: list[str]) -> str | None:
+def skip_reason_for_path(
+    relative_path: Path,
+    exclude_fragments: list[str],
+    exclude_dirs: set[str],
+    exclude_prefixes: tuple[str, ...],
+) -> str | None:
     top_level = relative_path.parts[0]
-    if should_skip_top_level(top_level):
+    if should_skip_top_level(top_level, exclude_dirs, exclude_prefixes):
         return f"top_level:{top_level}"
 
     normalized_path = normalize_match_path(relative_path)
@@ -214,8 +256,8 @@ def collect_source_files(source_root: Path, include_dirs: list[str]) -> list[Pat
     return files
 
 
-def build_source_url(relative_path: Path) -> str:
-    return f"https://github.com/openshift/openshift-docs/blob/main/{relative_path.as_posix()}"
+def build_source_url(relative_path: Path, ref: str, source_url_base: str) -> str:
+    return f"{source_url_base.rstrip('/')}/blob/{ref}/{relative_path.as_posix()}"
 
 
 def build_viewer_url(source_id: str, relative_path: Path) -> str:
@@ -233,6 +275,155 @@ def stable_document_id(relative_path: Path) -> str:
 def stable_section_id(document_id: str, anchor_id: str, section_index: int) -> str:
     payload = f"{document_id}:{anchor_id}:{section_index}"
     return hashlib.sha1(payload.encode("utf-8")).hexdigest()
+
+
+def load_yaml_file(path: Path) -> dict:
+    payload = yaml.safe_load(path.read_text(encoding="utf-8")) if path.exists() else {}
+    return payload or {}
+
+
+def format_profile_value(value, target_minor: str | None):
+    if isinstance(value, str) and target_minor:
+        return value.format(target_minor=target_minor)
+    if isinstance(value, list):
+        return [format_profile_value(item, target_minor) for item in value]
+    if isinstance(value, dict):
+        return {key: format_profile_value(item, target_minor) for key, item in value.items()}
+    return value
+
+
+def resolve_path_from_config(raw_path: str | None, *, base_dir: Path, fallback: Path) -> Path:
+    if not raw_path:
+        return fallback
+    candidate = Path(raw_path)
+    if candidate.is_absolute():
+        return candidate
+    return (base_dir / candidate).resolve()
+
+
+def resolve_source_profile(args: argparse.Namespace) -> dict[str, object]:
+    active_profile_id = args.profile_id.strip()
+    target_minor = args.target_minor.strip() or None
+    active_config_path = args.active_profile_config.resolve()
+    profile_catalog_path = args.profile_catalog.resolve()
+    active_config = load_yaml_file(active_config_path)
+    catalog = load_yaml_file(profile_catalog_path)
+
+    if not active_profile_id:
+        active_profile_id = str(active_config.get("active_profile_id", "")).strip()
+    if not target_minor:
+        raw_target_minor = active_config.get("target_minor")
+        if raw_target_minor not in (None, ""):
+            target_minor = str(raw_target_minor).strip()
+
+    if not active_profile_id:
+        return {
+            "profile_id": "",
+            "purpose": "manual",
+            "corpus_scope": "",
+            "mirror_id": "",
+            "source_root": args.source_root.resolve(),
+            "source_id": args.source_id,
+            "version_label": args.version_label,
+            "include_dirs": args.include_dirs or DEFAULT_INCLUDE_DIRS,
+            "exclude_fragments": args.exclude_fragments or list(DEFAULT_EXCLUDE_PATH_FRAGMENTS),
+            "product": "ocp",
+            "language": "en",
+            "trust_level": "official",
+            "source_type": "git_mirror",
+            "source_url_base": "https://github.com/openshift/openshift-docs",
+            "declared_git_ref": "main",
+            "target_minor": None,
+            "catalog_path": str(profile_catalog_path),
+            "active_config_path": str(active_config_path) if active_config_path.exists() else "",
+        }
+
+    mirrors = {
+        str(item.get("id", "")).strip(): item
+        for item in catalog.get("mirrors", [])
+        if str(item.get("id", "")).strip()
+    }
+    profiles = {
+        str(item.get("id", "")).strip(): item
+        for item in catalog.get("profiles", [])
+        if str(item.get("id", "")).strip()
+    }
+    if active_profile_id not in profiles:
+        raise SystemExit(f"Unknown source profile id: {active_profile_id}")
+
+    profile = dict(profiles[active_profile_id])
+    if profile.get("target_minor_required") and not target_minor:
+        raise SystemExit(f"Source profile `{active_profile_id}` requires --target-minor or active target_minor.")
+    profile = format_profile_value(profile, target_minor)
+    mirror_id = str(profile.get("mirror_id", "")).strip()
+    if mirror_id not in mirrors:
+        raise SystemExit(f"Unknown mirror id `{mirror_id}` for source profile `{active_profile_id}`")
+    mirror = format_profile_value(dict(mirrors[mirror_id]), target_minor)
+
+    source_id = str(profile.get("source_id") or profile.get("source_id_template") or args.source_id).strip()
+    version_label = str(profile.get("version_label") or profile.get("version_label_template") or args.version_label).strip()
+    declared_git_ref = str(profile.get("git_ref") or profile.get("git_ref_template") or mirror.get("default_ref", "main")).strip()
+    source_root = resolve_path_from_config(
+        str(profile.get("local_path") or mirror.get("local_path") or ""),
+        base_dir=REPO_ROOT,
+        fallback=args.source_root.resolve(),
+    )
+
+    return {
+        "profile_id": active_profile_id,
+        "purpose": str(profile.get("purpose", "")).strip(),
+        "corpus_scope": str(profile.get("corpus_scope", "")).strip(),
+        "mirror_id": mirror_id,
+        "source_root": source_root,
+        "source_id": source_id,
+        "version_label": version_label,
+        "include_dirs": list(profile.get("include_dirs", args.include_dirs or DEFAULT_INCLUDE_DIRS)),
+        "exclude_dirs": set(profile.get("exclude_dirs", list(DEFAULT_EXCLUDE_DIRS))),
+        "exclude_prefixes": tuple(profile.get("exclude_prefixes", list(DEFAULT_EXCLUDE_PREFIXES))),
+        "exclude_fragments": list(profile.get("exclude_path_fragments", args.exclude_fragments or list(DEFAULT_EXCLUDE_PATH_FRAGMENTS))),
+        "product": str(mirror.get("product", "ocp")).strip(),
+        "language": str(mirror.get("language", "en")).strip(),
+        "trust_level": str(mirror.get("trust_level", "official")).strip(),
+        "source_type": str(mirror.get("type", "git_mirror")).strip(),
+        "source_url_base": str(mirror.get("source_url", "https://github.com/openshift/openshift-docs")).strip(),
+        "declared_git_ref": declared_git_ref,
+        "target_minor": target_minor,
+        "catalog_path": str(profile_catalog_path),
+        "active_config_path": str(active_config_path) if active_config_path.exists() else "",
+    }
+
+
+def git_output(repo_path: Path, *git_args: str) -> str:
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo_path), *git_args],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return ""
+    return result.stdout.strip()
+
+
+def detect_source_lineage(source_root: Path, declared_git_ref: str) -> dict[str, object]:
+    remote_url = git_output(source_root, "config", "--get", "remote.origin.url")
+    detected_git_ref = git_output(source_root, "rev-parse", "--abbrev-ref", "HEAD")
+    detected_git_commit = git_output(source_root, "rev-parse", "HEAD")
+    dirty_state = git_output(source_root, "status", "--short")
+    git_ref_matches_profile = (
+        not declared_git_ref
+        or detected_git_ref == declared_git_ref
+        or detected_git_commit == declared_git_ref
+    )
+    return {
+        "remote_url": remote_url,
+        "declared_git_ref": declared_git_ref,
+        "detected_git_ref": detected_git_ref,
+        "detected_git_commit": detected_git_commit,
+        "git_ref_matches_profile": git_ref_matches_profile,
+        "is_dirty": bool(dirty_state),
+    }
 
 
 def classify_category(relative_path: Path) -> str:
@@ -760,12 +951,34 @@ def section_manifest(section: RenderSection, viewer_url: str) -> dict[str, objec
 
 
 def normalize_documents(args: argparse.Namespace) -> int:
-    source_root = args.source_root.resolve()
-    output_dir = args.output_dir.resolve()
-    html_dir = args.html_dir.resolve()
-    manifest_out = args.manifest_out.resolve()
-    include_dirs = args.include_dirs or DEFAULT_INCLUDE_DIRS
-    exclude_fragments = args.exclude_fragments or list(DEFAULT_EXCLUDE_PATH_FRAGMENTS)
+    profile = resolve_source_profile(args)
+    source_root = Path(profile["source_root"]).resolve()
+    source_id = str(profile["source_id"])
+    version_label = str(profile["version_label"])
+    include_dirs = list(profile["include_dirs"])
+    exclude_dirs = set(profile["exclude_dirs"])
+    exclude_prefixes = tuple(profile["exclude_prefixes"])
+    exclude_fragments = list(profile["exclude_fragments"])
+    lineage = detect_source_lineage(source_root, str(profile["declared_git_ref"]))
+    if not args.allow_ref_mismatch and not lineage["git_ref_matches_profile"]:
+        raise SystemExit(
+            "Resolved source profile ref does not match the checked-out source tree. "
+            f"profile={profile['profile_id'] or 'manual'}, declared_ref={lineage['declared_git_ref']}, "
+            f"detected_ref={lineage['detected_git_ref']}"
+        )
+
+    default_output_dir = Path("./data/normalized/openshift-docs-p0")
+    default_html_dir = Path("./data/views/openshift-docs-p0")
+    default_manifest_out = Path("./data/manifests/generated/openshift-docs-p0.json")
+    output_dir = (
+        Path("./data/normalized") / source_id if args.output_dir == default_output_dir else args.output_dir
+    ).resolve()
+    html_dir = (
+        Path("./data/views") / source_id if args.html_dir == default_html_dir else args.html_dir
+    ).resolve()
+    manifest_out = (
+        Path("./data/manifests/generated") / f"{source_id}.json" if args.manifest_out == default_manifest_out else args.manifest_out
+    ).resolve()
     collected_at = datetime.now(timezone.utc).isoformat()
 
     if not source_root.exists():
@@ -781,12 +994,12 @@ def normalize_documents(args: argparse.Namespace) -> int:
 
     for source_file in source_files:
         relative_path = source_file.relative_to(source_root)
-        skip_reason = skip_reason_for_path(relative_path, exclude_fragments)
+        skip_reason = skip_reason_for_path(relative_path, exclude_fragments, exclude_dirs, exclude_prefixes)
         if skip_reason:
             skipped[skip_reason] += 1
             continue
 
-        parser_state = ParserState(attr_values=build_default_attr_values(args.version_label))
+        parser_state = ParserState(attr_values=build_default_attr_values(version_label))
         resolved_lines = resolve_document_lines(source_file, source_root, parser_state)
         title = source_file.stem
         for line in resolved_lines:
@@ -797,9 +1010,10 @@ def normalize_documents(args: argparse.Namespace) -> int:
 
         document_id = stable_document_id(relative_path)
         sections = build_sections(resolved_lines, title, document_id)
-        viewer_url = build_viewer_url(args.source_id, relative_path)
+        viewer_url = build_viewer_url(source_id, relative_path)
         normalized_payload = build_normalized_payload(title, relative_path, viewer_url, sections, parser_state)
         checksum = sha256_text(normalized_payload)
+        source_url_ref = str(lineage["detected_git_commit"] or lineage["declared_git_ref"] or "main")
 
         normalized_path = output_dir / relative_path.with_suffix(".txt")
         html_path = html_dir / relative_path.with_suffix(".html")
@@ -807,18 +1021,23 @@ def normalize_documents(args: argparse.Namespace) -> int:
         document = NormalizedDocument(
             document_id=document_id,
             title=title,
-            source_id=args.source_id,
-            source_type="git_mirror",
-            source_url=build_source_url(relative_path),
+            source_id=source_id,
+            source_type=str(profile["source_type"]),
+            source_mirror_id=str(profile["mirror_id"]),
+            source_profile_id=str(profile["profile_id"]),
+            source_url=build_source_url(relative_path, source_url_ref, str(profile["source_url_base"])),
+            source_git_ref=str(lineage["declared_git_ref"]),
+            source_git_commit=str(lineage["detected_git_commit"]),
             local_path=str(source_file),
             normalized_path=str(normalized_path),
             html_path=str(html_path),
             viewer_url=viewer_url,
-            product="ocp",
-            version=args.version_label,
+            product=str(profile["product"]),
+            version=version_label,
+            target_minor=(str(profile["target_minor"]) if profile["target_minor"] else None),
             category=classify_category(relative_path),
-            language="en",
-            trust_level="official",
+            language=str(profile["language"]),
+            trust_level=str(profile["trust_level"]),
             collected_at=collected_at,
             checksum=checksum,
             top_level_dir=relative_path.parts[0],
@@ -833,10 +1052,31 @@ def normalize_documents(args: argparse.Namespace) -> int:
             write_text_file(html_path, html_payload)
 
     manifest = {
-        "manifest_id": f"{args.source_id}-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}",
+        "manifest_id": f"{source_id}-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}",
         "source_root": str(source_root),
-        "source_id": args.source_id,
+        "source_id": source_id,
         "collected_at": collected_at,
+        "version_label": version_label,
+        "source_profile": {
+            "profile_id": profile["profile_id"],
+            "purpose": profile["purpose"],
+            "corpus_scope": profile["corpus_scope"],
+            "mirror_id": profile["mirror_id"],
+            "catalog_path": profile["catalog_path"],
+            "active_config_path": profile["active_config_path"],
+        },
+        "target_release": {
+            "target_minor": profile["target_minor"],
+            "declared_git_ref": lineage["declared_git_ref"],
+            "version_label": version_label,
+        },
+        "source_lineage": lineage,
+        "collection_scope": {
+            "include_dirs": include_dirs,
+            "exclude_dirs": sorted(exclude_dirs),
+            "exclude_prefixes": list(exclude_prefixes),
+            "exclude_path_fragments": exclude_fragments,
+        },
         "scanned_adoc_count": len(source_files),
         "document_count": len(documents),
         "top_level_counts": dict(sorted(Counter(doc.top_level_dir for doc in documents).items())),

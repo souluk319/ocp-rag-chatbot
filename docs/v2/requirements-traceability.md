@@ -22,6 +22,7 @@ The goal is to make it obvious which requirements are already defined, which are
 | --- | --- | --- | --- | --- | --- |
 | OpenDocuments-style RAG flow | We need one shared mental model for ingest to answer generation | Lead Architect / PM | `docs/v2/architecture-blueprint.md` | defined | Flow remains consistent across ingest, retrieval, generation, and citation |
 | Official OCP source of truth | Grounding quality depends on trustworthy source material | Data / Document Onboarding Engineer | `docs/v2/source-scope.md`, `configs/source-manifest.yaml` | defined | Source boundary is fixed and reproducible |
+| Version-selectable source profile layer | The pipeline must survive future branch pinning without structural rewrites | Data / Document Onboarding Engineer, Lead Architect / PM | `configs/source-profiles.yaml`, `configs/active-source-profile.yaml`, `docs/v2/source-profile-layer.md`, `docs/v2/stage13-source-profile-report.md`, `ingest/normalize_openshift_docs.py` | implemented for validation mode | Validation mode and future operator-release mode are both expressible as configuration and emitted lineage |
 | `.adoc` normalization | `openshift-docs` is not directly ready for indexing | Data / Document Onboarding Engineer | `ingest/normalize_openshift_docs.py` | implemented first pass | Normalized corpus and manifest can be regenerated from source |
 | Mixed-product exclusion | OSD, ROSA, and other product lines must not contaminate answers | Data / Document Onboarding Engineer | `docs/v2/source-scope.md`, `configs/source-manifest.yaml` | defined and validated for P0 | Filtered corpus excludes known non-OCP paths |
 | Stable metadata contract | Retrieval, ranking, and citation all depend on stable metadata | RAG / Search Engineer | `configs/metadata-schema.yaml` | defined | Each normalized document has the required fields |
@@ -56,6 +57,7 @@ The goal is to make it obvious which requirements are already defined, which are
 - Stage 11 front-half bundle workflow
 - Stage 11 back-half reindex, runtime smoke, activation, and rollback drill
 - Stage 12 live runtime smoke and citation viewer baseline
+- Stage 13 source-profile and git-lineage abstraction
 
 ## What still needs implementation
 

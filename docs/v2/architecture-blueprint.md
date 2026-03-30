@@ -304,6 +304,36 @@ These exclusions must apply at two levels:
 - top-level directories
 - path fragments inside mixed directories such as `support`
 
+### Source profile layer
+
+The pipeline must not assume that one permanent git branch will serve every future release.
+
+We now separate:
+
+1. the trusted source mirror
+2. the resolved source profile
+3. the approved target release state
+
+This is represented by:
+
+- `configs/source-profiles.yaml`
+- `configs/active-source-profile.yaml`
+
+Validation can continue on `main`.
+
+Operator-facing release must later switch to a target-minor profile such as `enterprise-4.17` after that minor is approved.
+
+The normalization pipeline must record:
+
+- source mirror id
+- source profile id
+- declared git ref
+- detected git ref
+- detected git commit
+- target minor when applicable
+
+By default, normalization must fail if the local checkout ref does not match the resolved source profile ref.
+
 ## 10. Metadata Contract
 
 Every normalized document must carry stable metadata.
@@ -314,7 +344,11 @@ Required fields:
 - `title`
 - `source_id`
 - `source_type`
+- `source_mirror_id`
+- `source_profile_id`
 - `source_url`
+- `source_git_ref`
+- `source_git_commit`
 - `local_path`
 - `normalized_path`
 - `product`
@@ -331,6 +365,7 @@ Additional fields we should preserve when possible:
 - `heading_hierarchy`
 - `section_title`
 - `viewer_url`
+- `target_minor`
 
 This metadata is the prerequisite for:
 
@@ -416,23 +451,26 @@ We should not start by translating the entire corpus.
 
 1. lock the `openshift-docs` source boundary
 2. finalize `configs/source-manifest.yaml`
-3. finalize `configs/metadata-schema.yaml`
-4. finalize `configs/rag-policy.yaml`
-5. implement `.adoc` normalization into `data/normalized/`
-6. emit stable manifests into `data/manifests/`
-7. define bundle format for air-gap transfer
-8. run a minimal OpenDocuments indexing and query validation on the normalized subset
-9. define the first retrieval benchmark and evaluation questions
-10. define multi-turn session and follow-up rewrite rules
-11. add version-aware and source-aware retrieval improvements
-12. build citation click-through behavior
-13. automate the approved document update loop
+3. finalize `configs/source-profiles.yaml` and `configs/active-source-profile.yaml`
+4. finalize `configs/metadata-schema.yaml`
+5. finalize `configs/rag-policy.yaml`
+6. implement `.adoc` normalization into `data/normalized/`
+7. emit stable manifests into `data/manifests/`
+8. define bundle format for air-gap transfer
+9. run a minimal OpenDocuments indexing and query validation on the normalized subset
+10. define the first retrieval benchmark and evaluation questions
+11. define multi-turn session and follow-up rewrite rules
+12. add version-aware and source-aware retrieval improvements
+13. build citation click-through behavior
+14. automate the approved document update loop
 
 ## 15. Immediate Deliverables
 
 These files define the first real baseline:
 
 - `configs/source-manifest.yaml`
+- `configs/source-profiles.yaml`
+- `configs/active-source-profile.yaml`
 - `configs/metadata-schema.yaml`
 - `configs/rag-policy.yaml`
 - `deployment/airgap-flow.md`

@@ -1,6 +1,13 @@
 version: 1
 project: ocp-operations-assistant-v2
 
+active_source_profile:
+  catalog_path: ./configs/source-profiles.yaml
+  state_path: ./configs/active-source-profile.yaml
+  profile_id: ocp-validation-main-p0
+  target_minor:
+  purpose: validation
+
 sources:
   - id: openshift-docs-p0
     enabled: true

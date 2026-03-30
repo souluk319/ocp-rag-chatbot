@@ -1,0 +1,6 @@
+version: 1
+active_profile_id: ocp-validation-main-p0
+target_minor:
+notes:
+  - Validation mode follows main until an operator-facing target minor is approved.
+  - Once a target minor is approved, switch to an operator_release profile instead of rewriting the pipeline.

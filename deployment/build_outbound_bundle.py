@@ -148,6 +148,9 @@ def main() -> int:
         "source_manifest_version": source_manifest_version,
         "normalized_manifest_id": manifest.get("manifest_id", ""),
         "baseline_manifest_id": baseline.get("manifest_id", ""),
+        "source_profile": manifest.get("source_profile", {}),
+        "source_lineage": manifest.get("source_lineage", {}),
+        "target_release": manifest.get("target_release", {}),
         "approval": {
             "status": approval_payload["status"],
             "reviewer": approval_payload["reviewer"],
@@ -173,11 +176,18 @@ def main() -> int:
         "mode": args.mode,
         "normalized_manifest_id": manifest.get("manifest_id", ""),
         "baseline_manifest_id": baseline.get("manifest_id", ""),
+        "source_profile": manifest.get("source_profile", {}),
+        "source_lineage": manifest.get("source_lineage", {}),
+        "target_release": manifest.get("target_release", {}),
         "summary": manifest_payload["summary"],
         "documents": emitted_files,
     }
 
     shutil.copy2(args.source_manifest, bundle_root / "manifests" / "source-manifest.yaml")
+    for optional_config_name in ("source-profiles.yaml", "active-source-profile.yaml"):
+        optional_path = args.source_manifest.parent / optional_config_name
+        if optional_path.exists():
+            shutil.copy2(optional_path, bundle_root / "manifests" / optional_config_name)
     shutil.copy2(args.manifest, bundle_root / "manifests" / "normalized-manifest.json")
     shutil.copy2(args.baseline, bundle_root / "manifests" / "previous-approved-baseline.json")
     write_json(bundle_root / "manifest.json", manifest_payload)

@@ -26,6 +26,13 @@ This trust decision should be justified by:
 
 ## Scope policy
 
+The source boundary is now applied through the source-profile layer:
+
+- profile catalog: `configs/source-profiles.yaml`
+- active profile state: `configs/active-source-profile.yaml`
+
+This means the pipeline can stay stable while the active git ref changes later from validation mode to an approved operator-facing minor.
+
 ### P0 validation slice
 
 This is the smallest active slice that must work end to end before we widen the corpus.
@@ -82,6 +89,7 @@ Version rule for the first operational release:
 - the release must declare one approved target minor explicitly
 - `release_notes` should prefer the current approved target minor only
 - broader `4.x` labeling is acceptable for validation, not for operator-facing release guidance
+- operator-facing release should use a target-minor source profile instead of continuing to ingest from `main`
 
 ### P1 immediate expansion
 

@@ -46,6 +46,7 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 10: complete (`go` for widening scope on the validated slice)
 - Stage 11: complete for the validated slice (`build -> approve -> validate -> stage -> reindex -> smoke -> activate -> rollback`)
 - Stage 12: complete for the live runtime baseline (`bridge -> OpenDocuments -> gateway -> viewer`)
+- Stage 13: complete for source-profile and git-lineage abstraction (`mirror -> profile -> target release -> normalized manifest lineage`)
 
 ## Stage 0. Freeze the rewrite baseline
 
@@ -707,6 +708,54 @@ Interpretation:
 
 - Stage 12 proves serving-path and citation-viewer parity
 - Stage 9 and Stage 10 remain the authority for retrieval quality
+
+## Stage 13. Abstract source profiles and release lineage
+
+### Goal
+
+Separate source-mirror selection, corpus profile selection, and approved target release state so branch changes do not require a pipeline redesign.
+
+### Why it matters
+
+The product will eventually need an operator-facing minor-version pin, but the pipeline itself must stay stable before that version is chosen.
+
+### Primary owners
+
+- Data / Document Onboarding Engineer
+- OCP / Air-gapped Infrastructure Engineer
+- Lead Architect / PM
+
+### Inputs
+
+- `configs/source-manifest.yaml`
+- `docs/v2/source-scope.md`
+- `docs/v2/stage11-back-half-report.md`
+- `docs/v2/stage12-live-runtime-report.md`
+
+### Work items
+
+- define source mirror vs source profile vs active target release state
+- add a source-profile catalog
+- add an active-source-profile state file
+- teach normalization to resolve a profile instead of relying on one hardcoded branch assumption
+- record branch and commit lineage in normalized manifests
+- propagate that lineage through Stage 11 baseline, bundle, and index artifacts
+- fail normalization when the checked-out ref does not match the resolved source profile unless explicitly overridden
+
+### Deliverables
+
+- `configs/source-profiles.yaml`
+- `configs/active-source-profile.yaml`
+- `docs/v2/source-profile-layer.md`
+- `docs/v2/stage13-source-profile-report.md`
+- updated `ingest/normalize_openshift_docs.py`
+
+### Exit criteria
+
+- validation mode and operator-release mode are representable without code rewrites
+- normalized manifests record source profile and git lineage explicitly
+- Stage 11 lineage survives source-profile selection
+- the repository can stay on `main` for validation while making future target-minor pinning configuration-driven
 
 ## Stage advancement rule
 

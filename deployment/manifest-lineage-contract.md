@@ -22,6 +22,38 @@ Identity field:
 
 - `version`
 
+### Source profile catalog
+
+Path:
+
+- `configs/source-profiles.yaml`
+
+Purpose:
+
+- defines reusable source profiles
+- separates validation mode from operator-release mode
+- defines the expected git ref for each profile
+
+Identity field:
+
+- `version`
+
+### Active source profile state
+
+Path:
+
+- `configs/active-source-profile.yaml`
+
+Purpose:
+
+- records which source profile is active now
+- records which target minor, if any, has been approved
+
+Identity fields:
+
+- `active_profile_id`
+- `target_minor`
+
 ### Normalized corpus manifest
 
 Example path:
@@ -73,8 +105,10 @@ Identity fields:
 Allowed lineage:
 
 ```text
-source-manifest.yaml
-  -> normalized-manifest.json
+source-profiles.yaml
+  -> active-source-profile.yaml
+      -> source-manifest.yaml
+          -> normalized-manifest.json
       -> approved-baseline.json
           -> bundle manifest
               -> staged import
@@ -105,3 +139,9 @@ These identifiers must stay stable once emitted for an approved artifact:
 - `bundle_id`
 - `document_id`
 - `section_id`
+
+These lineage fields must remain explicit on every normalized manifest after Stage 13:
+
+- `source_profile.profile_id`
+- `target_release.declared_git_ref`
+- `source_lineage.detected_git_commit`

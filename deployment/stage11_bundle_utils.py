@@ -82,6 +82,11 @@ def build_document_snapshot(document: dict[str, Any]) -> dict[str, Any]:
         "view_relative_path": view_bundle_relative(document),
         "viewer_url": document.get("viewer_url", ""),
         "source_url": document.get("source_url", ""),
+        "source_mirror_id": document.get("source_mirror_id", ""),
+        "source_profile_id": document.get("source_profile_id", ""),
+        "source_git_ref": document.get("source_git_ref", ""),
+        "source_git_commit": document.get("source_git_commit", ""),
+        "target_minor": document.get("target_minor", ""),
         "top_level_dir": document.get("top_level_dir", ""),
     }
 
