@@ -37,6 +37,7 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 2: complete for first pass
 - Stage 3: complete
 - Stage 4: complete
+- Stage 4.5: complete
 - Stage 5: next active implementation stage
 
 ## Stage 0. Freeze the rewrite baseline
@@ -239,6 +240,49 @@ Citation click-through is a hard product requirement.
 - every chunk can resolve to a readable HTML citation target
 - section-level click-through is possible on a sample corpus
 
+## Stage 4.5. Add the context-retention harness
+
+### Goal
+
+Create a diagnostic harness that shows where grounded context is lost before formal retrieval benchmarking begins.
+
+### Why it matters
+
+If Stage 5 fails, we need to know whether the problem came from retrieval, rerank, context assembly, truncation, or citation rendering.
+
+### Primary owners
+
+- RAG / Search Engineer
+- QA / Evaluation / Red Team
+- LLM Serving / Backend Engineer
+
+### Inputs
+
+- `docs/v2/context-retention-harness.md`
+- `docs/v2/evaluation-spec.md`
+- Stage 4 metadata and `viewer_url` outputs
+
+### Work items
+
+- define the trace record used for per-turn context diagnostics
+- define context-loss classes such as retrieval miss, rerank loss, and assembly loss
+- add a reporter that summarizes trace findings
+- add sample traces that prove the reporter can classify loss modes
+
+### Deliverables
+
+- `docs/v2/context-retention-harness.md`
+- `eval/context-harness-schema.yaml`
+- `eval/context_harness_report.py`
+- `eval/fixtures/context_harness_sample.jsonl`
+
+### Exit criteria
+
+- the trace format is fixed for upcoming benchmark cases
+- a reporter can classify the main context-loss modes
+- at least one sample trace can be summarized end to end
+- Stage 5 explicitly uses this harness instead of bypassing it
+
 ## Stage 5. Build the retrieval benchmark dataset
 
 ### Goal
@@ -258,6 +302,7 @@ The earlier review explicitly said vector search quality was not validated.
 ### Inputs
 
 - `docs/v2/evaluation-spec.md`
+- `docs/v2/context-retention-harness.md`
 - normalized P0 corpus
 
 ### Work items

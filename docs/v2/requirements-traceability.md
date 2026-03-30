@@ -28,6 +28,7 @@ The goal is to make it obvious which requirements are already defined, which are
 | HTML citation view generation | Source click-through must open a readable document, not raw source text | UI / UX Engineer | `docs/v2/architecture-blueprint.md` | defined | Each indexed document can resolve to an internal HTML citation target |
 | Section-aware chunking | Answers and citations must point to meaningful sections, not arbitrary text blobs | RAG / Search Engineer | `docs/v2/architecture-blueprint.md`, `docs/v2/chunking-contract.md`, `configs/chunk-schema.yaml` | defined | Chunks preserve heading hierarchy, type, and section identity |
 | Hybrid retrieval and reranking | OpenDocuments PRD expects retrieval quality beyond naive vector lookup | RAG / Search Engineer | `docs/v2/architecture-blueprint.md`, `configs/rag-policy.yaml` | planned | Relevant chunks rank ahead of weak lexical or noisy matches |
+| Context-retention harness | We need to localize context loss before Stage 5 benchmark failures become opaque | QA / Evaluation / Red Team | `docs/v2/context-retention-harness.md`, `eval/context-harness-schema.yaml`, `eval/context_harness_report.py` | defined | A failing turn can be classified as retrieval miss, rerank loss, assembly loss, citation loss, or version drift |
 | Retrieval benchmark and rerank validation | Feedback requires proof that vector retrieval quality is measured, not assumed | QA / Evaluation / Red Team | `docs/v2/evaluation-spec.md` | planned next | Top-k, source-dir, citation, and rerank metrics are tracked on a fixed dataset |
 | Korean answer policy | Users will ask in Korean while official documents stay mostly English | LLM Serving / Backend Engineer | `configs/rag-policy.yaml` | defined | Korean answers remain grounded and preserve technical terms correctly |
 | Citation rendering | Answers must always disclose evidence | RAG / Search Engineer | `configs/rag-policy.yaml`, `docs/v2/architecture-blueprint.md` | defined | Every answer includes source references |
@@ -51,6 +52,7 @@ The goal is to make it obvious which requirements are already defined, which are
 ## What still needs implementation
 
 - section-aware chunk generation
+- context-retention harness traces and diagnostics
 - retrieval benchmark dataset and metrics
 - viewer-friendly HTML output with stable `viewer_url`
 - OpenDocuments ingestion validation using the normalized P0 corpus

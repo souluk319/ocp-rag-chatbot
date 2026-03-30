@@ -7,6 +7,7 @@ Planned contents:
 - OCP operations question sets
 - expected answer guidance
 - citation checks
+- context-retention harness traces and reports
 - version correctness checks
 - retrieval benchmark datasets and result summaries
 - multi-turn scenario datasets
@@ -15,3 +16,4 @@ Planned contents:
 The controlling evaluation document is:
 
 - `docs/v2/evaluation-spec.md`
+- `docs/v2/context-retention-harness.md`

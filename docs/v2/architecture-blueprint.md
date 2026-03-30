@@ -176,6 +176,33 @@ The first benchmark contract should record:
 - rerank delta between pre-rerank and post-rerank ordering
 - query classes such as install, update, troubleshooting, disconnected, and follow-up queries
 
+### 7.3.1 Context-retention harness
+
+Before we treat benchmark failures as retrieval failures, we need one diagnostic layer that traces where expected evidence disappears.
+
+The harness must record:
+
+- the user turn and rewritten retrieval query
+- retrieval candidates
+- reranked candidates
+- final assembled prompt context
+- dropped chunks and the reason they were dropped
+- citations emitted for the answer
+- version context before and after the turn
+
+This harness exists to separate:
+
+- retrieval miss
+- rerank loss
+- assembly loss
+- citation loss
+- truncation pressure
+- version drift on follow-up turns
+
+The first implementation does not need deep UI.
+
+It does need a stable trace record and a repeatable reporter.
+
 ### 7.4 Multi-turn context flow
 
 Multi-turn behavior is a product requirement, not a later enhancement.

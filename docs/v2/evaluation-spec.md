@@ -71,6 +71,38 @@ Benchmark reporting should compare:
 - retrieval plus rerank
 - query class by query class results
 
+### Track A2. Context-retention diagnostics
+
+This track exists to make benchmark failures explainable before we widen scope.
+
+Checks:
+
+- expected support survives from retrieval to rerank to assembled context
+- token-budget pressure and truncation are visible
+- final citations still point to the grounded context that survived assembly
+- follow-up turns preserve the grounded topic through query rewrite
+
+Required diagnostics:
+
+- `retrieval_miss`
+- `rerank_loss`
+- `assembly_loss`
+- `citation_loss`
+- `truncation_applied`
+- `version_drift`
+- `follow_up_rewrite_missing`
+
+Required artifacts:
+
+- `docs/v2/context-retention-harness.md`
+- `eval/context-harness-schema.yaml`
+- `eval/context_harness_report.py`
+
+Pass expectation for the first working slice:
+
+- benchmark failures can be localized to a pipeline stage
+- follow-up trace failures are visible before answer-quality review starts
+
 ### Track B. Citation accuracy
 
 Checks:
@@ -213,6 +245,7 @@ Each evaluation item should record:
 - `click_through_required`
 - `turn_index`
 - `notes`
+- `context_harness_required`
 
 ## Minimum release gate for the first working slice
 
@@ -226,6 +259,7 @@ The first working slice is acceptable only if all of the following are true:
 6. the system does not silently mix incompatible OCP version guidance
 7. retrieval benchmark meets the first-slice gate
 8. 5-turn multi-turn scenarios stay grounded
+9. failing benchmark cases can be traced through the context-retention harness
 
 ## Red-team checks
 

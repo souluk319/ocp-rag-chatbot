@@ -23,8 +23,8 @@ The goal is to make each item:
 | --- | --- | --- | --- |
 | Official OpenShift data collection is insufficient | Treat `openshift-docs` as the official source of truth, document validation slice vs first operational release scope, and keep product-family exclusions explicit | `docs/v2/source-scope.md`, `configs/source-manifest.yaml`, `ingest/normalize_openshift_docs.py` | The corpus boundary is fixed, reproducible, and free of known non-OCP contamination |
 | Chunking strategy is weak | Add section-aware chunking rules tied to the canonical document model and the HTML citation view | `docs/v2/architecture-blueprint.md`, `configs/metadata-schema.yaml` | Chunk units, overlap, and citation alignment rules are defined before implementation |
-| Vector retrieval quality is not validated | Add a retrieval benchmark with query classes, top-k hit metrics, citation correctness, and rerank deltas | `docs/v2/evaluation-spec.md`, `docs/v2/requirements-traceability.md` | Retrieval quality is measured on a fixed baseline dataset before scope expansion |
-| Multi-turn capability is weak | Add explicit session memory, follow-up rewrite, citation continuity, and 5+ turn evaluation scenarios | `docs/v2/architecture-blueprint.md`, `docs/v2/evaluation-spec.md`, `docs/v2/requirements-traceability.md` | Multi-turn behavior is tested and remains grounded across at least 5 turns |
+| Vector retrieval quality is not validated | Add a retrieval benchmark with query classes, top-k hit metrics, citation correctness, rerank deltas, and a context-retention harness that shows where evidence was lost | `docs/v2/evaluation-spec.md`, `docs/v2/context-retention-harness.md`, `docs/v2/requirements-traceability.md` | Retrieval quality is measured on a fixed baseline dataset and failing cases can be localized to a pipeline stage |
+| Multi-turn capability is weak | Add explicit session memory, follow-up rewrite, citation continuity, 5+ turn evaluation scenarios, and trace hooks for version drift and follow-up rewrite failure | `docs/v2/architecture-blueprint.md`, `docs/v2/evaluation-spec.md`, `docs/v2/context-retention-harness.md`, `docs/v2/requirements-traceability.md` | Multi-turn behavior is tested and remains grounded across at least 5 turns |
 
 ## Concrete design upgrades
 
@@ -100,6 +100,7 @@ We must not widen corpus scope beyond the current validation slice until all of 
 
 1. formalize chunking contract
 2. formalize retrieval benchmark metrics
-3. formalize multi-turn memory and rewrite rules
-4. validate OpenDocuments against the normalized validation slice
-5. build the first benchmark dataset
+3. add the context-retention harness
+4. formalize multi-turn memory and rewrite rules
+5. validate OpenDocuments against the normalized validation slice
+6. build the first benchmark dataset
