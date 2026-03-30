@@ -189,6 +189,13 @@ Pass expectation for the first working slice:
 - no answer is primarily grounded in the wrong product family
 - weakly grounded questions do not receive overconfident answers
 
+Required Stage 9 artifacts:
+
+- `configs/rag-policy.yaml`
+- `app/ocp_policy.py`
+- `eval/stage9_policy_report.py`
+- `docs/v2/ocp-policy-application.md`
+
 ### Track H. Closed-network update safety
 
 Checks:

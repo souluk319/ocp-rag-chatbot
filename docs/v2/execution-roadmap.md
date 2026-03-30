@@ -42,7 +42,8 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 6: complete
 - Stage 7: complete
 - Stage 8: complete
-- Stage 9: next active implementation stage
+- Stage 9: complete
+- Stage 10: next active implementation stage
 
 ## Stage 0. Freeze the rewrite baseline
 
@@ -485,11 +486,17 @@ Official-source preference and version safety are central to trust.
 
 - refined retrieval and answer policy
 - updated benchmark expectations if needed
+- `configs/rag-policy.yaml`
+- `app/ocp_policy.py`
+- `eval/stage9_policy_report.py`
+- `docs/v2/ocp-policy-application.md`
 
 ### Exit criteria
 
 - answers prefer the correct source family
 - version-safe behavior is visible and testable
+- policy-shaped rerank output is measurable on the Stage 5 benchmark set
+- answer guardrails are explicit for operations mode and study mode
 
 ## Stage 10. Run evaluation and red-team checks
 

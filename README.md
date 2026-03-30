@@ -49,6 +49,7 @@ ingest/        document onboarding pipeline notes
 - `docs/v2/chunking-contract.md`
 - `docs/v2/context-retention-harness.md`
 - `docs/v2/company-runtime-lock.md`
+- `docs/v2/ocp-policy-application.md`
 - `docs/v2/retrieval-benchmark-plan.md`
 - `docs/v2/source-scope.md`
 - `docs/v2/requirements-traceability.md`
