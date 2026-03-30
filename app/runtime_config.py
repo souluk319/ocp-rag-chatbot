@@ -56,6 +56,8 @@ class RuntimeConfig:
     chat_model: str
     embedding_model: str
     company_bearer_token: str
+    opendocuments_base_url: str
+    default_chat_mode: str
     request_timeout_seconds: float
     allow_local_chat_fallback: bool
 
@@ -74,15 +76,24 @@ class RuntimeConfig:
             missing.append("EMBEDDING_MODEL")
         return missing
 
+    def missing_gateway_keys(self) -> list[str]:
+        missing = list(self.missing_required_keys())
+        if not self.opendocuments_base_url:
+            missing.append("OD_SERVER_BASE_URL")
+        return missing
+
     def to_health_dict(self) -> dict[str, object]:
         return {
             "company_base_url_configured": bool(self.company_base_url),
             "chat_model_configured": bool(self.chat_model),
             "embedding_model_configured": bool(self.embedding_model),
             "company_token_configured": bool(self.company_bearer_token),
+            "opendocuments_base_url_configured": bool(self.opendocuments_base_url),
+            "default_chat_mode": self.default_chat_mode,
             "local_chat_fallback": self.allow_local_chat_fallback,
             "runtime_mode": self.runtime_mode(),
             "missing_required_keys": self.missing_required_keys(),
+            "missing_gateway_keys": self.missing_gateway_keys(),
         }
 
 
@@ -98,6 +109,8 @@ def load_runtime_config() -> RuntimeConfig:
         chat_model=_get_env("OD_CHAT_MODEL", "LLM_EP_COMPANY_MODEL", "LLM_MODEL"),
         embedding_model=_get_env("OD_EMBEDDING_MODEL", "EMBEDDING_MODEL"),
         company_bearer_token=_get_env("OD_COMPANY_BEARER_TOKEN", "LLM_EP_COMPANY_BEARER_TOKEN"),
+        opendocuments_base_url=_get_env("OD_SERVER_BASE_URL"),
+        default_chat_mode=_get_env("OD_DEFAULT_MODE", "DEFAULT_MODE", default="operations"),
         request_timeout_seconds=timeout_value,
         allow_local_chat_fallback=_get_bool("OD_ALLOW_LOCAL_CHAT_FALLBACK", default=False),
     )

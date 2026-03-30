@@ -659,15 +659,23 @@ UI polish before retrieval quality wastes time and hides core problems.
 ### Work items
 
 - keep the default OpenDocuments UI first
+- put a product-owned runtime gateway in front of the OpenDocuments server
+- carry Stage 7 memory rewrite and Stage 9 policy behavior into the live HTTP path
 - add only the minimum OCP-specific UX
 - surface citations and HTML document links clearly
 
 ### Deliverables
 
 - minimal operator-facing UI improvements
+- `app/ocp_runtime_gateway.py`
+- `app/runtime_gateway_support.py`
+- `app/runtime_source_index.py`
+- `docs/v2/live-runtime-gateway.md`
 
 ### Exit criteria
 
+- the live runtime path uses session-aware rewrite before upstream retrieval
+- the live runtime path normalizes and reranks sources against the active index manifest
 - users can ask questions, inspect citations, and open supporting documents easily
 
 ## Stage advancement rule

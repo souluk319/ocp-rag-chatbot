@@ -1,0 +1,185 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from functools import lru_cache
+from typing import Any
+
+from app.multiturn_memory import SessionMemoryManager
+from app.ocp_policy import OcpPolicyEngine, QuerySignals, load_policy_engine
+from app.runtime_source_index import SourceCatalog, load_active_source_catalog
+
+
+def _normalize_text(value: str) -> str:
+    return " ".join((value or "").split()).strip().lower()
+
+
+@dataclass(frozen=True)
+class RuntimeTurnPlan:
+    conversation_id: str
+    mode: str
+    original_query: str
+    rewritten_query: str
+    memory_before: dict[str, Any]
+    turn_trace: dict[str, Any]
+
+
+@lru_cache(maxsize=1)
+def load_session_manager() -> SessionMemoryManager:
+    return SessionMemoryManager()
+
+
+def snapshot_to_policy_memory(snapshot: dict[str, Any]) -> dict[str, Any]:
+    source_dir = str(snapshot.get("source_dir", "")).strip()
+    active_category = str(snapshot.get("active_category", "")).strip()
+    return {
+        "active_source_dirs": [source_dir] if source_dir else [],
+        "active_categories": [active_category] if active_category else [],
+        "active_version": str(snapshot.get("active_version", "")).strip(),
+        "active_document_path": str(snapshot.get("reference_doc_path", "")).strip(),
+    }
+
+
+def prepare_runtime_turn(
+    *,
+    question_ko: str,
+    conversation_id: str,
+    mode: str,
+    memory_manager: SessionMemoryManager | None = None,
+) -> RuntimeTurnPlan:
+    manager = memory_manager or load_session_manager()
+    snapshot = manager.get_snapshot(conversation_id)
+    result = manager.process_turn(
+        session_id=conversation_id,
+        turn_index=snapshot.turn_count + 1,
+        question_ko=question_ko,
+        reference_doc_path=snapshot.reference_doc_path,
+        reference_source_dir=snapshot.source_dir,
+    )
+    return RuntimeTurnPlan(
+        conversation_id=conversation_id,
+        mode=mode,
+        original_query=question_ko,
+        rewritten_query=str(result["turn"]["rewritten_query"]).strip(),
+        memory_before=result["state_before"],
+        turn_trace=result,
+    )
+
+
+def build_policy_overlay(
+    *,
+    question_ko: str,
+    mode: str,
+    sources: list[dict[str, Any]],
+    memory_before: dict[str, Any],
+    policy_engine: OcpPolicyEngine | None = None,
+    source_catalog: SourceCatalog | None = None,
+) -> dict[str, Any]:
+    engine = policy_engine or load_policy_engine()
+    catalog = source_catalog or load_active_source_catalog()
+    memory_state = snapshot_to_policy_memory(memory_before)
+    normalized_sources = [
+        catalog.normalize_search_result(source, rank=index)
+        for index, source in enumerate(sources, start=1)
+    ]
+    signals = engine.analyze_query(question_ko, mode=mode, memory_state=memory_state)
+    prepared_sources, signals = engine.augment_follow_up_candidates(
+        question_ko,
+        normalized_sources,
+        manifest_index=catalog.by_document_path,
+        mode=mode,
+        memory_state=memory_state,
+        signals=signals,
+    )
+    reranked_sources, signals = engine.rerank_candidates(
+        question_ko,
+        prepared_sources,
+        mode=mode,
+        memory_state=memory_state,
+        signals=signals,
+    )
+    answer_contract = engine.build_answer_contract(
+        question_ko,
+        reranked_sources,
+        mode=mode,
+        grounded=bool(reranked_sources),
+        memory_state=memory_state,
+    )
+    return {
+        "raw_sources": normalized_sources,
+        "policy_sources": reranked_sources,
+        "policy_signals": signals.to_dict(),
+        "answer_contract": answer_contract,
+    }
+
+
+def commit_runtime_grounding(
+    *,
+    conversation_id: str,
+    sources: list[dict[str, Any]],
+    memory_manager: SessionMemoryManager | None = None,
+) -> dict[str, Any]:
+    manager = memory_manager or load_session_manager()
+    top_source = sources[0] if sources else {}
+    return manager.apply_grounding(
+        conversation_id,
+        reference_doc_path=str(top_source.get("document_path", "")).strip(),
+        source_dir=str(top_source.get("source_dir", "")).strip(),
+        category=str(top_source.get("effective_category", "") or top_source.get("category", "")).strip(),
+        version=str(top_source.get("version", "")).strip(),
+    )
+
+
+def build_answer_prefix(answer_contract: dict[str, Any]) -> str:
+    if not answer_contract.get("grounded", False):
+        return "현재 검색된 공식 근거만으로는 답을 확정하기 어렵습니다. 먼저 출처 문서를 직접 확인해 주세요.\n\n"
+
+    signals = answer_contract.get("signals", {})
+    lines: list[str] = []
+    version_hint = str(signals.get("version_hint", "")).strip()
+    if version_hint:
+        lines.append(f"[기준 버전: OpenShift {version_hint}]")
+    if bool(signals.get("risk_notice_required")):
+        lines.append("[주의: 운영 영향이 큰 작업일 수 있으니 적용 전 현재 클러스터 버전과 공식 문서를 다시 확인하세요.]")
+    if not lines:
+        return ""
+    return "\n".join(lines) + "\n\n"
+
+
+def ensure_citation_block(answer: str, citations: list[dict[str, Any]]) -> str:
+    if not citations:
+        return answer
+    if "[Source:" in answer:
+        return answer
+
+    lines = [answer.rstrip(), "", build_citation_appendix(citations).strip()]
+    return "\n".join(lines).strip()
+
+
+def build_citation_appendix(citations: list[dict[str, Any]]) -> str:
+    lines = ["출처:"]
+    for citation in citations[:3]:
+        label = str(citation.get("section_title", "")).strip() or str(citation.get("document_path", "")).strip()
+        viewer_url = str(citation.get("viewer_url", "")).strip()
+        lines.append(f"- {label} ({viewer_url})")
+    return "\n".join(lines)
+
+
+def shape_answer(answer: str, answer_contract: dict[str, Any], citations: list[dict[str, Any]]) -> str:
+    prefix = build_answer_prefix(answer_contract)
+    combined = f"{prefix}{answer}".strip()
+    return ensure_citation_block(combined, citations)
+
+
+def answer_requires_prefix(existing_text: str, answer_contract: dict[str, Any]) -> bool:
+    prefix = build_answer_prefix(answer_contract).strip()
+    if not prefix:
+        return False
+    return _normalize_text(prefix) not in _normalize_text(existing_text)
+
+
+def build_done_payload(done_payload: dict[str, Any], *, conversation_id: str, mode: str, rewritten_query: str) -> dict[str, Any]:
+    payload = dict(done_payload)
+    payload["conversationId"] = conversation_id
+    payload["mode"] = mode
+    payload["rewrittenQuery"] = rewritten_query
+    return payload

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "GW-001",
+    "conversation_id": "gw-sample-session",
+    "mode": "operations",
+    "question_ko": "업데이트 전에 etcd 백업이나 CNF 관련 조건은 어디서 확인해?",
+    "upstream_sources": [
+      {
+        "sourcePath": "C:/Users/soulu/cywell/ocp-rag-chatbot/data/staging/stage11-local-seed/views/openshift-docs-p0/post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.html",
+        "score": 0.88,
+        "headingHierarchy": [
+          "Updating clusters",
+          "Update before the update"
+        ]
+      },
+      {
+        "sourcePath": "C:/Users/soulu/cywell/ocp-rag-chatbot/data/staging/stage11-local-seed/views/openshift-docs-p0/post_installation_configuration/day_2_core_cnf_clusters/updating/update-api.html",
+        "score": 0.72,
+        "headingHierarchy": [
+          "Updating clusters",
+          "OpenShift update APIs"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "GW-002",
+    "conversation_id": "gw-sample-session",
+    "mode": "operations",
+    "question_ko": "그 전에 확인해야 할 조건도 알려줘",
+    "upstream_sources": [
+      {
+        "sourcePath": "C:/Users/soulu/cywell/ocp-rag-chatbot/data/staging/stage11-local-seed/views/openshift-docs-p0/post_installation_configuration/day_2_core_cnf_clusters/updating/update-api.html",
+        "score": 0.81,
+        "headingHierarchy": [
+          "Updating clusters",
+          "OpenShift update APIs"
+        ]
+      },
+      {
+        "sourcePath": "C:/Users/soulu/cywell/ocp-rag-chatbot/data/staging/stage11-local-seed/views/openshift-docs-p0/disconnected/about-installing-oc-mirror-v2.html",
+        "score": 0.77,
+        "headingHierarchy": [
+          "Disconnected environments",
+          "About oc-mirror v2"
+        ]
+      }
+    ]
+  }
+]

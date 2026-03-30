@@ -46,11 +46,12 @@ ingest/        document onboarding pipeline notes
 - Stage 11 archive snapshots are created for displaced active indexes during cutover and rollback
 - Stage 11 delta diff path also validates cleanly when the approved baseline and normalized manifest are identical
 - Stage 11 runtime smoke verifies ingest, grounding, citation presence, and click-through; retrieval quality itself still follows the Stage 9/10 benchmark gates
+- a product-owned runtime gateway now exists to apply Stage 7 multi-turn rewrite and Stage 9 source policy on the live OpenDocuments HTTP path
 
 ## Next milestones
 
-1. Wire the validated memory and policy path into the live runtime end to end
-2. Finish streaming and minimal operator-facing UI hardening in Stage 12
+1. Verify the new runtime gateway against a live OpenDocuments server path
+2. Finish minimal operator-facing UI hardening in Stage 12
 3. Expand the approved corpus beyond the validated P0 slice without regressing Stage 10 and Stage 11 gates
 
 ## Design docs
@@ -63,6 +64,7 @@ ingest/        document onboarding pipeline notes
 - `docs/v2/chunking-contract.md`
 - `docs/v2/context-retention-harness.md`
 - `docs/v2/company-runtime-lock.md`
+- `docs/v2/live-runtime-gateway.md`
 - `docs/v2/ocp-policy-application.md`
 - `docs/v2/stage10-evaluation-report.md`
 - `docs/v2/retrieval-benchmark-plan.md`

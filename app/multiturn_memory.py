@@ -115,6 +115,7 @@ class SessionSnapshot:
     session_id: str
     active_topic: str = ""
     source_dir: str = ""
+    active_category: str = ""
     active_version: str = ""
     reference_doc_path: str = ""
     retrieval_hints: list[str] = field(default_factory=list)
@@ -127,6 +128,7 @@ class SessionSnapshot:
             "session_id": self.session_id,
             "active_topic": self.active_topic,
             "source_dir": self.source_dir,
+            "active_category": self.active_category,
             "active_version": self.active_version,
             "reference_doc_path": self.reference_doc_path,
             "retrieval_hints": list(self.retrieval_hints),
@@ -238,6 +240,27 @@ class SessionMemoryManager:
         recent_turns = deque(snapshot.recent_turns, maxlen=self.max_history_turns)
         recent_turns.append(turn_record.to_dict())
         snapshot.recent_turns = list(recent_turns)
+
+    def apply_grounding(
+        self,
+        session_id: str,
+        *,
+        reference_doc_path: str = "",
+        source_dir: str = "",
+        category: str = "",
+        version: str = "",
+    ) -> dict[str, Any]:
+        snapshot = self.get_snapshot(session_id)
+        if reference_doc_path:
+            snapshot.reference_doc_path = reference_doc_path
+        if source_dir:
+            snapshot.source_dir = source_dir
+        if category:
+            snapshot.active_category = category
+        if version:
+            snapshot.active_version = version
+        snapshot.last_updated_epoch = time.time()
+        return snapshot.to_dict()
 
 
 def extract_version(text: str) -> str:

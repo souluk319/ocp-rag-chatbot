@@ -5,6 +5,7 @@ This directory now holds the deployment and air-gap contracts for v2.
 Current contents cover:
 
 - runtime contract validation for the approved company path
+- runtime gateway contract for the live OpenDocuments HTTP path
 - approved transfer bundle schema
 - closed-network refresh flow and rollback expectations
 - bundle layout, manifest lineage, and index activation contracts
@@ -16,6 +17,7 @@ Current contents cover:
 Key entry points:
 
 - `deployment/check_runtime_contract.py`
+- `app/ocp_runtime_gateway.py`
 - `deployment/check_stage11_readiness.py`
 - `deployment/initialize_stage11_baseline.py`
 - `deployment/build_outbound_bundle.py`
