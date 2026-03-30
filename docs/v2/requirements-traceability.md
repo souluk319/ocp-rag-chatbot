@@ -25,6 +25,7 @@ The goal is to make it obvious which requirements are already defined, which are
 | `.adoc` normalization | `openshift-docs` is not directly ready for indexing | Data / Document Onboarding Engineer | `ingest/normalize_openshift_docs.py` | implemented first pass | Normalized corpus and manifest can be regenerated from source |
 | Mixed-product exclusion | OSD, ROSA, and other product lines must not contaminate answers | Data / Document Onboarding Engineer | `docs/v2/source-scope.md`, `configs/source-manifest.yaml` | defined and validated for P0 | Filtered corpus excludes known non-OCP paths |
 | Stable metadata contract | Retrieval, ranking, and citation all depend on stable metadata | RAG / Search Engineer | `configs/metadata-schema.yaml` | defined | Each normalized document has the required fields |
+| HTML citation view generation | Source click-through must open a readable document, not raw source text | UI / UX Engineer | `docs/v2/architecture-blueprint.md` | defined | Each indexed document can resolve to an internal HTML citation target |
 | Section-aware chunking | Answers and citations must point to meaningful sections, not arbitrary text blobs | RAG / Search Engineer | `docs/v2/architecture-blueprint.md` | planned next | Chunks preserve heading hierarchy and section identity |
 | Hybrid retrieval and reranking | OpenDocuments PRD expects retrieval quality beyond naive vector lookup | RAG / Search Engineer | `docs/v2/architecture-blueprint.md`, `configs/rag-policy.yaml` | planned | Relevant chunks rank ahead of weak lexical or noisy matches |
 | Korean answer policy | Users will ask in Korean while official documents stay mostly English | LLM Serving / Backend Engineer | `configs/rag-policy.yaml` | defined | Korean answers remain grounded and preserve technical terms correctly |
@@ -48,7 +49,7 @@ The goal is to make it obvious which requirements are already defined, which are
 ## What still needs implementation
 
 - section-aware chunk generation
-- viewer-friendly document output with stable `viewer_url`
+- viewer-friendly HTML output with stable `viewer_url`
 - OpenDocuments ingestion validation using the normalized P0 corpus
 - evaluation dataset assets under `eval/`
 - company-endpoint runtime wiring for the integrated chatbot path

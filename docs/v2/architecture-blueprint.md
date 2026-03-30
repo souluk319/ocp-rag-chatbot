@@ -104,15 +104,42 @@ Build a closed-network OCP operations assistant that:
 The v2 chatbot will follow this logical flow:
 
 1. Source collection
-2. Normalization from `.adoc` to indexable text or markdown
-3. Section-aware chunking
-4. Embedding
-5. Retrieval
-6. Reranking
-7. Context assembly
-8. LLM generation
-9. Citation rendering
-10. Citation click-through to a document view
+2. Parse and normalize `.adoc` into a canonical document model
+3. Generate two synchronized outputs from the same canonical model
+4. Section-aware chunking for retrieval
+5. Embedding
+6. Retrieval
+7. Reranking
+8. Context assembly
+9. LLM generation
+10. Citation rendering
+11. Citation click-through to a document view
+
+### 7.1 Source pipeline branching
+
+The normalization stage must not produce only search text.
+
+It must produce a shared intermediate document structure first, then branch into two outputs:
+
+1. a retrieval-oriented representation
+2. a citation-oriented document view
+
+The required shape is:
+
+1. `.adoc` source collection
+2. AsciiDoc parsing and cleanup
+3. canonical document model with section hierarchy
+4. retrieval output generation
+   - normalized text or markdown
+   - chunk-ready section boundaries
+   - section metadata
+5. citation output generation
+   - internal HTML document view
+   - section anchors
+   - stable `viewer_url`
+6. metadata manifest emission
+
+This design keeps retrieval chunks and citation targets aligned to the same source structure.
 
 ## 8. Why `.adoc` Matters
 
@@ -236,14 +263,22 @@ We must produce two outputs from the source pipeline:
 1. an **indexable normalized representation**
 2. a **human-readable view representation**
 
-For phase 1, the minimum acceptable approach is:
+For v2, the default citation view format should be:
+
+- rendered internal HTML
+- readable without exposing raw `.adoc`
+- anchorable at the section level
+
+Phase 1 minimum implementation target:
 
 - normalized text for indexing
-- a source viewer path or rendered document path stored in metadata
+- rendered HTML documents for source viewing
+- `viewer_url` stored in metadata
+- section-level anchors when available
 
-Longer-term preferred approach:
+Non-goal for citation click-through:
 
-- render internal HTML views with section anchors
+- opening raw `.adoc` files as the user-facing citation target
 
 ## 12. Korean Quality Strategy
 

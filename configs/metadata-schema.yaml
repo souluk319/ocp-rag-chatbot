@@ -24,6 +24,9 @@ recommended_fields:
   - audience
   - visibility
   - top_level_dir
+  - section_title
+  - heading_hierarchy
+  - viewer_url
 
 field_notes:
   document_id: stable identifier derived from source path
@@ -40,3 +43,6 @@ field_notes:
   trust_level: official, internal_runbook, training, or reference
   collected_at: ISO-8601 collection timestamp
   checksum: SHA-256 of normalized content
+  section_title: nearest section title for citation targeting
+  heading_hierarchy: ordered heading path used for chunk and citation alignment
+  viewer_url: internal HTML document path used when a citation is clicked

@@ -59,7 +59,7 @@ Checks:
 
 Pass expectation for the first working slice:
 
-- every cited source opens a real document path
+- every cited source opens a real HTML document path
 - section-level precision is preferred, document-level precision is the minimum fallback
 
 ### Track D. Korean answer quality
