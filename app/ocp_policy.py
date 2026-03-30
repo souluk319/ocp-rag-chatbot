@@ -121,16 +121,18 @@ class OcpPolicyEngine:
         *,
         mode: str = "operations",
         memory_state: dict[str, Any] | None = None,
+        signals: QuerySignals | None = None,
     ) -> tuple[list[dict[str, Any]], QuerySignals]:
-        signals = self.analyze_query(question_ko, mode=mode, memory_state=memory_state)
+        signals = signals or self.analyze_query(question_ko, mode=mode, memory_state=memory_state)
         ranked_candidates: list[dict[str, Any]] = []
 
         for candidate in candidates:
-            score, breakdown = self._score_candidate(candidate, signals, memory_state or {})
-            enriched = dict(candidate)
-            enriched["policy_score"] = round(score, 4)
-            enriched["policy_breakdown"] = breakdown
-            ranked_candidates.append(enriched)
+            prepared_candidate = dict(candidate)
+            prepared_candidate["effective_category"] = self.effective_category(prepared_candidate)
+            score, breakdown = self._score_candidate(prepared_candidate, signals, memory_state or {})
+            prepared_candidate["policy_score"] = round(score, 4)
+            prepared_candidate["policy_breakdown"] = breakdown
+            ranked_candidates.append(prepared_candidate)
 
         ranked_candidates.sort(
             key=lambda item: (
@@ -144,6 +146,59 @@ class OcpPolicyEngine:
             candidate["rank"] = index
 
         return ranked_candidates, signals
+
+    def augment_follow_up_candidates(
+        self,
+        question_ko: str,
+        candidates: list[dict[str, Any]],
+        *,
+        manifest_index: dict[str, dict[str, Any]],
+        mode: str = "operations",
+        memory_state: dict[str, Any] | None = None,
+        signals: QuerySignals | None = None,
+    ) -> tuple[list[dict[str, Any]], QuerySignals]:
+        memory_state = memory_state or {}
+        signals = signals or self.analyze_query(question_ko, mode=mode, memory_state=memory_state)
+        augmented = [dict(candidate) for candidate in candidates]
+
+        if not signals.follow_up_detected:
+            return augmented, signals
+
+        active_document_path = _normalize_path(str(memory_state.get("active_document_path", "")))
+        if not active_document_path:
+            return augmented, signals
+
+        if any(_normalize_path(str(item.get("document_path", ""))) == active_document_path for item in augmented):
+            return augmented, signals
+
+        manifest_doc = manifest_index.get(active_document_path)
+        if not manifest_doc:
+            return augmented, signals
+
+        if not self._should_rescue_active_document(manifest_doc, active_document_path, signals):
+            return augmented, signals
+
+        sections = manifest_doc.get("sections", []) or []
+        section_title = sections[0].get("section_title", "") if sections else ""
+        rescue_score = self._memory_anchor_score(augmented)
+        augmented.append(
+            {
+                "rank": len(augmented) + 1,
+                "source_dir": manifest_doc.get("top_level_dir", ""),
+                "document_path": active_document_path,
+                "viewer_url": manifest_doc.get("viewer_url", ""),
+                "score": rescue_score,
+                "section_title": section_title,
+                "title": manifest_doc.get("title", ""),
+                "product": manifest_doc.get("product", ""),
+                "version": manifest_doc.get("version", ""),
+                "category": manifest_doc.get("category", ""),
+                "trust_level": manifest_doc.get("trust_level", ""),
+                "top_level_dir": manifest_doc.get("top_level_dir", ""),
+                "retrieval_origin": "memory_anchor",
+            }
+        )
+        return augmented, signals
 
     def build_answer_contract(
         self,
@@ -242,7 +297,7 @@ class OcpPolicyEngine:
                     breakdown["source_dir_mismatch"] = round(penalty, 4)
                     total += penalty
 
-        category = str(candidate.get("category", "other")).strip()
+        category = self.effective_category(candidate)
         category_weight = float(category_priority.get(category, category_priority.get("other", 0))) / 14.0
         breakdown["category_priority"] = round(category_weight, 4)
         total += category_weight
@@ -309,6 +364,51 @@ class OcpPolicyEngine:
 
         return total, breakdown
 
+    def effective_category(self, candidate: dict[str, Any]) -> str:
+        raw_category = str(candidate.get("category", "")).strip()
+        document_path = _normalize_path(str(candidate.get("document_path", "")))
+        source_dir = str(candidate.get("source_dir") or candidate.get("top_level_dir", "")).strip().lower()
+
+        if "/troubleshooting/" in document_path or source_dir == "support":
+            return "troubleshooting"
+        if "/updating/" in document_path or source_dir == "updating":
+            return "upgrade"
+        if "security" in document_path:
+            return "security"
+        if "network" in document_path:
+            return "networking"
+        if "storage" in document_path:
+            return "storage"
+        if raw_category:
+            return raw_category
+        return "other"
+
+    def _should_rescue_active_document(
+        self,
+        manifest_doc: dict[str, Any],
+        active_document_path: str,
+        signals: QuerySignals,
+    ) -> bool:
+        source_dir = str(manifest_doc.get("top_level_dir", "")).strip().lower()
+        effective_category = self.effective_category(
+            {
+                "category": manifest_doc.get("category", ""),
+                "document_path": active_document_path,
+                "source_dir": source_dir,
+                "top_level_dir": source_dir,
+            }
+        )
+
+        if signals.preferred_source_dirs and source_dir in {
+            item.strip().lower() for item in signals.preferred_source_dirs if item
+        }:
+            return True
+        if signals.preferred_categories and effective_category in {
+            item.strip().lower() for item in signals.preferred_categories if item
+        }:
+            return True
+        return not signals.preferred_source_dirs and not signals.preferred_categories
+
     def _extract_version(self, question_ko: str) -> str:
         match = VERSION_PATTERN.search(question_ko)
         return match.group(1) if match else ""
@@ -328,6 +428,17 @@ class OcpPolicyEngine:
             item = str(value).strip()
             if item and item not in target:
                 target.append(item)
+
+    @staticmethod
+    def _memory_anchor_score(candidates: list[dict[str, Any]]) -> float:
+        if not candidates:
+            return 0.05
+        numeric_scores = [float(candidate.get("score", 0.0)) for candidate in candidates if candidate.get("score") is not None]
+        if not numeric_scores:
+            return 0.05
+        ceiling = max(numeric_scores)
+        floor = min(numeric_scores)
+        return round(max(ceiling * 0.97, floor * 1.05, 0.05), 6)
 
 
 @lru_cache(maxsize=1)

@@ -96,6 +96,9 @@ def main() -> None:
     overall_decision = "go" if all(gates.values()) else "no-go"
 
     report = {
+        "policy_summary_basis": policy_report.get("summary_basis", "policy_prepared_candidates"),
+        "policy_summary_note": policy_report.get("summary_note", ""),
+        "raw_retrieval_summary": policy_report.get("raw_retrieval_summary", {}),
         "policy_summary": policy_report.get("summary", {}),
         "multiturn_summary": multiturn_report.get("summary", {}),
         "context_summary": context_report.get("summary", {}),

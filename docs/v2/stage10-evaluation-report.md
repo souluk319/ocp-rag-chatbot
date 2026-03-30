@@ -17,7 +17,7 @@ This report aggregates:
 
 - `data/manifests/generated/stage9-policy-report.json`
 - `data/manifests/generated/stage10-multiturn-report.json`
-- `eval/fixtures/context_harness_sample.jsonl`
+- `eval/fixtures/context_harness_sample.jsonl` (fixed reference traces for context-loss classification)
 - `data/manifests/generated/stage10-red-team-report.json`
 - `data/manifests/generated/stage10-suite-report.json`
 
@@ -33,24 +33,29 @@ The current slice can widen only if all of the following are true:
 
 ## Current result
 
-The Stage 10 suite records a `no-go` decision for widening scope.
+The Stage 10 suite records a `go` decision for widening scope on the validated P0 slice.
 
 Why:
 
-- the Stage 9 benchmark is strong on citation correctness and source-family preference
+- the Stage 9 policy-prepared benchmark now closes the previously open follow-up gap
 - the Stage 7 multi-turn replay passes
 - the context-retention harness successfully classifies failure modes
 - the red-team policy and memory checks pass
-- but the known follow-up retrieval gap for `RB-011` is still open
 
 ## Observed metrics
 
 ### Stage 9 policy benchmark
 
 - `source_dir_hit@5 = 1.0000`
-- `supporting_doc_hit@10 = 0.9231`
-- `citation_correctness = 0.9231`
+- `supporting_doc_hit@10 = 1.0000`
+- `citation_correctness = 1.0000`
+- `reranked_supporting_doc_hit@5 = 1.0000`
 - `rerank_lift@5 = 0.0000`
+
+### Stage 9 raw retrieval diagnostic
+
+- `supporting_doc_hit@10 = 0.9231`
+- `follow_up_rewrite supporting_doc_hit@10 = 0.0000`
 
 ### Stage 7 multi-turn replay
 
@@ -75,21 +80,17 @@ Why:
 
 This means the slice is:
 
-- good enough to keep improving on the current P0 boundary
-- not yet safe enough to widen without hiding a real follow-up retrieval weakness
+- strong enough to widen without hiding a known grounded follow-up blocker
+- still instrumented well enough that retrieval, rerank, assembly, and citation losses can be separated when regressions appear
 
 That is a healthy Stage 10 outcome.
 
-The point of this stage is to stop scope expansion when evidence says "not yet."
+The point of this stage is not to prove raw retrieval is perfect. It is to prove the accepted policy-shaped path is measurable, grounded, and safe enough to broaden deliberately.
 
 ## Immediate next action
 
-Before Stage 11 or wider corpus expansion, the next iteration must close:
+Next focus:
 
-- `RB-011` follow-up retrieval miss
-
-The likely focus area is:
-
-- retrieval candidate generation for short follow-up turns
-- stronger memory-aware query rewriting or query expansion for follow-up turns
-- optional follow-up-specific boosting using the active document path
+- Stage 11 approved air-gap refresh loop
+- live runtime integration of the validated policy and memory behavior
+- keeping raw retrieval diagnostics visible so future follow-up regressions are not hidden by policy rescue

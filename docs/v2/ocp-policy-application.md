@@ -129,16 +129,24 @@ Observed policy summary:
 
 - `case_count = 13`
 - `source_dir_hit@5 = 1.0000`
-- `supporting_doc_hit@10 = 0.9231`
-- `citation_correctness = 0.9231`
-- `reranked_supporting_doc_hit@5 = 0.9231`
+- `supporting_doc_hit@10 = 1.0000`
+- `citation_correctness = 1.0000`
+- `reranked_supporting_doc_hit@5 = 1.0000`
 - `rerank_lift@5 = 0.0000`
 
 Interpretation:
 
 - Stage 9 policy closes the citation-quality gap from the Stage 6 baseline for the current slice
-- Stage 9 does not yet solve the `RB-011` follow-up miss because the expected supporting document is not present in the raw retrieval candidate set
-- this means Stage 10 must still treat follow-up retrieval quality as an open evaluation target
+- Stage 9 now closes the `RB-011` follow-up miss on the accepted policy-prepared path
+- Stage 9 keeps raw baseline retrieval recall visible as a separate diagnostic instead of hiding it inside the policy summary
+- memory-aware rescue only activates when the active document still matches the follow-up source/category context
+
+Additional diagnostic note:
+
+- `raw_retrieval_summary.supporting_doc_hit@10 = 0.9231`
+- `raw_retrieval_by_query_class.follow_up_rewrite.supporting_doc_hit@10 = 0.0000`
+
+This means the product gate is satisfied on the policy-prepared path while the raw retrieval baseline remains observable for regression analysis.
 
 ## Deliverables
 

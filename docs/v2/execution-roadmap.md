@@ -43,7 +43,8 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 7: complete
 - Stage 8: complete
 - Stage 9: complete
-- Stage 10: evaluation executed, no-go hold
+- Stage 10: complete (`go` for widening scope on the validated slice)
+- Stage 11: ready to activate
 
 ## Stage 0. Freeze the rewrite baseline
 
@@ -548,13 +549,19 @@ Without this stage, scope expands before the baseline is trustworthy.
 
 Stage 10 has been executed.
 
+The authoritative gate state lives in:
+
+- `docs/v2/stage10-evaluation-report.md`
+- `data/manifests/generated/stage10-suite-report.json`
+
 Current decision:
 
-- `no-go` for widening scope
+- `go` for widening scope on the validated P0 slice
 
-Current blocker:
+Current note:
 
-- `RB-011` follow-up retrieval gap remains open
+- raw baseline retrieval still underperforms on the follow-up class
+- the accepted Stage 9/10 gate is based on the policy-prepared retrieval path, with raw retrieval diagnostics preserved separately
 
 ## Stage 11. Build the approved air-gap refresh loop
 

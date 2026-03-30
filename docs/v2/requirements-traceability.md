@@ -25,7 +25,7 @@ The goal is to make it obvious which requirements are already defined, which are
 | `.adoc` normalization | `openshift-docs` is not directly ready for indexing | Data / Document Onboarding Engineer | `ingest/normalize_openshift_docs.py` | implemented first pass | Normalized corpus and manifest can be regenerated from source |
 | Mixed-product exclusion | OSD, ROSA, and other product lines must not contaminate answers | Data / Document Onboarding Engineer | `docs/v2/source-scope.md`, `configs/source-manifest.yaml` | defined and validated for P0 | Filtered corpus excludes known non-OCP paths |
 | Stable metadata contract | Retrieval, ranking, and citation all depend on stable metadata | RAG / Search Engineer | `configs/metadata-schema.yaml` | defined | Each normalized document has the required fields |
-| HTML citation view generation | Source click-through must open a readable document, not raw source text | UI / UX Engineer | `docs/v2/architecture-blueprint.md` | defined | Each indexed document can resolve to an internal HTML citation target |
+| HTML citation view generation | Source click-through must open a readable document, not raw source text | UI / UX Engineer | `docs/v2/architecture-blueprint.md`, `ingest/normalize_openshift_docs.py` | implemented for the validation slice | Each normalized document resolves to a generated internal HTML citation target |
 | Section-aware chunking | Answers and citations must point to meaningful sections, not arbitrary text blobs | RAG / Search Engineer | `docs/v2/architecture-blueprint.md`, `docs/v2/chunking-contract.md`, `configs/chunk-schema.yaml` | defined | Chunks preserve heading hierarchy, type, and section identity |
 | Hybrid retrieval and reranking | OpenDocuments PRD expects retrieval quality beyond naive vector lookup | RAG / Search Engineer | `docs/v2/architecture-blueprint.md`, `configs/rag-policy.yaml`, `app/ocp_policy.py`, `eval/stage9_policy_report.py` | implemented for Stage 9 baseline | Relevant chunks rank ahead of weak lexical or noisy matches on the fixed benchmark set |
 | Context-retention harness | We need to localize context loss before Stage 5 benchmark failures become opaque | QA / Evaluation / Red Team | `docs/v2/context-retention-harness.md`, `eval/context-harness-schema.yaml`, `eval/context_harness_report.py`, `data/manifests/generated/stage10-suite-report.json` | implemented through Stage 10 evidence | A failing turn can be classified as retrieval miss, rerank loss, assembly loss, citation loss, or version drift |
@@ -35,9 +35,9 @@ The goal is to make it obvious which requirements are already defined, which are
 | Citation click-through | Clicking a citation must open a real readable document | UI / UX Engineer | `docs/v2/architecture-blueprint.md`, `ingest/normalize_openshift_docs.py` | defined with generated HTML targets | A cited source resolves to a human-readable HTML document or section target |
 | Multi-turn memory and follow-up rewrite | Feedback requires grounded continuity across more than one turn | LLM Serving / Backend Engineer | `docs/v2/multiturn-memory-plan.md`, `app/multiturn_memory.py`, `eval/benchmarks/p0_multiturn_scenarios.json`, `eval/multiturn_rewrite_report.py` | implemented for Stage 7 baseline | Session memory, rewrite rules, and 5-turn scenarios are defined and replayable |
 | Company-approved model usage | The runtime must not drift to local or public providers | LLM Serving / Backend Engineer | `.env`, `app/runtime_config.py`, `app/opendocuments_openai_bridge.py`, `docs/v2/company-runtime-lock.md`, `deployment/check_runtime_contract.py` | implemented for Stage 8 baseline | Runtime only uses env-driven approved endpoint settings and local fallback is opt-in |
-| Streaming response | OpenDocuments behavior and user experience expect streaming output | LLM Serving / Backend Engineer | `docs/v2/architecture-blueprint.md` | planned | Chat answers stream to the client in chunks |
+| Streaming response | OpenDocuments behavior and user experience expect streaming output | LLM Serving / Backend Engineer | `docs/v2/architecture-blueprint.md`, `app/opendocuments_openai_bridge.py`, `docs/v2/company-runtime-lock.md` | implemented in the bridge baseline | Chat answers stream through the approved bridge path in chunks |
 | Air-gapped update loop | The system must survive document refreshes in a closed network | OCP / Air-gapped Infrastructure Engineer | `deployment/airgap-flow.md`, `deployment/bundle-schema.yaml` | defined | Approved bundle import and rollback are documented and repeatable |
-| Evaluation and red-team | We need measurable acceptance, not intuition | QA / Evaluation / Red Team | `docs/v2/evaluation-spec.md`, `eval/benchmarks/p0_red_team_cases.jsonl`, `eval/stage10_red_team_report.py`, `eval/stage10_suite.py`, `docs/v2/stage10-evaluation-report.md` | implemented with Stage 10 no-go decision | Baseline dataset, pass criteria, and blockers are documented in a reproducible suite report |
+| Evaluation and red-team | We need measurable acceptance, not intuition | QA / Evaluation / Red Team | `docs/v2/evaluation-spec.md`, `eval/benchmarks/p0_red_team_cases.jsonl`, `eval/stage10_red_team_report.py`, `eval/stage10_suite.py`, `docs/v2/stage10-evaluation-report.md` | implemented with Stage 10 go decision | Baseline dataset, pass criteria, policy-prepared retrieval notes, and blockers are documented in a reproducible suite report |
 | OCP operations usefulness | The product must solve real install, upgrade, and troubleshooting questions | OCP Operations SME | `docs/v2/evaluation-spec.md` | defined | Scenario coverage includes install, update, disconnected, and troubleshooting |
 | Multi-repo workspace discipline | The product repo, OpenDocuments, and openshift-docs must evolve together without mixing Git histories | Lead Architect / PM | `docs/v2/workspace-guide.md` | defined | Team members can work across the three repositories without ownership confusion |
 
@@ -47,15 +47,18 @@ The goal is to make it obvious which requirements are already defined, which are
 - initial source boundary policy
 - metadata contract
 - answer grounding policy
-- air-gap bundle direction
+- OpenDocuments ingestion validation on the normalized P0 corpus
+- Stage 9 policy-shaped retrieval benchmark on the fixed dataset
 - Stage 10 evaluation and red-team execution path
+- validation-slice follow-up analysis for `RB-011`
+- air-gap bundle direction
 
 ## What still needs implementation
 
 - section-aware chunk generation
-- OpenDocuments ingestion validation using the normalized P0 corpus
+- live runtime wiring for the validated policy and memory path
 - Stage 11 approved air-gap refresh loop
-- follow-up retrieval fix for `RB-011`
+- Stage 12 minimal operator-facing UI improvements
 
 ## Interpretation rule
 

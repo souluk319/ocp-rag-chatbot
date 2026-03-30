@@ -89,6 +89,64 @@ def build_citations(ranked_candidates: list[dict[str, Any]], max_sources: int = 
     return citations
 
 
+def build_scenario_memory_state(
+    signals: Any,
+    top_candidate: dict[str, Any],
+    memory_state: dict[str, Any],
+) -> dict[str, Any]:
+    active_source_dirs = list(signals.preferred_source_dirs)
+    if not active_source_dirs and top_candidate.get("source_dir"):
+        active_source_dirs = [top_candidate.get("source_dir", "")]
+
+    active_categories = list(signals.preferred_categories)
+    if not active_categories and top_candidate.get("effective_category"):
+        active_categories = [top_candidate.get("effective_category", "")]
+
+    return {
+        "active_source_dirs": active_source_dirs,
+        "active_categories": active_categories,
+        "active_version": top_candidate.get("version", memory_state.get("active_version", "")),
+        "active_document_path": top_candidate.get("document_path", memory_state.get("active_document_path", "")),
+    }
+
+
+def rerank_prepared_retrieval(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    ordered = sorted(
+        [dict(candidate) for candidate in candidates],
+        key=lambda item: (-float(item.get("score", 0.0)), int(item.get("rank", 999999))),
+    )
+    for index, candidate in enumerate(ordered, start=1):
+        candidate["rank"] = index
+    return ordered
+
+
+def extract_raw_retrieval_view(report: dict[str, Any]) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
+    summary = report.get("summary", {})
+    raw_summary = {
+        key: summary.get(key)
+        for key in (
+            "case_count",
+            "invalid_result_count",
+            "missing_case_count",
+            "source_dir_hit@3",
+            "source_dir_hit@5",
+            "supporting_doc_hit@5",
+            "supporting_doc_hit@10",
+            "retrieval_supporting_doc_hit@5",
+            "query_class_distribution",
+        )
+    }
+
+    raw_by_query_class: dict[str, dict[str, Any]] = {}
+    for query_class, values in report.get("by_query_class", {}).items():
+        raw_by_query_class[query_class] = {
+            "case_count": values.get("case_count", 0),
+            "source_dir_hit@5": values.get("source_dir_hit@5", 0.0),
+            "supporting_doc_hit@10": values.get("supporting_doc_hit@10", 0.0),
+        }
+    return raw_summary, raw_by_query_class
+
+
 def main() -> None:
     args = parse_args()
     cases_raw = load_records(args.cases)
@@ -113,11 +171,26 @@ def main() -> None:
         enriched_candidates = [
             enrich_candidate(candidate, manifest_index) for candidate in raw_result.get("retrieval_candidates", [])
         ]
-        reranked_candidates, signals = policy_engine.rerank_candidates(
+        query_signals = policy_engine.analyze_query(
             case["question_ko"],
-            enriched_candidates,
             mode=args.mode,
             memory_state=memory_state,
+        )
+        prepared_candidates, query_signals = policy_engine.augment_follow_up_candidates(
+            case["question_ko"],
+            enriched_candidates,
+            manifest_index=manifest_index,
+            mode=args.mode,
+            memory_state=memory_state,
+            signals=query_signals,
+        )
+        prepared_candidates = rerank_prepared_retrieval(prepared_candidates)
+        reranked_candidates, signals = policy_engine.rerank_candidates(
+            case["question_ko"],
+            prepared_candidates,
+            mode=args.mode,
+            memory_state=memory_state,
+            signals=query_signals,
         )
         citations = build_citations(reranked_candidates)
         answer_contract = policy_engine.build_answer_contract(
@@ -129,17 +202,14 @@ def main() -> None:
         )
 
         top_candidate = reranked_candidates[0] if reranked_candidates else {}
-        scenario_memory[scenario_id] = {
-            "active_source_dirs": [top_candidate.get("source_dir", "")] if top_candidate.get("source_dir") else [],
-            "active_categories": [top_candidate.get("category", "")] if top_candidate.get("category") else [],
-            "active_version": top_candidate.get("version", memory_state.get("active_version", "")),
-            "active_document_path": top_candidate.get("document_path", memory_state.get("active_document_path", "")),
-        }
+        scenario_memory[scenario_id] = build_scenario_memory_state(signals, top_candidate, memory_state)
 
         policy_results.append(
             {
                 "benchmark_case_id": case_id,
-                "retrieval_candidates": enriched_candidates,
+                "raw_retrieval_candidates": enriched_candidates,
+                "policy_prepared_candidates": prepared_candidates,
+                "retrieval_candidates": prepared_candidates,
                 "reranked_candidates": reranked_candidates,
                 "citations": citations,
                 "grounded_answer": bool(citations),
@@ -150,8 +220,22 @@ def main() -> None:
         )
 
     report = summarize_by_case(case_map, policy_results)
+    raw_results = []
+    for record in policy_results:
+        raw_record = dict(record)
+        raw_record["retrieval_candidates"] = record.get("raw_retrieval_candidates", [])
+        raw_results.append(raw_record)
+    raw_report = summarize_by_case(case_map, raw_results)
+    raw_summary, raw_by_query_class = extract_raw_retrieval_view(raw_report)
     report["policy_mode"] = args.mode
     report["policy_result_count"] = len(policy_results)
+    report["summary_basis"] = "policy_prepared_candidates"
+    report["summary_note"] = (
+        "The Stage 9 summary metrics are computed on policy-prepared retrieval candidates after memory-aware "
+        "augmentation. Raw baseline retrieval recall is preserved separately for diagnostics."
+    )
+    report["raw_retrieval_summary"] = raw_summary
+    report["raw_retrieval_by_query_class"] = raw_by_query_class
 
     if args.output_results:
         args.output_results.write_text(

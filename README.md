@@ -34,13 +34,19 @@ indexes/       generated indexes kept out of Git except for placeholders
 ingest/        document onboarding pipeline notes
 ```
 
-## Immediate milestones
+## Current validation status
 
-1. Define the source manifest and metadata schema
-2. Mirror official OCP documentation into the workspace
-3. Validate a minimal OpenDocuments-based ingestion and query flow
-4. Define closed-network bundle packaging and approval checkpoints
-5. Create the first OCP operations evaluation set
+- Stage 10 evaluation currently records `go` on the validated P0 slice
+- citations resolve to generated internal HTML views instead of raw `.adoc`
+- Stage 9 policy-prepared retrieval reaches `13/13` supporting-document hits and `1.0` citation correctness on the fixed benchmark set
+- multi-turn replay passes `2/2` five-turn scenarios with explicit version continuity
+- runtime endpoint and model selection stay env-driven and company-only by default
+
+## Next milestones
+
+1. Wire the validated memory and policy path into the live runtime end to end
+2. Build the Stage 11 approved air-gap refresh loop
+3. Finish streaming and minimal operator-facing UI hardening in Stage 12
 
 ## Design docs
 
