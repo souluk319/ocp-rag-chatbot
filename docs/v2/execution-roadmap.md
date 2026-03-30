@@ -44,7 +44,7 @@ Only one stage should be treated as the active implementation focus at a time.
 - Stage 8: complete
 - Stage 9: complete
 - Stage 10: complete (`go` for widening scope on the validated slice)
-- Stage 11: preflight complete (`ready_for_stage11 = true`); activation warning remains for `indexes/current.txt`
+- Stage 11: front half implemented and locally verified (`build -> approve -> validate -> stage`); activation warning remains for `indexes/current.txt`
 
 ## Stage 0. Freeze the rewrite baseline
 
@@ -622,6 +622,7 @@ The current preflight report lives in:
 Current state:
 
 - `ready_for_stage11 = true`
+- Stage 11 front-half dry-run is verified on `stage11-local-seed`
 - first-bundle activation warning remains for `indexes/current.txt`
 
 ## Stage 12. Touch UI last

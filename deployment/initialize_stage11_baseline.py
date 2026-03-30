@@ -4,17 +4,17 @@ import argparse
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+import sys
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from deployment.stage11_bundle_utils import current_manifest_documents, load_json, repo_relative, write_json
 
 
 def repo_root() -> Path:
-    return Path(__file__).resolve().parents[1]
-
-
-def repo_relative(path: Path) -> str:
-    try:
-        return str(path.resolve().relative_to(repo_root().resolve()))
-    except ValueError:
-        return str(path)
+    return REPO_ROOT
 
 
 def parse_args() -> argparse.Namespace:
@@ -24,30 +24,26 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--manifest",
         type=Path,
-        default=repo_root() / "data" / "manifests" / "generated" / "openshift-docs-p0.json",
+        default=REPO_ROOT / "data" / "manifests" / "generated" / "openshift-docs-p0.json",
     )
     parser.add_argument(
         "--suite-report",
         type=Path,
-        default=repo_root() / "data" / "manifests" / "generated" / "stage10-suite-report.json",
+        default=REPO_ROOT / "data" / "manifests" / "generated" / "stage10-suite-report.json",
     )
     parser.add_argument(
         "--baseline",
         type=Path,
-        default=repo_root() / "data" / "manifests" / "approved-baseline.json",
+        default=REPO_ROOT / "data" / "manifests" / "approved-baseline.json",
     )
     parser.add_argument(
         "--index-pointer",
         type=Path,
-        default=repo_root() / "indexes" / "current.txt",
+        default=REPO_ROOT / "indexes" / "current.txt",
     )
     parser.add_argument("--active-index-id", default="")
     parser.add_argument("--force", action="store_true")
     return parser.parse_args()
-
-
-def load_json(path: Path) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def is_placeholder_baseline(payload: dict) -> bool:
@@ -61,6 +57,7 @@ def utc_now() -> str:
 def main() -> None:
     args = parse_args()
     manifest = load_json(args.manifest)
+    manifest_documents = current_manifest_documents(manifest)
     suite_report = load_json(args.suite_report)
     existing = load_json(args.baseline) if args.baseline.exists() else {}
 
@@ -74,6 +71,7 @@ def main() -> None:
     baseline_payload = {
         "baseline_id": f"approved-{manifest.get('manifest_id', 'unknown')}",
         "manifest_id": manifest.get("manifest_id", ""),
+        "normalized_manifest_path": repo_relative(args.manifest),
         "source_id": manifest.get("source_id", ""),
         "approved_at": utc_now(),
         "stage10_overall_decision": suite_report.get("overall_decision", ""),
@@ -84,14 +82,13 @@ def main() -> None:
         "activation_smoke_set": repo_relative(repo_root() / "deployment" / "activation-smoke-case-ids.json"),
         "active_index_id": active_index_id or None,
         "notes": [],
+        "documents": manifest_documents,
     }
     if not active_index_id:
         baseline_payload["notes"].append(
             "Seed indexes/current.txt with a real validated local index id before starting Stage 11 activation work."
         )
-
-    args.baseline.parent.mkdir(parents=True, exist_ok=True)
-    args.baseline.write_text(json.dumps(baseline_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    write_json(args.baseline, baseline_payload)
 
     if active_index_id:
         args.index_pointer.parent.mkdir(parents=True, exist_ok=True)

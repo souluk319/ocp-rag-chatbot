@@ -28,7 +28,19 @@ Stage 11 should only start after two things are true:
 - `data/staging/.gitkeep`
 - `indexes/previous.txt`
 
-These assets do not implement the full bundle flow yet. They establish the minimum contract needed to start Stage 11 without guessing.
+These assets no longer stop at preflight. The repository now implements the Stage 11 front half:
+
+- outbound bundle build
+- approval record update
+- inbound validation
+- staging for indexing
+
+The remaining gap is the back half:
+
+- reindex
+- smoke before cutover
+- activation pointer update
+- rollback drill
 
 ## Repository-side prerequisites
 
@@ -74,6 +86,23 @@ Run the Stage 11 readiness check:
 python deployment/check_stage11_readiness.py
 ```
 
+Run the verified local front-half dry-run:
+
+```powershell
+python deployment/build_outbound_bundle.py --mode seed --bundle-id stage11-local-seed --force
+python deployment/approve_bundle.py --bundle data/packages/outbound/stage11-local-seed --status approved --reviewer codex-local
+python deployment/validate_bundle.py data/packages/outbound/stage11-local-seed --require-approved
+Copy-Item -Recurse -Force data/packages/outbound/stage11-local-seed data/packages/inbound/stage11-local-seed
+python deployment/validate_bundle.py data/packages/inbound/stage11-local-seed --require-approved
+python deployment/stage_bundle_for_indexing.py data/packages/inbound/stage11-local-seed --force
+```
+
 ## Interpretation
 
-If readiness passes with only the `indexes/current.txt` warning left, Stage 11 can start but the final activation cutover is not yet production-safe.
+If readiness passes with only the `indexes/current.txt` warning left, Stage 11 can start and the front-half bundle path can be exercised safely.
+
+It is still not production-safe for cutover until:
+
+- a real local index id seeds `indexes/current.txt`
+- reindex and smoke are recorded against a staged bundle
+- activation and rollback evidence exist

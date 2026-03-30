@@ -10,12 +10,18 @@ Current contents cover:
 - bundle layout, manifest lineage, and index activation contracts
 - operator runbook and baseline seed helper for the first approved refresh cycle
 - Stage 11 readiness preflight
+- Stage 11 front-half bundle build, approval, validation, and staging scripts
 
 Key entry points:
 
 - `deployment/check_runtime_contract.py`
 - `deployment/check_stage11_readiness.py`
 - `deployment/initialize_stage11_baseline.py`
+- `deployment/build_outbound_bundle.py`
+- `deployment/approve_bundle.py`
+- `deployment/validate_bundle.py`
+- `deployment/stage_bundle_for_indexing.py`
+- `deployment/stage11_bundle_utils.py`
 - `deployment/activation-smoke-case-ids.json`
 - `deployment/airgap-flow.md`
 - `deployment/bundle-schema.yaml`

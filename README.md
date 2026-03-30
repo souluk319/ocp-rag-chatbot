@@ -41,11 +41,13 @@ ingest/        document onboarding pipeline notes
 - Stage 9 policy-prepared retrieval reaches `13/13` supporting-document hits and `1.0` citation correctness on the fixed benchmark set
 - multi-turn replay passes `2/2` five-turn scenarios with explicit version continuity
 - runtime endpoint and model selection stay env-driven and company-only by default
+- Stage 11 front-half dry-run passes for `build -> approve -> validate -> stage` on the validated seed bundle
+- Stage 11 delta diff path also validates cleanly when the approved baseline and normalized manifest are identical
 
 ## Next milestones
 
 1. Wire the validated memory and policy path into the live runtime end to end
-2. Build the Stage 11 approved air-gap refresh loop
+2. Finish Stage 11 back-half work: reindex, smoke, activate, and rollback evidence
 3. Finish streaming and minimal operator-facing UI hardening in Stage 12
 
 ## Design docs
@@ -53,6 +55,7 @@ ingest/        document onboarding pipeline notes
 - `docs/v2/architecture-blueprint.md`
 - `docs/v2/execution-roadmap.md`
 - `docs/v2/stage11-readiness.md`
+- `docs/v2/stage11-front-half-report.md`
 - `docs/v2/chunking-contract.md`
 - `docs/v2/context-retention-harness.md`
 - `docs/v2/company-runtime-lock.md`
@@ -74,7 +77,7 @@ ingest/        document onboarding pipeline notes
 - `rewrite/opendoc-v2` is the only branch for this rewrite
 - Do not reintroduce the v1 runtime into this branch
 
-## Stage 11 preflight
+## Stage 11 preflight and local dry-run
 
 Before Stage 11 activation work starts, initialize the approved baseline and run the readiness gate:
 
@@ -84,3 +87,14 @@ python deployment/check_stage11_readiness.py
 ```
 
 The current expected result is `ready_for_stage11 = true` with a warning that `indexes/current.txt` is still uninitialized. That warning is acceptable for starting Stage 11, but it must be closed before the first real activation cutover.
+
+The currently verified local Stage 11 front-half flow is:
+
+```powershell
+python deployment/build_outbound_bundle.py --mode seed --bundle-id stage11-local-seed --force
+python deployment/approve_bundle.py --bundle data/packages/outbound/stage11-local-seed --status approved --reviewer codex-local
+python deployment/validate_bundle.py data/packages/outbound/stage11-local-seed --require-approved
+Copy-Item -Recurse -Force data/packages/outbound/stage11-local-seed data/packages/inbound/stage11-local-seed
+python deployment/validate_bundle.py data/packages/inbound/stage11-local-seed --require-approved
+python deployment/stage_bundle_for_indexing.py data/packages/inbound/stage11-local-seed --force
+```
