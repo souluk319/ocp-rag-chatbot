@@ -35,6 +35,42 @@ Pass expectation for the first working slice:
 - the correct source family appears in the retrieved set for the baseline questions
 - the answer does not rely on unsupported claims
 
+### Track A1. Retrieval benchmark
+
+This track exists specifically to answer the "vector search quality is unproven" feedback.
+
+Required query classes:
+
+- install and prerequisites
+- upgrade and update
+- disconnected environment
+- troubleshooting and recovery
+- networking and node health
+- version-sensitive questions
+- follow-up questions rewritten from prior turns
+
+Required metrics:
+
+- `source_dir_hit@3`
+- `source_dir_hit@5`
+- `supporting_doc_hit@5`
+- `supporting_doc_hit@10`
+- `citation_correctness`
+- `rerank_lift@5`
+
+Recommended first-slice gates:
+
+- `source_dir_hit@5 >= 0.85`
+- `supporting_doc_hit@10 >= 0.75`
+- `citation_correctness >= 0.90` on grounded answers
+- reranking must improve or at least not regress the ambiguous-query subset
+
+Benchmark reporting should compare:
+
+- dense retrieval only
+- retrieval plus rerank
+- query class by query class results
+
 ### Track B. Citation accuracy
 
 Checks:
@@ -126,6 +162,24 @@ Pass expectation for the first working slice:
 
 - one approved refresh cycle can be repeated without ambiguous state
 
+### Track I. Multi-turn continuity
+
+This track exists specifically to answer the "multi-turn behavior is weak" feedback.
+
+Checks:
+
+- at least 5 turns remain on the same grounded topic unless the user changes it
+- follow-up questions can be rewritten into retrieval-ready standalone questions
+- version context remains stable across turns
+- citation continuity is preserved across related follow-up turns
+- the system admits when prior turns are insufficient to ground the next answer
+
+Pass expectation for the first working slice:
+
+- 5-turn scenarios stay grounded
+- version drift does not occur silently
+- follow-up turns still produce valid citations
+
 ## Baseline scenario groups
 
 The first baseline dataset must include at least these groups:
@@ -138,6 +192,8 @@ The first baseline dataset must include at least these groups:
 6. troubleshooting and operator recovery
 7. version-sensitive follow-up questions
 8. citation click-through checks
+9. retrieval benchmark queries by class
+10. 5-turn multi-turn scenarios
 
 ## Baseline question format
 
@@ -149,10 +205,13 @@ Each evaluation item should record:
 - `expected_source_dirs`
 - `expected_category`
 - `expected_version_behavior`
+- `expected_query_class`
+- `expected_memory_behavior`
 - `must_include_terms`
 - `must_not_include_terms`
 - `citation_required`
 - `click_through_required`
+- `turn_index`
 - `notes`
 
 ## Minimum release gate for the first working slice
@@ -165,6 +224,8 @@ The first working slice is acceptable only if all of the following are true:
 4. every citation opens a real document path
 5. the baseline questions do not show obvious OSD, ROSA, or MicroShift contamination
 6. the system does not silently mix incompatible OCP version guidance
+7. retrieval benchmark meets the first-slice gate
+8. 5-turn multi-turn scenarios stay grounded
 
 ## Red-team checks
 
@@ -176,6 +237,7 @@ The initial red-team set should include:
 - questions that ask for unsafe certainty when the source is incomplete
 - follow-up questions that rely on previous context
 - high-risk change questions that should trigger caution language
+- follow-up questions that intentionally try to cause topic drift
 
 ## Ownership
 

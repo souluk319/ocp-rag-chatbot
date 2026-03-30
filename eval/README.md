@@ -8,6 +8,8 @@ Planned contents:
 - expected answer guidance
 - citation checks
 - version correctness checks
+- retrieval benchmark datasets and result summaries
+- multi-turn scenario datasets
 - red-team prompts for unsafe or weakly grounded answers
 
 The controlling evaluation document is:

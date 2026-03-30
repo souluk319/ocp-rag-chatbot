@@ -30,7 +30,8 @@ Build a closed-network OCP operations assistant that:
 
 - connect the local OpenDocuments workspace
 - ingest a small OCP subset
-- confirm citation behavior and Korean query handling
+- confirm citation behavior, retrieval benchmark behavior, and Korean query handling
+- confirm 5-turn multi-turn handling on the same subset
 
 ## Phase 3: Add OCP-specific policies
 
@@ -38,6 +39,7 @@ Build a closed-network OCP operations assistant that:
 - version preference rules
 - operations mode and study mode
 - conservative answer rules when evidence is incomplete
+- multi-turn memory and follow-up rewrite rules
 
 ## Phase 4: Closed-network refresh flow
 
@@ -49,5 +51,6 @@ Build a closed-network OCP operations assistant that:
 ## Phase 5: Evaluation
 
 - define OCP operations questions
-- verify answer quality, source grounding, and version correctness
+- verify answer quality, source grounding, retrieval benchmark metrics, and version correctness
+- verify multi-turn continuity and follow-up rewrite behavior
 - add red-team scenarios before production use

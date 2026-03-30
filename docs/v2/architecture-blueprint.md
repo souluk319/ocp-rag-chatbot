@@ -141,6 +141,46 @@ The required shape is:
 
 This design keeps retrieval chunks and citation targets aligned to the same source structure.
 
+### 7.2 Chunking strategy requirements
+
+Chunking must be explicit in the design, not left to an implicit library default.
+
+The default rules are:
+
+- chunk unit starts at the section or subsection level
+- chunk boundaries must respect heading hierarchy
+- long sections may split further, but should keep a small overlap for continuity
+- ordered procedures should stay intact whenever possible
+- fenced code blocks should be separated from prose but retain nearby explanatory context
+- chunk metadata must preserve section identity for citation click-through
+
+The first chunking contract should include:
+
+- target size range for prose chunks
+- overlap rule for split sections
+- chunk types such as `prose`, `procedure`, `code`, and `reference`
+- required metadata such as `section_title`, `heading_hierarchy`, `position`, and `viewer_url`
+
+### 7.3 Multi-turn context flow
+
+Multi-turn behavior is a product requirement, not a later enhancement.
+
+The system should support grounded follow-up turns by:
+
+1. storing session-local turn history
+2. classifying each new turn as standalone or follow-up
+3. rewriting follow-up turns into a standalone retrieval query when needed
+4. preserving version context unless the user explicitly changes it
+5. preserving citation continuity across related turns
+
+The design goal is grounded continuity, not unrestricted memory growth.
+
+The first implementation should prefer:
+
+- a bounded session memory window
+- explicit follow-up rewrite logic
+- conservative behavior when the prior turn does not contain enough grounding
+
 ## 8. Why `.adoc` Matters
 
 The `openshift-docs` repository stores the documentation source in AsciiDoc.
@@ -327,10 +367,11 @@ We should not start by translating the entire corpus.
 6. emit stable manifests into `data/manifests/`
 7. define bundle format for air-gap transfer
 8. run a minimal OpenDocuments indexing and query validation on the normalized subset
-9. define the first evaluation questions
-10. add version-aware and source-aware retrieval improvements
-11. build citation click-through behavior
-12. automate the approved document update loop
+9. define the first retrieval benchmark and evaluation questions
+10. define multi-turn session and follow-up rewrite rules
+11. add version-aware and source-aware retrieval improvements
+12. build citation click-through behavior
+13. automate the approved document update loop
 
 ## 15. Immediate Deliverables
 
@@ -350,7 +391,10 @@ The first slice is successful only if:
 - selected `openshift-docs` directories can be normalized into indexable files
 - manifest output is reproducible
 - OpenDocuments can index the normalized subset
+- chunk boundaries are section-aware and citation-safe
 - Korean questions can be answered from that subset
+- retrieval quality is measured on a fixed benchmark set
+- 5-turn follow-up scenarios remain grounded
 - answers include citations
 - citations point to a real document path
 
