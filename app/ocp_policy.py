@@ -160,6 +160,12 @@ class OcpPolicyEngine:
         memory_state = memory_state or {}
         signals = signals or self.analyze_query(question_ko, mode=mode, memory_state=memory_state)
         augmented = [dict(candidate) for candidate in candidates]
+        augmented = self._augment_manifest_hint_candidates(
+            augmented,
+            manifest_index=manifest_index,
+            signals=signals,
+            memory_state=memory_state,
+        )
 
         if not signals.follow_up_detected:
             return augmented, signals
@@ -199,6 +205,99 @@ class OcpPolicyEngine:
             }
         )
         return augmented, signals
+
+    def _augment_manifest_hint_candidates(
+        self,
+        candidates: list[dict[str, Any]],
+        *,
+        manifest_index: dict[str, dict[str, Any]],
+        signals: QuerySignals,
+        memory_state: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        if not manifest_index:
+            return candidates
+
+        preferred_source_dirs = {str(item).strip().lower() for item in signals.preferred_source_dirs if item}
+        preferred_categories = {str(item).strip().lower() for item in signals.preferred_categories if item}
+        normalized_path_terms = [_normalize_text(term) for term in signals.path_terms if _normalize_text(term)]
+        if not (preferred_source_dirs or preferred_categories or normalized_path_terms):
+            return candidates
+
+        scan_limit = max(int(self.retrieval.get("manifest_hint_scan_limit", 5)), 1)
+        top_candidates = candidates[:scan_limit]
+        top_source_dirs = {
+            str(candidate.get("source_dir") or candidate.get("top_level_dir", "")).strip().lower()
+            for candidate in top_candidates
+            if candidate.get("source_dir") or candidate.get("top_level_dir")
+        }
+        top_categories = {
+            self.effective_category(candidate).strip().lower()
+            for candidate in top_candidates
+            if self.effective_category(candidate)
+        }
+        top_path_hits = max(
+            (self._count_candidate_path_term_hits(candidate, normalized_path_terms) for candidate in top_candidates),
+            default=0,
+        )
+
+        rescue_needed = False
+        if preferred_source_dirs and not (top_source_dirs & preferred_source_dirs):
+            rescue_needed = True
+        elif preferred_categories and not (top_categories & preferred_categories):
+            rescue_needed = True
+        elif normalized_path_terms and top_path_hits == 0:
+            rescue_needed = True
+
+        if not rescue_needed:
+            return candidates
+
+        existing_paths = {_normalize_path(str(candidate.get("document_path", ""))) for candidate in candidates}
+        base_score = self._manifest_hint_base_score(candidates)
+        hint_limit = max(int(self.retrieval.get("manifest_hint_limit", 2)), 1)
+        hint_candidates: list[dict[str, Any]] = []
+
+        for document_path, manifest_doc in manifest_index.items():
+            normalized_document_path = _normalize_path(document_path)
+            if normalized_document_path in existing_paths:
+                continue
+
+            score, breakdown = self._manifest_hint_score(
+                manifest_doc,
+                preferred_source_dirs=preferred_source_dirs,
+                preferred_categories=preferred_categories,
+                normalized_path_terms=normalized_path_terms,
+                memory_state=memory_state,
+                base_score=base_score,
+            )
+            if score <= 0.0:
+                continue
+
+            hint_candidates.append(
+                {
+                    "rank": len(candidates) + len(hint_candidates) + 1,
+                    "source_dir": manifest_doc.get("top_level_dir", ""),
+                    "document_path": normalized_document_path,
+                    "viewer_url": manifest_doc.get("viewer_url", ""),
+                    "score": score,
+                    "section_title": self._select_manifest_section_title(manifest_doc, normalized_path_terms),
+                    "title": manifest_doc.get("title", ""),
+                    "product": manifest_doc.get("product", ""),
+                    "version": manifest_doc.get("version", ""),
+                    "category": manifest_doc.get("category", ""),
+                    "trust_level": manifest_doc.get("trust_level", ""),
+                    "top_level_dir": manifest_doc.get("top_level_dir", ""),
+                    "retrieval_origin": "policy_manifest_hint",
+                    "policy_hint_breakdown": breakdown,
+                }
+            )
+
+        hint_candidates.sort(
+            key=lambda item: (
+                -float(item.get("score", 0.0)),
+                _normalize_path(str(item.get("document_path", ""))),
+            )
+        )
+        return candidates + hint_candidates[:hint_limit]
 
     def build_answer_contract(
         self,
@@ -409,6 +508,102 @@ class OcpPolicyEngine:
             return True
         return not signals.preferred_source_dirs and not signals.preferred_categories
 
+    def _manifest_hint_score(
+        self,
+        manifest_doc: dict[str, Any],
+        *,
+        preferred_source_dirs: set[str],
+        preferred_categories: set[str],
+        normalized_path_terms: list[str],
+        memory_state: dict[str, Any],
+        base_score: float,
+    ) -> tuple[float, dict[str, float]]:
+        top_level_dir = str(manifest_doc.get("top_level_dir", "")).strip().lower()
+        effective_category = self.effective_category(
+            {
+                "category": manifest_doc.get("category", ""),
+                "document_path": manifest_doc.get("source_url", ""),
+                "source_dir": top_level_dir,
+                "top_level_dir": top_level_dir,
+            }
+        ).strip().lower()
+        path_term_hits = self._count_manifest_path_term_hits(manifest_doc, normalized_path_terms)
+        source_dir_match = bool(top_level_dir and top_level_dir in preferred_source_dirs)
+        category_match = bool(effective_category and effective_category in preferred_categories)
+
+        if path_term_hits == 0 and not source_dir_match and not category_match:
+            return 0.0, {}
+
+        breakdown: dict[str, float] = {"base_score": round(base_score, 6)}
+        score = base_score
+
+        if source_dir_match:
+            score += 0.006
+            breakdown["source_dir_match"] = 0.006
+        if category_match:
+            score += 0.003
+            breakdown["category_match"] = 0.003
+        if path_term_hits:
+            path_boost = min(path_term_hits, 4) * 0.004
+            score += path_boost
+            breakdown["path_term_hits"] = round(path_boost, 6)
+
+        active_source_dirs = {str(item).strip().lower() for item in memory_state.get("active_source_dirs", []) if item}
+        if top_level_dir and top_level_dir in active_source_dirs:
+            score += 0.002
+            breakdown["memory_source_dir"] = 0.002
+
+        return round(min(score, 0.999999), 6), breakdown
+
+    def _count_manifest_path_term_hits(self, manifest_doc: dict[str, Any], normalized_path_terms: list[str]) -> int:
+        searchable_parts = [
+            str(manifest_doc.get("title", "")),
+            str(manifest_doc.get("source_url", "")),
+            str(manifest_doc.get("local_path", "")),
+            str(manifest_doc.get("viewer_url", "")),
+        ]
+        searchable_parts.extend(str(section.get("section_title", "")) for section in (manifest_doc.get("sections", []) or []))
+        searchable_text = _normalize_text(" ".join(searchable_parts))
+        return sum(1 for term in normalized_path_terms if term and term in searchable_text)
+
+    def _count_candidate_path_term_hits(self, candidate: dict[str, Any], normalized_path_terms: list[str]) -> int:
+        searchable_text = _normalize_text(
+            " ".join(
+                [
+                    str(candidate.get("title", "")),
+                    str(candidate.get("document_path", "")),
+                    str(candidate.get("section_title", "")),
+                ]
+            )
+        )
+        return sum(1 for term in normalized_path_terms if term and term in searchable_text)
+
+    def _select_manifest_section_title(self, manifest_doc: dict[str, Any], normalized_path_terms: list[str]) -> str:
+        sections = manifest_doc.get("sections", []) or []
+        if not sections:
+            return ""
+        if not normalized_path_terms:
+            return str(sections[0].get("section_title", ""))
+
+        best_title = str(sections[0].get("section_title", ""))
+        best_hits = -1
+        for section in sections:
+            title = str(section.get("section_title", ""))
+            searchable_text = _normalize_text(
+                " ".join(
+                    [
+                        title,
+                        str(section.get("section_anchor", "")),
+                        " ".join(section.get("heading_hierarchy", []) or []),
+                    ]
+                )
+            )
+            hits = sum(1 for term in normalized_path_terms if term and term in searchable_text)
+            if hits > best_hits:
+                best_hits = hits
+                best_title = title
+        return best_title
+
     def _extract_version(self, question_ko: str) -> str:
         match = VERSION_PATTERN.search(question_ko)
         return match.group(1) if match else ""
@@ -439,6 +634,17 @@ class OcpPolicyEngine:
         ceiling = max(numeric_scores)
         floor = min(numeric_scores)
         return round(max(ceiling * 0.97, floor * 1.05, 0.05), 6)
+
+    @staticmethod
+    def _manifest_hint_base_score(candidates: list[dict[str, Any]]) -> float:
+        if not candidates:
+            return 0.35
+        numeric_scores = [float(candidate.get("score", 0.0)) for candidate in candidates if candidate.get("score") is not None]
+        if not numeric_scores:
+            return 0.35
+        ceiling = max(numeric_scores)
+        floor = min(numeric_scores)
+        return round(max(ceiling * 0.94, floor * 1.02, 0.35), 6)
 
 
 @lru_cache(maxsize=1)

@@ -29,6 +29,18 @@ def normalize_path(value: str) -> str:
     return value.replace("\\", "/").strip().lower()
 
 
+def normalize_candidate_document_path(document_path: str, manifest_index: dict[str, dict[str, Any]]) -> str:
+    normalized = normalize_path(document_path)
+    if normalized in manifest_index:
+        return normalized
+    parts = normalized.split("/")
+    if len(parts) >= 2:
+        trimmed = "/".join(parts[1:])
+        if trimmed in manifest_index:
+            return trimmed
+    return normalized
+
+
 def build_manifest_index(manifest_path: Path) -> dict[str, dict[str, Any]]:
     payload = json.loads(manifest_path.read_text(encoding="utf-8"))
     documents = payload.get("documents", []) if isinstance(payload, dict) else payload
@@ -52,7 +64,8 @@ def build_manifest_index(manifest_path: Path) -> dict[str, dict[str, Any]]:
 
 def enrich_candidate(candidate: dict[str, Any], manifest_index: dict[str, dict[str, Any]]) -> dict[str, Any]:
     enriched = dict(candidate)
-    document_path = normalize_path(str(candidate.get("document_path", "")))
+    document_path = normalize_candidate_document_path(str(candidate.get("document_path", "")), manifest_index)
+    enriched["document_path"] = document_path
     manifest_doc = manifest_index.get(document_path, {})
 
     for field in (
@@ -67,7 +80,9 @@ def enrich_candidate(candidate: dict[str, Any], manifest_index: dict[str, dict[s
         if field not in enriched or not enriched.get(field):
             enriched[field] = manifest_doc.get(field, enriched.get(field, ""))
 
-    if not enriched.get("source_dir"):
+    manifest_source_dir = str(manifest_doc.get("top_level_dir", "")).strip()
+    candidate_source_dir = str(enriched.get("source_dir", "")).strip()
+    if manifest_source_dir and normalize_path(candidate_source_dir) != normalize_path(manifest_source_dir):
         enriched["source_dir"] = manifest_doc.get("top_level_dir", "")
 
     sections = manifest_doc.get("sections", [])

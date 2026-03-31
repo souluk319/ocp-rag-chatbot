@@ -84,3 +84,18 @@ python deployment/rollback_index.py --operator codex-local --output data/manifes
 ## 참고
 
 제품 설명은 루트 `README.md` 에서 확인하고, 이 문서는 구현 진행과 단계별 작업 판단 기준을 보는 용도로 사용합니다.
+
+## 2026-03-31 Stage 4 Update
+
+- Stage 4: widened corpus 실패 패턴을 기준으로 retrieval 보정 1차 반영 완료
+- 반영 범위:
+  - `source_dir/document_path` 정합성 복구
+  - manifest 기반 제한적 hint rescue
+  - disconnected/update/certificate/node-health 계열 path term 보강
+- 결과:
+  - raw retrieval 기준 `supporting_doc_hit@10 = 0.2`
+  - policy-prepared retrieval 기준 `supporting_doc_hit@10 = 1.0`
+  - policy-prepared retrieval 기준 `citation_correctness = 1.0`
+- 주의:
+  - Stage 4는 보정 반영 단계이며, widened corpus 품질 게이트 확정은 아니다
+  - 다음 단계인 Stage 5에서 retrieval / citation 회귀 검증을 다시 수행한다

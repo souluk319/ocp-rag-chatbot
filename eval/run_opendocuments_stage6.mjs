@@ -104,6 +104,32 @@ function normalizeSlashes(value) {
   return value.replace(/\\/g, '/')
 }
 
+const KNOWN_TOP_LEVEL_DIRS = new Set([
+  'installing',
+  'post_installation_configuration',
+  'updating',
+  'upgrading',
+  'backup_and_restore',
+  'networking',
+  'security',
+  'storage',
+  'nodes',
+  'operators',
+  'observability',
+  'etcd',
+  'disconnected',
+  'registry',
+  'cli_reference',
+  'support',
+  'authentication',
+  'architecture',
+  'machine_configuration',
+  'machine_management',
+  'web_console',
+  'applications',
+  'cicd',
+])
+
 function collectHtmlFiles(rootDir) {
   const files = []
 
@@ -152,11 +178,21 @@ function mapHtmlSourcePathToAdoc(sourcePath, htmlRoot) {
   return rel.replace(/\.html$/i, '.adoc')
 }
 
+function stripSourcePrefix(documentPath) {
+  const normalized = normalizeSlashes(documentPath).replace(/^\/+/, '')
+  const parts = normalized.split('/').filter(Boolean)
+  if (parts.length >= 2 && !KNOWN_TOP_LEVEL_DIRS.has(parts[0]) && KNOWN_TOP_LEVEL_DIRS.has(parts[1])) {
+    return parts.slice(1).join('/')
+  }
+  return parts.join('/')
+}
+
 function convertCandidate(candidate, htmlRoot, rank) {
+  const documentPath = stripSourcePrefix(mapHtmlSourcePathToAdoc(candidate.sourcePath, htmlRoot))
   return {
     rank,
-    source_dir: normalizeSlashes(mapHtmlSourcePathToAdoc(candidate.sourcePath, htmlRoot)).split('/')[0],
-    document_path: normalizeSlashes(mapHtmlSourcePathToAdoc(candidate.sourcePath, htmlRoot)),
+    source_dir: documentPath.split('/')[0] || '',
+    document_path: documentPath,
     viewer_url: normalizeSlashes(candidate.sourcePath),
     score: candidate.score,
     section_title: Array.isArray(candidate.headingHierarchy) && candidate.headingHierarchy.length > 0

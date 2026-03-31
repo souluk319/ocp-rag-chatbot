@@ -33,6 +33,8 @@ modes:
 
 retrieval:
   base_similarity_multiplier: 100.0
+  manifest_hint_scan_limit: 5
+  manifest_hint_limit: 2
   source_priority:
     official: 100
     internal_runbook: 90
@@ -70,11 +72,11 @@ retrieval:
     mismatch_penalty: 20
     unknown_penalty: 4
   scoring:
-    source_dir_match_boost: 9
-    source_dir_mismatch_penalty: 3
-    category_match_boost: 7
-    category_mismatch_penalty: 2
-    path_term_boost: 1.5
+    source_dir_match_boost: 12
+    source_dir_mismatch_penalty: 4
+    category_match_boost: 8
+    category_mismatch_penalty: 3
+    path_term_boost: 2.0
     memory_source_dir_boost: 8
     memory_category_boost: 4
     memory_document_boost: 6
@@ -85,12 +87,36 @@ retrieval:
       any_terms:
         - 설치
         - install
+      preferred_categories:
+        - install
+      preferred_source_dirs:
+        - installing
+      path_terms:
+        - install
+        - prerequisite
+        - preinstall
+    install_firewall:
+      any_terms:
         - 방화벽
         - firewall
         - 포트
         - domain
         - 도메인
+        - allowlist
+      preferred_categories:
+        - install
+      preferred_source_dirs:
+        - installing
+      path_terms:
+        - firewall
+        - allowlist
+        - port
+        - domain
+        - configuring-firewall
+    install_customizing:
+      any_terms:
         - 커스터마이징
+        - 커스텀
         - customizing
         - customization
       preferred_categories:
@@ -98,11 +124,10 @@ retrieval:
       preferred_source_dirs:
         - installing
       path_terms:
-        - install
-        - firewall
         - customize
-        - prerequisite
         - customizing
+        - customizations
+        - day-1
     disconnected_mirroring:
       any_terms:
         - 폐쇄망
@@ -120,6 +145,7 @@ retrieval:
         - mirror
         - registry
         - oc-mirror
+        - creating-registry
     troubleshooting_node_health:
       any_terms:
         - 노드 상태
@@ -180,6 +206,9 @@ retrieval:
         - api
         - etcd
         - cnf
+        - update-before-the-update
+        - application pods
+        - etcd backup
     certificate_maintenance:
       any_terms:
         - 인증서
