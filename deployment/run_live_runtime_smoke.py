@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import shutil
@@ -205,6 +206,10 @@ def tail_log(path: Path, *, lines: int = 20) -> list[str]:
     return content[-lines:]
 
 
+def normalize_match_text(value: str) -> str:
+    return " ".join(html.unescape(value).lower().split())
+
+
 def wait_for_json(url: str, *, timeout_seconds: float, predicate) -> dict[str, Any]:
     deadline = time.time() + timeout_seconds
     last_error = ""
@@ -284,21 +289,31 @@ def parse_sse(response: requests.Response) -> tuple[list[dict[str, Any]], str, d
     return sources, "".join(answer_parts), done_payload, event_counts
 
 
-def fetch_viewer(session: requests.Session, gateway_base_url: str, viewer_url: str) -> dict[str, Any]:
+def fetch_viewer(session: requests.Session, gateway_base_url: str, source: dict[str, Any]) -> dict[str, Any]:
+    viewer_url = str(source.get("viewer_url", "")).strip()
+    expected_section_title = str(source.get("section_title", "")).strip()
     resolved_url = viewer_url
     if viewer_url.startswith("/"):
         resolved_url = gateway_base_url.rstrip("/") + viewer_url
 
     response = session.get(resolved_url, timeout=30)
     content_type = response.headers.get("content-type", "")
-    body = response.text[:400]
+    body = response.text
+    expected_section_present = True
+    if expected_section_title:
+        expected_section_present = normalize_match_text(expected_section_title) in normalize_match_text(body)
     return {
         "viewer_url": viewer_url,
         "resolved_url": resolved_url,
         "status_code": response.status_code,
         "content_type": content_type,
+        "expected_section_title": expected_section_title,
+        "section_title_present": expected_section_present,
         "html_detected": "<html" in body.lower(),
-        "pass": response.status_code == 200 and "text/html" in content_type.lower() and "<html" in body.lower(),
+        "pass": response.status_code == 200
+        and "text/html" in content_type.lower()
+        and "<html" in body.lower()
+        and expected_section_present,
     }
 
 
@@ -321,9 +336,8 @@ def run_turn(
 
     viewer_checks: list[dict[str, Any]] = []
     for source in sources[:2]:
-        viewer_url = str(source.get("viewer_url", "")).strip()
-        if viewer_url:
-            viewer_checks.append(fetch_viewer(session, gateway_base_url, viewer_url))
+        if str(source.get("viewer_url", "")).strip():
+            viewer_checks.append(fetch_viewer(session, gateway_base_url, source))
 
     return {
         "id": case.get("id", ""),
@@ -337,6 +351,7 @@ def run_turn(
         "event_counts": event_counts,
         "viewer_checks": viewer_checks,
         "session_cookie_present": bool(session.cookies.get("ocp_runtime_session")),
+        "session_cookie_value": session.cookies.get("ocp_runtime_session", ""),
         "pass": bool(sources) and bool(done_payload) and all(check["pass"] for check in viewer_checks),
     }
 
@@ -488,11 +503,22 @@ def main() -> None:
         follow_up_rewrite = str(second_done.get("rewrittenQuery", "")).strip()
         rewrite_contains_last_document = "last_document" in follow_up_rewrite
         viewer_pass = all(check["pass"] for check in first_turn["viewer_checks"] + second_turn["viewer_checks"])
+        same_cookie_value = bool(first_turn["session_cookie_value"]) and first_turn["session_cookie_value"] == second_turn["session_cookie_value"]
         bridge_evidence = wait_for_json(
             f"{bridge_base_url}/evidence",
             timeout_seconds=args.startup_timeout_seconds,
             predicate=lambda payload: isinstance(payload, dict) and payload.get("ok") is True,
         )
+        telemetry = bridge_evidence.get("telemetry", {})
+        bridge_checks = {
+            "bridge_embedding_requests_present": int(telemetry.get("embedding_requests", 0)) > 0,
+            "bridge_chat_requests_present": int(telemetry.get("chat_requests", 0)) > 0,
+            "bridge_upstream_chat_success_present": int(telemetry.get("upstream_chat_success_count", 0)) > 0,
+            "bridge_no_fallback_chat": int(telemetry.get("fallback_chat_count", 0)) == 0,
+            "bridge_last_chat_target_ok": str(telemetry.get("last_chat_target_path", "")) == "/chat/completions",
+            "bridge_embedding_model_match": str(bridge_ready.get("embedding_model", "")) == config.embedding_model,
+            "bridge_embedding_dimensions_match": int(bridge_ready.get("embedding_dimensions", 0)) == vector_dimensions,
+        }
 
         report.update(
             {
@@ -509,10 +535,12 @@ def main() -> None:
                     "first_turn_pass": first_turn["pass"],
                     "second_turn_pass": second_turn["pass"],
                     "same_conversation_id": same_conversation,
+                    "same_session_cookie_value": same_cookie_value,
                     "follow_up_rewrite_contains_last_document": rewrite_contains_last_document,
                     "viewer_click_through_pass": viewer_pass,
                     "gateway_cookie_present_after_turn1": first_turn["session_cookie_present"],
                     "gateway_cookie_present_after_turn2": second_turn["session_cookie_present"],
+                    **bridge_checks,
                 },
             }
         )

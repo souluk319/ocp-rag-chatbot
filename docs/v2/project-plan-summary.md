@@ -163,3 +163,31 @@ python deployment/rollback_index.py --operator codex-local --output data/manifes
   - [stage07-refresh-cycle-summary.json](/C:/Users/soulu/cywell/ocp-rag-chatbot/data/manifests/generated/stage07-refresh-cycle-summary.json)
 - 다음 단계:
   - `8단계. live runtime / viewer / citation 경로 품질 재검증`
+
+## 2026-03-31 Stage 8 Update
+
+- Stage 8: widened corpus 기준 live runtime / viewer / citation 경로 품질 재검증 완료
+- 추가 구현:
+  - [run_live_runtime_smoke.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/run_live_runtime_smoke.py) 에 bridge evidence gate 추가
+  - same session cookie value 검증 추가
+  - citation viewer 의 `section_title_present` 검증 추가
+  - [live_runtime_smoke_cases.json](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/live_runtime_smoke_cases.json) 의 1턴 한국어 질문을 더 운영자다운 표현으로 수정
+- 결과:
+  - Stage 8 live runtime smoke `overall_pass = true`
+  - same conversation id `true`
+  - same session cookie value `true`
+  - follow-up rewrite contains `last_document` `true`
+  - viewer click-through `true`
+  - viewer section title alignment `true`
+  - bridge runtime mode `company-only`
+  - bridge embedding model `BAAI/bge-m3`
+  - bridge embedding dimensions `1024`
+  - fallback chat `0`
+- 해석:
+  - Stage 8은 serving-path integrity 와 citation-viewer behavior 의 pass 이다
+  - retrieval-quality authority 는 계속 Stage 5 / Stage 6 이다
+- 결과 문서:
+  - [stage08-live-runtime-quality-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage08-live-runtime-quality-report.md)
+  - [stage08-live-runtime-report.json](/C:/Users/soulu/cywell/ocp-rag-chatbot/data/manifests/generated/stage08-live-runtime-report.json)
+- 다음 단계:
+  - `9단계. source profile 운영 전환 준비와 release-facing 입력 계약 정리`
