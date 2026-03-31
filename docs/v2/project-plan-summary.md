@@ -119,3 +119,18 @@ python deployment/rollback_index.py --operator codex-local --output data/manifes
   - raw retrieval baseline 이 여전히 약함
 - 다음 단계:
   - `6단계. multiturn / red-team 회귀 검증`
+
+## 2026-03-31 Stage 6 Update
+
+- Stage 6: widened corpus 기준 multiturn / red-team 회귀 완료
+- 추가 구현:
+  - [`run_stage06_regression.py`](/C:/Users/soulu/cywell/ocp-rag-chatbot/eval/run_stage06_regression.py) 추가
+  - Stage 5 policy gate + multiturn + red-team + Stage 10-style suite 를 순차 실행하는 재현 경로 고정
+- 결과:
+  - multiturn `2/2` 시나리오 통과
+  - red-team `7/7` 통과
+  - combined suite `overall_decision = go`
+- 해석:
+  - retrieval 보정이 follow-up continuity, topic shift, version continuity, 보수 응답 규칙을 깨지 않았다
+- 다음 단계:
+  - `7단계. refresh / activate / rollback 재검증`
