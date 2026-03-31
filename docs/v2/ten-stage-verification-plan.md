@@ -38,6 +38,20 @@
 2. `Inspector-B`
    - 테스트 증거, 로그, 리포트, 회귀 여부 검증 담당
 
+## 현재 단계 상태
+
+- 1단계 완료
+  - [stage01-fixture-integrity-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage01-fixture-integrity-report.md)
+  - [stage01-fixture-integrity-report.json](/C:/Users/soulu/cywell/ocp-rag-chatbot/data/manifests/generated/stage01-fixture-integrity-report.json)
+- 2단계 완료
+  - [stage02-runtime-path-authenticity-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage02-runtime-path-authenticity-report.md)
+  - [stage02-runtime-path-authenticity-report.json](/C:/Users/soulu/cywell/ocp-rag-chatbot/data/manifests/generated/stage02-runtime-path-authenticity-report.json)
+- 3단계 완료
+  - [stage03-retrieval-root-cause-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage03-retrieval-root-cause-report.md)
+  - [stage03-retrieval-root-cause-report.json](/C:/Users/soulu/cywell/ocp-rag-chatbot/data/manifests/generated/stage03-retrieval-root-cause-report.json)
+
+현재 다음 활성 단계는 **4단계. retrieval 보정 1차**다.
+
 ## 단계 운영 규칙
 
 각 단계는 아래 순서를 반드시 따른다.

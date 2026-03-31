@@ -12,6 +12,7 @@
 
 ## 현재 검증 상태
 
+- Stage 3 widened corpus retrieval root-cause 분석 완료
 - Stage 10 평가 기준 `go`
 - Stage 11 validated slice 기준 local refresh loop 검증 완료
 - Stage 12 live runtime baseline 검증 완료
@@ -31,12 +32,13 @@
 
 ## 다음 마일스톤
 
-1. widened core corpus 기준 retrieval 회귀 검증 강화
-2. Stage 11 activation smoke 를 bridge / bge-m3 기준에 더 가깝게 보강
-3. Stage 9 ~ Stage 12 게이트를 widened corpus 기준으로 다시 집계
-4. Stage 11 delta refresh 실데이터 기준 재실행
-5. 운영 대상 minor 버전이 확정되면 target-minor source profile 활성화
-6. 필요 시 최소 UI hardening
+1. Stage 3 분석 결과를 기준으로 retrieval 보정 1차 수행
+2. widened core corpus 기준 retrieval 회귀 검증 강화
+3. Stage 11 activation smoke 를 bridge / bge-m3 기준에 더 가깝게 보강
+4. Stage 9 ~ Stage 12 게이트를 widened corpus 기준으로 다시 집계
+5. Stage 11 delta refresh 실데이터 기준 재실행
+6. 운영 대상 minor 버전이 확정되면 target-minor source profile 활성화
+7. 필요 시 최소 UI hardening
 
 ## 핵심 설계 문서
 
