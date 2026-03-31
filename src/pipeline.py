@@ -328,6 +328,7 @@ class RAGPipeline:
                 "method": "Semantic + BM25 Hybrid",
                 "results": [
                     {
+                        "chunk_id": r.chunk_id,
                         "source": r.metadata.get("source", ""),
                         "score": round(r.score, 4),
                         "semantic": round(r.semantic_score, 4),

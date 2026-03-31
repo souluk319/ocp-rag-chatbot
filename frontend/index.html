@@ -545,10 +545,43 @@
             color: #2D2B28;
         }
 
+        .message .source-chip-button {
+            appearance: none;
+            cursor: pointer;
+            font: inherit;
+            text-align: left;
+            transition: border-color 0.2s ease, color 0.2s ease, transform 0.15s ease, background 0.2s ease;
+        }
+
+        .message .source-chip-button:hover {
+            border-color: rgba(26, 111, 181, 0.35);
+            color: #1A6FB5;
+            background: #F7F1EB;
+            transform: translateY(-1px);
+        }
+
+        .message .source-chip-button:focus-visible {
+            outline: 2px solid rgba(26, 111, 181, 0.25);
+            outline-offset: 2px;
+        }
+
+        .message .source-index {
+            color: #1A6FB5;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+
         .message .source-score {
             color: #B5B3B0;
             font-size: 11px;
             font-family: 'SF Mono', 'Consolas', monospace;
+        }
+
+        .message .sources-caption {
+            font-size: 11px;
+            color: #8C8A87;
+            line-height: 1.5;
         }
 
         .inline-source {
@@ -623,6 +656,21 @@
         .message .source-table td:last-child {
             font-family: 'SF Mono', 'Consolas', monospace;
             color: #1A6FB5;
+        }
+
+        .message .source-table-button {
+            appearance: none;
+            background: none;
+            border: none;
+            padding: 0;
+            color: #1A6FB5;
+            cursor: pointer;
+            font: inherit;
+            text-align: left;
+        }
+
+        .message .source-table-button:hover {
+            text-decoration: underline;
         }
 
         .message .rewrite-note {
@@ -721,6 +769,149 @@
             color: #DC2626;
             font-size: 13px;
             max-width: 90%;
+        }
+
+        .source-viewer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 18, 16, 0.42);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 40;
+        }
+
+        .source-viewer-overlay.open {
+            display: flex;
+        }
+
+        .source-viewer {
+            width: min(840px, calc(100vw - 32px));
+            max-height: min(84vh, 920px);
+            background: #FFFFFF;
+            border: 1px solid #E8E3DC;
+            border-radius: 16px;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .source-viewer-header {
+            padding: 16px 18px 14px;
+            border-bottom: 1px solid #E8E3DC;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .source-viewer-kicker {
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #B5B3B0;
+            margin-bottom: 4px;
+        }
+
+        .source-viewer-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2D2B28;
+            line-height: 1.35;
+        }
+
+        .source-viewer-meta {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #8C8A87;
+            line-height: 1.5;
+        }
+
+        .source-viewer-close {
+            appearance: none;
+            background: none;
+            border: 1px solid #E8E3DC;
+            color: #8C8A87;
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .source-viewer-close:hover {
+            border-color: #1A6FB5;
+            color: #1A6FB5;
+        }
+
+        .source-viewer-content {
+            padding: 18px;
+            overflow-y: auto;
+            background: #FCFBF9;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .source-preview-hint {
+            font-size: 12px;
+            color: #8C8A87;
+            line-height: 1.6;
+        }
+
+        .source-preview-block {
+            border: 1px solid #E8E3DC;
+            border-radius: 12px;
+            background: #FFFFFF;
+            overflow: hidden;
+        }
+
+        .source-preview-block summary {
+            cursor: pointer;
+            list-style: none;
+            padding: 10px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6B6966;
+            background: #F7F4EF;
+        }
+
+        .source-preview-block summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .source-preview-block summary::after {
+            content: '펼치기';
+            float: right;
+            font-size: 11px;
+            font-weight: 500;
+            color: #B5B3B0;
+        }
+
+        .source-preview-block[open] summary::after {
+            content: '접기';
+        }
+
+        .source-preview-body {
+            padding: 14px 14px 16px;
+        }
+
+        .source-preview-body p {
+            margin: 6px 0;
+            line-height: 1.7;
+        }
+
+        .source-preview-body pre {
+            background: #F5F3F0;
+            border: 1px solid #E8E3DC;
+        }
+
+        .source-preview-loading {
+            font-size: 13px;
+            color: #8C8A87;
+            padding: 8px 2px;
         }
 
         /* ========== Trace Panel ========== */
@@ -1719,6 +1910,25 @@
                 font-size: 10px;
                 padding: 5px 12px;
             }
+
+            .source-viewer-overlay {
+                padding: 12px;
+            }
+
+            .source-viewer {
+                width: 100%;
+                max-height: calc(100vh - 24px);
+                border-radius: 12px;
+            }
+
+            .source-viewer-header,
+            .source-viewer-content {
+                padding: 14px;
+            }
+
+            .source-viewer-title {
+                font-size: 16px;
+            }
         }
 
         /* ========== 소형 폰 (≤ 400px) ========== */
@@ -1864,6 +2074,22 @@
                     <span>Total</span>
                     <span class="time" id="traceTotalTime">-</span>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="source-viewer-overlay" id="sourceViewerOverlay" onclick="handleSourceViewerOverlay(event)">
+        <div class="source-viewer" role="dialog" aria-modal="true" aria-labelledby="sourceViewerTitle" onclick="event.stopPropagation()">
+            <div class="source-viewer-header">
+                <div>
+                    <div class="source-viewer-kicker">Citation Preview</div>
+                    <div class="source-viewer-title" id="sourceViewerTitle">근거 문서를 불러오는 중...</div>
+                    <div class="source-viewer-meta" id="sourceViewerMeta">검색에 사용된 청크 원문을 확인할 수 있습니다.</div>
+                </div>
+                <button class="source-viewer-close" type="button" onclick="closeSourceViewer()">닫기</button>
+            </div>
+            <div class="source-viewer-content" id="sourceViewerContent">
+                <div class="source-preview-loading">원문을 불러오는 중...</div>
             </div>
         </div>
     </div>
@@ -2071,6 +2297,11 @@
         const chatContainer = document.getElementById('chatContainer');
         const traceContent = document.getElementById('traceContent');
         const traceJumpBtn = document.getElementById('traceJumpBtn');
+        const sourceViewerOverlay = document.getElementById('sourceViewerOverlay');
+        const sourceViewerTitle = document.getElementById('sourceViewerTitle');
+        const sourceViewerMeta = document.getElementById('sourceViewerMeta');
+        const sourceViewerContent = document.getElementById('sourceViewerContent');
+        const sourcePreviewCache = new Map();
 
         function isNearBottom(el, threshold = 40) {
             return el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
@@ -2107,9 +2338,22 @@
             updateChatJumpButton();
         });
 
+        chatContainer.addEventListener('click', (event) => {
+            const trigger = event.target.closest('.source-chip-button, .source-table-button');
+            if (!trigger) return;
+            event.preventDefault();
+            openSourceViewer(trigger.dataset.chunkId || '', trigger.dataset.source || '');
+        });
+
         traceContent.addEventListener('scroll', () => {
             traceAutoScroll = isNearBottom(traceContent);
             updateTraceJumpButton();
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && sourceViewerOverlay.classList.contains('open')) {
+                closeSourceViewer();
+            }
         });
 
         userInput.addEventListener('compositionstart', () => { isComposing = true; });
@@ -2356,6 +2600,128 @@
 
         function normalizeForCompare(text) {
             return text.trim().replace(/\s+/g, ' ');
+        }
+
+        function summarizeSourceName(source) {
+            if (!source) return '이름 없는 문서';
+            return source.length > 42 ? `${source.slice(0, 39)}...` : source;
+        }
+
+        function dedupeSources(sources) {
+            const seen = new Set();
+            return (sources || []).filter(source => {
+                const key = `${source.chunk_id || ''}::${source.source || ''}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        }
+
+        function renderSourceButtons(sources) {
+            const uniqueSources = dedupeSources(sources);
+            if (uniqueSources.length === 0) return '';
+
+            const chips = uniqueSources.map((source, index) => {
+                const chunkId = source.chunk_id || '';
+                const score = typeof source.score === 'number'
+                    ? `<span class="source-score">${(source.score * 100).toFixed(1)}%</span>`
+                    : '';
+                return (
+                    `<button type="button" class="source-chip source-chip-button" ` +
+                    `data-source="${escapeHtml(source.source || '')}" ` +
+                    `data-chunk-id="${escapeHtml(chunkId)}" ` +
+                    `title="클릭해서 검색에 사용된 원문 청크 보기">` +
+                    `<span class="source-index">[${index + 1}]</span>` +
+                    `<span>${escapeHtml(summarizeSourceName(source.source || ''))}</span>` +
+                    `${score}` +
+                    `</button>`
+                );
+            }).join('');
+
+            return (
+                '<div class="sources">' +
+                '<div class="sources-label">근거 문서</div>' +
+                '<div class="source-list">' + chips + '</div>' +
+                '<div class="sources-caption">출처를 클릭하면 검색에 사용된 원문 청크가 화면에 열립니다.</div>' +
+                '</div>'
+            );
+        }
+
+        function renderSourcePreviewBlock(label, chunk, openByDefault = false) {
+            if (!chunk || !chunk.text) return '';
+            const rendered = renderMarkdown(chunk.text);
+            return (
+                `<details class="source-preview-block" ${openByDefault ? 'open' : ''}>` +
+                `<summary>${escapeHtml(label)}</summary>` +
+                `<div class="source-preview-body">${rendered}</div>` +
+                '</details>'
+            );
+        }
+
+        function setSourceViewerLoading(sourceName) {
+            sourceViewerTitle.textContent = sourceName ? `${sourceName} 불러오는 중...` : '근거 문서를 불러오는 중...';
+            sourceViewerMeta.textContent = '검색에 사용된 청크 원문을 확인할 수 있습니다.';
+            sourceViewerContent.innerHTML = '<div class="source-preview-loading">원문을 불러오는 중...</div>';
+        }
+
+        function renderSourceViewer(data) {
+            const title = data.source || '근거 문서';
+            const chunkPosition = typeof data.chunk_index === 'number'
+                ? `청크 ${data.chunk_index + 1}/${data.total_chunks || '?'}`
+                : `관련 청크 ${data.total_chunks || '?' }개`;
+
+            sourceViewerTitle.textContent = title;
+            sourceViewerMeta.textContent = `${chunkPosition} · 실제 retrieval에 사용된 문맥입니다.`;
+
+            let html = '<div class="source-preview-hint">현재 답변은 아래 청크를 근거로 생성되었습니다. 필요하면 앞뒤 청크도 열어서 문맥을 더 확인할 수 있습니다.</div>';
+            html += renderSourcePreviewBlock('검색에 사용된 청크', {
+                chunk_id: data.chunk_id,
+                text: data.text,
+            }, true);
+            html += renderSourcePreviewBlock('이전 청크', data.previous_chunk, false);
+            html += renderSourcePreviewBlock('다음 청크', data.next_chunk, false);
+            sourceViewerContent.innerHTML = html;
+        }
+
+        async function openSourceViewer(chunkId, sourceName = '') {
+            sourceViewerOverlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            setSourceViewerLoading(sourceName);
+
+            const cacheKey = `${chunkId || ''}::${sourceName || ''}`;
+            if (sourcePreviewCache.has(cacheKey)) {
+                renderSourceViewer(sourcePreviewCache.get(cacheKey));
+                return;
+            }
+
+            const params = new URLSearchParams();
+            if (chunkId) params.set('chunk_id', chunkId);
+            if (sourceName) params.set('source', sourceName);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/source?${params.toString()}`);
+                if (!response.ok) {
+                    throw new Error('출처 원문을 불러오지 못했습니다.');
+                }
+                const data = await response.json();
+                sourcePreviewCache.set(cacheKey, data);
+                renderSourceViewer(data);
+            } catch (error) {
+                sourceViewerTitle.textContent = sourceName || '근거 문서';
+                sourceViewerMeta.textContent = '원문 로드에 실패했습니다.';
+                sourceViewerContent.innerHTML = `<div class="source-preview-loading">${escapeHtml(error.message)}</div>`;
+            }
+        }
+
+        function closeSourceViewer() {
+            sourceViewerOverlay.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        function handleSourceViewerOverlay(event) {
+            if (event.target === sourceViewerOverlay) {
+                closeSourceViewer();
+            }
         }
 
         // ========== Chat ==========
@@ -2651,7 +3017,7 @@
                                     traceSources = parsed.detail.results.map(r => ({
                                         source: r.source,
                                         score: r.score,
-                                        chunk_id: ''
+                                        chunk_id: r.chunk_id || ''
                                     }));
                                     if (sources.length === 0) {
                                         sources = traceSources;
@@ -2752,6 +3118,7 @@
             let html = renderMarkdown(text);
             const metaSections = [];
             const badges = [];
+            const sourceSection = renderSourceButtons(sources);
             const normalizedOriginal = originalQuery ? normalizeForCompare(originalQuery) : '';
             const normalizedRewrite = rewrittenQuery ? normalizeForCompare(rewrittenQuery) : '';
 
@@ -2768,7 +3135,7 @@
                     '<summary>검색 점수 상세</summary>' +
                     '<table class="source-table"><thead><tr><th>#</th><th>문서</th><th>점수</th></tr></thead><tbody>' +
                     sources.map((s, i) =>
-                        `<tr><td>${i + 1}</td><td>${escapeHtml(s.source)}</td><td><strong>${(s.score * 100).toFixed(1)}%</strong></td></tr>`
+                        `<tr><td>${i + 1}</td><td><button type="button" class="source-table-button" data-source="${escapeHtml(s.source || '')}" data-chunk-id="${escapeHtml(s.chunk_id || '')}">${escapeHtml(s.source)}</button></td><td><strong>${(s.score * 100).toFixed(1)}%</strong></td></tr>`
                     ).join('') +
                     '</tbody></table></details>'
                 );
@@ -2783,11 +3150,12 @@
                 );
             }
 
-            if (badges.length > 0 || metaSections.length > 0) {
+            if (badges.length > 0 || sourceSection || metaSections.length > 0) {
                 html += '<div class="answer-meta">';
                 if (badges.length > 0) {
                     html += `<div class="meta-badges">${badges.join('')}</div>`;
                 }
+                html += sourceSection;
                 html += metaSections.join('');
                 html += '</div>';
             }

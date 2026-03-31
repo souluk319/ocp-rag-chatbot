@@ -47,6 +47,9 @@ embedding_engine = EmbeddingEngine()
 session_manager = SessionManager()
 semantic_cache = SemanticCache()
 pipeline: Optional[RAGPipeline] = None
+source_chunk_lookup: dict[str, dict] = {}
+source_group_lookup: dict[str, list[dict]] = {}
+source_chunk_index_lookup: dict[tuple[str, int], dict] = {}
 
 
 def endpoint_switching_enabled() -> bool:
@@ -68,6 +71,43 @@ def _public_endpoint_keys() -> list[str]:
     return [next(iter(LLM_ENDPOINTS))]
 
 
+def _rebuild_source_lookup(index: IVFIndex) -> None:
+    """Build in-memory lookups so the UI can preview retrieved source chunks."""
+    global source_chunk_lookup, source_group_lookup, source_chunk_index_lookup
+
+    source_chunk_lookup = {}
+    source_group_lookup = {}
+    source_chunk_index_lookup = {}
+
+    for doc in index.documents:
+        chunk_id = doc.get("chunk_id")
+        metadata = doc.get("metadata", {})
+        source_name = metadata.get("source") or (chunk_id.split("::", 1)[0] if chunk_id else "")
+        chunk_index = metadata.get("chunk_index")
+
+        if chunk_id:
+            source_chunk_lookup[chunk_id] = doc
+        if source_name:
+            source_group_lookup.setdefault(source_name, []).append(doc)
+        if source_name and isinstance(chunk_index, int):
+            source_chunk_index_lookup[(source_name, chunk_index)] = doc
+
+    for docs in source_group_lookup.values():
+        docs.sort(key=lambda item: item.get("metadata", {}).get("chunk_index", 0))
+
+
+def _find_source_doc(chunk_id: Optional[str], source: Optional[str]) -> Optional[dict]:
+    if chunk_id:
+        doc = source_chunk_lookup.get(chunk_id)
+        if doc:
+            return doc
+    if source:
+        docs = source_group_lookup.get(source)
+        if docs:
+            return docs[0]
+    return None
+
+
 @app.on_event("startup")
 async def startup():
     """Load index and prepare the pipeline."""
@@ -83,6 +123,7 @@ async def startup():
     retriever = Retriever(index=index, embedding_engine=embedding_engine)
     if index.documents:
         retriever.bm25.index_corpus(index.documents)
+        _rebuild_source_lookup(index)
         print(f"BM25 corpus indexed: {len(index.documents)} documents")
 
     pipeline = RAGPipeline(
@@ -126,6 +167,16 @@ class ChatResponse(BaseModel):
     cached: bool
 
 
+class SourcePreviewResponse(BaseModel):
+    source: str
+    chunk_id: str
+    chunk_index: Optional[int] = None
+    total_chunks: int
+    text: str
+    previous_chunk: Optional[dict] = None
+    next_chunk: Optional[dict] = None
+
+
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
     """Chat API."""
@@ -157,6 +208,55 @@ async def chat_stream(req: ChatRequest):
             }
 
     return EventSourceResponse(event_generator())
+
+
+@app.get("/api/source", response_model=SourcePreviewResponse)
+async def source_preview(
+    chunk_id: Optional[str] = Query(default=None),
+    source: Optional[str] = Query(default=None),
+):
+    """Return the retrieved chunk so the UI can show citation previews."""
+    if pipeline is None:
+        raise HTTPException(status_code=503, detail="Pipeline is not initialized.")
+    if not chunk_id and not source:
+        raise HTTPException(status_code=400, detail="chunk_id or source is required.")
+
+    doc = _find_source_doc(chunk_id, source)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Source chunk not found.")
+
+    metadata = doc.get("metadata", {})
+    source_name = metadata.get("source") or source or ""
+    chunk_index = metadata.get("chunk_index")
+    total_chunks = len(source_group_lookup.get(source_name, []))
+
+    previous_chunk = None
+    next_chunk = None
+    if source_name and isinstance(chunk_index, int):
+        prev_doc = source_chunk_index_lookup.get((source_name, chunk_index - 1))
+        next_doc = source_chunk_index_lookup.get((source_name, chunk_index + 1))
+        if prev_doc:
+            previous_chunk = {
+                "chunk_id": prev_doc.get("chunk_id", ""),
+                "chunk_index": prev_doc.get("metadata", {}).get("chunk_index"),
+                "text": prev_doc.get("text", ""),
+            }
+        if next_doc:
+            next_chunk = {
+                "chunk_id": next_doc.get("chunk_id", ""),
+                "chunk_index": next_doc.get("metadata", {}).get("chunk_index"),
+                "text": next_doc.get("text", ""),
+            }
+
+    return SourcePreviewResponse(
+        source=source_name,
+        chunk_id=doc.get("chunk_id", ""),
+        chunk_index=chunk_index if isinstance(chunk_index, int) else None,
+        total_chunks=total_chunks,
+        text=doc.get("text", ""),
+        previous_chunk=previous_chunk,
+        next_chunk=next_chunk,
+    )
 
 
 @app.get("/api/sessions")
