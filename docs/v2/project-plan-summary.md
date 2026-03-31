@@ -190,4 +190,45 @@ python deployment/rollback_index.py --operator codex-local --output data/manifes
   - [stage08-live-runtime-quality-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage08-live-runtime-quality-report.md)
   - [stage08-live-runtime-report.json](/C:/Users/soulu/cywell/ocp-rag-chatbot/data/manifests/generated/stage08-live-runtime-report.json)
 - 다음 단계:
-  - `9단계. source profile 운영 전환 준비와 release-facing 입력 계약 정리`
+  - `9단계. 저장소 정리와 v2 본체 가시화`
+
+## 2026-03-31 Stage 9 Update
+
+- Stage 9: 저장소 정리와 v2 본체 가시화 완료
+- 추가 구현:
+  - [repository-map.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/repository-map.md) 추가
+  - [check_stage09_repository_map.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/check_stage09_repository_map.py) 추가
+  - [README.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/README.md) 를 제품 설명서 중심으로 재정리
+- 결과:
+  - `stage09-repository-map-check.json` 기준 `pass = true`
+  - missing core/support paths 없음
+  - root stray python entrypoint 없음
+- 결과 문서:
+  - [stage09-repository-clarity-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage09-repository-clarity-report.md)
+  - [stage09-repository-map-check.json](/C:/Users/soulu/cywell/ocp-rag-chatbot/data/manifests/generated/stage09-repository-map-check.json)
+- 다음 단계:
+  - `10단계. 최종 통합 검증과 릴리즈 판정`
+
+## 2026-03-31 Stage 10 Update
+
+- Stage 10: 최종 통합 검증과 릴리즈 판정 완료
+- 추가 구현:
+  - [run_stage10_release_gate.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/eval/run_stage10_release_gate.py) 추가
+- 결과:
+  - Stage 5 policy gate pass
+  - Stage 6 suite gate pass
+  - Stage 7 refresh gate pass
+  - Stage 8 serving gate pass
+  - Stage 9 repository gate pass
+  - runtime contract gate pass
+  - 최종 판정 `conditional-go`
+- 해석:
+  - widened validation corpus 기준 제출/시연/검증용으로는 pass
+  - target-minor-pinned operator release 로는 아직 미인증
+- 결과 문서:
+  - [stage10-final-release-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage10-final-release-report.md)
+  - [stage10-final-release-gate.json](/C:/Users/soulu/cywell/ocp-rag-chatbot/data/manifests/generated/stage10-final-release-gate.json)
+- 다음 단계:
+  - target release profile 확정
+  - raw retrieval baseline 개선
+  - release-profile rehearsal
