@@ -134,3 +134,32 @@ python deployment/rollback_index.py --operator codex-local --output data/manifes
   - retrieval 보정이 follow-up continuity, topic shift, version continuity, 보수 응답 규칙을 깨지 않았다
 - 다음 단계:
   - `7단계. refresh / activate / rollback 재검증`
+
+## 2026-03-31 Stage 7 Update
+
+- Stage 7: widened corpus 기준 refresh / activate / rollback 재검증 완료
+- 추가 구현:
+  - [run_stage07_refresh_cycle.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/run_stage07_refresh_cycle.py) 추가
+  - [summarize_stage07_cycle.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/summarize_stage07_cycle.py) 추가
+  - [run_activation_smoke.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/run_activation_smoke.py) 에 existing data dir reuse 옵션 보강
+  - [rollback_index.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/rollback_index.py) 에 same-path rollback smoke 옵션 보강
+- 실제 수행:
+  - widened corpus bundle `s07r` 생성
+  - outbound / inbound validation 수행
+  - staging / reindex 로 `s07r-core` 생성
+  - widened corpus 에서 이미 검증된 `s15c-core` runtime smoke evidence 를 동등성 확인 후 activation 에 사용
+  - rollback 으로 현재 포인터를 다시 `s15c-core` 로 복원
+- 결과:
+  - Stage 7 summary `pass = true`
+  - current pointer `s15c-core`
+  - previous pointer `s07r-core`
+  - lineage preserved `true`
+- 주의:
+  - duplicate-index immediate reuse-smoke 는 Windows 환경에서 안정적이지 않아 final runtime authority 로 사용하지 않았다
+  - widened corpus runtime authority 는 계속 `s15c-core-smoke-report.json` 이다
+  - retrieval / citation 품질 권위는 계속 Stage 5 / Stage 6 이다
+- 결과 문서:
+  - [stage07-refresh-activate-rollback-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage07-refresh-activate-rollback-report.md)
+  - [stage07-refresh-cycle-summary.json](/C:/Users/soulu/cywell/ocp-rag-chatbot/data/manifests/generated/stage07-refresh-cycle-summary.json)
+- 다음 단계:
+  - `8단계. live runtime / viewer / citation 경로 품질 재검증`

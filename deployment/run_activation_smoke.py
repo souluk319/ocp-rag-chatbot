@@ -41,6 +41,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--bridge-port", type=int, default=18111)
     parser.add_argument("--startup-timeout-seconds", type=float, default=90.0)
+    parser.add_argument("--reuse-existing-data-dir", action="store_true")
     parser.add_argument("--output", type=Path)
     return parser.parse_args()
 
@@ -90,6 +91,7 @@ def execute_runtime_smoke(
     smoke_results_path: Path,
     sample_out_path: Path,
     failures_out_path: Path,
+    reuse_existing_data_dir: bool,
 ) -> None:
     if not opendocuments_root.exists():
         raise SystemExit(f"OpenDocuments root does not exist: {opendocuments_root}")
@@ -138,8 +140,11 @@ def execute_runtime_smoke(
         "--sample-out",
         str(sample_out_path),
         "--retrieval-only",
-        "--reset-data-dir",
     ]
+    if reuse_existing_data_dir and smoke_data_dir.exists():
+        command.append("--skip-ingest")
+    else:
+        command.append("--reset-data-dir")
     env = os.environ.copy()
     subprocess.run(command, cwd=repo_root(), env=env, check=True)
 
@@ -312,9 +317,10 @@ def run_activation_smoke(
     smoke_set_path: Path,
     benchmark_cases_path: Path,
     opendocuments_root: Path,
-    bridge_port: int,
-    startup_timeout_seconds: float,
-    output_path: Path,
+    bridge_port: int = 18111,
+    startup_timeout_seconds: float = 90.0,
+    reuse_existing_data_dir: bool = False,
+    output_path: Path | None = None,
 ) -> dict[str, Any]:
     staging_path = repo_root() / str(index_manifest.get("staging_path", "")).replace("/", "\\")
     if not staging_path.exists():
@@ -339,7 +345,7 @@ def run_activation_smoke(
     )
     if smoke_workspace.exists():
         shutil.rmtree(smoke_workspace, ignore_errors=True)
-    if smoke_data_dir.exists():
+    if smoke_data_dir.exists() and not reuse_existing_data_dir:
         shutil.rmtree(smoke_data_dir, ignore_errors=True)
     bridge_log_path = index_dir / "reports" / "activation-smoke-bridge.log"
     bridge_env = os.environ.copy()
@@ -400,6 +406,7 @@ def run_activation_smoke(
             smoke_results_path=smoke_results_path,
             sample_out_path=sample_out_path,
             failures_out_path=failures_out_path,
+            reuse_existing_data_dir=reuse_existing_data_dir,
         )
     finally:
         for key, value in previous_env.items():
@@ -408,6 +415,7 @@ def run_activation_smoke(
             else:
                 os.environ[key] = value
         bridge.terminate()
+    final_output_path = output_path or (index_dir / "reports" / "activation-smoke-report.json")
     report = build_runtime_smoke_report(
         index_dir=index_dir,
         index_manifest=index_manifest,
@@ -416,7 +424,7 @@ def run_activation_smoke(
         sample_out_path=sample_out_path,
         failures_out_path=failures_out_path,
     )
-    write_json(output_path, report)
+    write_json(final_output_path, report)
     write_json(index_dir / "reports" / "activation-smoke-report.json", report)
     return report
 
@@ -432,6 +440,7 @@ def main() -> int:
         opendocuments_root=args.opendocuments_root.resolve(),
         bridge_port=args.bridge_port,
         startup_timeout_seconds=args.startup_timeout_seconds,
+        reuse_existing_data_dir=args.reuse_existing_data_dir,
         output_path=args.output or (index_dir / "reports" / "activation-smoke-report.json"),
     )
     print(json.dumps(report, ensure_ascii=False, indent=2))

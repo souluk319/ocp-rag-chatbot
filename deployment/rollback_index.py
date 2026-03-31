@@ -37,6 +37,7 @@ def parse_args() -> argparse.Namespace:
         "--operator",
         default="local-operator",
     )
+    parser.add_argument("--reuse-existing-data-dir", action="store_true")
     parser.add_argument("--output", type=Path)
     return parser.parse_args()
 
@@ -90,6 +91,7 @@ def main() -> int:
         smoke_set_path=args.smoke_set,
         benchmark_cases_path=args.benchmark_cases,
         opendocuments_root=repo_root().parent / "ocp-rag-v2" / "OpenDocuments",
+        reuse_existing_data_dir=args.reuse_existing_data_dir,
         output_path=restore_dir / "reports" / "post-rollback-smoke-report.json",
     )
     smoke_report["smoke_reason"] = "post-rollback verification"
