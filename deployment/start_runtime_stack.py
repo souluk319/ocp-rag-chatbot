@@ -101,7 +101,7 @@ def main() -> int:
     od_base_url = f"http://127.0.0.1:{args.od_port}"
     gateway_base_url = f"http://127.0.0.1:{args.gateway_port}"
     output_path = args.output.resolve()
-    log_dir = output_path.parent / "stage14-runtime-launch-logs"
+    log_dir = output_path.parent / f"{output_path.stem}-logs"
     log_dir.mkdir(parents=True, exist_ok=True)
 
     vector_dimensions = detect_vector_dimensions(
@@ -180,6 +180,16 @@ def main() -> int:
             timeout_seconds=args.startup_timeout_seconds,
             predicate=lambda payload: isinstance(payload, dict) and payload.get("ok") is True,
         )
+        bridge_ready = wait_for_json(
+            f"{bridge_base_url}/ready",
+            timeout_seconds=args.startup_timeout_seconds,
+            predicate=lambda payload: isinstance(payload, dict) and payload.get("ready") is True,
+        )
+        bridge_evidence = wait_for_json(
+            f"{bridge_base_url}/evidence",
+            timeout_seconds=args.startup_timeout_seconds,
+            predicate=lambda payload: isinstance(payload, dict) and payload.get("ok") is True,
+        )
         bridge_models = wait_for_status(
             f"{bridge_base_url}/v1/models",
             timeout_seconds=args.startup_timeout_seconds,
@@ -234,6 +244,8 @@ def main() -> int:
 
         report["health"] = {
             "bridge": bridge_health,
+            "bridge_ready": bridge_ready,
+            "bridge_evidence": bridge_evidence,
             "bridge_models": bridge_models,
             "opendocuments": od_health,
             "gateway": gateway_health,
@@ -241,6 +253,8 @@ def main() -> int:
         }
         report["endpoints"] = {
             "bridge_health": f"{bridge_base_url}/health",
+            "bridge_ready": f"{bridge_base_url}/ready",
+            "bridge_evidence": f"{bridge_base_url}/evidence",
             "bridge_models": f"{bridge_base_url}/v1/models",
             "opendocuments_health": f"{od_base_url}/api/v1/health",
             "gateway_health": f"{gateway_base_url}/health",

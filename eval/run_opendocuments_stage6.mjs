@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { basename, dirname, extname, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -18,6 +18,16 @@ function parseArgs(argv) {
     failuresOut: '',
     sampleQuery: '',
     sampleOut: '',
+    openAiBaseUrl: process.env.OPENAI_BASE_URL || '',
+    openAiApiKey: process.env.OPENAI_API_KEY || '',
+    chatModel: process.env.OD_CHAT_MODEL || process.env.LLM_EP_COMPANY_MODEL || process.env.LLM_MODEL || '',
+    embeddingModel: process.env.OD_EMBEDDING_MODEL || process.env.EMBEDDING_MODEL || '',
+    embeddingDimensions: Number.parseInt(
+      process.env.OD_EMBEDDING_DIMENSIONS || process.env.EMBEDDING_DIMENSIONS || '1024',
+      10,
+    ),
+    retrievalOnly: false,
+    resetDataDir: false,
   }
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -37,6 +47,13 @@ function parseArgs(argv) {
     if (arg === '--failures-out') opts.failuresOut = next
     if (arg === '--sample-query') opts.sampleQuery = next
     if (arg === '--sample-out') opts.sampleOut = next
+    if (arg === '--openai-base-url') opts.openAiBaseUrl = next
+    if (arg === '--openai-api-key') opts.openAiApiKey = next
+    if (arg === '--chat-model') opts.chatModel = next
+    if (arg === '--embedding-model') opts.embeddingModel = next
+    if (arg === '--embedding-dimensions') opts.embeddingDimensions = parseInt(next, 10)
+    if (arg === '--retrieval-only') opts.retrievalOnly = true
+    if (arg === '--reset-data-dir') opts.resetDataDir = true
   }
 
   for (const key of ['workspace', 'cases', 'output', 'openDocumentsRoot', 'htmlRoot']) {
@@ -46,6 +63,30 @@ function parseArgs(argv) {
   }
 
   return opts
+}
+
+function buildConfigOverrides(opts) {
+  const baseUrl = String(opts.openAiBaseUrl || '').trim()
+  const chatModel = String(opts.chatModel || '').trim()
+  const embeddingModel = String(opts.embeddingModel || '').trim()
+  const embeddingDimensions = Number.isFinite(opts.embeddingDimensions) && opts.embeddingDimensions > 0
+    ? opts.embeddingDimensions
+    : 1024
+
+  if (!baseUrl || !chatModel || !embeddingModel) {
+    return null
+  }
+
+  return {
+    model: {
+      provider: 'openai',
+      llm: chatModel,
+      embedding: embeddingModel,
+      apiKey: String(opts.openAiApiKey || 'stage6-local').trim() || 'stage6-local',
+      baseUrl,
+      embeddingDimensions,
+    },
+  }
 }
 
 function loadJsonLines(path) {
@@ -150,17 +191,26 @@ async function main() {
   const ingestInputs = collectIngestInputs(opts)
   const resolvedWorkspace = resolve(opts.workspace)
   const resolvedDataDir = resolve(opts.dataDir || resolve(resolvedWorkspace, '.opendocuments-stage6'))
+  const configOverrides = buildConfigOverrides(opts)
+
+  if (opts.resetDataDir && existsSync(resolvedDataDir)) {
+    rmSync(resolvedDataDir, { recursive: true, force: true })
+  }
 
   const bootstrapModuleUrl = pathToFileURL(resolve(opts.openDocumentsRoot, 'packages/server/dist/index.js')).href
+  const coreModuleUrl = pathToFileURL(resolve(opts.openDocumentsRoot, 'packages/core/dist/index.js')).href
   const { bootstrap } = await import(bootstrapModuleUrl)
+  const { getProfileConfig } = await import(coreModuleUrl)
 
   const ctx = await bootstrap({
     projectDir: resolvedWorkspace,
     dataDir: resolvedDataDir,
+    configOverrides: configOverrides || undefined,
   })
 
   try {
     const failures = []
+    const profileConfig = getProfileConfig(opts.profile, ctx.config?.rag?.custom)
 
     if (ingestInputs.length > 0) {
       let indexedCount = 0
@@ -228,10 +278,16 @@ async function main() {
     if (opts.sampleQuery) {
       let answer = ''
       let sources = []
-      for await (const event of ctx.ragEngine.queryStream({ query: opts.sampleQuery, profile: opts.profile })) {
-        if (event.type === 'chunk') answer += event.data
-        if (event.type === 'sources') {
-          sources = event.data.map((item, index) => convertCandidate(item, opts.htmlRoot, index + 1))
+      if (opts.retrievalOnly) {
+        const retrieved = await ctx.ragEngine.retrieveWithFeatures('sample-query', opts.sampleQuery, profileConfig)
+        sources = retrieved.map((item, index) => convertCandidate(item, opts.htmlRoot, index + 1))
+        answer = '[retrieval-only benchmark mode]'
+      } else {
+        for await (const event of ctx.ragEngine.queryStream({ query: opts.sampleQuery, profile: opts.profile })) {
+          if (event.type === 'chunk') answer += event.data
+          if (event.type === 'sources') {
+            sources = event.data.map((item, index) => convertCandidate(item, opts.htmlRoot, index + 1))
+          }
         }
       }
       if (opts.sampleOut) {
@@ -251,10 +307,12 @@ async function main() {
       const query = testCase.question_ko
       const embedResult = await embedder.embed([query])
       const denseResults = await ctx.store.searchChunks(embedResult.dense[0], opts.topK)
-      const ragResult = await ctx.ragEngine.query({ query, profile: opts.profile })
+      const retrieved = opts.retrievalOnly
+        ? await ctx.ragEngine.retrieveWithFeatures(`bench-${testCase.id}`, query, profileConfig)
+        : (await ctx.ragEngine.query({ query, profile: opts.profile })).sources
 
       const retrievalCandidates = denseResults.map((item, index) => convertCandidate(item, opts.htmlRoot, index + 1))
-      const rerankedCandidates = ragResult.sources.map((item, index) => convertCandidate(item, opts.htmlRoot, index + 1))
+      const rerankedCandidates = retrieved.map((item, index) => convertCandidate(item, opts.htmlRoot, index + 1))
       const citations = rerankedCandidates.map((item) => ({
         document_path: item.document_path,
         viewer_url: item.viewer_url,

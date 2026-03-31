@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -12,6 +13,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from app.runtime_config import load_runtime_config
+from deployment.run_live_runtime_smoke import start_process, wait_for_json
 from deployment.stage11_activation_utils import load_index_manifest, load_jsonl, resolve_index_dir
 from deployment.stage11_bundle_utils import load_json, repo_relative, repo_root, utc_now, write_json
 
@@ -36,6 +39,8 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=auto_detect_opendocuments_root(),
     )
+    parser.add_argument("--bridge-port", type=int, default=18111)
+    parser.add_argument("--startup-timeout-seconds", type=float, default=90.0)
     parser.add_argument("--output", type=Path)
     return parser.parse_args()
 
@@ -76,6 +81,8 @@ def prepare_smoke_cases(*, smoke_set_path: Path, benchmark_cases_path: Path, out
 
 def execute_runtime_smoke(
     *,
+    smoke_workspace: Path,
+    smoke_data_dir: Path,
     index_dir: Path,
     index_manifest: dict[str, Any],
     opendocuments_root: Path,
@@ -96,9 +103,7 @@ def execute_runtime_smoke(
     if not staged_manifest_path.exists():
         raise SystemExit(f"Staged manifest is missing: {staged_manifest_path}")
 
-    workspace_path = repo_root() / "workspace" / "stage11" / index_dir.name
-    data_dir = workspace_path / ".opendocuments-stage11"
-    workspace_path.mkdir(parents=True, exist_ok=True)
+    smoke_workspace.mkdir(parents=True, exist_ok=True)
     smoke_results_path.parent.mkdir(parents=True, exist_ok=True)
     sample_out_path.parent.mkdir(parents=True, exist_ok=True)
     failures_out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -113,7 +118,7 @@ def execute_runtime_smoke(
         "node",
         str(stage6_runner),
         "--workspace",
-        str(workspace_path),
+        str(smoke_workspace),
         "--cases",
         str(smoke_cases_path),
         "--output",
@@ -125,15 +130,18 @@ def execute_runtime_smoke(
         "--manifest",
         str(staged_manifest_path),
         "--data-dir",
-        str(data_dir),
+        str(smoke_data_dir),
         "--failures-out",
         str(failures_out_path),
         "--sample-query",
         sample_query,
         "--sample-out",
         str(sample_out_path),
+        "--retrieval-only",
+        "--reset-data-dir",
     ]
-    subprocess.run(command, cwd=repo_root(), check=True)
+    env = os.environ.copy()
+    subprocess.run(command, cwd=repo_root(), env=env, check=True)
 
 
 def build_runtime_smoke_report(
@@ -304,6 +312,8 @@ def run_activation_smoke(
     smoke_set_path: Path,
     benchmark_cases_path: Path,
     opendocuments_root: Path,
+    bridge_port: int,
+    startup_timeout_seconds: float,
     output_path: Path,
 ) -> dict[str, Any]:
     staging_path = repo_root() / str(index_manifest.get("staging_path", "")).replace("/", "\\")
@@ -314,21 +324,90 @@ def run_activation_smoke(
     smoke_results_path = index_dir / "smoke-results.jsonl"
     sample_out_path = index_dir / "sample-query.json"
     failures_out_path = index_dir / "ingest-failures.json"
+    smoke_workspace = index_dir / ".activation-smoke-workspace"
+    smoke_data_dir = index_dir / ".activation-smoke-data"
+    bridge_base_url = f"http://127.0.0.1:{bridge_port}"
+    runtime_config = load_runtime_config()
+    missing = runtime_config.missing_required_keys()
+    if missing:
+        raise SystemExit(f"Runtime config is incomplete for activation smoke: {missing}")
 
     prepare_smoke_cases(
         smoke_set_path=smoke_set_path,
         benchmark_cases_path=benchmark_cases_path,
         output_path=smoke_cases_path,
     )
-    execute_runtime_smoke(
-        index_dir=index_dir,
-        index_manifest=index_manifest,
-        opendocuments_root=opendocuments_root,
-        smoke_cases_path=smoke_cases_path,
-        smoke_results_path=smoke_results_path,
-        sample_out_path=sample_out_path,
-        failures_out_path=failures_out_path,
+    if smoke_workspace.exists():
+        shutil.rmtree(smoke_workspace, ignore_errors=True)
+    if smoke_data_dir.exists():
+        shutil.rmtree(smoke_data_dir, ignore_errors=True)
+    bridge_log_path = index_dir / "reports" / "activation-smoke-bridge.log"
+    bridge_env = os.environ.copy()
+    bridge_env["PYTHONIOENCODING"] = "utf-8"
+    bridge_env["OD_EMBEDDING_DIMENSIONS"] = str(runtime_config.embedding_dimensions)
+    # Activation smoke prioritizes retrieval/citation validation, so allow
+    # the explicit local chat fallback when company chat auth is unavailable.
+    bridge_env["OD_ALLOW_LOCAL_CHAT_FALLBACK"] = "1"
+    bridge = start_process(
+        name="activation-smoke-bridge",
+        command=[
+            sys.executable,
+            "-m",
+            "uvicorn",
+            "app.opendocuments_openai_bridge:app",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(bridge_port),
+        ],
+        cwd=repo_root(),
+        env=bridge_env,
+        log_path=bridge_log_path,
     )
+    previous_env = {
+        key: os.environ.get(key)
+        for key in (
+            "OPENAI_BASE_URL",
+            "OPENAI_API_KEY",
+            "OD_CHAT_MODEL",
+            "OD_EMBEDDING_MODEL",
+            "OD_EMBEDDING_DIMENSIONS",
+        )
+    }
+    try:
+        wait_for_json(
+            f"{bridge_base_url}/health",
+            timeout_seconds=startup_timeout_seconds,
+            predicate=lambda payload: isinstance(payload, dict) and payload.get("ok") is True,
+        )
+        wait_for_json(
+            f"{bridge_base_url}/ready",
+            timeout_seconds=startup_timeout_seconds,
+            predicate=lambda payload: isinstance(payload, dict) and payload.get("ready") is True,
+        )
+        os.environ["OPENAI_BASE_URL"] = f"{bridge_base_url}/v1"
+        os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY", "stage11-local")
+        os.environ["OD_CHAT_MODEL"] = runtime_config.chat_model
+        os.environ["OD_EMBEDDING_MODEL"] = runtime_config.embedding_model
+        os.environ["OD_EMBEDDING_DIMENSIONS"] = str(runtime_config.embedding_dimensions)
+        execute_runtime_smoke(
+            smoke_workspace=smoke_workspace,
+            smoke_data_dir=smoke_data_dir,
+            index_dir=index_dir,
+            index_manifest=index_manifest,
+            opendocuments_root=opendocuments_root,
+            smoke_cases_path=smoke_cases_path,
+            smoke_results_path=smoke_results_path,
+            sample_out_path=sample_out_path,
+            failures_out_path=failures_out_path,
+        )
+    finally:
+        for key, value in previous_env.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+        bridge.terminate()
     report = build_runtime_smoke_report(
         index_dir=index_dir,
         index_manifest=index_manifest,
@@ -351,6 +430,8 @@ def main() -> int:
         smoke_set_path=args.smoke_set,
         benchmark_cases_path=args.benchmark_cases,
         opendocuments_root=args.opendocuments_root.resolve(),
+        bridge_port=args.bridge_port,
+        startup_timeout_seconds=args.startup_timeout_seconds,
         output_path=args.output or (index_dir / "reports" / "activation-smoke-report.json"),
     )
     print(json.dumps(report, ensure_ascii=False, indent=2))

@@ -359,7 +359,7 @@ def main() -> None:
     od_base_url = f"http://127.0.0.1:{args.od_port}"
     gateway_base_url = f"http://127.0.0.1:{args.gateway_port}"
     output_path = args.output.resolve()
-    log_dir = output_path.parent / "stage12-live-runtime-logs"
+    log_dir = output_path.parent / f"{output_path.stem}-logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     vector_dimensions = detect_vector_dimensions(
         opendocuments_root=args.opendocuments_root,
@@ -416,6 +416,16 @@ def main() -> None:
         processes.append(bridge)
         bridge_health = wait_for_json(
             f"{bridge_base_url}/health",
+            timeout_seconds=args.startup_timeout_seconds,
+            predicate=lambda payload: isinstance(payload, dict) and payload.get("ok") is True,
+        )
+        bridge_ready = wait_for_json(
+            f"{bridge_base_url}/ready",
+            timeout_seconds=args.startup_timeout_seconds,
+            predicate=lambda payload: isinstance(payload, dict) and payload.get("ready") is True,
+        )
+        bridge_evidence_startup = wait_for_json(
+            f"{bridge_base_url}/evidence",
             timeout_seconds=args.startup_timeout_seconds,
             predicate=lambda payload: isinstance(payload, dict) and payload.get("ok") is True,
         )
@@ -478,10 +488,18 @@ def main() -> None:
         follow_up_rewrite = str(second_done.get("rewrittenQuery", "")).strip()
         rewrite_contains_last_document = "last_document" in follow_up_rewrite
         viewer_pass = all(check["pass"] for check in first_turn["viewer_checks"] + second_turn["viewer_checks"])
+        bridge_evidence = wait_for_json(
+            f"{bridge_base_url}/evidence",
+            timeout_seconds=args.startup_timeout_seconds,
+            predicate=lambda payload: isinstance(payload, dict) and payload.get("ok") is True,
+        )
 
         report.update(
             {
                 "bridge_health": bridge_health,
+                "bridge_ready": bridge_ready,
+                "bridge_evidence_startup": bridge_evidence_startup,
+                "bridge_evidence": bridge_evidence,
                 "bridge_models": bridge_models,
                 "opendocuments_health": od_health,
                 "gateway_health": gateway_health,

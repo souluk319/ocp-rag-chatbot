@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from functools import lru_cache
+from threading import Lock
 from typing import Any
 import json
 import re
@@ -14,6 +15,39 @@ from sentence_transformers import SentenceTransformer
 from app.runtime_config import RuntimeConfig, load_runtime_config
 
 app = FastAPI(title="OpenDocuments Stage8 OpenAI Bridge")
+
+_TELEMETRY_LOCK = Lock()
+_BRIDGE_TELEMETRY: dict[str, Any] = {
+    "started_at": time.time(),
+    "models_requests": 0,
+    "embedding_requests": 0,
+    "chat_requests": 0,
+    "streaming_chat_requests": 0,
+    "upstream_chat_success_count": 0,
+    "upstream_chat_error_count": 0,
+    "fallback_chat_count": 0,
+    "last_models_status": None,
+    "last_chat_status": None,
+    "last_chat_target_path": None,
+    "last_embedding_dimensions": None,
+    "last_embedding_model": None,
+}
+
+
+def record_telemetry(**updates: Any) -> None:
+    with _TELEMETRY_LOCK:
+        _BRIDGE_TELEMETRY.update(updates)
+
+
+def bump_telemetry(counter_name: str, *, amount: int = 1, **updates: Any) -> None:
+    with _TELEMETRY_LOCK:
+        _BRIDGE_TELEMETRY[counter_name] = int(_BRIDGE_TELEMETRY.get(counter_name, 0)) + amount
+        _BRIDGE_TELEMETRY.update(updates)
+
+
+def telemetry_snapshot() -> dict[str, Any]:
+    with _TELEMETRY_LOCK:
+        return dict(_BRIDGE_TELEMETRY)
 
 
 @lru_cache(maxsize=1)
@@ -196,10 +230,38 @@ def health() -> dict[str, Any]:
     }
 
 
+@app.get("/evidence")
+def evidence() -> dict[str, Any]:
+    config = get_runtime_config()
+    return {
+        "ok": not config.missing_required_keys(),
+        "runtime_mode": config.runtime_mode(),
+        "embedding_model": config.embedding_model,
+        "embedding_dimensions": config.embedding_dimensions,
+        "telemetry": telemetry_snapshot(),
+    }
+
+
+@app.get("/ready")
+def ready() -> dict[str, Any]:
+    config = require_runtime_config()
+    model = get_embedder()
+    probe_vector = model.encode(["probe"], normalize_embeddings=False).tolist()[0]
+    adjusted = adjust_embedding_dimensions(probe_vector, target_dimensions=config.embedding_dimensions)
+    return {
+        "ok": True,
+        "ready": True,
+        "embedding_model": config.embedding_model,
+        "embedding_dimensions": len(adjusted),
+    }
+
+
 @app.get("/v1/models")
 def list_models(request: Request) -> Response:
     config = require_runtime_config()
+    bump_telemetry("models_requests")
     response = proxy_response("GET", "/models", config, headers=proxy_headers(request, config))
+    record_telemetry(last_models_status=response.status_code)
     if response.status_code in {401, 403} and config.allow_local_chat_fallback:
         return JSONResponse(
             {
@@ -223,19 +285,29 @@ async def chat_completions(request: Request) -> Response:
     url = f"{config.company_base_url.rstrip('/')}/chat/completions"
     headers = proxy_headers(request, config)
     headers["Content-Type"] = "application/json"
+    is_stream = bool(payload.get("stream"))
+    bump_telemetry(
+        "chat_requests",
+        streaming_chat_requests=telemetry_snapshot().get("streaming_chat_requests", 0) + (1 if is_stream else 0),
+        last_chat_target_path="/chat/completions",
+    )
 
     try:
-        if payload.get("stream"):
+        if is_stream:
             upstream = requests.post(url, headers=headers, json=payload, stream=True, timeout=config.request_timeout_seconds)
+            record_telemetry(last_chat_status=upstream.status_code)
             if upstream.status_code >= 400:
                 try:
                     detail = upstream.json()
                 except Exception:
                     detail = {"error": upstream.text}
+                bump_telemetry("upstream_chat_error_count")
                 if upstream.status_code in {401, 403} and config.allow_local_chat_fallback:
                     upstream.close()
+                    bump_telemetry("fallback_chat_count")
                     return StreamingResponse(stream_fallback_completion(payload, config), media_type="text/event-stream")
                 return JSONResponse(status_code=upstream.status_code, content=detail)
+            bump_telemetry("upstream_chat_success_count")
 
             def event_stream():
                 try:
@@ -249,12 +321,19 @@ async def chat_completions(request: Request) -> Response:
             return StreamingResponse(event_stream(), media_type=media_type)
 
         response = proxy_response("POST", "/chat/completions", config, headers=headers, json_body=payload)
+        record_telemetry(last_chat_status=response.status_code)
         if response.status_code in {401, 403} and config.allow_local_chat_fallback:
+            bump_telemetry("fallback_chat_count")
             return JSONResponse(make_fallback_completion(payload, config))
+        if response.status_code >= 400:
+            bump_telemetry("upstream_chat_error_count")
+        else:
+            bump_telemetry("upstream_chat_success_count")
         return response
     except requests.RequestException as exc:
         if config.allow_local_chat_fallback:
-            if payload.get("stream"):
+            bump_telemetry("fallback_chat_count")
+            if is_stream:
                 return StreamingResponse(stream_fallback_completion(payload, config), media_type="text/event-stream")
             return JSONResponse(make_fallback_completion(payload, config))
         raise HTTPException(status_code=502, detail=f"Company LLM proxy failed: {exc}") from exc
@@ -285,6 +364,11 @@ async def embeddings(request: Request) -> Response:
         adjust_embedding_dimensions(vector, target_dimensions=config.embedding_dimensions)
         for vector in raw_dense_vectors
     ]
+    bump_telemetry(
+        "embedding_requests",
+        last_embedding_dimensions=len(dense_vectors[0]) if dense_vectors else 0,
+        last_embedding_model=config.embedding_model,
+    )
 
     data = [
         {
