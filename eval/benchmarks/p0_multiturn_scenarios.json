@@ -3,11 +3,11 @@
   "scenarios": [
     {
       "scenario_id": "MT-001",
-      "title": "Update preparation continuity and version switch",
+      "title": "업데이트 준비와 버전 전환",
       "turns": [
         {
           "turn_index": 1,
-          "question_ko": "CNF 클러스터 업데이트 전에 무엇을 준비해야 해?",
+          "question_ko": "CNF 드라이버 업데이트 전에 무엇을 준비해야 하나요?",
           "expected_classification": "standalone",
           "expected_source_dir": "post_installation_configuration",
           "expected_topic": "update_prereq",
@@ -18,7 +18,7 @@
         },
         {
           "turn_index": 2,
-          "question_ko": "그 전에 etcd 백업도 해야 하나?",
+          "question_ko": "그 문서 기준으로 etcd 백업도 필요한가요?",
           "expected_classification": "follow_up",
           "expected_source_dir": "post_installation_configuration",
           "expected_topic": "update_prereq",
@@ -29,7 +29,7 @@
         },
         {
           "turn_index": 3,
-          "question_ko": "백업 말고 애플리케이션 pod 준비는?",
+          "question_ko": "업데이트할 때 애플리케이션 pod는 어떻게 준비하나요?",
           "expected_classification": "follow_up",
           "expected_source_dir": "post_installation_configuration",
           "expected_topic": "update_prereq",
@@ -40,7 +40,7 @@
         },
         {
           "turn_index": 4,
-          "question_ko": "같은 흐름으로 4.16에서도 봐도 돼?",
+          "question_ko": "같은 방식으로 4.16 버전 권장 사항도 알려주세요.",
           "expected_classification": "follow_up",
           "expected_source_dir": "post_installation_configuration",
           "expected_topic": "update_prereq",
@@ -51,7 +51,7 @@
         },
         {
           "turn_index": 5,
-          "question_ko": "아니, 인증서 maintenance 쪽은 어디 문서 봐야 해?",
+          "question_ko": "그럼 다음에는 인증서 유지보수 문서를 보고 싶어요.",
           "expected_classification": "topic_shift",
           "expected_source_dir": "post_installation_configuration",
           "expected_topic": "certificate_maintenance",
@@ -64,11 +64,11 @@
     },
     {
       "scenario_id": "MT-002",
-      "title": "Disconnected mirroring continuity with support reset",
+      "title": "폐쇄망 미러링과 지원 문서 전환",
       "turns": [
         {
           "turn_index": 1,
-          "question_ko": "폐쇄망에서 oc-mirror v2 개요를 먼저 보고 싶어.",
+          "question_ko": "폐쇄망에서 oc-mirror v2 개요를 먼저 보고 싶어요.",
           "expected_classification": "standalone",
           "expected_source_dir": "disconnected",
           "expected_topic": "disconnected_mirroring",
@@ -79,7 +79,7 @@
         },
         {
           "turn_index": 2,
-          "question_ko": "그럼 mirror registry는 어떻게 준비해?",
+          "question_ko": "그럼 mirror registry는 어떻게 만드나요?",
           "expected_classification": "follow_up",
           "expected_source_dir": "disconnected",
           "expected_topic": "disconnected_mirroring",
@@ -90,7 +90,7 @@
         },
         {
           "turn_index": 3,
-          "question_ko": "public internet 없이 설치할 때 주의사항은?",
+          "question_ko": "인터넷 없이 설치할 때 주의사항도 알려주세요.",
           "expected_classification": "follow_up",
           "expected_source_dir": "disconnected",
           "expected_topic": "disconnected_mirroring",
@@ -101,7 +101,7 @@
         },
         {
           "turn_index": 4,
-          "question_ko": "같은 disconnected 흐름으로 업데이트 mirror도 반영해야 해?",
+          "question_ko": "같은 방식으로 업데이트 미러 반영 문서도 보고 싶어요.",
           "expected_classification": "follow_up",
           "expected_source_dir": "disconnected",
           "expected_topic": "disconnected_mirroring",
@@ -112,7 +112,7 @@
         },
         {
           "turn_index": 5,
-          "question_ko": "다른 질문인데 노드 상태는 어디부터 확인해?",
+          "question_ko": "다음에는 노드 상태 확인 문서를 보고 싶어요.",
           "expected_classification": "topic_shift",
           "expected_source_dir": "support",
           "expected_topic": "node_health",

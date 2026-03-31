@@ -2,11 +2,11 @@
   {
     "id": "LT-001",
     "mode": "operations",
-    "query": "CNF 클러스터 업데이트 전에 어떤 준비 항목을 먼저 확인해야 해?"
+    "query": "CNF 드라이버 업데이트 전에 무엇을 준비해야 하나요?"
   },
   {
     "id": "LT-002",
     "mode": "operations",
-    "query": "그 문서 기준으로 etcd 백업 조건도 같이 알려줘."
+    "query": "그 문서 기준으로 etcd 백업도 필요한가요?"
   }
 ]
