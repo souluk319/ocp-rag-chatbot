@@ -113,6 +113,7 @@ retrieval:
         - port
         - domain
         - configuring-firewall
+        - configuring your firewall
     install_customizing:
       any_terms:
         - 커스터마이징
@@ -128,6 +129,9 @@ retrieval:
         - customizing
         - customizations
         - day-1
+        - node
+        - installing-customizing
+        - customizing nodes
     disconnected_mirroring:
       any_terms:
         - 폐쇄망
@@ -146,6 +150,20 @@ retrieval:
         - registry
         - oc-mirror
         - creating-registry
+    disconnected_oc_mirror:
+      any_terms:
+        - oc-mirror
+        - 미러링
+        - 이미지
+      preferred_categories:
+        - troubleshooting
+      preferred_source_dirs:
+        - disconnected
+      path_terms:
+        - oc-mirror
+        - installing-mirroring-disconnected
+        - mirroring-disconnected
+        - image set
     troubleshooting_node_health:
       any_terms:
         - 노드 상태
@@ -209,6 +227,21 @@ retrieval:
         - update-before-the-update
         - application pods
         - etcd backup
+    update_cnf_pods:
+      any_terms:
+        - cnf
+        - pod
+        - 애플리케이션
+        - application
+      preferred_categories:
+        - upgrade
+      preferred_source_dirs:
+        - post_installation_configuration
+      path_terms:
+        - update-cnf-update-prep
+        - application pods
+        - cnf
+        - pod
     certificate_maintenance:
       any_terms:
         - 인증서

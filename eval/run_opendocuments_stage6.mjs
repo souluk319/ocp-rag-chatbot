@@ -28,6 +28,7 @@ function parseArgs(argv) {
     ),
     retrievalOnly: false,
     resetDataDir: false,
+    skipIngest: false,
   }
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -54,6 +55,7 @@ function parseArgs(argv) {
     if (arg === '--embedding-dimensions') opts.embeddingDimensions = parseInt(next, 10)
     if (arg === '--retrieval-only') opts.retrievalOnly = true
     if (arg === '--reset-data-dir') opts.resetDataDir = true
+    if (arg === '--skip-ingest') opts.skipIngest = true
   }
 
   for (const key of ['workspace', 'cases', 'output', 'openDocumentsRoot', 'htmlRoot']) {
@@ -248,7 +250,7 @@ async function main() {
     const failures = []
     const profileConfig = getProfileConfig(opts.profile, ctx.config?.rag?.custom)
 
-    if (ingestInputs.length > 0) {
+    if (!opts.skipIngest && ingestInputs.length > 0) {
       let indexedCount = 0
       let skippedCount = 0
 
@@ -304,6 +306,9 @@ async function main() {
         mkdirSync(dirname(resolve(opts.failuresOut)), { recursive: true })
         writeFileSync(resolve(opts.failuresOut), JSON.stringify(failures, null, 2), 'utf-8')
       }
+    } else if (opts.failuresOut) {
+      mkdirSync(dirname(resolve(opts.failuresOut)), { recursive: true })
+      writeFileSync(resolve(opts.failuresOut), JSON.stringify([], null, 2), 'utf-8')
     }
 
     const embedder = ctx.registry.getModels().find((model) => model.capabilities.embedding && model.embed)

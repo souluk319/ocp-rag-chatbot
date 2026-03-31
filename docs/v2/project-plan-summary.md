@@ -99,3 +99,23 @@ python deployment/rollback_index.py --operator codex-local --output data/manifes
 - 주의:
   - Stage 4는 보정 반영 단계이며, widened corpus 품질 게이트 확정은 아니다
   - 다음 단계인 Stage 5에서 retrieval / citation 회귀 검증을 다시 수행한다
+
+## 2026-03-31 Stage 5 Update
+
+- Stage 5: widened corpus 전체 `13개` benchmark 케이스 기준 Stage 9 retrieval / citation 회귀 완료
+- 추가 구현:
+  - [`run_stage05_regression.py`](/C:/Users/soulu/cywell/ocp-rag-chatbot/eval/run_stage05_regression.py) 추가
+  - widened corpus 회귀 전용 `--skip-ingest` / `--reuse-existing-data-dir` 경로 정리
+  - disconnected / update / install 관련 policy term 보강
+- 결과:
+  - raw retrieval baseline `source_dir_hit@5 = 0.0`
+  - policy-prepared retrieval `source_dir_hit@5 = 0.9231`
+  - policy-prepared retrieval `supporting_doc_hit@10 = 0.9231`
+  - policy-prepared retrieval `citation_correctness = 0.9231`
+- 판정:
+  - widened corpus 기준 Stage 5 gate 는 `pass`
+- 남은 리스크:
+  - `RB-003` 1건 미해결
+  - raw retrieval baseline 이 여전히 약함
+- 다음 단계:
+  - `6단계. multiturn / red-team 회귀 검증`
