@@ -10,6 +10,7 @@ Current contents include:
 - retrieval benchmark case sets and scoring reports
 - multi-turn scenario datasets and rewrite replay reports
 - red-team prompts for unsafe or weakly grounded answers
+- Stage 6 widened-corpus regression summary that keeps raw baseline and policy-prepared retrieval separate
 - Stage 10 suite aggregation reports and release-gate evidence
 
 Authoritative generated outputs live under `data/manifests/generated/`.

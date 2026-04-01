@@ -21,7 +21,7 @@ def load_json(path: Path) -> dict:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run Stage 6 multiturn and red-team regression against the Stage 5 widened corpus gate."
+        description="Run Stage 6 widened-corpus regression and summarize raw-vs-policy retrieval separately."
     )
     parser.add_argument(
         "--policy-report",
@@ -62,6 +62,11 @@ def parse_args() -> argparse.Namespace:
         "--summary-output",
         type=Path,
         default=Path("data/manifests/generated/stage06-regression-summary.json"),
+    )
+    parser.add_argument(
+        "--runtime-report",
+        type=Path,
+        default=Path("data/manifests/generated/stage08-live-runtime-report.json"),
     )
     return parser.parse_args()
 
@@ -115,6 +120,46 @@ def main() -> None:
     multiturn_report = load_json(args.multiturn_output)
     red_team_report = load_json(args.red_team_output)
     suite_report = load_json(args.suite_output)
+    runtime_report = load_json(args.runtime_report)
+
+    raw_summary = policy_report.get("raw_retrieval_summary", {})
+    policy_summary = policy_report.get("summary", {})
+
+    def retrieval_gate(summary: dict) -> bool:
+        return (
+            summary.get("source_dir_hit@5", 0.0) >= 0.85
+            and summary.get("supporting_doc_hit@10", 0.0) >= 0.75
+            and summary.get("citation_correctness", 0.0) >= 0.90
+        )
+
+    raw_gate = retrieval_gate(raw_summary)
+    policy_gate = retrieval_gate(policy_summary)
+
+    def metric_delta(key: str) -> float:
+        return round(float(policy_summary.get(key, 0.0)) - float(raw_summary.get(key, 0.0)), 4)
+
+    all_gates = {
+        "raw_retrieval_gate": raw_gate,
+        "policy_retrieval_gate": policy_gate,
+        "policy_suite_gate": suite_report.get("overall_decision", "") == "go",
+        "multiturn_gate": bool(multiturn_report.get("summary", {}).get("fully_passing_scenarios", 0))
+        and multiturn_report.get("summary", {}).get("fully_passing_scenarios", 0)
+        == multiturn_report.get("summary", {}).get("scenario_count", 0),
+        "red_team_gate": bool(red_team_report.get("summary", {}).get("passed_count", 0))
+        and red_team_report.get("summary", {}).get("passed_count", 0)
+        == red_team_report.get("summary", {}).get("case_count", 0),
+        "runtime_gate": bool(runtime_report.get("overall_pass")),
+    }
+
+    if raw_gate and policy_gate and all_gates["policy_suite_gate"] and all_gates["multiturn_gate"] and all_gates["red_team_gate"] and all_gates["runtime_gate"]:
+        overall_decision = "go"
+        verdict_reason = "Raw and policy-prepared retrieval both meet the widened-corpus regression bar, and the companion runtime/multiturn/red-team checks pass."
+    elif policy_gate and all_gates["policy_suite_gate"] and all_gates["multiturn_gate"] and all_gates["red_team_gate"] and all_gates["runtime_gate"]:
+        overall_decision = "policy-go/raw-gap-present"
+        verdict_reason = "Policy-prepared retrieval is acceptable, but the raw widened-corpus baseline still underperforms, so the regression is not fully clean."
+    else:
+        overall_decision = "no-go"
+        verdict_reason = "One or more widened-corpus regression gates failed."
 
     summary = {
         "stage": 6,
@@ -122,13 +167,31 @@ def main() -> None:
         "multiturn_output_path": str((REPO_ROOT / args.multiturn_output).resolve()),
         "red_team_output_path": str((REPO_ROOT / args.red_team_output).resolve()),
         "suite_output_path": str((REPO_ROOT / args.suite_output).resolve()),
-        "policy_summary": policy_report.get("summary", {}),
+        "runtime_report_path": str((REPO_ROOT / args.runtime_report).resolve()),
+        "raw_retrieval_summary": raw_summary,
+        "policy_retrieval_summary": policy_summary,
+        "raw_vs_policy_delta": {
+            "source_dir_hit@5": metric_delta("source_dir_hit@5"),
+            "supporting_doc_hit@10": metric_delta("supporting_doc_hit@10"),
+            "citation_correctness": metric_delta("citation_correctness"),
+            "rerank_lift@5": float(policy_summary.get("rerank_lift@5", 0.0)),
+        },
         "multiturn_summary": multiturn_report.get("summary", {}),
         "red_team_summary": red_team_report.get("summary", {}),
+        "runtime_summary": {
+            "overall_pass": runtime_report.get("overall_pass"),
+            "checks": runtime_report.get("checks", {}),
+            "bridge_health": runtime_report.get("bridge_health", {}),
+        },
+        "stage6_gates": all_gates,
         "gates": suite_report.get("gates", {}),
-        "overall_decision": suite_report.get("overall_decision", ""),
+        "raw_gate": raw_gate,
+        "policy_gate": policy_gate,
+        "policy_suite_decision": suite_report.get("overall_decision", ""),
         "known_blockers": suite_report.get("known_blockers", []),
-        "pass": suite_report.get("overall_decision", "") == "go",
+        "overall_decision": overall_decision,
+        "verdict_reason": verdict_reason,
+        "pass": overall_decision == "go",
     }
 
     args.summary_output.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
