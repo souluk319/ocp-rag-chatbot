@@ -67,3 +67,10 @@
 1. 빠르게 보이는 답변보다 **정확한 문서 연결**이 먼저다.
 2. fast path나 rescue는 숨기지 않는다.
 3. `localhost:8000`에서 직접 보이는 결과와 평가셋 결과가 서로 모순되면 실패로 본다.
+
+## 8. 현재 상태
+
+1. `enterprise-4.20` 기반 Golden Set 100은 확정됐다.
+2. `openshift-docs-4.20` worktree를 기준으로 `openshift-docs-4.20-balanced` canonical corpus가 생성됐다.
+3. 이 corpus는 `modules/include/xref` lineage를 manifest에 남긴다.
+4. 단, `localhost:8000` live runtime은 아직 이 4.20 corpus로 재구축된 상태가 아니다.

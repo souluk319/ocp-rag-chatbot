@@ -1,136 +1,33 @@
 version: 1
 
 mirrors:
-  - id: openshift-docs
+  - id: openshift-docs-4.20
     type: git_mirror
     source_url: https://github.com/openshift/openshift-docs
-    local_path: ../openshift-docs
+    local_path: ../openshift-docs-4.20
     trust_level: official
     product: ocp
     language: en
-    default_ref: main
+    default_ref: enterprise-4.20
 
 profiles:
-  - id: ocp-validation-main-p0
-    mirror_id: openshift-docs
-    source_id: openshift-docs-p0
-    purpose: validation
-    corpus_scope: p0
-    git_ref: main
-    version_label: 4.x
+  - id: ocp-4.20-balanced
+    mirror_id: openshift-docs-4.20
+    source_id: openshift-docs-4.20-balanced
+    purpose: canonical_evaluation
+    corpus_scope: balanced_4_20
+    git_ref: enterprise-4.20
+    version_label: "4.20"
     include_dirs:
-      - installing
-      - post_installation_configuration
-      - updating
-      - disconnected
-      - support
-    exclude_dirs:
-      - modules
-      - snippets
-      - _topic_maps
-      - _images
-      - _templates
-      - _attributes
-      - _stylesheets
-      - _javascripts
-      - _converters
-      - _gemfiles
-    exclude_prefixes:
-      - osd_
-      - rosa_
-      - microshift_
-      - cloud_experts_
-    exclude_path_fragments:
-      - /rosa-
-      - /rosa_
-      - -rosa-
-      - _rosa_
-      - /osd-
-      - /osd_
-      - -osd-
-      - _osd_
-      - /microshift-
-      - /microshift_
-      - -microshift-
-      - _microshift_
-      - /support/remote_health_monitoring/
-      - /support/troubleshooting/rosa-
-      - /support/troubleshooting/troubleshooting-osd-
-      - /support/troubleshooting/sd-
-    exclude_exact:
-      - ocm
-      - hosted_control_planes
-      - lightspeed
-      - migration_toolkit_for_containers
-      - contributing_to_docs
-
-  - id: ocp-target-minor-p0
-    mirror_id: openshift-docs
-    source_id_template: openshift-docs-{target_minor}-p0
-    purpose: operator_release
-    corpus_scope: p0
-    git_ref_template: enterprise-{target_minor}
-    version_label_template: "{target_minor}"
-    target_minor_required: true
-    include_dirs:
-      - installing
-      - post_installation_configuration
-      - updating
-      - disconnected
-      - support
-    exclude_dirs:
-      - modules
-      - snippets
-      - _topic_maps
-      - _images
-      - _templates
-      - _attributes
-      - _stylesheets
-      - _javascripts
-      - _converters
-      - _gemfiles
-    exclude_prefixes:
-      - osd_
-      - rosa_
-      - microshift_
-      - cloud_experts_
-    exclude_path_fragments:
-      - /rosa-
-      - /rosa_
-      - -rosa-
-      - _rosa_
-      - /osd-
-      - /osd_
-      - -osd-
-      - _osd_
-      - /microshift-
-      - /microshift_
-      - -microshift-
-      - _microshift_
-      - /support/remote_health_monitoring/
-      - /support/troubleshooting/rosa-
-      - /support/troubleshooting/troubleshooting-osd-
-      - /support/troubleshooting/sd-
-    exclude_exact:
-      - ocm
-      - hosted_control_planes
-      - lightspeed
-      - migration_toolkit_for_containers
-      - contributing_to_docs
-
-  - id: ocp-validation-main-core
-    mirror_id: openshift-docs
-    source_id: openshift-docs-core-validation
-    purpose: validation
-    corpus_scope: core_validation
-    git_ref: main
-    version_label: 4.x
-    include_dirs:
-      - installing
+      - architecture
+      - installing/overview
+      - installing/install_config
+      - installing/installing_platform_agnostic
+      - installing/validation_and_troubleshooting
       - post_installation_configuration
       - updating
       - upgrading
-      - backup_and_restore
+      - disconnected
       - networking
       - security
       - storage
@@ -138,119 +35,63 @@ profiles:
       - operators
       - observability
       - etcd
-      - disconnected
-      - registry
-      - cli_reference
-      - support
+      - backup_and_restore
       - authentication
-      - architecture
       - machine_configuration
       - machine_management
+      - registry
+      - support
+    exclude_dirs:
+      - snippets
+      - _topic_maps
+      - _images
+      - _templates
+      - _attributes
+      - _stylesheets
+      - _javascripts
+      - _converters
+      - _gemfiles
+    exclude_prefixes:
+      - osd_
+      - rosa_
+      - microshift_
+      - cloud_experts_
+    exclude_path_fragments:
+      - /rosa-
+      - /rosa_
+      - -rosa-
+      - _rosa_
+      - /osd-
+      - /osd_
+      - -osd-
+      - _osd_
+      - /microshift-
+      - /microshift_
+      - -microshift-
+      - _microshift_
+      - /support/remote_health_monitoring/
+      - /support/troubleshooting/rosa-
+      - /support/troubleshooting/rosa-troubleshooting-
+      - /support/troubleshooting/troubleshooting-osd-
+      - /support/troubleshooting/sd-
+      - /authentication/osd-
+      - /authentication/sd-
+      - /architecture/ocm-
+      - /architecture/mce-
+      - /architecture/osd-
+      - /architecture/rosa-
+      - /architecture/cicd_
+      - /architecture/nvidia-gpu-
+      - /networking/ovn_kubernetes_network_provider/migrate-from-openshift-sdn-osd
+      - /openshift-sdn-osd
+    exclude_exact:
+      - ocm
+      - hosted_control_planes
+      - lightspeed
+      - migration_toolkit_for_containers
+      - contributing_to_docs
+      - release_notes
+      - rest_api
       - web_console
       - applications
       - cicd
-    exclude_dirs:
-      - modules
-      - snippets
-      - _topic_maps
-      - _images
-      - _templates
-      - _attributes
-      - _stylesheets
-      - _javascripts
-      - _converters
-      - _gemfiles
-    exclude_prefixes:
-      - osd_
-      - rosa_
-      - microshift_
-      - cloud_experts_
-    exclude_path_fragments:
-      - /rosa-
-      - /rosa_
-      - -rosa-
-      - _rosa_
-      - /osd-
-      - /osd_
-      - -osd-
-      - _osd_
-      - /microshift-
-      - /microshift_
-      - -microshift-
-      - _microshift_
-      - /support/remote_health_monitoring/
-      - /support/troubleshooting/rosa-
-      - /support/troubleshooting/troubleshooting-osd-
-      - /support/troubleshooting/sd-
-    exclude_exact:
-      - ocm
-      - hosted_control_planes
-      - lightspeed
-      - migration_toolkit_for_containers
-      - contributing_to_docs
-
-  - id: ocp-target-minor-core
-    mirror_id: openshift-docs
-    source_id_template: openshift-docs-{target_minor}-core
-    purpose: operator_release
-    corpus_scope: first_operational_release
-    git_ref_template: enterprise-{target_minor}
-    version_label_template: "{target_minor}"
-    target_minor_required: true
-    include_dirs:
-      - installing
-      - post_installation_configuration
-      - updating
-      - upgrading
-      - backup_and_restore
-      - networking
-      - security
-      - storage
-      - nodes
-      - operators
-      - observability
-      - etcd
-      - disconnected
-      - registry
-      - cli_reference
-      - support
-      - release_notes
-    exclude_dirs:
-      - modules
-      - snippets
-      - _topic_maps
-      - _images
-      - _templates
-      - _attributes
-      - _stylesheets
-      - _javascripts
-      - _converters
-      - _gemfiles
-    exclude_prefixes:
-      - osd_
-      - rosa_
-      - microshift_
-      - cloud_experts_
-    exclude_path_fragments:
-      - /rosa-
-      - /rosa_
-      - -rosa-
-      - _rosa_
-      - /osd-
-      - /osd_
-      - -osd-
-      - _osd_
-      - /microshift-
-      - /microshift_
-      - -microshift-
-      - _microshift_
-      - /support/remote_health_monitoring/
-      - /support/troubleshooting/rosa-
-      - /support/troubleshooting/troubleshooting-osd-
-      - /support/troubleshooting/sd-
-    exclude_exact:
-      - ocm
-      - hosted_control_planes
-      - lightspeed
-      - migration_toolkit_for_containers
-      - contributing_to_docs

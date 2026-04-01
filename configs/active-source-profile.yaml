@@ -1,7 +1,7 @@
 version: 1
-active_profile_id: ocp-validation-main-core
-target_minor:
+active_profile_id: ocp-4.20-balanced
+target_minor: "4.20"
 notes:
-  - Validation mode currently serves the widened main-based core validation corpus.
-  - This active profile is aligned with the live runtime index `s15c-core`.
-  - Once a target minor is approved, switch to an operator_release profile instead of rewriting the pipeline.
+  - Canonical evaluation now targets the official openshift-docs enterprise-4.20 branch.
+  - The 4.20 balanced corpus is the only accepted build baseline for Golden Set evaluation.
+  - Live runtime must be rebuilt from the resulting 4.20 canonical corpus before claiming 4.20 serving.

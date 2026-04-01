@@ -18,10 +18,24 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 DEFAULT_INCLUDE_DIRS = [
+    "architecture",
     "installing",
     "post_installation_configuration",
     "updating",
+    "upgrading",
     "disconnected",
+    "networking",
+    "security",
+    "storage",
+    "nodes",
+    "operators",
+    "observability",
+    "etcd",
+    "backup_and_restore",
+    "authentication",
+    "machine_configuration",
+    "machine_management",
+    "registry",
     "support",
 ]
 
@@ -52,7 +66,6 @@ DEFAULT_EXCLUDE_PATH_FRAGMENTS = (
 )
 
 DEFAULT_EXCLUDE_DIRS = {
-    "modules",
     "snippets",
     "_topic_maps",
     "_images",
@@ -80,6 +93,7 @@ INCLUDE_RE = re.compile(r"^include::([^\[]+)\[([^\]]*)\]\s*$")
 LEVEL_OFFSET_RE = re.compile(r"leveloffset=([+-]?\d+)")
 ADMONITION_RE = re.compile(r"^\[(NOTE|IMPORTANT|WARNING|TIP|CAUTION)\]\s*$")
 SOURCE_BLOCK_RE = re.compile(r"^\[source(?:,([^\]]+))?\]\s*$")
+XREF_RE = re.compile(r"xref:([^\[]+)\[([^\]]*)\]")
 
 
 @dataclass
@@ -98,6 +112,23 @@ class RenderSection:
     heading_hierarchy: list[str]
     section_index: int
     body_lines: list[str] = field(default_factory=list)
+
+
+@dataclass
+class IncludeEdge:
+    from_path: str
+    to_path: str
+    include_target: str
+    level_offset: int
+
+
+@dataclass
+class ResolvedDocument:
+    lines: list[str] = field(default_factory=list)
+    source_paths: list[str] = field(default_factory=list)
+    included_module_paths: list[str] = field(default_factory=list)
+    include_edges: list[IncludeEdge] = field(default_factory=list)
+    xref_targets: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -124,6 +155,10 @@ class NormalizedDocument:
     collected_at: str
     checksum: str
     top_level_dir: str
+    canonical_source_paths: list[str]
+    included_module_paths: list[str]
+    include_edges: list[dict[str, object]]
+    xref_targets: list[str]
     section_count: int
     sections: list[dict[str, object]]
 
@@ -157,25 +192,25 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--source-root",
         type=Path,
-        default=Path("../openshift-docs"),
-        help="Path to the openshift-docs checkout",
+        default=Path("../openshift-docs-4.20"),
+        help="Path to the enterprise-4.20 openshift-docs checkout",
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("./data/normalized/openshift-docs-p0"),
+        default=Path("./data/normalized/openshift-docs-4.20-balanced"),
         help="Directory where normalized text files will be written",
     )
     parser.add_argument(
         "--html-dir",
         type=Path,
-        default=Path("./data/views/openshift-docs-p0"),
+        default=Path("./data/views/openshift-docs-4.20-balanced"),
         help="Directory where HTML citation views will be written",
     )
     parser.add_argument(
         "--manifest-out",
         type=Path,
-        default=Path("./data/manifests/generated/openshift-docs-p0.json"),
+        default=Path("./data/manifests/generated/openshift-docs-4.20-balanced.json"),
         help="Path to the generated manifest JSON file",
     )
     parser.add_argument(
@@ -186,7 +221,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--source-id",
-        default="openshift-docs-p0",
+        default="openshift-docs-4.20-balanced",
         help="Source identifier written to the manifest",
     )
     parser.add_argument(
@@ -197,7 +232,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--version-label",
-        default="4.x",
+        default="4.20",
         help="Version label stored in the manifest",
     )
     parser.add_argument(
@@ -233,8 +268,11 @@ def skip_reason_for_path(
     exclude_fragments: list[str],
     exclude_dirs: set[str],
     exclude_prefixes: tuple[str, ...],
+    exclude_exact: set[str],
 ) -> str | None:
     top_level = relative_path.parts[0]
+    if top_level in exclude_exact:
+        return f"top_level_exact:{top_level}"
     if should_skip_top_level(top_level, exclude_dirs, exclude_prefixes):
         return f"top_level:{top_level}"
 
@@ -332,7 +370,7 @@ def resolve_source_profile(args: argparse.Namespace) -> dict[str, object]:
             "trust_level": "official",
             "source_type": "git_mirror",
             "source_url_base": "https://github.com/openshift/openshift-docs",
-            "declared_git_ref": "main",
+            "declared_git_ref": "enterprise-4.20",
             "target_minor": None,
             "catalog_path": str(profile_catalog_path),
             "active_config_path": str(active_config_path) if active_config_path.exists() else "",
@@ -381,6 +419,7 @@ def resolve_source_profile(args: argparse.Namespace) -> dict[str, object]:
         "exclude_dirs": set(profile.get("exclude_dirs", list(DEFAULT_EXCLUDE_DIRS))),
         "exclude_prefixes": tuple(profile.get("exclude_prefixes", list(DEFAULT_EXCLUDE_PREFIXES))),
         "exclude_fragments": list(profile.get("exclude_path_fragments", args.exclude_fragments or list(DEFAULT_EXCLUDE_PATH_FRAGMENTS))),
+        "exclude_exact": set(profile.get("exclude_exact", [])),
         "product": str(mirror.get("product", "ocp")).strip(),
         "language": str(mirror.get("language", "en")).strip(),
         "trust_level": str(mirror.get("trust_level", "official")).strip(),
@@ -410,16 +449,28 @@ def detect_source_lineage(source_root: Path, declared_git_ref: str) -> dict[str,
     remote_url = git_output(source_root, "config", "--get", "remote.origin.url")
     detected_git_ref = git_output(source_root, "rev-parse", "--abbrev-ref", "HEAD")
     detected_git_commit = git_output(source_root, "rev-parse", "HEAD")
+    detected_tracking_ref = git_output(source_root, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}")
     dirty_state = git_output(source_root, "status", "--short")
+    tracking_ref_matches_profile = bool(
+        declared_git_ref
+        and detected_tracking_ref
+        and (
+            detected_tracking_ref == declared_git_ref
+            or detected_tracking_ref.endswith(f"/{declared_git_ref}")
+        )
+    )
     git_ref_matches_profile = (
         not declared_git_ref
         or detected_git_ref == declared_git_ref
+        or detected_git_ref.startswith(f"{declared_git_ref}-")
         or detected_git_commit == declared_git_ref
+        or tracking_ref_matches_profile
     )
     return {
         "remote_url": remote_url,
         "declared_git_ref": declared_git_ref,
         "detected_git_ref": detected_git_ref,
+        "detected_tracking_ref": detected_tracking_ref,
         "detected_git_commit": detected_git_commit,
         "git_ref_matches_profile": git_ref_matches_profile,
         "is_dirty": bool(dirty_state),
@@ -523,19 +574,50 @@ def resolve_include_target(current_file: Path, include_target: str, source_root:
     return None
 
 
+def relative_source_path(path: Path, source_root: Path) -> str:
+    return path.resolve().relative_to(source_root.resolve()).as_posix()
+
+
+def append_unique(items: list[str], value: str) -> None:
+    if value and value not in items:
+        items.append(value)
+
+
+def append_xref_targets(targets: list[str], raw_line: str, state: ParserState) -> None:
+    expanded_line = replace_attrs(raw_line, state)
+    for match in XREF_RE.finditer(expanded_line):
+        target = match.group(1).strip()
+        if target:
+            append_unique(targets, target)
+
+
+def merge_resolved_document(result: ResolvedDocument, nested: ResolvedDocument) -> None:
+    result.lines.extend(nested.lines)
+    for path in nested.source_paths:
+        append_unique(result.source_paths, path)
+    for path in nested.included_module_paths:
+        append_unique(result.included_module_paths, path)
+    for edge in nested.include_edges:
+        if edge not in result.include_edges:
+            result.include_edges.append(edge)
+    for target in nested.xref_targets:
+        append_unique(result.xref_targets, target)
+
+
 def resolve_document_lines(
     source_file: Path,
     source_root: Path,
     state: ParserState,
     heading_offset: int = 0,
     include_stack: set[Path] | None = None,
-) -> list[str]:
+) -> ResolvedDocument:
     include_stack = include_stack or set()
     if source_file in include_stack:
-        return []
+        return ResolvedDocument()
 
     include_stack.add(source_file)
-    lines_out: list[str] = []
+    result = ResolvedDocument()
+    append_unique(result.source_paths, relative_source_path(source_file, source_root))
     condition_stack: list[bool] = []
 
     for raw_line in source_file.read_text(encoding="utf-8", errors="ignore").splitlines():
@@ -590,31 +672,41 @@ def resolve_document_lines(
             include_path = resolve_include_target(source_file, include_target, source_root)
             if not include_path:
                 continue
-            lines_out.extend(
-                resolve_document_lines(
-                    include_path,
-                    source_root,
-                    state,
-                    heading_offset=heading_offset + parse_level_offset(options),
-                    include_stack=include_stack.copy(),
+            nested = resolve_document_lines(
+                include_path,
+                source_root,
+                state,
+                heading_offset=heading_offset + parse_level_offset(options),
+                include_stack=include_stack.copy(),
+            )
+            if include_path.resolve().is_relative_to(source_root.resolve() / "modules"):
+                append_unique(result.included_module_paths, relative_source_path(include_path, source_root))
+            result.include_edges.append(
+                IncludeEdge(
+                    from_path=relative_source_path(source_file, source_root),
+                    to_path=relative_source_path(include_path, source_root),
+                    include_target=include_target,
+                    level_offset=parse_level_offset(options),
                 )
             )
+            merge_resolved_document(result, nested)
             continue
 
         if id_match := ID_RE.match(stripped):
             resolved_id = replace_attrs(id_match.group(1), state)
-            lines_out.append(f'[id="{resolved_id}"]')
+            result.lines.append(f'[id="{resolved_id}"]')
             continue
 
         if heading_match := HEADING_RE.match(raw_line):
             new_level = max(1, min(6, len(heading_match.group(1)) + heading_offset))
             heading_title = clean_inline_text(heading_match.group(2), state)
-            lines_out.append(f'{"=" * new_level} {heading_title}')
+            result.lines.append(f'{"=" * new_level} {heading_title}')
             continue
 
-        lines_out.append(replace_attrs(raw_line.rstrip(), state))
+        append_xref_targets(result.xref_targets, raw_line.rstrip(), state)
+        result.lines.append(replace_attrs(raw_line.rstrip(), state))
 
-    return lines_out
+    return result
 
 
 def build_sections(lines: list[str], fallback_title: str, document_id: str) -> list[RenderSection]:
@@ -986,6 +1078,7 @@ def normalize_documents(args: argparse.Namespace) -> int:
     exclude_dirs = set(profile["exclude_dirs"])
     exclude_prefixes = tuple(profile["exclude_prefixes"])
     exclude_fragments = list(profile["exclude_fragments"])
+    exclude_exact = set(profile.get("exclude_exact", set()))
     lineage = detect_source_lineage(source_root, str(profile["declared_git_ref"]))
     if not args.allow_ref_mismatch and not lineage["git_ref_matches_profile"]:
         raise SystemExit(
@@ -994,9 +1087,9 @@ def normalize_documents(args: argparse.Namespace) -> int:
             f"detected_ref={lineage['detected_git_ref']}"
         )
 
-    default_output_dir = Path("./data/normalized/openshift-docs-p0")
-    default_html_dir = Path("./data/views/openshift-docs-p0")
-    default_manifest_out = Path("./data/manifests/generated/openshift-docs-p0.json")
+    default_output_dir = Path("./data/normalized/openshift-docs-4.20-balanced")
+    default_html_dir = Path("./data/views/openshift-docs-4.20-balanced")
+    default_manifest_out = Path("./data/manifests/generated/openshift-docs-4.20-balanced.json")
     output_dir = (
         Path("./data/normalized") / source_id if args.output_dir == default_output_dir else args.output_dir
     ).resolve()
@@ -1021,22 +1114,22 @@ def normalize_documents(args: argparse.Namespace) -> int:
 
     for source_file in source_files:
         relative_path = source_file.relative_to(source_root)
-        skip_reason = skip_reason_for_path(relative_path, exclude_fragments, exclude_dirs, exclude_prefixes)
+        skip_reason = skip_reason_for_path(relative_path, exclude_fragments, exclude_dirs, exclude_prefixes, exclude_exact)
         if skip_reason:
             skipped[skip_reason] += 1
             continue
 
         parser_state = ParserState(attr_values=build_default_attr_values(version_label))
-        resolved_lines = resolve_document_lines(source_file, source_root, parser_state)
+        resolved_document = resolve_document_lines(source_file, source_root, parser_state)
         title = source_file.stem
-        for line in resolved_lines:
+        for line in resolved_document.lines:
             heading_match = HEADING_RE.match(line.strip())
             if heading_match:
                 title = clean_inline_text(heading_match.group(2), parser_state) or title
                 break
 
         document_id = stable_document_id(relative_path)
-        sections = build_sections(resolved_lines, title, document_id)
+        sections = build_sections(resolved_document.lines, title, document_id)
         viewer_url = build_viewer_url(source_id, relative_path)
         normalized_payload = build_normalized_payload(title, relative_path, viewer_url, sections, parser_state)
         checksum = sha256_text(normalized_payload)
@@ -1068,6 +1161,18 @@ def normalize_documents(args: argparse.Namespace) -> int:
             collected_at=collected_at,
             checksum=checksum,
             top_level_dir=relative_path.parts[0],
+            canonical_source_paths=resolved_document.source_paths,
+            included_module_paths=resolved_document.included_module_paths,
+            include_edges=[
+                {
+                    "from_path": edge.from_path,
+                    "to_path": edge.to_path,
+                    "include_target": edge.include_target,
+                    "level_offset": edge.level_offset,
+                }
+                for edge in resolved_document.include_edges
+            ],
+            xref_targets=resolved_document.xref_targets,
             section_count=len(sections),
             sections=[section_manifest(section, viewer_url) for section in sections],
         )
@@ -1103,6 +1208,7 @@ def normalize_documents(args: argparse.Namespace) -> int:
             "exclude_dirs": sorted(exclude_dirs),
             "exclude_prefixes": list(exclude_prefixes),
             "exclude_path_fragments": exclude_fragments,
+            "exclude_exact": sorted(exclude_exact),
         },
         "scanned_adoc_count": len(source_files),
         "document_count": len(documents),
