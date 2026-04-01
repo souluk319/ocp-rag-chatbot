@@ -68,8 +68,23 @@ This is useful for CI-like smoke checks or quick operator verification.
 
 - bridge health: `http://127.0.0.1:18101/health`
 - OpenDocuments health: `http://127.0.0.1:18102/api/v1/health`
-- gateway health: `http://127.0.0.1:18103/health`
-- gateway chat stream: `http://127.0.0.1:18103/api/v1/chat/stream`
+- gateway health: `http://127.0.0.1:8000/health`
+- gateway chat stream: `http://127.0.0.1:8000/api/v1/chat/stream`
+- gateway UI: `http://127.0.0.1:8000/`
+
+## Recommended local launch wrapper
+
+For local operator usage on Windows, prefer:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deployment/start_local_runtime.ps1
+```
+
+This wrapper locks the local runtime to:
+
+- bridge: `18101`
+- OpenDocuments: `18102`
+- gateway: `8000`
 
 ## Logs and report
 

@@ -41,6 +41,18 @@ Then it starts:
 
 The launcher injects `OD_SERVER_BASE_URL` into the gateway process, so the gateway path can be managed even when that value is not permanently written to `.env`.
 
+For local Windows operation, the recommended wrapper is:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deployment/start_local_runtime.ps1
+```
+
+The locked local path is:
+
+- bridge: `18101`
+- OpenDocuments: `18102`
+- gateway/UI: `8000`
+
 ## Exit criteria
 
 Stage 14 is complete when:
