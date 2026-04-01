@@ -85,8 +85,12 @@ python deployment/check_runtime_contract.py
 ### 2. 런타임 기동
 
 ```powershell
-python deployment/start_runtime_stack.py --hold-seconds 10
+python deployment/start_runtime_stack.py
 ```
+
+실행 후 브라우저에서 아래 주소로 바로 들어가면 됩니다.
+
+- [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
 ### 3. live runtime smoke
 

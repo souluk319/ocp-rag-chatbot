@@ -40,7 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--runtime-workspace", type=Path)
     parser.add_argument("--bridge-port", type=int, default=18101)
     parser.add_argument("--od-port", type=int, default=18102)
-    parser.add_argument("--gateway-port", type=int, default=18103)
+    parser.add_argument("--gateway-port", type=int, default=8000)
     parser.add_argument("--startup-timeout-seconds", type=float, default=90.0)
     parser.add_argument("--request-timeout-seconds", type=float, default=180.0)
     parser.add_argument("--output", type=Path, default=default_output_path())

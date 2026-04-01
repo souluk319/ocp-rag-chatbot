@@ -28,6 +28,7 @@ SESSION_COOKIE_NAME = "ocp_runtime_session"
 KNOWN_UPSTREAM_CONVERSATIONS: set[str] = set()
 
 app = FastAPI(title="OCP Runtime Gateway")
+STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
 @lru_cache(maxsize=1)
@@ -208,6 +209,14 @@ def health() -> dict[str, Any]:
         "ok": not config.missing_gateway_keys(),
         **health_payload(config),
     }
+
+
+@app.get("/")
+def chat_home() -> Response:
+    page = STATIC_DIR / "runtime_chat.html"
+    if not page.exists():
+        raise HTTPException(status_code=404, detail="Runtime chat page is missing.")
+    return FileResponse(page, media_type="text/html")
 
 
 @app.get("/viewer/{source_id}/{document_path:path}")
