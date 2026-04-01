@@ -17,11 +17,23 @@ from deployment.stage11_bundle_utils import repo_relative, utc_now, write_json
 
 
 def default_smoke_output() -> Path:
-    return REPO_ROOT / "data" / "manifests" / "generated" / "stage02-live-runtime-smoke.json"
+    return (
+        REPO_ROOT
+        / "data"
+        / "manifests"
+        / "generated"
+        / "stage02-live-runtime-smoke.json"
+    )
 
 
 def default_output() -> Path:
-    return REPO_ROOT / "data" / "manifests" / "generated" / "stage02-runtime-path-authenticity-report.json"
+    return (
+        REPO_ROOT
+        / "data"
+        / "manifests"
+        / "generated"
+        / "stage02-runtime-path-authenticity-report.json"
+    )
 
 
 def parse_args() -> argparse.Namespace:
@@ -49,7 +61,11 @@ def read_log(path_str: str) -> str:
 
 def has_model(models_payload: dict, model_id: str) -> bool:
     data = models_payload.get("data", [])
-    return any(str(item.get("id", "")).strip() == model_id for item in data if isinstance(item, dict))
+    return any(
+        str(item.get("id", "")).strip() == model_id
+        for item in data
+        if isinstance(item, dict)
+    )
 
 
 def turn_has_done_payload(turn: dict) -> bool:
@@ -88,14 +104,22 @@ def main() -> int:
         "--output",
         str(smoke_output),
     ]
-    smoke_result = subprocess.run(smoke_command, cwd=str(REPO_ROOT), text=True, capture_output=True, check=False)
+    smoke_result = subprocess.run(
+        smoke_command, cwd=str(REPO_ROOT), text=True, capture_output=True, check=False
+    )
     if not smoke_output.exists():
         raise SystemExit(f"Stage 2 smoke output was not produced: {smoke_output}")
 
     smoke_report = load_json(smoke_output)
-    bridge_log = read_log(str(smoke_report.get("logs", {}).get("bridge", {}).get("path", "")))
-    od_log = read_log(str(smoke_report.get("logs", {}).get("opendocuments", {}).get("path", "")))
-    gateway_log = read_log(str(smoke_report.get("logs", {}).get("gateway", {}).get("path", "")))
+    bridge_log = read_log(
+        str(smoke_report.get("logs", {}).get("bridge", {}).get("path", ""))
+    )
+    od_log = read_log(
+        str(smoke_report.get("logs", {}).get("opendocuments", {}).get("path", ""))
+    )
+    gateway_log = read_log(
+        str(smoke_report.get("logs", {}).get("gateway", {}).get("path", ""))
+    )
 
     bridge_ready = smoke_report.get("bridge_ready", {})
     bridge_evidence = smoke_report.get("bridge_evidence", {})
@@ -104,46 +128,115 @@ def main() -> int:
     gateway_health = smoke_report.get("gateway_health", {})
     turns = smoke_report.get("turns", [])
     vector_dimensions = int(smoke_report.get("vector_dimensions", 0) or 0)
-    evidence_telemetry = bridge_evidence.get("telemetry", {}) if isinstance(bridge_evidence, dict) else {}
-    last_chat_target_path = str(evidence_telemetry.get("last_chat_target_path", "")).strip()
+    evidence_telemetry = (
+        bridge_evidence.get("telemetry", {})
+        if isinstance(bridge_evidence, dict)
+        else {}
+    )
+    last_chat_target_path = str(
+        evidence_telemetry.get("last_chat_target_path", "")
+    ).strip()
 
     checks = {
         "bridge_health_ok": bool(bridge_health.get("ok") is True),
         "bridge_ready_ok": bool(bridge_ready.get("ready") is True),
         "bridge_evidence_ok": bool(bridge_evidence.get("ok") is True),
-        "runtime_mode_company_only": str(bridge_health.get("runtime_mode", "")).strip() == "company-only",
-        "local_chat_fallback_disabled": bool(bridge_health.get("local_chat_fallback") is False),
-        "bridge_evidence_runtime_mode_company_only": str(bridge_evidence.get("runtime_mode", "")).strip() == "company-only",
-        "bridge_ready_model_matches_config": str(bridge_ready.get("embedding_model", "")).strip() == config.embedding_model,
-        "bridge_ready_dimensions_match_config": int(bridge_ready.get("embedding_dimensions", 0) or 0)
+        "runtime_mode_company_only": str(bridge_health.get("runtime_mode", "")).strip()
+        == "company-only",
+        "local_chat_fallback_disabled": bool(
+            bridge_health.get("local_chat_fallback") is False
+        ),
+        "bridge_evidence_runtime_mode_company_only": str(
+            bridge_evidence.get("runtime_mode", "")
+        ).strip()
+        == "company-only",
+        "bridge_ready_model_matches_config": str(
+            bridge_ready.get("embedding_model", "")
+        ).strip()
+        == config.embedding_model,
+        "bridge_ready_dimensions_match_config": int(
+            bridge_ready.get("embedding_dimensions", 0) or 0
+        )
         == config.embedding_dimensions,
-        "bridge_ready_dimensions_match_active_index": int(bridge_ready.get("embedding_dimensions", 0) or 0)
+        "bridge_ready_dimensions_match_active_index": int(
+            bridge_ready.get("embedding_dimensions", 0) or 0
+        )
         == vector_dimensions,
-        "bridge_evidence_model_matches_config": str(bridge_evidence.get("embedding_model", "")).strip() == config.embedding_model,
-        "bridge_evidence_dimensions_match_config": int(bridge_evidence.get("embedding_dimensions", 0) or 0)
+        "bridge_ready_transport_company_proxy": str(
+            bridge_ready.get("embedding_transport", "")
+        ).strip()
+        == "company-proxy",
+        "bridge_evidence_model_matches_config": str(
+            bridge_evidence.get("embedding_model", "")
+        ).strip()
+        == config.embedding_model,
+        "bridge_evidence_dimensions_match_config": int(
+            bridge_evidence.get("embedding_dimensions", 0) or 0
+        )
         == config.embedding_dimensions,
-        "bridge_models_include_configured_chat_model": has_model(bridge_models, config.chat_model),
-        "opendocuments_openai_plugin_loaded": "Loading model plugin: opendocuments-model-openai" in od_log,
-        "opendocuments_no_embed_probe_failure": "embed probe failed" not in od_log.lower(),
+        "bridge_evidence_transport_company_proxy": str(
+            bridge_evidence.get("embedding_transport", "")
+        ).strip()
+        == "company-proxy",
+        "bridge_models_include_configured_chat_model": has_model(
+            bridge_models, config.chat_model
+        ),
+        "opendocuments_openai_plugin_loaded": "Loading model plugin: opendocuments-model-openai"
+        in od_log,
+        "opendocuments_no_embed_probe_failure": "embed probe failed"
+        not in od_log.lower(),
         "opendocuments_no_ollama_reference": "ollama" not in od_log.lower(),
         "bridge_embedding_requests_seen": "POST /v1/embeddings" in bridge_log,
         "bridge_chat_requests_seen": "POST /v1/chat/completions" in bridge_log,
-        "bridge_evidence_embedding_requests_seen": int(evidence_telemetry.get("embedding_requests", 0) or 0) > 0,
-        "bridge_evidence_chat_requests_seen": int(evidence_telemetry.get("chat_requests", 0) or 0) > 0,
-        "bridge_evidence_upstream_chat_success_seen": int(evidence_telemetry.get("upstream_chat_success_count", 0) or 0) > 0,
-        "bridge_evidence_fallback_chat_absent": int(evidence_telemetry.get("fallback_chat_count", 0) or 0) == 0,
-        "bridge_evidence_last_chat_target_path_valid": last_chat_target_path in {"/chat/completions", "/v1/chat/completions"},
-        "bridge_evidence_last_embedding_model_matches_config": str(evidence_telemetry.get("last_embedding_model", "")).strip()
+        "bridge_evidence_embedding_requests_seen": int(
+            evidence_telemetry.get("embedding_requests", 0) or 0
+        )
+        > 0,
+        "bridge_evidence_upstream_embedding_success_seen": int(
+            evidence_telemetry.get("upstream_embedding_success_count", 0) or 0
+        )
+        > 0,
+        "bridge_evidence_upstream_embedding_error_absent": int(
+            evidence_telemetry.get("upstream_embedding_error_count", 0) or 0
+        )
+        == 0,
+        "bridge_evidence_chat_requests_seen": int(
+            evidence_telemetry.get("chat_requests", 0) or 0
+        )
+        > 0,
+        "bridge_evidence_upstream_chat_success_seen": int(
+            evidence_telemetry.get("upstream_chat_success_count", 0) or 0
+        )
+        > 0,
+        "bridge_evidence_fallback_chat_absent": int(
+            evidence_telemetry.get("fallback_chat_count", 0) or 0
+        )
+        == 0,
+        "bridge_evidence_last_chat_target_path_valid": last_chat_target_path
+        in {"/chat/completions", "/v1/chat/completions"},
+        "bridge_evidence_last_embedding_target_path_valid": str(
+            evidence_telemetry.get("last_embedding_target_path", "")
+        ).strip()
+        in {"/embeddings", "/v1/embeddings"},
+        "bridge_evidence_last_embedding_status_ok": int(
+            evidence_telemetry.get("last_embedding_status", 0) or 0
+        )
+        == 200,
+        "bridge_evidence_last_embedding_model_matches_config": str(
+            evidence_telemetry.get("last_embedding_model", "")
+        ).strip()
         == config.embedding_model,
         "bridge_evidence_last_embedding_dimensions_match_active_index": int(
             evidence_telemetry.get("last_embedding_dimensions", 0) or 0
         )
         == vector_dimensions,
         "gateway_health_ok": bool(gateway_health.get("ok") is True),
-        "gateway_port_conflict_absent": "error while attempting to bind on address" not in gateway_log.lower()
+        "gateway_port_conflict_absent": "error while attempting to bind on address"
+        not in gateway_log.lower()
         and "eaddrinuse" not in od_log.lower(),
         "gateway_stream_requests_seen": "POST /api/v1/chat/stream" in gateway_log,
-        "smoke_turns_executed": len(turns) >= 2 and all(turn_has_done_payload(turn) for turn in turns[:2]),
+        "smoke_turns_executed": len(turns) >= 2
+        and all(turn_has_done_payload(turn) for turn in turns[:2]),
     }
 
     report = {

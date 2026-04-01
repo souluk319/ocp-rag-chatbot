@@ -1,24 +1,34 @@
 # v2 프로젝트 계획 및 현황
 
-이 문서는 제품 소개가 아니라, `rewrite/opendoc-v2` 브랜치의 진행 현황과 다음 작업을 빠르게 파악하기 위한 계획 문서입니다.
+이 문서는 제품 소개가 아니라, 현재 작업 브랜치의 진행 현황과 다음 작업을 빠르게 파악하기 위한 계획 문서입니다.
 
 ## 브랜치 의도
 
-`rewrite/opendoc-v2` 는 v1 런타임을 이어받아 확장하는 브랜치가 아니라, 새 OCP 운영도우미 챗봇을 위한 리라이트 브랜치입니다.
+현재 기준 브랜치는 `feat/OCP_v2_planB` 이며, v1 런타임을 이어받아 확장하는 브랜치가 아니라 **OpenDocuments 파이프라인을 기준으로 OCP 운영 가이드 챗봇을 직접 완성하기 위한 브랜치**다.
 
 - v1 런타임과 예전 UI는 제거
 - `release/v1` 와 `v1.0` 태그로 이전 버전 보존
 - v2 는 OpenDocuments 기준 구조와 OCP 전용 파이프라인으로 재구성
+- 공식 평가 데이터 기준은 `openshift-docs` `enterprise-4.20`
+- 생성 모델 기준은 `Qwen/Qwen3.5-9B`, 임베딩 기준은 `BAAI/bge-m3`
+- 핵심 평가는 정확한 일처리, 설계력, 5턴 이상 멀티턴 안정성이다
 
 ## 현재 검증 상태
 
 - Stage 3 widened corpus retrieval root-cause 분석 완료
-- Stage 10 평가 기준 `go`
+- Stage 10 평가 게이트 `go`
 - Stage 11 validated slice 기준 local refresh loop 검증 완료
 - Stage 12 live runtime baseline 검증 완료
 - Stage 13 source profile / git lineage abstraction 완료
 - Stage 14 one-command operator launch path 검증 완료
 - Stage 15 core validation corpus 확대 및 delta activation 완료
+
+## 현재 제품 기준
+
+- 공식 평가 기준 문서 원천은 `openshift-docs` `enterprise-4.20` 브랜치다.
+- 이 저장소는 `OpenDocuments` 파이프라인을 기준으로 삼되, OCP 운영 챗봇 제품 레이어와 멀티턴 구조는 직접 설계한다.
+- LangSmith 같은 완성형 외부 제품에 기대어 평가를 위임하는 대신, 저장소 내부의 retrieval / multiturn / red-team / runtime gate 로 직접 증명한다.
+- 목표는 “문서 검색기”가 아니라 **5턴 이상 멀티턴이 가능한 OCP 운영 가이드 챗봇**이다.
 
 현재 확보된 기준은 다음과 같습니다.
 
@@ -32,13 +42,20 @@
 
 ## 다음 마일스톤
 
-1. Stage 3 분석 결과를 기준으로 retrieval 보정 1차 수행
-2. widened core corpus 기준 retrieval 회귀 검증 강화
-3. Stage 11 activation smoke 를 bridge / bge-m3 기준에 더 가깝게 보강
-4. Stage 9 ~ Stage 12 게이트를 widened corpus 기준으로 다시 집계
-5. Stage 11 delta refresh 실데이터 기준 재실행
-6. 운영 대상 minor 버전이 확정되면 target-minor source profile 활성화
-7. 필요 시 최소 UI hardening
+1. **5턴 이상 멀티턴 시나리오 확장**
+   - 현재 통과 기준을 2개 시나리오 수준에서 끝내지 말고, 운영형 5턴+ 시나리오 세트로 확장
+2. **follow-up rewrite / session memory 정교화**
+   - 문서 연속성, 버전 연속성, 주제 전환 복구를 더 안정적으로 만듦
+3. **운영 질문 중심 retrieval 품질 강화**
+   - 설치/업데이트/장애대응/폐쇄망 질문에 대해 source/category/path bias 를 더 정밀하게 보정
+4. **직접 설계한 평가 체계 강화**
+   - retrieval / multiturn / red-team / runtime / activation evidence 를 하나의 제품 품질 관점으로 재정렬
+5. **widened validation serving hardening**
+   - Stage 11 smoke, bridge 기반 runtime, widened validation corpus 사이의 정합성을 더 촘촘히 맞춘다
+6. **운영자 사용성 개선**
+   - launch, smoke, evidence, rollback 흐름을 운영자 관점에서 더 짧고 명확하게 정리
+7. **release-grade hardening**
+   - target-minor 운영 기준 확정, corpus 확장, raw retrieval baseline 보강, operator release rehearsal 정리
 
 ## 핵심 설계 문서
 

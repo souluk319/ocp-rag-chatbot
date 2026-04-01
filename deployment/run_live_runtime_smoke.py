@@ -20,7 +20,12 @@ if str(REPO_ROOT) not in sys.path:
 
 from app.runtime_config import load_runtime_config
 from deployment.stage11_activation_utils import load_index_manifest
-from deployment.stage11_bundle_utils import load_json, repo_relative, utc_now, write_json
+from deployment.stage11_bundle_utils import (
+    load_json,
+    repo_relative,
+    utc_now,
+    write_json,
+)
 
 
 def default_opendocuments_root() -> Path:
@@ -28,15 +33,29 @@ def default_opendocuments_root() -> Path:
 
 
 def default_output_path() -> Path:
-    return REPO_ROOT / "data" / "manifests" / "generated" / "stage12-live-runtime-report.json"
+    return (
+        REPO_ROOT
+        / "data"
+        / "manifests"
+        / "generated"
+        / "stage12-live-runtime-report.json"
+    )
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run a live Stage 12 runtime smoke through bridge -> OpenDocuments -> gateway.")
+    parser = argparse.ArgumentParser(
+        description="Run a live Stage 12 runtime smoke through bridge -> OpenDocuments -> gateway."
+    )
     parser.add_argument("--index", default="current")
     parser.add_argument("--index-root", type=Path, default=REPO_ROOT / "indexes")
-    parser.add_argument("--cases", type=Path, default=REPO_ROOT / "deployment" / "live_runtime_smoke_cases.json")
-    parser.add_argument("--opendocuments-root", type=Path, default=default_opendocuments_root())
+    parser.add_argument(
+        "--cases",
+        type=Path,
+        default=REPO_ROOT / "deployment" / "live_runtime_smoke_cases.json",
+    )
+    parser.add_argument(
+        "--opendocuments-root", type=Path, default=default_opendocuments_root()
+    )
     parser.add_argument("--runtime-workspace", type=Path)
     parser.add_argument("--bridge-port", type=int, default=18101)
     parser.add_argument("--od-port", type=int, default=18102)
@@ -140,7 +159,9 @@ def node20_launcher() -> list[str]:
     raise SystemExit("Could not find a Node.js launcher for the OpenDocuments runtime.")
 
 
-def start_process(*, name: str, command: list[str], cwd: Path, env: dict[str, str], log_path: Path) -> ManagedProcess:
+def start_process(
+    *, name: str, command: list[str], cwd: Path, env: dict[str, str], log_path: Path
+) -> ManagedProcess:
     log_path.parent.mkdir(parents=True, exist_ok=True)
     log_handle = log_path.open("w", encoding="utf-8")
     process = subprocess.Popen(
@@ -150,12 +171,18 @@ def start_process(*, name: str, command: list[str], cwd: Path, env: dict[str, st
         stdout=log_handle,
         stderr=subprocess.STDOUT,
         text=True,
-        creationflags=getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) if os.name == "nt" else 0,
+        creationflags=getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        if os.name == "nt"
+        else 0,
     )
-    return ManagedProcess(name=name, process=process, log_path=log_path, _log_handle=log_handle)
+    return ManagedProcess(
+        name=name, process=process, log_path=log_path, _log_handle=log_handle
+    )
 
 
-def detect_vector_dimensions(*, opendocuments_root: Path, data_dir: Path, log_dir: Path) -> int:
+def detect_vector_dimensions(
+    *, opendocuments_root: Path, data_dir: Path, log_dir: Path
+) -> int:
     script_path = opendocuments_root / "tmp_stage12_detect_vector_dimensions.mjs"
     script_path.write_text(
         """
@@ -229,7 +256,9 @@ def wait_for_json(url: str, *, timeout_seconds: float, predicate) -> dict[str, A
     raise SystemExit(f"Timed out waiting for {url}: {last_error}")
 
 
-def wait_for_status(url: str, *, timeout_seconds: float, expected_status: int = 200) -> dict[str, Any]:
+def wait_for_status(
+    url: str, *, timeout_seconds: float, expected_status: int = 200
+) -> dict[str, Any]:
     deadline = time.time() + timeout_seconds
     last_error = ""
     while time.time() < deadline:
@@ -239,7 +268,10 @@ def wait_for_status(url: str, *, timeout_seconds: float, expected_status: int = 
                 try:
                     return response.json()
                 except ValueError:
-                    return {"status_code": response.status_code, "body": response.text[:500]}
+                    return {
+                        "status_code": response.status_code,
+                        "body": response.text[:500],
+                    }
             last_error = f"HTTP {response.status_code}"
         except Exception as exc:  # pragma: no cover - polling guard
             last_error = str(exc)
@@ -247,7 +279,9 @@ def wait_for_status(url: str, *, timeout_seconds: float, expected_status: int = 
     raise SystemExit(f"Timed out waiting for {url}: {last_error}")
 
 
-def parse_sse(response: requests.Response) -> tuple[list[dict[str, Any]], str, dict[str, Any], dict[str, int]]:
+def parse_sse(
+    response: requests.Response,
+) -> tuple[list[dict[str, Any]], str, dict[str, Any], dict[str, int]]:
     event_type = ""
     data_lines: list[str] = []
     sources: list[dict[str, Any]] = []
@@ -289,7 +323,9 @@ def parse_sse(response: requests.Response) -> tuple[list[dict[str, Any]], str, d
     return sources, "".join(answer_parts), done_payload, event_counts
 
 
-def fetch_viewer(session: requests.Session, gateway_base_url: str, source: dict[str, Any]) -> dict[str, Any]:
+def fetch_viewer(
+    session: requests.Session, gateway_base_url: str, source: dict[str, Any]
+) -> dict[str, Any]:
     viewer_url = str(source.get("viewer_url", "")).strip()
     expected_section_title = str(source.get("section_title", "")).strip()
     resolved_url = viewer_url
@@ -301,7 +337,9 @@ def fetch_viewer(session: requests.Session, gateway_base_url: str, source: dict[
     body = response.text
     expected_section_present = True
     if expected_section_title:
-        expected_section_present = normalize_match_text(expected_section_title) in normalize_match_text(body)
+        expected_section_present = normalize_match_text(
+            expected_section_title
+        ) in normalize_match_text(body)
     return {
         "viewer_url": viewer_url,
         "resolved_url": resolved_url,
@@ -352,7 +390,9 @@ def run_turn(
         "viewer_checks": viewer_checks,
         "session_cookie_present": bool(session.cookies.get("ocp_runtime_session")),
         "session_cookie_value": session.cookies.get("ocp_runtime_session", ""),
-        "pass": bool(sources) and bool(done_payload) and all(check["pass"] for check in viewer_checks),
+        "pass": bool(sources)
+        and bool(done_payload)
+        and all(check["pass"] for check in viewer_checks),
     }
 
 
@@ -364,7 +404,9 @@ def main() -> None:
         raise SystemExit(f"Runtime config is incomplete: {missing}")
 
     index_id = resolve_index_id(args.index, args.index_root)
-    index_dir, index_manifest = load_index_manifest(index_id, index_root=args.index_root)
+    index_dir, index_manifest = load_index_manifest(
+        index_id, index_root=args.index_root
+    )
     active_workspace = ensure_active_workspace(index_dir.name)
     active_data_dir = active_workspace / ".opendocuments-stage11"
     runtime_workspace = runtime_workspace_for(index_dir.name, args.runtime_workspace)
@@ -423,7 +465,16 @@ def main() -> None:
     try:
         bridge = start_process(
             name="bridge",
-            command=[sys.executable, "-m", "uvicorn", "app.opendocuments_openai_bridge:app", "--host", "127.0.0.1", "--port", str(args.bridge_port)],
+            command=[
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "app.opendocuments_openai_bridge:app",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(args.bridge_port),
+            ],
             cwd=REPO_ROOT,
             env=bridge_env,
             log_path=log_dir / "bridge.log",
@@ -432,17 +483,23 @@ def main() -> None:
         bridge_health = wait_for_json(
             f"{bridge_base_url}/health",
             timeout_seconds=args.startup_timeout_seconds,
-            predicate=lambda payload: isinstance(payload, dict) and payload.get("ok") is True,
+            predicate=lambda payload: (
+                isinstance(payload, dict) and payload.get("ok") is True
+            ),
         )
         bridge_ready = wait_for_json(
             f"{bridge_base_url}/ready",
             timeout_seconds=args.startup_timeout_seconds,
-            predicate=lambda payload: isinstance(payload, dict) and payload.get("ready") is True,
+            predicate=lambda payload: (
+                isinstance(payload, dict) and payload.get("ready") is True
+            ),
         )
         bridge_evidence_startup = wait_for_json(
             f"{bridge_base_url}/evidence",
             timeout_seconds=args.startup_timeout_seconds,
-            predicate=lambda payload: isinstance(payload, dict) and payload.get("ok") is True,
+            predicate=lambda payload: (
+                isinstance(payload, dict) and payload.get("ok") is True
+            ),
         )
         bridge_models = wait_for_status(
             f"{bridge_base_url}/v1/models",
@@ -453,7 +510,13 @@ def main() -> None:
         od_server = start_process(
             name="opendocuments",
             command=node20_launcher()
-            + [str(args.opendocuments_root / "packages" / "cli" / "dist" / "index.js"), "start", "--port", str(args.od_port), "--no-web"],
+            + [
+                str(args.opendocuments_root / "packages" / "cli" / "dist" / "index.js"),
+                "start",
+                "--port",
+                str(args.od_port),
+                "--no-web",
+            ],
             cwd=runtime_workspace,
             env=od_env,
             log_path=log_dir / "opendocuments.log",
@@ -462,12 +525,23 @@ def main() -> None:
         od_health = wait_for_json(
             f"{od_base_url}/api/v1/health",
             timeout_seconds=args.startup_timeout_seconds,
-            predicate=lambda payload: isinstance(payload, dict) and payload.get("status") == "ok",
+            predicate=lambda payload: (
+                isinstance(payload, dict) and payload.get("status") == "ok"
+            ),
         )
 
         gateway = start_process(
             name="gateway",
-            command=[sys.executable, "-m", "uvicorn", "app.ocp_runtime_gateway:app", "--host", "127.0.0.1", "--port", str(args.gateway_port)],
+            command=[
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "app.ocp_runtime_gateway:app",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(args.gateway_port),
+            ],
             cwd=REPO_ROOT,
             env=gateway_env,
             log_path=log_dir / "gateway.log",
@@ -476,7 +550,9 @@ def main() -> None:
         gateway_health = wait_for_json(
             f"{gateway_base_url}/health",
             timeout_seconds=args.startup_timeout_seconds,
-            predicate=lambda payload: isinstance(payload, dict) and payload.get("ok") is True,
+            predicate=lambda payload: (
+                isinstance(payload, dict) and payload.get("ok") is True
+            ),
         )
 
         session = requests.Session()
@@ -499,25 +575,70 @@ def main() -> None:
 
         first_done = first_turn.get("done_payload", {})
         second_done = second_turn.get("done_payload", {})
-        same_conversation = bool(first_done) and first_done.get("conversationId") == second_done.get("conversationId")
+        same_conversation = bool(first_done) and first_done.get(
+            "conversationId"
+        ) == second_done.get("conversationId")
         follow_up_rewrite = str(second_done.get("rewrittenQuery", "")).strip()
         rewrite_contains_last_document = "last_document" in follow_up_rewrite
-        viewer_pass = all(check["pass"] for check in first_turn["viewer_checks"] + second_turn["viewer_checks"])
-        same_cookie_value = bool(first_turn["session_cookie_value"]) and first_turn["session_cookie_value"] == second_turn["session_cookie_value"]
+        viewer_pass = all(
+            check["pass"]
+            for check in first_turn["viewer_checks"] + second_turn["viewer_checks"]
+        )
+        same_cookie_value = (
+            bool(first_turn["session_cookie_value"])
+            and first_turn["session_cookie_value"]
+            == second_turn["session_cookie_value"]
+        )
         bridge_evidence = wait_for_json(
             f"{bridge_base_url}/evidence",
             timeout_seconds=args.startup_timeout_seconds,
-            predicate=lambda payload: isinstance(payload, dict) and payload.get("ok") is True,
+            predicate=lambda payload: (
+                isinstance(payload, dict) and payload.get("ok") is True
+            ),
         )
         telemetry = bridge_evidence.get("telemetry", {})
         bridge_checks = {
-            "bridge_embedding_requests_present": int(telemetry.get("embedding_requests", 0)) > 0,
+            "bridge_embedding_requests_present": int(
+                telemetry.get("embedding_requests", 0)
+            )
+            > 0,
+            "bridge_upstream_embedding_success_present": int(
+                telemetry.get("upstream_embedding_success_count", 0)
+            )
+            > 0,
+            "bridge_upstream_embedding_error_absent": int(
+                telemetry.get("upstream_embedding_error_count", 0)
+            )
+            == 0,
             "bridge_chat_requests_present": int(telemetry.get("chat_requests", 0)) > 0,
-            "bridge_upstream_chat_success_present": int(telemetry.get("upstream_chat_success_count", 0)) > 0,
-            "bridge_no_fallback_chat": int(telemetry.get("fallback_chat_count", 0)) == 0,
-            "bridge_last_chat_target_ok": str(telemetry.get("last_chat_target_path", "")) == "/chat/completions",
-            "bridge_embedding_model_match": str(bridge_ready.get("embedding_model", "")) == config.embedding_model,
-            "bridge_embedding_dimensions_match": int(bridge_ready.get("embedding_dimensions", 0)) == vector_dimensions,
+            "bridge_upstream_chat_success_present": int(
+                telemetry.get("upstream_chat_success_count", 0)
+            )
+            > 0,
+            "bridge_no_fallback_chat": int(telemetry.get("fallback_chat_count", 0))
+            == 0,
+            "bridge_last_chat_target_ok": str(
+                telemetry.get("last_chat_target_path", "")
+            )
+            == "/chat/completions",
+            "bridge_last_embedding_target_ok": str(
+                telemetry.get("last_embedding_target_path", "")
+            )
+            in {"/embeddings", "/v1/embeddings"},
+            "bridge_last_embedding_status_ok": int(
+                telemetry.get("last_embedding_status", 0) or 0
+            )
+            == 200,
+            "bridge_embedding_transport_company_proxy": str(
+                bridge_ready.get("embedding_transport", "")
+            )
+            == "company-proxy",
+            "bridge_embedding_model_match": str(bridge_ready.get("embedding_model", ""))
+            == config.embedding_model,
+            "bridge_embedding_dimensions_match": int(
+                bridge_ready.get("embedding_dimensions", 0)
+            )
+            == vector_dimensions,
         }
 
         report.update(
@@ -538,8 +659,12 @@ def main() -> None:
                     "same_session_cookie_value": same_cookie_value,
                     "follow_up_rewrite_contains_last_document": rewrite_contains_last_document,
                     "viewer_click_through_pass": viewer_pass,
-                    "gateway_cookie_present_after_turn1": first_turn["session_cookie_present"],
-                    "gateway_cookie_present_after_turn2": second_turn["session_cookie_present"],
+                    "gateway_cookie_present_after_turn1": first_turn[
+                        "session_cookie_present"
+                    ],
+                    "gateway_cookie_present_after_turn2": second_turn[
+                        "session_cookie_present"
+                    ],
                     **bridge_checks,
                 },
             }

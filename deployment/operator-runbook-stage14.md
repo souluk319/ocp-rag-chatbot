@@ -19,9 +19,10 @@ Before startup, confirm:
 
 1. `.env` contains the approved company endpoint and model values
 2. embedding baseline is `BAAI/bge-m3`
-3. an active Stage 11 index exists in `indexes/current.txt`
-4. `workspace/stage11/<active-index>/` exists
-5. runtime contract check passes
+3. company embedding endpoint is expected to answer through the local bridge without local embedding fallback
+4. an active Stage 11 index exists in `indexes/current.txt`
+5. `workspace/stage11/<active-index>/` exists
+6. runtime contract check passes
 
 Recommended preflight:
 
@@ -46,7 +47,7 @@ This launcher will:
 
 1. resolve the active Stage 11 index
 2. detect the active vector dimension from the Stage 11 LanceDB store
-3. start the local bridge
+3. start the local bridge with company chat + embedding proxying
 4. start OpenDocuments against the active Stage 11 data directory
 5. start the product gateway with launcher-injected `OD_SERVER_BASE_URL`
 6. verify health endpoints

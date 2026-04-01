@@ -17,24 +17,24 @@ The Stage 12 baseline added:
 
 - a live viewer route on the product gateway: `GET /viewer/{source_id}/{document_path}`
 - env-driven bridge auth forwarding control via `OD_FORWARD_CLIENT_AUTH`
-- env-driven embedding-dimension compatibility via `OD_EMBEDDING_DIMENSIONS`
+- env-driven company embedding proxy validation via `OD_EMBEDDING_DIMENSIONS`
 - a reproducible local live smoke runner: `deployment/run_live_runtime_smoke.py`
 
-## Why the embedding-dimension compatibility layer was needed
+## Why the company embedding contract matters
 
 The active Stage 11 baseline index was built with LanceDB vectors at dimension `1024`.
 
-The embedding baseline is now standardized on `BAAI/bge-m3`, which produces `1024`-dimension dense vectors and fits the active Stage 11 baseline without the earlier 384-to-1024 mismatch.
+The embedding baseline is now standardized on `BAAI/bge-m3`, which produces `1024`-dimension dense vectors and fits the active Stage 11 baseline.
 
-The compatibility layer remains in place so the live runtime can still defend itself if a future staged index and the currently configured embedding path drift out of alignment.
+In planB, the bridge no longer computes embeddings locally. It validates that the approved company embedding path returns the expected `1024`-dimension vectors and fails fast if the upstream contract drifts.
 
-Stage 12 therefore:
+Stage 12 therefore now proves:
 
 - detects the active index vector dimension from the live LanceDB schema
 - injects that dimension into the bridge and OpenDocuments runtime
-- pads or truncates bridge-produced embeddings to the active index dimension when a mismatch is detected
+- verifies that company-proxied embeddings match the active index dimension without local padding or truncation
 
-This is a runtime compatibility step, not a retrieval-quality claim.
+This is a runtime contract step, not a retrieval-quality claim.
 
 ## Live smoke command
 
@@ -55,6 +55,7 @@ Smoke inputs:
 The current live smoke report records:
 
 - bridge `/health`: pass
+- bridge `/ready`: company embedding proxy pass
 - bridge `/v1/models`: pass
 - OpenDocuments `/api/v1/health`: pass
 - gateway `/health`: pass
@@ -70,10 +71,11 @@ The current live smoke report records:
 Stage 12 now proves that:
 
 1. the approved company-backed bridge can serve the live OpenDocuments runtime path
-2. the product gateway can preserve session continuity for unmodified clients
-3. follow-up rewrite is present on the real HTTP path
-4. citations returned on the live path resolve through the product-owned HTML viewer route
-5. the serving stack can be recreated locally without hardcoding company endpoint or model values into source files
+2. the approved company-backed bridge can proxy both chat and embeddings without local embedding fallback
+3. the product gateway can preserve session continuity for unmodified clients
+4. follow-up rewrite is present on the real HTTP path
+5. citations returned on the live path resolve through the product-owned HTML viewer route
+6. the serving stack can be recreated locally without hardcoding company endpoint or model values into source files
 
 ## What Stage 12 does not prove
 

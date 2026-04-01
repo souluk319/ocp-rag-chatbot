@@ -1,146 +1,163 @@
-# OCP 운영 도우미 챗봇 v2 PlanB
+# OCP 운영 가이드 챗봇
 
-폐쇄망 환경에서 사용할 수 있도록 설계 중인 **OCP(OpenShift Container Platform) 운영 지원용 RAG 챗봇 프로젝트**입니다.  
-공식 OpenShift 문서를 기반으로 검색하고, 한국어 답변과 citation click-through 를 제공하는 구조를 목표로 개발하고 있습니다.
+이 저장소는 **공식 OpenShift Container Platform 문서를 기반 데이터로 사용하는 OCP 운영 가이드 챗봇**을 만드는 프로젝트다.
 
-## 프로젝트 목적
+핵심은 단순한 문서 검색기나 데모용 RAG가 아니라,
 
-이 프로젝트의 목표는 단순한 문서 검색기가 아니라, 운영자가 실제로 활용할 수 있는 **지식 기반형 OCP 도우미**를 만드는 것입니다.
+- 폐쇄망/운영 환경에서 실제로 쓸 수 있고
+- 한국어 질문에 정확하게 답하고
+- 공식 문서 근거를 클릭 가능한 citation으로 보여주며
+- **5턴 이상 멀티턴 문맥을 안정적으로 유지하는**
+- **직접 설계한** OCP 운영 도우미 챗봇을 만드는 것이다.
 
-핵심 목표는 다음과 같습니다.
+## 이 프로젝트가 정확히 무엇인가
 
-- 한국어 질문에 답변할 수 있어야 합니다.
-- 답변은 공식 문서 근거를 기반으로 해야 합니다.
-- 답변에는 출처가 포함되어야 합니다.
-- 출처를 클릭하면 원문 HTML 문서가 열려야 합니다.
-- 멀티턴 대화를 통해 앞선 질문의 문맥을 이어갈 수 있어야 합니다.
-- 폐쇄망 반입, 인덱스 갱신, 활성화, 롤백까지 고려한 구조여야 합니다.
+이 프로젝트는 아래 3가지를 결합한 제품 레이어다.
 
-## 적용 기준
+1. **데이터 원천**
+   - 공식 OCP 문서 원천: `https://github.com/openshift/openshift-docs/tree/enterprise-4.20`
+2. **파이프라인 기준**
+   - `https://github.com/joungminsung/OpenDocuments`
+   - 이 저장소는 OpenDocuments의 인덱싱/런타임 파이프라인 방향을 따른다.
+3. **이 저장소의 고유 책임**
+   - OCP 전용 정규화 파이프라인
+   - OCP 운영 질문에 맞춘 retrieval / answer policy
+   - 자체 게이트웨이 / 브리지 / 세션 메모리 / citation viewer
+   - 폐쇄망 반입 / 활성화 / 롤백 운영 흐름
+   - 멀티턴 5턴 이상 검증과 운영 품질 평가 체계
 
-이 프로젝트는 내부 지침에 따라 **RAG 구조를 [`OpenDocuments`](https://github.com/joungminsung/OpenDocuments) 기준으로 통일**해 설계했습니다.
+즉, **OpenDocuments를 그대로 포장하는 프로젝트가 아니라**, 그 파이프라인을 기준선으로 삼아 **OCP 운영 가이드 챗봇을 직접 설계하고 완성하는 프로젝트**다.
 
-다만 이 저장소는 단순 포크가 아니라, 다음 역할을 담당하는 **OCP 적용 프로젝트**입니다.
+## 중요하게 선을 그어야 하는 것
 
-- `OpenDocuments`: RAG 런타임과 검색 흐름의 기준 플랫폼
-- `openshift-docs`: 공식 OCP 문서 원천
-- `ocp-rag-chatbot`: OCP 전용 정규화, 정책, 게이트웨이, 운영 흐름을 담당하는 제품 레이어
+- 이 프로젝트는 LangSmith 같은 완성형 운영/평가 제품에 의존해 “대충 붙이는” 방향이 아니다.
+- 멀티턴, grounded answer, citation, 운영 흐름은 **직접 설계하고 직접 검증**해야 한다.
+- 핵심 평가 과제는 단순 연결 성공이 아니라 다음 3가지다.
+  1. **정확한 일처리** — 공식 문서 근거에 맞는 답변과 보수적 응답
+  2. **설계력** — 멀티턴 메모리, follow-up rewrite, 정책, 운영 흐름을 제품 구조로 설계
+  3. **검증력** — 5턴 이상 멀티턴, retrieval, red-team, runtime path, activation/rollback까지 증거로 입증
 
-즉, **RAG 엔진 방향은 OpenDocuments를 따르고**, 이 저장소는 그 위에 OCP용 데이터 파이프라인과 운영 로직을 얹는 구조입니다.
+## 현재 기술 기준
 
-## 모델 구성
+현재 이 저장소가 고정 기준으로 삼는 기술 축은 다음과 같다.
 
-현재 기준 모델 구성은 다음과 같습니다.
+- **생성 모델**: `Qwen/Qwen3.5-9B`
+- **임베딩 모델**: `BAAI/bge-m3`
+- **임베딩 차원**: `1024`
+- **평가 기준 문서 버전**: `openshift-docs` `enterprise-4.20`
+- **평가 기준 소스 프로필**: `ocp-4.20-balanced`
 
-- 생성 모델: `Qwen/Qwen3.5-9B`
-- 임베딩 모델: `BAAI/bge-m3`
-- 임베딩 차원: `1024`
+왜 이 구성이 중요한가:
 
-설계 의도는 다음과 같습니다.
+- `Qwen/Qwen3.5-9B`는 현재 회사 제공 런타임 경로에서 사용하는 생성 모델 기준이다.
+- `BAAI/bge-m3`는 한국어 질문과 영어 공식 문서를 함께 다루는 멀티링구얼 임베딩 기준이다.
+- `enterprise-4.20`은 현재 canonical evaluation의 문서 기준선이다.
+- 현재 widened validation runtime/index 상태와 평가 기준선은 완전히 같은 개념이 아니며, 최신 활성 상태는 Stage 15 증거 문서를 함께 봐야 한다.
 
-- 생성 모델은 회사 제공 런타임을 사용합니다.
-- 임베딩은 한국어 질문과 영어 공식 문서를 함께 다루기 위해 `BAAI/bge-m3` 를 baseline 으로 사용합니다.
-- 민감한 엔드포인트와 토큰 값은 코드에 하드코딩하지 않고 `.env` 로 관리합니다.
+## 제품 목표
 
-## 목표 기능
+이 프로젝트의 제품 목표는 다음과 같다.
 
-- 한국어 질문 입력
-- OpenShift 공식 문서 기반 검색
-- 한국어 답변 생성
-- 클릭 가능한 citation 제공
-- HTML 기반 원문 문서 뷰어 제공
-- 세션 기반 멀티턴 문맥 유지
-- 로컬 실행용 게이트웨이 및 런타임 스택 제공
+- 한국어 운영 질문을 받을 수 있어야 한다.
+- 답변은 **공식 OCP 문서 근거**에 기반해야 한다.
+- 답변에는 **클릭 가능한 citation**이 포함되어야 한다.
+- citation 클릭 시 내부 HTML viewer가 정확한 문서/섹션을 열어야 한다.
+- follow-up 질문에서 앞선 문맥과 문서 대상을 유지해야 한다.
+- **5턴 이상 멀티턴 시나리오**에서도 grounded behavior가 유지되어야 한다.
+- 폐쇄망 반입, 인덱스 생성, 활성화, 스모크, 롤백 흐름까지 운영 가능한 구조여야 한다.
 
 ## 시스템 개요
 
-이 프로젝트는 크게 4개 계층으로 구성됩니다.
+이 프로젝트는 크게 4개 계층으로 구성된다.
 
-1. **문서 수집/정규화 계층**
-   - `openshift-docs` 원본 `.adoc` 문서를 읽습니다.
-   - 검색용 텍스트와 HTML 뷰어 문서를 함께 생성합니다.
-   - 문서별 메타데이터와 citation 연결 정보를 생성합니다.
+### 1. 문서 수집/정규화 계층
 
-2. **RAG 계층**
-   - `OpenDocuments` 기반 런타임을 사용합니다.
-   - 정규화된 문서를 인덱싱합니다.
-   - 검색 결과를 정책 기반으로 보정합니다.
-   - 문서 우선순위, source/category 힌트, follow-up 문맥을 반영합니다.
+- canonical evaluation 기준으로는 `openshift-docs` `enterprise-4.20` 원본 `.adoc` 문서를 입력으로 사용한다.
+- 검색용 텍스트, HTML viewer 문서, 문서/섹션 메타데이터를 생성한다.
+- citation click-through에 필요한 viewer 경로와 section anchor 정보를 만든다.
 
-3. **런타임 계층**
-   - 사용자 요청을 받는 게이트웨이
-   - OpenDocuments 연동 브리지
-   - 실제 질의응답과 출처 정리를 담당하는 응답 경로
+관련 구현:
 
-4. **운영 계층**
-   - 문서 반입
-   - 인덱스 생성
-   - 활성화
-   - 스모크 테스트
-   - 롤백
+- `ingest/normalize_openshift_docs.py`
+- `configs/source-profiles.yaml`
+- `configs/active-source-profile.yaml`
 
-## 파이프라인
+### 2. 검색/RAG 계층
+
+- OpenDocuments 파이프라인을 기준으로 문서를 인덱싱한다.
+- retrieval 결과를 OCP 운영 질문에 맞게 보정한다.
+- source/category/path term/follow-up memory를 반영한다.
+
+관련 구현:
+
+- `app/ocp_policy.py`
+- `configs/rag-policy.yaml`
+- `app/multiturn_memory.py`
+
+### 3. 런타임 계층
+
+- 사용자 요청은 제품 게이트웨이로 들어온다.
+- OpenDocuments 브리지와 HTTP runtime을 통해 응답이 생성된다.
+- citation 정리, 세션 연속성, viewer 노출은 이 제품 레이어가 책임진다.
+
+관련 구현:
+
+- `app/ocp_runtime_gateway.py`
+- `app/opendocuments_openai_bridge.py`
+- `app/runtime_gateway_support.py`
+- `app/runtime_source_index.py`
+- `deployment/start_runtime_stack.py`
+
+### 4. 운영 계층
+
+- 승인된 문서 번들 생성
+- inbound staging
+- reindex
+- activation
+- smoke
+- rollback
+
+관련 구현:
+
+- `deployment/build_outbound_bundle.py`
+- `deployment/reindex_staged_bundle.py`
+- `deployment/activate_index.py`
+- `deployment/rollback_index.py`
+
+## 파이프라인 요약
 
 ```mermaid
 flowchart LR
-    A["openshift-docs (.adoc)"] --> B["정규화 파이프라인"]
+    A["openshift-docs enterprise-4.20 (.adoc)"] --> B["OCP 정규화 파이프라인"]
     B --> C["검색용 텍스트"]
-    B --> D["HTML 문서 뷰"]
-    B --> E["문서 메타데이터 / citation 정보"]
-    C --> F["RAG 인덱스"]
+    B --> D["HTML viewer 문서"]
+    B --> E["문서/섹션 메타데이터"]
+    C --> F["OpenDocuments 기반 인덱스"]
     E --> F
-    F --> G["런타임 게이트웨이"]
-    G --> H["질문 재작성 / 정책 보정"]
+    F --> G["제품 게이트웨이"]
+    G --> H["후속질문 재작성 / 정책 보정"]
     H --> I["검색 / 응답 생성"]
     D --> J["citation click-through"]
     I --> J
 ```
 
-## 데이터 처리 방식
+## 런타임 기준
 
-### 1. 문서 원천
+현재 로컬 실행 기본 포트는 다음과 같다.
 
-- 공식 데이터 원천은 `openshift-docs` 저장소입니다.
-- 원본 포맷은 AsciiDoc(`.adoc`)입니다.
-- PDF나 렌더링 결과물이 아니라 **원본 문서 소스**를 기준으로 처리합니다.
-
-### 2. 정규화
-
-정규화 단계에서는 아래 산출물이 생성됩니다.
-
-- 검색용 텍스트
-- HTML 문서 뷰어 파일
-- 문서/섹션 메타데이터
-- viewer URL
-- citation 연결 정보
-
-### 3. 출처 처리
-
-답변의 출처는 단순 파일명이 아니라 **실제 클릭 가능한 문서 링크**로 제공됩니다.
-
-- 답변에 citation 표시
-- citation 클릭 시 내부 HTML 문서 열기
-- 가능한 경우 섹션 수준까지 연결
-
-## 런타임 구조
-
-현재 로컬 실행 기준 포트는 다음과 같습니다.
-
-- `8000`: 사용자 게이트웨이 / 브라우저 UI
+- `8000`: 제품 게이트웨이 / UI
 - `18101`: OpenAI 호환 브리지
 - `18102`: OpenDocuments 런타임
 
-사용자는 기본적으로 아래 주소만 사용하면 됩니다.
+운영자 기본 접속 주소:
 
 - `http://127.0.0.1:8000`
 
-## 실행 방법
+## 실행 예시
 
 ### 1. 환경 변수 준비
 
-민감 정보는 코드에 하드코딩하지 않고 `.env` 로 관리합니다.
-
-예시:
+민감 정보는 코드에 하드코딩하지 않고 `.env`로 관리한다.
 
 ```env
 OD_SERVER_BASE_URL=http://127.0.0.1:18102
@@ -157,90 +174,84 @@ OD_EMBEDDING_DIMENSIONS=1024
 powershell -ExecutionPolicy Bypass -File deployment/start_local_runtime.ps1
 ```
 
-### 3. 접속
+또는 증거를 남기며 직접 기동:
 
-브라우저에서:
+```bash
+python deployment/start_runtime_stack.py
+```
 
-- `http://127.0.0.1:8000`
-
-### 4. 종료
+### 3. 종료
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File deployment/stop_local_runtime.ps1
 ```
 
-## 저장소 구조
-
-```text
-app/          런타임 게이트웨이, 브리지, UI
-configs/      source profile, 정책, 설정
-data/         정규화 결과, manifest, generated 산출물
-deployment/   실행, 스모크 테스트, 반입/활성화/롤백
-docs/         설계 및 운영 문서
-eval/         benchmark, 회귀 검증, 리포트 생성
-indexes/      생성된 인덱스와 관련 산출물
-ingest/       openshift-docs 정규화 파이프라인
-```
-
-## 주요 구성요소
-
-- `app/ocp_runtime_gateway.py`
-  - 사용자 요청 수신
-  - citation 정리
-  - 멀티턴 흐름 연결
-
-- `app/opendocuments_openai_bridge.py`
-  - OpenDocuments 와 모델 서버 사이의 브리지
-  - 임베딩/채팅 요청 처리
-
-- `app/ocp_policy.py`
-  - 질의 신호 해석
-  - source/category/path term 기반 retrieval 보정
-
-- `app/multiturn_memory.py`
-  - 세션 메모리 관리
-  - 후속 질문 rewrite 지원
-
-- `ingest/normalize_openshift_docs.py`
-  - `.adoc` -> 검색용 텍스트 + HTML 문서 + 메타데이터 생성
-
-## 설계 원칙
-
-- RAG 구조는 OpenDocuments 기준으로 통일
-- 공식 문서 우선
-- 한국어 사용성 우선
-- 출처 검증 가능성 우선
-- 폐쇄망 운영 가능성 고려
-- 특정 minor 버전에 즉시 하드고정하지 않고, 향후 source profile 전환이 가능하도록 설계
-
 ## 현재 상태
 
-현재 저장소는 **설계, 파이프라인, 런타임 스택, 문서 정규화, citation viewer 구조까지 구현된 프로토타입 단계**입니다.
+이 저장소는 더 이상 막연한 프로토타입 설명 단계가 아니다. 현재는 다음 기준이 이미 확보된 상태다.
 
-현재 확인 가능한 범위:
+- `enterprise-4.20` 기반 canonical evaluation 기준선 확보
+- `Qwen/Qwen3.5-9B` + `BAAI/bge-m3` 기준 runtime lock
+- OpenDocuments 기반 live runtime serving path 검증
+- citation viewer click-through 검증
+- Stage 11 refresh / activate / rollback 흐름 검증
+- Stage 14 one-command runtime launch 검증
+- Stage 15 widened validation corpus(`main` 기반 `s15c-core`) 활성화 검증 완료
+- multiturn replay 통과 기록 보유
 
-- `openshift-docs` 기반 정규화 파이프라인
-- HTML citation viewer 생성 구조
-- OpenDocuments 기반 RAG 런타임 연동 구조
-- 로컬 게이트웨이/브리지/런타임 실행 스크립트
-- retrieval / multiturn / red-team / runtime 검증 스크립트
+다만 제품 완성도 측면에서 아직 계속 강화해야 할 핵심 영역이 있다.
 
-다만 아래 항목은 계속 품질 보강 중입니다.
+- **5턴 이상 멀티턴 안정성 강화**
+- **운영 질문 기준 retrieval / grounded answer 정확도 강화**
+- **정책/메모리/세션 설계의 일관성 강화**
+- **운영자 관점의 재현 가능성과 설명 가능성 강화**
 
-- 실제 `localhost:8000` 런타임의 안정성
-- 기본 질문과 운영 질문에 대한 한국어 응답 품질
-- expanded corpus 기준 retrieval 안정성
-- operator release 수준의 최종 품질 보증
+## 이 프로젝트를 평가할 때 봐야 하는 것
 
-즉, 이 README는 **현재 완성 제품 소개서라기보다, 프로젝트의 설계와 구현 범위를 설명하는 문서**로 보는 것이 맞습니다.
+이 프로젝트는 아래 항목으로 평가해야 한다.
 
-## 주의 사항
+### 1. 정확한 일처리
 
-- 이 프로젝트는 내부/폐쇄망 운영을 고려한 구조입니다.
-- `.env` 및 토큰 정보는 저장소에 커밋하지 않습니다.
-- 문서 코퍼스가 커질수록 retrieval 품질 검증이 중요해집니다.
+- 질문 의도에 맞는 문서군으로 들어가는가
+- 보수적으로 답해야 할 때 추측하지 않는가
+- citation이 실제 근거 문서/섹션으로 이어지는가
+
+### 2. 멀티턴 설계력
+
+- 5턴 이상 follow-up에서 문맥이 유지되는가
+- 이전 문서/버전/주제를 올바르게 이어받는가
+- 세션 메모리와 rewrite가 runtime path에서 실제로 동작하는가
+
+### 3. 운영 구조의 완성도
+
+- ingestion → index → serve → activate → rollback 흐름이 끊기지 않는가
+- 폐쇄망 환경에서 재현 가능한가
+- 설정/정책/검증 문서가 일관되게 이어지는가
+
+## 다음 발전 방향
+
+이 프로젝트는 앞으로 아래 순서로 발전해야 한다.
+
+1. **멀티턴 5턴+ 안정화**
+   - follow-up rewrite, session memory, topic/version continuity를 강화
+2. **운영 질문 정확도 강화**
+   - retrieval 보정과 grounded answer policy를 운영 질문 중심으로 고도화
+3. **직접 설계한 평가 체계 강화**
+   - off-the-shelf 제품 의존 대신, retrieval/multiturn/red-team/runtime/rollback을 저장소 안에서 직접 검증
+4. **운영자 사용성 강화**
+   - launch, smoke, evidence, rollback 흐름을 더 짧고 명확하게 만듦
+5. **release-grade hardening**
+   - target minor 고정, corpus 확장, widened validation 회귀 강화, 운영자용 문서/런북 정리
+
+## 어디부터 보면 좋은가
+
+1. `README.md`
+2. `docs/v2/repository-map.md`
+3. `docs/v2/project-plan-summary.md`
+4. `docs/v2/stage12-live-runtime-report.md`
+5. `docs/v2/stage14-runtime-launch.md`
 
 ## 참고
 
-- 공식 문서 원천: `openshift-docs`
-- 로컬 UI 주소: `http://127.0.0.1:8000`
+- 공식 OCP 데이터 원천: https://github.com/openshift/openshift-docs/tree/enterprise-4.20
+- 파이프라인 기준: https://github.com/joungminsung/OpenDocuments

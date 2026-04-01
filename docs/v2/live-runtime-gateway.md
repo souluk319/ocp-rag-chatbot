@@ -119,9 +119,9 @@ The bridge now adds two runtime controls that matter for Stage 12:
 
 `OD_FORWARD_CLIENT_AUTH` defaults to off so the OpenDocuments-side placeholder API key is not accidentally forwarded to the company server.
 
-`OD_EMBEDDING_DIMENSIONS` exists because the active Stage 11 baseline currently uses `1024`-dimension vectors, and the embedding path is now standardized on `BAAI/bge-m3` with `1024`-dimension dense vectors.
+`OD_EMBEDDING_DIMENSIONS` exists because the active Stage 11 baseline currently uses `1024`-dimension vectors, and the embedding path is now standardized on `BAAI/bge-m3` with `1024`-dimension dense vectors served through the approved company endpoint.
 
-This is both a runtime compatibility contract and a clearer match for the Korean-service requirement, because `BAAI/bge-m3` is multilingual and can represent Korean queries and English source passages in the same space.
+This is both a runtime contract and a clearer match for the Korean-service requirement, because `BAAI/bge-m3` is multilingual and can represent Korean queries and English source passages in the same space.
 
 ## Runtime contracts
 
@@ -150,6 +150,7 @@ The authoritative live-runtime evidence now lives in:
 That evidence proves:
 
 - bridge health and model listing
+- bridge company-proxied embedding readiness
 - OpenDocuments live HTTP startup
 - gateway streaming on the real path
 - session continuity across two turns

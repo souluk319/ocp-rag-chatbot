@@ -18,7 +18,7 @@ export default defineConfig({
     embedding: requireEnv('OD_EMBEDDING_MODEL'),
     apiKey: requireEnv('OPENAI_API_KEY'),
     baseUrl: requireEnv('OPENAI_BASE_URL'),
-    embeddingDimensions: 384,
+    embeddingDimensions: Number.parseInt(requireEnv('OD_EMBEDDING_DIMENSIONS'), 10),
   },
 
   rag: {

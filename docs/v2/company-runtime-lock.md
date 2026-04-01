@@ -8,7 +8,7 @@ The target operating path is:
 
 - OpenDocuments uses a local OpenAI-compatible bridge
 - the bridge proxies chat requests to the approved company endpoint
-- the bridge serves embeddings locally for the current validation setup
+- the bridge proxies embedding requests to the approved company endpoint
 - the current embedding baseline is `BAAI/bge-m3` so Korean questions and English source documents share one multilingual embedding space
 - endpoint and model values come from `.env` or process environment, never from committed code defaults
 
@@ -46,6 +46,11 @@ These are used by the Python bridge and the integrated runtime check.
 - `OD_ALLOW_LOCAL_CHAT_FALLBACK`
 - `OD_BRIDGE_TIMEOUT_SECONDS`
 
+`OD_COMPANY_BASE_URL` must resolve to a real HTTP(S) endpoint because the bridge now proxies both:
+
+- `/chat/completions`
+- `/embeddings`
+
 ### Compatible project-level fallbacks
 
 If `OD_*` values are not set, the bridge can read these project-level names:
@@ -64,6 +69,7 @@ Current baseline:
 - chat model: company-provided `Qwen/Qwen3.5-9B`
 - embedding model: `BAAI/bge-m3`
 - embedding dimensions: `1024`
+- embedding transport: company-proxy through the local bridge
 
 ## Approved behavior
 
@@ -74,6 +80,7 @@ Default mode is `company-only`.
 That means:
 
 - the bridge reads endpoint and model settings from env
+- the bridge sends both chat and embeddings to the approved company endpoint
 - no local fallback answer is used unless explicitly enabled
 - health output shows configuration state without exposing secrets
 
@@ -84,16 +91,18 @@ Diagnostic mode is enabled only when:
 - `OD_ALLOW_LOCAL_CHAT_FALLBACK=1`
 
 This mode is allowed only for temporary local validation. It is not the release target.
+It applies to chat fallback only. Embedding failures remain hard errors.
 
 ## Validation steps
 
 Stage 8 is considered complete when:
 
 1. `app/opendocuments_openai_bridge.py` no longer hardcodes company endpoint or model values
-2. `deployment/opendocuments-stage6.config.template.ts` fails fast if required env vars are missing
-3. `deployment/check_runtime_contract.py` reports the runtime contract state without printing secrets
-4. `.env.example` documents the env contract without including real values
-5. local fallback is off by default
+2. bridge `/ready` and `/v1/embeddings` succeed only when the approved company embedding path responds with the expected model dimensions
+3. `deployment/opendocuments-stage6.config.template.ts` fails fast if required env vars are missing
+4. `deployment/check_runtime_contract.py` reports the runtime contract state without printing secrets
+5. `.env.example` documents the env contract without including real values
+6. local chat fallback is off by default
 
 ## Evidence files
 
@@ -113,4 +122,4 @@ This is intentional because:
 - some environments inject auth at the caller layer
 - we must not force secrets into Git-tracked files
 
-The runtime contract only requires that the approved company endpoint and model selection are env-driven and that local fallback is opt-in.
+The runtime contract now requires that the approved company endpoint and model selection are env-driven for both chat and embeddings, and that only chat fallback is opt-in.

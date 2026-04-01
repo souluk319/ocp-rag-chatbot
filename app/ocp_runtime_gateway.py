@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import hashlib
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterator
@@ -30,7 +31,11 @@ from app.runtime_gateway_support import (
     shape_answer,
     should_use_local_runtime_rescue,
 )
-from app.runtime_source_index import load_active_source_catalog, reset_active_source_catalog
+from app.runtime_cache import TtlLruCache
+from app.runtime_source_index import (
+    load_active_source_catalog,
+    reset_active_source_catalog,
+)
 
 
 SESSION_COOKIE_NAME = "ocp_runtime_session"
@@ -43,6 +48,15 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 @lru_cache(maxsize=1)
 def get_runtime_config() -> RuntimeConfig:
     return load_runtime_config()
+
+
+@lru_cache(maxsize=1)
+def load_query_cache() -> TtlLruCache[dict[str, Any]]:
+    config = load_runtime_config()
+    return TtlLruCache(
+        max_items=config.query_cache_max_items,
+        ttl_seconds=config.query_cache_ttl_seconds,
+    )
 
 
 def require_gateway_config() -> RuntimeConfig:
@@ -59,7 +73,9 @@ def require_gateway_config() -> RuntimeConfig:
     return config
 
 
-def conversation_exists(config: RuntimeConfig, headers: dict[str, str], conversation_id: str) -> bool:
+def conversation_exists(
+    config: RuntimeConfig, headers: dict[str, str], conversation_id: str
+) -> bool:
     if not conversation_id:
         return False
     if conversation_id in KNOWN_UPSTREAM_CONVERSATIONS:
@@ -67,7 +83,9 @@ def conversation_exists(config: RuntimeConfig, headers: dict[str, str], conversa
 
     url = f"{config.opendocuments_base_url.rstrip('/')}/api/v1/conversations/{conversation_id}/messages"
     try:
-        response = requests.get(url, headers=headers, timeout=config.request_timeout_seconds)
+        response = requests.get(
+            url, headers=headers, timeout=config.request_timeout_seconds
+        )
     except requests.RequestException:
         return False
 
@@ -77,25 +95,44 @@ def conversation_exists(config: RuntimeConfig, headers: dict[str, str], conversa
     return False
 
 
-def create_upstream_conversation(config: RuntimeConfig, headers: dict[str, str], *, title: str = "") -> str:
+def create_upstream_conversation(
+    config: RuntimeConfig, headers: dict[str, str], *, title: str = ""
+) -> str:
     url = f"{config.opendocuments_base_url.rstrip('/')}/api/v1/conversations"
     payload = {"title": title} if title else {}
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=config.request_timeout_seconds)
+        response = requests.post(
+            url, headers=headers, json=payload, timeout=config.request_timeout_seconds
+        )
     except requests.RequestException as exc:
-        raise HTTPException(status_code=502, detail=f"OpenDocuments conversation bootstrap failed: {exc}") from exc
+        raise HTTPException(
+            status_code=502,
+            detail=f"OpenDocuments conversation bootstrap failed: {exc}",
+        ) from exc
 
     try:
         payload = response.json()
     except ValueError as exc:
-        raise HTTPException(status_code=502, detail="OpenDocuments conversation bootstrap returned invalid JSON.") from exc
+        raise HTTPException(
+            status_code=502,
+            detail="OpenDocuments conversation bootstrap returned invalid JSON.",
+        ) from exc
 
     if response.status_code >= 400:
-        raise HTTPException(status_code=502, detail={"message": "OpenDocuments conversation bootstrap failed.", "upstream": payload})
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "OpenDocuments conversation bootstrap failed.",
+                "upstream": payload,
+            },
+        )
 
     conversation_id = str(payload.get("id", "")).strip()
     if not conversation_id:
-        raise HTTPException(status_code=502, detail="OpenDocuments conversation bootstrap did not return an id.")
+        raise HTTPException(
+            status_code=502,
+            detail="OpenDocuments conversation bootstrap did not return an id.",
+        )
 
     KNOWN_UPSTREAM_CONVERSATIONS.add(conversation_id)
     return conversation_id
@@ -203,10 +240,20 @@ def looks_like_definition_query(query: str) -> bool:
     if not normalized:
         return False
     product_terms = ("ocp", "openshift", "open shift", "오픈시프트")
-    definition_cues = ("뭐야", "무엇", "정의", "소개", "개요", "란", "what is", "overview", "introduction")
-    return (
-        any(term in normalized for term in product_terms)
-        and (any(cue in normalized for cue in definition_cues) or normalized in {"ocp", "openshift", "오픈시프트"})
+    definition_cues = (
+        "뭐야",
+        "무엇",
+        "정의",
+        "소개",
+        "개요",
+        "란",
+        "what is",
+        "overview",
+        "introduction",
+    )
+    return any(term in normalized for term in product_terms) and (
+        any(cue in normalized for cue in definition_cues)
+        or normalized in {"ocp", "openshift", "오픈시프트"}
     )
 
 
@@ -346,9 +393,138 @@ def health_payload(config: RuntimeConfig) -> dict[str, Any]:
         payload["active_index_id"] = catalog.index_id
         payload["active_manifest_path"] = str(catalog.manifest_path)
         payload["active_document_count"] = len(catalog.documents)
+        payload["query_cache"] = load_query_cache().stats()
     except Exception as exc:  # pragma: no cover - health guard
         payload["active_index_error"] = str(exc)
     return payload
+
+
+def local_query_cache_key(
+    *,
+    route_name: str,
+    query: str,
+    mode: str,
+    rewritten_query: str,
+    memory_before: dict[str, Any],
+) -> str:
+    catalog = load_active_source_catalog()
+    normalized = {
+        "route": route_name,
+        "query": query.strip(),
+        "mode": mode.strip(),
+        "rewritten_query": rewritten_query.strip(),
+        "active_index_id": catalog.index_id,
+        "memory": {
+            "active_topic": str(memory_before.get("active_topic", "")).strip(),
+            "source_dir": str(memory_before.get("source_dir", "")).strip(),
+            "active_category": str(memory_before.get("active_category", "")).strip(),
+            "active_version": str(memory_before.get("active_version", "")).strip(),
+            "reference_doc_path": str(
+                memory_before.get("reference_doc_path", "")
+            ).strip(),
+        },
+    }
+    encoded = json.dumps(
+        normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    )
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def restore_cached_local_payload(
+    *,
+    cached_core: dict[str, Any],
+    session_id: str,
+    query: str,
+    mode: str,
+    rewritten_query: str,
+    turn_trace: dict[str, Any],
+) -> dict[str, Any]:
+    route_name = (
+        str(cached_core.get("route", "manifest_runtime_rescue")).strip()
+        or "manifest_runtime_rescue"
+    )
+    local_rescue_topic = (
+        "definition" if route_name == "manifest_definition" else "reference"
+    )
+    payload = dict(cached_core)
+    payload["queryId"] = f"cached-{route_name}-{session_id}"
+    payload["conversationId"] = session_id
+    payload["mode"] = mode
+    payload["rewrittenQuery"] = rewritten_query
+    payload["turnTrace"] = turn_trace
+    payload["pipelineTrace"] = build_pipeline_trace(
+        query=query,
+        mode=mode,
+        route=route_name,
+        rewritten_query=rewritten_query,
+        turn_trace=turn_trace,
+        raw_sources=[],
+        policy_sources=payload.get("sources", []),
+        policy_signals=payload.get("policySignals", {}),
+        local_rescue_topic=local_rescue_topic,
+        upstream_used=False,
+        answer_contract={},
+    )
+    return payload
+
+
+def load_cached_local_payload(
+    *,
+    route_name: str,
+    query: str,
+    session_id: str,
+    mode: str,
+    rewritten_query: str,
+    turn_trace: dict[str, Any],
+    memory_before: dict[str, Any],
+) -> dict[str, Any] | None:
+    cache_key = local_query_cache_key(
+        route_name=route_name,
+        query=query,
+        mode=mode,
+        rewritten_query=rewritten_query,
+        memory_before=memory_before,
+    )
+    cached_core = load_query_cache().get(cache_key)
+    if cached_core is None:
+        return None
+    return restore_cached_local_payload(
+        cached_core=cached_core,
+        session_id=session_id,
+        query=query,
+        mode=mode,
+        rewritten_query=rewritten_query,
+        turn_trace=turn_trace,
+    )
+
+
+def store_cached_local_payload(
+    *,
+    payload: dict[str, Any],
+    route_name: str,
+    query: str,
+    mode: str,
+    rewritten_query: str,
+    memory_before: dict[str, Any],
+) -> None:
+    cache_key = local_query_cache_key(
+        route_name=route_name,
+        query=query,
+        mode=mode,
+        rewritten_query=rewritten_query,
+        memory_before=memory_before,
+    )
+    cacheable_core = {
+        "answer": payload.get("answer", ""),
+        "sources": payload.get("sources", []),
+        "source_count": payload.get("source_count", 0),
+        "confidence": payload.get("confidence", {}),
+        "route": payload.get("route", route_name),
+        "profile": payload.get("profile", "precise"),
+        "policySignals": payload.get("policySignals", {}),
+        "runtimeRescue": payload.get("runtimeRescue", False),
+    }
+    load_query_cache().set(cache_key, cacheable_core)
 
 
 @app.get("/health")
@@ -381,7 +557,9 @@ async def chat(request: Request) -> Response:
     try:
         body = await request.json()
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Invalid JSON body: {exc}") from exc
+        raise HTTPException(
+            status_code=400, detail=f"Invalid JSON body: {exc}"
+        ) from exc
 
     query = str(body.get("query", "")).strip()
     if not query:
@@ -396,7 +574,10 @@ async def chat(request: Request) -> Response:
         explicit_conversation_id=body.get("conversationId"),
         query=query,
     )
-    mode = str(body.get("mode") or config.default_chat_mode or "operations").strip() or "operations"
+    mode = (
+        str(body.get("mode") or config.default_chat_mode or "operations").strip()
+        or "operations"
+    )
     plan = prepare_runtime_turn(
         question_ko=query,
         conversation_id=session_id,
@@ -405,6 +586,24 @@ async def chat(request: Request) -> Response:
     )
     definition_query = looks_like_definition_query(query)
     if should_use_local_runtime_rescue(query):
+        cached_local_payload = load_cached_local_payload(
+            route_name="manifest_runtime_rescue",
+            query=query,
+            session_id=session_id,
+            mode=mode,
+            rewritten_query=plan.rewritten_query,
+            turn_trace=plan.turn_trace,
+            memory_before=plan.memory_before,
+        )
+        if cached_local_payload:
+            commit_runtime_grounding(
+                conversation_id=session_id,
+                sources=cached_local_payload.get("sources", []),
+                memory_manager=load_session_manager(),
+            )
+            response = JSONResponse(cached_local_payload)
+            set_session_cookie(response, session_id)
+            return response
         local_payload = build_local_reference_payload(
             query=query,
             session_id=session_id,
@@ -413,6 +612,14 @@ async def chat(request: Request) -> Response:
             turn_trace=plan.turn_trace,
         )
         if local_payload:
+            store_cached_local_payload(
+                payload=local_payload,
+                route_name="manifest_runtime_rescue",
+                query=query,
+                mode=mode,
+                rewritten_query=plan.rewritten_query,
+                memory_before=plan.memory_before,
+            )
             response = JSONResponse(local_payload)
             set_session_cookie(response, session_id)
             return response
@@ -432,12 +639,18 @@ async def chat(request: Request) -> Response:
             timeout=config.request_timeout_seconds,
         )
     except requests.RequestException as exc:
-        raise HTTPException(status_code=502, detail=f"OpenDocuments upstream failed: {exc}") from exc
+        raise HTTPException(
+            status_code=502, detail=f"OpenDocuments upstream failed: {exc}"
+        ) from exc
 
     try:
         payload = upstream.json()
     except ValueError:
-        return Response(status_code=upstream.status_code, content=upstream.content, media_type=upstream.headers.get("content-type"))
+        return Response(
+            status_code=upstream.status_code,
+            content=upstream.content,
+            media_type=upstream.headers.get("content-type"),
+        )
 
     if upstream.status_code >= 400:
         return JSONResponse(status_code=upstream.status_code, content=payload)
@@ -459,14 +672,20 @@ async def chat(request: Request) -> Response:
         memory_manager=load_session_manager(),
     )
 
-    if not payload.get("sources") and policy_sources and (definition_query or "definition_intro" in matched_rules):
+    if (
+        not payload.get("sources")
+        and policy_sources
+        and (definition_query or "definition_intro" in matched_rules)
+    ):
         base_answer = build_manifest_backed_definition_answer(query, policy_sources)
     else:
         base_answer = str(payload.get("answer", ""))
         if answer_needs_source_backed_rescue(base_answer, policy_sources):
             base_answer = build_source_backed_runtime_answer(query, policy_sources)
 
-    payload["answer"] = shape_answer(base_answer, overlay["answer_contract"], policy_sources)
+    payload["answer"] = shape_answer(
+        base_answer, overlay["answer_contract"], policy_sources
+    )
     payload["sources"] = policy_sources
     payload["source_count"] = len(policy_sources)
     payload["conversationId"] = session_id
@@ -499,7 +718,9 @@ async def stream_chat(request: Request) -> Response:
     try:
         body = await request.json()
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Invalid JSON body: {exc}") from exc
+        raise HTTPException(
+            status_code=400, detail=f"Invalid JSON body: {exc}"
+        ) from exc
 
     query = str(body.get("query", "")).strip()
     if not query:
@@ -514,7 +735,10 @@ async def stream_chat(request: Request) -> Response:
         explicit_conversation_id=body.get("conversationId"),
         query=query,
     )
-    mode = str(body.get("mode") or config.default_chat_mode or "operations").strip() or "operations"
+    mode = (
+        str(body.get("mode") or config.default_chat_mode or "operations").strip()
+        or "operations"
+    )
     plan = prepare_runtime_turn(
         question_ko=query,
         conversation_id=session_id,
@@ -522,6 +746,51 @@ async def stream_chat(request: Request) -> Response:
         memory_manager=load_session_manager(),
     )
     definition_query = looks_like_definition_query(query)
+    cached_local_payload = load_cached_local_payload(
+        route_name="manifest_runtime_rescue",
+        query=query,
+        session_id=session_id,
+        mode=mode,
+        rewritten_query=plan.rewritten_query,
+        turn_trace=plan.turn_trace,
+        memory_before=plan.memory_before,
+    )
+    if should_use_local_runtime_rescue(query) and cached_local_payload:
+        commit_runtime_grounding(
+            conversation_id=session_id,
+            sources=cached_local_payload.get("sources", []),
+            memory_manager=load_session_manager(),
+        )
+
+        async def cached_local_reference_stream() -> Iterator[str]:
+            yield serialize_sse("trace", cached_local_payload.get("pipelineTrace", []))
+            yield serialize_sse("sources", cached_local_payload["sources"])
+            yield serialize_sse("chunk", cached_local_payload["answer"])
+            yield serialize_sse(
+                "done",
+                build_done_payload(
+                    {
+                        "route": cached_local_payload.get(
+                            "route", "manifest_runtime_rescue"
+                        ),
+                        "pipelineTrace": cached_local_payload.get("pipelineTrace", []),
+                    },
+                    conversation_id=session_id,
+                    mode=mode,
+                    rewritten_query=plan.rewritten_query,
+                ),
+            )
+
+        response = StreamingResponse(
+            cached_local_reference_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Content-Type": "text/event-stream; charset=utf-8",
+                "Cache-Control": "no-cache",
+            },
+        )
+        set_session_cookie(response, session_id)
+        return response
     if should_use_local_runtime_rescue(query):
         local_payload = build_local_reference_payload(
             query=query,
@@ -531,6 +800,15 @@ async def stream_chat(request: Request) -> Response:
             turn_trace=plan.turn_trace,
         )
         if local_payload:
+            store_cached_local_payload(
+                payload=local_payload,
+                route_name="manifest_runtime_rescue",
+                query=query,
+                mode=mode,
+                rewritten_query=plan.rewritten_query,
+                memory_before=plan.memory_before,
+            )
+
             async def local_reference_stream() -> Iterator[str]:
                 yield serialize_sse("trace", local_payload.get("pipelineTrace", []))
                 yield serialize_sse("sources", local_payload["sources"])
@@ -539,7 +817,9 @@ async def stream_chat(request: Request) -> Response:
                     "done",
                     build_done_payload(
                         {
-                            "route": local_payload.get("route", "manifest_runtime_rescue"),
+                            "route": local_payload.get(
+                                "route", "manifest_runtime_rescue"
+                            ),
                             "pipelineTrace": local_payload.get("pipelineTrace", []),
                         },
                         conversation_id=session_id,
@@ -575,7 +855,9 @@ async def stream_chat(request: Request) -> Response:
             stream=True,
         )
     except requests.RequestException as exc:
-        raise HTTPException(status_code=502, detail=f"OpenDocuments upstream failed: {exc}") from exc
+        raise HTTPException(
+            status_code=502, detail=f"OpenDocuments upstream failed: {exc}"
+        ) from exc
 
     if upstream.status_code >= 400:
         try:
@@ -632,7 +914,9 @@ async def stream_chat(request: Request) -> Response:
                         policy_sources = pick_manifest_backed_definition_sources()
                     answer_contract = overlay["answer_contract"]
                     yield serialize_sse("sources", policy_sources)
-                    matched_rules = set(overlay["policy_signals"].get("matched_rules", []))
+                    matched_rules = set(
+                        overlay["policy_signals"].get("matched_rules", [])
+                    )
                     if (
                         (not raw_sources)
                         and policy_sources
@@ -657,7 +941,9 @@ async def stream_chat(request: Request) -> Response:
                                 answer_contract=overlay["answer_contract"],
                             ),
                         )
-                        local_answer = build_manifest_backed_definition_answer(query, policy_sources)
+                        local_answer = build_manifest_backed_definition_answer(
+                            query, policy_sources
+                        )
                         if answer_contract and not prefix_emitted:
                             if answer_requires_prefix(full_answer, answer_contract):
                                 prefix = build_answer_prefix(answer_contract)
@@ -690,7 +976,9 @@ async def stream_chat(request: Request) -> Response:
                     if local_definition_override or local_source_override:
                         continue
                     text = str(payload)
-                    if policy_sources and answer_needs_source_backed_rescue(full_answer + text, policy_sources):
+                    if policy_sources and answer_needs_source_backed_rescue(
+                        full_answer + text, policy_sources
+                    ):
                         local_source_override = True
                         route_name = "source_backed_runtime_rescue"
                         local_rescue_topic = "reference"
@@ -710,7 +998,9 @@ async def stream_chat(request: Request) -> Response:
                                 answer_contract=answer_contract or {},
                             ),
                         )
-                        local_answer = build_source_backed_runtime_answer(query, policy_sources)
+                        local_answer = build_source_backed_runtime_answer(
+                            query, policy_sources
+                        )
                         if answer_contract and not prefix_emitted:
                             if answer_requires_prefix(full_answer, answer_contract):
                                 prefix = build_answer_prefix(answer_contract)
@@ -806,12 +1096,20 @@ async def chat_feedback(request: Request) -> Response:
             timeout=config.request_timeout_seconds,
         )
     except requests.RequestException as exc:
-        raise HTTPException(status_code=502, detail=f"OpenDocuments upstream failed: {exc}") from exc
+        raise HTTPException(
+            status_code=502, detail=f"OpenDocuments upstream failed: {exc}"
+        ) from exc
 
     content_type = upstream.headers.get("content-type", "application/json")
     if "application/json" in content_type.lower():
         try:
-            return JSONResponse(status_code=upstream.status_code, content=upstream.json())
+            return JSONResponse(
+                status_code=upstream.status_code, content=upstream.json()
+            )
         except ValueError:
             pass
-    return Response(status_code=upstream.status_code, content=upstream.content, media_type=content_type)
+    return Response(
+        status_code=upstream.status_code,
+        content=upstream.content,
+        media_type=content_type,
+    )

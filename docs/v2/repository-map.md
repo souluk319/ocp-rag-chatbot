@@ -63,7 +63,7 @@
 
 ## 지금 기준으로 혼동하지 말아야 할 것
 
-- 이 저장소의 현재 기준은 `rewrite/opendoc-v2` 이다.
+- 이 저장소의 현재 기준 브랜치는 `feat/OCP_v2_planB` 이다.
 - `release/v1` 과 `main` 은 별도 기준선이다.
 - `docs/v2/` 안의 문서는 설계와 단계별 검증 문서다.
 - `data/manifests/generated/` 안의 JSON 은 문서보다 더 낮은 수준의 실행 증거다.
