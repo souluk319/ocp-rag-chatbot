@@ -29,6 +29,7 @@ function parseArgs(argv) {
     retrievalOnly: false,
     resetDataDir: false,
     skipIngest: false,
+    forceIngest: false,
   }
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -56,6 +57,7 @@ function parseArgs(argv) {
     if (arg === '--retrieval-only') opts.retrievalOnly = true
     if (arg === '--reset-data-dir') opts.resetDataDir = true
     if (arg === '--skip-ingest') opts.skipIngest = true
+    if (arg === '--force-ingest') opts.forceIngest = true
   }
 
   for (const key of ['workspace', 'cases', 'output', 'openDocumentsRoot', 'htmlRoot']) {
@@ -104,6 +106,13 @@ function loadJson(path) {
 
 function normalizeSlashes(value) {
   return value.replace(/\\/g, '/')
+}
+
+function shouldUseProbeMode(opts, selectedCaseCount) {
+  if (opts.forceIngest) return false
+  if (opts.skipIngest) return false
+  if (!opts.sampleQuery) return false
+  return selectedCaseCount <= 1
 }
 
 const KNOWN_TOP_LEVEL_DIRS = new Set([
@@ -226,12 +235,14 @@ async function main() {
   const opts = parseArgs(process.argv.slice(2))
   const cases = loadJsonLines(opts.cases)
   const selectedCases = opts.limit > 0 ? cases.slice(0, opts.limit) : cases
+  const probeMode = shouldUseProbeMode(opts, selectedCases.length)
+  const effectiveSkipIngest = opts.skipIngest || probeMode
   const ingestInputs = collectIngestInputs(opts)
   const resolvedWorkspace = resolve(opts.workspace)
   const resolvedDataDir = resolve(opts.dataDir || resolve(resolvedWorkspace, '.opendocuments-stage6'))
   const configOverrides = buildConfigOverrides(opts)
 
-  if (opts.resetDataDir && existsSync(resolvedDataDir)) {
+  if (opts.resetDataDir && !effectiveSkipIngest && existsSync(resolvedDataDir)) {
     rmSync(resolvedDataDir, { recursive: true, force: true })
   }
 
@@ -249,8 +260,18 @@ async function main() {
   try {
     const failures = []
     const profileConfig = getProfileConfig(opts.profile, ctx.config?.rag?.custom)
+    const ingestMode = effectiveSkipIngest ? 'skipped' : 'full'
 
-    if (!opts.skipIngest && ingestInputs.length > 0) {
+    console.log(
+      `[mode] probeMode=${probeMode} sampleQuery=${opts.sampleQuery ? 'yes' : 'no'} ` +
+      `limit=${selectedCases.length} ingest=${ingestMode} resetDataDir=${opts.resetDataDir && !effectiveSkipIngest}`,
+    )
+
+    if (probeMode && opts.resetDataDir) {
+      console.log('[mode] reset-data-dir ignored in probe mode to avoid rebuilding the corpus')
+    }
+
+    if (!effectiveSkipIngest && ingestInputs.length > 0) {
       let indexedCount = 0
       let skippedCount = 0
 
@@ -311,6 +332,13 @@ async function main() {
       writeFileSync(resolve(opts.failuresOut), JSON.stringify([], null, 2), 'utf-8')
     }
 
+    if (effectiveSkipIngest && ingestInputs.length > 0) {
+      console.log(
+        `[ok] ingest skipped for ${ingestInputs.length} inputs ` +
+        '(probe mode uses the existing indexed corpus)',
+      )
+    }
+
     const embedder = ctx.registry.getModels().find((model) => model.capabilities.embedding && model.embed)
     if (!embedder?.embed) {
       throw new Error('No embedding model available in OpenDocuments context')
@@ -335,7 +363,7 @@ async function main() {
         mkdirSync(dirname(resolve(opts.sampleOut)), { recursive: true })
         writeFileSync(
           resolve(opts.sampleOut),
-          JSON.stringify({ query: opts.sampleQuery, answer, sources }, null, 2),
+          JSON.stringify({ query: opts.sampleQuery, answer, sources, probeMode, ingestMode }, null, 2),
           'utf-8',
         )
       }
@@ -346,13 +374,10 @@ async function main() {
 
     for (const testCase of selectedCases) {
       const query = testCase.question_ko
-      const embedResult = await embedder.embed([query])
-      const denseResults = await ctx.store.searchChunks(embedResult.dense[0], opts.topK)
       const retrieved = opts.retrievalOnly
         ? await ctx.ragEngine.retrieveWithFeatures(`bench-${testCase.id}`, query, profileConfig)
         : (await ctx.ragEngine.query({ query, profile: opts.profile })).sources
-
-      const retrievalCandidates = denseResults.map((item, index) => convertCandidate(item, opts.htmlRoot, index + 1))
+      const retrievalCandidates = retrieved.map((item, index) => convertCandidate(item, opts.htmlRoot, index + 1))
       const rerankedCandidates = retrieved.map((item, index) => convertCandidate(item, opts.htmlRoot, index + 1))
       const citations = rerankedCandidates.map((item) => ({
         document_path: item.document_path,
@@ -364,6 +389,8 @@ async function main() {
 
       lines.push(JSON.stringify({
         benchmark_case_id: testCase.id,
+        probe_mode: probeMode,
+        ingest_mode: ingestMode,
         retrieval_candidates: retrievalCandidates,
         reranked_candidates: rerankedCandidates,
         citations,
