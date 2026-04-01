@@ -2,15 +2,20 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 from app.multiturn_memory import SessionMemoryManager
-from app.ocp_policy import OcpPolicyEngine, QuerySignals, load_policy_engine
+from app.ocp_policy import OcpPolicyEngine, load_policy_engine
 from app.runtime_source_index import SourceCatalog, load_active_source_catalog
 
 
 def _normalize_text(value: str) -> str:
     return " ".join((value or "").split()).strip().lower()
+
+
+def _normalize_path(value: str) -> str:
+    return value.replace("\\", "/").strip().lower()
 
 
 @dataclass(frozen=True)
@@ -139,7 +144,7 @@ def build_answer_prefix(answer_contract: dict[str, Any]) -> str:
     if version_hint:
         lines.append(f"[기준 버전: OpenShift {version_hint}]")
     if bool(signals.get("risk_notice_required")):
-        lines.append("[주의: 운영 영향이 큰 작업일 수 있으니 적용 전 현재 클러스터 버전과 공식 문서를 다시 확인하세요.]")
+        lines.append("[주의: 운영 영향이 있는 작업일 수 있으므로 적용 전에 현재 클러스터 버전과 공식 문서를 다시 확인하세요.]")
     if not lines:
         return ""
     return "\n".join(lines) + "\n\n"
@@ -162,6 +167,95 @@ def build_citation_appendix(citations: list[dict[str, Any]]) -> str:
         viewer_url = str(citation.get("viewer_url", "")).strip()
         lines.append(f"- {label} ({viewer_url})")
     return "\n".join(lines)
+
+
+def _read_definition_excerpt(document: dict[str, Any]) -> str:
+    normalized_path = str(document.get("normalized_path", "")).strip()
+    if not normalized_path:
+        return ""
+    path = Path(normalized_path)
+    if not path.exists() or not path.is_file():
+        return ""
+
+    lines: list[str] = []
+    for raw_line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("Title:") or line.startswith("Source Path:") or line.startswith("Viewer URL:"):
+            continue
+        if line.startswith("[Section]"):
+            continue
+        lines.append(line)
+        if len(lines) >= 3:
+            break
+    excerpt = " ".join(lines)
+    if ". " in excerpt:
+        excerpt = excerpt.split(". ", 1)[0].strip() + "."
+    return excerpt
+
+
+def build_manifest_backed_definition_answer(
+    question_ko: str,
+    citations: list[dict[str, Any]],
+    *,
+    source_catalog: SourceCatalog | None = None,
+) -> str:
+    catalog = source_catalog or load_active_source_catalog()
+    normalized_question = _normalize_text(question_ko)
+    top_citation = citations[0] if citations else {}
+    document = catalog.by_document_path.get(_normalize_path(str(top_citation.get("document_path", ""))), {})
+    excerpt = _read_definition_excerpt(document)
+
+    lines: list[str] = []
+    if "ocp" in normalized_question:
+        lines.append("OCP는 OpenShift Container Platform의 약자입니다.")
+    lines.append("OpenShift Container Platform(OCP)는 Red Hat이 제공하는 엔터프라이즈 Kubernetes 플랫폼입니다.")
+    lines.append("애플리케이션 배포뿐 아니라 클러스터 설치, 업데이트, 네트워킹, 보안, 모니터링 같은 운영 기능을 공식적으로 제공합니다.")
+    if excerpt:
+        lines.append(f'공식 문서에서는 "{excerpt}" 라고 설명합니다.')
+    return "\n".join(lines)
+
+
+def pick_manifest_backed_definition_sources(
+    *,
+    source_catalog: SourceCatalog | None = None,
+    limit: int = 2,
+) -> list[dict[str, Any]]:
+    catalog = source_catalog or load_active_source_catalog()
+    preferred_paths = (
+        "architecture/index.adoc",
+        "architecture/architecture.adoc",
+    )
+    results: list[dict[str, Any]] = []
+
+    for document_path in preferred_paths:
+        manifest_doc = catalog.by_document_path.get(document_path)
+        if not manifest_doc:
+            continue
+        sections = manifest_doc.get("sections", []) or []
+        top_section = sections[0] if sections else {}
+        results.append(
+            {
+                "rank": len(results) + 1,
+                "source_dir": manifest_doc.get("top_level_dir", ""),
+                "top_level_dir": manifest_doc.get("top_level_dir", ""),
+                "document_path": document_path,
+                "viewer_url": manifest_doc.get("viewer_url", ""),
+                "section_title": top_section.get("section_title", "") or manifest_doc.get("title", ""),
+                "title": manifest_doc.get("title", ""),
+                "product": manifest_doc.get("product", ""),
+                "version": manifest_doc.get("version", ""),
+                "category": manifest_doc.get("category", ""),
+                "effective_category": manifest_doc.get("category", ""),
+                "trust_level": manifest_doc.get("trust_level", ""),
+                "retrieval_origin": "definition_fallback",
+            }
+        )
+        if len(results) >= limit:
+            break
+
+    return results
 
 
 def shape_answer(answer: str, answer_contract: dict[str, Any], citations: list[dict[str, Any]]) -> str:

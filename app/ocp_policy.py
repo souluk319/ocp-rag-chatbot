@@ -90,6 +90,11 @@ class OcpPolicyEngine:
                 self._extend_unique(preferred_source_dirs, rule.get("preferred_source_dirs", []))
                 self._extend_unique(path_terms, rule.get("path_terms", []))
 
+        if self._looks_like_definition_query(normalized_question):
+            matched_rules.append("definition_intro")
+            self._extend_unique(preferred_source_dirs, ["architecture", "installing"])
+            self._extend_unique(path_terms, ["openshift container platform", "architecture", "overview", "introduction"])
+
         follow_up_detected = self._is_follow_up(question_ko, memory_state)
         if follow_up_detected:
             self._extend_unique(preferred_source_dirs, memory_state.get("active_source_dirs", []))
@@ -113,6 +118,30 @@ class OcpPolicyEngine:
             follow_up_detected=follow_up_detected,
             risk_notice_required=risk_notice_required,
         )
+
+    def _looks_like_definition_query(self, normalized_question: str) -> bool:
+        product_terms = (
+            "ocp",
+            "openshift",
+            "open shift",
+            "오픈시프트",
+            "open shift container platform",
+            "openshift container platform",
+        )
+        definition_cues = (
+            "뭐야",
+            "무엇",
+            "정의",
+            "소개",
+            "개요",
+            "란",
+            "what is",
+            "overview",
+            "introduction",
+        )
+        if not any(term in normalized_question for term in product_terms):
+            return False
+        return any(cue in normalized_question for cue in definition_cues) or normalized_question.strip() in {"ocp", "openshift", "오픈시프트"}
 
     def rerank_candidates(
         self,

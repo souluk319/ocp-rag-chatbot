@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterator
@@ -15,9 +16,11 @@ from app.runtime_gateway_support import (
     build_answer_prefix,
     build_citation_appendix,
     build_done_payload,
+    build_manifest_backed_definition_answer,
     build_policy_overlay,
     commit_runtime_grounding,
     load_session_manager,
+    pick_manifest_backed_definition_sources,
     prepare_runtime_turn,
     shape_answer,
 )
@@ -160,10 +163,13 @@ def iter_sse_events(response: requests.Response) -> Iterator[tuple[str, Any]]:
 
     event_type = ""
     data_lines: list[str] = []
-    for raw_line in response.iter_lines(decode_unicode=True):
+    for raw_line in response.iter_lines(decode_unicode=False):
         if raw_line is None:
             continue
-        line = raw_line.rstrip("\r")
+        if isinstance(raw_line, bytes):
+            line = raw_line.decode("utf-8", errors="replace").rstrip("\r")
+        else:
+            line = str(raw_line).rstrip("\r")
         if not line:
             if data_lines:
                 payload = "\n".join(data_lines)
@@ -184,6 +190,18 @@ def iter_sse_events(response: requests.Response) -> Iterator[tuple[str, Any]]:
         payload = "\n".join(data_lines)
         current_event = event_type or "message"
         yield current_event, decode_payload(current_event, payload)
+
+
+def looks_like_definition_query(query: str) -> bool:
+    normalized = re.sub(r"\s+", " ", (query or "")).strip().lower()
+    if not normalized:
+        return False
+    product_terms = ("ocp", "openshift", "open shift", "오픈시프트")
+    definition_cues = ("뭐야", "무엇", "정의", "소개", "개요", "란", "what is", "overview", "introduction")
+    return (
+        any(term in normalized for term in product_terms)
+        and (any(cue in normalized for cue in definition_cues) or normalized in {"ocp", "openshift", "오픈시프트"})
+    )
 
 
 def serialize_sse(event: str, payload: Any) -> str:
@@ -286,15 +304,25 @@ async def chat(request: Request) -> Response:
         sources=payload.get("sources", []),
         memory_before=plan.memory_before,
     )
+    definition_query = looks_like_definition_query(query)
     policy_sources = overlay["policy_sources"]
+    if definition_query and not policy_sources:
+        policy_sources = pick_manifest_backed_definition_sources()
+    matched_rules = set(overlay["policy_signals"].get("matched_rules", []))
     commit_runtime_grounding(
         conversation_id=session_id,
         sources=policy_sources,
         memory_manager=load_session_manager(),
     )
 
-    payload["answer"] = shape_answer(str(payload.get("answer", "")), overlay["answer_contract"], policy_sources)
+    if not payload.get("sources") and policy_sources and (definition_query or "definition_intro" in matched_rules):
+        base_answer = build_manifest_backed_definition_answer(query, policy_sources)
+    else:
+        base_answer = str(payload.get("answer", ""))
+
+    payload["answer"] = shape_answer(base_answer, overlay["answer_contract"], policy_sources)
     payload["sources"] = policy_sources
+    payload["source_count"] = len(policy_sources)
     payload["conversationId"] = session_id
     payload["mode"] = mode
     payload["rewrittenQuery"] = plan.rewritten_query
@@ -368,6 +396,7 @@ async def stream_chat(request: Request) -> Response:
         answer_contract: dict[str, Any] | None = None
         prefix_emitted = False
         done_payload: dict[str, Any] = {}
+        local_definition_override = False
 
         try:
             for event_type, payload in iter_sse_events(upstream):
@@ -378,12 +407,30 @@ async def stream_chat(request: Request) -> Response:
                         sources=payload if isinstance(payload, list) else [],
                         memory_before=plan.memory_before,
                     )
+                    definition_query = looks_like_definition_query(query)
                     policy_sources = overlay["policy_sources"]
+                    if definition_query and not policy_sources:
+                        policy_sources = pick_manifest_backed_definition_sources()
                     answer_contract = overlay["answer_contract"]
                     yield serialize_sse("sources", policy_sources)
+                    matched_rules = set(overlay["policy_signals"].get("matched_rules", []))
+                    if not payload and policy_sources and (definition_query or "definition_intro" in matched_rules):
+                        local_definition_override = True
+                        local_answer = build_manifest_backed_definition_answer(query, policy_sources)
+                        if answer_contract and not prefix_emitted:
+                            if answer_requires_prefix(full_answer, answer_contract):
+                                prefix = build_answer_prefix(answer_contract)
+                                if prefix:
+                                    full_answer += prefix
+                                    yield serialize_sse("chunk", prefix)
+                            prefix_emitted = True
+                        full_answer += local_answer
+                        yield serialize_sse("chunk", local_answer)
                     continue
 
                 if event_type == "chunk":
+                    if local_definition_override:
+                        continue
                     if answer_contract and not prefix_emitted:
                         if answer_requires_prefix(full_answer, answer_contract):
                             prefix = build_answer_prefix(answer_contract)
@@ -421,7 +468,14 @@ async def stream_chat(request: Request) -> Response:
         finally:
             upstream.close()
 
-    response = StreamingResponse(event_stream(), media_type="text/event-stream")
+    response = StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Content-Type": "text/event-stream; charset=utf-8",
+            "Cache-Control": "no-cache",
+        },
+    )
     set_session_cookie(response, session_id)
     return response
 
