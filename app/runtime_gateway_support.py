@@ -306,6 +306,11 @@ def classify_local_rescue_topic(query: str) -> str:
     normalized = _normalize_text(query)
     if looks_like_definition_query(normalized):
         return "definition"
+    if (
+        ("operatorhub" in normalized or "operator lifecycle manager" in normalized or "olm" in normalized)
+        and any(cue in normalized for cue in ("무엇", "뭐야", "역할", "개요", "소개", "what is", "overview"))
+    ):
+        return "operator_definition"
     if "oc-mirror" in normalized or "미러링" in normalized or "폐쇄망" in normalized:
         return "disconnected"
     if "방화벽" in normalized or "firewall" in normalized:
@@ -329,6 +334,12 @@ def pick_manifest_backed_reference_sources(
     preferred_paths_by_topic = {
         "firewall": (
             "installing/install_config/configuring-firewall.adoc",
+        ),
+        "operator_definition": (
+            "operators/index.adoc",
+            "operators/olm_v1/index.adoc",
+            "operators/understanding/olm-what-operators-are.adoc",
+            "operators/understanding/olm/olm-arch.adoc",
         ),
         "update": (
             "updating/index.adoc",
@@ -390,6 +401,13 @@ def build_manifest_backed_reference_answer(
             "정확한 전체 allowlist와 예외는 아래 출처 문서를 바로 확인하세요."
         )
 
+    if topic == "operator_definition":
+        return (
+            "OperatorHub는 클러스터에 설치할 수 있는 Operator를 찾고 배포하는 진입점이고, "
+            "Operator Lifecycle Manager(OLM)는 그 Operator의 설치, 업그레이드, 의존성, 수명주기를 관리하는 구성요소입니다.\n"
+            "즉 OperatorHub가 카탈로그와 선택의 화면이라면, OLM은 실제 설치와 운영 흐름을 담당한다고 보면 됩니다."
+        )
+
     if topic == "update":
         return (
             "업데이트 전에는 현재 버전과 업그레이드 경로, 자격 증명 관리 방식, 그리고 사전 준비 항목을 먼저 확인해야 합니다.\n"
@@ -409,7 +427,7 @@ def should_use_local_runtime_rescue(question_ko: str) -> bool:
     topic = classify_local_rescue_topic(question_ko)
     if topic == "definition":
         return True
-    if topic in {"firewall", "update", "disconnected"}:
+    if topic in {"firewall", "update", "disconnected", "operator_definition"}:
         return True
     return looks_like_reference_seeking_query(question_ko)
 

@@ -151,6 +151,11 @@ class OcpPolicyEngine:
                 }
             ]
 
+        if "operator_concepts" in matched_rule_set:
+            matched_rules = [rule for rule in matched_rules if rule != "troubleshooting_operator"]
+            preferred_source_dirs = [item for item in preferred_source_dirs if item != "support"]
+            preferred_categories = [item for item in preferred_categories if item != "troubleshooting"]
+
         return (
             self._dedupe_preserve_order(preferred_categories),
             self._dedupe_preserve_order(preferred_source_dirs),

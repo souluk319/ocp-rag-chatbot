@@ -1,0 +1,61 @@
+{
+  "primary_demo_questions": [
+    {
+      "id": "demo-01-definition",
+      "query": "오픈시프트가 뭐야",
+      "kind": "definition",
+      "expected_viewer_family": "architecture",
+      "reason": "가장 기본적인 정의 질문이며 한국어 답변, citation, architecture 계열 출처를 한 번에 보여준다."
+    },
+    {
+      "id": "demo-02-firewall",
+      "query": "설치 시 방화벽에서 어떤 포트와 예외를 허용해야 하나요?",
+      "kind": "operations",
+      "expected_viewer_family": "installing/install_config",
+      "reason": "설치 운영 질문의 대표 사례로 citation click-through를 직관적으로 검증할 수 있다."
+    },
+    {
+      "id": "demo-03-update",
+      "query": "업데이트 전에 확인해야 할 사항은 무엇인가요?",
+      "kind": "operations",
+      "expected_viewer_family": "updating",
+      "reason": "업데이트 전 확인사항과 주의 문구를 함께 보여줄 수 있는 핵심 운영 질문이다."
+    },
+    {
+      "id": "demo-04-disconnected",
+      "query": "폐쇄망 설치에서 oc-mirror 플러그인으로 이미지를 미러링하려면 어떤 문서를 봐야 하나요?",
+      "kind": "operations",
+      "expected_viewer_family": "disconnected",
+      "reason": "과제 목적에 맞는 폐쇄망/OCP 운영도우미 성격을 직접 보여준다."
+    }
+  ],
+  "follow_up_demo": {
+    "id": "demo-06-follow-up",
+    "turn_1": "업데이트 전에 확인해야 할 사항은 무엇인가요?",
+    "turn_2": "그 문서 기준으로 제일 먼저 볼 항목은 뭐야?",
+    "expected_viewer_family": "updating",
+    "reason": "멀티턴 follow-up에서 직전 문맥과 출처 계열을 유지하는지 확인한다."
+  },
+  "secondary_watchlist": [
+    {
+      "query": "OperatorHub와 Operator Lifecycle Manager는 어떤 역할을 하나요?",
+      "risk": "현재 build에서는 operator 개념 질문이 support/troubleshooting 쪽으로 치우칠 수 있어 데모 핵심 세트에서는 제외한다."
+    },
+    {
+      "query": "설치 후 Operator 상태를 점검하려면 어떤 문서를 봐야 하나요?",
+      "risk": "현재 build에서는 operator 상태 질문도 installing/support 쪽으로 흔들려, live demo primary 세트에서는 제외한다."
+    },
+    {
+      "query": "네트워크 문제를 진단하려면 어떤 문서를 먼저 봐야 하나요?",
+      "risk": "현재 build에서는 질문 표현에 따라 citation 없이 RAG fallback으로 빠질 수 있다."
+    },
+    {
+      "query": "인증서 유지보수나 보안 관련해서 먼저 볼 문서는 무엇인가요?",
+      "risk": "security/authentication/post_installation_configuration 중 어디로 갈지 아직 질문 표현 민감도가 있다."
+    },
+    {
+      "query": "스토리지 문제를 점검할 때 먼저 볼 문서는 무엇인가요?",
+      "risk": "storage 계열 질문은 현재 데모 핵심 세트보다 안정성이 낮다."
+    }
+  ]
+}

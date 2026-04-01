@@ -242,6 +242,19 @@ retrieval:
       path_terms:
         - network
         - troubleshooting
+    operator_concepts:
+      any_terms:
+        - operatorhub
+        - operator lifecycle manager
+        - olm
+      preferred_categories:
+        - reference
+      preferred_source_dirs:
+        - operators
+      path_terms:
+        - operators overview
+        - operator lifecycle manager
+        - what are operators
     troubleshooting_operator:
       any_terms:
         - operator

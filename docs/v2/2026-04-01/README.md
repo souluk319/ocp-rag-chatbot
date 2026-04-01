@@ -13,6 +13,7 @@
 - Stage 5: done
 - Stage 6: done
 - Stage 7: done
+- Stage 8: done
 
 ## Stage 5 and Stage 6 boundary
 - Stage 5 is the canonical direct `localhost:8000` proof.
@@ -32,6 +33,15 @@
 ## Stage 7 files
 - [Stage 7 plan](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/2026-04-01/stage-07-runtime-corpus-integrity.md)
 - [Stage 7 report](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/2026-04-01/stage-07-report.md)
+
+## Stage 8 files
+- [Stage 8 plan](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/2026-04-01/stage-08-demo-readiness.md)
+- [Stage 8 report](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/2026-04-01/stage-08-report.md)
+
+## Stage 8 verdict
+- Stage 8 is a live demo-readiness pass.
+- It fixes a stable primary question set for `localhost:8000`.
+- It is not a production-readiness claim.
 
 ## Reporting rule
 When writing status updates, always separate:
