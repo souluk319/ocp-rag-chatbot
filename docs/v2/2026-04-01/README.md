@@ -11,12 +11,13 @@
 - Stage 3: done
 - Stage 4: done
 - Stage 5: done
-- Stage 6: guardrails documented
+- Stage 6: guardrails and widened-corpus report documented
 
 ## Stage 5 and Stage 6 boundary
 - Stage 5 is the canonical direct `localhost:8000` proof.
 - Stage 6 is the widened-corpus regression report and guardrail layer.
 - Do not merge those claims.
+- Stage 6 report keeps the raw baseline separate from the policy-prepared path.
 
 ## Stage 5 files
 - [Stage 5 summary](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/2026-04-01/stage-05-report.md)
