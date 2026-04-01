@@ -1,134 +1,210 @@
-# OCP 운영 도우미 v2
+# OCP 운영 도우미 챗봇
 
-폐쇄망에서 사용할 수 있는 **OCP 운영 가이드 챗봇**입니다.  
-OpenShift 공식 문서 원천을 기반으로 검색하고, 한국어로 답변하며, 답변에 붙은 출처를 누르면 내부 HTML 문서가 열리도록 구성했습니다.
+폐쇄망 환경에서 사용할 수 있도록 설계한 **OCP(OpenShift Container Platform) 운영 지원용 RAG 챗봇**입니다.  
+공식 OpenShift 문서를 기반으로 검색하고, 한국어로 답변하며, 답변에 포함된 출처를 클릭하면 내부 HTML 문서를 바로 열 수 있도록 구성했습니다.
 
-## 이 프로젝트가 하는 일
+## 프로젝트 목적
 
-- 한국어 질문을 받습니다.
-- 공식 OCP 문서를 근거로 답변합니다.
-- 답변에 출처를 붙입니다.
-- 출처를 누르면 HTML 문서가 열립니다.
-- 멀티턴 문맥을 유지합니다.
-- 폐쇄망 반입과 refresh/activate/rollback 흐름을 고려한 구조를 갖고 있습니다.
+이 프로젝트의 목표는 단순한 문서 검색기가 아니라, 운영자가 실제로 활용할 수 있는 **지식 기반형 OCP 도우미**를 만드는 것입니다.
 
-## 현재 상태
+핵심 목표는 다음과 같습니다.
 
-현재 `main` 기준으로 아래가 확인되었습니다.
+- 한국어 질문에 답변할 수 있어야 합니다.
+- 답변은 공식 문서 근거를 기반으로 해야 합니다.
+- 답변에는 출처가 포함되어야 합니다.
+- 출처를 클릭하면 원문 HTML 문서가 열려야 합니다.
+- 멀티턴 대화를 통해 앞선 질문의 문맥을 이어갈 수 있어야 합니다.
+- 폐쇄망 반입, 인덱스 갱신, 활성화, 롤백까지 고려한 구조여야 합니다.
 
-- 로컬 UI: `http://127.0.0.1:8000`
-- 스트리밍 응답 동작
-- 한국어 기본 질문 응답
-- citation click-through 동작
-- 멀티턴 세션 유지
-- validation corpus 기준 retrieval / multiturn / red-team / runtime smoke 검증 완료
+## 핵심 기능
 
-다만 최종 판정은 **conditional-go** 입니다.
+- 한국어 질문 입력
+- OpenShift 공식 문서 기반 검색
+- 한국어 답변 생성
+- 클릭 가능한 citation 제공
+- HTML 기반 원문 문서 뷰어 제공
+- 세션 기반 멀티턴 문맥 유지
+- 로컬 실행용 게이트웨이 및 런타임 스택 제공
 
-뜻:
+## 시스템 개요
 
-- 시연, 검증, 내부 개발용으로는 충분히 동작합니다.
-- 하지만 특정 minor 버전에 고정된 운영 릴리즈로 보기에는 추가 검증이 더 필요합니다.
+이 프로젝트는 크게 4개 계층으로 구성됩니다.
 
-## 빠르게 보기
+1. **문서 수집/정규화 계층**
+   - `openshift-docs` 원본 `.adoc` 문서를 읽습니다.
+   - 검색용 텍스트와 HTML 뷰어 문서를 함께 생성합니다.
+   - 문서별 메타데이터와 citation 연결 정보를 생성합니다.
 
-- 실행용 기준 문서: [fixed-context-brief.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/fixed-context-brief.md)
-- 절대 기준 문서: [fixed-context.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/fixed-context.md)
-- 저장소 구조 안내: [repository-map.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/repository-map.md)
-- 현재 진행 요약: [project-plan-summary.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/project-plan-summary.md)
-- 10단계 검증 계획: [ten-stage-verification-plan.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/ten-stage-verification-plan.md)
-- 라이브 런타임 검증: [stage08-live-runtime-quality-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage08-live-runtime-quality-report.md)
-- 최종 릴리즈 판정: [stage10-final-release-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage10-final-release-report.md)
+2. **RAG 계층**
+   - 정규화된 문서를 인덱싱합니다.
+   - 검색 결과를 정책 기반으로 보정합니다.
+   - 문서 우선순위, source/category 힌트, follow-up 문맥을 반영합니다.
 
-## v2 본체
+3. **런타임 계층**
+   - 사용자 요청을 받는 게이트웨이
+   - OpenDocuments 연동 브리지
+   - 실제 질의응답과 출처 정리를 담당하는 응답 경로
 
-핵심 런타임 파일:
+4. **운영 계층**
+   - 문서 반입
+   - 인덱스 생성
+   - 활성화
+   - 스모크 테스트
+   - 롤백
 
-- 게이트웨이: [ocp_runtime_gateway.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/app/ocp_runtime_gateway.py)
-- OpenDocuments 브리지: [opendocuments_openai_bridge.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/app/opendocuments_openai_bridge.py)
-- 정책 엔진: [ocp_policy.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/app/ocp_policy.py)
-- 멀티턴 메모리: [multiturn_memory.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/app/multiturn_memory.py)
-- UI: [runtime_chat.html](/C:/Users/soulu/cywell/ocp-rag-chatbot/app/static/runtime_chat.html)
+## 파이프라인
 
-데이터 파이프라인:
-
-- 정규화: [normalize_openshift_docs.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/ingest/normalize_openshift_docs.py)
-- source profile: [source-profiles.yaml](/C:/Users/soulu/cywell/ocp-rag-chatbot/configs/source-profiles.yaml)
-
-운영/배포 경로:
-
-- 기동: [start_runtime_stack.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/start_runtime_stack.py)
-- smoke: [run_live_runtime_smoke.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/run_live_runtime_smoke.py)
-- refresh: [build_outbound_bundle.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/build_outbound_bundle.py)
-- activate: [activate_index.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/activate_index.py)
-- rollback: [rollback_index.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/rollback_index.py)
-
-## 데이터와 RAG 구조
-
-```text
-openshift-docs / approved docs
-  -> normalize (.adoc -> text + HTML viewer + metadata)
-  -> OpenDocuments-compatible retrieval flow
-  -> runtime gateway
-  -> Korean answer + clickable citations
+```mermaid
+flowchart LR
+    A["openshift-docs (.adoc)"] --> B["정규화 파이프라인"]
+    B --> C["검색용 텍스트"]
+    B --> D["HTML 문서 뷰"]
+    B --> E["문서 메타데이터 / citation 정보"]
+    C --> F["RAG 인덱스"]
+    E --> F
+    F --> G["런타임 게이트웨이"]
+    G --> H["질문 재작성 / 정책 보정"]
+    H --> I["검색 / 응답 생성"]
+    D --> J["citation click-through"]
+    I --> J
 ```
 
-역할 분리는 이렇게 봐야 합니다.
+## 데이터 처리 방식
 
-- `openshift-docs`: 공식 문서 원천
-- `OpenDocuments`: RAG 엔진 방향
-- `ocp-rag-chatbot`: 실제 제품 레이어
+### 1. 문서 원천
 
-## 로컬 실행
+- 공식 데이터 원천은 `openshift-docs` 저장소입니다.
+- 원본 포맷은 AsciiDoc(`.adoc`)입니다.
+- PDF나 렌더링 결과물이 아니라 **원본 문서 소스**를 기준으로 처리합니다.
 
-### 1. 런타임 계약 확인
+### 2. 정규화
 
-```powershell
-python deployment/check_runtime_contract.py
+정규화 단계에서는 아래 산출물이 생성됩니다.
+
+- 검색용 텍스트
+- HTML 문서 뷰어 파일
+- 문서/섹션 메타데이터
+- viewer URL
+- citation 연결 정보
+
+### 3. 출처 처리
+
+답변의 출처는 단순 파일명이 아니라 **실제 클릭 가능한 문서 링크**로 제공됩니다.
+
+- 답변에 citation 표시
+- citation 클릭 시 내부 HTML 문서 열기
+- 가능한 경우 섹션 수준까지 연결
+
+## 런타임 구조
+
+현재 로컬 실행 기준 포트는 다음과 같습니다.
+
+- `8000`: 사용자 게이트웨이 / 브라우저 UI
+- `18101`: OpenAI 호환 브리지
+- `18102`: OpenDocuments 런타임
+
+사용자는 기본적으로 아래 주소만 사용하면 됩니다.
+
+- `http://127.0.0.1:8000`
+
+## 실행 방법
+
+### 1. 환경 변수 준비
+
+민감 정보는 코드에 하드코딩하지 않고 `.env` 로 관리합니다.
+
+예시:
+
+```env
+OD_SERVER_BASE_URL=http://127.0.0.1:18102
+LLM_ENDPOINT=company
+LLM_EP_COMPANY_URL=http://...
+LLM_EP_COMPANY_MODEL=Qwen/Qwen3.5-9B
+OD_EMBEDDING_MODEL=BAAI/bge-m3
+OD_EMBEDDING_DIMENSIONS=1024
 ```
 
 ### 2. 런타임 기동
 
 ```powershell
-python deployment/start_runtime_stack.py
+powershell -ExecutionPolicy Bypass -File deployment/start_local_runtime.ps1
 ```
 
-브라우저에서 아래 주소로 접속합니다.
+### 3. 접속
 
-- [http://127.0.0.1:8000](http://127.0.0.1:8000)
+브라우저에서:
 
-### 3. 라이브 smoke
+- `http://127.0.0.1:8000`
+
+### 4. 종료
 
 ```powershell
-python deployment/run_live_runtime_smoke.py --output data/manifests/generated/manual-live-runtime-report.json
+powershell -ExecutionPolicy Bypass -File deployment/stop_local_runtime.ps1
 ```
 
-## 출처 방식
+## 저장소 구조
 
-이 프로젝트에서 citation은 보조 정보가 아니라 핵심 요구사항입니다.
+```text
+app/          런타임 게이트웨이, 브리지, UI
+configs/      source profile, 정책, 설정
+data/         정규화 결과, manifest, generated 산출물
+deployment/   실행, 스모크 테스트, 반입/활성화/롤백
+docs/         설계 및 운영 문서
+eval/         benchmark, 회귀 검증, 리포트 생성
+indexes/      생성된 인덱스와 관련 산출물
+ingest/       openshift-docs 정규화 파이프라인
+```
 
-- 검색용 텍스트와 별도로 HTML viewer를 생성합니다.
-- 문서 metadata에 `viewer_url` 과 section 정보가 들어갑니다.
-- 답변의 출처를 누르면 실제 HTML 문서가 열립니다.
+## 주요 구성요소
 
-즉 “인용이 붙는다”가 아니라 **눌렀을 때 실제 문서가 열리는 것**까지 포함해서 검증합니다.
+- `app/ocp_runtime_gateway.py`
+  - 사용자 요청 수신
+  - citation 정리
+  - 멀티턴 흐름 연결
 
-## 폐쇄망 운영 흐름
+- `app/opendocuments_openai_bridge.py`
+  - OpenDocuments 와 모델 서버 사이의 브리지
+  - 임베딩/채팅 요청 처리
 
-1. source mirror 갱신
-2. 정규화 / diff 계산
-3. outbound bundle 생성
-4. 승인
-5. inbound 반입
-6. staging / reindex
-7. smoke
-8. activate
-9. 필요 시 rollback
+- `app/ocp_policy.py`
+  - 질의 신호 해석
+  - source/category/path term 기반 retrieval 보정
 
-## 권위 문서
+- `app/multiturn_memory.py`
+  - 세션 메모리 관리
+  - 후속 질문 rewrite 지원
 
-- retrieval / citation: [stage05-stage9-regression-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage05-stage9-regression-report.md)
-- multiturn / red-team: [stage06-multiturn-redteam-regression-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage06-multiturn-redteam-regression-report.md)
-- refresh / rollback: [stage07-refresh-activate-rollback-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage07-refresh-activate-rollback-report.md)
-- live runtime / viewer: [stage08-live-runtime-quality-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage08-live-runtime-quality-report.md)
-- 최종 gate: [stage10-final-release-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage10-final-release-report.md)
+- `ingest/normalize_openshift_docs.py`
+  - `.adoc` -> 검색용 텍스트 + HTML 문서 + 메타데이터 생성
+
+## 설계 원칙
+
+- 공식 문서 우선
+- 한국어 사용성 우선
+- 출처 검증 가능성 우선
+- 폐쇄망 운영 가능성 고려
+- 특정 minor 버전에 즉시 하드고정하지 않고, 향후 source profile 전환이 가능하도록 설계
+
+## 현재 범위
+
+현재 구현은 **실행 가능한 OCP 운영 도우미 챗봇**을 목표로 하고 있으며, 다음 범위를 포함합니다.
+
+- 한국어 기본 질문 응답
+- citation click-through
+- 멀티턴 세션 유지
+- validation corpus 기반 검증 흐름
+- 로컬 런타임 스택 기동
+
+운영 릴리즈를 위해서는 target minor 고정, 추가 corpus 확장, 품질 보강이 이어질 수 있습니다.
+
+## 주의 사항
+
+- 이 프로젝트는 내부/폐쇄망 운영을 고려한 구조입니다.
+- `.env` 및 토큰 정보는 저장소에 커밋하지 않습니다.
+- 문서 코퍼스가 커질수록 retrieval 품질 검증이 중요해집니다.
+
+## 참고
+
+- 공식 문서 원천: `openshift-docs`
+- 로컬 UI 주소: `http://127.0.0.1:8000`
+
