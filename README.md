@@ -1,4 +1,4 @@
-# OCP 운영 도우미 챗봇
+# OCP 운영 도우미 챗봇 v2 PlanB
 
 폐쇄망 환경에서 사용할 수 있도록 설계 중인 **OCP(OpenShift Container Platform) 운영 지원용 RAG 챗봇 프로젝트**입니다.  
 공식 OpenShift 문서를 기반으로 검색하고, 한국어 답변과 citation click-through 를 제공하는 구조를 목표로 개발하고 있습니다.
