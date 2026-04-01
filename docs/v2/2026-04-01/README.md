@@ -39,7 +39,8 @@
 ## 현재 상태
 
 - 1단계 완료: [stage-01-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/2026-04-01/stage-01-report.md)
-- 다음 활성 단계: 2단계
+- 2단계 완료: [stage-02-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/2026-04-01/stage-02-report.md)
+- 다음 활성 단계: 3단계
 
 ## 공통 팀 구성
 

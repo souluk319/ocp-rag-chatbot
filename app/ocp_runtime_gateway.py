@@ -414,7 +414,11 @@ async def stream_chat(request: Request) -> Response:
                     answer_contract = overlay["answer_contract"]
                     yield serialize_sse("sources", policy_sources)
                     matched_rules = set(overlay["policy_signals"].get("matched_rules", []))
-                    if not payload and policy_sources and (definition_query or "definition_intro" in matched_rules):
+                    if (
+                        (not payload or not payload.get("sources"))
+                        and policy_sources
+                        and (definition_query or "definition_intro" in matched_rules)
+                    ):
                         local_definition_override = True
                         local_answer = build_manifest_backed_definition_answer(query, policy_sources)
                         if answer_contract and not prefix_emitted:
