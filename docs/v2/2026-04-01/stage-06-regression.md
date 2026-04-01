@@ -32,9 +32,9 @@ When summarizing Stage 6, always separate these two statements:
   - `source_dir_hit@5 = 0.0`
   - `supporting_doc_hit@10 = 0.0`
 - Policy-prepared path:
-  - `source_dir_hit@5 = 0.9231`
-  - `supporting_doc_hit@10 = 0.9231`
-  - `citation_correctness = 0.9231`
+  - `source_dir_hit@5 = 1.0`
+  - `supporting_doc_hit@10 = 1.0`
+  - `citation_correctness = 1.0`
   - `rerank_lift@5 = 0.0`
 - Multiturn:
   - `2/2` scenarios passed
@@ -42,7 +42,7 @@ When summarizing Stage 6, always separate these two statements:
 - Red-team:
   - `7/7` cases passed
 - Overall regression gate:
-  - `go`
+  - `policy-go/raw-gap-present`
 
 ## User-facing wording to use
 Use this wording when reporting upward:

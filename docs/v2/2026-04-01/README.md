@@ -11,7 +11,7 @@
 - Stage 3: done
 - Stage 4: done
 - Stage 5: done
-- Stage 6: guardrails and widened-corpus report documented
+- Stage 6: done
 
 ## Stage 5 and Stage 6 boundary
 - Stage 5 is the canonical direct `localhost:8000` proof.
@@ -38,3 +38,4 @@ When writing status updates, always separate:
 - `localhost:8000`: user-visible runtime checkpoint
 - `raw baseline`: diagnostic only
 - `policy-prepared`: the answer path we can report for Stage 6
+- `Stage 6 verdict`: direct runtime pass, raw gap still present

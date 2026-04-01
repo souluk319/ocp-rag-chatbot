@@ -8,8 +8,8 @@ from pathlib import Path
 import requests
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-REPORT_PATH = REPO_ROOT / "docs" / "v2" / "2026-04-01" / "stage-06-report.md"
-JSON_PATH = REPO_ROOT / "docs" / "v2" / "2026-04-01" / "stage-06-report.json"
+REPORT_PATH = REPO_ROOT / "docs" / "v2" / "2026-04-01" / "stage-06-direct-runtime-report.md"
+JSON_PATH = REPO_ROOT / "docs" / "v2" / "2026-04-01" / "stage-06-direct-runtime-report.json"
 BASE_URL = os.environ.get("STAGE06_BASE_URL", "http://127.0.0.1:8000")
 
 CASES = [
