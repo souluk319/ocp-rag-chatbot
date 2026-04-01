@@ -1,44 +1,27 @@
-# 6단계 - widened corpus 회귀 검증
+# Stage 6 - Direct localhost regression
 
-## 목표
+## Purpose
 
-앞 단계 수정이 widened corpus 기준으로 실제로 유지되는지 회귀 검증한다.
+Verify that the Stage 5 runtime behavior is still intact on the live `localhost:8000` runtime.
 
-## 왜 이 단계가 필요한가
+## What this stage checks
 
-기본 질문만 고쳐놓고 운영 질문이나 멀티턴이 깨지면 심사 직전에 다시 무너진다.
+- Basic definition questions still answer in Korean.
+- Operational questions still answer in Korean.
+- Citations still click through to a real HTML viewer.
 
-## 담당 역할
+## Live checkpoints
 
-- Ramanujan: 회귀 실패 패턴 분류
-- Arendt: 한국어 응답 품질 후퇴 여부 검토
-- Peirce: 정답 출처가 유지되는지 확인
-- Gibbs: benchmark / smoke 러너 보정
-- Feynman: stage 5~8 성격의 실검증
-- Russell: 결과 문서와 실제 실행 증거 정리
+- `http://127.0.0.1:8000/health`
+- `http://127.0.0.1:8000`
+- `http://127.0.0.1:8000/api/v1/chat`
 
-## 작업 내용
+## Run command
 
-1. retrieval 회귀
-2. multiturn 회귀
-3. red-team 회귀
-4. runtime smoke 재검증
+```powershell
+python .\deployment\check_stage06_direct_runtime_regression.py
+```
 
-## 테스트
+## Completion rule
 
-- benchmark set
-- 멀티턴 시나리오
-- red-team case
-- live runtime smoke
-
-## 완료 기준
-
-- 이전보다 나빠진 축이 없어야 한다.
-- 최소한 basic query / citation / runtime 은 유지된다.
-- 회귀 결과를 문서로 남긴다.
-
-## 산출물
-
-- 회귀 검증 결과
-- pass/fail 판정
-- 짧은 완료 보고
+This stage only passes when the user can directly verify the behavior in the browser at `localhost:8000`.
