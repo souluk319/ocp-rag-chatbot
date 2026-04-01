@@ -1,6 +1,6 @@
 # 2026-04-01 작업 계획
 
-오늘 작업은 [fixed-context.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/fixed-context.md)를 절대 기준으로 수행한다.
+오늘 작업은 [fixed-context-brief.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/fixed-context-brief.md)를 먼저 보고, 필요할 때 [fixed-context.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/fixed-context.md)를 참고한다.
 
 ## 오늘 목표
 

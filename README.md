@@ -32,6 +32,7 @@ OpenShift 공식 문서 원천을 기반으로 검색하고, 한국어로 답변
 
 ## 빠르게 보기
 
+- 실행용 기준 문서: [fixed-context-brief.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/fixed-context-brief.md)
 - 절대 기준 문서: [fixed-context.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/fixed-context.md)
 - 저장소 구조 안내: [repository-map.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/repository-map.md)
 - 현재 진행 요약: [project-plan-summary.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/project-plan-summary.md)
