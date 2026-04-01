@@ -122,6 +122,128 @@
           "forbidden_rewrite_terms": ["oc-mirror", "mirror registry"]
         }
       ]
+    },
+    {
+      "scenario_id": "MT-003",
+      "title": "노드 상태 점검에서 네트워크 문제로 전환",
+      "turns": [
+        {
+          "turn_index": 1,
+          "question_ko": "노드 상태를 확인하는 공식 절차를 먼저 알려줘.",
+          "expected_classification": "standalone",
+          "expected_source_dir": "support",
+          "expected_topic": "node_health",
+          "expected_version": "4.x",
+          "expected_document_path": "support/troubleshooting/verifying-node-health.adoc",
+          "required_rewrite_terms": ["source support", "topic node_health", "verifying node health"],
+          "forbidden_rewrite_terms": ["oc-mirror", "certificate maintenance"]
+        },
+        {
+          "turn_index": 2,
+          "question_ko": "그럼 kubelet 상태는 어디서 같이 확인해?",
+          "expected_classification": "follow_up",
+          "expected_source_dir": "support",
+          "expected_topic": "node_health",
+          "expected_version": "4.x",
+          "expected_document_path": "support/troubleshooting/verifying-node-health.adoc",
+          "required_rewrite_terms": ["source support", "topic node_health", "kubelet", "last_document"],
+          "forbidden_rewrite_terms": ["oc-mirror", "certificate maintenance"]
+        },
+        {
+          "turn_index": 3,
+          "question_ko": "같은 흐름으로 4.16에서는 달라지는 부분이 있어?",
+          "expected_classification": "follow_up",
+          "expected_source_dir": "support",
+          "expected_topic": "node_health",
+          "expected_version": "4.16",
+          "expected_document_path": "support/troubleshooting/verifying-node-health.adoc",
+          "required_rewrite_terms": ["source support", "topic node_health", "OpenShift 4.16", "version specific guidance"],
+          "forbidden_rewrite_terms": ["oc-mirror", "certificate maintenance"]
+        },
+        {
+          "turn_index": 4,
+          "question_ko": "주제 바꿀게. 이번에는 네트워크 이슈를 어떻게 좁혀야 하는지 보고 싶어.",
+          "expected_classification": "topic_shift",
+          "expected_source_dir": "support",
+          "expected_topic": "network_troubleshooting",
+          "expected_version": "4.16",
+          "expected_document_path": "support/troubleshooting/troubleshooting-network-issues.adoc",
+          "required_rewrite_terms": ["source support", "topic network_troubleshooting", "network troubleshooting", "OpenShift 4.16"],
+          "forbidden_rewrite_terms": ["topic node_health", "oc-mirror"]
+        },
+        {
+          "turn_index": 5,
+          "question_ko": "거기서 DNS 확인도 같이 봐야 해?",
+          "expected_classification": "follow_up",
+          "expected_source_dir": "support",
+          "expected_topic": "network_troubleshooting",
+          "expected_version": "4.16",
+          "expected_document_path": "support/troubleshooting/troubleshooting-network-issues.adoc",
+          "required_rewrite_terms": ["source support", "topic network_troubleshooting", "last_document", "OpenShift 4.16"],
+          "forbidden_rewrite_terms": ["topic node_health", "certificate maintenance"]
+        }
+      ]
+    },
+    {
+      "scenario_id": "MT-004",
+      "title": "설치 커스터마이징에서 방화벽 준비로 전환",
+      "turns": [
+        {
+          "turn_index": 1,
+          "question_ko": "설치 커스터마이징 문서를 먼저 보고 싶어요.",
+          "expected_classification": "standalone",
+          "expected_source_dir": "installing",
+          "expected_topic": "install_customizing",
+          "expected_version": "4.x",
+          "expected_document_path": "installing/installing_bare_metal/ipi/ipi-install-installation-workflow.adoc",
+          "required_rewrite_terms": ["source installing", "topic install_customizing", "install customizing"],
+          "forbidden_rewrite_terms": ["node health", "oc-mirror"]
+        },
+        {
+          "turn_index": 2,
+          "question_ko": "그 전에 day 1 customization은 어디서 봐야 해?",
+          "expected_classification": "follow_up",
+          "expected_source_dir": "installing",
+          "expected_topic": "install_customizing",
+          "expected_version": "4.x",
+          "expected_document_path": "installing/installing_bare_metal/ipi/ipi-install-installation-workflow.adoc",
+          "required_rewrite_terms": ["source installing", "topic install_customizing", "day 1 customization", "last_document"],
+          "forbidden_rewrite_terms": ["node health", "oc-mirror"]
+        },
+        {
+          "turn_index": 3,
+          "question_ko": "같은 내용으로 4.17에서도 확인해줘.",
+          "expected_classification": "follow_up",
+          "expected_source_dir": "installing",
+          "expected_topic": "install_customizing",
+          "expected_version": "4.17",
+          "expected_document_path": "installing/installing_bare_metal/ipi/ipi-install-installation-workflow.adoc",
+          "required_rewrite_terms": ["source installing", "topic install_customizing", "OpenShift 4.17", "version specific guidance"],
+          "forbidden_rewrite_terms": ["node health", "oc-mirror"]
+        },
+        {
+          "turn_index": 4,
+          "question_ko": "아니, 설치 전에 방화벽 쪽은 뭘 먼저 봐야 하지?",
+          "expected_classification": "topic_shift",
+          "expected_source_dir": "installing",
+          "expected_topic": "install_firewall",
+          "expected_version": "4.17",
+          "expected_document_path": "installing/install_config/configuring-firewall.adoc",
+          "required_rewrite_terms": ["source installing", "topic install_firewall", "OpenShift 4.17", "configuring firewall"],
+          "forbidden_rewrite_terms": ["topic install_customizing", "oc-mirror"]
+        },
+        {
+          "turn_index": 5,
+          "question_ko": "거기서 allowlist는 어떤 식으로 보라고 안내해?",
+          "expected_classification": "follow_up",
+          "expected_source_dir": "installing",
+          "expected_topic": "install_firewall",
+          "expected_version": "4.17",
+          "expected_document_path": "installing/install_config/configuring-firewall.adoc",
+          "required_rewrite_terms": ["source installing", "topic install_firewall", "last_document", "allowlist"],
+          "forbidden_rewrite_terms": ["topic install_customizing", "node health"]
+        }
+      ]
     }
   ]
 }

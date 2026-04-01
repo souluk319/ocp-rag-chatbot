@@ -28,18 +28,18 @@
 | 평가 항목 | 배점 | 보수적 예상 | 판단 |
 |---|---:|---:|---|
 | RAG 정확성 | 30 | 24 | 강함. 정책형 retrieval, citation, grounded answer 근거가 있다. 다만 raw retrieval 약세와 section-aware chunk 실구현 공백이 남아 있다. |
-| 멀티턴 처리 정확성 | 20 | 17 | 강함. 세션 메모리와 follow-up rewrite는 구현/검증되어 있다. 다만 시나리오 폭과 실사용 다양성은 더 넓혀야 한다. |
+| 멀티턴 처리 정확성 | 20 | 18 | 강함. 세션 메모리와 follow-up rewrite는 구현/검증되어 있고, 5턴 시나리오를 4개/20턴까지 확장한 증거도 있다. 다만 실사용 다양성과 runtime 실경로 replay는 더 넓혀야 한다. |
 | 시스템 아키텍처 | 20 | 15 | 중상. 계층 분리와 운영 흐름은 좋다. 다만 Vector Index 직접 구현 요구와 OpenDocuments 의존 경계 설명을 더 날카롭게 해야 한다. |
 | 코드 품질 및 설명 | 15 | 12 | 중상. 문서와 증거는 풍부하다. 하지만 “왜 이 구조가 과제 기준을 만족하는지”를 설명하는 발표형 자료는 더 필요하다. |
 | 추가 요구사항 구현 | 15 | 11 | 보강 중. Streaming은 있고, 1차 query/embedding cache와 cache proof report도 들어갔다. 그러나 Vector Index 직접성과 widened corpus 성능 증거는 아직 부족하다. |
-| **총계** | **100** | **79** | **현 상태는 강한 기반이지만 100점 상태는 아님** |
+| **총계** | **100** | **80** | **현 상태는 강한 기반이지만 100점 상태는 아님** |
 
 ## 항목별 갭 분석표
 
 | 항목 | 현재 근거 | 현재 판정 | 핵심 갭 | 우선순위 |
 |---|---|---|---|---|
 | RAG 정확성 30점 | `configs/rag-policy.yaml`, `app/ocp_policy.py`, `eval/stage9_policy_report.py`, `docs/v2/stage10-evaluation-report.md` | 강함 | raw retrieval가 여전히 약하고, policy rescue 의존도가 높다. section-aware chunk generation은 정의만 있고 완료 상태가 아니다. | 높음 |
-| 멀티턴 20점 | `app/multiturn_memory.py`, `docs/v2/multiturn-memory-plan.md`, `eval/multiturn_rewrite_report.py`, `docs/v2/evaluation-spec.md` Track I | 강함 | 5턴 이상 구조는 맞지만, 운영형 시나리오 수와 topic/version 전환 케이스를 더 늘려야 한다. | 높음 |
+| 멀티턴 20점 | `app/multiturn_memory.py`, `docs/v2/multiturn-memory-plan.md`, `eval/multiturn_rewrite_report.py`, `eval/benchmarks/p0_multiturn_scenarios.json`, `eval/fixtures/multiturn_rewrite_sample_report.json` | 강함 | 5턴 이상 구조와 4개 시나리오/20턴 증거는 확보됐다. 이제 runtime 실경로 replay와 더 넓은 운영형 질문군 확장이 필요하다. | 중상 |
 | 아키텍처 20점 | `README.md`, `docs/v2/requirements-traceability.md`, `docs/v2/live-runtime-gateway.md`, `deployment/*` | 중상 | 구조는 설명 가능하지만, “직접 구현” 요구 대비 OpenDocuments/LanceDB 의존 경계와 자체 소유 영역을 더 명확히 정리해야 한다. | 높음 |
 | 코드 품질/설명 15점 | `docs/v2/architecture-blueprint.md`, `docs/v2/project-plan-summary.md`, `docs/v2/requirements-traceability.md` | 중상 | 코드 설명 자료는 많지만, 채점자 질의에 바로 대응하는 “설계-코드-증거” 연결표가 아직 없다. | 중간 |
 | Streaming | `app/opendocuments_openai_bridge.py`, `app/ocp_runtime_gateway.py`, `docs/v2/stage12-live-runtime-report.md` | 구현됨 | 현재는 pass. 다만 토큰/청크 스트림 품질을 발표형으로 설명할 자료를 더 만들면 좋다. | 중간 |
