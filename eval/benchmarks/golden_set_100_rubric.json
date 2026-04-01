@@ -1,0 +1,5061 @@
+[
+  {
+    "id": "GS-001",
+    "group": "core_concept",
+    "scope_policy": "in_scope",
+    "intent_category": "definition",
+    "question_ko": "OpenShift Container Platform이 무엇인가요?",
+    "expected_document_paths": [
+      "architecture/index.adoc",
+      "architecture/architecture.adoc"
+    ],
+    "expected_source_dirs": [
+      "architecture"
+    ],
+    "expected_answer_shape": "한국어 정의 2~3문장 + 공식 제품명 설명 + citation 1~2개",
+    "required_keyword_groups": [
+      [
+        "OpenShift",
+        "OCP",
+        "OpenShift Container Platform"
+      ],
+      [
+        "OpenShift Container Platform"
+      ],
+      [
+        "OpenShift"
+      ],
+      [
+        "Container"
+      ],
+      [
+        "Platform"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "architecture"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-002",
+    "group": "core_concept",
+    "scope_policy": "in_scope",
+    "intent_category": "definition_alias",
+    "question_ko": "OCP와 OpenShift Container Platform은 같은 뜻인가요?",
+    "expected_document_paths": [
+      "architecture/architecture.adoc"
+    ],
+    "expected_source_dirs": [
+      "architecture"
+    ],
+    "expected_answer_shape": "약칭/정식 명칭 설명 + 한국어 정의 + citation",
+    "required_keyword_groups": [
+      [
+        "OpenShift",
+        "OCP",
+        "OpenShift Container Platform"
+      ],
+      [
+        "OpenShift Container Platform"
+      ],
+      [
+        "OpenShift"
+      ],
+      [
+        "OCP"
+      ],
+      [
+        "Container"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "architecture"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-003",
+    "group": "core_concept",
+    "scope_policy": "in_scope",
+    "intent_category": "control_plane_overview",
+    "question_ko": "control plane과 worker node의 역할 차이는 무엇인가요?",
+    "expected_document_paths": [
+      "architecture/control-plane.adoc"
+    ],
+    "expected_source_dirs": [
+      "architecture"
+    ],
+    "expected_answer_shape": "역할 비교형 설명 + 핵심 구성요소 언급 + citation",
+    "required_keyword_groups": [
+      [
+        "OpenShift",
+        "OCP",
+        "OpenShift Container Platform"
+      ],
+      [
+        "control plane"
+      ],
+      [
+        "worker"
+      ],
+      [
+        "control"
+      ],
+      [
+        "plane"
+      ],
+      [
+        "차이",
+        "비교",
+        "구분",
+        "기준"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "architecture"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-004",
+    "group": "core_concept",
+    "scope_policy": "in_scope",
+    "intent_category": "rhcos_overview",
+    "question_ko": "RHCOS가 왜 중요한가요?",
+    "expected_document_paths": [
+      "architecture/architecture-rhcos.adoc"
+    ],
+    "expected_source_dirs": [
+      "architecture"
+    ],
+    "expected_answer_shape": "운영 관점 개요 설명 + RHCOS 의미 요약 + citation",
+    "required_keyword_groups": [
+      [
+        "OpenShift",
+        "OCP",
+        "OpenShift Container Platform"
+      ],
+      [
+        "RHCOS"
+      ],
+      [
+        "중요한가요"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "architecture"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-005",
+    "group": "core_concept",
+    "scope_policy": "in_scope",
+    "intent_category": "operator_architecture",
+    "question_ko": "Cluster Operators와 OLM은 어떻게 다른가요?",
+    "expected_document_paths": [
+      "architecture/control-plane.adoc",
+      "operators/understanding/olm/olm-understanding-olm.adoc"
+    ],
+    "expected_source_dirs": [
+      "architecture",
+      "operators"
+    ],
+    "expected_answer_shape": "비교 설명형 + 역할 구분 + citation 2개",
+    "required_keyword_groups": [
+      [
+        "OpenShift",
+        "OCP",
+        "OpenShift Container Platform"
+      ],
+      [
+        "Cluster Operators"
+      ],
+      [
+        "OLM"
+      ],
+      [
+        "Cluster"
+      ],
+      [
+        "Operators"
+      ],
+      [
+        "차이",
+        "비교",
+        "구분",
+        "기준"
+      ],
+      [
+        "설명",
+        "역할",
+        "의미",
+        "개요"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "architecture",
+      "operators"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-006",
+    "group": "core_concept",
+    "scope_policy": "in_scope",
+    "intent_category": "install_update_architecture",
+    "question_ko": "OpenShift 설치와 업데이트의 큰 흐름은 어디서 이해하면 좋나요?",
+    "expected_document_paths": [
+      "architecture/architecture-installation.adoc"
+    ],
+    "expected_source_dirs": [
+      "architecture"
+    ],
+    "expected_answer_shape": "설치/업데이트 흐름 개요 + 후속 문서 안내 + citation",
+    "required_keyword_groups": [
+      [
+        "OpenShift",
+        "OCP",
+        "OpenShift Container Platform"
+      ],
+      [
+        "OpenShift"
+      ],
+      [
+        "설치"
+      ],
+      [
+        "업데이트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "architecture"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-007",
+    "group": "core_concept",
+    "scope_policy": "in_scope",
+    "intent_category": "cluster_capabilities",
+    "question_ko": "Cluster capabilities는 무엇을 의미하나요?",
+    "expected_document_paths": [
+      "installing/overview/cluster-capabilities.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "개념 설명 + 언제 확인해야 하는지 + citation",
+    "required_keyword_groups": [
+      [
+        "OpenShift",
+        "OCP",
+        "OpenShift Container Platform"
+      ],
+      [
+        "Cluster"
+      ],
+      [
+        "capabilities"
+      ],
+      [
+        "무엇"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-008",
+    "group": "core_concept",
+    "scope_policy": "in_scope",
+    "intent_category": "authentication_overview",
+    "question_ko": "OpenShift 인증 구조를 이해하려면 어떤 문서를 먼저 보면 되나요?",
+    "expected_document_paths": [
+      "authentication/index.adoc",
+      "authentication/understanding-authentication.adoc"
+    ],
+    "expected_source_dirs": [
+      "authentication"
+    ],
+    "expected_answer_shape": "문서 유도형 + 인증 개요 + citation",
+    "required_keyword_groups": [
+      [
+        "OpenShift",
+        "OCP",
+        "OpenShift Container Platform"
+      ],
+      [
+        "OpenShift"
+      ],
+      [
+        "인증"
+      ],
+      [
+        "구조"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "authentication"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-009",
+    "group": "core_concept",
+    "scope_policy": "in_scope",
+    "intent_category": "identity_provider_overview",
+    "question_ko": "Identity Provider는 OpenShift에서 어떤 역할을 하나요?",
+    "expected_document_paths": [
+      "authentication/understanding-identity-provider.adoc",
+      "authentication/external-auth.adoc"
+    ],
+    "expected_source_dirs": [
+      "authentication"
+    ],
+    "expected_answer_shape": "정의형 + 역할 설명 + citation",
+    "required_keyword_groups": [
+      [
+        "OpenShift",
+        "OCP",
+        "OpenShift Container Platform"
+      ],
+      [
+        "OpenShift"
+      ],
+      [
+        "Identity"
+      ],
+      [
+        "Provider"
+      ],
+      [
+        "OpenShift에서"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "authentication"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-010",
+    "group": "core_concept",
+    "scope_policy": "in_scope",
+    "intent_category": "monitoring_overview",
+    "question_ko": "기본 모니터링 스택은 어떤 역할을 하나요?",
+    "expected_document_paths": [
+      "observability/monitoring/about-ocp-monitoring.adoc",
+      "observability/monitoring/about-ocp-monitoring/monitoring-stack-architecture.adoc"
+    ],
+    "expected_source_dirs": [
+      "observability"
+    ],
+    "expected_answer_shape": "구성요소 개요 + 운영 의미 설명 + citation",
+    "required_keyword_groups": [
+      [
+        "OpenShift",
+        "OCP",
+        "OpenShift Container Platform"
+      ],
+      [
+        "기본"
+      ],
+      [
+        "모니터링"
+      ],
+      [
+        "스택"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "observability"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-011",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "install_prerequisite",
+    "question_ko": "설치 전에 확인해야 할 기본 준비사항을 운영자 관점에서 정리해 주세요.",
+    "expected_document_paths": [
+      "installing/overview/installing-preparing.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "체크리스트형 + 필수 선행조건 요약 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "설치"
+      ],
+      [
+        "확인해야"
+      ],
+      [
+        "기본"
+      ],
+      [
+        "확인",
+        "점검",
+        "준비",
+        "체크리스트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-012",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "install_firewall",
+    "question_ko": "설치 시 방화벽에서 어떤 포트와 예외를 허용해야 하나요?",
+    "expected_document_paths": [
+      "installing/install_config/configuring-firewall.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "포트/예외 체크리스트 + 주의사항 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "방화벽",
+        "firewall"
+      ],
+      [
+        "포트",
+        "port"
+      ],
+      [
+        "예외",
+        "allow"
+      ],
+      [
+        "설치"
+      ],
+      [
+        "방화벽에서"
+      ],
+      [
+        "포트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-013",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "install_config_customization",
+    "question_ko": "install-config.yaml을 커스터마이징할 때 특히 조심해야 할 항목은 무엇인가요?",
+    "expected_document_paths": [
+      "installing/install_config/installing-customizing.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "설정 항목 요약 + 주의사항 중심 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "install-config.yaml"
+      ],
+      [
+        "install"
+      ],
+      [
+        "config.yaml"
+      ],
+      [
+        "커스터마이징할"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-014",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "install_validation",
+    "question_ko": "설치가 끝난 뒤 정상 설치 여부는 어떤 순서로 검증하나요?",
+    "expected_document_paths": [
+      "installing/validation_and_troubleshooting/validating-an-installation.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "검증 순서형 + 확인 포인트 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "설치"
+      ],
+      [
+        "끝난"
+      ],
+      [
+        "정상"
+      ],
+      [
+        "먼저",
+        "다음",
+        "이후",
+        "1.",
+        "2."
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-015",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "install_bootstrap_troubleshooting",
+    "question_ko": "부트스트랩 단계에서 설치가 오래 멈추면 어떤 문서를 먼저 봐야 하나요?",
+    "expected_document_paths": [
+      "installing/validation_and_troubleshooting/installing-troubleshooting.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "문서 유도형 + 초기 진단 방향 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "부트스트랩"
+      ],
+      [
+        "단계에서"
+      ],
+      [
+        "설치"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-016",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "platform_agnostic_install",
+    "question_ko": "플랫폼 독립 설치를 준비할 때 가장 먼저 끝내야 할 준비 항목은 무엇인가요?",
+    "expected_document_paths": [
+      "installing/installing_platform_agnostic/installing-platform-agnostic.adoc",
+      "installing/overview/installing-preparing.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "체크리스트형 + 플랫폼 독립 설치 전제 설명 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "플랫폼"
+      ],
+      [
+        "독립"
+      ],
+      [
+        "설치"
+      ],
+      [
+        "확인",
+        "점검",
+        "준비",
+        "체크리스트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-017",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "baremetal_prerequisite",
+    "question_ko": "베어메탈 설치 전에 호스트, 네트워크, BMC 쪽에서 어떤 조건을 먼저 검증해야 하나요?",
+    "expected_document_paths": [
+      "installing/installing_bare_metal/preparing-to-install-on-bare-metal.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "범주형 체크리스트 + 베어메탈 특화 조건 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "베어메탈"
+      ],
+      [
+        "설치"
+      ],
+      [
+        "호스트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-018",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "baremetal_ipi_prerequisite",
+    "question_ko": "베어메탈 IPI 설치의 필수 사전조건은 어디서 확인하나요?",
+    "expected_document_paths": [
+      "installing/installing_bare_metal/ipi/ipi-install-prerequisites.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "문서 유도형 + 사전조건 요약 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "베어메탈"
+      ],
+      [
+        "IPI"
+      ],
+      [
+        "설치"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-019",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "baremetal_ipi_workflow",
+    "question_ko": "베어메탈 IPI 설치의 전체 워크플로를 설명해 주세요.",
+    "expected_document_paths": [
+      "installing/installing_bare_metal/ipi/ipi-install-installation-workflow.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "단계형 안내 + 주요 전환점 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "베어메탈"
+      ],
+      [
+        "IPI"
+      ],
+      [
+        "설치"
+      ],
+      [
+        "먼저",
+        "다음",
+        "이후",
+        "1.",
+        "2."
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-020",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "baremetal_ipi_troubleshooting",
+    "question_ko": "베어메탈 IPI 설치 문제를 진단하려면 어디서 시작해야 하나요?",
+    "expected_document_paths": [
+      "installing/installing_bare_metal/ipi/ipi-install-troubleshooting.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "문제 진단 순서 + 대표 실패 지점 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "베어메탈"
+      ],
+      [
+        "IPI"
+      ],
+      [
+        "설치"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-021",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "baremetal_upi_restricted",
+    "question_ko": "베어메탈 UPI를 restricted network로 설치할 때 먼저 볼 문서는 무엇인가요?",
+    "expected_document_paths": [
+      "installing/installing_bare_metal/upi/installing-restricted-networks-bare-metal.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "문서 유도형 + 준비 순서 요약 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "베어메탈"
+      ],
+      [
+        "UPI"
+      ],
+      [
+        "restricted"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-022",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "vsphere_ipi_prerequisite",
+    "question_ko": "vSphere IPI 설치 전에 어떤 요구사항을 먼저 점검해야 하나요?",
+    "expected_document_paths": [
+      "installing/installing_vsphere/ipi/ipi-vsphere-installation-reqs.adoc",
+      "installing/installing_vsphere/ipi/ipi-vsphere-preparing-to-install.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "체크리스트형 + 환경 요구사항 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "vSphere"
+      ],
+      [
+        "IPI"
+      ],
+      [
+        "설치"
+      ],
+      [
+        "확인",
+        "점검",
+        "준비",
+        "체크리스트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-023",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "vsphere_upi_prerequisite",
+    "question_ko": "vSphere UPI 설치를 준비할 때 가장 중요한 전제조건은 무엇인가요?",
+    "expected_document_paths": [
+      "installing/installing_vsphere/upi/upi-vsphere-installation-reqs.adoc",
+      "installing/installing_vsphere/upi/upi-vsphere-preparing-to-install.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "체크리스트형 + UPI 전제조건 요약 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "vSphere"
+      ],
+      [
+        "UPI"
+      ],
+      [
+        "설치"
+      ],
+      [
+        "확인",
+        "점검",
+        "준비",
+        "체크리스트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-024",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "aws_install_preparation",
+    "question_ko": "AWS에 설치하려면 어떤 준비 문서를 먼저 보면 되나요?",
+    "expected_document_paths": [
+      "installing/installing_aws/preparing-to-install-on-aws.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "문서 유도형 + 준비 항목 요약 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "AWS에"
+      ],
+      [
+        "설치하려면"
+      ],
+      [
+        "준비"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-025",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "aws_install_path_selection",
+    "question_ko": "AWS 설치에서 기본 설치, 커스터마이즈, private VPC 중 무엇을 봐야 하는지 어떻게 판단하나요?",
+    "expected_document_paths": [
+      "installing/installing_aws/preparing-to-install-on-aws.adoc",
+      "installing/installing_aws/ipi/installing-aws-customizations.adoc",
+      "installing/installing_aws/ipi/installing-aws-private.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "판단 기준 비교형 + 후속 문서 연결 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "AWS"
+      ],
+      [
+        "설치에서"
+      ],
+      [
+        "기본"
+      ],
+      [
+        "차이",
+        "비교",
+        "구분",
+        "기준"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-026",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "azure_install_preparation",
+    "question_ko": "Azure에 설치하려면 어떤 준비를 먼저 끝내야 하나요?",
+    "expected_document_paths": [
+      "installing/installing_azure/preparing-to-install-on-azure.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "체크리스트형 + 클라우드 준비 항목 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "Azure에"
+      ],
+      [
+        "설치하려면"
+      ],
+      [
+        "준비"
+      ],
+      [
+        "확인",
+        "점검",
+        "준비",
+        "체크리스트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-027",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "gcp_install_preparation",
+    "question_ko": "GCP에 설치하려면 어떤 준비 문서를 기준으로 봐야 하나요?",
+    "expected_document_paths": [
+      "installing/installing_gcp/preparing-to-install-on-gcp.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "문서 유도형 + 준비 항목 요약 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "GCP에"
+      ],
+      [
+        "설치하려면"
+      ],
+      [
+        "준비"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-028",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "agent_based_prerequisite",
+    "question_ko": "agent-based installer를 쓰기 전에 어떤 준비가 빠지면 자주 막히나요?",
+    "expected_document_paths": [
+      "installing/installing_with_agent_based_installer/preparing-to-install-with-agent-based-installer.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "실무형 체크리스트 + 대표 실패 원인 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "agent"
+      ],
+      [
+        "based"
+      ],
+      [
+        "installer"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-029",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "agent_based_workflow",
+    "question_ko": "agent-based installer의 전체 설치 흐름을 요약해 주세요.",
+    "expected_document_paths": [
+      "installing/installing_with_agent_based_installer/installing-with-agent-based-installer.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "단계형 안내 + 각 단계 목적 설명 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "agent"
+      ],
+      [
+        "based"
+      ],
+      [
+        "installer"
+      ],
+      [
+        "먼저",
+        "다음",
+        "이후",
+        "1.",
+        "2."
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-030",
+    "group": "install_prepare",
+    "scope_policy": "in_scope",
+    "intent_category": "sno_prerequisite",
+    "question_ko": "Single Node OpenShift 설치를 준비할 때 가장 먼저 확인해야 할 것은 무엇인가요?",
+    "expected_document_paths": [
+      "installing/installing_sno/install-sno-preparing-to-install-sno.adoc"
+    ],
+    "expected_source_dirs": [
+      "installing"
+    ],
+    "expected_answer_shape": "체크리스트형 + SNO 특화 준비사항 + citation",
+    "required_keyword_groups": [
+      [
+        "설치",
+        "install"
+      ],
+      [
+        "준비",
+        "사전",
+        "확인"
+      ],
+      [
+        "OpenShift"
+      ],
+      [
+        "Single"
+      ],
+      [
+        "Node"
+      ],
+      [
+        "확인",
+        "점검",
+        "준비",
+        "체크리스트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "installing"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-031",
+    "group": "disconnected",
+    "scope_policy": "in_scope",
+    "intent_category": "disconnected_overview",
+    "question_ko": "폐쇄망 설치 개요를 먼저 이해하려면 어떤 문서를 봐야 하나요?",
+    "expected_document_paths": [
+      "disconnected/index.adoc",
+      "disconnected/about.adoc"
+    ],
+    "expected_source_dirs": [
+      "disconnected"
+    ],
+    "expected_answer_shape": "문서 유도형 + 개요 설명 + citation",
+    "required_keyword_groups": [
+      [
+        "폐쇄망",
+        "disconnected"
+      ],
+      [
+        "미러",
+        "미러링",
+        "mirror",
+        "oc-mirror"
+      ],
+      [
+        "폐쇄망"
+      ],
+      [
+        "설치"
+      ],
+      [
+        "개요"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "disconnected"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-032",
+    "group": "disconnected",
+    "scope_policy": "in_scope",
+    "intent_category": "oc_mirror_v2_overview",
+    "question_ko": "oc-mirror v2는 폐쇄망 설치에서 어떤 역할을 하나요?",
+    "expected_document_paths": [
+      "disconnected/about-installing-oc-mirror-v2.adoc"
+    ],
+    "expected_source_dirs": [
+      "disconnected"
+    ],
+    "expected_answer_shape": "정의형 + 사용 목적 설명 + citation",
+    "required_keyword_groups": [
+      [
+        "폐쇄망",
+        "disconnected"
+      ],
+      [
+        "미러",
+        "미러링",
+        "mirror",
+        "oc-mirror"
+      ],
+      [
+        "oc-mirror"
+      ],
+      [
+        "oc"
+      ],
+      [
+        "mirror"
+      ],
+      [
+        "v2"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "disconnected"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-033",
+    "group": "disconnected",
+    "scope_policy": "in_scope",
+    "intent_category": "mirror_registry_creation",
+    "question_ko": "폐쇄망용 mirror registry를 만들기 전에 무엇을 준비해야 하나요?",
+    "expected_document_paths": [
+      "disconnected/installing-mirroring-creating-registry.adoc"
+    ],
+    "expected_source_dirs": [
+      "disconnected"
+    ],
+    "expected_answer_shape": "단계형 안내 + 준비 항목 + citation",
+    "required_keyword_groups": [
+      [
+        "폐쇄망",
+        "disconnected"
+      ],
+      [
+        "미러",
+        "미러링",
+        "mirror",
+        "oc-mirror"
+      ],
+      [
+        "mirror registry"
+      ],
+      [
+        "폐쇄망용"
+      ],
+      [
+        "mirror"
+      ],
+      [
+        "registry"
+      ],
+      [
+        "먼저",
+        "다음",
+        "이후",
+        "1.",
+        "2."
+      ]
+    ],
+    "required_source_scope_terms": [
+      "disconnected"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-034",
+    "group": "disconnected",
+    "scope_policy": "in_scope",
+    "intent_category": "mirror_installation_images",
+    "question_ko": "설치용 이미지를 미러링할 때 어떤 순서로 진행해야 하나요?",
+    "expected_document_paths": [
+      "disconnected/installing-mirroring-installation-images.adoc"
+    ],
+    "expected_source_dirs": [
+      "disconnected"
+    ],
+    "expected_answer_shape": "절차형 + 순서 보존 + citation",
+    "required_keyword_groups": [
+      [
+        "폐쇄망",
+        "disconnected"
+      ],
+      [
+        "미러",
+        "미러링",
+        "mirror",
+        "oc-mirror"
+      ],
+      [
+        "설치용"
+      ],
+      [
+        "이미지"
+      ],
+      [
+        "미러링할"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "disconnected"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-035",
+    "group": "disconnected",
+    "scope_policy": "in_scope",
+    "intent_category": "disconnected_install_flow",
+    "question_ko": "폐쇄망 설치 전체 흐름은 어떤 문서를 기준으로 보면 되나요?",
+    "expected_document_paths": [
+      "disconnected/installing.adoc"
+    ],
+    "expected_source_dirs": [
+      "disconnected"
+    ],
+    "expected_answer_shape": "문서 유도형 + 전체 흐름 요약 + citation",
+    "required_keyword_groups": [
+      [
+        "폐쇄망",
+        "disconnected"
+      ],
+      [
+        "미러",
+        "미러링",
+        "mirror",
+        "oc-mirror"
+      ],
+      [
+        "순서",
+        "절차"
+      ],
+      [
+        "미러",
+        "미러링",
+        "oc-mirror",
+        "mirror registry"
+      ],
+      [
+        "폐쇄망"
+      ],
+      [
+        "설치"
+      ],
+      [
+        "전체"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "disconnected"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-036",
+    "group": "disconnected",
+    "scope_policy": "in_scope",
+    "intent_category": "connected_to_disconnected",
+    "question_ko": "연결된 클러스터를 나중에 폐쇄망 운영 모델로 전환하려면 무엇을 봐야 하나요?",
+    "expected_document_paths": [
+      "disconnected/connected-to-disconnected.adoc"
+    ],
+    "expected_source_dirs": [
+      "disconnected"
+    ],
+    "expected_answer_shape": "단계형 안내 + 전환 시 주의사항 + citation",
+    "required_keyword_groups": [
+      [
+        "폐쇄망",
+        "disconnected"
+      ],
+      [
+        "미러",
+        "미러링",
+        "mirror",
+        "oc-mirror"
+      ],
+      [
+        "연결된"
+      ],
+      [
+        "클러스터"
+      ],
+      [
+        "나중에"
+      ],
+      [
+        "먼저",
+        "다음",
+        "이후",
+        "1.",
+        "2."
+      ]
+    ],
+    "required_source_scope_terms": [
+      "disconnected"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-037",
+    "group": "disconnected",
+    "scope_policy": "in_scope",
+    "intent_category": "disconnected_olm",
+    "question_ko": "폐쇄망 환경에서 OLM을 쓰려면 무엇을 추가로 고려해야 하나요?",
+    "expected_document_paths": [
+      "disconnected/using-olm.adoc"
+    ],
+    "expected_source_dirs": [
+      "disconnected"
+    ],
+    "expected_answer_shape": "운영 주의사항 중심 + 절차 요약 + citation",
+    "required_keyword_groups": [
+      [
+        "폐쇄망",
+        "disconnected"
+      ],
+      [
+        "미러",
+        "미러링",
+        "mirror",
+        "oc-mirror"
+      ],
+      [
+        "OLM"
+      ],
+      [
+        "폐쇄망"
+      ],
+      [
+        "환경에서"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "disconnected"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-038",
+    "group": "disconnected",
+    "scope_policy": "in_scope",
+    "intent_category": "disconnected_update_overview",
+    "question_ko": "폐쇄망 업데이트 개요를 이해하려면 어떤 문서를 먼저 보면 되나요?",
+    "expected_document_paths": [
+      "disconnected/updating/index.adoc"
+    ],
+    "expected_source_dirs": [
+      "disconnected"
+    ],
+    "expected_answer_shape": "문서 유도형 + 업데이트 개요 + citation",
+    "required_keyword_groups": [
+      [
+        "폐쇄망",
+        "disconnected"
+      ],
+      [
+        "미러",
+        "미러링",
+        "mirror",
+        "oc-mirror"
+      ],
+      [
+        "폐쇄망"
+      ],
+      [
+        "업데이트"
+      ],
+      [
+        "개요"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "disconnected"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-039",
+    "group": "disconnected",
+    "scope_policy": "in_scope",
+    "intent_category": "disconnected_update_flow",
+    "question_ko": "폐쇄망 클러스터 업데이트는 어떤 절차로 진행하나요?",
+    "expected_document_paths": [
+      "disconnected/updating/disconnected-update.adoc"
+    ],
+    "expected_source_dirs": [
+      "disconnected"
+    ],
+    "expected_answer_shape": "절차형 + connected 환경과의 차이 언급 + citation",
+    "required_keyword_groups": [
+      [
+        "폐쇄망",
+        "disconnected"
+      ],
+      [
+        "미러",
+        "미러링",
+        "mirror",
+        "oc-mirror"
+      ],
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "미러",
+        "미러링",
+        "oc-mirror",
+        "OSUS"
+      ],
+      [
+        "폐쇄망"
+      ],
+      [
+        "클러스터"
+      ],
+      [
+        "업데이트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "disconnected"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-040",
+    "group": "disconnected",
+    "scope_policy": "in_scope",
+    "intent_category": "disconnected_update_osus",
+    "question_ko": "OSUS를 이용한 폐쇄망 업데이트는 어디서 확인하나요?",
+    "expected_document_paths": [
+      "disconnected/updating/disconnected-update-osus.adoc"
+    ],
+    "expected_source_dirs": [
+      "disconnected"
+    ],
+    "expected_answer_shape": "문서 유도형 + OSUS 개요 + citation",
+    "required_keyword_groups": [
+      [
+        "폐쇄망",
+        "disconnected"
+      ],
+      [
+        "미러",
+        "미러링",
+        "mirror",
+        "oc-mirror"
+      ],
+      [
+        "OSUS"
+      ],
+      [
+        "이용한"
+      ],
+      [
+        "폐쇄망"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "disconnected"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-041",
+    "group": "disconnected",
+    "scope_policy": "in_scope",
+    "intent_category": "disconnected_update_mirroring",
+    "question_ko": "폐쇄망 업데이트용 이미지 저장소 미러링은 어떤 문서를 보면 되나요?",
+    "expected_document_paths": [
+      "disconnected/updating/mirroring-image-repository.adoc"
+    ],
+    "expected_source_dirs": [
+      "disconnected"
+    ],
+    "expected_answer_shape": "문서 유도형 + 미러링 순서 요약 + citation",
+    "required_keyword_groups": [
+      [
+        "폐쇄망",
+        "disconnected"
+      ],
+      [
+        "미러",
+        "미러링",
+        "mirror",
+        "oc-mirror"
+      ],
+      [
+        "폐쇄망"
+      ],
+      [
+        "업데이트용"
+      ],
+      [
+        "이미지"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "disconnected"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-042",
+    "group": "disconnected",
+    "scope_policy": "in_scope",
+    "intent_category": "oc_mirror_migration",
+    "question_ko": "oc-mirror v1에서 v2로 넘어갈 때 주의해야 할 점은 무엇인가요?",
+    "expected_document_paths": [
+      "disconnected/oc-mirror-migration-v1-to-v2.adoc"
+    ],
+    "expected_source_dirs": [
+      "disconnected"
+    ],
+    "expected_answer_shape": "차이점 설명 + 전환 시 주의사항 + citation",
+    "required_keyword_groups": [
+      [
+        "폐쇄망",
+        "disconnected"
+      ],
+      [
+        "미러",
+        "미러링",
+        "mirror",
+        "oc-mirror"
+      ],
+      [
+        "oc-mirror"
+      ],
+      [
+        "oc"
+      ],
+      [
+        "mirror"
+      ],
+      [
+        "v1에서"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "disconnected"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-043",
+    "group": "disconnected",
+    "scope_policy": "in_scope",
+    "intent_category": "disconnected_image_pull_troubleshooting",
+    "question_ko": "폐쇄망 설치에서 이미지 pull 단계가 멈추면 무엇부터 확인해야 하나요?",
+    "expected_document_paths": [
+      "disconnected/installing.adoc",
+      "support/troubleshooting/troubleshooting-installations.adoc"
+    ],
+    "expected_source_dirs": [
+      "disconnected",
+      "support"
+    ],
+    "expected_answer_shape": "원인 분리형 + 우선 점검 대상 + citation",
+    "required_keyword_groups": [
+      [
+        "폐쇄망",
+        "disconnected"
+      ],
+      [
+        "미러",
+        "미러링",
+        "mirror",
+        "oc-mirror"
+      ],
+      [
+        "폐쇄망"
+      ],
+      [
+        "설치에서"
+      ],
+      [
+        "이미지"
+      ],
+      [
+        "원인",
+        "확인",
+        "점검",
+        "경우"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "disconnected",
+      "support"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-044",
+    "group": "disconnected",
+    "scope_policy": "in_scope",
+    "intent_category": "disconnected_registry_auth_troubleshooting",
+    "question_ko": "폐쇄망에서 pull secret, 내부 레지스트리, mirror 설정 중 무엇이 문제인지 어떻게 구분하나요?",
+    "expected_document_paths": [
+      "disconnected/installing-mirroring-disconnected.adoc",
+      "disconnected/about-installing-oc-mirror-v2.adoc"
+    ],
+    "expected_source_dirs": [
+      "disconnected"
+    ],
+    "expected_answer_shape": "분기형 진단 + 확인 순서 + citation",
+    "required_keyword_groups": [
+      [
+        "폐쇄망",
+        "disconnected"
+      ],
+      [
+        "미러",
+        "미러링",
+        "mirror",
+        "oc-mirror"
+      ],
+      [
+        "폐쇄망에서"
+      ],
+      [
+        "pull"
+      ],
+      [
+        "secret"
+      ],
+      [
+        "경우",
+        "이면",
+        "아니면",
+        "분기"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "disconnected"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-045",
+    "group": "disconnected",
+    "scope_policy": "in_scope",
+    "intent_category": "disconnected_setup_sequence",
+    "question_ko": "폐쇄망 설치 준비에서 mirror registry 생성과 이미지 미러링의 선후관계를 어떻게 잡아야 하나요?",
+    "expected_document_paths": [
+      "disconnected/installing-mirroring-creating-registry.adoc",
+      "disconnected/installing-mirroring-installation-images.adoc"
+    ],
+    "expected_source_dirs": [
+      "disconnected"
+    ],
+    "expected_answer_shape": "순서형 설명 + 단계 구분 + citation",
+    "required_keyword_groups": [
+      [
+        "폐쇄망",
+        "disconnected"
+      ],
+      [
+        "미러",
+        "미러링",
+        "mirror",
+        "oc-mirror"
+      ],
+      [
+        "mirror registry"
+      ],
+      [
+        "폐쇄망"
+      ],
+      [
+        "설치"
+      ],
+      [
+        "준비에서"
+      ],
+      [
+        "먼저",
+        "다음",
+        "이후",
+        "1.",
+        "2."
+      ]
+    ],
+    "required_source_scope_terms": [
+      "disconnected"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-046",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "update_intro",
+    "question_ko": "OpenShift 업데이트 개요는 어디서 이해하면 되나요?",
+    "expected_document_paths": [
+      "updating/understanding_updates/intro-to-updates.adoc"
+    ],
+    "expected_source_dirs": [
+      "updating"
+    ],
+    "expected_answer_shape": "개요 설명 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "OpenShift"
+      ],
+      [
+        "업데이트"
+      ],
+      [
+        "개요"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "updating"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-047",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "how_updates_work",
+    "question_ko": "업데이트는 내부적으로 어떻게 동작하나요?",
+    "expected_document_paths": [
+      "updating/understanding_updates/how-updates-work.adoc"
+    ],
+    "expected_source_dirs": [
+      "updating"
+    ],
+    "expected_answer_shape": "동작 설명형 + 핵심 구성요소 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "업데이트"
+      ],
+      [
+        "내부적으"
+      ],
+      [
+        "동작하나요"
+      ],
+      [
+        "설명",
+        "역할",
+        "의미",
+        "개요"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "updating"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-048",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "update_channel_selection",
+    "question_ko": "업데이트 채널은 어떤 기준으로 선택해야 하나요?",
+    "expected_document_paths": [
+      "updating/understanding_updates/understanding-update-channels-release.adoc"
+    ],
+    "expected_source_dirs": [
+      "updating"
+    ],
+    "expected_answer_shape": "비교 설명형 + 선택 기준 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "업데이트"
+      ],
+      [
+        "채널"
+      ],
+      [
+        "기준으"
+      ],
+      [
+        "차이",
+        "비교",
+        "구분",
+        "기준"
+      ],
+      [
+        "설명",
+        "역할",
+        "의미",
+        "개요"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "updating"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-049",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "update_prerequisite",
+    "question_ko": "업데이트 전에 어떤 항목을 확인해야 하나요?",
+    "expected_document_paths": [
+      "updating/preparing_for_updates/updating-cluster-prepare.adoc"
+    ],
+    "expected_source_dirs": [
+      "updating"
+    ],
+    "expected_answer_shape": "체크리스트형 + 위험 요소 언급 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "사전",
+        "확인",
+        "준비"
+      ],
+      [
+        "업데이트"
+      ],
+      [
+        "항목"
+      ],
+      [
+        "확인해야"
+      ],
+      [
+        "확인",
+        "점검",
+        "준비",
+        "체크리스트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "updating"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-050",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "update_prepare_past_4_18",
+    "question_ko": "4.18 이후 버전에서 업데이트 준비 시 추가로 볼 내용이 있나요?",
+    "expected_document_paths": [
+      "updating/preparing_for_updates/updating-cluster-prepare-past-4-18.adoc"
+    ],
+    "expected_source_dirs": [
+      "updating"
+    ],
+    "expected_answer_shape": "버전 특이사항 설명 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "이후"
+      ],
+      [
+        "버전에서"
+      ],
+      [
+        "업데이트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "updating"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-051",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "manual_credentials_update",
+    "question_ko": "수동으로 관리하는 클라우드 자격 증명이 있는 환경은 업데이트 전에 무엇을 확인해야 하나요?",
+    "expected_document_paths": [
+      "updating/preparing_for_updates/preparing-manual-creds-update.adoc",
+      "authentication/managing_cloud_provider_credentials/cco-mode-manual.adoc"
+    ],
+    "expected_source_dirs": [
+      "updating",
+      "authentication"
+    ],
+    "expected_answer_shape": "체크리스트형 + 조건/영향 설명 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "수동으"
+      ],
+      [
+        "관리하"
+      ],
+      [
+        "클라우드"
+      ],
+      [
+        "확인",
+        "점검",
+        "준비",
+        "체크리스트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "updating",
+      "authentication"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-052",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "update_gathering_data",
+    "question_ko": "업데이트 장애가 났을 때 지원 요청 전에 어떤 데이터를 수집해야 하나요?",
+    "expected_document_paths": [
+      "updating/troubleshooting_updates/gathering-data-cluster-update.adoc"
+    ],
+    "expected_source_dirs": [
+      "updating"
+    ],
+    "expected_answer_shape": "단계형 안내 + 수집 대상 요약 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "업데이트"
+      ],
+      [
+        "장애"
+      ],
+      [
+        "났을"
+      ],
+      [
+        "먼저",
+        "다음",
+        "이후",
+        "1.",
+        "2."
+      ]
+    ],
+    "required_source_scope_terms": [
+      "updating"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-053",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "update_duration_risk",
+    "question_ko": "업데이트 시간이 길어질 수 있는 대표 원인은 무엇인가요?",
+    "expected_document_paths": [
+      "updating/understanding_updates/understanding-openshift-update-duration.adoc"
+    ],
+    "expected_source_dirs": [
+      "updating"
+    ],
+    "expected_answer_shape": "요인 설명형 + 사전 점검 포인트 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "업데이트"
+      ],
+      [
+        "시간"
+      ],
+      [
+        "길어질"
+      ],
+      [
+        "설명",
+        "역할",
+        "의미",
+        "개요"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "updating"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-054",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "control_plane_only_update",
+    "question_ko": "control plane만 먼저 업데이트해야 하는 상황에서는 무엇을 조심해야 하나요?",
+    "expected_document_paths": [
+      "updating/updating_a_cluster/control-plane-only-update.adoc"
+    ],
+    "expected_source_dirs": [
+      "updating"
+    ],
+    "expected_answer_shape": "조건/주의사항 설명 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "control plane"
+      ],
+      [
+        "control"
+      ],
+      [
+        "plane만"
+      ],
+      [
+        "업데이트해야"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "updating"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-055",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "update_custom_mcp",
+    "question_ko": "커스텀 MachineConfigPool을 운영 중일 때 업데이트 전에 무엇을 확인해야 하나요?",
+    "expected_document_paths": [
+      "updating/updating_a_cluster/update-using-custom-machine-config-pools.adoc"
+    ],
+    "expected_source_dirs": [
+      "updating"
+    ],
+    "expected_answer_shape": "영향 범위 설명 + 사전 체크리스트 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "커스텀"
+      ],
+      [
+        "MachineConfigPool"
+      ],
+      [
+        "운영"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "updating"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-056",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "cnf_update_before",
+    "question_ko": "CNF 클러스터를 y-stream으로 올리기 전에 가장 먼저 확인해야 할 것은 무엇인가요?",
+    "expected_document_paths": [
+      "post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc"
+    ],
+    "expected_source_dirs": [
+      "post_installation_configuration"
+    ],
+    "expected_answer_shape": "체크리스트형 + CNF 특화 주의사항 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "CNF"
+      ],
+      [
+        "y-stream"
+      ],
+      [
+        "클러스터"
+      ],
+      [
+        "stream으"
+      ],
+      [
+        "확인",
+        "점검",
+        "준비",
+        "체크리스트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "post_installation_configuration"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-057",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "cnf_update_prep",
+    "question_ko": "CNF 클러스터 업데이트 전 준비 절차는 어디서 확인하나요?",
+    "expected_document_paths": [
+      "post_installation_configuration/day_2_core_cnf_clusters/updating/update-cnf-update-prep.adoc"
+    ],
+    "expected_source_dirs": [
+      "post_installation_configuration"
+    ],
+    "expected_answer_shape": "문서 유도형 + 준비 절차 요약 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "CNF"
+      ],
+      [
+        "클러스터"
+      ],
+      [
+        "업데이트"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "post_installation_configuration"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-058",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "cnf_complete_y_stream",
+    "question_ko": "CNF 클러스터 y-stream 업데이트를 마친 뒤 무엇을 확인해야 하나요?",
+    "expected_document_paths": [
+      "post_installation_configuration/day_2_core_cnf_clusters/updating/update-completing-the-y-stream-update.adoc"
+    ],
+    "expected_source_dirs": [
+      "post_installation_configuration"
+    ],
+    "expected_answer_shape": "사후 검증 체크리스트 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "CNF"
+      ],
+      [
+        "y-stream"
+      ],
+      [
+        "클러스터"
+      ],
+      [
+        "stream"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "post_installation_configuration"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-059",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "update_disconnected_difference",
+    "question_ko": "폐쇄망 클러스터 업데이트는 일반 connected 클러스터 업데이트와 무엇이 다른가요?",
+    "expected_document_paths": [
+      "updating/updating_a_cluster/disconnected-update.adoc",
+      "disconnected/updating/disconnected-update.adoc"
+    ],
+    "expected_source_dirs": [
+      "updating",
+      "disconnected"
+    ],
+    "expected_answer_shape": "비교 설명형 + 추가 준비 항목 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "폐쇄망"
+      ],
+      [
+        "클러스터"
+      ],
+      [
+        "업데이트"
+      ],
+      [
+        "차이",
+        "비교",
+        "구분",
+        "기준"
+      ],
+      [
+        "설명",
+        "역할",
+        "의미",
+        "개요"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "updating",
+      "disconnected"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-060",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "update_path_check",
+    "question_ko": "업데이트 가능한 경로는 어디서 확인하나요?",
+    "expected_document_paths": [
+      "updating/preparing_for_updates/updating-cluster-prepare.adoc",
+      "updating/understanding_updates/understanding-update-channels-release.adoc"
+    ],
+    "expected_source_dirs": [
+      "updating"
+    ],
+    "expected_answer_shape": "문서 유도형 + 확인 포인트 설명 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "업데이트"
+      ],
+      [
+        "가능한"
+      ],
+      [
+        "경로"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "updating"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-061",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "update_blockers",
+    "question_ko": "업데이트가 차단되는 대표 원인은 무엇인가요?",
+    "expected_document_paths": [
+      "updating/preparing_for_updates/updating-cluster-prepare.adoc"
+    ],
+    "expected_source_dirs": [
+      "updating"
+    ],
+    "expected_answer_shape": "원인 요약형 + 사전 점검 항목 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "업데이트"
+      ],
+      [
+        "차단되"
+      ],
+      [
+        "대표"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "updating"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-062",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "kmm_preflight_validation",
+    "question_ko": "커널 모듈 관련 워크로드가 있는 환경은 업데이트 전에 무엇을 추가로 확인해야 하나요?",
+    "expected_document_paths": [
+      "updating/preparing_for_updates/kmm-preflight-validation.adoc"
+    ],
+    "expected_source_dirs": [
+      "updating"
+    ],
+    "expected_answer_shape": "조건부 체크리스트 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "커널"
+      ],
+      [
+        "모듈"
+      ],
+      [
+        "관련"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "updating"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-063",
+    "group": "update_upgrade",
+    "scope_policy": "in_scope",
+    "intent_category": "update_etcd_backup",
+    "question_ko": "업데이트 전에 etcd 백업도 같이 고려해야 하나요?",
+    "expected_document_paths": [
+      "backup_and_restore/control_plane_backup_and_restore/backing-up-etcd.adoc",
+      "updating/preparing_for_updates/updating-cluster-prepare.adoc"
+    ],
+    "expected_source_dirs": [
+      "backup_and_restore",
+      "updating"
+    ],
+    "expected_answer_shape": "예/아니오형 + 권장 이유 설명 + citation",
+    "required_keyword_groups": [
+      [
+        "업데이트",
+        "update"
+      ],
+      [
+        "사전",
+        "확인",
+        "채널",
+        "경로"
+      ],
+      [
+        "etcd"
+      ],
+      [
+        "업데이트"
+      ],
+      [
+        "백업도"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "backup_and_restore",
+      "updating"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-064",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "node_notready",
+    "question_ko": "노드가 NotReady일 때 가장 먼저 무엇을 확인해야 하나요?",
+    "expected_document_paths": [
+      "support/troubleshooting/verifying-node-health.adoc",
+      "support/troubleshooting/troubleshooting-operating-system-issues.adoc"
+    ],
+    "expected_source_dirs": [
+      "support"
+    ],
+    "expected_answer_shape": "우선순위형 진단 순서 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "NotReady",
+        "노드"
+      ],
+      [
+        "확인",
+        "점검"
+      ],
+      [
+        "원인",
+        "조치"
+      ],
+      [
+        "NotReady"
+      ],
+      [
+        "노드"
+      ],
+      [
+        "NotReady일"
+      ],
+      [
+        "무엇"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "support"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-065",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "node_diskpressure_imagepull",
+    "question_ko": "특정 노드에서 DiskPressure와 ImagePullBackOff가 같이 보이면 어디부터 봐야 하나요?",
+    "expected_document_paths": [
+      "support/troubleshooting/troubleshooting-operating-system-issues.adoc",
+      "support/troubleshooting/investigating-pod-issues.adoc"
+    ],
+    "expected_source_dirs": [
+      "support"
+    ],
+    "expected_answer_shape": "원인 분리형 + 확인 순서 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "DiskPressure"
+      ],
+      [
+        "ImagePullBackOff"
+      ],
+      [
+        "특정"
+      ],
+      [
+        "노드에서"
+      ],
+      [
+        "원인",
+        "확인",
+        "점검",
+        "경우"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "support"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-066",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "route_external_failure",
+    "question_ko": "서비스는 내부에서 되는데 외부 route로만 접속이 안 될 때 어디부터 확인하나요?",
+    "expected_document_paths": [
+      "networking/ingress_load_balancing/routes/nw-configuring-routes.adoc",
+      "support/troubleshooting/troubleshooting-network-issues.adoc"
+    ],
+    "expected_source_dirs": [
+      "networking",
+      "support"
+    ],
+    "expected_answer_shape": "분기형 진단 + route/ingress 점검 순서 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "route"
+      ],
+      [
+        "서비스"
+      ],
+      [
+        "내부에서"
+      ],
+      [
+        "되는데"
+      ],
+      [
+        "경우",
+        "이면",
+        "아니면",
+        "분기"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "networking",
+      "support"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-067",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "dns_external_only_failure",
+    "question_ko": "클러스터 내부 DNS는 되는데 외부 DNS 해석만 실패하면 무엇을 먼저 봐야 하나요?",
+    "expected_document_paths": [
+      "networking/networking_operators/dns-operator.adoc",
+      "support/troubleshooting/troubleshooting-network-issues.adoc"
+    ],
+    "expected_source_dirs": [
+      "networking",
+      "support"
+    ],
+    "expected_answer_shape": "원인 분리형 + DNS 확인 순서 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "DNS"
+      ],
+      [
+        "클러스터"
+      ],
+      [
+        "내부"
+      ],
+      [
+        "원인",
+        "확인",
+        "점검",
+        "경우"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "networking",
+      "support"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-068",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "network_policy_troubleshooting",
+    "question_ko": "네트워크 정책 때문에 통신이 막힌 것 같은데, 어디부터 확인해야 하나요?",
+    "expected_document_paths": [
+      "networking/network_security/network_policy/about-network-policy.adoc",
+      "networking/network_security/network_policy/viewing-network-policy.adoc"
+    ],
+    "expected_source_dirs": [
+      "networking"
+    ],
+    "expected_answer_shape": "확인 순서형 + 정책 점검 포인트 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "네트워크"
+      ],
+      [
+        "정책"
+      ],
+      [
+        "때문에"
+      ],
+      [
+        "먼저",
+        "다음",
+        "이후",
+        "1.",
+        "2."
+      ]
+    ],
+    "required_source_scope_terms": [
+      "networking"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-069",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "operator_degraded",
+    "question_ko": "오퍼레이터가 Degraded 상태가 되면 무엇을 기준으로 진단해야 하나요?",
+    "expected_document_paths": [
+      "support/troubleshooting/troubleshooting-operator-issues.adoc",
+      "operators/admin/olm-troubleshooting-operator-issues.adoc"
+    ],
+    "expected_source_dirs": [
+      "support",
+      "operators"
+    ],
+    "expected_answer_shape": "진단 순서형 + 상태 해석 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "operator",
+        "Operator"
+      ],
+      [
+        "degraded",
+        "저하"
+      ],
+      [
+        "확인",
+        "점검"
+      ],
+      [
+        "오퍼레이터"
+      ],
+      [
+        "Degraded"
+      ],
+      [
+        "상태"
+      ],
+      [
+        "먼저",
+        "다음",
+        "이후",
+        "1.",
+        "2."
+      ]
+    ],
+    "required_source_scope_terms": [
+      "support",
+      "operators"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-070",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "must_gather_usage",
+    "question_ko": "must-gather는 언제 떠야 하고, 수집 후 무엇부터 봐야 하나요?",
+    "expected_document_paths": [
+      "support/gathering-cluster-data.adoc"
+    ],
+    "expected_source_dirs": [
+      "support"
+    ],
+    "expected_answer_shape": "단계형 안내 + 수집 시점 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "must-gather"
+      ],
+      [
+        "수집",
+        "진단",
+        "지원"
+      ],
+      [
+        "must"
+      ],
+      [
+        "gather"
+      ],
+      [
+        "언제"
+      ],
+      [
+        "먼저",
+        "다음",
+        "이후",
+        "1.",
+        "2."
+      ]
+    ],
+    "required_source_scope_terms": [
+      "support"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-071",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "pvc_pending",
+    "question_ko": "PVC가 Pending에서 멈춰 있을 때 가장 먼저 볼 것은 무엇인가요?",
+    "expected_document_paths": [
+      "storage/understanding-persistent-storage.adoc",
+      "support/troubleshooting/troubleshooting-storage-issues.adoc"
+    ],
+    "expected_source_dirs": [
+      "storage",
+      "support"
+    ],
+    "expected_answer_shape": "체크리스트형 + 확인 리소스 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "PVC"
+      ],
+      [
+        "Pending"
+      ],
+      [
+        "Pending에서"
+      ],
+      [
+        "멈춰"
+      ],
+      [
+        "확인",
+        "점검",
+        "준비",
+        "체크리스트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "storage",
+      "support"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-072",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "node_drain",
+    "question_ko": "특정 워커 노드를 유지보수하려고 drain할 때 무엇을 주의해야 하나요?",
+    "expected_document_paths": [
+      "nodes/nodes/nodes-nodes-working.adoc"
+    ],
+    "expected_source_dirs": [
+      "nodes"
+    ],
+    "expected_answer_shape": "절차형 + 주의사항 중심 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "특정"
+      ],
+      [
+        "워커"
+      ],
+      [
+        "노드"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "nodes"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-073",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "mcp_updating",
+    "question_ko": "MachineConfigPool이 Updating 상태로 너무 오래 가면 무엇부터 확인해야 하나요?",
+    "expected_document_paths": [
+      "machine_configuration/machine-config-node-disruption.adoc",
+      "machine_configuration/index.adoc"
+    ],
+    "expected_source_dirs": [
+      "machine_configuration"
+    ],
+    "expected_answer_shape": "원인 분리형 + 확인 순서 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "MachineConfigPool"
+      ],
+      [
+        "Updating"
+      ],
+      [
+        "상태"
+      ],
+      [
+        "원인",
+        "확인",
+        "점검",
+        "경우"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "machine_configuration"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-074",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "custom_pki",
+    "question_ko": "클러스터에 custom PKI를 적용하려면 어떤 문서를 기준으로 봐야 하나요?",
+    "expected_document_paths": [
+      "networking/configuring_network_settings/configuring-a-custom-pki.adoc"
+    ],
+    "expected_source_dirs": [
+      "networking"
+    ],
+    "expected_answer_shape": "문서 유도형 + 절차 요약 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "PKI"
+      ],
+      [
+        "클러스터에"
+      ],
+      [
+        "custom"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "networking"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-075",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "external_idp_start",
+    "question_ko": "외부 IdP를 붙이려면 어디서부터 보는 게 맞나요?",
+    "expected_document_paths": [
+      "authentication/external-auth.adoc",
+      "authentication/understanding-identity-provider.adoc"
+    ],
+    "expected_source_dirs": [
+      "authentication"
+    ],
+    "expected_answer_shape": "문서 유도형 + 시작 지점 안내 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "외부"
+      ],
+      [
+        "IdP"
+      ],
+      [
+        "붙이려면"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "authentication"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-076",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "ldap_oidc_configuration",
+    "question_ko": "LDAP 또는 OIDC 연동을 설정하려면 어떤 문서를 보면 되나요?",
+    "expected_document_paths": [
+      "authentication/identity_providers/configuring-ldap-identity-provider.adoc",
+      "authentication/identity_providers/configuring-oidc-identity-provider.adoc"
+    ],
+    "expected_source_dirs": [
+      "authentication"
+    ],
+    "expected_answer_shape": "문서 유도형 + 선택 기준 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "LDAP"
+      ],
+      [
+        "OIDC"
+      ],
+      [
+        "또는"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "authentication"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-077",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "service_account_vs_oauth_client",
+    "question_ko": "서비스 계정과 OAuth client는 어떻게 다른가요?",
+    "expected_document_paths": [
+      "authentication/understanding-and-creating-service-accounts.adoc",
+      "authentication/using-service-accounts-as-oauth-client.adoc"
+    ],
+    "expected_source_dirs": [
+      "authentication"
+    ],
+    "expected_answer_shape": "비교 설명형 + 운영 차이점 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "서비스"
+      ],
+      [
+        "계정"
+      ],
+      [
+        "OAuth"
+      ],
+      [
+        "차이",
+        "비교",
+        "구분",
+        "기준"
+      ],
+      [
+        "설명",
+        "역할",
+        "의미",
+        "개요"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "authentication"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-078",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "registry_storage_change",
+    "question_ko": "내부 이미지 레지스트리 스토리지를 바꾸려면 무엇을 먼저 확인해야 하나요?",
+    "expected_document_paths": [
+      "registry/configuring-registry-operator.adoc",
+      "registry/configuring_registry_storage/configuring-registry-storage-baremetal.adoc"
+    ],
+    "expected_source_dirs": [
+      "registry"
+    ],
+    "expected_answer_shape": "체크리스트형 + 영향도 설명 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "내부"
+      ],
+      [
+        "이미지"
+      ],
+      [
+        "레지스트리"
+      ],
+      [
+        "확인",
+        "점검",
+        "준비",
+        "체크리스트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "registry"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-079",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "etcd_backup",
+    "question_ko": "etcd 백업은 어떤 절차로 해야 하나요?",
+    "expected_document_paths": [
+      "backup_and_restore/control_plane_backup_and_restore/backing-up-etcd.adoc"
+    ],
+    "expected_source_dirs": [
+      "backup_and_restore"
+    ],
+    "expected_answer_shape": "절차형 + 주의사항 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "etcd"
+      ],
+      [
+        "백업",
+        "backup"
+      ],
+      [
+        "백업"
+      ],
+      [
+        "절차"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "backup_and_restore"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-080",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "etcd_recovery",
+    "question_ko": "etcd 복구나 재해 복구는 어디서부터 봐야 하나요?",
+    "expected_document_paths": [
+      "backup_and_restore/control_plane_backup_and_restore/disaster_recovery/about-disaster-recovery.adoc",
+      "backup_and_restore/control_plane_backup_and_restore/disaster_recovery/quorum-restoration.adoc"
+    ],
+    "expected_source_dirs": [
+      "backup_and_restore"
+    ],
+    "expected_answer_shape": "문서 유도형 + 복구 범위 설명 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "etcd"
+      ],
+      [
+        "복구",
+        "restore",
+        "recovery"
+      ],
+      [
+        "복구나"
+      ],
+      [
+        "재해"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "backup_and_restore"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-081",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "cluster_summary_for_support",
+    "question_ko": "지원 요청 전에 클러스터 상태와 사양을 어떻게 요약하면 좋나요?",
+    "expected_document_paths": [
+      "support/summarizing-cluster-specifications.adoc",
+      "support/gathering-cluster-data.adoc"
+    ],
+    "expected_source_dirs": [
+      "support"
+    ],
+    "expected_answer_shape": "단계형 안내 + 요약 대상 설명 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "지원"
+      ],
+      [
+        "요청"
+      ],
+      [
+        "클러스터"
+      ],
+      [
+        "먼저",
+        "다음",
+        "이후",
+        "1.",
+        "2."
+      ]
+    ],
+    "required_source_scope_terms": [
+      "support"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-082",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "monitoring_troubleshooting",
+    "question_ko": "모니터링이 이상할 때 어떤 문서를 기준으로 진단을 시작해야 하나요?",
+    "expected_document_paths": [
+      "observability/monitoring/troubleshooting-monitoring-issues.adoc"
+    ],
+    "expected_source_dirs": [
+      "observability"
+    ],
+    "expected_answer_shape": "문서 유도형 + 진단 시작점 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "모니터링"
+      ],
+      [
+        "이상할"
+      ],
+      [
+        "문서"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "observability"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-083",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "logging_troubleshooting",
+    "question_ko": "로그 수집이나 포워딩이 이상할 때 먼저 어떤 문서를 봐야 하나요?",
+    "expected_document_paths": [
+      "observability/logging/troubleshooting/cluster-logging-cluster-status.adoc",
+      "observability/logging/troubleshooting/log-forwarding-troubleshooting.adoc"
+    ],
+    "expected_source_dirs": [
+      "observability"
+    ],
+    "expected_answer_shape": "문서 유도형 + 문제 유형 분리 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "로그"
+      ],
+      [
+        "수집이나"
+      ],
+      [
+        "포워딩"
+      ],
+      [
+        "문서",
+        "가이드",
+        "참고",
+        "확인"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "observability"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-084",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "operator_scope_selection",
+    "question_ko": "Operator를 namespace 범위로 설치할지 cluster 범위로 설치할지 어떻게 판단하나요?",
+    "expected_document_paths": [
+      "operators/user/olm-installing-operators-in-namespace.adoc",
+      "operators/understanding/olm/olm-understanding-operatorgroups.adoc"
+    ],
+    "expected_source_dirs": [
+      "operators"
+    ],
+    "expected_answer_shape": "비교 설명형 + 판단 기준 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "Operator"
+      ],
+      [
+        "namespace"
+      ],
+      [
+        "범위"
+      ],
+      [
+        "차이",
+        "비교",
+        "구분",
+        "기준"
+      ],
+      [
+        "설명",
+        "역할",
+        "의미",
+        "개요"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "operators"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-085",
+    "group": "operations",
+    "scope_policy": "in_scope",
+    "intent_category": "olm_restricted_networks",
+    "question_ko": "제한된 네트워크 환경에서 OLM을 운영하려면 무엇을 먼저 확인해야 하나요?",
+    "expected_document_paths": [
+      "operators/admin/olm-restricted-networks.adoc"
+    ],
+    "expected_source_dirs": [
+      "operators"
+    ],
+    "expected_answer_shape": "체크리스트형 + 제한 네트워크 주의사항 + citation",
+    "required_keyword_groups": [
+      [
+        "운영",
+        "확인",
+        "점검",
+        "원인",
+        "조치"
+      ],
+      [
+        "OLM"
+      ],
+      [
+        "제한된"
+      ],
+      [
+        "네트워크"
+      ],
+      [
+        "환경에서"
+      ],
+      [
+        "확인",
+        "점검",
+        "준비",
+        "체크리스트"
+      ]
+    ],
+    "required_source_scope_terms": [
+      "operators"
+    ],
+    "forbidden_keywords": [
+      "ROSA",
+      "OSD",
+      "OCM",
+      "MicroShift",
+      "Lightspeed",
+      "HyperShift"
+    ],
+    "refusal_required": false,
+    "refusal_any_keywords": [],
+    "min_citation_count": 1,
+    "max_citation_count": 3
+  },
+  {
+    "id": "GS-086",
+    "group": "out_of_scope",
+    "scope_policy": "out_of_scope",
+    "intent_category": "out_of_scope_rosa_create",
+    "question_ko": "ROSA에서 클러스터를 만드는 절차를 알려주세요.",
+    "expected_document_paths": [],
+    "expected_source_dirs": [],
+    "expected_answer_shape": "범위 밖 안내 + OCP 전용 챗봇임을 명시 + 지원하지 않음",
+    "required_keyword_groups": [],
+    "required_source_scope_terms": [],
+    "forbidden_keywords": [],
+    "refusal_required": true,
+    "refusal_any_keywords": [
+      "범위",
+      "공식 OCP",
+      "지원하지",
+      "추정하지",
+      "별도 문서",
+      "별도 제품",
+      "ROSA"
+    ],
+    "min_citation_count": 0,
+    "max_citation_count": 0
+  },
+  {
+    "id": "GS-087",
+    "group": "out_of_scope",
+    "scope_policy": "out_of_scope",
+    "intent_category": "out_of_scope_rosa_upgrade",
+    "question_ko": "ROSA 클러스터 업그레이드는 어떻게 하나요?",
+    "expected_document_paths": [],
+    "expected_source_dirs": [],
+    "expected_answer_shape": "범위 밖 안내 + ROSA 별도 문서 필요 명시 + 범위 밖",
+    "required_keyword_groups": [],
+    "required_source_scope_terms": [],
+    "forbidden_keywords": [],
+    "refusal_required": true,
+    "refusal_any_keywords": [
+      "범위",
+      "공식 OCP",
+      "지원하지",
+      "추정하지",
+      "별도 문서",
+      "별도 제품",
+      "ROSA"
+    ],
+    "min_citation_count": 0,
+    "max_citation_count": 0
+  },
+  {
+    "id": "GS-088",
+    "group": "out_of_scope",
+    "scope_policy": "out_of_scope",
+    "intent_category": "out_of_scope_osd_network_policy",
+    "question_ko": "OSD 환경에서 네트워크 정책을 설정하는 방법을 알려주세요.",
+    "expected_document_paths": [],
+    "expected_source_dirs": [],
+    "expected_answer_shape": "범위 밖 안내 + OCP 문서 범위 아님 명시 + 지원하지 않음",
+    "required_keyword_groups": [],
+    "required_source_scope_terms": [],
+    "forbidden_keywords": [],
+    "refusal_required": true,
+    "refusal_any_keywords": [
+      "범위",
+      "공식 OCP",
+      "지원하지",
+      "추정하지",
+      "별도 문서",
+      "별도 제품",
+      "OSD"
+    ],
+    "min_citation_count": 0,
+    "max_citation_count": 0
+  },
+  {
+    "id": "GS-089",
+    "group": "out_of_scope",
+    "scope_policy": "out_of_scope",
+    "intent_category": "out_of_scope_osd_backup_restore",
+    "question_ko": "OSD의 백업과 복구 절차는 어떻게 되나요?",
+    "expected_document_paths": [],
+    "expected_source_dirs": [],
+    "expected_answer_shape": "범위 밖 안내 + 모른다/지원하지 않음 + OSD 별도 범위 명시",
+    "required_keyword_groups": [],
+    "required_source_scope_terms": [],
+    "forbidden_keywords": [],
+    "refusal_required": true,
+    "refusal_any_keywords": [
+      "범위",
+      "공식 OCP",
+      "지원하지",
+      "추정하지",
+      "별도 문서",
+      "별도 제품",
+      "OSD"
+    ],
+    "min_citation_count": 0,
+    "max_citation_count": 0
+  },
+  {
+    "id": "GS-090",
+    "group": "out_of_scope",
+    "scope_policy": "out_of_scope",
+    "intent_category": "out_of_scope_ocm_registration",
+    "question_ko": "OCM에서 클러스터를 등록하는 방법을 알려주세요.",
+    "expected_document_paths": [],
+    "expected_source_dirs": [],
+    "expected_answer_shape": "범위 밖 안내 + OCM 별도 제품 문서 필요 + 지원하지 않음",
+    "required_keyword_groups": [],
+    "required_source_scope_terms": [],
+    "forbidden_keywords": [],
+    "refusal_required": true,
+    "refusal_any_keywords": [
+      "범위",
+      "공식 OCP",
+      "지원하지",
+      "추정하지",
+      "별도 문서",
+      "별도 제품",
+      "OCM"
+    ],
+    "min_citation_count": 0,
+    "max_citation_count": 0
+  },
+  {
+    "id": "GS-091",
+    "group": "out_of_scope",
+    "scope_policy": "out_of_scope",
+    "intent_category": "out_of_scope_ocm_policy",
+    "question_ko": "OCM 정책으로 여러 클러스터를 관리하는 방법을 알려주세요.",
+    "expected_document_paths": [],
+    "expected_source_dirs": [],
+    "expected_answer_shape": "범위 밖 안내 + OCM 별도 범위 명시 + 범위 밖",
+    "required_keyword_groups": [],
+    "required_source_scope_terms": [],
+    "forbidden_keywords": [],
+    "refusal_required": true,
+    "refusal_any_keywords": [
+      "범위",
+      "공식 OCP",
+      "지원하지",
+      "추정하지",
+      "별도 문서",
+      "별도 제품",
+      "OCM"
+    ],
+    "min_citation_count": 0,
+    "max_citation_count": 0
+  },
+  {
+    "id": "GS-092",
+    "group": "out_of_scope",
+    "scope_policy": "out_of_scope",
+    "intent_category": "out_of_scope_microshift_install",
+    "question_ko": "MicroShift를 폐쇄망 엣지 환경에 설치하는 방법은 무엇인가요?",
+    "expected_document_paths": [],
+    "expected_source_dirs": [],
+    "expected_answer_shape": "범위 밖 안내 + MicroShift 별도 범위 명시 + 지원하지 않음",
+    "required_keyword_groups": [],
+    "required_source_scope_terms": [],
+    "forbidden_keywords": [],
+    "refusal_required": true,
+    "refusal_any_keywords": [
+      "범위",
+      "공식 OCP",
+      "지원하지",
+      "추정하지",
+      "별도 문서",
+      "별도 제품",
+      "MicroShift"
+    ],
+    "min_citation_count": 0,
+    "max_citation_count": 0
+  },
+  {
+    "id": "GS-093",
+    "group": "out_of_scope",
+    "scope_policy": "out_of_scope",
+    "intent_category": "out_of_scope_microshift_cert",
+    "question_ko": "MicroShift에서 인증서 갱신은 어떻게 하나요?",
+    "expected_document_paths": [],
+    "expected_source_dirs": [],
+    "expected_answer_shape": "범위 밖 안내 + OCP 운영 범위 아님 명시 + 지원하지 않음",
+    "required_keyword_groups": [],
+    "required_source_scope_terms": [],
+    "forbidden_keywords": [],
+    "refusal_required": true,
+    "refusal_any_keywords": [
+      "범위",
+      "공식 OCP",
+      "지원하지",
+      "추정하지",
+      "별도 문서",
+      "별도 제품",
+      "MicroShift"
+    ],
+    "min_citation_count": 0,
+    "max_citation_count": 0
+  },
+  {
+    "id": "GS-094",
+    "group": "out_of_scope",
+    "scope_policy": "out_of_scope",
+    "intent_category": "out_of_scope_managed_service_sla",
+    "question_ko": "managed service OpenShift의 SLA와 지원 범위를 설명해 주세요.",
+    "expected_document_paths": [],
+    "expected_source_dirs": [],
+    "expected_answer_shape": "범위 밖 안내 + managed service는 별도 제품군 명시 + 지원하지 않음",
+    "required_keyword_groups": [],
+    "required_source_scope_terms": [],
+    "forbidden_keywords": [],
+    "refusal_required": true,
+    "refusal_any_keywords": [
+      "범위",
+      "공식 OCP",
+      "지원하지",
+      "추정하지",
+      "별도 문서",
+      "별도 제품",
+      "managed service",
+      "매니지드 서비스"
+    ],
+    "min_citation_count": 0,
+    "max_citation_count": 0
+  },
+  {
+    "id": "GS-095",
+    "group": "out_of_scope",
+    "scope_policy": "out_of_scope",
+    "intent_category": "out_of_scope_billing",
+    "question_ko": "managed service 환경의 과금 방식은 어떻게 되나요?",
+    "expected_document_paths": [],
+    "expected_source_dirs": [],
+    "expected_answer_shape": "범위 밖 안내 + 비용/과금은 OCP 문서 범위 아님 명시 + 범위 밖",
+    "required_keyword_groups": [],
+    "required_source_scope_terms": [],
+    "forbidden_keywords": [],
+    "refusal_required": true,
+    "refusal_any_keywords": [
+      "범위",
+      "공식 OCP",
+      "지원하지",
+      "추정하지",
+      "별도 문서",
+      "별도 제품",
+      "managed service",
+      "매니지드 서비스"
+    ],
+    "min_citation_count": 0,
+    "max_citation_count": 0
+  },
+  {
+    "id": "GS-096",
+    "group": "out_of_scope",
+    "scope_policy": "out_of_scope",
+    "intent_category": "out_of_scope_rosa_vs_ocp",
+    "question_ko": "ROSA와 OCP의 차이를 비교해 주세요.",
+    "expected_document_paths": [],
+    "expected_source_dirs": [],
+    "expected_answer_shape": "범위 밖 안내 + 제품 비교는 별도 범위라고 명시 + 지원하지 않음",
+    "required_keyword_groups": [],
+    "required_source_scope_terms": [],
+    "forbidden_keywords": [],
+    "refusal_required": true,
+    "refusal_any_keywords": [
+      "범위",
+      "공식 OCP",
+      "지원하지",
+      "추정하지",
+      "별도 문서",
+      "별도 제품",
+      "ROSA"
+    ],
+    "min_citation_count": 0,
+    "max_citation_count": 0
+  },
+  {
+    "id": "GS-097",
+    "group": "out_of_scope",
+    "scope_policy": "out_of_scope",
+    "intent_category": "out_of_scope_osd_vs_ocp",
+    "question_ko": "OSD와 OCP의 관리 방식 차이를 알려주세요.",
+    "expected_document_paths": [],
+    "expected_source_dirs": [],
+    "expected_answer_shape": "범위 밖 안내 + 제품 비교는 별도 범위라고 명시 + 지원하지 않음",
+    "required_keyword_groups": [],
+    "required_source_scope_terms": [],
+    "forbidden_keywords": [],
+    "refusal_required": true,
+    "refusal_any_keywords": [
+      "범위",
+      "공식 OCP",
+      "지원하지",
+      "추정하지",
+      "별도 문서",
+      "별도 제품",
+      "OSD"
+    ],
+    "min_citation_count": 0,
+    "max_citation_count": 0
+  },
+  {
+    "id": "GS-098",
+    "group": "out_of_scope",
+    "scope_policy": "out_of_scope",
+    "intent_category": "out_of_scope_hcp",
+    "question_ko": "Hosted Control Planes 운영 방법을 알려주세요.",
+    "expected_document_paths": [],
+    "expected_source_dirs": [],
+    "expected_answer_shape": "범위 밖 안내 + 현재 코퍼스 범위 밖이라고 명시 + 지원하지 않음",
+    "required_keyword_groups": [],
+    "required_source_scope_terms": [],
+    "forbidden_keywords": [],
+    "refusal_required": true,
+    "refusal_any_keywords": [
+      "범위",
+      "공식 OCP",
+      "지원하지",
+      "추정하지",
+      "별도 문서",
+      "별도 제품",
+      "HyperShift",
+      "hosted control planes",
+      "HCP"
+    ],
+    "min_citation_count": 0,
+    "max_citation_count": 0
+  },
+  {
+    "id": "GS-099",
+    "group": "out_of_scope",
+    "scope_policy": "out_of_scope",
+    "intent_category": "out_of_scope_lightspeed",
+    "question_ko": "OpenShift Lightspeed를 어떻게 쓰나요?",
+    "expected_document_paths": [],
+    "expected_source_dirs": [],
+    "expected_answer_shape": "범위 밖 안내 + 현재 코퍼스 범위 밖이라고 명시 + 지원하지 않음",
+    "required_keyword_groups": [],
+    "required_source_scope_terms": [],
+    "forbidden_keywords": [],
+    "refusal_required": true,
+    "refusal_any_keywords": [
+      "범위",
+      "공식 OCP",
+      "지원하지",
+      "추정하지",
+      "별도 문서",
+      "별도 제품",
+      "Lightspeed"
+    ],
+    "min_citation_count": 0,
+    "max_citation_count": 0
+  },
+  {
+    "id": "GS-100",
+    "group": "out_of_scope",
+    "scope_policy": "out_of_scope",
+    "intent_category": "out_of_scope_hypershift",
+    "question_ko": "HyperShift 관리 클러스터 구축 절차를 알려주세요.",
+    "expected_document_paths": [],
+    "expected_source_dirs": [],
+    "expected_answer_shape": "범위 밖 안내 + 현재 코퍼스 범위 밖이라고 명시 + 지원하지 않음",
+    "required_keyword_groups": [],
+    "required_source_scope_terms": [],
+    "forbidden_keywords": [],
+    "refusal_required": true,
+    "refusal_any_keywords": [
+      "범위",
+      "공식 OCP",
+      "지원하지",
+      "추정하지",
+      "별도 문서",
+      "별도 제품",
+      "HyperShift",
+      "hosted control planes",
+      "HCP"
+    ],
+    "min_citation_count": 0,
+    "max_citation_count": 0
+  }
+]

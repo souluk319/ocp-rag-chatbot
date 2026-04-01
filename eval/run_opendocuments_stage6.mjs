@@ -374,9 +374,22 @@ async function main() {
 
     for (const testCase of selectedCases) {
       const query = testCase.question_ko
-      const retrieved = opts.retrievalOnly
-        ? await ctx.ragEngine.retrieveWithFeatures(`bench-${testCase.id}`, query, profileConfig)
-        : (await ctx.ragEngine.query({ query, profile: opts.profile })).sources
+      let answerText = ''
+      let retrieved = []
+
+      if (opts.retrievalOnly) {
+        retrieved = await ctx.ragEngine.retrieveWithFeatures(`bench-${testCase.id}`, query, profileConfig)
+      } else {
+        for await (const event of ctx.ragEngine.queryStream({ query, profile: opts.profile })) {
+          if (event.type === 'chunk') {
+            answerText += event.data
+          }
+          if (event.type === 'sources') {
+            retrieved = event.data
+          }
+        }
+      }
+
       const retrievalCandidates = retrieved.map((item, index) => convertCandidate(item, opts.htmlRoot, index + 1))
       const rerankedCandidates = retrieved.map((item, index) => convertCandidate(item, opts.htmlRoot, index + 1))
       const citations = rerankedCandidates.map((item) => ({
@@ -394,6 +407,7 @@ async function main() {
         retrieval_candidates: retrievalCandidates,
         reranked_candidates: rerankedCandidates,
         citations,
+        answer_text: answerText,
         grounded_answer: rerankedCandidates.length > 0,
         click_through_ok: clickThroughOk,
       }))
