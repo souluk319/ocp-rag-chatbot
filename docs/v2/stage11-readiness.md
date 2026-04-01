@@ -59,7 +59,7 @@ Current interpretation:
 
 - `ready_for_stage11 = true`
 - repository-side preflight passes
-- the readiness warning about `indexes/current.txt` was closed locally by bootstrapping `baseline-openshift-docs-p0`
+- the readiness warning about `indexes/current.txt` was closed locally by bootstrapping `stage11-4-20-seed`
 - a full local Stage 11 cutover and rollback drill has now been executed
 
 ## Commands
