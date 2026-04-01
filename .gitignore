@@ -1,50 +1,67 @@
-# 환경변수
+# Local environment
 .env
 .env.*
 !.env.example
 
-# 로컬 도구/개인 메모
-.claude/
-CLAUDE.md
-docs/.plan/CLAUDE.md
-docs/.plan/
-docs/.self_review/
-docs/github-publication-security-plan-2026-03-22.md
-docs/publication-security-remediation-plan-2026-03-22.md
-docs/handoff-guide.md
-docs/plan-2026-03-23.md
-docs/system-deep-dive-private.md
-docs/presentation-notebooklm.md
-docs/OCP_RAG_중간발표.pptx
-docs/OCP_RAG_기술문서.pdf
-docs/_make_pptx.py
-docs/_make_pdf.py
-docs/team-kugnus-roadmap.md
+# Editor and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
 
-# 원본 문서 데이터
-data/raw/
-
-# 벡터 인덱스 (clone 후 make index로 생성)
-data/index/
-!data/index/.gitkeep
-
-# Python
+# Python and Node
 __pycache__/
 *.pyc
 *.pyo
 venv/
 .venv/
+node_modules/
 
-# 공개용 정제 코퍼스와 인덱스는 추적한다.
+# Local notes and helper context
+.claude/
+CLAUDE.md
+docs/*
+!docs/v2/
+!docs/v2/**
+docs/internal/
 
-# IDE
-.vscode/
-.idea/
+# Local mirrors, workspaces, and generated artifacts
+workspace/
+mirrors/
+.opendocuments/
+tmp/
 
-# OS
-.DS_Store
-Thumbs.db
-
-# 셀프리뷰
-.plan/
-.self_review/
+# Generated data
+data/raw/*
+!data/raw/.gitkeep
+data/normalized/*
+!data/normalized/.gitkeep
+data/views/*
+!data/views/.gitkeep
+data/staging/*
+!data/staging/.gitkeep
+data/packages/*
+!data/packages/.gitkeep
+!data/packages/outbound/
+data/packages/outbound/*
+!data/packages/outbound/.gitkeep
+!data/packages/inbound/
+data/packages/inbound/*
+!data/packages/inbound/.gitkeep
+!data/packages/approved/
+data/packages/approved/*
+!data/packages/approved/.gitkeep
+!data/packages/archive/
+data/packages/archive/*
+!data/packages/archive/.gitkeep
+data/manifests/generated/*
+!data/manifests/generated/.gitkeep
+indexes/*
+!indexes/.gitkeep
+!indexes/previous.txt
+!indexes/archive/
+indexes/archive/*
+!indexes/archive/.gitkeep
+!indexes/failed/
+indexes/failed/*
+!indexes/failed/.gitkeep

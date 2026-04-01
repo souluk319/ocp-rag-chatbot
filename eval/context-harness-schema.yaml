@@ -1,0 +1,106 @@
+version: 1
+
+record_type: context_retention_trace
+
+required_fields:
+  - trace_version
+  - run_id
+  - scenario_id
+  - turn_id
+  - turn_index
+  - turn_type
+  - user_query
+  - rewritten_query
+  - expected_support_chunk_ids
+  - retrieval_candidates
+  - reranked_candidates
+  - assembled_context
+  - citations
+  - token_budget
+  - truncation
+  - version_context
+
+field_shapes:
+  trace_version: integer
+  run_id: string
+  scenario_id: string
+  turn_id: string
+  turn_index: integer
+  turn_type: standalone | follow_up | reset
+  user_query: Korean or mixed-language operator question
+  rewritten_query: retrieval-ready standalone query string
+  expected_support_chunk_ids:
+    type: list[string]
+    description: chunk ids that must survive the pipeline for a grounded answer
+  expected_source_dirs:
+    type: list[string]
+    description: optional expected top-level source directories such as installing or updating
+  expected_version_behavior:
+    type: string
+    description: stable, explicit_change, or uncertain_disclose
+  retrieval_candidates:
+    type: list[chunk_candidate]
+  reranked_candidates:
+    type: list[chunk_candidate]
+  assembled_context:
+    type: list[chunk_candidate]
+    description: final chunk set included in the model prompt
+  dropped_candidates:
+    type: list[dropped_candidate]
+    description: optional diagnostic list of chunks removed before assembly
+  citations:
+    type: list[citation_item]
+  token_budget:
+    type: object
+    required:
+      - max_context_tokens
+      - used_context_tokens
+  truncation:
+    type: object
+    required:
+      - applied
+      - dropped_chunk_ids
+  version_context:
+    type: object
+    required:
+      - before
+      - after
+      - change_reason
+
+chunk_candidate:
+  required:
+    - chunk_id
+    - document_id
+    - section_id
+    - viewer_url
+  recommended:
+    - rank
+    - score
+    - source_dir
+    - section_title
+
+dropped_candidate:
+  required:
+    - chunk_id
+    - reason
+  recommended:
+    - stage
+    - detail
+
+citation_item:
+  required:
+    - chunk_id
+    - section_id
+    - viewer_url
+  recommended:
+    - citation_label
+    - section_title
+
+diagnostic_expectations:
+  - detect retrieval miss
+  - detect rerank loss
+  - detect assembly loss
+  - detect citation loss
+  - detect truncation pressure
+  - detect unexpected version drift
+  - flag follow-up turns with missing rewrite

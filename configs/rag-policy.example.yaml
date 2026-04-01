@@ -1,0 +1,33 @@
+version: 1
+
+answering:
+  default_language: ko
+  require_citations: true
+  refuse_if_ungrounded: true
+
+modes:
+  operations:
+    tone: concise
+    prefer_recent_versions: true
+    allow_speculation: false
+  study:
+    tone: explanatory
+    prefer_recent_versions: true
+    allow_speculation: false
+
+retrieval:
+  source_priority:
+    official: 100
+    internal_runbook: 90
+    training: 70
+    reference: 50
+  category_priority:
+    troubleshooting: 100
+    upgrade: 95
+    security: 95
+    networking: 90
+    storage: 90
+  version_policy:
+    prefer_exact_match: true
+    prefer_latest_minor: true
+    reject_unknown_version_mix: false

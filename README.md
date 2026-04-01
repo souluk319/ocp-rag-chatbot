@@ -1,614 +1,133 @@
-# OCP RAG Chatbot
+# OCP Operations Assistant v2
 
-OCP(OpenShift Container Platform) 운영 지식 기반 RAG 챗봇  
-Mobile 대응
+폐쇄망에서 사용할 수 있는 **OCP 운영도우미 RAG 챗봇**입니다.
 
-## 개요
+이 저장소는 OpenShift 공식 문서 원천을 정규화하고, OpenDocuments 기반 RAG 흐름 위에 OCP 전용 정책, 멀티턴 메모리, HTML 출처 클릭, 폐쇄망 refresh loop 를 얹은 **제품 레이어**를 담고 있습니다.
 
-OCP 공식 문서 및 기술 자료를 기반으로 질의응답이 가능한 RAG(Retrieval-Augmented Generation) 챗봇입니다.
-RAG 파이프라인의 각 컴포넌트(인덱싱, 검색, 리랭킹, 캐싱 등)를 개별 모듈로 구성했습니다.
+## 이 프로젝트가 하는 일
 
-**[테스트 서버 URL](https://hillary-unsecluding-unphilosophically.ngrok-free.dev/)**  (로컬호스트 연결되어있을 때만 가능함)  
+- 한국어 질문을 받는다
+- OCP 공식 문서를 근거로 답한다
+- 답변에 citation 을 붙인다
+- citation 을 누르면 실제 HTML 문서가 열린다
+- follow-up 질문에서도 문맥과 버전을 유지한다
+- 문서 갱신 시 bundle -> reindex -> activate -> rollback 흐름을 갖는다
 
-> 📄 **[파이프라인 구조 설명 자료 (PDF)](docs/OCP_Hybrid_RAG.pdf)** — 전체 아키텍처와 설계 정리 자료  
-> 🎬 **[프로젝트 설계 영상](https://youtu.be/zeXrMJcLidg)** — 파이프라인 구조와 설계 의사결정 설명  
-> 🎬 **[개인 학습 영상](https://youtu.be/MCdhsMPzt5o)** — RAG 개념 및 구현 과정 학습 정리  
+## 지금 무엇이 통과됐나
 
-### 주요 특징
-- RAG 파이프라인 (인덱싱 → 검색 → 리랭킹 → 응답)
-- IVF(Inverted File Index) 벡터 인덱스 설계 (numpy 기반 K-Means, 32 클러스터, n_probe=4 근사탐색)
-- Dual-Path 검색: IVF 벡터 검색 + BM25 독립 코퍼스 키워드 검색
-- **쿼리 유형별 동적 하이브리드 Reranking** (트러블슈팅 6:4, 개념 8:2, 기본 7:3)
-- **한국어 쿼리 시 한국어 문서 부스트** (+0.08 스코어 보정)
-- 인접 청크 확장 (Adjacent Chunk Expansion) — 검색된 청크의 앞뒤 ±2 청크 자동 병합
-- 세션 기반 멀티턴 대화 지원 (10턴, Few-shot Query Rewriting)
-- SSE 기반 실시간 토큰 스트리밍
-- Pipeline Trace 패널 (LangSmith 유사 관찰가능성)
-- 2단계 캐싱 (Embedding LRU + Semantic Response Cache, 3중 호환성 검증)
-- **Redis 영속화** — 세션·캐시 컨테이너 재시작 후 복원 (RDB 스냅샷)
-- **듀얼 모드 시스템** (운영 모드 / 학습 모드, 모드별 시스템 프롬프트)
-- **Perplexity 스타일 후속 추천 질문** (클릭으로 이어서 질문)
-- LLM 기반 합성 문서 자동 생성 (Synthetic Data Generation)
-- **72문항 검색 품질 평가 프레임워크**
-- 멀티 LLM 엔드포인트 지원 (UI에서 서버 전환 + 연결 상태 표시)
-- Docker 컨테이너화 (multi-stage build) + pytest 단위 테스트
+현재 `rewrite/opendoc-v2` 기준으로 아래가 검증되어 있습니다.
 
-## 아키텍처
+- widened corpus 기준 retrieval / citation gate 통과
+- multiturn / red-team gate 통과
+- refresh / activate / rollback 메커니즘 통과
+- live runtime / viewer / citation click-through 통과
+- company-only runtime contract 유지
+- 임베더 baseline `BAAI/bge-m3`, `1024` 차원 유지
 
-### 1. 온라인 질의 처리 플로우
+다만 최종 판정은 **validation-mode 기준 conditional-go** 입니다.
 
-```mermaid
-flowchart LR
-    U[사용자] --> UI[Web UI<br/>frontend/index.html]
-    UI -->|POST /api/chat/stream<br/>SSE 스트리밍| API[FastAPI API<br/>src/api]
-    API --> PIPE[RAGPipeline<br/>src/pipeline.py]
+이 뜻은:
 
-    PIPE --> SES[Session Manager<br/>대화 이력 관리]
-    PIPE --> REWRITE[Query Rewriter<br/>맥락 기반 질문 재작성]
-    REWRITE --> SES
+- 제출/시연/검증용으로는 충분히 설명 가능하고 실제로 동작한다
+- 하지만 특정 operator-release minor 에 고정된 최종 운영 릴리즈로는 아직 미인증이다
 
-    PIPE --> EMB[Embedding Engine<br/>SentenceTransformer + L1 LRU]
-    EMB --> CACHE[Semantic Cache<br/>의미 기반 응답 캐시]
-    CACHE -->|cache hit| PIPE
+## 가장 먼저 어디를 보면 되나
 
-    PIPE --> RET[Retriever<br/>Query Classifier + Hybrid Reranker]
-    EMB --> RET
-    RET --> IVF[IVF Vector Index<br/>numpy ANN search]
-    RET --> BM25[BM25 Corpus Search<br/>동의어 확장 키워드 검색]
-    RET --> EXPAND[Adjacent Chunk Expansion<br/>앞뒤 청크 병합]
-    EXPAND --> CTX[Context Builder<br/>max 6000자]
-    CTX --> LLM[LLM Client<br/>다중 엔드포인트 전환]
+1. 저장소 구조 안내: [repository-map.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/repository-map.md)
+2. 현재 상태 요약: [project-plan-summary.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/project-plan-summary.md)
+3. 10단계 검증 계획: [ten-stage-verification-plan.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/ten-stage-verification-plan.md)
+4. 최근 serving-path 권위 문서: [stage08-live-runtime-quality-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage08-live-runtime-quality-report.md)
 
-    LLM -->|토큰 스트리밍| PIPE
-    PIPE -->|answer sources trace| API
-    API --> UI
+## v2 본체
 
-    PIPE -->|대화 저장| SES
-    PIPE -->|정상 응답 저장| CACHE
+### 제품 런타임
 
-    REDIS[(Redis<br/>optional persistence)]
-    REDIS -. session .-> SES
-    REDIS -. cache .-> CACHE
-    REDIS -. embedding L2 .-> EMB
+- gateway: [ocp_runtime_gateway.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/app/ocp_runtime_gateway.py)
+- bridge: [opendocuments_openai_bridge.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/app/opendocuments_openai_bridge.py)
+- policy: [ocp_policy.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/app/ocp_policy.py)
+- memory: [multiturn_memory.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/app/multiturn_memory.py)
+
+### 온보딩 파이프라인
+
+- 정규화: [normalize_openshift_docs.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/ingest/normalize_openshift_docs.py)
+- source profile: [source-profiles.yaml](/C:/Users/soulu/cywell/ocp-rag-chatbot/configs/source-profiles.yaml)
+
+### 실행/운영 경로
+
+- 런타임 기동: [start_runtime_stack.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/start_runtime_stack.py)
+- live smoke: [run_live_runtime_smoke.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/run_live_runtime_smoke.py)
+- refresh/activate/rollback: [build_outbound_bundle.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/build_outbound_bundle.py), [activate_index.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/activate_index.py), [rollback_index.py](/C:/Users/soulu/cywell/ocp-rag-chatbot/deployment/rollback_index.py)
+
+## 데이터와 RAG 구조
+
+```text
+openshift-docs / approved docs
+  -> normalize (.adoc -> text + HTML viewer + metadata)
+  -> index through OpenDocuments-compatible flow
+  -> runtime gateway
+  -> Korean grounded answer + clickable citations
 ```
 
-### 2. 오프라인 인덱싱 및 문서 준비 플로우
+역할 분리는 이렇게 봐야 합니다.
 
-```mermaid
-flowchart LR
-    RAW[원천 문서<br/>data/raw 또는 외부 문서] --> PREP[문서 준비 스크립트<br/>scrape_docs.py<br/>generate_docs.py<br/>sanitize_corpus.py]
-    PREP --> CORPUS[정제 코퍼스<br/>data/sanitized_raw]
+- `openshift-docs`: 공식 원천 데이터
+- `OpenDocuments`: RAG 엔진 기준 구현
+- `ocp-rag-chatbot`: 제품화 레이어
 
-    CORPUS --> BUILD[build_index.py]
-    BUILD --> CHUNK[Chunker<br/>문단 분리 + sliding window]
-    CHUNK --> EMBATCH[EmbeddingEngine.embed_batch]
-    EMBATCH --> IVFBUILD[IVFIndex.build<br/>K-Means clustering]
-    IVFBUILD --> INDEX[data/index<br/>vectors.npy<br/>centroids.npy<br/>index_meta.json]
+## 빠른 실행
 
-    INDEX --> STARTUP[FastAPI startup]
-    STARTUP --> LOAD[IVFIndex.load]
-    LOAD --> BM25INIT[Retriever BM25 corpus indexing]
-    BM25INIT --> PIPELIVE[실시간 질의 파이프라인에서 사용]
+### 1. 런타임 계약 확인
+
+```powershell
+python deployment/check_runtime_contract.py
 ```
 
-### 핵심 포인트
+### 2. 런타임 기동
 
-- `src/api`는 FastAPI 엔드포인트와 SSE 스트리밍을 담당하고, 실제 질의 오케스트레이션은 `src/pipeline.py`의 `RAGPipeline`이 수행합니다.
-- 검색은 `IVF 벡터 검색 + BM25 전체 코퍼스 검색`을 함께 사용하고, `Retriever`가 쿼리 유형별 가중치로 최종 재정렬합니다.
-- `SessionManager`, `SemanticCache`, `EmbeddingEngine`은 Redis가 있으면 영속화되고, 없으면 인메모리 모드로 graceful fallback 합니다.
-- 오프라인에서 `data/sanitized_raw`를 청킹하고 IVF 인덱스를 생성해 두며, 서버 시작 시 이를 로드해 온라인 질의 처리에 사용합니다.
-
-### Pipeline Trace (관찰가능성)
-
-각 파이프라인 단계의 실행 과정을 실시간으로 모니터링할 수 있는 Trace 패널:
-
-```
-Session  ✓  0ms   → session_id, history_turns
-Rewrite  ✓  15ms  → original vs rewritten query, query_type, entity
-Embed    ✓  7ms   → dimension, cache_hit
-Cache    — miss   → semantic_cache_size
-Search   ✓  26ms  → candidates, top_score, IVF n_probe=4
-Rerank   ✓  120ms → hybrid scores per document (semantic + keyword + ko_boost)
-Context  ✓  0ms   → context_length, num_documents
-LLM      ✓  1.2s  → model, tokens, tokens/sec
-Complete ✓  1.3s  → total pipeline time
+```powershell
+python deployment/start_runtime_stack.py --hold-seconds 10
 ```
 
-## 기술 스택
+### 3. live runtime smoke
 
-| 구분 | 기술 | 설명 |
-|------|------|------|
-| Backend | Python 3.11, FastAPI | REST API + SSE 스트리밍 |
-| LLM | Qwen/Qwen3.5-9B | 멀티 endpoint 지원. Mac Mini / RTX Desktop 은 4bit 양자화본, OpenAI-compatible API |
-| Embedding | paraphrase-multilingual-MiniLM-L12-v2 | 384차원, 다국어(한/영) 지원 |
-| Vector Index | numpy IVF | K-Means 클러스터링, 32 클러스터, n_probe=4 (근사 탐색) |
-| Retrieval | Dual-Path (IVF + BM25) | 벡터 검색 + 독립 키워드 검색 병렬, 91쌍 동의어 |
-| Reranking | Dynamic Hybrid | 쿼리 유형별 동적 가중치 + 한국어 부스트 |
-| Frontend | HTML/CSS/JS | 프레임워크 미사용, 웜 라이트 테마, Pretendard 폰트 |
-| 문서 파싱 | PyPDF2, python-docx, python-pptx | 다양한 포맷 지원 |
-| 평가 | eval_questions.py | 72문항 자동 검색 품질 평가 |
-| 인프라 | Docker, docker-compose | multi-stage 빌드, Redis 영속화 |
-| 테스트 | pytest | 단위 테스트 (chunker/vectorstore/cache/retriever) |
-
-## 주요 기능별 담당 파일
-
-README만 보고 빠르게 코드를 따라가려면 아래 파일부터 보면 됩니다.
-
-| 기능 | 먼저 볼 파일 | 보조 파일 | 설명 |
-|------|-------------|----------|------|
-| 웹 UI / 사용자 입력 | [`frontend/index.html`](frontend/index.html) | [`frontend/assets/cywell-logo.png`](frontend/assets/cywell-logo.png) | 채팅 UI, 모드 전환, SSE 응답 렌더링, Trace 패널 |
-| FastAPI 진입점 / API / SSE | [`src/api/__init__.py`](src/api/__init__.py) | [`src/config.py`](src/config.py) | 서버 시작, 라우팅, 정적 파일 서빙, 스트리밍 엔드포인트 |
-| RAG 전체 오케스트레이션 | [`src/pipeline.py`](src/pipeline.py) | [`src/api/__init__.py`](src/api/__init__.py) | 세션 조회, 리라이트, 캐시, 검색, 컨텍스트 구성, LLM 호출, Trace 생성 |
-| 세션 관리 / 멀티턴 질의 재작성 | [`src/session/__init__.py`](src/session/__init__.py) | [`src/llm/__init__.py`](src/llm/__init__.py) | 세션 TTL, 히스토리 관리, Query Rewriter |
-| LLM 호출 / 엔드포인트 전환 | [`src/llm/__init__.py`](src/llm/__init__.py) | [`src/config.py`](src/config.py) | OpenAI-compatible API 호출, 스트리밍, 헬스체크, 모델 자동 감지 |
-| 임베딩 / 임베딩 캐시 | [`src/embedding/__init__.py`](src/embedding/__init__.py) | [`src/redis_client.py`](src/redis_client.py) | sentence-transformers 로딩, L1/L2 캐시, 배치 임베딩 |
-| 벡터 인덱스 / IVF 검색 | [`src/vectorstore/__init__.py`](src/vectorstore/__init__.py) | [`scripts/build_index.py`](scripts/build_index.py) | K-Means 기반 IVF 빌드, 저장/로드, ANN 검색 |
-| 하이브리드 검색 / BM25 / 리랭킹 | [`src/retriever/__init__.py`](src/retriever/__init__.py) | [`src/vectorstore/__init__.py`](src/vectorstore/__init__.py) | 쿼리 분류, BM25 동의어 확장, hybrid reranking, adjacent chunk expansion |
-| 시맨틱 응답 캐시 | [`src/cache/__init__.py`](src/cache/__init__.py) | [`src/embedding/__init__.py`](src/embedding/__init__.py) | 의미 기반 캐시 히트 판정, Redis 복원, LRU 관리 |
-| Redis 연동 / 영속화 fallback | [`src/redis_client.py`](src/redis_client.py) | [`docker-compose.yml`](docker-compose.yml) | Redis 연결, 세션/캐시/임베딩 영속화 |
-| 문서 파싱 / 청킹 | [`src/chunker/__init__.py`](src/chunker/__init__.py) | [`src/sanitizer.py`](src/sanitizer.py) | PDF/DOCX/PPTX 파싱, sliding window 청킹, 메타데이터 추출 |
-| 인덱스 생성 배치 | [`scripts/build_index.py`](scripts/build_index.py) | [`src/chunker/__init__.py`](src/chunker/__init__.py), [`src/embedding/__init__.py`](src/embedding/__init__.py), [`src/vectorstore/__init__.py`](src/vectorstore/__init__.py) | 정제 문서 → 청킹 → 임베딩 → IVF 인덱스 저장 |
-| 코퍼스 수집 / 정제 | [`scripts/scrape_docs.py`](scripts/scrape_docs.py) | [`scripts/sanitize_corpus.py`](scripts/sanitize_corpus.py), [`scripts/generate_docs.py`](scripts/generate_docs.py) | 외부 문서 수집, 비공개 원문 정제, 합성 문서 생성 |
-| 평가 / 테스트 | [`scripts/eval_questions.py`](scripts/eval_questions.py) | [`tests/test_retriever.py`](tests/test_retriever.py), [`tests/test_cache.py`](tests/test_cache.py), [`tests/test_vectorstore.py`](tests/test_vectorstore.py), [`tests/test_chunker.py`](tests/test_chunker.py) | 검색 품질 평가와 핵심 모듈 회귀 테스트 |
-
-## 프로젝트 구조
-
-```
-ocp-rag-chatbot/
-├── src/                          # 핵심 RAG 파이프라인
-│   ├── config.py                 # 전역 설정 관리 (.env 로드)
-│   ├── pipeline.py               # RAG 오케스트레이터 + 듀얼 모드 프롬프트 + 트레이스
-│   ├── api/                      # FastAPI 엔드포인트 (SSE)
-│   ├── llm/                      # LLM 클라이언트 (멀티 endpoint)
-│   ├── embedding/                # 임베딩 엔진 + LRU 캐싱
-│   ├── vectorstore/              # IVF 벡터 인덱스
-│   ├── retriever/                # Dual-Path 검색 + 쿼리 분류 + 동적 Hybrid Reranking
-│   ├── chunker/                  # 문서 청킹 (Sliding Window)
-│   ├── session/                  # 세션 관리 + Few-shot Query Rewriting
-│   └── cache/                    # Semantic Response Cache (3중 호환성 검증)
-├── frontend/
-│   └── index.html                # 웹 UI (웜 라이트 테마, 듀얼 모드, Trace 패널, 추천 질문)
-├── scripts/
-│   ├── scrape_docs.py            # OCP/K8s 공식 문서 스크래핑
-│   ├── generate_docs.py          # LLM 기반 합성 문서 생성
-│   ├── sanitize_corpus.py        # 비공개 raw → 공개 가능한 정제본 변환
-│   ├── build_index.py            # 정제본 인덱싱 (청킹→임베딩→IVF)
-│   ├── eval_questions.py         # 72문항 검색 품질 자동 평가
-│   └── test_multiturn.py         # 멀티턴 대화 테스트
-├── data/
-│   ├── raw/                      # 비공개 원본 문서 (Git 제외)
-│   ├── sanitized_raw/            # 챗봇이 읽는 정제본 문서 (Git 포함, 98개)
-│   └── index/                    # 벡터 인덱스 (Git 제외, make index로 재생성)
-├── docs/
-│   ├── worklog-*.md              # 일별 워크로그
-│   ├── troubleshooting/          # 일별 트러블슈팅 기록
-│   ├── plan-*.md                 # 고도화 계획
-│   ├── rag-dependency-guide.md   # 패키지 의존성 맵 & 배포 가이드
-│   └── README-v1-initial.md      # 초기 버전 README
-├── tests/                        # pytest 단위 테스트
-│   ├── conftest.py               # 공통 fixture (IVFIndex, Retriever, SemanticCache 등)
-│   ├── test_chunker.py           # Chunker 단위 테스트
-│   ├── test_vectorstore.py       # IVFIndex 단위 테스트
-│   ├── test_cache.py             # SemanticCache 단위 테스트
-│   └── test_retriever.py         # Retriever 단위 테스트
-├── Dockerfile                    # multi-stage 빌드 (python:3.11-slim)
-├── docker-compose.yml            # app + redis 구성, 볼륨 영속화
-├── pytest.ini                    # pytest 설정
-├── Makefile                      # 단축 명령어 (make run/stop/index) — Mac/Linux
-├── run.bat / kill.bat / index.bat  # Windows 실행 스크립트
-└── requirements.txt              # Python 의존성
+```powershell
+python deployment/run_live_runtime_smoke.py --output data/manifests/generated/manual-live-runtime-report.json
 ```
 
-## 실행 방법
+## 출처 방식
 
-### Mac / Linux
+이 프로젝트의 citation 은 보조 정보가 아니라 핵심 요구사항입니다.
 
-```bash
-# 1. 환경 설정
-cp .env.example .env
-# .env 파일에서 LLM_ENDPOINT를 실제 엔드포인트로 변경
+- 검색용 text 와 별도로 HTML viewer 를 생성한다
+- source metadata 에 `viewer_url` 과 section 정보가 있다
+- 응답의 citation 을 누르면 HTML 문서가 열린다
+- Stage 8 기준으로 section title alignment 까지 확인한다
 
-# 2. 의존성 설치
-pip install -r requirements.txt
+즉 “문서가 열린다”가 아니라, **인용한 섹션이 실제로 보이는가**를 검증한다.
 
-# 3. 인덱스 생성 (최초 1회)
-make index
+## 폐쇄망 운영 방식
 
-# 4. 서버 실행
-make run
-# → http://localhost:8000
-```
+문서 업데이트는 자동 반영이 아니라 승인형 refresh loop 기준입니다.
 
-### Windows
+1. source mirror 갱신
+2. 정규화와 diff 계산
+3. outbound bundle 생성
+4. 승인
+5. inbound 반입
+6. staging / reindex
+7. smoke
+8. activate
+9. 필요 시 rollback
 
-```batch
-# 0. 가상환경
-.\venv\Scripts\Activate  
+## 관련 권위 문서
 
-# 1. 환경 설정
-copy .env.example .env
-# .env 파일에서 LLM_ENDPOINT를 실제 엔드포인트로 변경
+- retrieval / citation: [stage05-stage9-regression-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage05-stage9-regression-report.md)
+- multiturn / red-team: [stage06-multiturn-redteam-regression-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage06-multiturn-redteam-regression-report.md)
+- refresh / rollback: [stage07-refresh-activate-rollback-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage07-refresh-activate-rollback-report.md)
+- live runtime / viewer: [stage08-live-runtime-quality-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/stage08-live-runtime-quality-report.md)
 
-# 2. 의존성 설치
-pip install -r requirements.txt
+## 브랜치 기준
 
-# 3. 인덱스 생성 (최초 1회)
-index.bat
-
-# 4. 서버 실행
-run.bat
-# → http://localhost:8000
-
-# 서버 종료
-kill.bat
-```
-
-### Docker (권장)
-
-```bash
-# 1. 환경 설정
-cp .env.example .env
-# .env 파일에서 LLM_ENDPOINT를 실제 엔드포인트로 변경
-
-# 2. 인덱스 생성 (최초 1회 — 호스트에서 실행 후 data/index/ 생성)
-pip install -r requirements.txt && python scripts/build_index.py
-
-# 3. Docker 이미지 빌드 + 실행 (app + Redis)
-docker-compose up --build -d
-# → http://localhost:8000
-
-# 서버 종료
-docker-compose down
-```
-
-> **볼륨 구성:**
-> - `./data` → `/app/data` : 벡터 인덱스 + 코퍼스 영속화
-> - `hf-cache` : HuggingFace 모델 캐시 (재시작해도 재다운로드 없음)
-> - `redis-data` : Redis RDB 스냅샷 (세션·캐시 영속화)
-
-### 코퍼스 재생성
-
-코퍼스를 수정하거나 새 문서를 추가할 때:
-
-```bash
-# 비공개 raw를 정제본으로 변환
-python scripts/sanitize_corpus.py    # Mac/Linux
-# 또는
-python scripts\sanitize_corpus.py    # Windows
-
-# 정제본 기준으로 인덱스 재생성
-make index                           # Mac/Linux
-index.bat                            # Windows
-
-# 중요: 인덱스 재빌드 후 반드시 서버 재시작 필요
-# (--reload 모드로는 인덱스 파일 변경이 반영되지 않음)
-```
-
-### 단축 명령어 (Makefile — Mac/Linux)
-
-```bash
-make install    # pip install -r requirements.txt
-make sanitize   # 비공개 raw → 정제본 변환
-make index      # 정제본 인덱싱 (build_index.py)
-make run        # 서버 시작 (uvicorn, port 8000)
-make stop       # 서버 종료
-make scrape     # OCP 공식 문서 스크래핑
-make test       # 멀티턴 대화 테스트
-make clean      # __pycache__ 정리
-
-# 단위 테스트
-pytest tests/
-```
-
-## API 엔드포인트
-
-| Method | Path | 설명 |
-|--------|------|------|
-| POST | `/api/chat` | 비스트리밍 채팅 |
-| POST | `/api/chat/stream` | SSE 스트리밍 채팅 (mode: "ops" / "learn") |
-| GET | `/api/sessions` | 활성 세션 목록 |
-| GET | `/api/session/{id}/history` | 세션 대화 이력 |
-| GET | `/api/stats` | 시스템 상태 (캐시, 인덱스, n_probe 등) |
-| POST | `/api/cache/clear` | 시맨틱 캐시 초기화 |
-| GET | `/api/llm/endpoints` | LLM 엔드포인트 목록 + 현재 선택 |
-| POST | `/api/llm/endpoint` | LLM 엔드포인트 전환 |
-| GET | `/api/llm/health` | 현재 LLM 연결 상태 확인 |
-
-## 핵심 설계 상세
-
-### 1. IVF Vector Index
-
-numpy 기반 벡터 검색 엔진:
-
-```
-전체 벡터
-    │
-    ▼ K-Means 클러스터링 (Lloyd's algorithm, seed=42)
-[C0] [C1] [C2] ... [C31]    ← 32개 클러스터
-                             ← 클러스터별 벡터 분배
-
-검색 시:
-Query 벡터 → n_probe=4 (32개 중 4개 클러스터 탐색, ~87.5% 근사)
-→ Cosine Similarity 계산
-→ recall과 속도의 균형점 (전수탐색 대비 빠르면서 품질 유지)
-```
-
-- K-Means 클러스터링 (Lloyd's algorithm, seed=42 고정으로 재현성 보장)
-- Cosine Similarity 기반 유사도 계산 (벡터 정규화 → dot product)
-- `n_probe=4` — 32개 클러스터 중 4개 탐색 (ANN 근사 탐색, recall/속도 균형)
-- `IVFIndex.load()` 시 config의 `IVF_N_PROBE` 우선 적용 (저장된 meta 값 무시)
-- 인덱스 저장/로드 지원 (vectors.npy, centroids.npy, index_meta.json)
-
-### 2. Dual-Path 검색 + 동적 Hybrid Reranking
-
-임베딩 벡터 검색과 BM25 키워드 검색을 병렬로 수행하여 상호 보완:
-
-```
-                    Query
-                      │
-                      ▼
-               [Query Classifier]
-               쿼리 유형 자동 분류
-               (troubleshooting / procedure / concept / comparison / overview / general)
-                      │
-           ┌──────────┼──────────┐
-           ▼                     ▼
-    [경로 1: IVF 검색]    [경로 2: BM25 코퍼스 검색]
-    top_k × 3 = 15개      top_k × 2 = 10개
-    (임베딩 유사도 기반)    (키워드 정확 매칭 + 91쌍 동의어)
-           │                     │
-           └──────────┬──────────┘
-                      ▼
-               중복 제거 + 합치기
-               (BM25 전용 후보의 semantic score 계산)
-                      │
-                      ▼
-            Dynamic Hybrid Reranking
-            ┌─────────────────────────────────────────┐
-            │ troubleshooting/procedure:               │
-            │   Score = 0.6 × Semantic + 0.4 × BM25   │
-            │   (키워드 매칭 중요: 에러명, 명령어)       │
-            │                                         │
-            │ concept:                                 │
-            │   Score = 0.8 × Semantic + 0.2 × BM25   │
-            │   (의미적 유사성 중요: "~란 무엇인가")     │
-            │                                         │
-            │ 기본:                                    │
-            │   Score = 0.7 × Semantic + 0.3 × BM25   │
-            │                                         │
-            │ + 한국어 쿼리 & -ko.md 문서: +0.08 부스트 │
-            └─────────────────────────────────────────┘
-                      │
-                      ▼ 소스 다양성 필터 (max_per_source=1)
-                      │ → 같은 문서에서 최대 1개만 선택
-                      ▼ 상위 top_k(5)개 선택
-                      │
-                      ▼
-            Adjacent Chunk Expansion
-            검색된 chunk의 앞뒤 ±2 청크 병합
-            (같은 문서의 연속 청크를 합쳐서 문맥 보완)
-```
-
-**쿼리 유형별 동적 가중치가 필요한 이유:**
-트러블슈팅 질문("CrashLoopBackOff 해결")은 에러명/명령어 등 키워드 매칭이 중요하고,
-개념 질문("Pod란 무엇인가")은 의미적 유사성이 더 중요합니다.
-고정 가중치로는 양쪽 다 최적화할 수 없어서 쿼리 분류기가 유형을 판단하고 가중치를 조절합니다.
-
-**한국어 문서 부스트가 필요한 이유:**
-BM25 토크나이저가 공백 기반이라 영어에 유리합니다. 한국어 쿼리인데 영문 문서가
-BM25 점수로 상위를 독점하면, 실제 해결방법이 담긴 한국어 문서가 밀려납니다.
-+0.08 부스트로 이 편향을 보정합니다.
-
-**소스 다양성 제어 (max_per_source=1)가 필요한 이유:**
-같은 영문 문서의 여러 청크가 BM25로 상위를 독점하면 한국어 해결방법 문서가 top 5에서 탈락합니다.
-문서당 1개로 제한하면 다양한 소스에서 정보를 수집할 수 있습니다.
-
-**인접 청크 확장이 필요한 이유:**
-chunk 0(개요)만 검색되면 LLM이 해결 방법을 답변하지 못합니다.
-인접 청크 확장으로 chunk 0 + 1 + 2를 합쳐서 진단 명령어와 해결 절차까지 context에 포함시킵니다.
-
-### 3. Query Classifier (쿼리 유형 분류기)
-
-BM25 토큰 + 힌트 키워드 매칭으로 쿼리 유형을 자동 분류:
-
-| 유형 | 힌트 키워드 예시 | 동적 가중치 |
-|------|---------------|-----------|
-| troubleshooting | 에러, 안됨, 실패, crashloop, pending, oom | Semantic 0.6 + BM25 0.4 |
-| procedure | 방법, 설정, 생성, 삭제, 변경, yaml | Semantic 0.6 + BM25 0.4 |
-| concept | 뭐야, 무엇, 개념, 설명, 원리 | Semantic 0.8 + BM25 0.2 |
-| comparison | 차이, 비교, vs | Semantic 0.7 + BM25 0.3 |
-| overview | 종류, 목록, 모음, 총정리 | Semantic 0.7 + BM25 0.3 |
-| general | (기본값) | Semantic 0.7 + BM25 0.3 |
-
-분류 결과는 Pipeline Trace 패널의 "Rewrite" 단계에서 `query_type`으로 확인 가능.
-
-### 4. Query Rewriter (멀티턴 지원)
-
-Few-shot 예시 기반으로 맥락 의존적 질문을 독립적 질문으로 변환:
-
-| 대화 맥락 | 사용자 질문 | 재작성된 질문 |
-|-----------|-----------|-------------|
-| OCP Pod 생성 방법 설명 후 | "그거 삭제하려면?" | "OCP에서 Pod를 삭제하려면?" |
-| Deployment 설명 후 | "더 알려줘" | "OCP Deployment의 롤링 업데이트 전략을 설명해줘" |
-| 첫 질문 | "readiness probe가 뭐야?" | (변경 없음) |
-
-소형 LLM(9B)에서는 장황한 규칙보다 구체적 Few-shot 예시가 더 효과적.
-핵심 규칙: 대명사 → 구체적 대상 교체, **최신 질문의 동사는 절대 바꾸지 않음**.
-
-### 5. 2단계 캐싱 전략
-
-**Embedding Cache (LRU):**
-- SHA256 해시 기반 키로 동일 텍스트의 중복 임베딩 방지
-- 최대 5000개 캐시, OrderedDict 기반 LRU 구현
-
-**Semantic Response Cache (3중 호환성 검증):**
-- Cosine Similarity 임계값(0.95) 기반 유사 질의 매칭
-- 캐시 히트 시 LLM 호출 없이 즉시 응답 (레이턴시 99% 감소)
-- **3중 호환성 검증**으로 오탐 방지:
-  1. **숫자 비교**: "세줄요약" vs "네줄요약" → 숫자가 다르면 캐시 미스
-  2. **엔티티 비교**: "OpenShift" vs "Kubernetes" → 대상이 다르면 캐시 미스
-  3. **토큰 교집합**: 핵심 토큰이 하나도 안 겹치면 캐시 미스
-- LRU 방식으로 최대 200개 캐시 항목 관리
-- 실패 응답("찾지 못했습니다" 등)은 캐시하지 않음
-
-### 6. 듀얼 모드 시스템
-
-| 모드 | 아이콘 | 시스템 프롬프트 특징 | 추천 질문 |
-|------|--------|-------------------|----------|
-| 운영 (ops) | ⚙️ | 간결, 실용적, 명령어 중심 | CrashLoopBackOff, drain, PVC, 업그레이드 등 |
-| 학습 (learn) | 💡 | 비유/예시 적극 활용, 단계별 설명, 용어 괄호 설명 | Pod/Deployment/Service 개념, OCP vs K8s 등 |
-
-- 모드별 시스템 프롬프트 분리 (같은 질문이라도 모드에 따라 답변 스타일 다름)
-- 캐시 키에 `[mode]` 접두사 → 모드 간 캐시 간섭 방지
-- 웰컴 화면에 모드별 추천 질문 풀 (각 8개) → 랜덤 3개 표시
-- 후속 추천 질문: LLM이 답변 끝에 3개 관련 질문 제안 → 클릭으로 자동 전송
-
-### 7. 데이터 수집 전략
-
-4가지 데이터 소스를 조합하여 98개 문서, 14,373 벡터 구축:
-
-| 소스 | 방법 | 문서 수 | 특징 |
-|------|------|--------|------|
-| 한국어 합성 문서 | LLM(Qwen3.5-9B) 생성 | ~20개 | 핵심 개념, 트러블슈팅, 운영 가이드 등 주제별 한국어 문서 |
-| 커스텀 가이드 | 수동 작성 | ~10개 | 트러블슈팅 가이드 (CrashLoop/ImagePull/Pending/OOMKilled 등) |
-| 웹 스크래핑 | 공식 문서 크롤링 | ~50개 | OCP 4.17 + K8s 공식 문서 기반 |
-| 추가 문서 | PPTX/PDF 파싱 | 가변 | 운영/교육용 보조 자료 |
-
-**텍스트 전처리:**
-- 스크래핑 데이터의 공백 누락 자동 수정 (camelCase 경계 분리)
-- K8s 기술 용어 보호 리스트 (StatefulSet 등 40개 용어)
-- PPTX 임시 파일(~$) 자동 필터링
-
-### 8. BM25 동의어 사전
-
-91쌍의 한국어-영어 동의어 매핑으로 BM25 키워드 검색의 다국어 매칭 강화:
-
-```python
-# 예시
-"pod" ↔ "파드"
-"openshift" ↔ ["오픈시프트", "ocp"]
-"drain" ↔ ["드레인"]
-"oomkilled" ↔ ["oom", "메모리초과", "메모리부족"]
-"crashloopbackoff" ↔ ["크래시루프", "크래시"]
-"argocd" ↔ ["아르고cd", "아르고"]
-# ... 총 91쌍
-```
-
-### 9. 멀티 LLM 엔드포인트
-
-UI 드롭다운에서 LLM 서버를 실시간으로 전환 가능:
-
-| 서버 | 백엔드 | GPU | 특징 |
-|------|--------|-----|------|
-| 회사 서버 | vLLM | - | 안정적, 평일 운영 |
-| Mac Mini | MLX | Apple GPU | Qwen3.5-9B 4bit 양자화본, Tailscale VPN, 로컬 테스트용 |
-| RTX Desktop | Ollama | RTX 4070 Ti | Qwen3.5-9B 4bit 양자화본, Tailscale VPN, 빠른 추론 |
-
-- 엔드포인트 전환 시 모델명 자동 감지 (`/v1/models` 조회)
-- 연결 상태 실시간 표시 (🟢/🔴)
-- 백엔드별 thinking 모드 자동 비활성화 (vLLM: `chat_template_kwargs`, Ollama: `reasoning_effort`)
-- 엔드포인트 URL/이름/모델은 `.env`에서 설정
-
-### 10. Streaming + Pipeline Trace
-
-SSE(Server-Sent Events)를 통한 실시간 응답:
-- 토큰 단위 스트리밍으로 체감 응답 속도 향상
-- 각 파이프라인 단계별 trace 이벤트 전송 (9단계)
-- 프론트엔드 Trace 패널에서 실시간 모니터링
-- 단계별 소요 시간, 중간 결과, 메트릭 표시
-
-### 11. 검색 품질 평가 프레임워크
-
-72개 질문으로 검색 품질을 자동 측정:
-
-```bash
-# 전체 평가 실행
-python scripts/eval_questions.py
-
-# 질문 목록만 확인
-python scripts/eval_questions.py --dry-run
-
-# 카테고리별 평가
-python scripts/eval_questions.py --category troubleshooting
-```
-
-| 카테고리 | 질문 수 | 예시 |
-|---------|--------|------|
-| concept | 20 | "쿠버네티스가 뭐야?", "Pod란 무엇이고 왜 필요한가?" |
-| procedure | 15 | "Deployment를 롤백하는 방법은?", "HPA를 설정하는 방법은?" |
-| troubleshooting | 14 | "Pod가 CrashLoopBackOff일 때 해결방법은?", "OOMKilled가 발생하면?" |
-| operations | 10 | "etcd 백업하는 방법", "노드를 drain하는 방법과 주의사항" |
-| cicd | 5 | "Blue-Green 배포와 Canary 배포의 차이" |
-| security | 4 | "Pod Security Standards 종류는?" |
-| commands | 4 | "자주 쓰는 oc 명령어 모음" |
-
-점수 기준: **PASS**(>=0.6), **WEAK**(0.4~0.6), **FAIL**(<0.4)
-결과 저장: `data/eval_results.json`
-
-## 설정 파라미터
-
-| 파라미터 | 기본값 | 설명 |
-|---------|--------|------|
-| CHUNK_SIZE | 256 | 청크 크기 (문자 수, 임베딩 모델 128토큰 창에 최적화) |
-| CHUNK_OVERLAP | 64 | 청크 간 겹침 크기 |
-| TOP_K | 3 | 최종 검색 결과 수 (context 과다 방지) |
-| IVF_N_CLUSTERS | 32 | IVF 클러스터 수 |
-| IVF_N_PROBE | 4 | 검색 시 탐색 클러스터 수 (근사 탐색, ~87.5%) |
-| CACHE_SIMILARITY_THRESHOLD | 0.95 | 캐시 히트 유사도 임계값 |
-| MAX_HISTORY_TURNS | 10 | 최대 대화 이력 턴 수 |
-| LLM_MAX_TOKENS | 1024 | LLM 최대 생성 토큰 (간결한 답변 유도) |
-| LLM_TEMPERATURE | 0.7 | LLM 생성 온도 |
-
-## 주요 구현 체크리스트
-
-### 필수 요구사항
-- [x] RAG → LLM 파이프라인 + 웹 UI 구현
-- [x] Vector Index 설계 (IVF - K-Means, numpy)
-- [x] 멀티턴 대화 10턴 이상 (세션 + Few-shot Query Rewriting)
-- [x] LLM 연동 - Qwen/Qwen3.5-9B (멀티 endpoint, Mac Mini / RTX 는 4bit 양자화본)
-- [x] Streaming 응답 (SSE 토큰 스트리밍)
-
-### 추가 구현
-- [x] Dual-Path 검색 (IVF 벡터 + BM25 독립 코퍼스 검색, 91쌍 동의어)
-- [x] 쿼리 유형 분류기 (6가지: troubleshooting, procedure, concept, comparison, overview, general)
-- [x] 동적 Hybrid Reranking (쿼리 유형별 가중치 + 한국어 문서 부스트)
-- [x] 소스 다양성 제어 (max_per_source=1)
-- [x] 인접 청크 확장 (Adjacent Chunk Expansion, ±2 window)
-- [x] 2단계 캐싱 (Embedding LRU + Semantic Cache, 3중 호환성 검증)
-- [x] Pipeline Trace 관찰가능성 패널 (9단계 실시간 모니터링)
-- [x] 듀얼 모드 시스템 (운영 / 학습, 모드별 프롬프트 + 캐시 분리)
-- [x] Perplexity 스타일 후속 추천 질문 (클릭으로 이어서 질문)
-- [x] 72문항 검색 품질 평가 프레임워크
-- [x] LLM 기반 합성 문서 자동 생성 (18개 토픽)
-- [x] 텍스트 전처리 (스크래핑 데이터 정규화)
-- [x] 한국어 트러블슈팅 문서 (CrashLoop/ImagePull/Pending/OOMKilled/Service네트워크)
-- [x] 캐시 초기화 API
-- [x] 한국어 IME 처리 (compositionstart/end)
-- [x] 마크다운 렌더링 (표/코드블록/리스트/볼드)
-- [x] 웜 라이트 테마 UI (Pretendard 폰트, 커스텀 스크롤바, fadeIn 애니메이션)
-- [x] 멀티 LLM 엔드포인트 (UI 서버 선택 + 모델 자동 감지)
-- [x] Qwen3.5 thinking 모드 자동 비활성화 (vLLM/Ollama/MLX 호환)
-- [x] Windows 지원 (run.bat / kill.bat / index.bat)
-- [x] Docker 컨테이너화 (multi-stage build, python:3.11-slim)
-- [x] Redis 세션/캐시 영속화 (RDB 스냅샷, 컨테이너 재시작 후 복원)
-- [x] pytest 단위 테스트 (chunker / vectorstore / cache / retriever, 4개 모듈)
-
-## 향후 과제
-
-- [ ] Playwright 스크래핑 업그레이드 (Red Hat JS SPA 렌더링 대응)
-- [ ] 코드 블록 복사 버튼
-- [ ] 답변 출처 인라인 표기 (Perplexity 스타일 [1][2] 각주)
-- [ ] 사용자 피드백 👍👎 (SQLite 저장)
-- [ ] 시맨틱 청킹 (마크다운 헤딩 기반)
-- [ ] 세션 영속화 + 대화 히스토리 (SQLite → 사이드바 목록)
-- [ ] CORS 제한 (`allow_origins=["*"]` → 배포 환경별 제한)
-- [ ] 프롬프트 인젝션 방어
-- [ ] 동의어 사전 외부 파일 분리 (현재 코드 내 하드코딩)
-
-## 관련 문서
-
-- [패키지 의존성 맵 & 배포 가이드](docs/rag-dependency-guide.md) — 오프라인/에어갭 배포 대비
-- [초기 버전 README](docs/README-v1-initial.md) — Day 1~2 시점의 시스템 설명
-- [고도화 계획](docs/plan-2026-03-23.md) — 우선순위별 실행 계획
-- [워크로그](docs/) — 일별 개발 기록 (worklog-*.md)
-- [트러블슈팅](docs/troubleshooting/) — 일별 문제 해결 기록
+- `main`: 안정 기준선
+- `release/v1`: 이전 구현 보존
+- `rewrite/opendoc-v2`: 현재 v2 작업 브랜치

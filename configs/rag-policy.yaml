@@ -1,0 +1,271 @@
+version: 2
+
+answering:
+  default_language: ko
+  require_citations: true
+  refuse_if_ungrounded: true
+  preserve_technical_terms: true
+  disclose_version_uncertainty: true
+  operations_conservative_notice: "공식 OCP 문서 기준으로 확인된 내용만 답변합니다."
+  ungrounded_response_ko: "현재 확보된 공식 OCP 문서 근거만으로는 확답할 수 없습니다. 관련 문서나 버전을 더 지정해 주세요."
+  citation_style:
+    prefer_section_level: true
+    max_sources: 3
+
+modes:
+  operations:
+    tone: concise
+    response_format: checklist
+    prefer_recent_versions: true
+    allow_speculation: false
+    require_risk_notice_for:
+      - upgrade
+      - security
+      - troubleshooting
+  study:
+    tone: explanatory
+    response_format: guided_summary
+    prefer_recent_versions: true
+    allow_speculation: false
+    require_risk_notice_for:
+      - upgrade
+      - security
+
+retrieval:
+  base_similarity_multiplier: 100.0
+  manifest_hint_scan_limit: 5
+  manifest_hint_limit: 2
+  source_priority:
+    official: 100
+    internal_runbook: 90
+    training: 70
+    reference: 50
+  source_dir_priority:
+    installing: 92
+    post_installation_configuration: 96
+    disconnected: 98
+    support: 97
+  category_priority:
+    troubleshooting: 100
+    upgrade: 98
+    security: 96
+    networking: 94
+    storage: 92
+    install: 92
+    other: 55
+  product_policy:
+    allowed_products:
+      - ocp
+      - internal
+    blocked_products:
+      - okd
+      - rosa
+      - osd
+      - microshift
+  version_policy:
+    prefer_exact_match: true
+    prefer_latest_minor: true
+    reject_unknown_version_mix: true
+    allowed_streams:
+      - 4.x
+    continuity_boost: 8
+    mismatch_penalty: 20
+    unknown_penalty: 4
+  scoring:
+    source_dir_match_boost: 12
+    source_dir_mismatch_penalty: 4
+    category_match_boost: 8
+    category_mismatch_penalty: 3
+    path_term_boost: 2.0
+    memory_source_dir_boost: 8
+    memory_category_boost: 4
+    memory_document_boost: 6
+    blocked_product_penalty: 200
+    nonpreferred_product_penalty: 25
+  query_signal_rules:
+    install_prereq:
+      any_terms:
+        - 설치
+        - install
+      preferred_categories:
+        - install
+      preferred_source_dirs:
+        - installing
+      path_terms:
+        - install
+        - prerequisite
+        - preinstall
+    install_firewall:
+      any_terms:
+        - 방화벽
+        - firewall
+        - 포트
+        - domain
+        - 도메인
+        - allowlist
+      preferred_categories:
+        - install
+      preferred_source_dirs:
+        - installing
+      path_terms:
+        - firewall
+        - allowlist
+        - port
+        - domain
+        - configuring-firewall
+        - configuring your firewall
+    install_customizing:
+      any_terms:
+        - 커스터마이징
+        - 커스텀
+        - customizing
+        - customization
+      preferred_categories:
+        - install
+      preferred_source_dirs:
+        - installing
+      path_terms:
+        - customize
+        - customizing
+        - customizations
+        - day-1
+        - node
+        - installing-customizing
+        - customizing nodes
+    disconnected_mirroring:
+      any_terms:
+        - 폐쇄망
+        - disconnected
+        - oc-mirror
+        - 미러
+        - mirror
+        - registry
+      preferred_categories:
+        - troubleshooting
+      preferred_source_dirs:
+        - disconnected
+      path_terms:
+        - disconnected
+        - mirror
+        - registry
+        - oc-mirror
+        - creating-registry
+    disconnected_oc_mirror:
+      any_terms:
+        - oc-mirror
+        - 미러링
+        - 이미지
+      preferred_categories:
+        - troubleshooting
+      preferred_source_dirs:
+        - disconnected
+      path_terms:
+        - oc-mirror
+        - installing-mirroring-disconnected
+        - mirroring-disconnected
+        - image set
+    troubleshooting_node_health:
+      any_terms:
+        - 노드 상태
+        - node health
+        - notready
+        - kubelet
+      preferred_categories:
+        - troubleshooting
+      preferred_source_dirs:
+        - support
+      path_terms:
+        - node
+        - health
+        - kubelet
+        - verifying
+    troubleshooting_network:
+      any_terms:
+        - 네트워크
+        - network
+        - dns
+      preferred_categories:
+        - troubleshooting
+        - networking
+      preferred_source_dirs:
+        - support
+      path_terms:
+        - network
+        - troubleshooting
+    troubleshooting_operator:
+      any_terms:
+        - operator
+        - 오퍼레이터
+        - clusteroperator
+      preferred_categories:
+        - troubleshooting
+      preferred_source_dirs:
+        - support
+      path_terms:
+        - operator
+        - troubleshooting
+    update_prereq:
+      any_terms:
+        - 업데이트
+        - 업그레이드
+        - update
+        - upgrade
+        - etcd
+        - cluster api
+        - cnf
+        - pod
+      preferred_categories:
+        - upgrade
+      preferred_source_dirs:
+        - post_installation_configuration
+      path_terms:
+        - update
+        - before-the-update
+        - api
+        - etcd
+        - cnf
+        - update-before-the-update
+        - application pods
+        - etcd backup
+    update_cnf_pods:
+      any_terms:
+        - cnf
+        - pod
+        - 애플리케이션
+        - application
+      preferred_categories:
+        - upgrade
+      preferred_source_dirs:
+        - post_installation_configuration
+      path_terms:
+        - update-cnf-update-prep
+        - application pods
+        - cnf
+        - pod
+    certificate_maintenance:
+      any_terms:
+        - 인증서
+        - certificate
+        - cert
+      preferred_categories:
+        - troubleshooting
+        - security
+      preferred_source_dirs:
+        - post_installation_configuration
+        - support
+      path_terms:
+        - cert
+        - certificate
+        - maintenance
+
+memory:
+  follow_up_cues:
+    - 그 전에
+    - 그거
+    - 거기
+    - 이전
+    - 위에서
+    - 앞에서
+    - 이어서
+  max_active_source_dirs: 2
+  carry_version_context: true
