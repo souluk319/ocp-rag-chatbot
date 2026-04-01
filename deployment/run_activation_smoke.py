@@ -15,8 +15,18 @@ if str(REPO_ROOT) not in sys.path:
 
 from app.runtime_config import load_runtime_config
 from deployment.run_live_runtime_smoke import start_process, wait_for_json
-from deployment.stage11_activation_utils import load_index_manifest, load_jsonl, resolve_index_dir
-from deployment.stage11_bundle_utils import load_json, repo_relative, repo_root, utc_now, write_json
+from deployment.stage11_activation_utils import (
+    load_index_manifest,
+    load_jsonl,
+    resolve_index_dir,
+)
+from deployment.stage11_bundle_utils import (
+    load_json,
+    repo_relative,
+    repo_root,
+    utc_now,
+    write_json,
+)
 
 
 def auto_detect_opendocuments_root() -> Path:
@@ -25,14 +35,23 @@ def auto_detect_opendocuments_root() -> Path:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run Stage 11 activation smoke against the real OpenDocuments runtime.")
+    parser = argparse.ArgumentParser(
+        description="Run Stage 11 activation smoke against the real OpenDocuments runtime."
+    )
     parser.add_argument("--index", required=True)
     parser.add_argument("--index-root", type=Path, default=repo_root() / "indexes")
-    parser.add_argument("--smoke-set", type=Path, default=repo_root() / "deployment" / "activation-smoke-case-ids.json")
+    parser.add_argument(
+        "--smoke-set",
+        type=Path,
+        default=repo_root() / "deployment" / "activation-smoke-case-ids.json",
+    )
     parser.add_argument(
         "--benchmark-cases",
         type=Path,
-        default=repo_root() / "eval" / "benchmarks" / "p0_retrieval_benchmark_cases.jsonl",
+        default=repo_root()
+        / "eval"
+        / "benchmarks"
+        / "p0_retrieval_benchmark_cases.jsonl",
     )
     parser.add_argument(
         "--opendocuments-root",
@@ -64,7 +83,9 @@ def _normalize_source_dir(document_path: str, source_dir: str, source_id: str) -
     return normalized_dir
 
 
-def prepare_smoke_cases(*, smoke_set_path: Path, benchmark_cases_path: Path, output_path: Path) -> list[dict[str, Any]]:
+def prepare_smoke_cases(
+    *, smoke_set_path: Path, benchmark_cases_path: Path, output_path: Path
+) -> list[dict[str, Any]]:
     case_ids = load_json(smoke_set_path).get("case_ids", [])
     available_cases = {case["id"]: case for case in load_jsonl(benchmark_cases_path)}
     selected_cases: list[dict[str, Any]] = []
@@ -100,8 +121,10 @@ def execute_runtime_smoke(
     if not stage6_runner.exists():
         raise SystemExit(f"Missing Stage 6 runner: {stage6_runner}")
 
-    staging_path = repo_root() / str(index_manifest.get("staging_path", "")).replace("/", "\\")
-    staged_manifest_path = repo_root() / str(index_manifest.get("staged_manifest_path", "")).replace("/", "\\")
+    staging_path = repo_root() / str(index_manifest.get("staging_path", ""))
+    staged_manifest_path = repo_root() / str(
+        index_manifest.get("staged_manifest_path", "")
+    )
     if not staged_manifest_path.exists():
         raise SystemExit(f"Staged manifest is missing: {staged_manifest_path}")
 
@@ -113,11 +136,19 @@ def execute_runtime_smoke(
     first_case = load_jsonl(smoke_cases_path)[0]
     sample_query = str(first_case.get("question_ko", "")).strip()
 
+    node = shutil.which("node")
+    if node:
+        launcher = [node]
+    else:
+        launcher = [
+            shutil.which("npx.cmd") or shutil.which("npx") or "npx",
+            "-p",
+            "node@20",
+            "node",
+        ]
+
     command = [
-        shutil.which("npx.cmd") or shutil.which("npx") or "npx",
-        "-p",
-        "node@20",
-        "node",
+        *launcher,
         str(stage6_runner),
         "--workspace",
         str(smoke_workspace),
@@ -159,7 +190,9 @@ def build_runtime_smoke_report(
     failures_out_path: Path,
 ) -> dict[str, Any]:
     smoke_cases = load_jsonl(smoke_cases_path)
-    smoke_results = {record["benchmark_case_id"]: record for record in load_jsonl(smoke_results_path)}
+    smoke_results = {
+        record["benchmark_case_id"]: record for record in load_jsonl(smoke_results_path)
+    }
     failures = load_json(failures_out_path) if failures_out_path.exists() else []
     source_id = str(index_manifest.get("source_id", "")).strip()
 
@@ -191,18 +224,26 @@ def build_runtime_smoke_report(
         expected_document_paths = set(case.get("expected_document_paths", []))
         normalized_candidates = []
         for candidate in result.get("reranked_candidates", []):
-            normalized_path = _normalize_document_path(candidate.get("document_path", ""), source_id)
+            normalized_path = _normalize_document_path(
+                candidate.get("document_path", ""), source_id
+            )
             normalized_candidates.append(
                 {
                     "rank": candidate.get("rank"),
-                    "source_dir": _normalize_source_dir(candidate.get("document_path", ""), candidate.get("source_dir", ""), source_id),
+                    "source_dir": _normalize_source_dir(
+                        candidate.get("document_path", ""),
+                        candidate.get("source_dir", ""),
+                        source_id,
+                    ),
                     "document_path": normalized_path,
                     "viewer_url": candidate.get("viewer_url", ""),
                 }
             )
         normalized_citations = []
         for citation in result.get("citations", []):
-            normalized_path = _normalize_document_path(citation.get("document_path", ""), source_id)
+            normalized_path = _normalize_document_path(
+                citation.get("document_path", ""), source_id
+            )
             normalized_citations.append(
                 {
                     "document_path": normalized_path,
@@ -213,12 +254,20 @@ def build_runtime_smoke_report(
 
         top5 = normalized_candidates[:5]
         top10 = normalized_candidates[:10]
-        source_dir_hit_top5 = any(candidate["source_dir"] in expected_source_dirs for candidate in top5)
-        supporting_doc_hit_top10 = any(candidate["document_path"] in expected_document_paths for candidate in top10)
+        source_dir_hit_top5 = any(
+            candidate["source_dir"] in expected_source_dirs for candidate in top5
+        )
+        supporting_doc_hit_top10 = any(
+            candidate["document_path"] in expected_document_paths for candidate in top10
+        )
         citation_presence = bool(normalized_citations)
-        citation_expected_hit = any(citation["document_path"] in expected_document_paths for citation in normalized_citations)
+        citation_expected_hit = any(
+            citation["document_path"] in expected_document_paths
+            for citation in normalized_citations
+        )
         click_through_ok = bool(result.get("click_through_ok", False)) and all(
-            Path(str(citation.get("viewer_url", ""))).exists() for citation in normalized_citations
+            Path(str(citation.get("viewer_url", ""))).exists()
+            for citation in normalized_citations
         )
         grounded_answer = bool(result.get("grounded_answer", False))
 
@@ -282,7 +331,9 @@ def build_runtime_smoke_report(
         "bundle_id": index_manifest.get("bundle_id", index_dir.name),
         "index_id": index_manifest.get("index_id", index_dir.name),
         "staging_path": index_manifest.get("staging_path", ""),
-        "workspace_path": repo_relative(repo_root() / "workspace" / "stage11" / index_dir.name),
+        "workspace_path": repo_relative(
+            repo_root() / "workspace" / "stage11" / index_dir.name
+        ),
         "index_path": repo_relative(index_dir),
         "staged_manifest_path": index_manifest.get("staged_manifest_path", ""),
         "smoke_cases_path": repo_relative(smoke_cases_path),
@@ -300,9 +351,13 @@ def build_runtime_smoke_report(
         "ingest_failures_empty": failures_empty,
         "runtime_smoke_pass": runtime_smoke_pass,
         "retrieval_alignment_pass": retrieval_alignment_pass,
-        "failed_case_ids": [case["case_id"] for case in case_reports if not case.get("runtime_pass")],
+        "failed_case_ids": [
+            case["case_id"] for case in case_reports if not case.get("runtime_pass")
+        ],
         "retrieval_alignment_failed_case_ids": [
-            case["case_id"] for case in case_reports if not case.get("retrieval_alignment_pass")
+            case["case_id"]
+            for case in case_reports
+            if not case.get("retrieval_alignment_pass")
         ],
         "overall_pass": runtime_smoke_pass,
         "generated_at": utc_now(),
@@ -322,7 +377,7 @@ def run_activation_smoke(
     reuse_existing_data_dir: bool = False,
     output_path: Path | None = None,
 ) -> dict[str, Any]:
-    staging_path = repo_root() / str(index_manifest.get("staging_path", "")).replace("/", "\\")
+    staging_path = repo_root() / str(index_manifest.get("staging_path", ""))
     if not staging_path.exists():
         raise SystemExit(f"Staging path does not exist: {staging_path}")
 
@@ -336,7 +391,9 @@ def run_activation_smoke(
     runtime_config = load_runtime_config()
     missing = runtime_config.missing_required_keys()
     if missing:
-        raise SystemExit(f"Runtime config is incomplete for activation smoke: {missing}")
+        raise SystemExit(
+            f"Runtime config is incomplete for activation smoke: {missing}"
+        )
 
     prepare_smoke_cases(
         smoke_set_path=smoke_set_path,
@@ -384,12 +441,16 @@ def run_activation_smoke(
         wait_for_json(
             f"{bridge_base_url}/health",
             timeout_seconds=startup_timeout_seconds,
-            predicate=lambda payload: isinstance(payload, dict) and payload.get("ok") is True,
+            predicate=lambda payload: (
+                isinstance(payload, dict) and payload.get("ok") is True
+            ),
         )
         wait_for_json(
             f"{bridge_base_url}/ready",
             timeout_seconds=startup_timeout_seconds,
-            predicate=lambda payload: isinstance(payload, dict) and payload.get("ready") is True,
+            predicate=lambda payload: (
+                isinstance(payload, dict) and payload.get("ready") is True
+            ),
         )
         os.environ["OPENAI_BASE_URL"] = f"{bridge_base_url}/v1"
         os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY", "stage11-local")
@@ -415,7 +476,9 @@ def run_activation_smoke(
             else:
                 os.environ[key] = value
         bridge.terminate()
-    final_output_path = output_path or (index_dir / "reports" / "activation-smoke-report.json")
+    final_output_path = output_path or (
+        index_dir / "reports" / "activation-smoke-report.json"
+    )
     report = build_runtime_smoke_report(
         index_dir=index_dir,
         index_manifest=index_manifest,
@@ -431,7 +494,9 @@ def run_activation_smoke(
 
 def main() -> int:
     args = parse_args()
-    index_dir, index_manifest = load_index_manifest(args.index, index_root=args.index_root)
+    index_dir, index_manifest = load_index_manifest(
+        args.index, index_root=args.index_root
+    )
     report = run_activation_smoke(
         index_dir=index_dir,
         index_manifest=index_manifest,
@@ -441,7 +506,8 @@ def main() -> int:
         bridge_port=args.bridge_port,
         startup_timeout_seconds=args.startup_timeout_seconds,
         reuse_existing_data_dir=args.reuse_existing_data_dir,
-        output_path=args.output or (index_dir / "reports" / "activation-smoke-report.json"),
+        output_path=args.output
+        or (index_dir / "reports" / "activation-smoke-report.json"),
     )
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0 if report["overall_pass"] else 1

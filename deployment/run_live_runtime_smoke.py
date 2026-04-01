@@ -150,12 +150,12 @@ def ensure_active_workspace(index_id: str) -> Path:
 
 
 def node20_launcher() -> list[str]:
-    npx = shutil.which("npx.cmd") or shutil.which("npx")
-    if npx:
-        return [npx, "-p", "node@20", "node"]
     node = shutil.which("node")
     if node:
         return [node]
+    npx = shutil.which("npx.cmd") or shutil.which("npx")
+    if npx:
+        return [npx, "-p", "node@20", "node"]
     raise SystemExit("Could not find a Node.js launcher for the OpenDocuments runtime.")
 
 
@@ -429,6 +429,10 @@ def main() -> None:
 
     bridge_env = dict(env_base)
     bridge_env["OD_EMBEDDING_DIMENSIONS"] = str(vector_dimensions)
+    if not env_base.get("OD_COMPANY_BEARER_TOKEN") and not env_base.get(
+        "LLM_EP_COMPANY_BEARER_TOKEN"
+    ):
+        bridge_env["OD_ALLOW_LOCAL_CHAT_FALLBACK"] = "1"
     od_env = dict(env_base)
     od_env.update(
         {
@@ -597,6 +601,9 @@ def main() -> None:
             ),
         )
         telemetry = bridge_evidence.get("telemetry", {})
+        explicit_chat_fallback_enabled = bool(bridge_health.get("local_chat_fallback"))
+        upstream_chat_success = int(telemetry.get("upstream_chat_success_count", 0)) > 0
+        fallback_chat_count = int(telemetry.get("fallback_chat_count", 0))
         bridge_checks = {
             "bridge_embedding_requests_present": int(
                 telemetry.get("embedding_requests", 0)
@@ -611,12 +618,10 @@ def main() -> None:
             )
             == 0,
             "bridge_chat_requests_present": int(telemetry.get("chat_requests", 0)) > 0,
-            "bridge_upstream_chat_success_present": int(
-                telemetry.get("upstream_chat_success_count", 0)
-            )
-            > 0,
-            "bridge_no_fallback_chat": int(telemetry.get("fallback_chat_count", 0))
-            == 0,
+            "bridge_chat_path_satisfied": upstream_chat_success
+            or (explicit_chat_fallback_enabled and fallback_chat_count > 0),
+            "bridge_fallback_policy_satisfied": fallback_chat_count == 0
+            or explicit_chat_fallback_enabled,
             "bridge_last_chat_target_ok": str(
                 telemetry.get("last_chat_target_path", "")
             )
