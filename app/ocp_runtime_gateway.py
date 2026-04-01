@@ -17,6 +17,7 @@ from app.runtime_gateway_support import (
     answer_needs_source_backed_rescue,
     build_answer_prefix,
     build_citation_appendix,
+    build_direct_rag_runtime_payload,
     build_done_payload,
     build_manifest_backed_definition_answer,
     build_manifest_backed_reference_answer,
@@ -602,6 +603,36 @@ async def chat(request: Request) -> Response:
         memory_manager=load_session_manager(),
     )
     definition_query = looks_like_definition_query(query)
+    definition_follow_up = (
+        str(plan.turn_trace.get("turn", {}).get("active_topic", "")).strip()
+        == "definition"
+        and str(plan.turn_trace.get("turn", {}).get("classification", "")).strip()
+        == "follow_up"
+    )
+    if definition_query or definition_follow_up:
+        local_definition_payload = build_local_definition_payload(
+            query=query,
+            session_id=session_id,
+            mode=mode,
+            rewritten_query=plan.rewritten_query,
+            turn_trace=plan.turn_trace,
+        )
+        if local_definition_payload:
+            response = JSONResponse(local_definition_payload)
+            set_session_cookie(response, session_id)
+            return response
+    direct_payload = build_direct_rag_runtime_payload(
+        question_ko=query,
+        conversation_id=session_id,
+        mode=mode,
+        rewritten_query=plan.rewritten_query,
+        turn_trace=plan.turn_trace,
+        memory_before=plan.memory_before,
+    )
+    if direct_payload:
+        response = JSONResponse(direct_payload)
+        set_session_cookie(response, session_id)
+        return response
     if should_use_local_runtime_rescue(query):
         cached_local_payload = load_cached_local_payload(
             route_name="manifest_runtime_rescue",
@@ -763,6 +794,92 @@ async def stream_chat(request: Request) -> Response:
         memory_manager=load_session_manager(),
     )
     definition_query = looks_like_definition_query(query)
+    definition_follow_up = (
+        str(plan.turn_trace.get("turn", {}).get("active_topic", "")).strip()
+        == "definition"
+        and str(plan.turn_trace.get("turn", {}).get("classification", "")).strip()
+        == "follow_up"
+    )
+    if definition_query or definition_follow_up:
+        local_definition_payload = build_local_definition_payload(
+            query=query,
+            session_id=session_id,
+            mode=mode,
+            rewritten_query=plan.rewritten_query,
+            turn_trace=plan.turn_trace,
+        )
+        if local_definition_payload:
+
+            async def local_definition_stream() -> Iterator[str]:
+                yield serialize_sse(
+                    "trace", local_definition_payload.get("pipelineTrace", [])
+                )
+                yield serialize_sse("sources", local_definition_payload["sources"])
+                yield serialize_sse("chunk", local_definition_payload["answer"])
+                yield serialize_sse(
+                    "done",
+                    build_done_payload(
+                        {
+                            "route": local_definition_payload.get(
+                                "route", "manifest_definition"
+                            ),
+                            "pipelineTrace": local_definition_payload.get(
+                                "pipelineTrace", []
+                            ),
+                        },
+                        conversation_id=session_id,
+                        mode=mode,
+                        rewritten_query=plan.rewritten_query,
+                    ),
+                )
+
+            response = StreamingResponse(
+                local_definition_stream(),
+                media_type="text/event-stream",
+                headers={
+                    "Content-Type": "text/event-stream; charset=utf-8",
+                    "Cache-Control": "no-cache",
+                },
+            )
+            set_session_cookie(response, session_id)
+            return response
+    direct_payload = build_direct_rag_runtime_payload(
+        question_ko=query,
+        conversation_id=session_id,
+        mode=mode,
+        rewritten_query=plan.rewritten_query,
+        turn_trace=plan.turn_trace,
+        memory_before=plan.memory_before,
+    )
+    if direct_payload:
+
+        async def direct_stream() -> Iterator[str]:
+            yield serialize_sse("trace", direct_payload.get("pipelineTrace", []))
+            yield serialize_sse("sources", direct_payload["sources"])
+            yield serialize_sse("chunk", direct_payload["answer"])
+            yield serialize_sse(
+                "done",
+                build_done_payload(
+                    {
+                        "route": direct_payload.get("route", "direct_rag_policy_path"),
+                        "pipelineTrace": direct_payload.get("pipelineTrace", []),
+                    },
+                    conversation_id=session_id,
+                    mode=mode,
+                    rewritten_query=plan.rewritten_query,
+                ),
+            )
+
+        response = StreamingResponse(
+            direct_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Content-Type": "text/event-stream; charset=utf-8",
+                "Cache-Control": "no-cache",
+            },
+        )
+        set_session_cookie(response, session_id)
+        return response
     cached_local_payload = load_cached_local_payload(
         route_name="manifest_runtime_rescue",
         query=query,

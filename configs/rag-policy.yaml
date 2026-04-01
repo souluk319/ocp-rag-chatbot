@@ -273,25 +273,20 @@ retrieval:
         - 업그레이드
         - update
         - upgrade
-        - etcd
-        - cluster api
-        - cnf
-        - pod
       preferred_categories:
         - upgrade
       preferred_source_dirs:
-        - post_installation_configuration
+        - updating
       path_terms:
         - update
-        - before-the-update
-        - api
-        - etcd
-        - cnf
-        - update-before-the-update
-        - application pods
-        - etcd backup
+        - preparing-for-updates
+        - update-cluster-prepare
+        - preparing to update
+        - introduction to updates
     update_cnf_pods:
       any_terms:
+        - etcd
+        - cluster api
         - cnf
         - pod
         - 애플리케이션

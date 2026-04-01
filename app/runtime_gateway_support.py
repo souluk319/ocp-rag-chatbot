@@ -7,6 +7,7 @@ from typing import Any
 
 from app.multiturn_memory import SessionMemoryManager
 from app.ocp_policy import OcpPolicyEngine, load_policy_engine
+from app.direct_rag_runtime import search_direct_sources
 from app.runtime_source_index import SourceCatalog, load_active_source_catalog
 
 
@@ -41,7 +42,11 @@ def looks_like_definition_query(query: str) -> bool:
     )
     if not any(term in normalized for term in product_terms):
         return False
-    return any(cue in normalized for cue in definition_cues) or normalized.strip() in {"ocp", "openshift", "오픈시프트"}
+    return any(cue in normalized for cue in definition_cues) or normalized.strip() in {
+        "ocp",
+        "openshift",
+        "오픈시프트",
+    }
 
 
 def _contains_any(value: str, terms: tuple[str, ...]) -> bool:
@@ -54,10 +59,20 @@ def looks_like_definition_query(query: str) -> bool:
     if not normalized:
         return False
     product_terms = ("ocp", "openshift", "open shift", "오픈시프트")
-    definition_cues = ("뭐야", "무엇", "정의", "소개", "개요", "란", "what is", "overview", "introduction")
-    return (
-        any(term in normalized for term in product_terms)
-        and (any(cue in normalized for cue in definition_cues) or normalized in {"ocp", "openshift", "오픈시프트"})
+    definition_cues = (
+        "뭐야",
+        "무엇",
+        "정의",
+        "소개",
+        "개요",
+        "란",
+        "what is",
+        "overview",
+        "introduction",
+    )
+    return any(term in normalized for term in product_terms) and (
+        any(cue in normalized for cue in definition_cues)
+        or normalized in {"ocp", "openshift", "오픈시프트"}
     )
 
 
@@ -103,12 +118,18 @@ def prepare_runtime_turn(
         reference_doc_path=snapshot.reference_doc_path,
         reference_source_dir=snapshot.source_dir,
     )
+    memory_before = dict(result["state_before"])
+    turn = result.get("turn", {}) if isinstance(result, dict) else {}
+    if str(turn.get("classification", "")).strip() == "topic_shift":
+        memory_before["source_dir"] = ""
+        memory_before["active_category"] = ""
+        memory_before["reference_doc_path"] = ""
     return RuntimeTurnPlan(
         conversation_id=conversation_id,
         mode=mode,
         original_query=question_ko,
         rewritten_query=str(result["turn"]["rewritten_query"]).strip(),
-        memory_before=result["state_before"],
+        memory_before=memory_before,
         turn_trace=result,
     )
 
@@ -160,6 +181,61 @@ def build_policy_overlay(
     }
 
 
+def build_direct_rag_runtime_payload(
+    *,
+    question_ko: str,
+    conversation_id: str,
+    mode: str,
+    rewritten_query: str,
+    turn_trace: dict[str, Any],
+    memory_before: dict[str, Any],
+) -> dict[str, Any] | None:
+    raw_sources = [source.__dict__ for source in search_direct_sources(rewritten_query)]
+    if not raw_sources:
+        return None
+
+    overlay = build_policy_overlay(
+        question_ko=question_ko,
+        mode=mode,
+        sources=raw_sources,
+        memory_before=memory_before,
+    )
+    policy_sources = overlay["policy_sources"]
+    if not policy_sources:
+        return None
+
+    commit_runtime_grounding(
+        conversation_id=conversation_id,
+        sources=policy_sources,
+        memory_manager=load_session_manager(),
+    )
+
+    base_answer = build_source_backed_runtime_answer(question_ko, policy_sources)
+    return {
+        "answer": shape_answer(base_answer, overlay["answer_contract"], policy_sources),
+        "sources": policy_sources,
+        "source_count": len(policy_sources),
+        "conversationId": conversation_id,
+        "mode": mode,
+        "rewrittenQuery": rewritten_query,
+        "policySignals": overlay["policy_signals"],
+        "turnTrace": turn_trace,
+        "route": "direct_rag_policy_path",
+        "pipelineTrace": build_pipeline_trace(
+            query=question_ko,
+            mode=mode,
+            route="direct_rag_policy_path",
+            rewritten_query=rewritten_query,
+            turn_trace=turn_trace,
+            raw_sources=overlay["raw_sources"],
+            policy_sources=policy_sources,
+            policy_signals=overlay["policy_signals"],
+            upstream_used=False,
+            answer_contract=overlay["answer_contract"],
+        ),
+    }
+
+
 def commit_runtime_grounding(
     *,
     conversation_id: str,
@@ -172,7 +248,9 @@ def commit_runtime_grounding(
         conversation_id,
         reference_doc_path=str(top_source.get("document_path", "")).strip(),
         source_dir=str(top_source.get("source_dir", "")).strip(),
-        category=str(top_source.get("effective_category", "") or top_source.get("category", "")).strip(),
+        category=str(
+            top_source.get("effective_category", "") or top_source.get("category", "")
+        ).strip(),
         version=str(top_source.get("version", "")).strip(),
     )
 
@@ -187,7 +265,9 @@ def build_answer_prefix(answer_contract: dict[str, Any]) -> str:
     if version_hint:
         lines.append(f"[기준 버전: OpenShift {version_hint}]")
     if bool(signals.get("risk_notice_required")):
-        lines.append("[주의: 운영 영향이 있는 작업일 수 있으므로 적용 전에 현재 클러스터 버전과 공식 문서를 다시 확인하세요.]")
+        lines.append(
+            "[주의: 운영 영향이 있는 작업일 수 있으므로 적용 전에 현재 클러스터 버전과 공식 문서를 다시 확인하세요.]"
+        )
     if not lines:
         return ""
     return "\n".join(lines) + "\n\n"
@@ -206,7 +286,10 @@ def ensure_citation_block(answer: str, citations: list[dict[str, Any]]) -> str:
 def build_citation_appendix(citations: list[dict[str, Any]]) -> str:
     lines = ["출처:"]
     for citation in citations[:3]:
-        label = str(citation.get("section_title", "")).strip() or str(citation.get("document_path", "")).strip()
+        label = (
+            str(citation.get("section_title", "")).strip()
+            or str(citation.get("document_path", "")).strip()
+        )
         viewer_url = str(citation.get("viewer_url", "")).strip()
         lines.append(f"- {label} ({viewer_url})")
     return "\n".join(lines)
@@ -225,7 +308,11 @@ def _read_definition_excerpt(document: dict[str, Any]) -> str:
         line = raw_line.strip()
         if not line:
             continue
-        if line.startswith("Title:") or line.startswith("Source Path:") or line.startswith("Viewer URL:"):
+        if (
+            line.startswith("Title:")
+            or line.startswith("Source Path:")
+            or line.startswith("Viewer URL:")
+        ):
             continue
         if line.startswith("[Section]"):
             continue
@@ -251,7 +338,11 @@ def _read_runtime_excerpt(document: dict[str, Any]) -> str:
         line = raw_line.strip()
         if not line:
             continue
-        if line.startswith("Title:") or line.startswith("Source Path:") or line.startswith("Viewer URL:"):
+        if (
+            line.startswith("Title:")
+            or line.startswith("Source Path:")
+            or line.startswith("Viewer URL:")
+        ):
             continue
         if line.startswith("[Section]"):
             continue
@@ -274,14 +365,33 @@ def build_manifest_backed_definition_answer(
     catalog = source_catalog or load_active_source_catalog()
     normalized_question = _normalize_text(question_ko)
     top_citation = citations[0] if citations else {}
-    document = catalog.by_document_path.get(_normalize_path(str(top_citation.get("document_path", ""))), {})
+    document = catalog.by_document_path.get(
+        _normalize_path(str(top_citation.get("document_path", ""))), {}
+    )
     excerpt = _read_definition_excerpt(document)
+    usage_cues = (
+        "어디에 쓰",
+        "어디에 사용",
+        "무슨 용도",
+        "뭐에 쓰",
+        "어디다 쓰",
+        "used for",
+        "use case",
+    )
 
     lines: list[str] = []
     if "ocp" in normalized_question:
         lines.append("OCP는 OpenShift Container Platform의 약자입니다.")
-    lines.append("OpenShift Container Platform(OCP)는 Red Hat이 제공하는 엔터프라이즈 Kubernetes 플랫폼입니다.")
-    lines.append("애플리케이션 배포뿐 아니라 클러스터 설치, 업데이트, 네트워킹, 보안, 모니터링 같은 운영 기능을 공식적으로 제공합니다.")
+    lines.append(
+        "OpenShift Container Platform(OCP)는 Red Hat이 제공하는 엔터프라이즈 Kubernetes 플랫폼입니다."
+    )
+    lines.append(
+        "애플리케이션 배포뿐 아니라 클러스터 설치, 업데이트, 네트워킹, 보안, 모니터링 같은 운영 기능을 공식적으로 제공합니다."
+    )
+    if any(cue in normalized_question for cue in usage_cues):
+        lines.append(
+            "실제로는 컨테이너 애플리케이션을 배포하고 운영하는 기본 플랫폼으로 쓰이며, 클러스터 설치/업데이트, 네트워크 정책, 보안 설정, 모니터링과 같은 Day-2 운영 작업까지 함께 다루는 데 사용됩니다."
+        )
     if excerpt:
         lines.append(f'공식 문서에서는 "{excerpt}" 라고 설명합니다.')
     return "\n".join(lines)
@@ -307,8 +417,12 @@ def classify_local_rescue_topic(query: str) -> str:
     if looks_like_definition_query(normalized):
         return "definition"
     if (
-        ("operatorhub" in normalized or "operator lifecycle manager" in normalized or "olm" in normalized)
-        and any(cue in normalized for cue in ("무엇", "뭐야", "역할", "개요", "소개", "what is", "overview"))
+        "operatorhub" in normalized
+        or "operator lifecycle manager" in normalized
+        or "olm" in normalized
+    ) and any(
+        cue in normalized
+        for cue in ("무엇", "뭐야", "역할", "개요", "소개", "what is", "overview")
     ):
         return "operator_definition"
     if "oc-mirror" in normalized or "미러링" in normalized or "폐쇄망" in normalized:
@@ -329,12 +443,12 @@ def pick_manifest_backed_reference_sources(
     catalog = source_catalog or load_active_source_catalog()
     topic = classify_local_rescue_topic(question_ko)
     if topic == "definition":
-        return pick_manifest_backed_definition_sources(source_catalog=catalog, limit=limit)
+        return pick_manifest_backed_definition_sources(
+            source_catalog=catalog, limit=limit
+        )
 
     preferred_paths_by_topic = {
-        "firewall": (
-            "installing/install_config/configuring-firewall.adoc",
-        ),
+        "firewall": ("installing/install_config/configuring-firewall.adoc",),
         "operator_definition": (
             "operators/index.adoc",
             "operators/olm_v1/index.adoc",
@@ -368,7 +482,8 @@ def pick_manifest_backed_reference_sources(
                 "top_level_dir": manifest_doc.get("top_level_dir", ""),
                 "document_path": document_path,
                 "viewer_url": manifest_doc.get("viewer_url", ""),
-                "section_title": top_section.get("section_title", "") or manifest_doc.get("title", ""),
+                "section_title": top_section.get("section_title", "")
+                or manifest_doc.get("title", ""),
                 "title": manifest_doc.get("title", ""),
                 "product": manifest_doc.get("product", ""),
                 "version": manifest_doc.get("version", ""),
@@ -392,7 +507,9 @@ def build_manifest_backed_reference_answer(
 ) -> str:
     topic = classify_local_rescue_topic(question_ko)
     if topic == "definition":
-        return build_manifest_backed_definition_answer(question_ko, citations, source_catalog=source_catalog)
+        return build_manifest_backed_definition_answer(
+            question_ko, citations, source_catalog=source_catalog
+        )
 
     if topic == "firewall":
         return (
@@ -423,16 +540,51 @@ def build_manifest_backed_reference_answer(
     return ""
 
 
+def _is_firewall_document(citation: dict[str, Any]) -> bool:
+    document_path = _normalize_path(str(citation.get("document_path", "")))
+    title = _normalize_text(
+        str(citation.get("section_title", "")) or str(citation.get("title", ""))
+    )
+    return (
+        document_path == "installing/install_config/configuring-firewall.adoc"
+        or "configuring your firewall" in title
+    )
+
+
+def build_firewall_action_answer(
+    citations: list[dict[str, Any]], *, source_catalog: SourceCatalog | None = None
+) -> str:
+    catalog = source_catalog or load_active_source_catalog()
+    top_citation = citations[0] if citations else {}
+    document = catalog.by_document_path.get(
+        _normalize_path(str(top_citation.get("document_path", ""))), {}
+    )
+    excerpt = _read_runtime_excerpt(document)
+
+    lines = [
+        "설치 전에 방화벽에서는 아래 항목을 먼저 확인하면 됩니다.",
+        "1. OpenShift 설치에 필요한 외부 사이트와 레지스트리로 아웃바운드 통신이 가능한지 확인합니다.",
+        "2. 최소한 HTTPS(443) 기준으로 registry.redhat.io, registry.access.redhat.com, access.redhat.com, quay.io 계열 접근이 막히지 않는지 점검합니다.",
+        "3. 프록시나 사내 방화벽 예외 목록이 있다면 설치 노드와 클러스터 노드가 같은 예외 정책을 받는지 확인합니다.",
+        "4. 실제 적용 전에는 아래 공식 문서의 allowlist/예외 항목을 그대로 대조합니다.",
+    ]
+    if excerpt:
+        lines.append(f'문서 요약: "{excerpt}"')
+    return "\n".join(lines)
+
+
 def should_use_local_runtime_rescue(question_ko: str) -> bool:
     topic = classify_local_rescue_topic(question_ko)
     if topic == "definition":
         return True
     if topic in {"firewall", "update", "disconnected", "operator_definition"}:
-        return True
+        return looks_like_reference_seeking_query(question_ko)
     return looks_like_reference_seeking_query(question_ko)
 
 
-def answer_needs_source_backed_rescue(answer: str, citations: list[dict[str, Any]]) -> bool:
+def answer_needs_source_backed_rescue(
+    answer: str, citations: list[dict[str, Any]]
+) -> bool:
     if not citations:
         return False
     normalized = _normalize_text(answer)
@@ -468,11 +620,22 @@ def build_source_backed_runtime_answer(
     catalog = source_catalog or load_active_source_catalog()
     top_citation = citations[0] if citations else {}
     next_citation = citations[1] if len(citations) > 1 else {}
-    document = catalog.by_document_path.get(_normalize_path(str(top_citation.get("document_path", ""))), {})
+    document = catalog.by_document_path.get(
+        _normalize_path(str(top_citation.get("document_path", ""))), {}
+    )
     excerpt = _read_runtime_excerpt(document)
 
-    top_section = str(top_citation.get("section_title", "")).strip() or str(top_citation.get("title", "")).strip()
-    next_section = str(next_citation.get("section_title", "")).strip() or str(next_citation.get("title", "")).strip()
+    if _is_firewall_document(top_citation):
+        return build_firewall_action_answer(citations, source_catalog=catalog)
+
+    top_section = (
+        str(top_citation.get("section_title", "")).strip()
+        or str(top_citation.get("title", "")).strip()
+    )
+    next_section = (
+        str(next_citation.get("section_title", "")).strip()
+        or str(next_citation.get("title", "")).strip()
+    )
 
     lines = [
         f'질문과 가장 가까운 공식 문서는 "{top_section or "관련 문서"}" 입니다.',
@@ -480,7 +643,9 @@ def build_source_backed_runtime_answer(
     if excerpt:
         lines.append(f'문서 요약: "{excerpt}"')
     else:
-        lines.append("현재 검색된 공식 문서를 기준으로 먼저 아래 출처를 확인하는 것이 가장 안전합니다.")
+        lines.append(
+            "현재 검색된 공식 문서를 기준으로 먼저 아래 출처를 확인하는 것이 가장 안전합니다."
+        )
     if next_section:
         lines.append(f'함께 보면 좋은 문서는 "{next_section}" 입니다.')
     lines.append("아래 출처를 눌러 HTML 원문을 바로 확인하세요.")
@@ -512,7 +677,8 @@ def pick_manifest_backed_definition_sources(
                 "top_level_dir": manifest_doc.get("top_level_dir", ""),
                 "document_path": document_path,
                 "viewer_url": manifest_doc.get("viewer_url", ""),
-                "section_title": top_section.get("section_title", "") or manifest_doc.get("title", ""),
+                "section_title": top_section.get("section_title", "")
+                or manifest_doc.get("title", ""),
                 "title": manifest_doc.get("title", ""),
                 "product": manifest_doc.get("product", ""),
                 "version": manifest_doc.get("version", ""),
@@ -528,7 +694,9 @@ def pick_manifest_backed_definition_sources(
     return results
 
 
-def shape_answer(answer: str, answer_contract: dict[str, Any], citations: list[dict[str, Any]]) -> str:
+def shape_answer(
+    answer: str, answer_contract: dict[str, Any], citations: list[dict[str, Any]]
+) -> str:
     prefix = build_answer_prefix(answer_contract)
     combined = f"{prefix}{answer}".strip()
     return ensure_citation_block(combined, citations)
@@ -541,7 +709,13 @@ def answer_requires_prefix(existing_text: str, answer_contract: dict[str, Any]) 
     return _normalize_text(prefix) not in _normalize_text(existing_text)
 
 
-def build_done_payload(done_payload: dict[str, Any], *, conversation_id: str, mode: str, rewritten_query: str) -> dict[str, Any]:
+def build_done_payload(
+    done_payload: dict[str, Any],
+    *,
+    conversation_id: str,
+    mode: str,
+    rewritten_query: str,
+) -> dict[str, Any]:
     payload = dict(done_payload)
     payload["conversationId"] = conversation_id
     payload["mode"] = mode
@@ -577,11 +751,23 @@ def build_pipeline_trace(
     policy_signals = policy_signals or {}
     answer_contract = answer_contract or {}
     turn = turn_trace.get("turn", {}) if isinstance(turn_trace, dict) else {}
-    state_before = turn_trace.get("state_before", {}) if isinstance(turn_trace, dict) else {}
+    state_before = (
+        turn_trace.get("state_before", {}) if isinstance(turn_trace, dict) else {}
+    )
 
-    matched_rules = [str(item).strip() for item in policy_signals.get("matched_rules", []) if str(item).strip()]
-    preferred_dirs = [str(item).strip() for item in policy_signals.get("preferred_source_dirs", []) if str(item).strip()]
-    first_policy_viewer = str(policy_sources[0].get("viewer_url", "")).strip() if policy_sources else ""
+    matched_rules = [
+        str(item).strip()
+        for item in policy_signals.get("matched_rules", [])
+        if str(item).strip()
+    ]
+    preferred_dirs = [
+        str(item).strip()
+        for item in policy_signals.get("preferred_source_dirs", [])
+        if str(item).strip()
+    ]
+    first_policy_viewer = (
+        str(policy_sources[0].get("viewer_url", "")).strip() if policy_sources else ""
+    )
     first_policy_doc = _short_source_label(policy_sources[0]) if policy_sources else "-"
     prefix_applied = bool(build_answer_prefix(answer_contract).strip())
 
@@ -614,7 +800,11 @@ def build_pipeline_trace(
             "summary": "이번 답변에 사용할 파이프라인 경로를 선택했습니다.",
             "detail": (
                 f"route={route}"
-                + (f" | rescue_topic={local_rescue_topic}" if local_rescue_topic else "")
+                + (
+                    f" | rescue_topic={local_rescue_topic}"
+                    if local_rescue_topic
+                    else ""
+                )
                 + (f" | upstream_used={str(upstream_used).lower()}")
             ),
         },
@@ -643,7 +833,11 @@ def build_pipeline_trace(
         }
     )
 
-    if route in {"manifest_runtime_rescue", "manifest_definition", "source_backed_runtime_rescue"}:
+    if route in {
+        "manifest_runtime_rescue",
+        "manifest_definition",
+        "source_backed_runtime_rescue",
+    }:
         trace.append(
             {
                 "step": len(trace) + 1,
