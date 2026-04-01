@@ -428,9 +428,21 @@ def detect_source_lineage(source_root: Path, declared_git_ref: str) -> dict[str,
 
 def classify_category(relative_path: Path) -> str:
     top_level = relative_path.parts[0] if relative_path.parts else "other"
+    normalized_path = relative_path.as_posix().lower()
+
+    if top_level == "architecture":
+        return "reference"
+    if top_level == "disconnected":
+        return "troubleshooting"
+    if top_level == "post_installation_configuration":
+        if "/updating/" in normalized_path:
+            return "upgrade"
+        if "/troubleshooting/" in normalized_path:
+            return "troubleshooting"
+        return "operations"
+
     mapping = {
         "installing": "install",
-        "post_installation_configuration": "install",
         "updating": "upgrade",
         "upgrading": "upgrade",
         "networking": "networking",

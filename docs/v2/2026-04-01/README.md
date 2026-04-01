@@ -42,7 +42,8 @@
 - 2단계 완료: [stage-02-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/2026-04-01/stage-02-report.md)
 - 3단계 완료: [stage-03-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/2026-04-01/stage-03-report.md)
 - 4단계 완료: [stage-04-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/2026-04-01/stage-04-report.md)
-- 다음 활성 단계: 5단계
+- 5단계 완료: [stage-05-report.md](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/2026-04-01/stage-05-report.md)
+- 다음 활성 단계: 6단계
 
 ## 공통 팀 구성
 

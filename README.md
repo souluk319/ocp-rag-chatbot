@@ -1,7 +1,7 @@
 # OCP 운영 도우미 챗봇
 
-폐쇄망 환경에서 사용할 수 있도록 설계한 **OCP(OpenShift Container Platform) 운영 지원용 RAG 챗봇**입니다.  
-공식 OpenShift 문서를 기반으로 검색하고, 한국어로 답변하며, 답변에 포함된 출처를 클릭하면 내부 HTML 문서를 바로 열 수 있도록 구성했습니다.
+폐쇄망 환경에서 사용할 수 있도록 설계 중인 **OCP(OpenShift Container Platform) 운영 지원용 RAG 챗봇 프로젝트**입니다.  
+공식 OpenShift 문서를 기반으로 검색하고, 한국어 답변과 citation click-through 를 제공하는 구조를 목표로 개발하고 있습니다.
 
 ## 프로젝트 목적
 
@@ -42,7 +42,7 @@
 - 임베딩은 한국어 질문과 영어 공식 문서를 함께 다루기 위해 `BAAI/bge-m3` 를 baseline 으로 사용합니다.
 - 민감한 엔드포인트와 토큰 값은 코드에 하드코딩하지 않고 `.env` 로 관리합니다.
 
-## 핵심 기능
+## 목표 기능
 
 - 한국어 질문 입력
 - OpenShift 공식 문서 기반 검색
@@ -213,17 +213,26 @@ ingest/       openshift-docs 정규화 파이프라인
 - 폐쇄망 운영 가능성 고려
 - 특정 minor 버전에 즉시 하드고정하지 않고, 향후 source profile 전환이 가능하도록 설계
 
-## 현재 범위
+## 현재 상태
 
-현재 구현은 **실행 가능한 OCP 운영 도우미 챗봇**을 목표로 하고 있으며, 다음 범위를 포함합니다.
+현재 저장소는 **설계, 파이프라인, 런타임 스택, 문서 정규화, citation viewer 구조까지 구현된 프로토타입 단계**입니다.
 
-- 한국어 기본 질문 응답
-- citation click-through
-- 멀티턴 세션 유지
-- validation corpus 기반 검증 흐름
-- 로컬 런타임 스택 기동
+현재 확인 가능한 범위:
 
-운영 릴리즈를 위해서는 target minor 고정, 추가 corpus 확장, 품질 보강이 이어질 수 있습니다.
+- `openshift-docs` 기반 정규화 파이프라인
+- HTML citation viewer 생성 구조
+- OpenDocuments 기반 RAG 런타임 연동 구조
+- 로컬 게이트웨이/브리지/런타임 실행 스크립트
+- retrieval / multiturn / red-team / runtime 검증 스크립트
+
+다만 아래 항목은 계속 품질 보강 중입니다.
+
+- 실제 `localhost:8000` 런타임의 안정성
+- 기본 질문과 운영 질문에 대한 한국어 응답 품질
+- expanded corpus 기준 retrieval 안정성
+- operator release 수준의 최종 품질 보증
+
+즉, 이 README는 **현재 완성 제품 소개서라기보다, 프로젝트의 설계와 구현 범위를 설명하는 문서**로 보는 것이 맞습니다.
 
 ## 주의 사항
 

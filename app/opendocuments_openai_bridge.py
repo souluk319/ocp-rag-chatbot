@@ -72,7 +72,7 @@ def require_runtime_config() -> RuntimeConfig:
 @lru_cache(maxsize=1)
 def get_embedder() -> SentenceTransformer:
     config = require_runtime_config()
-    return SentenceTransformer(config.embedding_model)
+    return SentenceTransformer(config.embedding_model, device="cpu")
 
 
 def proxy_headers(request: Request, config: RuntimeConfig) -> dict[str, str]:
@@ -245,9 +245,12 @@ def evidence() -> dict[str, Any]:
 @app.get("/ready")
 def ready() -> dict[str, Any]:
     config = require_runtime_config()
-    model = get_embedder()
-    probe_vector = model.encode(["probe"], normalize_embeddings=False).tolist()[0]
-    adjusted = adjust_embedding_dimensions(probe_vector, target_dimensions=config.embedding_dimensions)
+    try:
+        model = get_embedder()
+        probe_vector = model.encode(["probe"], normalize_embeddings=False).tolist()[0]
+        adjusted = adjust_embedding_dimensions(probe_vector, target_dimensions=config.embedding_dimensions)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Embedding model is not ready: {exc}") from exc
     return {
         "ok": True,
         "ready": True,

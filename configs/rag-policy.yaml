@@ -48,10 +48,12 @@ retrieval:
   category_priority:
     troubleshooting: 100
     upgrade: 98
+    operations: 96
     security: 96
     networking: 94
     storage: 92
     install: 92
+    reference: 90
     other: 55
   product_policy:
     allowed_products:
@@ -149,7 +151,54 @@ retrieval:
         - mirror
         - registry
         - oc-mirror
+        - oc-mirror plugin
+        - image set
+        - mirroring
+        - image registry
+        - mirror registry
         - creating-registry
+    disconnected_registry_setup:
+      any_terms:
+        - mirror registry
+        - registry를 만들
+        - registry 생성
+        - 레지스트리 만들
+      preferred_categories:
+        - troubleshooting
+      preferred_source_dirs:
+        - disconnected
+      path_terms:
+        - installing-mirroring-creating-registry
+        - creating-registry
+        - mirror registry
+        - registry for disconnected
+    disconnected_oc_mirror_procedure:
+      any_terms:
+        - oc-mirror 플러그인
+        - 이미지를 미러링
+        - 미러링하려면
+        - image set
+      preferred_categories:
+        - troubleshooting
+      preferred_source_dirs:
+        - disconnected
+      path_terms:
+        - installing-mirroring-disconnected
+        - mirroring-disconnected
+        - oc-mirror plugin
+        - installation-images
+    disconnected_oc_mirror_v2_overview:
+      any_terms:
+        - oc-mirror v2
+        - v2 기준
+        - v2 개요
+      preferred_categories:
+        - troubleshooting
+      preferred_source_dirs:
+        - disconnected
+      path_terms:
+        - about-installing-oc-mirror-v2
+        - oc-mirror v2
     disconnected_oc_mirror:
       any_terms:
         - oc-mirror
@@ -161,6 +210,7 @@ retrieval:
         - disconnected
       path_terms:
         - oc-mirror
+        - oc-mirror plugin
         - installing-mirroring-disconnected
         - mirroring-disconnected
         - image set

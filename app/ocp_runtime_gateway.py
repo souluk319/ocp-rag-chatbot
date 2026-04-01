@@ -13,16 +13,21 @@ from fastapi.responses import FileResponse, JSONResponse, Response, StreamingRes
 from app.runtime_config import RuntimeConfig, load_runtime_config
 from app.runtime_gateway_support import (
     answer_requires_prefix,
+    answer_needs_source_backed_rescue,
     build_answer_prefix,
     build_citation_appendix,
     build_done_payload,
     build_manifest_backed_definition_answer,
+    build_manifest_backed_reference_answer,
     build_policy_overlay,
+    build_source_backed_runtime_answer,
     commit_runtime_grounding,
     load_session_manager,
     pick_manifest_backed_definition_sources,
+    pick_manifest_backed_reference_sources,
     prepare_runtime_turn,
     shape_answer,
+    should_use_local_runtime_rescue,
 )
 from app.runtime_source_index import load_active_source_catalog, reset_active_source_catalog
 
@@ -204,6 +209,103 @@ def looks_like_definition_query(query: str) -> bool:
     )
 
 
+def build_local_definition_payload(
+    *,
+    query: str,
+    session_id: str,
+    mode: str,
+    rewritten_query: str,
+    turn_trace: dict[str, Any],
+) -> dict[str, Any] | None:
+    overlay = build_policy_overlay(
+        question_ko=query,
+        mode=mode,
+        sources=[],
+        memory_before=turn_trace.get("state_before", {}),
+    )
+    policy_sources = pick_manifest_backed_definition_sources()
+    if not policy_sources:
+        return None
+
+    commit_runtime_grounding(
+        conversation_id=session_id,
+        sources=policy_sources,
+        memory_manager=load_session_manager(),
+    )
+    answer = shape_answer(
+        build_manifest_backed_definition_answer(query, policy_sources),
+        overlay["answer_contract"],
+        policy_sources,
+    )
+    return {
+        "queryId": f"local-definition-{session_id}",
+        "answer": answer,
+        "sources": policy_sources,
+        "source_count": len(policy_sources),
+        "confidence": {
+            "score": 0.72,
+            "level": "medium",
+            "reason": "manifest-backed definition response",
+        },
+        "route": "manifest_definition",
+        "profile": "precise",
+        "conversationId": session_id,
+        "mode": mode,
+        "rewrittenQuery": rewritten_query,
+        "policySignals": overlay["policy_signals"],
+        "turnTrace": turn_trace,
+    }
+
+
+def build_local_reference_payload(
+    *,
+    query: str,
+    session_id: str,
+    mode: str,
+    rewritten_query: str,
+    turn_trace: dict[str, Any],
+) -> dict[str, Any] | None:
+    overlay = build_policy_overlay(
+        question_ko=query,
+        mode=mode,
+        sources=[],
+        memory_before=turn_trace.get("state_before", {}),
+    )
+    policy_sources = pick_manifest_backed_reference_sources(query)
+    if not policy_sources:
+        return None
+
+    commit_runtime_grounding(
+        conversation_id=session_id,
+        sources=policy_sources,
+        memory_manager=load_session_manager(),
+    )
+    answer = shape_answer(
+        build_manifest_backed_reference_answer(query, policy_sources),
+        overlay["answer_contract"],
+        policy_sources,
+    )
+    return {
+        "queryId": f"local-reference-{session_id}",
+        "answer": answer,
+        "sources": policy_sources,
+        "source_count": len(policy_sources),
+        "confidence": {
+            "score": 0.68,
+            "level": "medium",
+            "reason": "manifest-backed runtime rescue",
+        },
+        "route": "manifest_runtime_rescue",
+        "profile": "precise",
+        "conversationId": session_id,
+        "mode": mode,
+        "rewrittenQuery": rewritten_query,
+        "policySignals": overlay["policy_signals"],
+        "turnTrace": turn_trace,
+        "runtimeRescue": True,
+    }
+
+
 def serialize_sse(event: str, payload: Any) -> str:
     return f"event: {event}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
@@ -272,6 +374,19 @@ async def chat(request: Request) -> Response:
         mode=mode,
         memory_manager=load_session_manager(),
     )
+    definition_query = looks_like_definition_query(query)
+    if should_use_local_runtime_rescue(query):
+        local_payload = build_local_reference_payload(
+            query=query,
+            session_id=session_id,
+            mode=mode,
+            rewritten_query=plan.rewritten_query,
+            turn_trace=plan.turn_trace,
+        )
+        if local_payload:
+            response = JSONResponse(local_payload)
+            set_session_cookie(response, session_id)
+            return response
 
     upstream_body = {
         "query": plan.rewritten_query,
@@ -304,7 +419,6 @@ async def chat(request: Request) -> Response:
         sources=payload.get("sources", []),
         memory_before=plan.memory_before,
     )
-    definition_query = looks_like_definition_query(query)
     policy_sources = overlay["policy_sources"]
     if definition_query and not policy_sources:
         policy_sources = pick_manifest_backed_definition_sources()
@@ -319,6 +433,8 @@ async def chat(request: Request) -> Response:
         base_answer = build_manifest_backed_definition_answer(query, policy_sources)
     else:
         base_answer = str(payload.get("answer", ""))
+        if answer_needs_source_backed_rescue(base_answer, policy_sources):
+            base_answer = build_source_backed_runtime_answer(query, policy_sources)
 
     payload["answer"] = shape_answer(base_answer, overlay["answer_contract"], policy_sources)
     payload["sources"] = policy_sources
@@ -362,6 +478,39 @@ async def stream_chat(request: Request) -> Response:
         mode=mode,
         memory_manager=load_session_manager(),
     )
+    definition_query = looks_like_definition_query(query)
+    if should_use_local_runtime_rescue(query):
+        local_payload = build_local_reference_payload(
+            query=query,
+            session_id=session_id,
+            mode=mode,
+            rewritten_query=plan.rewritten_query,
+            turn_trace=plan.turn_trace,
+        )
+        if local_payload:
+            async def local_reference_stream() -> Iterator[str]:
+                yield serialize_sse("sources", local_payload["sources"])
+                yield serialize_sse("chunk", local_payload["answer"])
+                yield serialize_sse(
+                    "done",
+                    build_done_payload(
+                        {},
+                        conversation_id=session_id,
+                        mode=mode,
+                        rewritten_query=plan.rewritten_query,
+                    ),
+                )
+
+            response = StreamingResponse(
+                local_reference_stream(),
+                media_type="text/event-stream",
+                headers={
+                    "Content-Type": "text/event-stream; charset=utf-8",
+                    "Cache-Control": "no-cache",
+                },
+            )
+            set_session_cookie(response, session_id)
+            return response
 
     upstream_body = {
         "query": plan.rewritten_query,
@@ -397,6 +546,7 @@ async def stream_chat(request: Request) -> Response:
         prefix_emitted = False
         done_payload: dict[str, Any] = {}
         local_definition_override = False
+        local_source_override = False
 
         try:
             for event_type, payload in iter_sse_events(upstream):
@@ -433,7 +583,21 @@ async def stream_chat(request: Request) -> Response:
                     continue
 
                 if event_type == "chunk":
-                    if local_definition_override:
+                    if local_definition_override or local_source_override:
+                        continue
+                    text = str(payload)
+                    if policy_sources and answer_needs_source_backed_rescue(full_answer + text, policy_sources):
+                        local_source_override = True
+                        local_answer = build_source_backed_runtime_answer(query, policy_sources)
+                        if answer_contract and not prefix_emitted:
+                            if answer_requires_prefix(full_answer, answer_contract):
+                                prefix = build_answer_prefix(answer_contract)
+                                if prefix:
+                                    full_answer += prefix
+                                    yield serialize_sse("chunk", prefix)
+                            prefix_emitted = True
+                        full_answer += local_answer
+                        yield serialize_sse("chunk", local_answer)
                         continue
                     if answer_contract and not prefix_emitted:
                         if answer_requires_prefix(full_answer, answer_contract):
@@ -442,7 +606,6 @@ async def stream_chat(request: Request) -> Response:
                                 full_answer += prefix
                                 yield serialize_sse("chunk", prefix)
                         prefix_emitted = True
-                    text = str(payload)
                     full_answer += text
                     yield serialize_sse("chunk", text)
                     continue

@@ -90,9 +90,16 @@ class OcpPolicyEngine:
                 self._extend_unique(preferred_source_dirs, rule.get("preferred_source_dirs", []))
                 self._extend_unique(path_terms, rule.get("path_terms", []))
 
+        preferred_categories, preferred_source_dirs, path_terms, matched_rules = self._resolve_rule_conflicts(
+            preferred_categories=preferred_categories,
+            preferred_source_dirs=preferred_source_dirs,
+            path_terms=path_terms,
+            matched_rules=matched_rules,
+        )
+
         if self._looks_like_definition_query(normalized_question):
             matched_rules.append("definition_intro")
-            self._extend_unique(preferred_source_dirs, ["architecture", "installing"])
+            self._extend_unique(preferred_source_dirs, ["architecture"])
             self._extend_unique(path_terms, ["openshift container platform", "architecture", "overview", "introduction"])
 
         follow_up_detected = self._is_follow_up(question_ko, memory_state)
@@ -117,6 +124,38 @@ class OcpPolicyEngine:
             version_hint=version_hint,
             follow_up_detected=follow_up_detected,
             risk_notice_required=risk_notice_required,
+        )
+
+    def _resolve_rule_conflicts(
+        self,
+        *,
+        preferred_categories: list[str],
+        preferred_source_dirs: list[str],
+        path_terms: list[str],
+        matched_rules: list[str],
+    ) -> tuple[list[str], list[str], list[str], list[str]]:
+        matched_rule_set = set(matched_rules)
+        if {"disconnected_mirroring", "disconnected_oc_mirror"} & matched_rule_set:
+            matched_rules = [rule for rule in matched_rules if rule not in {"install_prereq", "install_customizing"}]
+            preferred_source_dirs = [item for item in preferred_source_dirs if item != "installing"]
+            preferred_categories = [item for item in preferred_categories if item != "install"]
+            path_terms = [
+                item
+                for item in path_terms
+                if _normalize_text(item) not in {
+                    "install",
+                    "prerequisite",
+                    "preinstall",
+                    "requirements",
+                    "requirement",
+                }
+            ]
+
+        return (
+            self._dedupe_preserve_order(preferred_categories),
+            self._dedupe_preserve_order(preferred_source_dirs),
+            self._dedupe_preserve_order(path_terms),
+            self._dedupe_preserve_order(matched_rules),
         )
 
     def _looks_like_definition_query(self, normalized_question: str) -> bool:
@@ -499,8 +538,12 @@ class OcpPolicyEngine:
 
         if "/troubleshooting/" in document_path or source_dir == "support":
             return "troubleshooting"
+        if source_dir == "disconnected":
+            return "troubleshooting"
         if "/updating/" in document_path or source_dir == "updating":
             return "upgrade"
+        if source_dir == "architecture":
+            return "reference"
         if "security" in document_path:
             return "security"
         if "network" in document_path:
@@ -577,6 +620,12 @@ class OcpPolicyEngine:
             score += path_boost
             breakdown["path_term_hits"] = round(path_boost, 6)
 
+        exact_path_hits = self._count_manifest_exact_path_hits(manifest_doc, normalized_path_terms)
+        if exact_path_hits:
+            exact_boost = min(exact_path_hits, 2) * 0.012
+            score += exact_boost
+            breakdown["exact_path_hits"] = round(exact_boost, 6)
+
         active_source_dirs = {str(item).strip().lower() for item in memory_state.get("active_source_dirs", []) if item}
         if top_level_dir and top_level_dir in active_source_dirs:
             score += 0.002
@@ -594,6 +643,25 @@ class OcpPolicyEngine:
         searchable_parts.extend(str(section.get("section_title", "")) for section in (manifest_doc.get("sections", []) or []))
         searchable_text = _normalize_text(" ".join(searchable_parts))
         return sum(1 for term in normalized_path_terms if term and term in searchable_text)
+
+    def _count_manifest_exact_path_hits(self, manifest_doc: dict[str, Any], normalized_path_terms: list[str]) -> int:
+        path_text = _normalize_text(
+            " ".join(
+                [
+                    str(manifest_doc.get("source_url", "")),
+                    str(manifest_doc.get("local_path", "")),
+                    str(manifest_doc.get("viewer_url", "")),
+                ]
+            )
+        )
+        exact_terms = [
+            term
+            for term in normalized_path_terms
+            if term
+            and ("-" in term or "/" in term or len(term) >= 18)
+            and term in path_text
+        ]
+        return len(exact_terms)
 
     def _count_candidate_path_term_hits(self, candidate: dict[str, Any], normalized_path_terms: list[str]) -> int:
         searchable_text = _normalize_text(
@@ -652,6 +720,15 @@ class OcpPolicyEngine:
             item = str(value).strip()
             if item and item not in target:
                 target.append(item)
+
+    @staticmethod
+    def _dedupe_preserve_order(values: list[str]) -> list[str]:
+        deduped: list[str] = []
+        for value in values:
+            item = str(value).strip()
+            if item and item not in deduped:
+                deduped.append(item)
+        return deduped
 
     @staticmethod
     def _memory_anchor_score(candidates: list[dict[str, Any]]) -> float:
