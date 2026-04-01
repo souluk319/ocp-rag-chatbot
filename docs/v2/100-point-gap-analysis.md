@@ -31,8 +31,8 @@
 | 멀티턴 처리 정확성 | 20 | 17 | 강함. 세션 메모리와 follow-up rewrite는 구현/검증되어 있다. 다만 시나리오 폭과 실사용 다양성은 더 넓혀야 한다. |
 | 시스템 아키텍처 | 20 | 15 | 중상. 계층 분리와 운영 흐름은 좋다. 다만 Vector Index 직접 구현 요구와 OpenDocuments 의존 경계 설명을 더 날카롭게 해야 한다. |
 | 코드 품질 및 설명 | 15 | 12 | 중상. 문서와 증거는 풍부하다. 하지만 “왜 이 구조가 과제 기준을 만족하는지”를 설명하는 발표형 자료는 더 필요하다. |
-| 추가 요구사항 구현 | 15 | 10 | 보강 중. Streaming은 있고, 1차 query/embedding cache도 들어갔다. 그러나 Vector Index 직접성과 제출용 캐시 증거는 아직 부족하다. |
-| **총계** | **100** | **78** | **현 상태는 강한 기반이지만 100점 상태는 아님** |
+| 추가 요구사항 구현 | 15 | 11 | 보강 중. Streaming은 있고, 1차 query/embedding cache와 cache proof report도 들어갔다. 그러나 Vector Index 직접성과 widened corpus 성능 증거는 아직 부족하다. |
+| **총계** | **100** | **79** | **현 상태는 강한 기반이지만 100점 상태는 아님** |
 
 ## 항목별 갭 분석표
 
@@ -46,7 +46,7 @@
 | Vector Index 직접 구현 | `deployment/run_live_runtime_smoke.py` 의 `vectorDb: 'lancedb'`, `deployment/opendocuments-stage6.config.template.ts` | 취약 | 과제 요구는 직접 설계/구현인데 현재 경로는 LanceDB/OpenDocuments 기반이다. **가장 큰 감점 리스크**. | 최상 |
 | 세션 메모리 직접 구현 | `app/multiturn_memory.py`, `app/runtime_gateway_support.py` | 강함 | 과제 요구와 잘 맞는다. 다만 reset boundary / long-session 정책 설명을 더 보강하면 좋다. | 중간 |
 | 성능 개선 전략 | `app/ocp_policy.py`, `configs/rag-policy.yaml`, `eval/stage9_policy_report.py` | 구현됨 | rerank/policy bias는 존재한다. 그러나 chunking 전략의 실구현/정량 비교는 더 필요하다. | 높음 |
-| 캐싱 전략 | `app/runtime_cache.py`, `app/ocp_runtime_gateway.py`, `app/opendocuments_openai_bridge.py`, `.env.example` | 부분 구현 | query cache와 embedding cache의 1차 구현은 들어갔다. TTL/LRU, 비활성화, cache-safe readiness, grounding 유지까지 반영됐다. 이제 hit/miss 증거와 제출형 리포트가 더 필요하다. | 높음 |
+| 캐싱 전략 | `app/runtime_cache.py`, `app/ocp_runtime_gateway.py`, `app/opendocuments_openai_bridge.py`, `eval/cache_strategy_report.py`, `docs/v2/cache-strategy-proof.md` | 부분 구현 | query cache와 embedding cache의 1차 구현, cache-safe readiness, grounding 유지, hit/miss proof report까지 반영됐다. 다만 query proof 범위는 local rescue payload에 한정되며, widened corpus 기준 성능 비교와 운영형 invalidation 증거가 더 필요하다. | 중상 |
 
 ## 점수 저지 리스크 3개
 
@@ -70,11 +70,11 @@
 
 하지만 아직 부족한 부분은 다음이다.
 
-- hit/miss를 점수 근거로 보여주는 제출형 보고서
+- widened corpus 기준 hit/miss 반복 보고서
 - cache invalidation 정책의 운영 문서화
 - widened corpus 기준 재현 가능한 성능 비교
 
-즉, 캐시 자체는 이제 안전한 1차 구현까지 들어갔지만 “무엇을 캐시했고 어떤 정책으로 무효화하며 얼마나 이득이 있었는가”를 채점 언어로 방어하려면 증거가 더 필요하다.
+즉, 캐시 자체는 이제 안전한 1차 구현과 proof report까지 들어갔지만 “무엇을 캐시했고 widened corpus에서 얼마나 이득이 있었는가”를 채점 언어로 방어하려면 추가 증거가 더 필요하다.
 
 ### 3. raw retrieval 약세와 chunk 전략 실증 부족
 
@@ -109,9 +109,9 @@
 
 1. **Vector Index 직접 설계/구현 경로 확보**
    - 최소 제출용이라도 자체 index abstraction, 저장 형식, 검색 API, 근사/정확 검색 전략을 설명 가능한 코드로 확보해야 한다.
-2. **캐싱 전략 제출형 증거 완성**
-   - query cache hit/miss 검증
-   - embedding cache hit/miss 검증
+2. **캐싱 전략 운영형 증거 확장**
+   - widened corpus 기준 query cache hit/miss 검증
+   - widened corpus 기준 embedding cache hit/miss 검증
    - TTL / invalidation / evidence 정리
 
 ### B. 높은 우선순위

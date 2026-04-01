@@ -18,7 +18,7 @@ from app.runtime_config import RuntimeConfig, load_runtime_config
 app = FastAPI(title="OpenDocuments Stage8 OpenAI Bridge")
 
 _TELEMETRY_LOCK = Lock()
-_BRIDGE_TELEMETRY: dict[str, Any] = {
+_INITIAL_BRIDGE_TELEMETRY: dict[str, Any] = {
     "started_at": time.time(),
     "models_requests": 0,
     "embedding_requests": 0,
@@ -39,6 +39,7 @@ _BRIDGE_TELEMETRY: dict[str, Any] = {
     "embedding_cache_hit_count": 0,
     "embedding_cache_miss_count": 0,
 }
+_BRIDGE_TELEMETRY: dict[str, Any] = dict(_INITIAL_BRIDGE_TELEMETRY)
 
 
 def record_telemetry(**updates: Any) -> None:
@@ -57,6 +58,13 @@ def bump_telemetry(counter_name: str, *, amount: int = 1, **updates: Any) -> Non
 def telemetry_snapshot() -> dict[str, Any]:
     with _TELEMETRY_LOCK:
         return dict(_BRIDGE_TELEMETRY)
+
+
+def reset_bridge_runtime_state() -> None:
+    with _TELEMETRY_LOCK:
+        _BRIDGE_TELEMETRY.clear()
+        _BRIDGE_TELEMETRY.update(dict(_INITIAL_BRIDGE_TELEMETRY))
+    load_embedding_cache().clear()
 
 
 @lru_cache(maxsize=1)

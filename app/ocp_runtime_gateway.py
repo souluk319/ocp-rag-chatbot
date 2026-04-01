@@ -59,6 +59,10 @@ def load_query_cache() -> TtlLruCache[dict[str, Any]]:
     )
 
 
+def reset_query_cache() -> None:
+    load_query_cache().clear()
+
+
 def require_gateway_config() -> RuntimeConfig:
     config = get_runtime_config()
     missing = config.missing_gateway_keys()
@@ -527,6 +531,19 @@ def store_cached_local_payload(
     load_query_cache().set(cache_key, cacheable_core)
 
 
+def commit_cached_local_payload_grounding(
+    *,
+    conversation_id: str,
+    cached_payload: dict[str, Any],
+    memory_manager=None,
+) -> dict[str, Any]:
+    return commit_runtime_grounding(
+        conversation_id=conversation_id,
+        sources=cached_payload.get("sources", []),
+        memory_manager=memory_manager or load_session_manager(),
+    )
+
+
 @app.get("/health")
 def health() -> dict[str, Any]:
     config = get_runtime_config()
@@ -596,9 +613,9 @@ async def chat(request: Request) -> Response:
             memory_before=plan.memory_before,
         )
         if cached_local_payload:
-            commit_runtime_grounding(
+            commit_cached_local_payload_grounding(
                 conversation_id=session_id,
-                sources=cached_local_payload.get("sources", []),
+                cached_payload=cached_local_payload,
                 memory_manager=load_session_manager(),
             )
             response = JSONResponse(cached_local_payload)
@@ -756,9 +773,9 @@ async def stream_chat(request: Request) -> Response:
         memory_before=plan.memory_before,
     )
     if should_use_local_runtime_rescue(query) and cached_local_payload:
-        commit_runtime_grounding(
+        commit_cached_local_payload_grounding(
             conversation_id=session_id,
-            sources=cached_local_payload.get("sources", []),
+            cached_payload=cached_local_payload,
             memory_manager=load_session_manager(),
         )
 
