@@ -7,35 +7,37 @@
   <link rel="icon" href="data:," />
   <style>
     :root {
-      --bg: #f5f1e8;
+      --bg: #f6f2e8;
       --panel: #fffdf8;
-      --ink: #1f2a24;
-      --muted: #5e6c63;
-      --line: #d8d2c6;
+      --panel-2: #faf7ef;
+      --ink: #1e2a24;
+      --muted: #5d695f;
+      --line: #d8d1c2;
       --accent: #0d6b4d;
-      --accent-soft: #e2f2ec;
+      --accent-soft: #e4f4ed;
       --user: #eef3ff;
       --assistant: #f7f8f4;
-      --danger: #972f2f;
+      --danger: #9f2d2d;
+      --trace: #f6fbff;
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
+      color: var(--ink);
       font-family: "Segoe UI", "Noto Sans KR", sans-serif;
       background:
-        radial-gradient(circle at top left, #fff7df 0%, transparent 35%),
-        radial-gradient(circle at bottom right, #d9efe4 0%, transparent 30%),
+        radial-gradient(circle at top left, #fff7de 0%, transparent 35%),
+        radial-gradient(circle at bottom right, #d9efe4 0%, transparent 32%),
         var(--bg);
-      color: var(--ink);
     }
 
     .shell {
-      max-width: 1120px;
+      max-width: 1180px;
       margin: 0 auto;
       min-height: 100vh;
-      padding: 24px;
+      padding: 22px;
       display: grid;
       grid-template-columns: 300px 1fr;
       gap: 20px;
@@ -73,7 +75,7 @@
       margin: 0;
       color: var(--muted);
       font-size: 14px;
-      line-height: 1.55;
+      line-height: 1.6;
     }
 
     .status {
@@ -193,6 +195,56 @@
       margin-bottom: 8px;
     }
 
+    .trace-panel {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--line);
+      display: grid;
+      gap: 10px;
+    }
+
+    .trace-heading {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .trace-meta {
+      background: var(--trace);
+      border: 1px solid #d9e8f4;
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--muted);
+      display: grid;
+      gap: 4px;
+    }
+
+    .trace-step {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .trace-step strong {
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    .trace-summary,
+    .trace-detail {
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--muted);
+      word-break: break-word;
+    }
+
     .sources {
       margin-top: 14px;
       padding-top: 14px;
@@ -262,11 +314,6 @@
       font-size: 13px;
     }
 
-    .error {
-      color: var(--danger);
-      font-weight: 700;
-    }
-
     @media (max-width: 900px) {
       .shell {
         grid-template-columns: 1fr;
@@ -286,7 +333,7 @@
       <div class="brand">
         <div class="eyebrow">OCP RAG v2</div>
         <h1>OCP 운영 도우미</h1>
-        <p class="sub">한국어로 질문하면 공식 OCP 문서를 근거로 답변하고, 출처 HTML 문서를 바로 열어볼 수 있습니다.</p>
+        <p class="sub">한국어 질문을 받으면 공식 OCP 문서를 근거로 답하고, 아래 작업 진행창에서 이번 답변이 어떤 파이프라인을 거쳤는지 순서대로 보여줍니다.</p>
       </div>
 
       <div id="statusBox" class="status">
@@ -304,13 +351,13 @@
 
       <div class="field">
         <label for="question">질문 입력</label>
-        <textarea id="question" placeholder="예: CNF 클러스터 업데이트 전에 무엇을 확인해야 하나요?"></textarea>
+        <textarea id="question" placeholder="예: 업데이트 전에 확인해야 할 사항은 무엇인가요?"></textarea>
       </div>
 
       <ul class="tips">
-        <li>응답 아래 출처를 누르면 HTML 문서를 바로 열 수 있습니다.</li>
-        <li>같은 세션에서 이어서 질문하면 이전 문맥을 반영합니다.</li>
-        <li>질문은 한국어로 입력해도 됩니다.</li>
+        <li>답변 아래에 이번 요청의 파이프라인 작업 진행창이 항상 표시됩니다.</li>
+        <li>출처를 누르면 HTML 원문 문서가 열립니다.</li>
+        <li>Enter는 전송, Shift+Enter는 줄바꿈입니다.</li>
       </ul>
     </aside>
 
@@ -369,6 +416,7 @@
       if (!sources || !sources.length) return;
       const wrapper = document.createElement("div");
       wrapper.className = "sources";
+      wrapper.innerHTML = `<div class="trace-heading">출처 문서</div>`;
 
       sources.forEach((source, index) => {
         const viewerUrl = source.viewer_url || "#";
@@ -388,21 +436,49 @@
       chatlog.scrollTop = chatlog.scrollHeight;
     }
 
+    function renderTrace(container, trace, meta = {}) {
+      if (!trace || !trace.length) return;
+      const wrapper = document.createElement("div");
+      wrapper.className = "trace-panel";
+      wrapper.innerHTML = `<div class="trace-heading">파이프라인 작업 진행창</div>`;
+
+      const metaBox = document.createElement("div");
+      metaBox.className = "trace-meta";
+      metaBox.innerHTML =
+        `<div><strong>응답 경로:</strong> ${escapeHtml(meta.route || "-")}</div>` +
+        `<div><strong>세션:</strong> ${escapeHtml(meta.conversationId || "-")}</div>` +
+        `<div><strong>재작성 질문:</strong> ${escapeHtml(meta.rewrittenQuery || "-")}</div>`;
+      wrapper.appendChild(metaBox);
+
+      trace.forEach((step) => {
+        const item = document.createElement("div");
+        item.className = "trace-step";
+        item.innerHTML =
+          `<strong>${escapeHtml(String(step.step || "-"))}. ${escapeHtml(step.title || "단계")}</strong>` +
+          `<div class="trace-summary">${escapeHtml(step.summary || "")}</div>` +
+          `<div class="trace-detail">${escapeHtml(step.detail || "")}</div>`;
+        wrapper.appendChild(item);
+      });
+
+      container.appendChild(wrapper);
+      chatlog.scrollTop = chatlog.scrollHeight;
+    }
+
     async function loadHealth() {
       try {
         const response = await fetch("/health");
         const payload = await response.json();
         if (!payload.ok) {
-          statusBox.innerHTML = `<strong>실행 설정이 완전하지 않습니다</strong><br />${escapeHtml(JSON.stringify(payload.missing_gateway_keys || []))}`;
           statusBox.classList.add("error");
+          statusBox.innerHTML = `<strong>실행 설정이 완전하지 않습니다</strong><br />${escapeHtml(JSON.stringify(payload.missing_gateway_keys || []))}`;
           return;
         }
         statusBox.classList.remove("error");
         statusBox.innerHTML =
           `<strong>서비스 정상</strong><br />활성 인덱스: ${escapeHtml(payload.active_index_id || "-")}<br />문서 수: ${escapeHtml(String(payload.active_document_count || 0))}`;
       } catch (error) {
-        statusBox.innerHTML = `<strong>서비스에 연결할 수 없습니다</strong><br />${escapeHtml(String(error))}`;
         statusBox.classList.add("error");
+        statusBox.innerHTML = `<strong>서비스에 연결할 수 없습니다</strong><br />${escapeHtml(String(error))}`;
       }
     }
 
@@ -419,6 +495,7 @@
           dataLines.push(payload);
         }
       }
+
       const raw = dataLines.join("\n");
       if (!raw) return;
 
@@ -434,6 +511,11 @@
         return;
       }
 
+      if (event === "trace") {
+        state.pipelineTrace = Array.isArray(payload) ? payload : [];
+        return;
+      }
+
       if (event === "chunk") {
         state.renderedText += String(payload);
         state.body.textContent = state.renderedText;
@@ -444,8 +526,17 @@
       if (event === "done" && payload && typeof payload === "object") {
         activeConversationId = payload.conversationId || activeConversationId;
         sessionMeta.textContent = activeConversationId ? `세션 ${activeConversationId.slice(0, 8)}...` : "세션 없음";
+        renderTrace(
+          state.assistantBubble,
+          Array.isArray(payload.pipelineTrace) ? payload.pipelineTrace : state.pipelineTrace,
+          {
+            route: payload.route || "-",
+            conversationId: payload.conversationId || "-",
+            rewrittenQuery: payload.rewrittenQuery || "-",
+          }
+        );
         renderSources(state.assistantBubble, state.sources);
-        runtimeNote.textContent = "답변이 완료되었습니다";
+        runtimeNote.textContent = "응답이 완료되었습니다.";
       }
     }
 
@@ -453,24 +544,33 @@
       const query = questionInput.value.trim();
       if (!query) return;
 
-      sendBtn.disabled = true;
-      runtimeNote.textContent = "질문을 보내는 중입니다";
-
-      addBubble("user", query);
+      const userBubble = addBubble("user", query);
+      void userBubble;
       const assistantBubble = addBubble("assistant", "");
       const body = assistantBubble.querySelector(".body");
-      const state = { assistantBubble, body, renderedText: "", sources: [] };
+
+      sendBtn.disabled = true;
+      runtimeNote.textContent = "파이프라인을 실행하고 있습니다...";
+
+      const state = {
+        assistantBubble,
+        body,
+        renderedText: "",
+        sources: [],
+        pipelineTrace: [],
+      };
 
       try {
         const response = await fetch("/api/v1/chat/stream", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
             query,
             mode: modeSelect.value,
-            conversationId: activeConversationId || undefined
-          })
+            conversationId: activeConversationId || undefined,
+          }),
         });
 
         if (!response.ok || !response.body) {
@@ -482,49 +582,46 @@
         let buffer = "";
 
         while (true) {
-          const { value, done } = await reader.read();
+          const { done, value } = await reader.read();
           if (done) break;
-
           buffer += decoder.decode(value, { stream: true });
-          let separatorIndex;
-          while ((separatorIndex = buffer.indexOf("\n\n")) >= 0) {
-            const block = buffer.slice(0, separatorIndex);
-            buffer = buffer.slice(separatorIndex + 2);
-            if (block.trim()) processEventBlock(block, state);
+
+          let boundaryIndex;
+          while ((boundaryIndex = buffer.indexOf("\n\n")) >= 0) {
+            const block = buffer.slice(0, boundaryIndex);
+            buffer = buffer.slice(boundaryIndex + 2);
+            processEventBlock(block, state);
           }
         }
 
-        buffer += decoder.decode();
         if (buffer.trim()) {
           processEventBlock(buffer, state);
         }
-
-        if (!state.renderedText.trim()) {
-          body.textContent = "응답을 생성하지 못했습니다. 다시 시도해 주세요.";
-        }
       } catch (error) {
-        body.textContent = `요청 처리 중 오류가 발생했습니다: ${String(error)}`;
-        assistantBubble.classList.add("error");
-        runtimeNote.textContent = "오류가 발생했습니다";
+        body.textContent = `오류가 발생했습니다: ${String(error)}`;
+        runtimeNote.textContent = "오류가 발생했습니다.";
       } finally {
-        questionInput.value = "";
         sendBtn.disabled = false;
       }
     }
-
-    sendBtn.addEventListener("click", streamChat);
-    clearBtn.addEventListener("click", () => {
-      chatlog.innerHTML = "";
-      runtimeNote.textContent = "대화가 초기화되었습니다";
-      activeConversationId = "";
-      sessionMeta.textContent = "세션 없음";
-    });
 
     questionInput.addEventListener("keydown", (event) => {
       if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
         streamChat();
       }
+    });
+
+    sendBtn.addEventListener("click", () => {
+      streamChat();
+    });
+
+    clearBtn.addEventListener("click", () => {
+      activeConversationId = "";
+      chatlog.innerHTML = "";
+      sessionMeta.textContent = "세션 없음";
+      runtimeNote.textContent = "대기 중";
+      questionInput.value = "";
     });
 
     loadHealth();

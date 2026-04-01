@@ -547,3 +547,134 @@ def build_done_payload(done_payload: dict[str, Any], *, conversation_id: str, mo
     payload["mode"] = mode
     payload["rewrittenQuery"] = rewritten_query
     return payload
+
+
+def _short_source_label(source: dict[str, Any]) -> str:
+    return (
+        str(source.get("section_title", "")).strip()
+        or str(source.get("title", "")).strip()
+        or str(source.get("document_path", "")).strip()
+        or "-"
+    )
+
+
+def build_pipeline_trace(
+    *,
+    query: str,
+    mode: str,
+    route: str,
+    rewritten_query: str,
+    turn_trace: dict[str, Any],
+    raw_sources: list[dict[str, Any]] | None = None,
+    policy_sources: list[dict[str, Any]] | None = None,
+    policy_signals: dict[str, Any] | None = None,
+    local_rescue_topic: str = "",
+    upstream_used: bool = False,
+    answer_contract: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    raw_sources = raw_sources or []
+    policy_sources = policy_sources or []
+    policy_signals = policy_signals or {}
+    answer_contract = answer_contract or {}
+    turn = turn_trace.get("turn", {}) if isinstance(turn_trace, dict) else {}
+    state_before = turn_trace.get("state_before", {}) if isinstance(turn_trace, dict) else {}
+
+    matched_rules = [str(item).strip() for item in policy_signals.get("matched_rules", []) if str(item).strip()]
+    preferred_dirs = [str(item).strip() for item in policy_signals.get("preferred_source_dirs", []) if str(item).strip()]
+    first_policy_viewer = str(policy_sources[0].get("viewer_url", "")).strip() if policy_sources else ""
+    first_policy_doc = _short_source_label(policy_sources[0]) if policy_sources else "-"
+    prefix_applied = bool(build_answer_prefix(answer_contract).strip())
+
+    trace: list[dict[str, Any]] = [
+        {
+            "step": 1,
+            "title": "질문 수신",
+            "summary": "사용자 질문을 수신했습니다.",
+            "detail": f"mode={mode} | query={query}",
+        },
+        {
+            "step": 2,
+            "title": "세션/멀티턴 메모리",
+            "summary": "현재 세션 문맥을 읽고 질문 유형을 분류했습니다.",
+            "detail": (
+                f"classification={turn.get('classification', '-')} | "
+                f"active_topic={turn.get('active_topic', '-') or '-'} | "
+                f"prev_source_dir={state_before.get('source_dir', '-') or '-'}"
+            ),
+        },
+        {
+            "step": 3,
+            "title": "질문 재작성",
+            "summary": "검색용 질의를 준비했습니다.",
+            "detail": rewritten_query if rewritten_query else query,
+        },
+        {
+            "step": 4,
+            "title": "경로 선택",
+            "summary": "이번 답변에 사용할 파이프라인 경로를 선택했습니다.",
+            "detail": (
+                f"route={route}"
+                + (f" | rescue_topic={local_rescue_topic}" if local_rescue_topic else "")
+                + (f" | upstream_used={str(upstream_used).lower()}")
+            ),
+        },
+    ]
+
+    if upstream_used:
+        trace.append(
+            {
+                "step": len(trace) + 1,
+                "title": "OpenDocuments 검색",
+                "summary": "OpenDocuments 기준 검색 결과를 수집했습니다.",
+                "detail": f"raw_source_count={len(raw_sources)}",
+            }
+        )
+
+    trace.append(
+        {
+            "step": len(trace) + 1,
+            "title": "정책 정렬",
+            "summary": "질문 규칙과 문맥을 반영해 출처 후보를 정렬했습니다.",
+            "detail": (
+                f"matched_rules={', '.join(matched_rules) if matched_rules else '-'} | "
+                f"preferred_dirs={', '.join(preferred_dirs) if preferred_dirs else '-'} | "
+                f"policy_source_count={len(policy_sources)}"
+            ),
+        }
+    )
+
+    if route in {"manifest_runtime_rescue", "manifest_definition", "source_backed_runtime_rescue"}:
+        trace.append(
+            {
+                "step": len(trace) + 1,
+                "title": "로컬 안전장치 적용",
+                "summary": "현재 질문군에 맞는 manifest-backed 경로를 적용했습니다.",
+                "detail": (
+                    f"route={route}"
+                    + (f" | topic={local_rescue_topic}" if local_rescue_topic else "")
+                    + f" | selected_source={first_policy_doc}"
+                ),
+            }
+        )
+
+    trace.append(
+        {
+            "step": len(trace) + 1,
+            "title": "답변 조합",
+            "summary": "응답 본문, 안내 문구, citation을 결합했습니다.",
+            "detail": (
+                f"prefix_applied={str(prefix_applied).lower()} | "
+                f"citation_count={len(policy_sources)}"
+            ),
+        }
+    )
+
+    trace.append(
+        {
+            "step": len(trace) + 1,
+            "title": "출처 연결",
+            "summary": "클릭 가능한 HTML citation을 연결했습니다.",
+            "detail": f"viewer={first_policy_viewer or '-'}",
+        }
+    )
+    return trace

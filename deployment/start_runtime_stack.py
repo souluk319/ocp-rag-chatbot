@@ -221,9 +221,7 @@ def main() -> int:
             name="gateway",
             command=[
                 sys.executable,
-                "-m",
-                "uvicorn",
-                "app.ocp_runtime_gateway:app",
+                str(REPO_ROOT / "deployment" / "run_gateway_exact.py"),
                 "--host",
                 "127.0.0.1",
                 "--port",

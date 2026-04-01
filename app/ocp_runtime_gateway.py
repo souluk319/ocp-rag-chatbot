@@ -19,6 +19,7 @@ from app.runtime_gateway_support import (
     build_done_payload,
     build_manifest_backed_definition_answer,
     build_manifest_backed_reference_answer,
+    build_pipeline_trace,
     build_policy_overlay,
     build_source_backed_runtime_answer,
     commit_runtime_grounding,
@@ -237,6 +238,19 @@ def build_local_definition_payload(
         overlay["answer_contract"],
         policy_sources,
     )
+    pipeline_trace = build_pipeline_trace(
+        query=query,
+        mode=mode,
+        route="manifest_definition",
+        rewritten_query=rewritten_query,
+        turn_trace=turn_trace,
+        raw_sources=[],
+        policy_sources=policy_sources,
+        policy_signals=overlay["policy_signals"],
+        local_rescue_topic="definition",
+        upstream_used=False,
+        answer_contract=overlay["answer_contract"],
+    )
     return {
         "queryId": f"local-definition-{session_id}",
         "answer": answer,
@@ -254,6 +268,7 @@ def build_local_definition_payload(
         "rewrittenQuery": rewritten_query,
         "policySignals": overlay["policy_signals"],
         "turnTrace": turn_trace,
+        "pipelineTrace": pipeline_trace,
     }
 
 
@@ -285,6 +300,19 @@ def build_local_reference_payload(
         overlay["answer_contract"],
         policy_sources,
     )
+    pipeline_trace = build_pipeline_trace(
+        query=query,
+        mode=mode,
+        route="manifest_runtime_rescue",
+        rewritten_query=rewritten_query,
+        turn_trace=turn_trace,
+        raw_sources=[],
+        policy_sources=policy_sources,
+        policy_signals=overlay["policy_signals"],
+        local_rescue_topic="reference",
+        upstream_used=False,
+        answer_contract=overlay["answer_contract"],
+    )
     return {
         "queryId": f"local-reference-{session_id}",
         "answer": answer,
@@ -302,6 +330,7 @@ def build_local_reference_payload(
         "rewrittenQuery": rewritten_query,
         "policySignals": overlay["policy_signals"],
         "turnTrace": turn_trace,
+        "pipelineTrace": pipeline_trace,
         "runtimeRescue": True,
     }
 
@@ -413,10 +442,11 @@ async def chat(request: Request) -> Response:
     if upstream.status_code >= 400:
         return JSONResponse(status_code=upstream.status_code, content=payload)
 
+    raw_sources = payload.get("sources", [])
     overlay = build_policy_overlay(
         question_ko=query,
         mode=mode,
-        sources=payload.get("sources", []),
+        sources=raw_sources,
         memory_before=plan.memory_before,
     )
     policy_sources = overlay["policy_sources"]
@@ -444,6 +474,19 @@ async def chat(request: Request) -> Response:
     payload["rewrittenQuery"] = plan.rewritten_query
     payload["policySignals"] = overlay["policy_signals"]
     payload["turnTrace"] = plan.turn_trace
+    payload["route"] = "opendocuments_policy_path"
+    payload["pipelineTrace"] = build_pipeline_trace(
+        query=query,
+        mode=mode,
+        route=payload["route"],
+        rewritten_query=plan.rewritten_query,
+        turn_trace=plan.turn_trace,
+        raw_sources=raw_sources if isinstance(raw_sources, list) else [],
+        policy_sources=policy_sources,
+        policy_signals=overlay["policy_signals"],
+        upstream_used=True,
+        answer_contract=overlay["answer_contract"],
+    )
 
     response = JSONResponse(payload)
     set_session_cookie(response, session_id)
@@ -489,12 +532,16 @@ async def stream_chat(request: Request) -> Response:
         )
         if local_payload:
             async def local_reference_stream() -> Iterator[str]:
+                yield serialize_sse("trace", local_payload.get("pipelineTrace", []))
                 yield serialize_sse("sources", local_payload["sources"])
                 yield serialize_sse("chunk", local_payload["answer"])
                 yield serialize_sse(
                     "done",
                     build_done_payload(
-                        {},
+                        {
+                            "route": local_payload.get("route", "manifest_runtime_rescue"),
+                            "pipelineTrace": local_payload.get("pipelineTrace", []),
+                        },
                         conversation_id=session_id,
                         mode=mode,
                         rewritten_query=plan.rewritten_query,
@@ -541,35 +588,75 @@ async def stream_chat(request: Request) -> Response:
 
     def event_stream() -> Iterator[str]:
         full_answer = ""
+        raw_sources: list[dict[str, Any]] = []
         policy_sources: list[dict[str, Any]] = []
+        policy_signals: dict[str, Any] = {}
         answer_contract: dict[str, Any] | None = None
         prefix_emitted = False
         done_payload: dict[str, Any] = {}
         local_definition_override = False
         local_source_override = False
+        route_name = "opendocuments_policy_path"
+        local_rescue_topic = ""
 
         try:
+            yield serialize_sse(
+                "trace",
+                build_pipeline_trace(
+                    query=query,
+                    mode=mode,
+                    route=route_name,
+                    rewritten_query=plan.rewritten_query,
+                    turn_trace=plan.turn_trace,
+                    raw_sources=raw_sources,
+                    policy_sources=policy_sources,
+                    policy_signals=policy_signals,
+                    local_rescue_topic=local_rescue_topic,
+                    upstream_used=False,
+                    answer_contract=answer_contract or {},
+                ),
+            )
             for event_type, payload in iter_sse_events(upstream):
                 if event_type == "sources":
+                    raw_sources = payload if isinstance(payload, list) else []
                     overlay = build_policy_overlay(
                         question_ko=query,
                         mode=mode,
-                        sources=payload if isinstance(payload, list) else [],
+                        sources=raw_sources,
                         memory_before=plan.memory_before,
                     )
                     definition_query = looks_like_definition_query(query)
                     policy_sources = overlay["policy_sources"]
+                    policy_signals = overlay["policy_signals"]
                     if definition_query and not policy_sources:
                         policy_sources = pick_manifest_backed_definition_sources()
                     answer_contract = overlay["answer_contract"]
                     yield serialize_sse("sources", policy_sources)
                     matched_rules = set(overlay["policy_signals"].get("matched_rules", []))
                     if (
-                        (not payload or not payload.get("sources"))
+                        (not raw_sources)
                         and policy_sources
                         and (definition_query or "definition_intro" in matched_rules)
                     ):
                         local_definition_override = True
+                        route_name = "manifest_definition"
+                        local_rescue_topic = "definition"
+                        yield serialize_sse(
+                            "trace",
+                            build_pipeline_trace(
+                                query=query,
+                                mode=mode,
+                                route=route_name,
+                                rewritten_query=plan.rewritten_query,
+                                turn_trace=plan.turn_trace,
+                                raw_sources=raw_sources,
+                                policy_sources=policy_sources,
+                                policy_signals=policy_signals,
+                                local_rescue_topic=local_rescue_topic,
+                                upstream_used=True,
+                                answer_contract=overlay["answer_contract"],
+                            ),
+                        )
                         local_answer = build_manifest_backed_definition_answer(query, policy_sources)
                         if answer_contract and not prefix_emitted:
                             if answer_requires_prefix(full_answer, answer_contract):
@@ -580,6 +667,23 @@ async def stream_chat(request: Request) -> Response:
                             prefix_emitted = True
                         full_answer += local_answer
                         yield serialize_sse("chunk", local_answer)
+                    if not local_definition_override:
+                        yield serialize_sse(
+                            "trace",
+                            build_pipeline_trace(
+                                query=query,
+                                mode=mode,
+                                route=route_name,
+                                rewritten_query=plan.rewritten_query,
+                                turn_trace=plan.turn_trace,
+                                raw_sources=raw_sources,
+                                policy_sources=policy_sources,
+                                policy_signals=policy_signals,
+                                local_rescue_topic=local_rescue_topic,
+                                upstream_used=True,
+                                answer_contract=overlay["answer_contract"],
+                            ),
+                        )
                     continue
 
                 if event_type == "chunk":
@@ -588,6 +692,24 @@ async def stream_chat(request: Request) -> Response:
                     text = str(payload)
                     if policy_sources and answer_needs_source_backed_rescue(full_answer + text, policy_sources):
                         local_source_override = True
+                        route_name = "source_backed_runtime_rescue"
+                        local_rescue_topic = "reference"
+                        yield serialize_sse(
+                            "trace",
+                            build_pipeline_trace(
+                                query=query,
+                                mode=mode,
+                                route=route_name,
+                                rewritten_query=plan.rewritten_query,
+                                turn_trace=plan.turn_trace,
+                                raw_sources=raw_sources,
+                                policy_sources=policy_sources,
+                                policy_signals=policy_signals,
+                                local_rescue_topic=local_rescue_topic,
+                                upstream_used=True,
+                                answer_contract=answer_contract or {},
+                            ),
+                        )
                         local_answer = build_source_backed_runtime_answer(query, policy_sources)
                         if answer_contract and not prefix_emitted:
                             if answer_requires_prefix(full_answer, answer_contract):
@@ -628,9 +750,32 @@ async def stream_chat(request: Request) -> Response:
                     memory_manager=load_session_manager(),
                 )
 
+            final_trace = build_pipeline_trace(
+                query=query,
+                mode=mode,
+                route=route_name,
+                rewritten_query=plan.rewritten_query,
+                turn_trace=plan.turn_trace,
+                raw_sources=raw_sources,
+                policy_sources=policy_sources,
+                policy_signals=policy_signals,
+                local_rescue_topic=local_rescue_topic,
+                upstream_used=True,
+                answer_contract=answer_contract or {},
+            )
+            yield serialize_sse("trace", final_trace)
             yield serialize_sse(
                 "done",
-                build_done_payload(done_payload, conversation_id=session_id, mode=mode, rewritten_query=plan.rewritten_query),
+                build_done_payload(
+                    {
+                        **done_payload,
+                        "route": route_name,
+                        "pipelineTrace": final_trace,
+                    },
+                    conversation_id=session_id,
+                    mode=mode,
+                    rewritten_query=plan.rewritten_query,
+                ),
             )
         finally:
             upstream.close()
