@@ -12,6 +12,31 @@ The evaluation model is built for an OCP operations assistant that:
 - opens the cited document when a source is clicked
 - runs in a closed-network operating model
 
+## Fixed evaluation baseline
+
+The current evaluation baseline is pinned to official `openshift-docs` branch `enterprise-4.20`.
+
+Pinned source details:
+
+- source repository: `openshift-docs`
+- pinned branch: `enterprise-4.20`
+- local worktree: `C:\Users\soulu\cywell\openshift-docs-4.20`
+- Golden Set file: `eval/benchmarks/golden_set_100.csv`
+- Golden Set definition doc: `docs/v2/golden-set-4.20.md`
+
+The Golden Set is the primary authority for deciding whether corpus scope changes improve or hurt quality.
+
+## Golden Set success criteria
+
+These are the hard targets for the 4.20 Golden Set:
+
+- retrieval recall: `>= 0.90`
+- answer accuracy: `>= 0.85`
+- hallucination rate: `0.00`
+- citation-link correctness: `1.00`
+
+If any out-of-scope question receives a fabricated in-scope answer, that run fails.
+
 ## Evaluation principles
 
 1. A fluent answer without evidence does not pass.
