@@ -117,4 +117,5 @@ Stage 11 is now considered closed for the validated slice because:
 Important interpretation:
 
 - Stage 11 smoke validates runtime ingest, grounding, citation presence, and citation click-through on the staged index
+- Stage 11 smoke retrieval alignment is now evaluated with source-dir hit, supporting-doc hit, and citation-expected hit together
 - Stage 9 and Stage 10 remain the authoritative retrieval-quality benchmark for the validated slice

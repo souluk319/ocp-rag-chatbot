@@ -202,6 +202,7 @@ def build_runtime_smoke_report(
     citation_presence_pass = True
     source_dir_pass = True
     supporting_doc_pass = True
+    citation_expected_pass = True
 
     for case in smoke_cases:
         result = smoke_results.get(case["id"])
@@ -291,6 +292,7 @@ def build_runtime_smoke_report(
         citation_presence_pass = citation_presence_pass and citation_presence
         source_dir_pass = source_dir_pass and source_dir_hit_top5
         supporting_doc_pass = supporting_doc_pass and supporting_doc_hit_top10
+        citation_expected_pass = citation_expected_pass and citation_expected_hit
 
         case_reports.append(
             {
@@ -325,7 +327,9 @@ def build_runtime_smoke_report(
             failures_empty,
         )
     )
-    retrieval_alignment_pass = source_dir_pass and supporting_doc_pass
+    retrieval_alignment_pass = (
+        source_dir_pass and supporting_doc_pass and citation_expected_pass
+    )
 
     return {
         "bundle_id": index_manifest.get("bundle_id", index_dir.name),

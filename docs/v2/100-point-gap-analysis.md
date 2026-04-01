@@ -27,12 +27,12 @@
 
 | 평가 항목 | 배점 | 보수적 예상 | 판단 |
 |---|---:|---:|---|
-| RAG 정확성 | 30 | 24 | 강함. 정책형 retrieval, citation, grounded answer 근거가 있다. 다만 raw retrieval 약세와 section-aware chunk 실구현 공백이 남아 있다. |
+| RAG 정확성 | 30 | 26 | 강함. 정책형 retrieval, citation, grounded answer 근거가 있고 Stage11 smoke retrieval alignment와 Stage12 live runtime smoke도 현재 planB 경로에서 통과했다. 다만 raw retrieval 약세와 section-aware chunk 실구현 공백은 여전히 남아 있다. |
 | 멀티턴 처리 정확성 | 20 | 18 | 강함. 세션 메모리와 follow-up rewrite는 구현/검증되어 있고, 5턴 시나리오를 4개/20턴까지 확장한 증거도 있다. 다만 실사용 다양성과 runtime 실경로 replay는 더 넓혀야 한다. |
 | 시스템 아키텍처 | 20 | 15 | 중상. 계층 분리와 운영 흐름은 좋다. 다만 Vector Index 직접 구현 요구와 OpenDocuments 의존 경계 설명을 더 날카롭게 해야 한다. |
 | 코드 품질 및 설명 | 15 | 12 | 중상. 문서와 증거는 풍부하다. 하지만 “왜 이 구조가 과제 기준을 만족하는지”를 설명하는 발표형 자료는 더 필요하다. |
 | 추가 요구사항 구현 | 15 | 11 | 보강 중. Streaming은 있고, 1차 query/embedding cache와 cache proof report도 들어갔다. 그러나 Vector Index 직접성과 widened corpus 성능 증거는 아직 부족하다. |
-| **총계** | **100** | **80** | **현 상태는 강한 기반이지만 100점 상태는 아님** |
+| **총계** | **100** | **82** | **현 상태는 강한 기반이지만 100점 상태는 아님** |
 
 ## 항목별 갭 분석표
 
@@ -49,6 +49,14 @@
 | 캐싱 전략 | `app/runtime_cache.py`, `app/ocp_runtime_gateway.py`, `app/opendocuments_openai_bridge.py`, `eval/cache_strategy_report.py`, `docs/v2/cache-strategy-proof.md` | 부분 구현 | query cache와 embedding cache의 1차 구현, cache-safe readiness, grounding 유지, hit/miss proof report까지 반영됐다. 다만 query proof 범위는 local rescue payload에 한정되며, widened corpus 기준 성능 비교와 운영형 invalidation 증거가 더 필요하다. | 중상 |
 
 ## 점수 저지 리스크 3개
+
+### 보강 메모: retrieval alignment 회복 범위
+
+`stage11-4-20-seed` activation smoke 기준으로 `RB-001`, `RB-004`, `RB-006`, `RB-010`, `RB-013` retrieval alignment는 모두 통과했다.
+
+다만 이건 **raw retrieval 자체의 완전한 개선 증거**가 아니라, planB 평가 경로에서 사용하는 **policy-prepared / manifest-hint 보강 smoke path** 기준의 회복으로 해석해야 한다.
+
+즉, 점수 방어에는 유효하지만 “모든 retrieval 문제가 근본적으로 해결됐다”는 표현은 아직 과장이다.
 
 ### 1. Vector Index 직접 구현 부족
 

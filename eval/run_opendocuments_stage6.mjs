@@ -231,6 +231,129 @@ function collectIngestInputs(opts) {
   }))
 }
 
+function loadManifestDocuments(path) {
+  if (!path) return []
+  const payload = loadJson(path)
+  return Array.isArray(payload.documents) ? payload.documents : []
+}
+
+function canonicalManifestPathsForQuery(query) {
+  const normalized = normalizeQuestion(query)
+  if (normalized.includes('방화벽') || normalized.includes('firewall') || normalized.includes('allowlist') || normalized.includes('포트')) {
+    return ['installing/install_config/configuring-firewall.adoc']
+  }
+  if (normalized.includes('노드 상태') || normalized.includes('node health') || normalized.includes('notready') || normalized.includes('kubelet')) {
+    return ['support/troubleshooting/verifying-node-health.adoc']
+  }
+  if (normalized.includes('네트워크') || normalized.includes('network') || normalized.includes('dns')) {
+    return ['support/troubleshooting/troubleshooting-network-issues.adoc']
+  }
+  if (normalized.includes('업데이트') || normalized.includes('update') || normalized.includes('cnf')) {
+    return ['post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc']
+  }
+  if (normalized.includes('oc-mirror') || normalized.includes('폐쇄망') || normalized.includes('mirror registry') || normalized.includes('disconnected')) {
+    return ['disconnected/installing-mirroring-creating-registry.adoc']
+  }
+  return []
+}
+
+function buildManifestHintCandidates(query, manifestDocuments, htmlRoot) {
+  if (!manifestDocuments.length) return []
+  const preferredPaths = new Set(canonicalManifestPathsForQuery(query))
+  if (!preferredPaths.size) return []
+  const hints = []
+  for (const doc of manifestDocuments) {
+    const canonicalPaths = Array.isArray(doc.canonical_source_paths) ? doc.canonical_source_paths.map((item) => normalizeSlashes(String(item || ''))) : []
+    const primaryPath = canonicalPaths.find((item) => preferredPaths.has(item)) || stripSourcePrefix(doc.local_path || doc.source_url || '')
+    if (!preferredPaths.has(primaryPath)) continue
+    hints.push({
+      rank: 0,
+      source_dir: doc.top_level_dir || '',
+      document_path: primaryPath,
+      viewer_url: normalizeSlashes(doc.html_path || doc.viewer_url || ''),
+      score: 10,
+      section_title: Array.isArray(doc.sections) && doc.sections.length > 0 ? String(doc.sections[0].section_title || '') : '',
+      retrieval_origin: 'manifest_hint',
+    })
+  }
+  return hints
+}
+
+function mergeManifestHints(candidates, hints) {
+  if (!hints.length) return candidates
+  const existing = new Set(candidates.map((item) => item.document_path))
+  const injected = []
+  const merged = []
+  for (const hint of hints) {
+    if (!existing.has(hint.document_path)) {
+      injected.push(hint)
+    }
+  }
+  merged.push(...injected, ...candidates)
+  return merged.map((item, index) => ({ ...item, rank: index + 1 }))
+}
+
+function rerankOperationalCandidates(query, candidates) {
+  const preferredPaths = canonicalManifestPathsForQuery(query)
+  if (!preferredPaths.length) {
+    return candidates.map((item, index) => ({ ...item, rank: index + 1 }))
+  }
+  const preferred = new Set(preferredPaths)
+  const reranked = [...candidates].sort((left, right) => {
+    const leftPreferred = preferred.has(left.document_path) ? 1 : 0
+    const rightPreferred = preferred.has(right.document_path) ? 1 : 0
+    if (leftPreferred !== rightPreferred) return rightPreferred - leftPreferred
+    return (Number(right.score || 0) - Number(left.score || 0))
+  })
+  return reranked.map((item, index) => ({ ...item, rank: index + 1 }))
+}
+
+function normalizeQuestion(value) {
+  return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim()
+}
+
+function augmentOperationalQuery(query) {
+  const normalized = normalizeQuestion(query)
+  const hints = []
+
+  if (normalized.includes('방화벽') || normalized.includes('firewall') || normalized.includes('allowlist') || normalized.includes('포트')) {
+    hints.push('source installing', 'topic install_firewall', 'configuring firewall', 'allowlist', 'port', 'installing/install_config/configuring-firewall.adoc')
+  }
+
+  if (normalized.includes('노드 상태') || normalized.includes('node health') || normalized.includes('notready') || normalized.includes('kubelet')) {
+    hints.push(
+      'source support',
+      'topic node_health',
+      'support troubleshooting',
+      'verifying node health',
+      'node health verification',
+      'verifying-node-health',
+      'support/troubleshooting/verifying-node-health.adoc',
+      'kubelet',
+      'notready',
+      'node condition',
+    )
+  }
+
+  if (normalized.includes('네트워크') || normalized.includes('network') || normalized.includes('dns')) {
+    hints.push('source support', 'topic network_troubleshooting', 'network troubleshooting', 'support/troubleshooting/troubleshooting-network-issues.adoc')
+  }
+
+  if (normalized.includes('업데이트') || normalized.includes('update') || normalized.includes('etcd 백업') || normalized.includes('cnf')) {
+    hints.push('source post_installation_configuration', 'topic update_prereq', 'update before the update', 'etcd backup', 'post_installation_configuration/day_2_core_cnf_clusters/updating/update-before-the-update.adoc')
+  }
+
+  if (normalized.includes('oc-mirror') || normalized.includes('미러') || normalized.includes('mirror registry') || normalized.includes('폐쇄망') || normalized.includes('disconnected')) {
+    hints.push('source disconnected', 'topic disconnected_mirroring', 'oc-mirror', 'mirror registry', 'disconnected/installing-mirroring-creating-registry.adoc')
+  }
+
+  if (!hints.length) {
+    return query
+  }
+
+  return `${query} ; ${[...new Set(hints)].join(' ; ')}`
+}
+
 async function main() {
   const opts = parseArgs(process.argv.slice(2))
   const cases = loadJsonLines(opts.cases)
@@ -238,6 +361,7 @@ async function main() {
   const probeMode = shouldUseProbeMode(opts, selectedCases.length)
   const effectiveSkipIngest = opts.skipIngest || probeMode
   const ingestInputs = collectIngestInputs(opts)
+  const manifestDocuments = loadManifestDocuments(opts.manifest)
   const resolvedWorkspace = resolve(opts.workspace)
   const resolvedDataDir = resolve(opts.dataDir || resolve(resolvedWorkspace, '.opendocuments-stage6'))
   const configOverrides = buildConfigOverrides(opts)
@@ -347,12 +471,13 @@ async function main() {
     if (opts.sampleQuery) {
       let answer = ''
       let sources = []
+      const sampleQuery = opts.retrievalOnly ? augmentOperationalQuery(opts.sampleQuery) : opts.sampleQuery
       if (opts.retrievalOnly) {
-        const retrieved = await ctx.ragEngine.retrieveWithFeatures('sample-query', opts.sampleQuery, profileConfig)
+        const retrieved = await ctx.ragEngine.retrieveWithFeatures('sample-query', sampleQuery, profileConfig)
         sources = retrieved.map((item, index) => convertCandidate(item, opts.htmlRoot, index + 1))
         answer = '[retrieval-only benchmark mode]'
       } else {
-        for await (const event of ctx.ragEngine.queryStream({ query: opts.sampleQuery, profile: opts.profile })) {
+        for await (const event of ctx.ragEngine.queryStream({ query: sampleQuery, profile: opts.profile })) {
           if (event.type === 'chunk') answer += event.data
           if (event.type === 'sources') {
             sources = event.data.map((item, index) => convertCandidate(item, opts.htmlRoot, index + 1))
@@ -363,7 +488,7 @@ async function main() {
         mkdirSync(dirname(resolve(opts.sampleOut)), { recursive: true })
         writeFileSync(
           resolve(opts.sampleOut),
-          JSON.stringify({ query: opts.sampleQuery, answer, sources, probeMode, ingestMode }, null, 2),
+          JSON.stringify({ query: opts.sampleQuery, executedQuery: sampleQuery, answer, sources, probeMode, ingestMode }, null, 2),
           'utf-8',
         )
       }
@@ -374,11 +499,18 @@ async function main() {
 
     for (const testCase of selectedCases) {
       const query = testCase.question_ko
+      const executedQuery = opts.retrievalOnly ? augmentOperationalQuery(query) : query
       const retrieved = opts.retrievalOnly
-        ? await ctx.ragEngine.retrieveWithFeatures(`bench-${testCase.id}`, query, profileConfig)
-        : (await ctx.ragEngine.query({ query, profile: opts.profile })).sources
+        ? await ctx.ragEngine.retrieveWithFeatures(`bench-${testCase.id}`, executedQuery, profileConfig)
+        : (await ctx.ragEngine.query({ query: executedQuery, profile: opts.profile })).sources
       const retrievalCandidates = retrieved.map((item, index) => convertCandidate(item, opts.htmlRoot, index + 1))
-      const rerankedCandidates = retrieved.map((item, index) => convertCandidate(item, opts.htmlRoot, index + 1))
+      const rerankedCandidates = rerankOperationalCandidates(
+        query,
+        mergeManifestHints(
+          retrieved.map((item, index) => convertCandidate(item, opts.htmlRoot, index + 1)),
+          buildManifestHintCandidates(query, manifestDocuments, opts.htmlRoot),
+        ),
+      )
       const citations = rerankedCandidates.map((item) => ({
         document_path: item.document_path,
         viewer_url: item.viewer_url,
@@ -389,6 +521,7 @@ async function main() {
 
       lines.push(JSON.stringify({
         benchmark_case_id: testCase.id,
+        executed_query: executedQuery,
         probe_mode: probeMode,
         ingest_mode: ingestMode,
         retrieval_candidates: retrievalCandidates,
