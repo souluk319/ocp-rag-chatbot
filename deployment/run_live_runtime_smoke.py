@@ -602,12 +602,12 @@ def main() -> None:
                 telemetry.get("embedding_requests", 0)
             )
             > 0,
-            "bridge_upstream_embedding_success_present": int(
-                telemetry.get("upstream_embedding_success_count", 0)
+            "bridge_local_embedding_success_present": int(
+                telemetry.get("local_embedding_success_count", 0)
             )
             > 0,
-            "bridge_upstream_embedding_error_absent": int(
-                telemetry.get("upstream_embedding_error_count", 0)
+            "bridge_local_embedding_error_absent": int(
+                telemetry.get("local_embedding_error_count", 0)
             )
             == 0,
             "bridge_chat_requests_present": int(telemetry.get("chat_requests", 0)) > 0,
@@ -624,15 +624,15 @@ def main() -> None:
             "bridge_last_embedding_target_ok": str(
                 telemetry.get("last_embedding_target_path", "")
             )
-            in {"/embeddings", "/v1/embeddings"},
+            == "local-encoder",
             "bridge_last_embedding_status_ok": int(
                 telemetry.get("last_embedding_status", 0) or 0
             )
             == 200,
-            "bridge_embedding_transport_company_proxy": str(
+            "bridge_embedding_transport_local_bge_m3": str(
                 bridge_ready.get("embedding_transport", "")
             )
-            == "company-proxy",
+            == "local-bge-m3",
             "bridge_embedding_model_match": str(bridge_ready.get("embedding_model", ""))
             == config.embedding_model,
             "bridge_embedding_dimensions_match": int(

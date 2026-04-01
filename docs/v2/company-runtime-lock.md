@@ -8,7 +8,7 @@ The target operating path is:
 
 - OpenDocuments uses a local OpenAI-compatible bridge
 - the bridge proxies chat requests to the approved company endpoint
-- the bridge proxies embedding requests to the approved company endpoint
+- the bridge serves embeddings locally with `BAAI/bge-m3`
 - the current embedding baseline is `BAAI/bge-m3` so Korean questions and English source documents share one multilingual embedding space
 - endpoint and model values come from `.env` or process environment, never from committed code defaults
 
@@ -19,7 +19,7 @@ Stage 6 was allowed to use a local fallback because the company chat token was n
 Stage 8 therefore makes these rules explicit:
 
 1. runtime endpoint and model settings must come from environment variables
-2. the approved company path is the default operating mode
+2. the approved company chat path is the default operating mode
 3. local chat fallback is diagnostic-only and must be enabled explicitly
 4. secrets stay outside Git
 
@@ -46,10 +46,9 @@ These are used by the Python bridge and the integrated runtime check.
 - `OD_ALLOW_LOCAL_CHAT_FALLBACK`
 - `OD_BRIDGE_TIMEOUT_SECONDS`
 
-`OD_COMPANY_BASE_URL` must resolve to a real HTTP(S) endpoint because the bridge now proxies both:
+`OD_COMPANY_BASE_URL` must resolve to a real HTTP(S) endpoint because the bridge proxies chat requests to:
 
 - `/chat/completions`
-- `/embeddings`
 
 ### Compatible project-level fallbacks
 
@@ -69,18 +68,19 @@ Current baseline:
 - chat model: company-provided `Qwen/Qwen3.5-9B`
 - embedding model: `BAAI/bge-m3`
 - embedding dimensions: `1024`
-- embedding transport: company-proxy through the local bridge
+- embedding transport: local-bge-m3 through the local bridge
 
 ## Approved behavior
 
 ### Default mode
 
-Default mode is `company-only`.
+Default mode is `company-chat-plus-local-embeddings`.
 
 That means:
 
 - the bridge reads endpoint and model settings from env
-- the bridge sends both chat and embeddings to the approved company endpoint
+- the bridge sends chat to the approved company endpoint
+- the bridge computes embeddings locally with `BAAI/bge-m3`
 - no local fallback answer is used unless explicitly enabled
 - health output shows configuration state without exposing secrets
 
@@ -98,7 +98,7 @@ It applies to chat fallback only. Embedding failures remain hard errors.
 Stage 8 is considered complete when:
 
 1. `app/opendocuments_openai_bridge.py` no longer hardcodes company endpoint or model values
-2. bridge `/ready` and `/v1/embeddings` succeed only when the approved company embedding path responds with the expected model dimensions
+2. bridge `/ready` and `/v1/embeddings` succeed only when the local `BAAI/bge-m3` path responds with the expected model dimensions
 3. `deployment/opendocuments-stage6.config.template.ts` fails fast if required env vars are missing
 4. `deployment/check_runtime_contract.py` reports the runtime contract state without printing secrets
 5. `.env.example` documents the env contract without including real values
@@ -122,4 +122,4 @@ This is intentional because:
 - some environments inject auth at the caller layer
 - we must not force secrets into Git-tracked files
 
-The runtime contract now requires that the approved company endpoint and model selection are env-driven for both chat and embeddings, and that only chat fallback is opt-in.
+The runtime contract now requires that the approved company endpoint and model selection are env-driven for chat, that embeddings remain local `BAAI/bge-m3`, and that only chat fallback is opt-in.

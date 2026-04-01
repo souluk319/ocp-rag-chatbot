@@ -66,7 +66,7 @@ Stage 8의 목표는 widened corpus 활성 인덱스 기준으로 실제 HTTP se
 
 bridge telemetry 요약:
 
-- runtime mode: `company-only`
+- runtime mode: `company-chat-plus-local-embeddings`
 - embedding model: `BAAI/bge-m3`
 - embedding dimensions: `1024`
 - embedding requests: `8`

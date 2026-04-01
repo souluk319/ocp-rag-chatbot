@@ -141,15 +141,17 @@ def main() -> int:
         "bridge_health_ok": bool(bridge_health.get("ok") is True),
         "bridge_ready_ok": bool(bridge_ready.get("ready") is True),
         "bridge_evidence_ok": bool(bridge_evidence.get("ok") is True),
-        "runtime_mode_company_only": str(bridge_health.get("runtime_mode", "")).strip()
-        == "company-only",
+        "runtime_mode_company_chat_plus_local_embeddings": str(
+            bridge_health.get("runtime_mode", "")
+        ).strip()
+        == "company-chat-plus-local-embeddings",
         "local_chat_fallback_disabled": bool(
             bridge_health.get("local_chat_fallback") is False
         ),
-        "bridge_evidence_runtime_mode_company_only": str(
+        "bridge_evidence_runtime_mode_company_chat_plus_local_embeddings": str(
             bridge_evidence.get("runtime_mode", "")
         ).strip()
-        == "company-only",
+        == "company-chat-plus-local-embeddings",
         "bridge_ready_model_matches_config": str(
             bridge_ready.get("embedding_model", "")
         ).strip()
@@ -162,10 +164,10 @@ def main() -> int:
             bridge_ready.get("embedding_dimensions", 0) or 0
         )
         == vector_dimensions,
-        "bridge_ready_transport_company_proxy": str(
+        "bridge_ready_transport_local_bge_m3": str(
             bridge_ready.get("embedding_transport", "")
         ).strip()
-        == "company-proxy",
+        == "local-bge-m3",
         "bridge_evidence_model_matches_config": str(
             bridge_evidence.get("embedding_model", "")
         ).strip()
@@ -174,10 +176,10 @@ def main() -> int:
             bridge_evidence.get("embedding_dimensions", 0) or 0
         )
         == config.embedding_dimensions,
-        "bridge_evidence_transport_company_proxy": str(
+        "bridge_evidence_transport_local_bge_m3": str(
             bridge_evidence.get("embedding_transport", "")
         ).strip()
-        == "company-proxy",
+        == "local-bge-m3",
         "bridge_models_include_configured_chat_model": has_model(
             bridge_models, config.chat_model
         ),
@@ -192,12 +194,12 @@ def main() -> int:
             evidence_telemetry.get("embedding_requests", 0) or 0
         )
         > 0,
-        "bridge_evidence_upstream_embedding_success_seen": int(
-            evidence_telemetry.get("upstream_embedding_success_count", 0) or 0
+        "bridge_evidence_local_embedding_success_seen": int(
+            evidence_telemetry.get("local_embedding_success_count", 0) or 0
         )
         > 0,
-        "bridge_evidence_upstream_embedding_error_absent": int(
-            evidence_telemetry.get("upstream_embedding_error_count", 0) or 0
+        "bridge_evidence_local_embedding_error_absent": int(
+            evidence_telemetry.get("local_embedding_error_count", 0) or 0
         )
         == 0,
         "bridge_evidence_chat_requests_seen": int(
@@ -217,7 +219,7 @@ def main() -> int:
         "bridge_evidence_last_embedding_target_path_valid": str(
             evidence_telemetry.get("last_embedding_target_path", "")
         ).strip()
-        in {"/embeddings", "/v1/embeddings"},
+        == "local-encoder",
         "bridge_evidence_last_embedding_status_ok": int(
             evidence_telemetry.get("last_embedding_status", 0) or 0
         )

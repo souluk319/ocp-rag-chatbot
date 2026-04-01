@@ -49,7 +49,7 @@ Stage 10의 목표는 앞선 1~9단계 증거를 바탕으로 **현재 상태를
 - refresh / activate / rollback 메커니즘은 Stage 7 기준으로 통과
 - live runtime / viewer / citation click-through 는 Stage 8 기준으로 통과
 - 저장소 가시성은 Stage 9 기준으로 통과
-- runtime contract 는 `company-only`, `BAAI/bge-m3`, `1024` 기준으로 유지
+- runtime contract 는 `company-chat-plus-local-embeddings`, `BAAI/bge-m3`, `1024` 기준으로 유지
 
 즉, 지금 상태는 **validation-grade OCP RAG assistant** 라고 부를 수 있다.
 

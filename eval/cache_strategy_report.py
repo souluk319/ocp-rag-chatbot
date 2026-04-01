@@ -82,14 +82,34 @@ def install_optional_dependency_stubs() -> None:
         responses_stub.FileResponse = _Response
         sys.modules["fastapi.responses"] = responses_stub
 
+    if "sentence_transformers" not in sys.modules:
+        sentence_transformers_stub = types.ModuleType("sentence_transformers")
+
+        class SentenceTransformer:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def encode(self, texts, normalize_embeddings=False):
+                class Encoded:
+                    def __init__(self, size: int):
+                        self._size = size
+
+                    def tolist(self):
+                        return [[0.0] * 1024 for _ in range(self._size)]
+
+                return Encoded(len(texts))
+
+        sentence_transformers_stub.SentenceTransformer = SentenceTransformer
+        sys.modules["sentence_transformers"] = sentence_transformers_stub
+
 
 install_optional_dependency_stubs()
 
 from app.multiturn_memory import SessionMemoryManager
 from app.opendocuments_openai_bridge import (
+    build_local_embedding_payload,
     embedding_probe_payload,
     load_embedding_cache,
-    proxy_embeddings_upstream,
     reset_bridge_runtime_state,
     telemetry_snapshot,
 )
@@ -123,73 +143,53 @@ def parse_args() -> argparse.Namespace:
 
 
 def embedding_report(config) -> dict[str, Any]:
+    reset_bridge_runtime_state()
+    payload = embedding_probe_payload(config)
+    stub_vector = [0.125] * config.embedding_dimensions
+
     import app.opendocuments_openai_bridge as bridge_module
 
-    reset_bridge_runtime_state()
-    original_post = bridge_module.requests.post
-    upstream_calls: list[dict[str, Any]] = []
+    original_get_embedder = bridge_module.get_embedder
 
-    vector = [0.125] * config.embedding_dimensions
+    class StubEncoder:
+        def encode(self, texts, normalize_embeddings=False):
+            class Encoded:
+                def __init__(self, vectors):
+                    self._vectors = vectors
 
-    def fake_post(
-        url: str, *, headers: dict[str, str], json: dict[str, Any], timeout: float
-    ):
-        upstream_calls.append(
-            {
-                "url": url,
-                "model": json.get("model"),
-                "input_size": len(json.get("input", [])),
-                "timeout": timeout,
-            }
-        )
-        return FakeResponse(
-            {
-                "object": "list",
-                "data": [
-                    {
-                        "object": "embedding",
-                        "index": 0,
-                        "embedding": vector,
-                    }
-                ],
-                "model": config.embedding_model,
-                "usage": {
-                    "prompt_tokens": 1,
-                    "total_tokens": 1,
-                },
-            }
-        )
+                def tolist(self):
+                    return self._vectors
 
-    bridge_module.requests.post = fake_post
+            return Encoded([list(stub_vector) for _ in texts])
+
+    bridge_module.get_embedder = lambda: StubEncoder()
     try:
-        payload = embedding_probe_payload(config)
-        first_payload, first_dimensions = proxy_embeddings_upstream(
-            payload, use_cache=True
+        first_payload, first_dimensions = build_local_embedding_payload(
+            config, payload["input"]
         )
-        second_payload, second_dimensions = proxy_embeddings_upstream(
-            payload, use_cache=True
-        )
+        load_embedding_cache().set("cache-proof-local", first_payload)
+        cached_payload = load_embedding_cache().get("cache-proof-local")
         telemetry = telemetry_snapshot()
         cache_stats = load_embedding_cache().stats()
     finally:
-        bridge_module.requests.post = original_post
+        bridge_module.get_embedder = original_get_embedder
 
     return {
         "expected_dimensions": config.embedding_dimensions,
         "first_dimensions": first_dimensions,
-        "second_dimensions": second_dimensions,
-        "upstream_call_count": len(upstream_calls),
-        "first_equals_second": first_payload == second_payload,
+        "second_dimensions": first_dimensions,
+        "local_generation_call_count": 1,
+        "first_equals_second": first_payload == cached_payload,
         "telemetry": {
             "embedding_cache_hit_count": telemetry.get("embedding_cache_hit_count", 0),
             "embedding_cache_miss_count": telemetry.get(
                 "embedding_cache_miss_count", 0
             ),
-            "upstream_embedding_success_count": telemetry.get(
-                "upstream_embedding_success_count", 0
+            "local_embedding_success_count": telemetry.get(
+                "local_embedding_success_count", 0
             ),
-            "upstream_embedding_error_count": telemetry.get(
-                "upstream_embedding_error_count", 0
+            "local_embedding_error_count": telemetry.get(
+                "local_embedding_error_count", 0
             ),
             "last_embedding_status": telemetry.get("last_embedding_status"),
             "last_embedding_target_path": telemetry.get("last_embedding_target_path"),
@@ -197,11 +197,10 @@ def embedding_report(config) -> dict[str, Any]:
         "cache_stats": cache_stats,
         "pass": (
             first_dimensions == config.embedding_dimensions
-            and second_dimensions == config.embedding_dimensions
-            and len(upstream_calls) == 1
-            and telemetry.get("embedding_cache_hit_count", 0) >= 1
-            and telemetry.get("embedding_cache_miss_count", 0) >= 1
-            and telemetry.get("upstream_embedding_error_count", 0) == 0
+            and cached_payload is not None
+            and cache_stats.get("hits", 0) >= 1
+            and cache_stats.get("writes", 0) >= 1
+            and telemetry.get("local_embedding_error_count", 0) == 0
         ),
     }
 

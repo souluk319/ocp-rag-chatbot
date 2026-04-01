@@ -11,6 +11,7 @@ import hashlib
 import requests
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
+from sentence_transformers import SentenceTransformer
 
 from app.runtime_cache import TtlLruCache
 from app.runtime_config import RuntimeConfig, load_runtime_config
@@ -30,8 +31,8 @@ _INITIAL_BRIDGE_TELEMETRY: dict[str, Any] = {
     "last_models_status": None,
     "last_chat_status": None,
     "last_chat_target_path": None,
-    "upstream_embedding_success_count": 0,
-    "upstream_embedding_error_count": 0,
+    "local_embedding_success_count": 0,
+    "local_embedding_error_count": 0,
     "last_embedding_status": None,
     "last_embedding_target_path": None,
     "last_embedding_dimensions": None,
@@ -68,6 +69,12 @@ def reset_bridge_runtime_state() -> None:
 
 
 @lru_cache(maxsize=1)
+def get_embedder() -> SentenceTransformer:
+    config = require_runtime_config()
+    return SentenceTransformer(config.embedding_model, device="cpu")
+
+
+@lru_cache(maxsize=1)
 def load_embedding_cache() -> TtlLruCache[dict[str, Any]]:
     config = load_runtime_config()
     return TtlLruCache(
@@ -88,7 +95,7 @@ def require_runtime_config() -> RuntimeConfig:
         raise HTTPException(
             status_code=503,
             detail={
-                "message": "Runtime configuration is incomplete for the approved company path.",
+                "message": "Runtime configuration is incomplete for the approved runtime path.",
                 "missing_required_keys": missing,
             },
         )
@@ -302,15 +309,13 @@ def embedding_cache_key(payload: dict[str, Any], *, config: RuntimeConfig) -> st
 def normalize_embedding_payload(payload: Any) -> tuple[list[list[float]], str]:
     if not isinstance(payload, dict):
         raise HTTPException(
-            status_code=502,
-            detail="Company embedding proxy returned a non-JSON payload.",
+            status_code=502, detail="Embedding path returned a non-JSON payload."
         )
 
     data = payload.get("data")
     if not isinstance(data, list) or not data:
         raise HTTPException(
-            status_code=502,
-            detail="Company embedding proxy returned no embedding data.",
+            status_code=502, detail="Embedding path returned no embedding data."
         )
 
     vectors: list[list[float]] = []
@@ -318,7 +323,7 @@ def normalize_embedding_payload(payload: Any) -> tuple[list[list[float]], str]:
         if not isinstance(item, dict):
             raise HTTPException(
                 status_code=502,
-                detail="Company embedding proxy returned malformed embedding items.",
+                detail="Embedding path returned malformed embedding items.",
             )
         vector = item.get("embedding")
         if not isinstance(vector, list) or not all(
@@ -326,7 +331,7 @@ def normalize_embedding_payload(payload: Any) -> tuple[list[list[float]], str]:
         ):
             raise HTTPException(
                 status_code=502,
-                detail="Company embedding proxy returned an invalid embedding vector.",
+                detail="Embedding path returned an invalid embedding vector.",
             )
         vectors.append([float(value) for value in vector])
 
@@ -341,8 +346,54 @@ def embedding_probe_payload(config: RuntimeConfig) -> dict[str, Any]:
     }
 
 
-def proxy_embeddings_upstream(
-    payload: dict[str, Any], *, request: Request | None = None, use_cache: bool = True
+def build_local_embedding_payload(
+    config: RuntimeConfig, texts: list[str]
+) -> tuple[dict[str, Any], int]:
+    model = get_embedder()
+    encoded = model.encode(texts, normalize_embeddings=False)
+    dense_vectors = [[float(value) for value in vector] for vector in encoded.tolist()]
+    dimensions = len(dense_vectors[0]) if dense_vectors else 0
+    if dimensions != config.embedding_dimensions:
+        bump_telemetry("local_embedding_error_count")
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "Local embedding path returned unexpected embedding dimensions.",
+                "expected_dimensions": config.embedding_dimensions,
+                "actual_dimensions": dimensions,
+            },
+        )
+
+    token_estimate = sum(max(1, len(text.split())) for text in texts)
+    payload = {
+        "object": "list",
+        "data": [
+            {
+                "object": "embedding",
+                "index": index,
+                "embedding": vector,
+            }
+            for index, vector in enumerate(dense_vectors)
+        ],
+        "model": config.embedding_model,
+        "usage": {
+            "prompt_tokens": token_estimate,
+            "total_tokens": token_estimate,
+        },
+    }
+    bump_telemetry(
+        "local_embedding_success_count", last_embedding_dimensions=dimensions
+    )
+    record_telemetry(
+        last_embedding_status=200,
+        last_embedding_target_path="local-encoder",
+        last_embedding_model=config.embedding_model,
+    )
+    return payload, dimensions
+
+
+def generate_local_embeddings(
+    payload: dict[str, Any], *, use_cache: bool = True
 ) -> tuple[dict[str, Any], int]:
     config = require_runtime_config()
     cache = load_embedding_cache()
@@ -357,103 +408,37 @@ def proxy_embeddings_upstream(
             return cached_payload, dimensions
 
         bump_telemetry("embedding_cache_miss_count")
-    headers = proxy_headers(request, config)
-    headers["Content-Type"] = "application/json"
-    candidate_paths = ("/embeddings", "/v1/embeddings")
     bump_telemetry(
         "embedding_requests",
         last_embedding_model=str(payload.get("model", config.embedding_model)).strip()
         or config.embedding_model,
     )
-
-    upstream = None
-    chosen_path = ""
-    for path in candidate_paths:
-        try:
-            response = requests.post(
-                f"{config.company_base_url.rstrip('/')}{path}",
-                headers=headers,
-                json=payload,
-                timeout=config.request_timeout_seconds,
-            )
-        except requests.RequestException as exc:
-            bump_telemetry("upstream_embedding_error_count")
-            record_telemetry(last_embedding_status=502, last_embedding_target_path=path)
-            raise HTTPException(
-                status_code=502, detail=f"Company embedding proxy failed: {exc}"
-            ) from exc
-
-        if response.status_code == 404 and path != candidate_paths[-1]:
-            continue
-
-        upstream = response
-        chosen_path = path
-        break
-
-    if upstream is None:
-        bump_telemetry("upstream_embedding_error_count")
+    texts = payload.get("input", [])
+    if not isinstance(texts, list) or not all(isinstance(item, str) for item in texts):
+        bump_telemetry("local_embedding_error_count")
         raise HTTPException(
-            status_code=502,
-            detail="Company embedding proxy did not return a usable endpoint.",
+            status_code=400,
+            detail="'input' must be a list of strings for local embeddings.",
         )
 
-    record_telemetry(
-        last_embedding_status=upstream.status_code,
-        last_embedding_target_path=chosen_path,
-    )
-    try:
-        upstream_payload = upstream.json()
-    except ValueError as exc:
-        bump_telemetry("upstream_embedding_error_count")
-        raise HTTPException(
-            status_code=502, detail="Company embedding proxy returned invalid JSON."
-        ) from exc
-
-    if upstream.status_code >= 400:
-        bump_telemetry("upstream_embedding_error_count")
-        raise HTTPException(
-            status_code=upstream.status_code,
-            detail={
-                "message": "Company embedding proxy request failed.",
-                "upstream": upstream_payload,
-            },
-        )
-
-    vectors, upstream_model = normalize_embedding_payload(upstream_payload)
-    dimensions = len(vectors[0]) if vectors else 0
-    if dimensions != config.embedding_dimensions:
-        bump_telemetry("upstream_embedding_error_count")
-        raise HTTPException(
-            status_code=502,
-            detail={
-                "message": "Company embedding proxy returned unexpected embedding dimensions.",
-                "expected_dimensions": config.embedding_dimensions,
-                "actual_dimensions": dimensions,
-            },
-        )
-
-    bump_telemetry(
-        "upstream_embedding_success_count", last_embedding_dimensions=dimensions
-    )
-    if upstream_model and upstream_model != config.embedding_model:
-        record_telemetry(last_embedding_model=upstream_model)
+    local_payload, dimensions = build_local_embedding_payload(config, texts)
     if use_cache:
-        cache.set(cache_key, upstream_payload)
-    return upstream_payload, dimensions
+        cache.set(cache_key, local_payload)
+    return local_payload, dimensions
 
 
 @app.get("/ready")
 def ready() -> dict[str, Any]:
     config = require_runtime_config()
     try:
-        _, dimensions = proxy_embeddings_upstream(
+        _, dimensions = generate_local_embeddings(
             embedding_probe_payload(config),
             use_cache=False,
         )
     except Exception as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"Embedding model is not ready through the company endpoint: {exc}",
+            detail=f"Local embedding model is not ready: {exc}",
         ) from exc
     return {
         "ok": True,
@@ -594,12 +579,11 @@ async def embeddings(request: Request) -> Response:
             status_code=400, detail="'input' must be a string or a list of strings"
         )
 
-    upstream_payload, _ = proxy_embeddings_upstream(
+    upstream_payload, _ = generate_local_embeddings(
         {
             **payload,
             "input": texts,
             "model": payload.get("model", config.embedding_model),
         },
-        request=request,
     )
     return JSONResponse(upstream_payload)

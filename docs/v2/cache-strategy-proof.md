@@ -10,7 +10,7 @@
 
 - 위치: `app/opendocuments_openai_bridge.py`
 - 구조: process-local TTL + LRU
-- 대상: 회사 임베딩 프록시 요청 결과
+- 대상: 로컬 `BAAI/bge-m3` 임베딩 결과
 - 키: `model + input + dimensions`
 
 ### 2. Query cache
@@ -23,7 +23,7 @@
 ## Safety rules
 
 - cache hit가 나도 `commit_runtime_grounding(...)`를 다시 수행해 멀티턴 세션 정합성을 유지한다.
-- bridge `/ready`는 embedding cache를 우회하고 실제 upstream embedding readiness를 본다.
+- bridge `/ready`는 embedding cache를 우회하고 실제 local embedding readiness를 본다.
 - `max_items <= 0` 또는 `ttl_seconds <= 0`이면 캐시는 비활성화된다.
 
 ## Evidence script
@@ -44,9 +44,9 @@ python3 eval/cache_strategy_report.py
 
 - 첫 동일 요청은 miss
 - 두 번째 동일 요청은 hit
-- upstream 호출 수는 1회
+- local embedding generation은 1회
 - 차원 계약은 `1024`
-- upstream embedding error는 0
+- local embedding error는 0
 
 ### Query cache proof
 

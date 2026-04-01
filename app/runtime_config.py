@@ -68,12 +68,12 @@ class RuntimeConfig:
     embedding_cache_max_items: int
 
     def embedding_transport(self) -> str:
-        return "company-proxy"
+        return "local-bge-m3"
 
     def runtime_mode(self) -> str:
         if self.allow_local_chat_fallback:
-            return "company-plus-explicit-local-fallback"
-        return "company-only"
+            return "company-chat-plus-local-embeddings-with-explicit-chat-fallback"
+        return "company-chat-plus-local-embeddings"
 
     def missing_required_keys(self) -> list[str]:
         missing: list[str] = []

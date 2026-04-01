@@ -76,7 +76,7 @@ Observed results:
 - active index: `baseline-openshift-docs-p0`
 - active vector dimensions: `1024`
 - embedding baseline: `BAAI/bge-m3`
-- embedding transport: company-proxy through the bridge
+- embedding transport: local-bge-m3 through the bridge
 - gateway viewer click-through returned `200 text/html`
 
 Evidence paths:
@@ -91,12 +91,12 @@ Evidence paths:
 The current launch evidence includes two important notes:
 
 1. OpenDocuments reports that the upstream web UI is not built in the current local runtime path.
-2. The bridge must now fail if the company embedding endpoint does not return the expected `BAAI/bge-m3` `1024`-dimension contract.
+2. The bridge must fail if the local `BAAI/bge-m3` embedding path does not return the expected `1024`-dimension contract.
 
 Interpretation:
 
 - Stage 14 is still considered complete because the operator launch contract, gateway health, and citation-viewer path all passed.
-- Stage 14 now assumes the embedding path is company-proxied rather than locally generated.
+- Stage 14 now assumes the embedding path is locally generated rather than company-proxied.
 - Retrieval quality remains governed by Stage 9 and Stage 10.
 - If we later want the upstream OpenDocuments web UI itself, that is a separate packaging/build concern, not a Stage 14 launch blocker.
 

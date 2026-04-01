@@ -196,7 +196,7 @@ python deployment/rollback_index.py --operator codex-local --output data/manifes
   - follow-up rewrite contains `last_document` `true`
   - viewer click-through `true`
   - viewer section title alignment `true`
-  - bridge runtime mode `company-only`
+- bridge runtime mode `company-chat-plus-local-embeddings`
   - bridge embedding model `BAAI/bge-m3`
   - bridge embedding dimensions `1024`
   - fallback chat `0`

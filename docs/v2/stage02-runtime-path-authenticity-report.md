@@ -61,7 +61,7 @@ Stage 2는 완료로 판정한다.
 
 - `bridge_health_ok = true`
 - `bridge_ready_ok = true`
-- `runtime_mode_company_only = true`
+- `runtime_mode_company_chat_plus_local_embeddings = true`
 - `local_chat_fallback_disabled = true`
 - `bridge_ready_model_matches_config = true`
 - `bridge_ready_dimensions_match_config = true`
@@ -73,7 +73,7 @@ Stage 2는 완료로 판정한다.
 - `bridge_embedding_requests_seen = true`
 - `bridge_chat_requests_seen = true`
 - `bridge_evidence_ok = true`
-- `bridge_evidence_runtime_mode_company_only = true`
+- `bridge_evidence_runtime_mode_company_chat_plus_local_embeddings = true`
 - `bridge_evidence_embedding_requests_seen = true`
 - `bridge_evidence_chat_requests_seen = true`
 - `bridge_evidence_upstream_chat_success_seen = true`
