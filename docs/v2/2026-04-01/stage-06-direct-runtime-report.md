@@ -18,7 +18,7 @@ python .\deployment\check_stage06_direct_runtime_regression.py
 
 ## Summary
 
-- checked_at: `2026-04-01T03:17:32.680379+00:00`
+- checked_at: `2026-04-01T03:21:36.083827+00:00`
 - base_url: `http://127.0.0.1:8000`
 - health_status: `200`
 - health_ok: `True`

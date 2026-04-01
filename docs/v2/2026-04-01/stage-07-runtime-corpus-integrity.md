@@ -35,6 +35,14 @@ health 에 보이는 코퍼스와 실제 OpenDocuments runtime 이 사용하는 
 - 문서와 실제 상태가 크게 어긋나지 않음
 - launch path 기준이 정리됨
 
+## 현재 결과 요약
+
+- active profile: `ocp-validation-main-core`
+- active index: `s15c-core`
+- active manifest: `data/staging/s15c/manifests/staged-manifest.json`
+- active document count: `1201`
+- declared/detected git ref: `main`
+
 ## 산출물
 
 - 정합성 보고

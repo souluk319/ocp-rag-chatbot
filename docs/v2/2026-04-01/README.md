@@ -12,6 +12,7 @@
 - Stage 4: done
 - Stage 5: done
 - Stage 6: done
+- Stage 7: done
 
 ## Stage 5 and Stage 6 boundary
 - Stage 5 is the canonical direct `localhost:8000` proof.
@@ -26,6 +27,11 @@
 ## Stage 6 files
 - [Stage 6 guardrails](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/2026-04-01/stage-06-regression.md)
 - [Stage 6 report](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/2026-04-01/stage-06-report.md)
+- [Stage 6 direct runtime report](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/2026-04-01/stage-06-direct-runtime-report.md)
+
+## Stage 7 files
+- [Stage 7 plan](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/2026-04-01/stage-07-runtime-corpus-integrity.md)
+- [Stage 7 report](/C:/Users/soulu/cywell/ocp-rag-chatbot/docs/v2/2026-04-01/stage-07-report.md)
 
 ## Reporting rule
 When writing status updates, always separate:
@@ -39,3 +45,4 @@ When writing status updates, always separate:
 - `raw baseline`: diagnostic only
 - `policy-prepared`: the answer path we can report for Stage 6
 - `Stage 6 verdict`: direct runtime pass, raw gap still present
+- `Stage 7 verdict`: live runtime, current index, active profile, and staged manifest are aligned

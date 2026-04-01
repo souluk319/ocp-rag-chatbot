@@ -1,7 +1,7 @@
 version: 1
-active_profile_id: ocp-validation-main-p0
+active_profile_id: ocp-validation-main-core
 target_minor:
 notes:
-  - Validation mode follows main until an operator-facing target minor is approved.
-  - A wider main-based validation profile is available as `ocp-validation-main-core` for corpus expansion without minor pinning.
+  - Validation mode currently serves the widened main-based core validation corpus.
+  - This active profile is aligned with the live runtime index `s15c-core`.
   - Once a target minor is approved, switch to an operator_release profile instead of rewriting the pipeline.
