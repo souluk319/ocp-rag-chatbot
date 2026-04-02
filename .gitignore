@@ -1,67 +1,8 @@
-# Local environment
-.env
-.env.*
-!.env.example
-
-# Editor and OS
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-
-# Python and Node
-__pycache__/
-*.pyc
-*.pyo
-venv/
 .venv/
-node_modules/
-
-# Local notes and helper context
-.claude/
-CLAUDE.md
-docs/*
-!docs/v2/
-!docs/v2/**
-docs/internal/
-
-# Local mirrors, workspaces, and generated artifacts
-workspace/
-mirrors/
-.opendocuments/
-tmp/
-
-# Generated data
-data/raw/*
-!data/raw/.gitkeep
-data/normalized/*
-!data/normalized/.gitkeep
-data/views/*
-!data/views/.gitkeep
-data/staging/*
-!data/staging/.gitkeep
-data/packages/*
-!data/packages/.gitkeep
-!data/packages/outbound/
-data/packages/outbound/*
-!data/packages/outbound/.gitkeep
-!data/packages/inbound/
-data/packages/inbound/*
-!data/packages/inbound/.gitkeep
-!data/packages/approved/
-data/packages/approved/*
-!data/packages/approved/.gitkeep
-!data/packages/archive/
-data/packages/archive/*
-!data/packages/archive/.gitkeep
-data/manifests/generated/*
-!data/manifests/generated/.gitkeep
-indexes/*
-!indexes/.gitkeep
-!indexes/previous.txt
-!indexes/archive/
-indexes/archive/*
-!indexes/archive/.gitkeep
-!indexes/failed/
-indexes/failed/*
-!indexes/failed/.gitkeep
+__pycache__/
+*.py[cod]
+.env
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+artifacts/

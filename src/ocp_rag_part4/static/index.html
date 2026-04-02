@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OCP RAG QA Console</title>
+  <style>
+    :root {
+      --bg: #f4efe6;
+      --panel: rgba(255, 252, 247, 0.92);
+      --panel-strong: #fffaf1;
+      --ink: #1e2228;
+      --muted: #5e6570;
+      --line: rgba(30, 34, 40, 0.12);
+      --accent: #0f766e;
+      --accent-soft: rgba(15, 118, 110, 0.12);
+      --warn: #b45309;
+      --shadow: 0 18px 40px rgba(54, 46, 32, 0.12);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI Variable", "Malgun Gothic", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.16), transparent 32%),
+        radial-gradient(circle at top right, rgba(217, 119, 6, 0.16), transparent 28%),
+        linear-gradient(180deg, #fbf7ef 0%, #f1ebe1 100%);
+      min-height: 100vh;
+    }
+
+    .shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px 18px 28px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    .hero-main {
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-main::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -60px auto;
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(15, 118, 110, 0.12), transparent 70%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 12px;
+      color: var(--accent);
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 4vw, 46px);
+      line-height: 1.05;
+    }
+
+    .hero-main p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 58ch;
+      line-height: 1.55;
+    }
+
+    .hero-side {
+      padding: 20px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .status-row, .mode-row, .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .pill, button, textarea {
+      font: inherit;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 5px rgba(15, 118, 110, 0.12);
+    }
+
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+    }
+
+    .mode-toggle button,
+    .action-row button,
+    .composer button {
+      border: 0;
+      border-radius: 999px;
+      padding: 11px 16px;
+      cursor: pointer;
+      transition: transform 120ms ease, opacity 120ms ease, background 120ms ease;
+    }
+
+    .mode-toggle button {
+      background: rgba(30, 34, 40, 0.06);
+      color: var(--ink);
+    }
+
+    .mode-toggle button.active {
+      background: var(--accent);
+      color: white;
+    }
+
+    .action-row button {
+      background: rgba(30, 34, 40, 0.08);
+      color: var(--ink);
+    }
+
+    .action-row button.primary,
+    .composer button.primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: default;
+      transform: none;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 1.35fr 0.65fr;
+      gap: 18px;
+      min-height: 68vh;
+    }
+
+    .chat-panel {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .messages {
+      min-height: 420px;
+      max-height: 72vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-right: 6px;
+    }
+
+    .message {
+      border-radius: 18px;
+      padding: 16px;
+      max-width: 90%;
+      border: 1px solid var(--line);
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, rgba(15, 118, 110, 0.18), rgba(15, 118, 110, 0.08));
+    }
+
+    .message.assistant {
+      align-self: flex-start;
+      background: var(--panel-strong);
+    }
+
+    .message .meta {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .citations {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .citation {
+      border: 1px solid var(--line);
+      background: rgba(15, 118, 110, 0.05);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .citation a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .citation p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .composer {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.62);
+      border: 1px solid var(--line);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 110px;
+      resize: vertical;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    .composer-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .side-panel {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .stack {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.62);
+      border: 1px solid var(--line);
+    }
+
+    .stack h2 {
+      font-size: 15px;
+      margin: 0 0 10px;
+    }
+
+    .stack pre, .stack code {
+      font-family: Consolas, "Cascadia Code", monospace;
+      font-size: 13px;
+    }
+
+    .stack pre {
+      white-space: pre-wrap;
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .warning {
+      color: var(--warn);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 960px) {
+      .hero,
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .messages {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="card hero-main">
+        <div class="eyebrow">Part 4 QA Console</div>
+        <h1>실답변을 눈으로 확인하는<br>OCP RAG 점검 UI</h1>
+        <p>실제 질문, follow-up, citation, rewritten query를 한 자리에서 보면서 Part 3 품질을 빠르게 점검합니다. 지금 단계에서는 완성형 제품 UI보다 QA 속도와 관찰 가능성을 우선합니다.</p>
+      </div>
+      <div class="card hero-side">
+        <div class="status-row">
+          <div class="pill"><span class="dot"></span><span id="status-text">준비됨</span></div>
+          <div class="pill">Session <span id="session-id">-</span></div>
+        </div>
+        <div class="mode-row">
+          <strong>Mode</strong>
+          <div class="mode-toggle">
+            <button type="button" class="active" data-mode="ops">ops</button>
+            <button type="button" data-mode="learn">learn</button>
+          </div>
+        </div>
+        <div class="action-row">
+          <button type="button" id="reset-btn">세션 리셋</button>
+          <button type="button" id="regenerate-btn">재생성</button>
+          <button type="button" id="stop-btn">중지</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <div class="card chat-panel">
+        <div class="messages" id="messages"></div>
+        <div class="composer">
+          <textarea id="composer" placeholder="질문을 입력하세요. Enter 전송, Shift+Enter 줄바꿈"></textarea>
+          <div class="composer-footer">
+            <div class="hint">실답변 QA용 최소 UI. follow-up, citation, rewritten query를 함께 확인합니다.</div>
+            <button type="button" class="primary" id="send-btn">전송</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="card side-panel">
+        <div class="stack">
+          <h2>Rewritten Query</h2>
+          <pre id="rewritten-query">-</pre>
+        </div>
+        <div class="stack">
+          <h2>Session Context</h2>
+          <pre id="session-context">-</pre>
+        </div>
+        <div class="stack">
+          <h2>Warnings</h2>
+          <div id="warnings" class="warning">없음</div>
+        </div>
+      </aside>
+    </section>
+  </div>
+
+  <script>
+    const messagesEl = document.getElementById("messages");
+    const composerEl = document.getElementById("composer");
+    const sendBtn = document.getElementById("send-btn");
+    const stopBtn = document.getElementById("stop-btn");
+    const resetBtn = document.getElementById("reset-btn");
+    const regenerateBtn = document.getElementById("regenerate-btn");
+    const statusTextEl = document.getElementById("status-text");
+    const sessionIdEl = document.getElementById("session-id");
+    const rewrittenQueryEl = document.getElementById("rewritten-query");
+    const sessionContextEl = document.getElementById("session-context");
+    const warningsEl = document.getElementById("warnings");
+    const modeButtons = Array.from(document.querySelectorAll("[data-mode]"));
+
+    let sessionId = crypto.randomUUID();
+    let currentMode = "ops";
+    let currentController = null;
+    let currentTyper = null;
+    let generating = false;
+    let lastQuery = "";
+
+    sessionIdEl.textContent = sessionId.slice(0, 8);
+
+    function setStatus(text) {
+      statusTextEl.textContent = text;
+    }
+
+    function setGenerating(next) {
+      generating = next;
+      sendBtn.disabled = next;
+      resetBtn.disabled = next;
+      regenerateBtn.disabled = next || !lastQuery;
+      stopBtn.disabled = !next;
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      modeButtons.forEach((button) => {
+        button.classList.toggle("active", button.dataset.mode === mode);
+      });
+    }
+
+    function appendMessage(role, text) {
+      const wrapper = document.createElement("article");
+      wrapper.className = `message ${role}`;
+      const body = document.createElement("div");
+      body.className = "body";
+      body.textContent = text;
+      wrapper.appendChild(body);
+      messagesEl.appendChild(wrapper);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return { wrapper, body };
+    }
+
+    function renderAssistantMeta(wrapper, payload) {
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = `mode=${payload.mode} | cited=${payload.cited_indices.join(", ") || "-"}`;
+      wrapper.appendChild(meta);
+
+      if (payload.citations.length) {
+        const citations = document.createElement("div");
+        citations.className = "citations";
+        payload.citations.forEach((citation) => {
+          const card = document.createElement("div");
+          card.className = "citation";
+          const link = document.createElement("a");
+          link.href = citation.href;
+          link.target = "_blank";
+          link.rel = "noreferrer";
+          link.textContent = `[${citation.index}] ${citation.book_slug} · ${citation.section}`;
+          const excerpt = document.createElement("p");
+          excerpt.textContent = citation.excerpt;
+          card.append(link, excerpt);
+          citations.appendChild(card);
+        });
+        wrapper.appendChild(citations);
+      }
+    }
+
+    function updateSidePanel(payload) {
+      rewrittenQueryEl.textContent = payload.rewritten_query || "-";
+      sessionContextEl.textContent = JSON.stringify(payload.context || {}, null, 2);
+      warningsEl.textContent = payload.warnings && payload.warnings.length
+        ? payload.warnings.join("\n")
+        : "없음";
+    }
+
+    async function typeText(element, text) {
+      if (currentTyper) {
+        clearInterval(currentTyper);
+        currentTyper = null;
+      }
+      element.textContent = "";
+      let index = 0;
+      await new Promise((resolve) => {
+        currentTyper = setInterval(() => {
+          index += 4;
+          element.textContent = text.slice(0, index);
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+          if (index >= text.length) {
+            clearInterval(currentTyper);
+            currentTyper = null;
+            resolve();
+          }
+        }, 12);
+      });
+    }
+
+    async function sendMessage({ query, regenerate = false } = {}) {
+      const trimmed = (query ?? composerEl.value).trim();
+      if (!trimmed && !regenerate) return;
+
+      if (!regenerate) {
+        appendMessage("user", trimmed);
+        composerEl.value = "";
+        lastQuery = trimmed;
+      }
+
+      const { wrapper, body } = appendMessage("assistant", "생성 중...");
+      setGenerating(true);
+      setStatus("생성 중");
+      currentController = new AbortController();
+
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            session_id: sessionId,
+            query: trimmed,
+            mode: currentMode,
+            regenerate,
+          }),
+          signal: currentController.signal,
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || "응답 생성 실패");
+        }
+
+        sessionId = payload.session_id;
+        sessionIdEl.textContent = sessionId.slice(0, 8);
+        await typeText(body, payload.answer || "답변이 비어 있습니다.");
+        renderAssistantMeta(wrapper, payload);
+        updateSidePanel(payload);
+        setStatus("완료");
+      } catch (error) {
+        if (error.name === "AbortError") {
+          body.textContent = "응답 표시를 중단했습니다.";
+          setStatus("중단됨");
+        } else {
+          body.textContent = error.message || "오류가 발생했습니다.";
+          setStatus("오류");
+        }
+      } finally {
+        currentController = null;
+        setGenerating(false);
+      }
+    }
+
+    async function resetSession() {
+      const response = await fetch("/api/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+      const payload = await response.json();
+      sessionId = payload.session_id;
+      sessionIdEl.textContent = sessionId.slice(0, 8);
+      messagesEl.innerHTML = "";
+      rewrittenQueryEl.textContent = "-";
+      sessionContextEl.textContent = JSON.stringify(payload.context || {}, null, 2);
+      warningsEl.textContent = "없음";
+      lastQuery = "";
+      regenerateBtn.disabled = true;
+      setStatus("리셋됨");
+    }
+
+    composerEl.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+
+    sendBtn.addEventListener("click", () => sendMessage());
+    regenerateBtn.addEventListener("click", () => sendMessage({ query: lastQuery, regenerate: true }));
+    stopBtn.addEventListener("click", () => {
+      if (currentController) currentController.abort();
+      if (currentTyper) {
+        clearInterval(currentTyper);
+        currentTyper = null;
+      }
+    });
+    resetBtn.addEventListener("click", resetSession);
+
+    modeButtons.forEach((button) => {
+      button.addEventListener("click", () => setMode(button.dataset.mode));
+    });
+
+    setGenerating(false);
+    setMode(currentMode);
+    sessionContextEl.textContent = JSON.stringify({ mode: currentMode, ocp_version: "4.20" }, null, 2);
+    appendMessage("assistant", "답변 품질을 점검할 질문을 입력해 주세요. follow-up과 citation을 같이 확인할 수 있습니다.");
+  </script>
+</body>
+</html>

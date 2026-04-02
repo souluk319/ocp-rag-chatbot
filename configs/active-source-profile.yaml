@@ -1,7 +1,0 @@
-version: 1
-active_profile_id: ocp-4.20-balanced
-target_minor: "4.20"
-notes:
-  - Canonical evaluation now targets the official openshift-docs enterprise-4.20 branch.
-  - The 4.20 balanced corpus is the only accepted build baseline for Golden Set evaluation.
-  - Live runtime must be rebuilt from the resulting 4.20 canonical corpus before claiming 4.20 serving.
