@@ -1223,8 +1223,3 @@ OpenDocuments와 비교했을 때:
 
 즉 이 저장소의 핵심 가치는 `정답처럼 보이는 데모`가 아니라,  
 **폐쇄망 OCP 환경에서 설명 가능한 RAG 시스템을 직접 구현하고 검증하는 기반**에 있다.
-## Local UI URL
-
-- Start the UI server: `python scripts/run_part4_ui.py --host 127.0.0.1 --port 8765`
-- Open in your browser: [http://127.0.0.1:8765](http://127.0.0.1:8765)
-- If you change `--host` or `--port`, use that address in the browser.
