@@ -930,7 +930,7 @@ def _recent_turn_memory_hints(query: str, context: SessionContext) -> list[str]:
     hints: list[str] = []
     latest_turn = recent_turns[-1]
     if has_follow_up_reference(normalized):
-        capsule_parts = []
+        capsule_parts = [f"query={latest_turn.query}"]
         if latest_turn.topic:
             capsule_parts.append(f"topic={latest_turn.topic}")
         if latest_turn.answer_focus:
@@ -971,16 +971,7 @@ def rewrite_query(query: str, context: SessionContext | None = None) -> str:
         hints.append(f"주제 {context.current_topic}")
     if context.topic_journal:
         hints.append(f"최근 주제 흐름 {' -> '.join(context.topic_journal[-3:])}")
-    if context.recent_turns:
-        recent_turn_hint_parts: list[str] = []
-        for turn in context.recent_turns[-3:]:
-            if turn.topic:
-                recent_turn_hint_parts.append(f"{turn.query} -> {turn.topic}")
-            elif turn.answer_focus:
-                recent_turn_hint_parts.append(f"{turn.query} -> {turn.answer_focus}")
-            else:
-                recent_turn_hint_parts.append(turn.query)
-        hints.append(f"최근 대화 캡슐 {' | '.join(recent_turn_hint_parts)}")
+    hints.extend(_recent_turn_memory_hints(normalized, context))
     if context.open_entities:
         hints.append(f"엔터티 {', '.join(context.open_entities)}")
     if context.reference_hints:
