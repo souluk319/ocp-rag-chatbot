@@ -5,8 +5,10 @@ from collections import Counter, defaultdict
 
 from ocp_rag_part2.models import RetrievalHit
 from ocp_rag_part2.query import (
+    has_architecture_explainer_intent,
     has_backup_restore_intent,
     has_cluster_node_usage_intent,
+    has_kubernetes_compare_follow_up_intent,
     has_mco_concept_intent,
     has_node_drain_intent,
     has_openshift_kubernetes_compare_intent,
@@ -54,6 +56,31 @@ def _hit_identity(hit: RetrievalHit) -> tuple[str, str, str]:
     )
 
 
+def _hit_text_quality(hit: RetrievalHit) -> tuple[int, float]:
+    excerpt = _normalize_excerpt(hit.text)
+    quality = len(excerpt)
+    if "/TABLE]" in excerpt or "[/TABLE]" in excerpt:
+        quality -= 240
+    if excerpt.endswith("Expand"):
+        quality -= 40
+    return quality, _hit_score(hit)
+
+
+def _collapse_duplicate_identity_hits(hits: list[RetrievalHit]) -> list[RetrievalHit]:
+    first_positions: dict[tuple[str, str, str], int] = {}
+    best_hits: dict[tuple[str, str, str], RetrievalHit] = {}
+
+    for index, hit in enumerate(hits):
+        identity = _hit_identity(hit)
+        first_positions.setdefault(identity, index)
+        incumbent = best_hits.get(identity)
+        if incumbent is None or _hit_text_quality(hit) > _hit_text_quality(incumbent):
+            best_hits[identity] = hit
+
+    ordered_identities = sorted(first_positions, key=first_positions.__getitem__)
+    return [best_hits[identity] for identity in ordered_identities]
+
+
 def _unique_top_hits(hits: list[RetrievalHit], *, limit: int) -> list[RetrievalHit]:
     unique: list[RetrievalHit] = []
     seen: set[tuple[str, str, str]] = set()
@@ -77,7 +104,9 @@ def _should_force_clarification(
     if any(
         [
             has_openshift_kubernetes_compare_intent(normalized),
+            has_kubernetes_compare_follow_up_intent(normalized),
             is_generic_intro_query(normalized),
+            has_architecture_explainer_intent(normalized),
             has_operator_concept_intent(normalized),
             has_mco_concept_intent(normalized),
             has_rbac_intent(normalized),
@@ -128,7 +157,9 @@ def _select_hits(
     is_concept_query = any(
         [
             has_openshift_kubernetes_compare_intent(normalized),
+            has_kubernetes_compare_follow_up_intent(normalized),
             is_generic_intro_query(normalized),
+            has_architecture_explainer_intent(normalized),
             has_operator_concept_intent(normalized),
             has_mco_concept_intent(normalized),
         ]
@@ -143,6 +174,8 @@ def _select_hits(
             has_cluster_node_usage_intent(normalized),
         ]
     )
+    if is_concept_query and not is_procedure_query:
+        ranked_hits = _collapse_duplicate_identity_hits(ranked_hits)
 
     max_chunks = min(max_chunks, 5 if is_procedure_query else 4)
     support_window = ranked_hits[: max(max_chunks * 2, 6)]

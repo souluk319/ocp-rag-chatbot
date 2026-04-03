@@ -55,6 +55,31 @@ class ContextAssemblyTests(unittest.TestCase):
         self.assertIn("[2] book=overview", bundle.prompt_context)
         self.assertIn("[3] book=overview", bundle.prompt_context)
 
+    def test_assemble_context_prefers_substantive_duplicate_excerpt(self) -> None:
+        bundle = assemble_context(
+            [
+                _hit(
+                    "chunk-1",
+                    "overview",
+                    "7.1. 유사점 및 차이점",
+                    "개요 7장. About OpenShift Kubernetes Engine > 7.1. 유사점 및 차이점 /TABLE]",
+                    score=0.0718,
+                ),
+                _hit(
+                    "chunk-2",
+                    "overview",
+                    "7.1. 유사점 및 차이점",
+                    "개요 7장. About OpenShift Kubernetes Engine > 7.1. 유사점 및 차이점\n\n다음 표에서 OpenShift Kubernetes Engine과 OpenShift Container Platform의 유사점과 차이점을 확인할 수 있습니다.",
+                    score=0.0674,
+                ),
+            ],
+            query="쿠버네티스와 차이도 설명해줘",
+            max_chunks=4,
+        )
+
+        self.assertEqual(1, len(bundle.citations))
+        self.assertIn("차이점", bundle.citations[0].excerpt)
+
     def test_assemble_context_returns_empty_for_low_confidence_competing_books(self) -> None:
         bundle = assemble_context(
             [
@@ -203,3 +228,104 @@ class ContextAssemblyTests(unittest.TestCase):
             ["postinstallation_configuration"] * len(bundle.citations),
             [citation.book_slug for citation in bundle.citations],
         )
+    def test_intro_query_keeps_context_for_ocp_intro_request(self) -> None:
+        hits = [
+            _hit(
+                "chunk-1",
+                "overview",
+                "5.2. self-managed edition",
+                "OpenShift Container Platform (OCP) overview.",
+                score=0.0208,
+            ),
+            _hit(
+                "chunk-2",
+                "updating_clusters",
+                "1.2. update overview",
+                "OCP update process overview.",
+                score=0.0205,
+            ),
+            _hit(
+                "chunk-3",
+                "hosted_control_planes",
+                "8.3.2. supported versions",
+                "Hosted control planes supported versions.",
+                score=0.019,
+            ),
+        ]
+
+        bundle = assemble_context(
+            hits,
+            query="OCP 소개해줘",
+            max_chunks=4,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertEqual("overview", bundle.citations[0].book_slug)
+
+    def test_architecture_summary_query_keeps_context_without_explicit_ocp_token(self) -> None:
+        hits = [
+            _hit(
+                "chunk-1",
+                "architecture",
+                "OpenShift Container Platform의 아키텍처 개요",
+                "OpenShift 아키텍처 개요 설명",
+                score=0.0177,
+            ),
+            _hit(
+                "chunk-2",
+                "architecture",
+                "1.1. OpenShift Container Platform 아키텍처의 일반 용어집",
+                "OpenShift 아키텍처 일반 용어 설명",
+                score=0.0174,
+            ),
+            _hit(
+                "chunk-3",
+                "storage",
+                "6.22.10.1. vSphere CSI 토폴로지 요구사항",
+                "스토리지 관련 문서",
+                score=0.0172,
+            ),
+        ]
+
+        bundle = assemble_context(
+            hits,
+            query="아키텍처를 한 장으로 요약해줘",
+            max_chunks=4,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertEqual("architecture", bundle.citations[0].book_slug)
+
+    def test_kubernetes_compare_follow_up_keeps_context(self) -> None:
+        hits = [
+            _hit(
+                "chunk-1",
+                "installation_overview",
+                "3.2.10.1. 프로젝트",
+                "설치 개요 문서",
+                score=0.0381,
+            ),
+            _hit(
+                "chunk-2",
+                "overview",
+                "4.2. Kubernetes 리소스",
+                "Kubernetes 리소스 설명",
+                score=0.0370,
+            ),
+            _hit(
+                "chunk-3",
+                "overview",
+                "7.1. 유사점 및 차이점",
+                "OpenShift와 Kubernetes 차이 설명",
+                score=0.0353,
+            ),
+        ]
+
+        bundle = assemble_context(
+            hits,
+            query="쿠버네티스와 차이도 설명해줘",
+            max_chunks=4,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertIn("overview", [citation.book_slug for citation in bundle.citations])

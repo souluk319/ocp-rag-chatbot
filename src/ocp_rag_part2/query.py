@@ -79,6 +79,10 @@ EXPLAINER_RE = re.compile(
     r"(설명해줘|설명해 줘|처음 설명|개념 설명|뭐야\??|무엇인가\??|무슨 역할|왜 중요|차이가 뭐야\??|역할이 뭐야\??|요약해줘|요약해 줘|요약해봐|요약해 봐|정리해줘|정리해 줘|세줄|3줄|한줄|짧게)",
     re.IGNORECASE,
 )
+STEP_BY_STEP_RE = re.compile(
+    r"(단계별|순서대로|차근차근|step-by-step|step by step|stepwise)",
+    re.IGNORECASE,
+)
 GENERIC_INTRO_RE = re.compile(
     r"(오픈시프트|openshift).*(뭐야|무엇|소개|개요|아키텍처|architecture)|"
     r"(오픈시프트|openshift).*(요약|정리|세줄|3줄|한줄|짧게)|"
@@ -176,6 +180,21 @@ def _contains_any(text: str, keywords: tuple[str, ...]) -> bool:
     return any(keyword in lowered for keyword in keywords)
 
 
+def _has_intro_keyword(text: str) -> bool:
+    normalized = text or ""
+    lowered = normalized.lower()
+    return any(
+        keyword in normalized
+        for keyword in (
+            "소개",
+            "소개해줘",
+            "소개해 줘",
+            "소개해주세요",
+            "소개해 주세요",
+        )
+    ) or any(keyword in lowered for keyword in ("introduction", "intro"))
+
+
 def has_doc_locator_intent(query: str) -> bool:
     return bool(DOC_LOCATOR_RE.search(query or ""))
 
@@ -236,7 +255,9 @@ def is_generic_intro_query(query: str) -> bool:
         return True
     has_ocp_topic = "openshift" in lowered or bool(OCP_RE.search(query or ""))
     return has_ocp_topic and bool(
-        ARCHITECTURE_RE.search(query or "") or EXPLAINER_RE.search(query or "")
+        ARCHITECTURE_RE.search(query or "")
+        or EXPLAINER_RE.search(query or "")
+        or _has_intro_keyword(query or "")
     )
 
 
@@ -248,7 +269,39 @@ def has_openshift_kubernetes_compare_intent(query: str) -> bool:
 
 
 def is_explainer_query(query: str) -> bool:
-    return bool(EXPLAINER_RE.search(query or ""))
+    return bool(EXPLAINER_RE.search(query or "") or _has_intro_keyword(query or ""))
+
+
+def has_step_by_step_intent(query: str) -> bool:
+    return bool(STEP_BY_STEP_RE.search(query or ""))
+
+
+def has_kubernetes_compare_follow_up_intent(query: str) -> bool:
+    normalized = query or ""
+    if has_openshift_kubernetes_compare_intent(normalized):
+        return True
+    if OPENSHIFT_RE.search(normalized) or OCP_RE.search(normalized):
+        return False
+    if not KUBERNETES_RE.search(normalized):
+        return False
+    return bool(
+        COMPARE_RE.search(normalized)
+        or "\ucc28\uc774" in normalized
+        or "\ube44\uad50" in normalized
+    )
+
+
+def has_architecture_explainer_intent(query: str) -> bool:
+    normalized = query or ""
+    lowered = normalized.lower()
+    return bool(ARCHITECTURE_RE.search(normalized)) and bool(
+        is_explainer_query(normalized)
+        or "\ud55c \uc7a5" in normalized
+        or "\uac1c\uc694" in normalized
+        or "\uc694\uc57d" in normalized
+        or "overview" in lowered
+        or "summary" in lowered
+    )
 
 
 def has_operator_concept_intent(query: str) -> bool:
@@ -425,7 +478,9 @@ def query_book_adjustments(
         penalties["api_overview"] = 0.78
         penalties["project_apis"] = 0.82
 
-    if has_openshift_kubernetes_compare_intent(normalized):
+    if has_openshift_kubernetes_compare_intent(normalized) or has_kubernetes_compare_follow_up_intent(
+        normalized
+    ):
         boosts["architecture"] = max(boosts.get("architecture", 1.0), 1.28)
         boosts["overview"] = max(boosts.get("overview", 1.0), 1.24)
         boosts["security_and_compliance"] = max(
@@ -439,6 +494,13 @@ def query_book_adjustments(
             penalties.get("postinstallation_configuration", 1.0),
             0.72,
         )
+
+    if has_architecture_explainer_intent(normalized):
+        boosts["architecture"] = max(boosts.get("architecture", 1.0), 1.42)
+        boosts["overview"] = max(boosts.get("overview", 1.0), 1.18)
+        penalties["tutorials"] = min(penalties.get("tutorials", 1.0), 0.7)
+        penalties["support"] = min(penalties.get("support", 1.0), 0.72)
+        penalties["cli_tools"] = min(penalties.get("cli_tools", 1.0), 0.76)
 
     if has_doc_locator_intent(normalized):
         boosts["web_console"] = 1.35 if "콘솔" in normalized else boosts.get("web_console", 1.0)
@@ -721,6 +783,8 @@ def normalize_query(query: str) -> str:
 
     if has_doc_locator_intent(normalized):
         terms.extend(["문서", "guide", "documentation"])
+    if has_step_by_step_intent(normalized):
+        terms.extend(["절차", "단계", "순서", "procedure", "steps"])
     if BACKUP_RE.search(normalized):
         terms.extend(["backup"])
     if RESTORE_RE.search(normalized):
@@ -740,7 +804,13 @@ def normalize_query(query: str) -> str:
         terms.extend(["개요", "overview"])
     if is_generic_intro_query(normalized):
         terms.extend(["소개", "overview", "architecture", "기본", "개념"])
-    if has_openshift_kubernetes_compare_intent(normalized):
+    if has_architecture_explainer_intent(normalized):
+        terms.extend(["OpenShift", "Container", "Platform"])
+    if has_openshift_kubernetes_compare_intent(normalized) or has_kubernetes_compare_follow_up_intent(
+        normalized
+    ):
+        if not (OPENSHIFT_RE.search(normalized) or OCP_RE.search(normalized)):
+            terms.extend(["OpenShift", "Container", "Platform"])
         terms.extend(["comparison", "difference", "비교", "차이점", "유사점"])
 
     if ETCD_RE.search(normalized):

@@ -691,6 +691,115 @@
       -webkit-box-orient: vertical;
     }
 
+    .source-tag-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .source-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(238, 0, 0, 0.14);
+      background: rgba(238, 0, 0, 0.05);
+      color: var(--accent-dark);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    button.source-tag {
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+
+    button.source-tag:hover {
+      transform: translateY(-1px);
+      border-color: rgba(238, 0, 0, 0.28);
+      background: rgba(238, 0, 0, 0.08);
+    }
+
+    .source-tag strong {
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .source-tag span {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .citations-panel {
+      padding: 12px;
+    }
+
+    .citations-panel .trace-empty {
+      padding: 2px 4px 6px;
+    }
+
+    .document-stack {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      min-height: 70vh;
+    }
+
+    .document-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 16px 0;
+      flex-wrap: wrap;
+    }
+
+    .document-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .ghost-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(21, 21, 21, 0.1);
+      background: rgba(21, 21, 21, 0.03);
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .document-empty {
+      padding: 12px 16px 16px;
+    }
+
+    .document-frame {
+      width: 100%;
+      min-height: 60vh;
+      border: 0;
+      border-top: 1px solid rgba(21, 21, 21, 0.06);
+      background: #ffffff;
+      display: none;
+    }
+
+    .document-frame.active {
+      display: block;
+    }
+
+    .pipeline-live {
+      padding: 12px;
+    }
+
     .suggestion-list-title {
       margin-top: 18px;
       color: var(--muted);
@@ -1352,52 +1461,73 @@
       <aside class="card side-panel">
         <div class="inspector-header">
           <div class="inspector-title">
-            <strong>진단 도구</strong>
-            <span>필요할 때만 여는 상세 정보</span>
+            <strong>근거 워크스페이스</strong>
+            <span>답변, 출처, 원문을 같은 화면에서 확인합니다</span>
           </div>
         </div>
         <div class="inspector-tabs">
-          <button type="button" class="active" data-inspector-tab="query">질문</button>
-          <button type="button" data-inspector-tab="session">세션</button>
-          <button type="button" data-inspector-tab="pipeline">파이프라인</button>
+          <button type="button" class="active" data-inspector-tab="sources">Sources</button>
+          <button type="button" data-inspector-tab="document">Document</button>
+          <button type="button" data-inspector-tab="trace">Trace</button>
         </div>
-        <div class="inspector-page active" data-inspector-page="query">
+        <div class="inspector-page active" data-inspector-page="sources">
           <div class="stack">
-            <h2>질문 재구성</h2>
+            <h2>Answer Source Tags</h2>
+            <div id="source-tags-panel" class="pipeline-live">
+              <div class="trace-empty">아직 표시할 출처 태그가 없습니다.</div>
+            </div>
+          </div>
+          <div class="stack">
+            <h2>Grounded Sources</h2>
+            <div id="source-list" class="citations citations-panel">
+              <div class="trace-empty">답변이 생성되면 관련 근거가 여기에 정리됩니다.</div>
+            </div>
+          </div>
+        </div>
+        <div class="inspector-page" data-inspector-page="document">
+          <div class="stack document-stack">
+            <h2>Document Viewer</h2>
+            <div class="document-toolbar">
+              <div id="document-meta" class="document-meta">근거 카드를 누르면 원문을 이 패널에서 바로 확인할 수 있습니다.</div>
+              <a id="document-open-new" class="ghost-link" href="#" target="_blank" rel="noreferrer">새 탭으로 열기</a>
+            </div>
+            <div id="document-empty" class="trace-empty document-empty">아직 선택된 문서가 없습니다.</div>
+            <iframe id="document-frame" class="document-frame" title="Citation document viewer"></iframe>
+          </div>
+        </div>
+        <div class="inspector-page" data-inspector-page="trace">
+          <div class="stack">
+            <h2>Rewritten Query</h2>
             <pre id="rewritten-query">-</pre>
           </div>
           <div class="stack">
-            <h2>경고</h2>
+            <h2>Warnings</h2>
             <div id="warnings" class="warning">없음</div>
           </div>
-        </div>
-        <div class="inspector-page" data-inspector-page="session">
           <div class="stack">
-            <h2>세션 상태</h2>
+            <h2>Session Context</h2>
             <pre id="session-context">-</pre>
           </div>
-        </div>
-        <div class="inspector-page" data-inspector-page="pipeline">
           <div class="stack">
-            <h2>실시간 진행</h2>
+            <h2>Live Progress</h2>
             <div id="pipeline-live" class="pipeline-live">
               <div class="trace-empty">질문을 보내면 현재 단계와 진행 상황이 여기에 표시됩니다.</div>
             </div>
           </div>
           <div class="stack">
-            <h2>하이브리드 검색 지표</h2>
+            <h2>Search Metrics</h2>
             <div id="search-metrics" class="metric-grid">
               <div class="trace-empty">질문을 보내면 BM25, Vector, Hybrid 점수가 표시됩니다.</div>
             </div>
           </div>
           <div class="stack">
-            <h2>요약</h2>
+            <h2>Summary</h2>
             <div id="pipeline-summary" class="summary-grid">
               <div class="trace-empty">아직 실행 기록이 없습니다.</div>
             </div>
           </div>
           <div class="stack">
-            <h2>단계 흐름</h2>
+            <h2>Trace Timeline</h2>
             <div id="pipeline-trace" class="trace-list">
               <div class="trace-empty">아직 실행 기록이 없습니다.</div>
             </div>
@@ -1419,9 +1549,17 @@
     const statusTextEl = document.getElementById("status-text");
     const statusDetailEl = document.getElementById("status-detail");
     const sessionIdEl = document.getElementById("session-id");
+    const sourceTagsPanelEl = document.getElementById("source-tags-panel");
+    const sourceListEl = document.getElementById("source-list");
+    const documentMetaEl = document.getElementById("document-meta");
+    const documentEmptyEl = document.getElementById("document-empty");
+    const documentFrameEl = document.getElementById("document-frame");
+    const documentOpenNewEl = document.getElementById("document-open-new");
     const rewrittenQueryEl = document.getElementById("rewritten-query");
     const sessionContextEl = document.getElementById("session-context");
     const warningsEl = document.getElementById("warnings");
+    const pipelineLiveEl = document.getElementById("pipeline-live");
+    const searchMetricsEl = document.getElementById("search-metrics");
     const pipelineSummaryEl = document.getElementById("pipeline-summary");
     const pipelineTraceEl = document.getElementById("pipeline-trace");
     const modeButtons = Array.from(document.querySelectorAll("[data-mode]"));
@@ -1440,16 +1578,29 @@
     let lastQuery = "";
     let isComposing = false;
     let inspectorVisible = true;
+    let latestPayload = null;
+
+    const LIVE_STAGE_ORDER = [
+      "route_query",
+      "retrieval",
+      "context_assembly",
+      "prompt_build",
+      "llm_generate",
+      "citation_finalize",
+    ];
 
     const PIPELINE_LABELS = {
+      route_query: "질문 라우팅",
       normalize_query: "질문 정리",
       rewrite_query: "질문 재구성",
+      retrieval: "근거 검색",
       bm25_search: "키워드 검색",
       vector_search: "의미 검색",
       fusion: "결과 합치기",
       retrieval_total: "검색 전체",
       context_assembly: "근거 조립",
       prompt_build: "프롬프트 구성",
+      llm_generate: "LLM 응답 생성",
       llm_generate_total: "LLM 응답 생성",
       citation_finalize: "citation 정리",
       total: "총 응답 시간",
@@ -1547,8 +1698,255 @@
 
     function resetPipelineTrace() {
       traceEvents = [];
+      latestPayload = null;
+      sourceTagsPanelEl.innerHTML = '<div class="trace-empty">아직 표시할 출처 태그가 없습니다.</div>';
+      sourceListEl.innerHTML = '<div class="trace-empty">답변이 생성되면 관련 근거가 여기에 정리됩니다.</div>';
+      documentMetaEl.textContent = "근거 카드를 누르면 같은 화면에서 원문을 바로 확인할 수 있습니다.";
+      documentOpenNewEl.href = "#";
+      documentFrameEl.classList.remove("active");
+      documentFrameEl.removeAttribute("src");
+      documentEmptyEl.style.display = "";
+      pipelineLiveEl.innerHTML = '<div class="trace-empty">질문을 보내면 현재 단계와 진행 상황이 여기에 표시됩니다.</div>';
+      searchMetricsEl.innerHTML = '<div class="trace-empty">질문을 보내면 BM25, Vector, Hybrid 점수가 표시됩니다.</div>';
       pipelineSummaryEl.innerHTML = '<div class="trace-empty">아직 실행 기록이 없습니다.</div>';
       pipelineTraceEl.innerHTML = '<div class="trace-empty">아직 실행 기록이 없습니다.</div>';
+    }
+
+    function collectSourceTags(citations) {
+      const unique = [];
+      const seen = new Set();
+      (citations || []).forEach((citation) => {
+        const section = (citation.section || citation.anchor || "").trim();
+        const key = `${citation.book_slug}::${section}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        unique.push({
+          bookSlug: citation.book_slug,
+          section,
+          href: citation.href,
+          index: citation.index,
+        });
+      });
+      return unique.slice(0, 4);
+    }
+
+    function createSourceTag(tag, { interactive = false } = {}) {
+      const node = document.createElement(interactive ? "button" : "div");
+      node.className = "source-tag";
+      if (interactive) {
+        node.type = "button";
+      }
+
+      const strong = document.createElement("strong");
+      strong.textContent = tag.bookSlug;
+
+      const span = document.createElement("span");
+      span.textContent = tag.section || `근거 ${tag.index}`;
+
+      node.append(strong, span);
+      return node;
+    }
+
+    function renderSourceTags(target, citations, { interactive = false } = {}) {
+      const tags = collectSourceTags(citations);
+      if (!tags.length) {
+        target.innerHTML = '<div class="trace-empty">아직 표시할 출처 태그가 없습니다.</div>';
+        return;
+      }
+
+      target.innerHTML = "";
+      const strip = document.createElement("div");
+      strip.className = "source-tag-strip";
+
+      tags.forEach((tag) => {
+        const node = createSourceTag(tag, { interactive });
+        if (interactive) {
+          node.addEventListener("click", () => {
+            const citation = (citations || []).find((item) => item.href === tag.href) || citations[0];
+            if (citation) {
+              openCitationInPanel(citation);
+            }
+          });
+        }
+        strip.appendChild(node);
+      });
+      target.appendChild(strip);
+    }
+
+    function openCitationInPanel(citation) {
+      if (!citation || !citation.href) return;
+      documentMetaEl.textContent = `${citation.book_slug} · ${citation.section || citation.anchor || `근거 ${citation.index}`}`;
+      documentOpenNewEl.href = citation.href;
+      documentEmptyEl.style.display = "none";
+      documentFrameEl.classList.add("active");
+      documentFrameEl.src = citation.href;
+      setInspectorVisible(true);
+      setInspectorTab("document");
+    }
+
+    function renderSourcesPanel(payload) {
+      const citations = Array.isArray(payload && payload.citations) ? payload.citations : [];
+      renderSourceTags(sourceTagsPanelEl, citations, { interactive: true });
+
+      if (!citations.length) {
+        sourceListEl.innerHTML = '<div class="trace-empty">답변이 생성되면 관련 근거가 여기에 정리됩니다.</div>';
+        return;
+      }
+
+      sourceListEl.innerHTML = "";
+      citations.forEach((citation) => {
+        const card = document.createElement("div");
+        card.className = "citation";
+
+        const source = document.createElement("div");
+        source.className = "citation-source";
+        source.textContent = citation.book_slug;
+
+        const link = document.createElement("a");
+        link.href = citation.href;
+        link.textContent = `[${citation.index}] ${citation.section || citation.anchor || "문서 열기"}`;
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
+          openCitationInPanel(citation);
+        });
+
+        const excerpt = document.createElement("p");
+        excerpt.textContent = citation.excerpt;
+
+        card.append(source, link, excerpt);
+        sourceListEl.appendChild(card);
+      });
+    }
+
+    function renderSearchMetrics(retrievalTrace) {
+      const metrics = retrievalTrace && retrievalTrace.metrics ? retrievalTrace.metrics : null;
+      if (!metrics) {
+        searchMetricsEl.innerHTML = '<div class="trace-empty">질문을 보내면 BM25, Vector, Hybrid 점수가 표시됩니다.</div>';
+        return;
+      }
+
+      const cards = [
+        {
+          label: "BM25",
+          value: metrics.bm25 ? metrics.bm25.count : "-",
+          detail: metrics.bm25 && metrics.bm25.top_score != null ? `top score ${metrics.bm25.top_score}` : "검색 결과 없음",
+        },
+        {
+          label: "Vector",
+          value: metrics.vector ? metrics.vector.count : "-",
+          detail: metrics.vector && metrics.vector.top_score != null ? `top score ${metrics.vector.top_score}` : "검색 결과 없음",
+        },
+        {
+          label: "Hybrid",
+          value: metrics.hybrid ? metrics.hybrid.count : "-",
+          detail: metrics.hybrid && metrics.hybrid.top_score != null ? `top score ${metrics.hybrid.top_score}` : "검색 결과 없음",
+          className: "metric-hybrid",
+        },
+        {
+          label: "Selected",
+          value: retrievalTrace.selection && retrievalTrace.selection.selected_hits ? retrievalTrace.selection.selected_hits.length : 0,
+          detail: "최종 citation 조립에 사용된 근거 수",
+          className: "metric-selected",
+        },
+      ];
+
+      searchMetricsEl.innerHTML = "";
+      cards.forEach((card) => {
+        const node = document.createElement("div");
+        node.className = `metric-card ${card.className || ""}`.trim();
+
+        const label = document.createElement("div");
+        label.className = "metric-label";
+        label.textContent = card.label;
+
+        const value = document.createElement("div");
+        value.className = "metric-value";
+        value.textContent = card.value;
+
+        const detail = document.createElement("div");
+        detail.className = "metric-detail";
+        detail.textContent = card.detail;
+
+        node.append(label, value, detail);
+        searchMetricsEl.appendChild(node);
+      });
+    }
+
+    function renderPendingCard(target, event) {
+      const stageState = new Map();
+      traceEvents.forEach((traceEvent) => {
+        if (!LIVE_STAGE_ORDER.includes(traceEvent.step)) return;
+        const current = stageState.get(traceEvent.step);
+        if (!current || traceEvent.status === "running" || current.status !== "done") {
+          stageState.set(traceEvent.step, traceEvent);
+        }
+      });
+
+      const completedCount = LIVE_STAGE_ORDER.filter((step) => stageState.get(step)?.status === "done").length;
+      const activeStage = stageState.get(event.step) || event;
+      const stageIndex = Math.max(LIVE_STAGE_ORDER.indexOf(activeStage.step), 0);
+      const progress = Math.max(
+        12,
+        Math.round(((completedCount + (activeStage.status === "running" ? 0.5 : 0)) / LIVE_STAGE_ORDER.length) * 100)
+      );
+
+      target.innerHTML = "";
+
+      const panel = document.createElement("div");
+      panel.className = "pending-panel";
+
+      const kicker = document.createElement("div");
+      kicker.className = "pending-kicker";
+      kicker.textContent = "Generating";
+
+      const stage = document.createElement("div");
+      stage.className = `pending-stage ${activeStage.status === "running" ? "live" : ""}`.trim();
+      stage.textContent = activeStage.label || humanizePipelineKey(activeStage.step) || "처리 중";
+
+      const detail = document.createElement("div");
+      detail.className = "pending-detail";
+      detail.textContent = activeStage.detail || "질문을 해석하고 답변 근거를 준비하고 있습니다.";
+
+      const rail = document.createElement("div");
+      rail.className = "progress-rail";
+
+      const fill = document.createElement("div");
+      fill.className = `progress-fill ${activeStage.status === "running" ? "live" : ""}`.trim();
+      fill.style.width = `${progress}%`;
+      rail.appendChild(fill);
+
+      const strip = document.createElement("div");
+      strip.className = "stage-strip";
+      LIVE_STAGE_ORDER.forEach((stepKey, index) => {
+        const chip = document.createElement("div");
+        const stageEvent = stageState.get(stepKey);
+        let statusClass = "pending";
+        if (stageEvent?.status === "done") {
+          statusClass = "done";
+        } else if (stepKey === activeStage.step && activeStage.status === "running") {
+          statusClass = "running";
+        } else if (index < stageIndex && !stageEvent) {
+          statusClass = "done";
+        }
+        chip.className = `stage-chip ${statusClass}`;
+        chip.textContent = humanizePipelineKey(stepKey);
+        strip.appendChild(chip);
+      });
+
+      const metrics = document.createElement("div");
+      metrics.className = "pending-metrics";
+
+      const completedCard = document.createElement("div");
+      completedCard.className = "metric-card metric-selected";
+      completedCard.innerHTML = `<div class="metric-label">Completed</div><div class="metric-value">${completedCount}/${LIVE_STAGE_ORDER.length}</div><div class="metric-detail">지금까지 완료된 처리 단계</div>`;
+
+      const currentCard = document.createElement("div");
+      currentCard.className = "metric-card metric-hybrid";
+      currentCard.innerHTML = `<div class="metric-label">Now</div><div class="metric-value">${stageIndex + 1}</div><div class="metric-detail">${humanizePipelineKey(activeStage.step)}</div>`;
+
+      metrics.append(completedCard, currentCard);
+      panel.append(kicker, stage, detail, rail, strip, metrics);
+      target.appendChild(panel);
     }
 
     function renderPipelineSummary(trace) {
@@ -1946,6 +2344,12 @@
     }
 
     function renderAssistantMeta(wrapper, payload) {
+      if (payload.citations.length) {
+        const sourceTags = document.createElement("div");
+        renderSourceTags(sourceTags, payload.citations, { interactive: true });
+        wrapper.appendChild(sourceTags);
+      }
+
       const meta = document.createElement("div");
       meta.className = "assistant-footer";
 
@@ -2013,11 +2417,12 @@
 
           const link = document.createElement("a");
           link.href = citation.href;
-          link.target = "_blank";
-          link.rel = "noreferrer";
-
           const titleText = citation.section || citation.anchor || "문서 열기";
           link.textContent = `[${citation.index}] ${titleText}`;
+          link.addEventListener("click", (event) => {
+            event.preventDefault();
+            openCitationInPanel(citation);
+          });
 
           const excerpt = document.createElement("p");
           excerpt.textContent = citation.excerpt;
@@ -2030,11 +2435,14 @@
     }
 
     function updateSidePanel(payload) {
+      latestPayload = payload;
       rewrittenQueryEl.textContent = payload.rewritten_query || "-";
       sessionContextEl.textContent = JSON.stringify(payload.context || {}, null, 2);
       warningsEl.textContent = payload.warnings && payload.warnings.length
         ? payload.warnings.join("\n")
         : "없음";
+      renderSourcesPanel(payload);
+      renderSearchMetrics(payload.retrieval_trace || {});
       renderPipelineSummary(payload.pipeline_trace || {});
     }
 
@@ -2061,11 +2469,8 @@
     }
 
     function renderPendingStage(element, event) {
-      const lines = [event.label || "처리 중"];
-      if (event.detail) {
-        lines.push(event.detail);
-      }
-      element.textContent = lines.join("\n");
+      renderPendingCard(element, event);
+      renderPendingCard(pipelineLiveEl, event);
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
@@ -2239,7 +2644,7 @@
     setGenerating(false);
     setMode(currentMode);
     setInspectorVisible(false);
-    setInspectorTab("pipeline");
+    setInspectorTab("sources");
     sessionContextEl.textContent = JSON.stringify({ mode: currentMode, ocp_version: "4.20" }, null, 2);
     resetPipelineTrace();
     renderEmptyState();

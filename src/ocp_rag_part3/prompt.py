@@ -4,6 +4,7 @@ from ocp_rag_part2.query import (
     has_backup_restore_intent,
     has_certificate_monitor_intent,
     has_cluster_node_usage_intent,
+    has_step_by_step_intent,
     has_project_finalizer_intent,
     has_project_terminating_intent,
     has_openshift_kubernetes_compare_intent,
@@ -15,6 +16,15 @@ from ocp_rag_part2.query import (
 )
 
 from .models import ContextBundle
+
+
+def _step_by_step_hint(query: str, mode: str) -> str:
+    if mode != "ops" or not has_step_by_step_intent(query):
+        return ""
+    return (
+        "질문이 단계별 요청이면 답변 본문을 반드시 번호 목록 `1. 2. 3.` 형식으로 쓰고, "
+        "각 단계마다 먼저 무엇을 확인하거나 수행하는지 한 줄로 말한 뒤 필요한 명령어나 YAML은 바로 아래 코드 블록으로 붙일 것."
+    )
 
 
 def _intent_shape_hint(query: str, mode: str) -> str:
@@ -81,6 +91,7 @@ def build_messages(
         "핵심 제품명과 기술명은 처음 등장할 때 한국어를 먼저 쓰고 필요하면 괄호 안에 영문을 덧붙여라. "
         "ops 모드에서 명령이나 절차를 답할 때는 bare command만 던지지 말고, "
         "먼저 무엇을 쓰는지 한 문장으로 말한 뒤 코드 블록으로 명령이나 YAML을 제시하라. "
+        "질문에 '단계별' 또는 '순서대로'가 있으면 답변 본문을 반드시 번호 목록 `1. 2. 3.` 형식으로 구성하라. "
         "가능하면 바로 아래에 범위, 영향, 전제, 예시 중 필요한 것만 한 줄로 덧붙여라. "
         "필요할 때만 빈 줄 뒤에 '추가 가이드:' 섹션을 붙여라. "
         "인사말, 군더더기, 장황한 서론은 쓰지 마라. "
@@ -95,6 +106,7 @@ def build_messages(
         "이전 맥락과 현재 근거가 충돌하거나 현재 근거가 비어 있으면 단정하지 말고 다시 확인하라."
     )
     shape_hint = _intent_shape_hint(query, mode)
+    step_by_step_hint = _step_by_step_hint(query, mode)
     session_block = f"세션 맥락:\n{session_summary}\n\n" if session_summary else ""
     user = (
         f"모드: {mode}\n"
@@ -118,6 +130,8 @@ def build_messages(
         "- 질문이 애매한 경우 '근거가 없습니다'로만 끝내지 말 것\n"
         "- 근거 자체가 없는 negative/no-answer 상황에서는 단정 답변을 하지 말 것\n"
     )
+    if step_by_step_hint:
+        user += f"- 단계별 출력 규칙: {step_by_step_hint}\n"
     if shape_hint:
         user += f"- 답변 구조 힌트: {shape_hint}\n"
     return [

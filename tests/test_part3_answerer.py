@@ -287,6 +287,17 @@ class Part3AnswererTests(unittest.TestCase):
         self.assertIn("bare command만 던지지 말고", messages[0]["content"])
         self.assertIn("한 줄 설명 -> 코드 블록 -> 짧은 범위/예시", messages[1]["content"])
 
+    def test_build_messages_adds_step_by_step_rule_for_ops_queries(self) -> None:
+        messages = build_messages(
+            query="특정 namespace만 admin 권한 주는 방법 단계별로 알려줘",
+            mode="ops",
+            context_bundle=type("Bundle", (), {"prompt_context": "[1] ...", "citations": []})(),
+            session_summary="",
+        )
+
+        self.assertIn("번호 목록 `1. 2. 3.`", messages[0]["content"])
+        self.assertIn("단계별 출력 규칙:", messages[1]["content"])
+
     def test_build_messages_adds_compare_shape_hint(self) -> None:
         messages = build_messages(
             query="오픈시프트와 쿠버네티스 차이를 세 줄로 설명해줘",

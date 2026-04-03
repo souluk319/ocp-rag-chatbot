@@ -798,5 +798,37 @@ class RetrievalTests(unittest.TestCase):
         )
 
 
+    def test_normalize_query_treats_ocp_intro_request_as_intro_query(self) -> None:
+        normalized = normalize_query("OCP 소개해줘")
+
+        self.assertIn("OpenShift", normalized)
+        self.assertIn("Container", normalized)
+        self.assertIn("Platform", normalized)
+        self.assertIn("overview", normalized)
+
+    def test_normalize_query_expands_architecture_summary_request(self) -> None:
+        normalized = normalize_query("아키텍처를 한 장으로 요약해줘")
+
+        self.assertIn("OpenShift", normalized)
+        self.assertIn("Container", normalized)
+        self.assertIn("Platform", normalized)
+        self.assertIn("architecture", normalized)
+        self.assertIn("overview", normalized)
+
+    def test_normalize_query_expands_kubernetes_compare_follow_up_toward_openshift(self) -> None:
+        normalized = normalize_query("쿠버네티스와 차이도 설명해줘")
+
+        self.assertIn("Kubernetes", normalized)
+        self.assertIn("OpenShift", normalized)
+        self.assertIn("comparison", normalized)
+        self.assertIn("difference", normalized)
+
+    def test_normalize_query_adds_procedure_terms_for_step_by_step_request(self) -> None:
+        normalized = normalize_query("특정 namespace만 admin 권한 주는 방법 단계별로 알려줘")
+
+        self.assertIn("절차", normalized)
+        self.assertIn("단계", normalized)
+        self.assertIn("procedure", normalized)
+
 if __name__ == "__main__":
     unittest.main()
