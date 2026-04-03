@@ -1,0 +1,205 @@
+from __future__ import annotations
+
+import sys
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from ocp_rag_part2.models import RetrievalHit
+from ocp_rag_part3.context import _should_force_clarification, assemble_context
+
+
+def _hit(
+    chunk_id: str,
+    book_slug: str,
+    section: str,
+    text: str,
+    *,
+    anchor: str | None = None,
+    score: float = 1.0,
+) -> RetrievalHit:
+    return RetrievalHit(
+        chunk_id=chunk_id,
+        book_slug=book_slug,
+        chapter=book_slug,
+        section=section,
+        anchor=anchor or section.lower().replace(" ", "-"),
+        source_url=f"https://example.com/{book_slug}",
+        viewer_path=f"/docs/{book_slug}.html#{section.lower().replace(' ', '-')}",
+        text=text,
+        source="hybrid",
+        raw_score=score,
+        fused_score=score,
+    )
+
+
+class ContextAssemblyTests(unittest.TestCase):
+    def test_assemble_context_deduplicates_same_chunk_and_signature(self) -> None:
+        bundle = assemble_context(
+            [
+                _hit("chunk-1", "architecture", "개요", "OpenShift 아키텍처 개요 설명"),
+                _hit("chunk-1", "architecture", "개요", "OpenShift 아키텍처 개요 설명"),
+                _hit("chunk-2", "architecture", "개요", "OpenShift 아키텍처 개요 설명"),
+                _hit("chunk-3", "overview", "소개", "플랫폼 소개"),
+                _hit("chunk-4", "overview", "소개", "플랫폼 소개 두 번째 근거"),
+            ],
+            max_chunks=5,
+        )
+
+        self.assertEqual(3, len(bundle.citations))
+        self.assertIn("[1] book=architecture", bundle.prompt_context)
+        self.assertIn("[2] book=overview", bundle.prompt_context)
+        self.assertIn("[3] book=overview", bundle.prompt_context)
+
+    def test_assemble_context_returns_empty_for_low_confidence_competing_books(self) -> None:
+        bundle = assemble_context(
+            [
+                _hit("chunk-1", "logging", "로그", "로그 문서", score=0.0178),
+                _hit("chunk-2", "monitoring", "모니터링", "모니터링 문서", score=0.0172),
+                _hit("chunk-3", "observability_overview", "관찰성", "관찰성 문서", score=0.0169),
+                _hit("chunk-4", "network_security", "감사 로그", "보안 로그 문서", score=0.0168),
+            ],
+            max_chunks=4,
+        )
+
+        self.assertEqual([], bundle.citations)
+        self.assertEqual("", bundle.prompt_context)
+
+    def test_assemble_context_skips_cross_book_mirror_sections(self) -> None:
+        bundle = assemble_context(
+            [
+                _hit(
+                    "chunk-1",
+                    "operators",
+                    "4.12.6.2. CLI 사용",
+                    "spec.paused 를 true 로 설정하고 master 와 worker 에 patch 합니다.",
+                    anchor="troubleshooting-disabling-autoreboot-mco-cli_olm-troubleshooting-operator-issues",
+                    score=0.039,
+                ),
+                _hit(
+                    "chunk-2",
+                    "operators",
+                    "4.12.6.2. CLI 사용",
+                    "spec.paused 를 false 로 설정하여 일시 중지를 해제합니다.",
+                    anchor="troubleshooting-disabling-autoreboot-mco-cli_olm-troubleshooting-operator-issues",
+                    score=0.038,
+                ),
+                _hit(
+                    "chunk-3",
+                    "support",
+                    "7.6.6.2. CLI 사용",
+                    "spec.paused 를 true 로 설정하고 master 와 worker 에 patch 합니다.",
+                    anchor="troubleshooting-disabling-autoreboot-mco-cli_troubleshooting-operator-issues",
+                    score=0.037,
+                ),
+                _hit(
+                    "chunk-4",
+                    "support",
+                    "7.6.6.2. CLI 사용",
+                    "spec.paused 를 false 로 설정하여 일시 중지를 해제합니다.",
+                    anchor="troubleshooting-disabling-autoreboot-mco-cli_troubleshooting-operator-issues",
+                    score=0.036,
+                ),
+            ],
+            max_chunks=6,
+        )
+
+        self.assertEqual(["operators", "operators"], [c.book_slug for c in bundle.citations])
+
+    def test_clarification_gate_ignores_duplicate_top_hits_from_same_section(self) -> None:
+        hits = [
+            _hit(
+                "chunk-1",
+                "security_and_compliance",
+                "2.1.2. OpenShift Container Platform의 정의",
+                "쿠버네티스 플랫폼마다 보안이 다를 수 있습니다.",
+                anchor="platform-definition",
+                score=0.0379,
+            ),
+            _hit(
+                "chunk-2",
+                "security_and_compliance",
+                "2.1.2. OpenShift Container Platform의 정의",
+                "OpenShift Container Platform은 쿠버네티스 보안을 잠그고 운영 기능을 제공합니다.",
+                anchor="platform-definition",
+                score=0.0379,
+            ),
+            _hit(
+                "chunk-3",
+                "architecture",
+                "1장. 아키텍처 개요",
+                "OpenShift Container Platform은 Kubernetes 기반의 플랫폼입니다.",
+                anchor="architecture-overview",
+                score=0.0305,
+            ),
+            _hit(
+                "chunk-4",
+                "overview",
+                "7.1. 유사점 및 차이점",
+                "비교 표입니다.",
+                anchor="similarities-and-differences",
+                score=0.0246,
+            ),
+        ]
+
+        self.assertFalse(_should_force_clarification(hits))
+        bundle = assemble_context(hits, max_chunks=4)
+        self.assertNotEqual([], bundle.citations)
+
+    def test_compare_query_keeps_context_even_with_multiple_books(self) -> None:
+        hits = [
+            _hit("chunk-1", "overview", "7.1. 유사점 및 차이점", "OpenShift와 Kubernetes 차이 설명", score=0.031),
+            _hit("chunk-2", "architecture", "1장. 아키텍처 개요", "OpenShift는 Kubernetes 기반 플랫폼", score=0.029),
+            _hit("chunk-3", "security_and_compliance", "2.1.2. 정의", "보안과 운영 기능", score=0.027),
+        ]
+
+        bundle = assemble_context(
+            hits,
+            query="오픈시프트랑 쿠버네티스 차이를 설명해줘",
+            max_chunks=4,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertIn(bundle.citations[0].book_slug, {"overview", "architecture"})
+
+    def test_operator_concept_prefers_expected_concept_books(self) -> None:
+        hits = [
+            _hit("chunk-1", "architecture", "1.1. 일반 용어집", "Operator 정의", score=0.041),
+            _hit("chunk-2", "extensions", "6.3. OpenShift Container Platform의 Operator", "Operator controller", score=0.038),
+            _hit("chunk-3", "overview", "7.1. 유사점 및 차이점", "운영 자동화", score=0.036),
+            _hit("chunk-4", "support", "문제 해결", "지원 문서", score=0.03),
+        ]
+
+        bundle = assemble_context(
+            hits,
+            query="Operator가 왜 필요한지 예시까지 설명해줘",
+            max_chunks=4,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertIn(bundle.citations[0].book_slug, {"extensions", "overview", "architecture"})
+        self.assertNotIn("support", [citation.book_slug for citation in bundle.citations])
+
+    def test_procedure_query_allows_more_same_book_chunks(self) -> None:
+        hits = [
+            _hit("chunk-1", "postinstallation_configuration", "4.12.5. etcd 데이터 백업", "oc debug --as-root node", score=0.041),
+            _hit("chunk-2", "postinstallation_configuration", "4.12.5. etcd 데이터 백업", "chroot /host", score=0.039),
+            _hit("chunk-3", "postinstallation_configuration", "4.12.5. etcd 데이터 백업", "cluster-backup.sh", score=0.038),
+            _hit("chunk-4", "hosted_control_planes", "9.3.1. hosted etcd 백업", "velero", score=0.03),
+        ]
+
+        bundle = assemble_context(
+            hits,
+            query="etcd 백업은 실제로 어떤 절차로 해?",
+            max_chunks=5,
+        )
+
+        self.assertGreaterEqual(len(bundle.citations), 3)
+        self.assertEqual(
+            ["postinstallation_configuration"] * len(bundle.citations),
+            [citation.book_slug for citation in bundle.citations],
+        )
