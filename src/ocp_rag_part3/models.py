@@ -14,6 +14,7 @@ class Citation:
     source_url: str
     viewer_path: str
     excerpt: str
+    origin: str = "retrieved"
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

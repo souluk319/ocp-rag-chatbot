@@ -13,6 +13,7 @@ from ocp_rag_part2.query import (
     STEP_REFERENCE_RE,
     has_certificate_monitor_intent,
     has_cluster_node_usage_intent,
+    has_doc_locator_intent,
     has_follow_up_reference,
     has_node_drain_intent,
     has_openshift_kubernetes_compare_intent,
@@ -21,9 +22,9 @@ from ocp_rag_part2.query import (
     is_generic_intro_query,
 )
 
-from .context import assemble_context
+from .context import assemble_context, build_context_bundle_from_citations
 from .llm import LLMClient
-from .models import AnswerResult
+from .models import AnswerResult, Citation
 from .prompt import build_messages
 from .router import route_non_rag
 
@@ -72,6 +73,33 @@ RBAC_ASSIGNMENT_VERB_RE = re.compile(r"(부여|추가|바인딩|grant|assign)", 
 RBAC_VERIFY_RE = re.compile(r"(확인|검증|verify|check)", re.IGNORECASE)
 RBAC_COMMAND_SUPPORT_RE = re.compile(r"oc\s+adm\s+policy\s+add-role-to-user", re.IGNORECASE)
 RBAC_ROLEBINDING_SUPPORT_RE = re.compile(r"rolebinding", re.IGNORECASE)
+CITATION_EXPLICIT_REF_RE = re.compile(
+    r"(그\s*문서|위\s*근거|방금\s*(?:본|인용한)?\s*(?:문서|근거|출처|자료)|아까\s*(?:본|인용한)?\s*(?:문서|근거|출처|자료)|같은\s*문서|(?:근거|출처|자료|문서)\s*(?:다시|기준)|(?:(?<!\d)(1[0-9]|[1-9])\s*번|첫\s*번째|두\s*번째|세\s*번째|네\s*번째)\s*(?:근거|출처|자료|문서))",
+    re.IGNORECASE,
+)
+CITATION_DIGIT_ORDINAL_RE = re.compile(r"(?<!\d)(1[0-9]|[1-9])\s*번\s*(?:근거|출처|자료|문서)", re.IGNORECASE)
+CITATION_SOURCE_LOOKUP_RE = re.compile(
+    r"(근거|출처|어느\s*파일|어떤\s*파일|문서\s*위치|문서.*(?:보여|열어)|source|citation|document)",
+    re.IGNORECASE,
+)
+CITATION_SAFE_RECAP_RE = re.compile(
+    r"(다시\s*(?:설명|정리|요약)|짧게\s*(?:정리|요약)|brief\s+recap|restate|summarize\s+again|same\s+document)",
+    re.IGNORECASE,
+)
+CITATION_RISKY_EXPANSION_RE = re.compile(
+    r"(\uc65c|\uc5b4\ub5bb\uac8c|\ucc28\uc774|\ube44\uad50|\ub2e4\ub978|\ub300\uc548|\uc6d0\uc778|\ud574\uacb0|\ubc29\ubc95|\ub2e8\uacc4|why|how|difference|compare|alternative|step|serviceaccount|yaml|json|namespace|user|group|command|\uba85\ub839)",
+    re.IGNORECASE,
+)
+ORDINAL_WORDS = {
+    "첫번째": 1,
+    "첫 번째": 1,
+    "두번째": 2,
+    "두 번째": 2,
+    "세번째": 3,
+    "세 번째": 3,
+    "네번째": 4,
+    "네 번째": 4,
+}
 
 
 @dataclass(slots=True)
@@ -79,6 +107,14 @@ class RbacAssignmentRequest:
     subject_name: str
     namespace: str
     role: str
+
+
+@dataclass(slots=True)
+class CitationReplaySelection:
+    citations: list[Citation]
+    scope: str
+    detail: str
+    direct_answer: str | None = None
 
 
 def normalize_answer_text(answer_text: str) -> str:
@@ -401,6 +437,343 @@ def _build_first_turn_rbac_assignment_answer(
     return "\n".join(lines)
 
 
+def _citation_origin(citation: Citation) -> str:
+    return (citation.origin or "retrieved").strip() or "retrieved"
+
+
+def _citation_memory_to_citation(memory, *, index: int) -> Citation:
+    return Citation(
+        index=index,
+        chunk_id=memory.chunk_id,
+        book_slug=memory.book_slug,
+        section=memory.section,
+        anchor=memory.anchor,
+        source_url=memory.source_url,
+        viewer_path=memory.viewer_path,
+        excerpt=memory.excerpt,
+        origin="replayed",
+    )
+
+
+def _extract_citation_reference_index(query: str) -> int | None:
+    match = CITATION_DIGIT_ORDINAL_RE.search(query or "")
+    if match:
+        return int(match.group(1))
+    normalized = " ".join((query or "").split())
+    for token, index in ORDINAL_WORDS.items():
+        if token in normalized:
+            return index
+    return None
+
+
+def _has_explicit_citation_reference(query: str) -> bool:
+    return bool(CITATION_EXPLICIT_REF_RE.search(query or ""))
+
+
+def _is_source_lookup_query(query: str) -> bool:
+    normalized = query or ""
+    return bool(CITATION_SOURCE_LOOKUP_RE.search(normalized)) and not bool(
+        CITATION_RISKY_EXPANSION_RE.search(normalized)
+    )
+
+
+def _is_safe_citation_recap_query(query: str) -> bool:
+    normalized = query or ""
+    if not _has_explicit_citation_reference(normalized):
+        return False
+    if CITATION_RISKY_EXPANSION_RE.search(normalized):
+        return False
+    return bool(CITATION_SAFE_RECAP_RE.search(normalized))
+
+
+def _build_citation_replay_lookup_answer(citations: list[Citation]) -> str:
+    if not citations:
+        return ""
+    if len(citations) == 1:
+        citation = citations[0]
+        section = citation.section or citation.anchor or "-"
+        return "\n".join(
+            [
+                "답변: 방금 근거로 사용한 문서를 다시 고정했습니다 [1].",
+                "",
+                f"- 문서: `{citation.book_slug}`",
+                f"- 섹션: `{section}`",
+                "- 같은 화면 문서 패널에서 바로 다시 확인할 수 있습니다.",
+            ]
+        )
+
+    lines = ["답변: 방금 근거로 사용한 문서를 다시 고정했습니다."]
+    for citation in citations:
+        section = citation.section or citation.anchor or "-"
+        lines.append(f"- [{citation.index}] `{citation.book_slug}` / `{section}`")
+    lines.append("- 같은 화면 문서 패널에서 바로 다시 확인할 수 있습니다.")
+    return "\n".join(lines)
+
+
+def _resolve_citation_replay_selection(
+    query: str,
+    context: SessionContext | None,
+) -> tuple[CitationReplaySelection | None, str | None]:
+    if context is None or context.active_citation_group is None or not context.active_citation_group.citations:
+        return None, None
+    if not _has_explicit_citation_reference(query):
+        return None, None
+
+    if CITATION_RISKY_EXPANSION_RE.search(query or "") and not _is_source_lookup_query(query):
+        return None, "requires_fresh_retrieval"
+
+    group = context.active_citation_group
+    requested_index = _extract_citation_reference_index(query)
+    if requested_index is not None:
+        target = group.citation_for_index(requested_index)
+        if target is None:
+            return None, "ambiguous_reference"
+        citations = [_citation_memory_to_citation(target, index=1)]
+        detail = f"session citation ordinal={requested_index}"
+        return CitationReplaySelection(
+            citations=citations,
+            scope="ordinal",
+            detail=detail,
+            direct_answer=_build_citation_replay_lookup_answer(citations) if _is_source_lookup_query(query) else None,
+        ), None
+
+    primary = group.primary_citation()
+    if primary is None:
+        return None, "missing_primary_citation"
+    citations = [_citation_memory_to_citation(primary, index=1)]
+
+    if _is_source_lookup_query(query):
+        return CitationReplaySelection(
+            citations=citations,
+            scope="primary",
+            detail="session citation primary lookup",
+            direct_answer=_build_citation_replay_lookup_answer(citations),
+        ), None
+    if _is_safe_citation_recap_query(query):
+        return CitationReplaySelection(
+            citations=citations,
+            scope="primary",
+            detail="session citation primary replay",
+        ), None
+    return None, "requires_fresh_retrieval"
+
+
+def _answer_from_citation_replay(
+    *,
+    query: str,
+    mode: str,
+    context: SessionContext | None,
+    replay_selection: CitationReplaySelection,
+    llm_client: LLMClient,
+    answer_started_at: float,
+    pipeline_timings_ms: dict[str, float],
+    emit,
+) -> AnswerResult:
+    emit(
+        {
+            "step": "citation_replay",
+            "label": "citation replay cache hit",
+            "status": "done",
+            "detail": replay_selection.detail,
+        }
+    )
+    emit(
+        {
+            "step": "retrieval",
+            "label": "evidence retrieval skipped",
+            "status": "done",
+            "detail": f"session replay {len(replay_selection.citations)} citation(s)",
+        }
+    )
+    pipeline_timings_ms["retrieval_total"] = 0.0
+
+    context_started_at = time.perf_counter()
+    emit(
+        {
+            "step": "context_assembly",
+            "label": "citation context replay",
+            "status": "running",
+        }
+    )
+    context_bundle = build_context_bundle_from_citations(replay_selection.citations)
+    pipeline_timings_ms["context_assembly"] = round(
+        (time.perf_counter() - context_started_at) * 1000,
+        1,
+    )
+    emit(
+        {
+            "step": "context_assembly",
+            "label": "citation context replay ready",
+            "status": "done",
+            "detail": f"citation {len(context_bundle.citations)}",
+            "duration_ms": pipeline_timings_ms["context_assembly"],
+            "meta": {
+                "selected": len(context_bundle.citations),
+                "selected_hits": _summarize_selected_citations(
+                    context_bundle.citations,
+                    [],
+                ),
+            },
+        }
+    )
+
+    prompt_started_at = time.perf_counter()
+    emit(
+        {
+            "step": "prompt_build",
+            "label": "prompt build",
+            "status": "running",
+        }
+    )
+    messages = build_messages(
+        query=_augment_query_with_procedure_focus(query, context),
+        mode=mode,
+        context_bundle=context_bundle,
+        session_summary=summarize_session_context(context),
+    )
+    pipeline_timings_ms["prompt_build"] = round(
+        (time.perf_counter() - prompt_started_at) * 1000,
+        1,
+    )
+    emit(
+        {
+            "step": "prompt_build",
+            "label": "prompt build",
+            "status": "done",
+            "detail": f"messages {len(messages)}",
+            "duration_ms": pipeline_timings_ms["prompt_build"],
+        }
+    )
+
+    llm_started_at = time.perf_counter()
+    if replay_selection.direct_answer is not None:
+        emit(
+            {
+                "step": "citation_replay_lookup",
+                "label": "direct replay answer",
+                "status": "done",
+                "detail": replay_selection.detail,
+            }
+        )
+        answer_text = replay_selection.direct_answer
+        pipeline_timings_ms["llm_generate_total"] = 0.0
+    else:
+        answer_text = reshape_ops_answer_text(
+            normalize_answer_text(
+                llm_client.generate(messages, trace_callback=emit)
+            ),
+            mode=mode,
+        )
+        answer_text = _ensure_korean_product_terms(answer_text, query=query)
+        answer_text = _align_answer_to_grounded_commands(
+            answer_text,
+            query=query,
+            citations=context_bundle.citations,
+        )
+        answer_text = _strip_weak_additional_guidance(
+            answer_text,
+            mode=mode,
+            citations=context_bundle.citations,
+        )
+        answer_text = _strip_intro_offtopic_noise(answer_text, query=query)
+        if mode == "ops" and context_bundle.citations and not CITATION_RE.search(answer_text):
+            answer_text = _inject_single_citation(answer_text, citation_index=1)
+        pipeline_timings_ms["llm_generate_total"] = round(
+            (time.perf_counter() - llm_started_at) * 1000,
+            1,
+        )
+
+    finalize_started_at = time.perf_counter()
+    emit(
+        {
+            "step": "citation_finalize",
+            "label": "citation finalize",
+            "status": "running",
+        }
+    )
+    answer_text, final_citations, cited_indices = finalize_citations(
+        answer_text,
+        context_bundle.citations,
+    )
+    auto_repaired_citations = False
+    if not cited_indices:
+        answer_text, auto_repaired_citations = maybe_autorepair_inline_citations(
+            answer_text,
+            context_bundle.citations,
+        )
+        if auto_repaired_citations:
+            answer_text, final_citations, cited_indices = finalize_citations(
+                answer_text,
+                context_bundle.citations,
+            )
+    pipeline_timings_ms["citation_finalize"] = round(
+        (time.perf_counter() - finalize_started_at) * 1000,
+        1,
+    )
+    emit(
+        {
+            "step": "citation_finalize",
+            "label": "citation finalize",
+            "status": "done",
+            "detail": f"final citations {len(final_citations)}",
+            "duration_ms": pipeline_timings_ms["citation_finalize"],
+        }
+    )
+
+    warnings: list[str] = []
+    if not cited_indices:
+        warnings.append("answer has no inline citations")
+    elif auto_repaired_citations:
+        warnings.append("inline citations auto-repaired")
+
+    pipeline_timings_ms["total"] = round(
+        (time.perf_counter() - answer_started_at) * 1000,
+        1,
+    )
+    emit(
+        {
+            "step": "pipeline_complete",
+            "label": "answer complete",
+            "status": "done",
+            "detail": f"total {pipeline_timings_ms['total']}ms",
+            "duration_ms": pipeline_timings_ms["total"],
+        }
+    )
+
+    retrieval_trace = {
+        "warnings": [],
+        "timings_ms": {"citation_replay": 0.0},
+        "citation_replay": {
+            "status": "hit",
+            "scope": replay_selection.scope,
+            "count": len(context_bundle.citations),
+            "detail": replay_selection.detail,
+        },
+    }
+    return AnswerResult(
+        query=query,
+        mode=mode,
+        answer=answer_text,
+        rewritten_query=query,
+        response_kind="rag",
+        citations=final_citations,
+        cited_indices=cited_indices,
+        warnings=warnings,
+        retrieval_trace=retrieval_trace,
+        pipeline_trace={
+            "events": [],
+            "timings_ms": dict(pipeline_timings_ms),
+            "selection": {
+                "selected_hits": _summarize_selected_citations(
+                    context_bundle.citations,
+                    [],
+                )
+            },
+            "citation_replay": retrieval_trace["citation_replay"],
+        },
+    )
+
+
 def _citation_identity(citation) -> tuple[str, str]:
     viewer_path = (citation.viewer_path or "").strip().lower()
     if viewer_path:
@@ -482,6 +855,7 @@ def _summarize_selected_citations(citations, retrieval_hits) -> list[dict[str, s
             "index": citation.index,
             "book_slug": citation.book_slug,
             "section": citation.section,
+            "origin": _citation_origin(citation),
         }
         if hit is not None:
             summary["fused_score"] = round(float(hit.fused_score), 4)
@@ -622,6 +996,35 @@ class Part3Answerer:
                 "duration_ms": pipeline_timings_ms["route_query"],
             }
         )
+        replay_selection, replay_miss_reason = _resolve_citation_replay_selection(query, context)
+        if replay_selection is not None:
+            replay_result = _answer_from_citation_replay(
+                query=query,
+                mode=mode,
+                context=context,
+                replay_selection=replay_selection,
+                llm_client=self.llm_client,
+                answer_started_at=answer_started_at,
+                pipeline_timings_ms=pipeline_timings_ms,
+                emit=emit,
+            )
+            return replace(
+                replay_result,
+                pipeline_trace={
+                    **replay_result.pipeline_trace,
+                    "events": pipeline_events,
+                    "timings_ms": dict(pipeline_timings_ms),
+                },
+            )
+        if replay_miss_reason:
+            emit(
+                {
+                    "step": "citation_replay",
+                    "label": "citation replay cache miss",
+                    "status": "done",
+                    "detail": replay_miss_reason,
+                }
+            )
         emit(
             {
                 "step": "retrieval",

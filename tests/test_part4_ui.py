@@ -78,6 +78,9 @@ class Part4UiTests(unittest.TestCase):
         self.assertIn("function loadLibrary", html)
         self.assertIn("function renderLibraryRail", html)
         self.assertIn("function openLibraryItemInPanel", html)
+        self.assertIn("function citationOrigin", html)
+        self.assertIn("replayed citation", html)
+        self.assertIn("source-origin-tag", html)
         self.assertIn("function renderSourcesPanel", html)
         self.assertIn("function openCitationInPanel", html)
         self.assertIn("function renderProcedurePanel", html)
@@ -114,6 +117,10 @@ class Part4UiTests(unittest.TestCase):
         self.assertEqual("learn", updated.mode)
         self.assertTrue((updated.current_topic or "").startswith("OpenShift"))
         self.assertIsNone(updated.unresolved_question)
+        self.assertIsNotNone(updated.active_citation_group)
+        assert updated.active_citation_group is not None
+        self.assertEqual(1, len(updated.active_citation_group.citations))
+        self.assertEqual("architecture", updated.active_citation_group.citations[0].book_slug)
 
     def test_derive_next_context_builds_procedure_memory(self) -> None:
         result = AnswerResult(

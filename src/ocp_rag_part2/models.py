@@ -67,6 +67,76 @@ class CommandTemplateMemory:
 
 
 @dataclass(slots=True)
+class CitationMemory:
+    chunk_id: str = ""
+    book_slug: str = ""
+    section: str = ""
+    anchor: str = ""
+    source_url: str = ""
+    viewer_path: str = ""
+    excerpt: str = ""
+    origin: str = "retrieved"
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any] | None) -> "CitationMemory":
+        if not payload:
+            return cls()
+        return cls(
+            chunk_id=str(payload.get("chunk_id") or ""),
+            book_slug=str(payload.get("book_slug") or ""),
+            section=str(payload.get("section") or ""),
+            anchor=str(payload.get("anchor") or ""),
+            source_url=str(payload.get("source_url") or ""),
+            viewer_path=str(payload.get("viewer_path") or ""),
+            excerpt=str(payload.get("excerpt") or ""),
+            origin=str(payload.get("origin") or "retrieved"),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
+class CitationGroupMemory:
+    query: str = ""
+    topic: str | None = None
+    citations: list[CitationMemory] = field(default_factory=list)
+    primary_index: int = 1
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any] | None) -> "CitationGroupMemory":
+        if not payload:
+            return cls()
+        citations = payload.get("citations") or []
+        if isinstance(citations, dict):
+            citations = [citations]
+        primary_index = payload.get("primary_index")
+        if not isinstance(primary_index, int) or primary_index < 1:
+            primary_index = 1
+        return cls(
+            query=str(payload.get("query") or ""),
+            topic=payload.get("topic"),
+            citations=[
+                item if isinstance(item, CitationMemory) else CitationMemory.from_dict(item)
+                for item in citations
+                if item
+            ],
+            primary_index=primary_index,
+        )
+
+    def citation_for_index(self, index: int) -> CitationMemory | None:
+        if index < 1 or index > len(self.citations):
+            return None
+        return self.citations[index - 1]
+
+    def primary_citation(self) -> CitationMemory | None:
+        return self.citation_for_index(self.primary_index) or (self.citations[0] if self.citations else None)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
 class ProcedureMemory:
     goal: str = ""
     steps: list[str] = field(default_factory=list)
@@ -147,6 +217,7 @@ class SessionContext:
     recent_commands: list[str] = field(default_factory=list)
     recent_command_templates: list[CommandTemplateMemory] = field(default_factory=list)
     procedure_memory: ProcedureMemory | None = None
+    active_citation_group: CitationGroupMemory | None = None
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any] | None) -> "SessionContext":
@@ -166,6 +237,7 @@ class SessionContext:
         if isinstance(recent_command_templates, dict):
             recent_command_templates = [recent_command_templates]
         procedure_memory = payload.get("procedure_memory")
+        active_citation_group = payload.get("active_citation_group")
         return cls(
             mode=payload.get("mode"),
             user_goal=payload.get("user_goal"),
@@ -192,6 +264,13 @@ class SessionContext:
                 if isinstance(procedure_memory, ProcedureMemory)
                 else ProcedureMemory.from_dict(procedure_memory)
                 if procedure_memory
+                else None
+            ),
+            active_citation_group=(
+                active_citation_group
+                if isinstance(active_citation_group, CitationGroupMemory)
+                else CitationGroupMemory.from_dict(active_citation_group)
+                if active_citation_group
                 else None
             ),
         )

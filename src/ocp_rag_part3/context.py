@@ -310,11 +310,51 @@ def assemble_context(
                 source_url=hit.source_url,
                 viewer_path=hit.viewer_path,
                 excerpt=excerpt[:max_chars_per_chunk].strip(),
+                origin="retrieved",
+            )
+        )
+
+    return build_context_bundle_from_citations(
+        citations,
+        max_chars_per_chunk=max_chars_per_chunk,
+    )
+
+
+def build_context_bundle_from_citations(
+    citations: list[Citation],
+    *,
+    max_chars_per_chunk: int = 900,
+) -> ContextBundle:
+    normalized_citations: list[Citation] = []
+    seen_signatures: set[tuple[str, str, str, str]] = set()
+
+    for citation in citations:
+        excerpt = _normalize_excerpt(citation.excerpt)
+        signature = (
+            citation.book_slug,
+            citation.section.strip(),
+            (citation.viewer_path or citation.source_url).strip(),
+            excerpt[:240],
+        )
+        if signature in seen_signatures:
+            continue
+        seen_signatures.add(signature)
+        normalized_citations.append(
+            Citation(
+                index=len(normalized_citations) + 1,
+                chunk_id=citation.chunk_id,
+                book_slug=citation.book_slug,
+                section=citation.section,
+                anchor=citation.anchor,
+                source_url=citation.source_url,
+                viewer_path=citation.viewer_path,
+                excerpt=excerpt[:max_chars_per_chunk].strip(),
+                origin=citation.origin or "retrieved",
             )
         )
 
     prompt_lines: list[str] = []
-    for citation in citations:
+    for citation in normalized_citations:
         prompt_lines.append(
             f"[{citation.index}] book={citation.book_slug} | section={citation.section} | viewer={citation.viewer_path}"
         )
@@ -323,5 +363,5 @@ def assemble_context(
 
     return ContextBundle(
         prompt_context="\n".join(prompt_lines).strip(),
-        citations=citations,
+        citations=normalized_citations,
     )

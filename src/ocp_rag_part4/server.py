@@ -21,6 +21,8 @@ from ocp_rag_part2.command_memory import (
     build_command_template_memory,
 )
 from ocp_rag_part2.models import (
+    CitationGroupMemory,
+    CitationMemory,
     CommandTemplateMemory,
     ProcedureMemory,
     SessionContext,
@@ -640,6 +642,34 @@ def _build_reference_hints(result: AnswerResult, *, topic: str | None) -> list[s
     return hints[:6]
 
 
+def _build_citation_group_memory(
+    *,
+    query: str,
+    topic: str | None,
+    result: AnswerResult,
+) -> CitationGroupMemory | None:
+    if not result.citations:
+        return None
+    return CitationGroupMemory(
+        query=_compact_memory_text(query, limit=140),
+        topic=_compact_memory_text(topic or "", limit=120) or None,
+        citations=[
+            CitationMemory(
+                chunk_id=citation.chunk_id,
+                book_slug=citation.book_slug,
+                section=citation.section,
+                anchor=citation.anchor,
+                source_url=citation.source_url,
+                viewer_path=citation.viewer_path,
+                excerpt=_compact_memory_text(citation.excerpt, limit=320),
+                origin=citation.origin or "retrieved",
+            )
+            for citation in result.citations[:4]
+        ],
+        primary_index=1,
+    )
+
+
 def _resolve_procedure_follow_up_index(
     query: str,
     context: SessionContext | None,
@@ -1252,6 +1282,13 @@ def _derive_next_context(
         next_context.reference_hints,
         _build_reference_hints(result, topic=next_context.current_topic),
     )
+    updated_citation_group = _build_citation_group_memory(
+        query=query,
+        topic=next_context.current_topic,
+        result=result,
+    )
+    if updated_citation_group is not None:
+        next_context.active_citation_group = updated_citation_group
     next_context.procedure_memory = _derive_procedure_memory(
         next_context.procedure_memory,
         query=query,

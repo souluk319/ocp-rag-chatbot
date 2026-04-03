@@ -11,7 +11,15 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from ocp_rag_part1.settings import Settings
-from ocp_rag_part2.models import ProcedureMemory, RetrievalHit, RetrievalResult, SessionContext, TurnMemory
+from ocp_rag_part2.models import (
+    CitationGroupMemory,
+    CitationMemory,
+    ProcedureMemory,
+    RetrievalHit,
+    RetrievalResult,
+    SessionContext,
+    TurnMemory,
+)
 from ocp_rag_part3.answerer import (
     _build_procedure_follow_up_answer,
     _augment_query_with_procedure_focus,
@@ -206,6 +214,21 @@ class _ClarifyingLLMClient:
             "답변: 질문의 실행 대상이 불명확합니다. "
             "어떤 사용자 또는 namespace를 말씀하시는 건가요?"
         )
+
+
+class _ReplayLLMClient:
+    def generate(self, messages, trace_callback=None):  # noqa: ANN001
+        self.messages = messages
+        if trace_callback is not None:
+            trace_callback(
+                {
+                    "step": "llm_generate",
+                    "label": "LLM 응답 생성 완료",
+                    "status": "done",
+                    "duration_ms": 1.4,
+                }
+            )
+        return "답변: 같은 문서를 기준으로 다시 정리하면 OpenShift 아키텍처 개요입니다 [1]."
 
 
 class _ExplodingRetriever:
@@ -512,6 +535,102 @@ class Part3AnswererTests(unittest.TestCase):
         self.assertNotIn("불명확합니다", result.answer)
         self.assertTrue(
             any(event.get("step") == "rbac_fast_lane" for event in result.pipeline_trace["events"])
+        )
+
+    def test_answerer_replays_citation_group_for_explicit_same_document_recap(self) -> None:
+        context = SessionContext(
+            mode="learn",
+            current_topic="OpenShift",
+            active_citation_group=CitationGroupMemory(
+                query="아키텍처 설명",
+                topic="OpenShift",
+                citations=[
+                    CitationMemory(
+                        chunk_id="chunk-1",
+                        book_slug="architecture",
+                        section="개요",
+                        anchor="overview",
+                        source_url="https://example.com/architecture",
+                        viewer_path="/docs/architecture.html#overview",
+                        excerpt="OpenShift 아키텍처 개요",
+                    )
+                ],
+            ),
+        )
+        answerer = Part3Answerer(
+            settings=Settings(root_dir=ROOT),
+            retriever=_ExplodingRetriever(),
+            llm_client=_ReplayLLMClient(),
+        )
+
+        result = answerer.answer(
+            "그 문서 기준으로 다시 정리해줘",
+            mode="learn",
+            context=context,
+        )
+
+        self.assertEqual("rag", result.response_kind)
+        self.assertEqual("replayed", result.citations[0].origin)
+        self.assertTrue(
+            any(event.get("step") == "citation_replay" for event in result.pipeline_trace["events"])
+        )
+        self.assertEqual("hit", result.retrieval_trace["citation_replay"]["status"])
+
+    def test_answerer_reruns_retrieval_for_risky_citation_follow_up(self) -> None:
+        class _TrackingRetriever:
+            def __init__(self) -> None:
+                self.called = False
+
+            def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
+                self.called = True
+                return _FakeRetriever().retrieve(
+                    query,
+                    context,
+                    top_k,
+                    candidate_k,
+                    trace_callback=trace_callback,
+                )
+
+        retriever = _TrackingRetriever()
+        context = SessionContext(
+            mode="learn",
+            current_topic="OpenShift",
+            active_citation_group=CitationGroupMemory(
+                query="아키텍처 설명",
+                topic="OpenShift",
+                citations=[
+                    CitationMemory(
+                        chunk_id="chunk-1",
+                        book_slug="architecture",
+                        section="개요",
+                        anchor="overview",
+                        source_url="https://example.com/architecture",
+                        viewer_path="/docs/architecture.html#overview",
+                        excerpt="OpenShift 아키텍처 개요",
+                    )
+                ],
+            ),
+        )
+        answerer = Part3Answerer(
+            settings=Settings(root_dir=ROOT),
+            retriever=retriever,
+            llm_client=_ReplayLLMClient(),
+        )
+
+        result = answerer.answer(
+            "그 문서 기준으로 OpenShift 아키텍처가 왜 그런지 설명해줘",
+            mode="learn",
+            context=context,
+        )
+
+        self.assertTrue(retriever.called)
+        self.assertEqual("retrieved", result.citations[0].origin)
+        self.assertTrue(
+            any(
+                event.get("step") == "citation_replay"
+                and event.get("detail") == "requires_fresh_retrieval"
+                for event in result.pipeline_trace["events"]
+            )
         )
 
     def test_answerer_aligns_drain_command_to_grounded_oc_command(self) -> None:
