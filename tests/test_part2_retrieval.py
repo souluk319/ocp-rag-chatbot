@@ -11,7 +11,7 @@ if str(SRC) not in sys.path:
 
 from ocp_rag_part1.settings import Settings
 from ocp_rag_part2.bm25 import BM25Index
-from ocp_rag_part2.models import RetrievalHit, SessionContext, TurnMemory
+from ocp_rag_part2.models import ProcedureMemory, RetrievalHit, SessionContext, TurnMemory
 from ocp_rag_part2.query import (
     decompose_retrieval_queries,
     detect_out_of_corpus_version,
@@ -153,6 +153,49 @@ class RetrievalTests(unittest.TestCase):
         self.assertIn("참조 단계 적용 결과 확인", rewritten)
         self.assertIn("최근 명령", rewritten)
         self.assertIn("최근 근거 메모", rewritten)
+
+    def test_rewrite_query_uses_procedure_memory_for_next_step_follow_up(self) -> None:
+        context = SessionContext(
+            current_topic="RBAC",
+            ocp_version="4.20",
+            procedure_memory=ProcedureMemory(
+                goal="namespace admin 권한 부여",
+                steps=["역할 바인딩 추가", "적용 결과 확인", "권한 검증"],
+                active_step_index=0,
+                step_commands=[
+                    "oc adm policy add-role-to-user admin alice -n joe",
+                    "oc describe rolebinding -n joe",
+                    "oc auth can-i create pods -n joe --as alice",
+                ],
+                references=["authentication_and_authorization · 9.6. 사용자 역할 추가"],
+            ),
+        )
+
+        rewritten = rewrite_query("다음은?", context)
+
+        self.assertIn("절차 목표 namespace admin 권한 부여", rewritten)
+        self.assertIn("절차 참조 단계 2. 적용 결과 확인", rewritten)
+
+    def test_rewrite_query_uses_procedure_step_command_for_step_specific_follow_up(self) -> None:
+        context = SessionContext(
+            current_topic="RBAC",
+            ocp_version="4.20",
+            procedure_memory=ProcedureMemory(
+                goal="namespace admin 권한 부여",
+                steps=["역할 바인딩 추가", "적용 결과 확인"],
+                active_step_index=0,
+                step_commands=[
+                    "oc adm policy add-role-to-user admin alice -n joe",
+                    "oc describe rolebinding -n joe",
+                ],
+                references=["authentication_and_authorization · 9.6. 사용자 역할 추가"],
+            ),
+        )
+
+        rewritten = rewrite_query("2번 단계 확인 명령은?", context)
+
+        self.assertIn("절차 참조 단계 2. 적용 결과 확인", rewritten)
+        self.assertIn("절차 단계 명령 oc describe rolebinding -n joe", rewritten)
 
     def test_normalize_query_expands_high_value_aliases(self) -> None:
         normalized = normalize_query("로그는 어디서 봐?")
@@ -904,6 +947,28 @@ class RetrievalTests(unittest.TestCase):
         self.assertEqual(1, len(context.recent_turns))
         self.assertEqual("이전 질문", context.recent_turns[0].query)
         self.assertEqual("RBAC", context.recent_turns[0].topic)
+
+    def test_session_context_from_dict_restores_procedure_memory(self) -> None:
+        context = SessionContext.from_dict(
+            {
+                "current_topic": "RBAC",
+                "procedure_memory": {
+                    "goal": "namespace admin 권한 부여",
+                    "steps": ["역할 바인딩 추가", "적용 결과 확인"],
+                    "active_step_index": 1,
+                    "step_commands": [
+                        "oc adm policy add-role-to-user admin alice -n joe",
+                        "oc describe rolebinding -n joe",
+                    ],
+                    "references": ["authentication_and_authorization · 9.6. 사용자 역할 추가"],
+                },
+            }
+        )
+
+        self.assertIsNotNone(context.procedure_memory)
+        self.assertEqual("namespace admin 권한 부여", context.procedure_memory.goal)
+        self.assertEqual(1, context.procedure_memory.active_step_index)
+        self.assertEqual("oc describe rolebinding -n joe", context.procedure_memory.command_for(1))
 
 if __name__ == "__main__":
     unittest.main()

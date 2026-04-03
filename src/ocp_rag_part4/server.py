@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 
 from ocp_rag_part1.settings import load_settings
 from ocp_rag_part1.validation import read_jsonl
-from ocp_rag_part2.models import SessionContext, TurnMemory
+from ocp_rag_part2.models import ProcedureMemory, SessionContext, TurnMemory
 from ocp_rag_part2.query import (
     ARCHITECTURE_RE,
     ETCD_RE,
@@ -25,12 +25,14 @@ from ocp_rag_part2.query import (
     OPENSHIFT_RE,
     has_backup_restore_intent,
     has_certificate_monitor_intent,
+    has_follow_up_reference,
     has_logging_ambiguity,
     has_doc_locator_intent,
     has_openshift_kubernetes_compare_intent,
     has_rbac_intent,
     has_update_doc_locator_ambiguity,
     is_generic_intro_query,
+    STEP_REFERENCE_RE,
 )
 from ocp_rag_part3 import Part3Answerer
 from ocp_rag_part3.models import AnswerResult, Citation
@@ -43,8 +45,23 @@ INLINE_CODE_RE = re.compile(r"`([^`]+)`")
 ANSWER_PREFIX_RE = re.compile(r"^\s*답변:\s*")
 CITATION_MARK_RE = re.compile(r"\[\d+\]")
 STEP_LINE_RE = re.compile(r"^\s*(\d+)\.\s+(.+?)\s*$", re.MULTILINE)
+STEP_BLOCK_RE = re.compile(r"^\s*(\d+)\.\s+(.+?)(?=^\s*\d+\.\s+|\Z)", re.MULTILINE | re.DOTALL)
 CODE_BLOCK_RE = re.compile(r"```(?:[\w.+-]*)\n(.*?)```", re.DOTALL)
 DOC_HEADING_RE = re.compile(r"^\d+(?:\.\d+)+(?:\.\d+)*\.\s*")
+PROCEDURE_NEXT_STEP_RE = re.compile(r"(다음(?:\s*단계)?|그 다음|이어서|다음으로|계속(?:해서)?)", re.IGNORECASE)
+PROCEDURE_CURRENT_STEP_RE = re.compile(
+    r"(이 단계|현재 단계|여기서|여기부터|방금 단계|해당 단계)",
+    re.IGNORECASE,
+)
+PROCEDURE_DONE_UNTIL_RE = re.compile(
+    r"(?<!\d)(1[0-2]|[1-9])번(?:\s*단계)?(?:까지|까진|까지는).*(했|끝|완료)",
+    re.IGNORECASE,
+)
+PROCEDURE_GOAL_NOISE_RE = re.compile(
+    r"(단계별(?:로)?|순서대로|차근차근|하나씩|알려줘|알려 줘|설명해줘|설명해 줘|"
+    r"보여줘|보여 줘|정리해줘|정리해 줘|다시|예시로|예시만|기준으로|만 더 자세히)",
+    re.IGNORECASE,
+)
 
 
 @dataclass(slots=True)
@@ -181,19 +198,41 @@ def _merge_recent_turns(
     return merged[-limit:]
 
 
-def _extract_answer_steps(answer_text: str) -> list[str]:
-    steps: list[str] = []
+def _extract_step_entries(answer_text: str) -> list[tuple[str, str | None]]:
+    entries: list[tuple[str, str | None]] = []
     body = re.sub(r"^\s*답변:\s*", "", answer_text or "", count=1).strip()
-    for match in STEP_LINE_RE.finditer(body):
-        step_text = re.sub(r"\*\*([^*]+)\*\*", r"\1", match.group(2))
+    for match in STEP_BLOCK_RE.finditer(body):
+        block = match.group(0)
+        raw_title = match.group(2).strip().splitlines()[0]
+        step_text = re.sub(r"\*\*([^*]+)\*\*", r"\1", raw_title)
         step_text = step_text.strip(" -*")
         step_text = re.sub(r"\s+", " ", step_text).rstrip(".:")
-        if not step_text or step_text in steps:
+        if not step_text:
             continue
-        steps.append(step_text[:140])
-        if len(steps) >= 5:
+        command: str | None = None
+        code_match = CODE_BLOCK_RE.search(block)
+        if code_match:
+            command = next((line.strip() for line in code_match.group(1).splitlines() if line.strip()), None)
+        entries.append((step_text[:140], (command or "")[:160] or None))
+        if len(entries) >= 5:
             break
+    return entries
+
+
+def _extract_answer_steps(answer_text: str) -> list[str]:
+    steps: list[str] = []
+    for step_text, _ in _extract_step_entries(answer_text):
+        if step_text in steps:
+            continue
+        steps.append(step_text)
     return steps
+
+
+def _extract_step_commands(answer_text: str) -> list[str]:
+    commands: list[str] = []
+    for _, command in _extract_step_entries(answer_text):
+        commands.append(command or "")
+    return commands
 
 
 def _extract_answer_commands(answer_text: str) -> list[str]:
@@ -209,6 +248,118 @@ def _extract_answer_commands(answer_text: str) -> list[str]:
         if len(commands) >= 3:
             break
     return commands
+
+
+def _normalize_step_commands(step_commands: list[str], step_count: int) -> list[str]:
+    normalized = [""] * step_count
+    for index, command in enumerate(step_commands[:step_count]):
+        normalized[index] = command.strip()
+    return normalized
+
+
+def _infer_procedure_goal(
+    *,
+    query: str,
+    topic: str | None,
+    previous: ProcedureMemory | None,
+) -> str:
+    if previous and previous.goal and (has_follow_up_reference(query) or not _infer_explicit_topic(query)):
+        return previous.goal
+
+    cleaned_query = PROCEDURE_GOAL_NOISE_RE.sub(" ", query or "")
+    cleaned_goal = _compact_memory_text(cleaned_query, limit=120)
+    if cleaned_goal:
+        return cleaned_goal
+    if topic:
+        return _compact_memory_text(f"{topic} 절차", limit=120)
+    if previous and previous.goal:
+        return previous.goal
+    return ""
+
+
+def _resolve_procedure_step_index(query: str, procedure: ProcedureMemory | None) -> int | None:
+    if procedure is None or not procedure.steps:
+        return None
+
+    normalized = query or ""
+    match = STEP_REFERENCE_RE.search(normalized)
+    if match:
+        index = int(match.group(1)) - 1
+        if 0 <= index < len(procedure.steps):
+            return index
+
+    completed_match = PROCEDURE_DONE_UNTIL_RE.search(normalized)
+    if completed_match:
+        index = int(completed_match.group(1))
+        return min(index, len(procedure.steps) - 1)
+
+    if PROCEDURE_CURRENT_STEP_RE.search(normalized):
+        return procedure.active_step_index
+
+    if PROCEDURE_NEXT_STEP_RE.search(normalized):
+        if procedure.active_step_index is None:
+            return 0 if procedure.steps else None
+        return min(procedure.active_step_index + 1, len(procedure.steps) - 1)
+
+    return None
+
+
+def _derive_procedure_memory(
+    previous: ProcedureMemory | None,
+    *,
+    query: str,
+    topic: str | None,
+    reference_hints: list[str],
+    explicit_topic: str | None,
+    prior_topic: str | None,
+    answer_text: str,
+) -> ProcedureMemory | None:
+    extracted_steps = _extract_answer_steps(answer_text)
+    extracted_step_commands = _normalize_step_commands(
+        _extract_step_commands(answer_text),
+        len(extracted_steps),
+    )
+
+    if extracted_steps:
+        seeded_previous = previous if previous and previous.steps else None
+        seeded_procedure = ProcedureMemory(
+            goal=_infer_procedure_goal(query=query, topic=topic, previous=seeded_previous),
+            steps=list(extracted_steps),
+            active_step_index=0,
+            step_commands=list(extracted_step_commands),
+            references=_merge_memory_items(
+                seeded_previous.references if seeded_previous else [],
+                reference_hints,
+                limit=4,
+            ),
+        )
+        focused_index = _resolve_procedure_step_index(query, seeded_procedure)
+        if focused_index is not None:
+            seeded_procedure.active_step_index = focused_index
+        return seeded_procedure
+
+    if explicit_topic and prior_topic and explicit_topic != prior_topic:
+        return None
+
+    if previous is None or not previous.steps:
+        return None
+
+    updated = ProcedureMemory.from_dict(previous.to_dict())
+    updated.goal = _infer_procedure_goal(query=query, topic=topic, previous=updated)
+    updated.references = _merge_memory_items(updated.references, reference_hints, limit=4)
+    focused_index = _resolve_procedure_step_index(query, updated)
+    if focused_index is not None:
+        updated.active_step_index = focused_index
+
+    extracted_commands = _extract_answer_commands(answer_text)
+    if extracted_commands and updated.steps:
+        step_commands = _normalize_step_commands(updated.step_commands, len(updated.steps))
+        focus_index = updated.active_step_index if updated.active_step_index is not None else 0
+        if 0 <= focus_index < len(step_commands):
+            step_commands[focus_index] = extracted_commands[0]
+        updated.step_commands = step_commands
+
+    return updated
 
 
 def _build_reference_hints(result: AnswerResult, *, topic: str | None) -> list[str]:
@@ -680,17 +831,32 @@ def _derive_next_context(
         next_context.reference_hints,
         _build_reference_hints(result, topic=next_context.current_topic),
     )
-    extracted_steps = _extract_answer_steps(result.answer)
-    if extracted_steps:
-        next_context.recent_steps = extracted_steps
-    elif explicit_topic and prior_topic and explicit_topic != prior_topic:
-        next_context.recent_steps = []
+    next_context.procedure_memory = _derive_procedure_memory(
+        next_context.procedure_memory,
+        query=query,
+        topic=next_context.current_topic,
+        reference_hints=next_context.reference_hints,
+        explicit_topic=explicit_topic,
+        prior_topic=prior_topic,
+        answer_text=result.answer,
+    )
 
-    extracted_commands = _extract_answer_commands(result.answer)
-    if extracted_commands:
-        next_context.recent_commands = extracted_commands
-    elif explicit_topic and prior_topic and explicit_topic != prior_topic:
-        next_context.recent_commands = []
+    if next_context.procedure_memory and next_context.procedure_memory.steps:
+        next_context.recent_steps = list(next_context.procedure_memory.steps[:5])
+        procedure_commands = [command for command in next_context.procedure_memory.step_commands if command]
+        next_context.recent_commands = procedure_commands[:3]
+    else:
+        extracted_steps = _extract_answer_steps(result.answer)
+        if extracted_steps:
+            next_context.recent_steps = extracted_steps
+        elif explicit_topic and prior_topic and explicit_topic != prior_topic:
+            next_context.recent_steps = []
+
+        extracted_commands = _extract_answer_commands(result.answer)
+        if extracted_commands:
+            next_context.recent_commands = extracted_commands
+        elif explicit_topic and prior_topic and explicit_topic != prior_topic:
+            next_context.recent_commands = []
 
     next_context.recent_turns = _merge_recent_turns(
         next_context.recent_turns,

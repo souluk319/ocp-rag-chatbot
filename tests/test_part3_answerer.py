@@ -11,7 +11,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from ocp_rag_part1.settings import Settings
-from ocp_rag_part2.models import RetrievalHit, RetrievalResult, SessionContext, TurnMemory
+from ocp_rag_part2.models import ProcedureMemory, RetrievalHit, RetrievalResult, SessionContext, TurnMemory
 from ocp_rag_part3.answerer import (
     _ensure_korean_product_terms,
     _strip_intro_offtopic_noise,
@@ -558,6 +558,16 @@ class Part3AnswererTests(unittest.TestCase):
                 ],
                 recent_steps=["명령을 통해 역할 바인딩 추가", "적용 결과 확인"],
                 recent_commands=["oc adm policy add-role-to-user admin alice -n joe"],
+                procedure_memory=ProcedureMemory(
+                    goal="namespace admin 권한 부여",
+                    steps=["명령을 통해 역할 바인딩 추가", "적용 결과 확인"],
+                    active_step_index=1,
+                    step_commands=[
+                        "oc adm policy add-role-to-user admin alice -n joe",
+                        "oc describe rolebinding -n joe",
+                    ],
+                    references=["authentication_and_authorization · 9.6. 사용자 역할 추가"],
+                ),
                 ocp_version="4.20",
             )
         )
@@ -567,6 +577,8 @@ class Part3AnswererTests(unittest.TestCase):
         self.assertIn("최근 대화 캡슐", summary)
         self.assertIn("최근 단계 메모", summary)
         self.assertIn("최근 명령 메모", summary)
+        self.assertIn("진행 중 절차", summary)
+        self.assertIn("절차 근거 메모", summary)
 
     def test_finalize_citations_collapses_duplicate_targets(self) -> None:
         citations = [

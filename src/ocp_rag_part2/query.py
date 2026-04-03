@@ -9,6 +9,15 @@ HANGUL_RE = re.compile(r"[\uac00-\ud7a3]")
 SPACE_RE = re.compile(r"\s+")
 VERSION_RE = re.compile(r"(?<!\d)4\.(\d+)(?!\d)")
 STEP_REFERENCE_RE = re.compile(r"(?<!\d)(1[0-2]|[1-9])번(?:\s*단계)?")
+PROCEDURE_NEXT_STEP_RE = re.compile(r"(다음(?:\s*단계)?|그 다음|이어서|다음으로|계속(?:해서)?)", re.IGNORECASE)
+PROCEDURE_CURRENT_STEP_RE = re.compile(
+    r"(이 단계|현재 단계|여기서|여기부터|방금 단계|해당 단계)",
+    re.IGNORECASE,
+)
+PROCEDURE_DONE_UNTIL_RE = re.compile(
+    r"(?<!\d)(1[0-2]|[1-9])번(?:\s*단계)?(?:까지|까진|까지는).*(했|끝|완료)",
+    re.IGNORECASE,
+)
 OCP_RE = re.compile(r"(?<![a-z0-9])ocp(?![a-z0-9])", re.IGNORECASE)
 OPENSHIFT_RE = re.compile(r"(오픈시프트|openshift)", re.IGNORECASE)
 KUBERNETES_RE = re.compile(r"(쿠버네티스|kubernetes)", re.IGNORECASE)
@@ -895,6 +904,7 @@ def needs_rewrite(query: str, context: SessionContext) -> bool:
             context.reference_hints,
             context.recent_steps,
             context.recent_commands,
+            context.procedure_memory,
         ]
     ):
         return False
@@ -919,6 +929,71 @@ def _resolve_step_reference(query: str, context: SessionContext) -> str | None:
 def _needs_command_reference_hint(query: str) -> bool:
     normalized = (query or "").lower()
     return any(hint in normalized for hint in COMMAND_STYLE_HINTS)
+
+
+def _resolve_procedure_step_index(query: str, context: SessionContext) -> int | None:
+    procedure = context.procedure_memory
+    if procedure is None or not procedure.steps:
+        return None
+
+    normalized = query or ""
+    match = STEP_REFERENCE_RE.search(normalized)
+    if match:
+        index = int(match.group(1)) - 1
+        if 0 <= index < len(procedure.steps):
+            return index
+
+    completed_match = PROCEDURE_DONE_UNTIL_RE.search(normalized)
+    if completed_match:
+        index = int(completed_match.group(1))
+        return min(index, len(procedure.steps) - 1)
+
+    if PROCEDURE_CURRENT_STEP_RE.search(normalized):
+        return procedure.active_step_index
+
+    if PROCEDURE_NEXT_STEP_RE.search(normalized):
+        if procedure.active_step_index is None:
+            return 0 if procedure.steps else None
+        return min(procedure.active_step_index + 1, len(procedure.steps) - 1)
+
+    return None
+
+
+def _needs_procedure_command_hint(query: str) -> bool:
+    normalized = _collapse_spaces(query)
+    return _needs_command_reference_hint(normalized) or any(
+        token in normalized for token in ["확인", "체크", "검증", "명령", "커맨드", "yaml", "manifest"]
+    )
+
+
+def _procedure_memory_hints(query: str, context: SessionContext) -> list[str]:
+    procedure = context.procedure_memory
+    if procedure is None or not procedure.steps:
+        return []
+
+    normalized = _collapse_spaces(query)
+    hints: list[str] = []
+    if procedure.goal:
+        hints.append(f"절차 목표 {procedure.goal}")
+
+    focused_index = _resolve_procedure_step_index(normalized, context)
+    if focused_index is not None:
+        step = procedure.steps[focused_index]
+        hints.append(f"절차 참조 단계 {focused_index + 1}. {step}")
+        command = procedure.command_for(focused_index)
+        if command and _needs_procedure_command_hint(normalized):
+            hints.append(f"절차 단계 명령 {command}")
+    elif has_follow_up_reference(normalized) and procedure.active_step_index is not None:
+        active_step = procedure.active_step()
+        if active_step:
+            hints.append(f"현재 절차 단계 {procedure.active_step_index + 1}. {active_step}")
+        if PROCEDURE_NEXT_STEP_RE.search(normalized):
+            next_index = min(procedure.active_step_index + 1, len(procedure.steps) - 1)
+            hints.append(f"다음 절차 단계 {next_index + 1}. {procedure.steps[next_index]}")
+
+    if procedure.references and has_follow_up_reference(normalized):
+        hints.append(f"진행 중 절차 근거 {' | '.join(procedure.references[:2])}")
+    return hints
 
 
 def _recent_turn_memory_hints(query: str, context: SessionContext) -> list[str]:
@@ -987,6 +1062,7 @@ def rewrite_query(query: str, context: SessionContext | None = None) -> str:
     if context.topic_journal:
         hints.append(f"최근 주제 흐름 {' -> '.join(context.topic_journal[-3:])}")
     hints.extend(_recent_turn_memory_hints(normalized, context))
+    hints.extend(_procedure_memory_hints(normalized, context))
     if context.open_entities:
         hints.append(f"엔터티 {', '.join(context.open_entities)}")
     if context.reference_hints:

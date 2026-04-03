@@ -12,7 +12,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part2.models import SessionContext
+from ocp_rag_part2.models import ProcedureMemory, SessionContext
 from ocp_rag_part2.query import rewrite_query
 from ocp_rag_part3.models import AnswerResult, Citation
 from ocp_rag_part4.server import (
@@ -287,6 +287,62 @@ class Part4UiTests(unittest.TestCase):
         self.assertIn("authentication_and_authorization · 9.6. 사용자 역할 추가", updated.reference_hints)
         self.assertEqual(["역할 바인딩 추가", "적용 결과 확인"], updated.recent_steps)
         self.assertIn("oc adm policy add-role-to-user admin alice -n joe", updated.recent_commands)
+        self.assertIsNotNone(updated.procedure_memory)
+        self.assertEqual("특정 namespace만 admin 권한 주는 방법", updated.procedure_memory.goal)
+        self.assertEqual(["역할 바인딩 추가", "적용 결과 확인"], updated.procedure_memory.steps)
+        self.assertEqual(0, updated.procedure_memory.active_step_index)
+        self.assertEqual(
+            "oc describe rolebinding -n joe",
+            updated.procedure_memory.command_for(1),
+        )
+
+    def test_derive_next_context_updates_active_procedure_step_for_follow_up(self) -> None:
+        result = AnswerResult(
+            query="2번만 더 자세히 설명해줘",
+            mode="ops",
+            answer=(
+                "답변: 2번 단계는 적용 결과를 확인하는 순서입니다 [1].\n\n"
+                "```bash\noc describe rolebinding -n joe\n```"
+            ),
+            rewritten_query="2번만 더 자세히 설명해줘",
+            citations=[
+                _citation(
+                    1,
+                    book_slug="authentication_and_authorization",
+                    section="9.6. 사용자 역할 추가",
+                )
+            ],
+            cited_indices=[1],
+        )
+
+        updated = _derive_next_context(
+            SessionContext(
+                mode="ops",
+                current_topic="RBAC",
+                open_entities=["RBAC"],
+                ocp_version="4.20",
+                procedure_memory=ProcedureMemory(
+                    goal="특정 namespace만 admin 권한 주는 방법",
+                    steps=["역할 바인딩 추가", "적용 결과 확인"],
+                    active_step_index=0,
+                    step_commands=[
+                        "oc adm policy add-role-to-user admin alice -n joe",
+                        "",
+                    ],
+                    references=["authentication_and_authorization · 9.6. 사용자 역할 추가"],
+                ),
+                recent_steps=["역할 바인딩 추가", "적용 결과 확인"],
+                recent_commands=["oc adm policy add-role-to-user admin alice -n joe"],
+            ),
+            query="2번만 더 자세히 설명해줘",
+            mode="ops",
+            result=result,
+        )
+
+        self.assertIsNotNone(updated.procedure_memory)
+        self.assertEqual(1, updated.procedure_memory.active_step_index)
+        self.assertEqual("적용 결과 확인", updated.procedure_memory.active_step())
+        self.assertEqual("oc describe rolebinding -n joe", updated.procedure_memory.command_for(1))
 
     def test_multiturn_memory_compacts_but_survives_beyond_ten_turns(self) -> None:
         context = SessionContext(mode="ops", ocp_version="4.20")

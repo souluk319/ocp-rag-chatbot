@@ -35,6 +35,55 @@ class TurnMemory:
 
 
 @dataclass(slots=True)
+class ProcedureMemory:
+    goal: str = ""
+    steps: list[str] = field(default_factory=list)
+    active_step_index: int | None = None
+    step_commands: list[str] = field(default_factory=list)
+    references: list[str] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any] | None) -> "ProcedureMemory":
+        if not payload:
+            return cls()
+        steps = payload.get("steps") or []
+        if isinstance(steps, str):
+            steps = [steps]
+        step_commands = payload.get("step_commands") or []
+        if isinstance(step_commands, str):
+            step_commands = [step_commands]
+        references = payload.get("references") or []
+        if isinstance(references, str):
+            references = [references]
+        active_step_index = payload.get("active_step_index")
+        if not isinstance(active_step_index, int) or active_step_index < 0:
+            active_step_index = None
+        return cls(
+            goal=str(payload.get("goal") or ""),
+            steps=list(steps),
+            active_step_index=active_step_index,
+            step_commands=list(step_commands),
+            references=list(references),
+        )
+
+    def active_step(self) -> str | None:
+        if self.active_step_index is None:
+            return None
+        if self.active_step_index < 0 or self.active_step_index >= len(self.steps):
+            return None
+        return self.steps[self.active_step_index]
+
+    def command_for(self, index: int) -> str | None:
+        if index < 0 or index >= len(self.step_commands):
+            return None
+        command = self.step_commands[index].strip()
+        return command or None
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
 class SessionContext:
     mode: str | None = None
     user_goal: str | None = None
@@ -47,6 +96,7 @@ class SessionContext:
     reference_hints: list[str] = field(default_factory=list)
     recent_steps: list[str] = field(default_factory=list)
     recent_commands: list[str] = field(default_factory=list)
+    procedure_memory: ProcedureMemory | None = None
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any] | None) -> "SessionContext":
@@ -62,6 +112,7 @@ class SessionContext:
         reference_hints = payload.get("reference_hints") or []
         recent_steps = payload.get("recent_steps") or []
         recent_commands = payload.get("recent_commands") or []
+        procedure_memory = payload.get("procedure_memory")
         return cls(
             mode=payload.get("mode"),
             user_goal=payload.get("user_goal"),
@@ -77,6 +128,13 @@ class SessionContext:
             reference_hints=list(reference_hints),
             recent_steps=list(recent_steps),
             recent_commands=list(recent_commands),
+            procedure_memory=(
+                procedure_memory
+                if isinstance(procedure_memory, ProcedureMemory)
+                else ProcedureMemory.from_dict(procedure_memory)
+                if procedure_memory
+                else None
+            ),
         )
 
     def to_dict(self) -> dict[str, Any]:

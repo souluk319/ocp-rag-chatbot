@@ -199,6 +199,17 @@ def summarize_session_context(context: SessionContext | None) -> str:
         parts.append(f"- 최근 단계 메모: {numbered_steps}")
     if context.recent_commands:
         parts.append(f"- 최근 명령 메모: {' | '.join(context.recent_commands[:2])}")
+    if context.procedure_memory and context.procedure_memory.steps:
+        active_index = context.procedure_memory.active_step_index
+        if active_index is not None and 0 <= active_index < len(context.procedure_memory.steps):
+            parts.append(
+                f"- 진행 중 절차: {context.procedure_memory.goal or context.current_topic or '절차'} "
+                f"(현재 {active_index + 1}번: {context.procedure_memory.steps[active_index]})"
+            )
+        else:
+            parts.append(f"- 진행 중 절차: {context.procedure_memory.goal or context.current_topic or '절차'}")
+        if context.procedure_memory.references:
+            parts.append(f"- 절차 근거 메모: {' | '.join(context.procedure_memory.references[:2])}")
     if context.ocp_version:
         parts.append(f"- OCP 버전: {context.ocp_version}")
     if context.mode:
