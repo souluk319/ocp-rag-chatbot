@@ -154,7 +154,7 @@ def chunk_sections(sections: list[NormalizedSection], settings: Settings) -> lis
             body = "\n\n".join(current_blocks).strip()
             final_text = f"{prefix}{body}".strip()
             token_count = token_counter.count(final_text)
-            raw_key = f"{section.book_slug}:{section.anchor}:{ordinal}:{final_text}"
+            raw_key = f"{section.book_slug}:{section.section_key or section.anchor}:{ordinal}:{final_text}"
             chunk_id = str(uuid.uuid5(uuid.NAMESPACE_URL, raw_key))
             chunks.append(
                 ChunkRecord(

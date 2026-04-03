@@ -19,6 +19,7 @@ REQUIRED_SECTION_KEYS = {
     "section_level",
     "section_path",
     "anchor",
+    "section_key",
     "source_url",
     "viewer_path",
     "text",

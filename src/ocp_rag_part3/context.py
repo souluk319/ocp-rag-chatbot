@@ -10,6 +10,10 @@ from .models import Citation, ContextBundle
 
 SPACE_RE = re.compile(r"\s+")
 SECTION_PREFIX_RE = re.compile(r"^\d+(?:\.\d+)*\.?\s*")
+PROCEDURAL_SUPPORT_RE = re.compile(
+    r"(oc\s+adm|oc\s+get|oc\s+create|oc\s+patch|kubectl|jsonpath|add-scc-to-user|system:openshift:scc)",
+    re.IGNORECASE,
+)
 
 
 def _normalize_excerpt(text: str) -> str:
@@ -32,6 +36,11 @@ def _hit_score(hit: RetrievalHit) -> float:
     if hit.fused_score > 0:
         return float(hit.fused_score)
     return float(hit.raw_score)
+
+
+def _is_procedural_support_hit(hit: RetrievalHit) -> bool:
+    text = (hit.text or "").strip()
+    return bool(PROCEDURAL_SUPPORT_RE.search(text))
 
 
 def _should_force_clarification(hits: list[RetrievalHit]) -> bool:
@@ -88,6 +97,18 @@ def _select_hits(
         if count >= 2 and best_book_scores[book_slug] >= top_score * 0.92:
             allowed_books.add(book_slug)
 
+    if len(allowed_books) == 1:
+        top_is_procedural = _is_procedural_support_hit(support_window[0])
+        for hit in support_window[1:]:
+            if hit.book_slug == top_book:
+                continue
+            if not (top_is_procedural or _is_procedural_support_hit(hit)):
+                continue
+            if _hit_score(hit) < top_score * 0.68:
+                continue
+            allowed_books.add(hit.book_slug)
+            break
+
     score_cutoff = top_score * 0.82 if top_score > 0 else 0.0
     selected: list[RetrievalHit] = []
     per_book_counts: Counter[str] = Counter()
@@ -103,6 +124,30 @@ def _select_hits(
             continue
         selected.append(hit)
         per_book_counts[hit.book_slug] += 1
+
+    # If only the top book survived filtering, keep one extra same-book support chunk
+    # with a looser cutoff so broad/follow-up answers still have enough grounded detail.
+    if (
+        len(selected) < min(max_chunks, 2)
+        and allowed_books == {top_book}
+        and per_book_counts[top_book] < 2
+    ):
+        support_cutoff = top_score * 0.45 if top_score > 0 else 0.0
+        seen_sections = {hit.section.strip() for hit in selected}
+        for hit in ranked_hits:
+            if len(selected) >= min(max_chunks, 2):
+                break
+            if hit.book_slug != top_book:
+                continue
+            if hit in selected:
+                continue
+            if _hit_score(hit) < support_cutoff:
+                continue
+            if hit.section.strip() in seen_sections:
+                continue
+            selected.append(hit)
+            per_book_counts[top_book] += 1
+            seen_sections.add(hit.section.strip())
 
     return selected[:max_chunks]
 

@@ -27,6 +27,7 @@ class NormalizedSection:
     source_url: str
     viewer_path: str
     text: str
+    section_key: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -56,6 +57,7 @@ class PipelineLog:
     manifest_count: int = 0
     collected_count: int = 0
     normalized_count: int = 0
+    viewer_doc_count: int = 0
     chunk_count: int = 0
     embedded_count: int = 0
     qdrant_upserted_count: int = 0

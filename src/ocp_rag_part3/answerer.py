@@ -7,6 +7,7 @@ from pathlib import Path
 from ocp_rag_part1.settings import Settings
 from ocp_rag_part2 import Part2Retriever, SessionContext
 
+from .confidence import calculate_confidence
 from .context import assemble_context
 from .llm import LLMClient
 from .models import AnswerResult
@@ -77,6 +78,15 @@ def summarize_session_context(context: SessionContext | None) -> str:
     return "\n".join(parts)
 
 
+def resolved_query_for_prompt(query: str, rewritten_query: str) -> str:
+    candidate = (rewritten_query or "").strip()
+    if not candidate or candidate == (query or "").strip():
+        return ""
+    if " | " in candidate:
+        return ""
+    return candidate
+
+
 class Part3Answerer:
     def __init__(
         self,
@@ -135,6 +145,7 @@ class Part3Answerer:
             mode=mode,
             context_bundle=context_bundle,
             session_summary=summarize_session_context(context),
+            resolved_query=resolved_query_for_prompt(query, retrieval.rewritten_query),
         )
         answer_text = normalize_answer_text(self.llm_client.generate(messages))
         cited_indices = sorted(
@@ -147,6 +158,12 @@ class Part3Answerer:
         if not cited_indices:
             warnings.append("answer has no inline citations")
 
+        confidence = calculate_confidence(
+            query=query,
+            hits=retrieval.hits,
+            citations=context_bundle.citations,
+            warnings=warnings + list(retrieval.trace.get("warnings", [])),
+        )
         result = AnswerResult(
             query=query,
             mode=mode,
@@ -156,5 +173,6 @@ class Part3Answerer:
             cited_indices=cited_indices,
             warnings=warnings + list(retrieval.trace.get("warnings", [])),
             retrieval_trace=retrieval.trace,
+            confidence=confidence,
         )
         return result

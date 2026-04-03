@@ -14,6 +14,7 @@ from ocp_rag_part2.models import RetrievalHit, RetrievalResult, SessionContext
 from ocp_rag_part3.answerer import (
     Part3Answerer,
     normalize_answer_text,
+    resolved_query_for_prompt,
     summarize_session_context,
 )
 from ocp_rag_part3.llm import LLMClient
@@ -122,6 +123,66 @@ class Part3AnswererTests(unittest.TestCase):
         self.assertIn("follow-up이라도 현재 검색 근거가 약하면 단정하지 말고 확인 질문을 할 것", messages[1]["content"])
         self.assertIn("이전 맥락 때문에 현재 근거와 맞지 않는 대상을 끌어오지 말 것", messages[1]["content"])
 
+    def test_build_messages_adds_ops_format_guidance_for_procedural_answers(self) -> None:
+        from ocp_rag_part3.context import assemble_context
+
+        hit = RetrievalHit(
+            chunk_id="chunk-1",
+            book_slug="authentication_and_authorization",
+            chapter="16장. 보안 컨텍스트 제약 조건 관리",
+            section="16.5. 특정 SCC가 필요하도록 워크로드 구성",
+            anchor="security-context-constraints-requiring_configuring-internal-oauth",
+            source_url="https://example.com/authz",
+            viewer_path="/docs/authz.html#scc",
+            text="openshift.io/scc 를 확인하는 jsonpath 예시와 required-scc 설명이 있습니다.",
+            source="hybrid",
+            raw_score=1.0,
+            fused_score=1.0,
+        )
+        bundle = assemble_context([hit])
+        messages = build_messages(
+            query="Pod에 적용된 SCC를 확인하고 anyuid 권한을 주는 방법은?",
+            mode="ops",
+            context_bundle=bundle,
+            session_summary="",
+        )
+
+        self.assertIn("'확인:', '조치:', '주의:' 형식", messages[0]["content"])
+
+    def test_build_messages_exposes_resolved_query_for_grounded_follow_up(self) -> None:
+        from ocp_rag_part3.context import assemble_context
+
+        hit = RetrievalHit(
+            chunk_id="chunk-1",
+            book_slug="architecture",
+            chapter="architecture",
+            section="OpenShift Container Platform 아키텍처 개요",
+            anchor="overview",
+            source_url="https://example.com/architecture",
+            viewer_path="/docs/architecture.html#overview",
+            text="OpenShift Container Platform 개요와 사용 사례를 설명합니다.",
+            source="hybrid",
+            raw_score=1.0,
+            fused_score=1.0,
+        )
+        bundle = assemble_context([hit])
+        messages = build_messages(
+            query="그걸 어떠써?",
+            mode="ops",
+            context_bundle=bundle,
+            session_summary="- 열린 엔터티: OpenShift Container Platform",
+            resolved_query="OpenShift Container Platform 용도 목적 사용 사례",
+        )
+
+        self.assertIn(
+            "해석된 질문(standalone): OpenShift Container Platform 용도 목적 사용 사례",
+            messages[1]["content"],
+        )
+        self.assertIn(
+            "원문 대명사 때문에 clarification으로 되돌리지 말 것",
+            messages[1]["content"],
+        )
+
     def test_build_messages_forces_brief_clarification_in_ambiguous_cases(self) -> None:
         messages = build_messages(
             query="로그는 어디서 봐?",
@@ -135,10 +196,11 @@ class Part3AnswererTests(unittest.TestCase):
 
     def test_answerer_returns_citations_and_used_indices(self) -> None:
         settings = Settings(root_dir=ROOT)
+        llm = _FakeLLMClient()
         answerer = Part3Answerer(
             settings=settings,
             retriever=_FakeRetriever(),
-            llm_client=_FakeLLMClient(),
+            llm_client=llm,
         )
 
         result = answerer.answer("OpenShift 아키텍처를 설명해줘", mode="learn")
@@ -147,6 +209,36 @@ class Part3AnswererTests(unittest.TestCase):
         self.assertEqual("architecture", result.citations[0].book_slug)
         self.assertFalse(result.warnings)
         self.assertTrue(result.answer.startswith("답변:"))
+        self.assertIsNotNone(result.confidence)
+        self.assertIn(result.confidence.level, {"high", "medium", "low", "none"})
+        self.assertNotIn("해석된 질문(standalone):", llm.messages[1]["content"])
+
+    def test_answerer_includes_semantic_resolved_query_in_prompt(self) -> None:
+        settings = Settings(root_dir=ROOT)
+        llm = _FakeLLMClient()
+
+        class _SemanticRetriever(_FakeRetriever):
+            def retrieve(self, query, context, top_k, candidate_k):  # noqa: ANN001
+                result = super().retrieve(query, context, top_k, candidate_k)
+                result.rewritten_query = "OpenShift Container Platform 용도 목적 사용 사례"
+                return result
+
+        answerer = Part3Answerer(
+            settings=settings,
+            retriever=_SemanticRetriever(),
+            llm_client=llm,
+        )
+
+        answerer.answer(
+            "그걸 어떠써?",
+            mode="ops",
+            context=SessionContext(open_entities=["OpenShift Container Platform"]),
+        )
+
+        self.assertIn(
+            "해석된 질문(standalone): OpenShift Container Platform 용도 목적 사용 사례",
+            llm.messages[1]["content"],
+        )
 
     def test_normalize_answer_text_enforces_single_answer_prefix(self) -> None:
         normalized = normalize_answer_text("### 답변\n안녕하세요\nOpenShift 설명입니다. [1]")
@@ -167,6 +259,16 @@ class Part3AnswererTests(unittest.TestCase):
         self.assertIn("현재 주제: etcd 백업", summary)
         self.assertIn("열린 엔터티: etcd", summary)
         self.assertIn("미해결 질문: 복원 절차", summary)
+
+    def test_resolved_query_for_prompt_skips_pipe_style_hint_strings(self) -> None:
+        self.assertEqual("", resolved_query_for_prompt("그거 복구는?", "OCP 4.20 | 주제 etcd | 그거 복구는?"))
+        self.assertEqual(
+            "OpenShift Container Platform 용도 목적",
+            resolved_query_for_prompt(
+                "그걸 어떠써?",
+                "OpenShift Container Platform 용도 목적",
+            ),
+        )
 
     def test_llm_client_parses_chat_completions_response(self) -> None:
         settings = Settings(root_dir=ROOT)

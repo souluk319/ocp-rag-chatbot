@@ -5,6 +5,17 @@ from typing import Any
 
 
 @dataclass(slots=True)
+class ConfidenceResult:
+    score: float
+    level: str
+    reason: str
+    degraded: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
 class Citation:
     index: int
     chunk_id: str
@@ -41,6 +52,7 @@ class AnswerResult:
     cited_indices: list[int] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     retrieval_trace: dict[str, Any] = field(default_factory=dict)
+    confidence: ConfidenceResult | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -52,4 +64,5 @@ class AnswerResult:
             "cited_indices": self.cited_indices,
             "warnings": self.warnings,
             "retrieval_trace": self.retrieval_trace,
+            "confidence": self.confidence.to_dict() if self.confidence else None,
         }

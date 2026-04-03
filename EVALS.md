@@ -29,12 +29,14 @@ Current benchmark assets:
 - `manifests/part2_smoke_queries.jsonl`
 - `manifests/part2_retrieval_benchmark.jsonl`
 - `manifests/part3_answer_eval_cases.jsonl`
+- `manifests/part3_ragas_golden_cases.jsonl`
 
 Recommended output reports:
 
 - `part2/smoke_report.json`
 - `part2/retrieval_benchmark_report.json`
 - `part3/answer_eval_report.json`
+- `part3/ragas_eval_report.json`
 
 ## Retrieval Metrics
 
@@ -184,6 +186,44 @@ Additional release gates:
 - no unanswered follow-up reference when context is sufficient
 - ambiguous questions should prefer clarification over speculative expansion
 - answer failures must be comparable against the previous report
+
+## Part 3 RAGAS Gate
+
+Use RAGAS only on answerable golden cases with a reference answer.
+
+Do not mix these cases with:
+
+- clarification-required cases
+- no-answer-required cases
+- pure UI checks such as internal viewer link behavior
+
+Track these metrics:
+
+- `faithfulness`
+- `answer_relevance`
+- `context_precision`
+- `context_recall`
+
+Baseline for iteration:
+
+- golden-set `case_count >= 10`
+- average `faithfulness >= 0.75`
+- average `answer_relevance >= 0.75`
+- average `context_precision >= 0.70`
+- average `context_recall >= 0.70`
+
+Release guidance:
+
+- golden-set `case_count >= 30`
+- average `faithfulness >= 0.85`
+- average `answer_relevance >= 0.85`
+- average `context_precision >= 0.80`
+- average `context_recall >= 0.80`
+
+Important:
+
+- RAGAS does not replace product checks for citation shape, internal `/docs/...` links, forbidden books, or clarification behavior.
+- RAGAS should be reported alongside the existing Part 3 custom eval, not instead of it.
 
 ## Current Interpretation
 

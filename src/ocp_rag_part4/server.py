@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import threading
 import uuid
 import webbrowser
@@ -11,14 +12,20 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
+from ocp_rag_part1.language_policy import describe_language_policy, load_language_policy_map
 from ocp_rag_part1.settings import load_settings
 from ocp_rag_part2.models import SessionContext
+from ocp_rag_part2.query import is_generic_intro_query
 from ocp_rag_part3 import Part3Answerer
 from ocp_rag_part3.models import AnswerResult, Citation
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 INDEX_HTML_PATH = STATIC_DIR / "index.html"
+OPENSHIFT_ENTITY_RE = re.compile(r"(오픈시프트|openshift)", re.IGNORECASE)
+MCO_ENTITY_RE = re.compile(r"machine config operator", re.IGNORECASE)
+ETCD_ENTITY_RE = re.compile(r"\betcd\b", re.IGNORECASE)
+OPERATOR_ENTITY_RE = re.compile(r"\boperator\b", re.IGNORECASE)
 
 
 @dataclass(slots=True)
@@ -91,10 +98,54 @@ def _viewer_path_to_local_html(root_dir: Path, viewer_path: str) -> Path | None:
 
     book_slug = parts[0]
     settings = load_settings(root_dir)
-    candidate = settings.raw_html_dir / f"{book_slug}.html"
+    candidate = settings.viewer_docs_dir / book_slug / "index.html"
     if not candidate.exists():
         return None
     return candidate
+
+
+def _unique_entities(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for value in values:
+        normalized = (value or "").strip()
+        if not normalized:
+            continue
+        lowered = normalized.lower()
+        if lowered in seen:
+            continue
+        seen.add(lowered)
+        ordered.append(normalized)
+    return ordered
+
+
+def _extract_open_entities(query: str, result: AnswerResult) -> list[str]:
+    entities: list[str] = []
+    normalized_query = query or ""
+
+    if OPENSHIFT_ENTITY_RE.search(normalized_query):
+        entities.append("OpenShift Container Platform")
+    if MCO_ENTITY_RE.search(normalized_query):
+        entities.append("Machine Config Operator")
+    if ETCD_ENTITY_RE.search(normalized_query):
+        entities.append("etcd")
+    if OPERATOR_ENTITY_RE.search(normalized_query) and "Machine Config Operator" not in entities:
+        entities.append("Operator")
+
+    if entities:
+        return _unique_entities(entities)
+
+    for citation in result.citations:
+        if citation.book_slug in {"architecture", "overview"} and is_generic_intro_query(query):
+            entities.append("OpenShift Container Platform")
+        elif citation.book_slug == "machine_configuration":
+            entities.append("Machine Config Operator")
+        elif citation.book_slug == "etcd" or ETCD_ENTITY_RE.search(citation.section):
+            entities.append("etcd")
+        elif citation.book_slug == "operators":
+            entities.append("Operator")
+
+    return _unique_entities(entities)
 
 
 def _derive_next_context(
@@ -107,6 +158,11 @@ def _derive_next_context(
     next_context = SessionContext.from_dict(previous.to_dict() if previous else None)
     next_context.mode = mode
     next_context.ocp_version = next_context.ocp_version or "4.20"
+    extracted_entities = _extract_open_entities(query, result)
+    if extracted_entities:
+        next_context.open_entities = extracted_entities
+        if is_generic_intro_query(query):
+            next_context.user_goal = "개념 설명"
 
     if result.citations:
         primary = result.citations[0]
@@ -117,10 +173,32 @@ def _derive_next_context(
     return next_context
 
 
+def _citation_payload(
+    citation: Citation,
+    language_policy_map: dict[str, dict[str, object]],
+) -> dict[str, Any]:
+    payload = {
+        **citation.to_dict(),
+        "href": _citation_href(citation),
+    }
+    policy = language_policy_map.get(citation.book_slug)
+    if policy:
+        payload["language_policy"] = {
+            **{
+                "language_status": str(policy.get("language_status", "")),
+                "recommended_action": str(policy.get("recommended_action", "")),
+                "translation_priority": str(policy.get("translation_priority", "")),
+            },
+            **describe_language_policy(policy),
+        }
+    return payload
+
+
 def _build_chat_payload(
     *,
     session: ChatSession,
     result: AnswerResult,
+    language_policy_map: dict[str, dict[str, object]],
 ) -> dict[str, Any]:
     return {
         "session_id": session.session_id,
@@ -129,11 +207,9 @@ def _build_chat_payload(
         "rewritten_query": result.rewritten_query,
         "warnings": list(result.warnings),
         "cited_indices": list(result.cited_indices),
+        "confidence": result.confidence.to_dict() if result.confidence else None,
         "citations": [
-            {
-                **citation.to_dict(),
-                "href": _citation_href(citation),
-            }
+            _citation_payload(citation, language_policy_map)
             for citation in result.citations
         ],
         "context": session.context.to_dict(),
@@ -147,6 +223,9 @@ def _build_handler(
     store: SessionStore,
     root_dir: Path,
 ) -> type[BaseHTTPRequestHandler]:
+    settings = load_settings(root_dir)
+    language_policy_map = load_language_policy_map(settings)
+
     class ChatHandler(BaseHTTPRequestHandler):
         server_version = "OCPRAGPart4/0.1"
 
@@ -239,7 +318,13 @@ def _build_handler(
             session.history.append(Turn(query=query, mode=mode, answer=result.answer))
             session.history = session.history[-20:]
             store.update(session)
-            self._send_json(_build_chat_payload(session=session, result=result))
+            self._send_json(
+                _build_chat_payload(
+                    session=session,
+                    result=result,
+                    language_policy_map=language_policy_map,
+                )
+            )
 
         def _handle_reset(self, payload: dict[str, Any]) -> None:
             session_id = str(payload.get("session_id") or uuid.uuid4().hex)
@@ -282,6 +367,7 @@ __all__ = [
     "ChatSession",
     "SessionStore",
     "_citation_href",
+    "_citation_payload",
     "_viewer_path_to_local_html",
     "_derive_next_context",
     "serve",

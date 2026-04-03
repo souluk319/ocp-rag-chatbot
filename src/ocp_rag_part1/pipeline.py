@@ -6,11 +6,14 @@ from pathlib import Path
 from .chunking import chunk_sections
 from .collector import collect_entry, raw_html_path
 from .embedding import EmbeddingClient
+from .language_policy import write_language_policy_report
 from .manifest import fetch_docs_index, parse_manifest_entries, read_manifest, write_manifest
 from .models import ChunkRecord, NormalizedSection, PipelineLog, SourceManifestEntry
 from .normalize import extract_sections
+from .overrides import apply_translation_overrides, load_translation_overrides
 from .qdrant_store import ensure_collection, upsert_chunks
 from .settings import HIGH_VALUE_SLUGS, Settings
+from .viewer import write_viewer_docs
 
 
 def _write_jsonl(path: Path, rows: list[dict]) -> None:
@@ -85,6 +88,9 @@ def run_part1(
             _save_log(settings, log)
 
     process_entries = _select_entries(entries, process_subset, process_limit)
+    translation_overrides = load_translation_overrides(settings)
+    if translation_overrides:
+        _progress(f"[overrides] loaded={len(translation_overrides)}")
     all_sections: list[NormalizedSection] = []
     _progress(f"[normalize] target_books={len(process_entries)} subset={process_subset}")
     log.stage = "normalize"
@@ -97,18 +103,23 @@ def run_part1(
                 log.collected_sources.append(entry.book_slug)
             html = html_path.read_text(encoding="utf-8")
             sections = extract_sections(html, entry)
+            sections, applied_overrides = apply_translation_overrides(
+                sections,
+                translation_overrides,
+            )
             all_sections.extend(sections)
             log.processed_sources.append(entry.book_slug)
             log.upsert_book_stat(
                 entry.book_slug,
                 processed=True,
                 section_count=len(sections),
+                translated_override_count=applied_overrides,
                 title=entry.title,
                 high_value=entry.high_value,
             )
             _progress(
                 f"[normalize {index}/{len(process_entries)}] "
-                f"{entry.book_slug} sections={len(sections)}"
+                f"{entry.book_slug} sections={len(sections)} overrides={applied_overrides}"
             )
             _save_log(settings, log)
         except Exception as exc:  # noqa: BLE001
@@ -119,6 +130,20 @@ def run_part1(
     log.normalized_count = len(all_sections)
     _progress(f"[normalize] total_sections={len(all_sections)}")
     _write_jsonl(settings.normalized_docs_path, [section.to_dict() for section in all_sections])
+    _save_log(settings, log)
+
+    log.stage = "viewer"
+    log.viewer_doc_count = write_viewer_docs(all_sections, settings)
+    _progress(f"[viewer] total_books={log.viewer_doc_count}")
+    _save_log(settings, log)
+
+    log.stage = "language_policy"
+    language_policy_report = write_language_policy_report(settings)
+    _progress(
+        "[language_policy] "
+        f"translate_priority={len(language_policy_report['summary']['translate_priority_books'])} "
+        f"exclude_default={len(language_policy_report['summary']['exclude_default_books'])}"
+    )
     _save_log(settings, log)
 
     log.stage = "chunk"

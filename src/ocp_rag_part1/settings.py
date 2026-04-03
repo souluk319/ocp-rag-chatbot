@@ -100,6 +100,30 @@ class Settings:
     llm_max_tokens: int = field(
         default_factory=lambda: int(os.getenv("LLM_MAX_TOKENS", "700"))
     )
+    ragas_judge_model: str = field(
+        default_factory=lambda: os.getenv("RAGAS_JUDGE_MODEL", "gpt-4.1").strip()
+    )
+    ragas_judge_embedding_model: str = field(
+        default_factory=lambda: os.getenv(
+            "RAGAS_JUDGE_EMBEDDING_MODEL",
+            "text-embedding-3-small",
+        ).strip()
+    )
+    ragas_judge_temperature: float = field(
+        default_factory=lambda: float(os.getenv("RAGAS_JUDGE_TEMPERATURE", "0.0"))
+    )
+    ragas_openai_api_key: str = field(
+        default_factory=lambda: (
+            os.getenv("RAGAS_OPENAI_API_KEY", "").strip()
+            or os.getenv("OPENAI_API_KEY", "").strip()
+        )
+    )
+    ragas_openai_base_url: str = field(
+        default_factory=lambda: (
+            os.getenv("RAGAS_OPENAI_BASE_URL", "").strip()
+            or os.getenv("OPENAI_BASE_URL", "").strip()
+        ).rstrip("/")
+    )
 
     def __post_init__(self) -> None:
         self.manifest_dir.mkdir(parents=True, exist_ok=True)
@@ -107,6 +131,8 @@ class Settings:
         self.part2_dir.mkdir(parents=True, exist_ok=True)
         self.part3_dir.mkdir(parents=True, exist_ok=True)
         self.raw_html_dir.mkdir(parents=True, exist_ok=True)
+        self.viewer_docs_dir.mkdir(parents=True, exist_ok=True)
+        self.translation_overrides_dir.mkdir(parents=True, exist_ok=True)
 
     def _resolve_optional_dir(self, value: str, default: Path) -> Path:
         if not value:
@@ -151,6 +177,10 @@ class Settings:
         return self.artifacts_dir / "part3"
 
     @property
+    def part3_ragas_report_path(self) -> Path:
+        return self.part3_dir / "ragas_eval_report.json"
+
+    @property
     def normalized_docs_path(self) -> Path:
         return self.part1_dir / "normalized_docs.jsonl"
 
@@ -161,6 +191,26 @@ class Settings:
     @property
     def bm25_corpus_path(self) -> Path:
         return self.part1_dir / "bm25_corpus.jsonl"
+
+    @property
+    def viewer_docs_dir(self) -> Path:
+        return self.part1_dir / "viewer_docs"
+
+    @property
+    def translation_overrides_dir(self) -> Path:
+        return self.part1_dir / "translation_overrides"
+
+    @property
+    def translation_report_path(self) -> Path:
+        return self.part1_dir / "translation_report.json"
+
+    @property
+    def language_policy_report_path(self) -> Path:
+        return self.part1_dir / "language_policy_report.json"
+
+    @property
+    def collection_audit_report_path(self) -> Path:
+        return self.part1_dir / "collection_audit_report.json"
 
     @property
     def preprocessing_log_path(self) -> Path:

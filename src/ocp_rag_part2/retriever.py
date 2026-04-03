@@ -8,6 +8,7 @@ from pathlib import Path
 import requests
 
 from ocp_rag_part1.embedding import EmbeddingClient
+from ocp_rag_part1.language_policy import load_language_policy_map
 from ocp_rag_part1.settings import Settings
 
 from .bm25 import BM25Index
@@ -16,6 +17,7 @@ from .query import (
     contains_hangul,
     detect_unsupported_product,
     has_doc_locator_intent,
+    has_scc_troubleshooting_intent,
     is_generic_intro_query,
     normalize_query,
     query_book_adjustments,
@@ -46,6 +48,45 @@ def _is_noise_hit(hit: RetrievalHit) -> bool:
     return bool(NOISE_SECTION_RE.match(hit.section.strip()))
 
 
+def filter_hits_by_language_policy(
+    hits: list[RetrievalHit],
+    language_policy_map: dict[str, dict[str, object]],
+    warnings: list[str],
+    *,
+    top_k: int,
+) -> list[RetrievalHit]:
+    if not language_policy_map:
+        return hits[:top_k]
+
+    kept: list[RetrievalHit] = []
+    warned_books: set[str] = set()
+
+    for hit in hits:
+        policy = language_policy_map.get(hit.book_slug, {})
+        retrieval_policy = str(policy.get("retrieval_policy", "normal"))
+
+        if retrieval_policy == "exclude_default":
+            if hit.book_slug not in warned_books:
+                warnings.append(
+                    f"excluded non-Korean-first book from default retrieval: {hit.book_slug}"
+                )
+                warned_books.add(hit.book_slug)
+            continue
+
+        if retrieval_policy == "allow_with_warning" and hit.book_slug not in warned_books:
+            recommended_action = str(policy.get("recommended_action", "review"))
+            warnings.append(
+                f"retrieved non-Korean-first book: {hit.book_slug} ({recommended_action})"
+            )
+            warned_books.add(hit.book_slug)
+
+        kept.append(hit)
+        if len(kept) >= top_k:
+            break
+
+    return kept
+
+
 def fuse_ranked_hits(
     query: str,
     ranked_lists: dict[str, list[RetrievalHit]],
@@ -61,6 +102,7 @@ def fuse_ranked_hits(
     query_has_hangul = contains_hangul(query)
     book_boosts, book_penalties = query_book_adjustments(query)
     doc_locator_intent = has_doc_locator_intent(query)
+    scc_troubleshooting_intent = has_scc_troubleshooting_intent(query)
 
     for source_name, hits in ranked_lists.items():
         weight = weights.get(source_name, 1.0)
@@ -102,6 +144,24 @@ def fuse_ranked_hits(
                 hit.fused_score *= 0.88
         if doc_locator_intent and hit.book_slug.endswith("_apis"):
             hit.fused_score *= 0.82
+        if scc_troubleshooting_intent:
+            hit_text_lower = hit.text.lower()
+            if hit.book_slug == "authentication_and_authorization":
+                hit.fused_score *= 1.22
+            elif hit.book_slug == "cli_tools":
+                hit.fused_score *= 1.06
+            elif hit.book_slug == "nodes":
+                hit.fused_score *= 1.16
+            if "openshift.io/scc" in hit_text_lower or "required-scc" in hit_text_lower:
+                hit.fused_score *= 1.2
+            if "add-scc-to-user" in hit_text_lower or "system:openshift:scc" in hit_text_lower:
+                hit.fused_score *= 1.28
+            if "serviceaccount" in hit_text_lower or "서비스 계정" in hit.text:
+                hit.fused_score *= 1.08
+            if "[code]" in hit_text_lower and (
+                "jsonpath" in hit_text_lower or "add-scc-to-user" in hit_text_lower
+            ):
+                hit.fused_score *= 1.1
         if hit.book_slug in book_boosts:
             hit.fused_score *= book_boosts[hit.book_slug]
         if hit.book_slug in book_penalties:
@@ -183,10 +243,12 @@ class Part2Retriever:
         bm25_index: BM25Index,
         *,
         vector_retriever: VectorRetriever | None = None,
+        language_policy_map: dict[str, dict[str, object]] | None = None,
     ) -> None:
         self.settings = settings
         self.bm25_index = bm25_index
         self.vector_retriever = vector_retriever
+        self.language_policy_map = language_policy_map or {}
 
     @classmethod
     def from_settings(
@@ -197,7 +259,13 @@ class Part2Retriever:
     ) -> "Part2Retriever":
         bm25_index = BM25Index.from_jsonl(settings.bm25_corpus_path)
         vector_retriever = VectorRetriever(settings) if enable_vector else None
-        return cls(settings, bm25_index, vector_retriever=vector_retriever)
+        language_policy_map = load_language_policy_map(settings)
+        return cls(
+            settings,
+            bm25_index,
+            vector_retriever=vector_retriever,
+            language_policy_map=language_policy_map,
+        )
 
     def default_log_path(self) -> Path:
         return self.settings.retrieval_log_path
@@ -249,9 +317,15 @@ class Part2Retriever:
                 except Exception as exc:  # noqa: BLE001
                     warnings.append(f"vector search failed: {exc}")
 
-        hits = fuse_ranked_hits(
+        fused_hits = fuse_ranked_hits(
             rewritten_query,
             {"bm25": bm25_hits, "vector": vector_hits},
+            top_k=max(top_k, candidate_k),
+        )
+        hits = filter_hits_by_language_policy(
+            fused_hits,
+            self.language_policy_map,
+            warnings,
             top_k=top_k,
         )
         trace = {

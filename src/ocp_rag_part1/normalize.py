@@ -7,6 +7,7 @@ from typing import Iterable
 from bs4 import BeautifulSoup, NavigableString, Tag
 
 from .models import NormalizedSection, SourceManifestEntry
+from .section_keys import assign_section_keys
 
 
 REMOVE_SELECTORS = (
@@ -227,7 +228,6 @@ def extract_sections(html: str, entry: SourceManifestEntry) -> list[NormalizedSe
         if _is_noise_heading(str(section["heading"])):
             continue
         anchor = str(section["anchor"])
-        viewer_path = f"{entry.viewer_path}#{anchor}"
         sections.append(
             NormalizedSection(
                 book_slug=entry.book_slug,
@@ -237,12 +237,12 @@ def extract_sections(html: str, entry: SourceManifestEntry) -> list[NormalizedSe
                 section_path=list(section["section_path"]),
                 anchor=anchor,
                 source_url=entry.source_url,
-                viewer_path=viewer_path,
+                viewer_path=entry.viewer_path,
                 text=text,
             )
         )
 
-    return sections
+    return assign_section_keys(sections)
 
 
 def iter_normalized_dicts(sections: Iterable[NormalizedSection]) -> list[dict[str, object]]:
