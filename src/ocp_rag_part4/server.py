@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 
 from ocp_rag_part1.settings import load_settings
 from ocp_rag_part1.validation import read_jsonl
-from ocp_rag_part2.models import SessionContext
+from ocp_rag_part2.models import SessionContext, TurnMemory
 from ocp_rag_part2.query import (
     ARCHITECTURE_RE,
     ETCD_RE,
@@ -40,6 +40,10 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 INDEX_HTML_PATH = STATIC_DIR / "index.html"
 NORMALIZED_BLOCK_RE = re.compile(r"(\[CODE\].*?\[/CODE\]|\[TABLE\].*?\[/TABLE\])", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`([^`]+)`")
+ANSWER_PREFIX_RE = re.compile(r"^\s*답변:\s*")
+CITATION_MARK_RE = re.compile(r"\[\d+\]")
+STEP_LINE_RE = re.compile(r"^\s*(\d+)\.\s+(.+?)\s*$", re.MULTILINE)
+CODE_BLOCK_RE = re.compile(r"```(?:[\w.+-]*)\n(.*?)```", re.DOTALL)
 
 
 @dataclass(slots=True)
@@ -96,6 +100,124 @@ def _citation_href(citation: Citation) -> str:
     if citation.anchor:
         return f"{citation.source_url}#{citation.anchor}"
     return citation.source_url
+
+
+def _merge_memory_items(
+    existing: list[str],
+    additions: list[str],
+    *,
+    limit: int = 6,
+) -> list[str]:
+    merged: list[str] = []
+    for raw in [*existing, *additions]:
+        cleaned = " ".join((raw or "").split()).strip()
+        if not cleaned:
+            continue
+        if cleaned in merged:
+            merged.remove(cleaned)
+        merged.append(cleaned[:160])
+    return merged[-limit:]
+
+
+def _compact_memory_text(text: str, *, limit: int = 160) -> str:
+    cleaned = CODE_BLOCK_RE.sub(" ", text or "")
+    cleaned = CITATION_MARK_RE.sub("", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(" -:|")
+    return cleaned[:limit]
+
+
+def _extract_answer_focus(answer_text: str) -> str:
+    body = ANSWER_PREFIX_RE.sub("", answer_text or "", count=1).strip()
+    if not body:
+        return ""
+    for part in re.split(r"(?:\n\s*\n+|[.!?]\s+)", body):
+        cleaned = _compact_memory_text(part, limit=140)
+        if cleaned:
+            return cleaned
+    return _compact_memory_text(body, limit=140)
+
+
+def _build_turn_memory(
+    *,
+    query: str,
+    result: AnswerResult,
+    topic: str | None,
+    entities: list[str],
+    references: list[str] | None = None,
+) -> TurnMemory:
+    turn_references = list(references or [])
+    if not turn_references:
+        for citation in result.citations[:2]:
+            label = citation.section or citation.anchor or citation.book_slug
+            reference = _compact_memory_text(f"{citation.book_slug} · {label}", limit=120)
+            if reference and reference not in turn_references:
+                turn_references.append(reference)
+    return TurnMemory(
+        query=_compact_memory_text(query, limit=120),
+        topic=_compact_memory_text(topic or "", limit=120) or None,
+        answer_focus=_extract_answer_focus(result.answer) or None,
+        entities=[_compact_memory_text(entity, limit=80) for entity in entities[:4] if entity],
+        references=turn_references[:3],
+    )
+
+
+def _merge_recent_turns(
+    existing: list[TurnMemory],
+    addition: TurnMemory,
+    *,
+    limit: int = 12,
+) -> list[TurnMemory]:
+    merged = [
+        turn
+        for turn in existing
+        if turn.query or turn.topic or turn.answer_focus or turn.references or turn.entities
+    ]
+    if addition.query or addition.topic or addition.answer_focus or addition.references or addition.entities:
+        if merged and merged[-1].query == addition.query and merged[-1].topic == addition.topic:
+            merged[-1] = addition
+        else:
+            merged.append(addition)
+    return merged[-limit:]
+
+
+def _extract_answer_steps(answer_text: str) -> list[str]:
+    steps: list[str] = []
+    body = re.sub(r"^\s*답변:\s*", "", answer_text or "", count=1).strip()
+    for match in STEP_LINE_RE.finditer(body):
+        step_text = re.sub(r"\*\*([^*]+)\*\*", r"\1", match.group(2))
+        step_text = step_text.strip(" -*")
+        step_text = re.sub(r"\s+", " ", step_text).rstrip(".:")
+        if not step_text or step_text in steps:
+            continue
+        steps.append(step_text[:140])
+        if len(steps) >= 5:
+            break
+    return steps
+
+
+def _extract_answer_commands(answer_text: str) -> list[str]:
+    commands: list[str] = []
+    for match in CODE_BLOCK_RE.finditer(answer_text or ""):
+        block = match.group(1).strip()
+        if not block:
+            continue
+        first_line = next((line.strip() for line in block.splitlines() if line.strip()), "")
+        if not first_line or first_line in commands:
+            continue
+        commands.append(first_line[:160])
+        if len(commands) >= 3:
+            break
+    return commands
+
+
+def _build_reference_hints(result: AnswerResult, *, topic: str | None) -> list[str]:
+    hints: list[str] = []
+    if topic:
+        hints.append(topic)
+    for citation in result.citations[:3]:
+        label = citation.section or citation.anchor or citation.book_slug
+        hints.append(f"{citation.book_slug} · {label}")
+    return hints[:6]
 
 
 def _viewer_path_to_local_html(root_dir: Path, viewer_path: str) -> Path | None:
@@ -518,15 +640,15 @@ def _derive_next_context(
     next_context = SessionContext.from_dict(previous.to_dict() if previous else None)
     next_context.mode = mode
     next_context.ocp_version = next_context.ocp_version or "4.20"
+    prior_topic = next_context.current_topic
 
     if result.response_kind in {"smalltalk", "meta"}:
         return next_context
-    if result.response_kind in {"clarification", "no_answer"}:
-        next_context.unresolved_question = query
-        return next_context
 
     explicit_topic = _infer_explicit_topic(query)
-    if explicit_topic:
+    if result.response_kind in {"clarification", "no_answer"}:
+        next_context.unresolved_question = query
+    elif explicit_topic:
         next_context.current_topic = explicit_topic
         next_context.open_entities = _infer_open_entities(explicit_topic)
         next_context.unresolved_question = None if result.citations else query
@@ -536,6 +658,39 @@ def _derive_next_context(
         next_context.unresolved_question = None
     else:
         next_context.unresolved_question = query
+
+    if next_context.current_topic:
+        next_context.topic_journal = _merge_memory_items(
+            next_context.topic_journal,
+            [next_context.current_topic],
+        )
+
+    next_context.reference_hints = _merge_memory_items(
+        next_context.reference_hints,
+        _build_reference_hints(result, topic=next_context.current_topic),
+    )
+    extracted_steps = _extract_answer_steps(result.answer)
+    if extracted_steps:
+        next_context.recent_steps = extracted_steps
+    elif explicit_topic and prior_topic and explicit_topic != prior_topic:
+        next_context.recent_steps = []
+
+    extracted_commands = _extract_answer_commands(result.answer)
+    if extracted_commands:
+        next_context.recent_commands = extracted_commands
+    elif explicit_topic and prior_topic and explicit_topic != prior_topic:
+        next_context.recent_commands = []
+
+    next_context.recent_turns = _merge_recent_turns(
+        next_context.recent_turns,
+        _build_turn_memory(
+            query=query,
+            result=result,
+            topic=next_context.current_topic,
+            entities=next_context.open_entities,
+            references=next_context.reference_hints,
+        ),
+    )
     return next_context
 
 
@@ -865,7 +1020,7 @@ def _build_handler(
                 result=result,
             )
             session.history.append(Turn(query=query, mode=mode, answer=result.answer))
-            session.history = session.history[-20:]
+            session.history = session.history[-40:]
             store.update(session)
             self._send_json(_build_chat_payload(session=session, result=result))
 
@@ -924,7 +1079,7 @@ def _build_handler(
                 result=result,
             )
             session.history.append(Turn(query=query, mode=mode, answer=result.answer))
-            session.history = session.history[-20:]
+            session.history = session.history[-40:]
             store.update(session)
             self._stream_event(
                 {

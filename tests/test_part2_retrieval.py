@@ -11,7 +11,7 @@ if str(SRC) not in sys.path:
 
 from ocp_rag_part1.settings import Settings
 from ocp_rag_part2.bm25 import BM25Index
-from ocp_rag_part2.models import RetrievalHit, SessionContext
+from ocp_rag_part2.models import RetrievalHit, SessionContext, TurnMemory
 from ocp_rag_part2.query import (
     decompose_retrieval_queries,
     detect_out_of_corpus_version,
@@ -111,6 +111,23 @@ class RetrievalTests(unittest.TestCase):
         self.assertIn("4.20", rewritten)
         self.assertIn("복구는?", rewritten)
 
+    def test_rewrite_query_uses_recent_turn_capsules_for_long_follow_up(self) -> None:
+        context = SessionContext(
+            ocp_version="4.20",
+            current_topic="RBAC",
+            recent_turns=[
+                TurnMemory(query=f"이전 질문 {index}", topic=f"주제 {index}")
+                for index in range(1, 12)
+            ],
+            reference_hints=["1번=authentication_and_authorization · 9.6. 사용자 역할 추가"],
+        )
+
+        rewritten = rewrite_query("그거는 왜 그렇게 해?", context)
+
+        self.assertIn("최근 대화 캡슐", rewritten)
+        self.assertIn("이전 질문 9 -> 주제 9", rewritten)
+        self.assertIn("1번=authentication_and_authorization", rewritten)
+
     def test_rewrite_query_does_not_force_prior_topic_for_explicit_new_topic(self) -> None:
         context = SessionContext(
             current_topic="2.1.3. 클러스터 업데이트 전 etcd 백업",
@@ -120,6 +137,22 @@ class RetrievalTests(unittest.TestCase):
         rewritten = rewrite_query("오픈시프트에 대해 새줄약해봐", context)
 
         self.assertEqual("오픈시프트에 대해 새줄약해봐", rewritten)
+
+    def test_rewrite_query_uses_step_and_command_ledger_for_follow_up(self) -> None:
+        context = SessionContext(
+            current_topic="RBAC",
+            ocp_version="4.20",
+            topic_journal=["OpenShift", "RBAC"],
+            reference_hints=["authentication_and_authorization · 9.6. 사용자 역할 추가"],
+            recent_steps=["명령을 통해 역할 바인딩 추가", "적용 결과 확인"],
+            recent_commands=["oc adm policy add-role-to-user admin <user> -n <namespace>"],
+        )
+
+        rewritten = rewrite_query("2번 단계에서 그 명령 확인은?", context)
+
+        self.assertIn("참조 단계 적용 결과 확인", rewritten)
+        self.assertIn("최근 명령", rewritten)
+        self.assertIn("최근 근거 메모", rewritten)
 
     def test_normalize_query_expands_high_value_aliases(self) -> None:
         normalized = normalize_query("로그는 어디서 봐?")
@@ -829,6 +862,28 @@ class RetrievalTests(unittest.TestCase):
         self.assertIn("절차", normalized)
         self.assertIn("단계", normalized)
         self.assertIn("procedure", normalized)
+
+    def test_rewrite_query_uses_recent_turn_capsule_for_follow_up(self) -> None:
+        rewritten = rewrite_query(
+            "그거 YAML로도 돼?",
+            SessionContext(
+                mode="ops",
+                current_topic="RBAC",
+                recent_turns=[
+                    TurnMemory(
+                        query="특정 namespace만 admin 권한 주는 방법 단계별로 알려줘",
+                        topic="RBAC",
+                        answer_focus="namespace 단위 admin 권한은 RoleBinding으로 부여한다",
+                        references=["authentication_and_authorization · 9.6. 사용자 역할 추가"],
+                    )
+                ],
+            ),
+        )
+
+        self.assertIn("최근 대화 캡슐", rewritten)
+        self.assertIn("topic=RBAC", rewritten)
+        self.assertIn("focus=namespace 단위 admin 권한은 RoleBinding으로 부여한다", rewritten)
+        self.assertIn("refs=authentication_and_authorization", rewritten)
 
 if __name__ == "__main__":
     unittest.main()

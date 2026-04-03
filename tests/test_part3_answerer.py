@@ -11,7 +11,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from ocp_rag_part1.settings import Settings
-from ocp_rag_part2.models import RetrievalHit, RetrievalResult, SessionContext
+from ocp_rag_part2.models import RetrievalHit, RetrievalResult, SessionContext, TurnMemory
 from ocp_rag_part3.answerer import (
     _ensure_korean_product_terms,
     _strip_intro_offtopic_noise,
@@ -540,6 +540,33 @@ class Part3AnswererTests(unittest.TestCase):
         self.assertIn("현재 주제: etcd 백업", summary)
         self.assertIn("열린 엔터티: etcd", summary)
         self.assertIn("미해결 질문: 복원 절차", summary)
+
+    def test_summarize_session_context_includes_memory_ledgers(self) -> None:
+        summary = summarize_session_context(
+            SessionContext(
+                mode="ops",
+                current_topic="RBAC",
+                topic_journal=["OpenShift", "RBAC"],
+                reference_hints=["authentication_and_authorization · 9.6. 사용자 역할 추가"],
+                recent_turns=[
+                    TurnMemory(
+                        query="특정 namespace만 admin 권한 주는 방법 단계별로 알려줘",
+                        topic="RBAC",
+                        answer_focus="namespace 단위 admin 권한은 RoleBinding으로 부여한다",
+                        references=["authentication_and_authorization · 9.6. 사용자 역할 추가"],
+                    )
+                ],
+                recent_steps=["명령을 통해 역할 바인딩 추가", "적용 결과 확인"],
+                recent_commands=["oc adm policy add-role-to-user admin alice -n joe"],
+                ocp_version="4.20",
+            )
+        )
+
+        self.assertIn("최근 주제 흐름", summary)
+        self.assertIn("최근 근거 메모", summary)
+        self.assertIn("최근 대화 캡슐", summary)
+        self.assertIn("최근 단계 메모", summary)
+        self.assertIn("최근 명령 메모", summary)
 
     def test_finalize_citations_collapses_duplicate_targets(self) -> None:
         citations = [

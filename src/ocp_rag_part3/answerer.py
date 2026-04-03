@@ -177,6 +177,28 @@ def summarize_session_context(context: SessionContext | None) -> str:
         parts.append(f"- 미해결 질문: {context.unresolved_question}")
     elif context.user_goal:
         parts.append(f"- 사용자 목표: {context.user_goal}")
+    if context.topic_journal:
+        parts.append(f"- 최근 주제 흐름: {' -> '.join(context.topic_journal[-3:])}")
+    if context.reference_hints:
+        parts.append(f"- 최근 근거 메모: {' | '.join(context.reference_hints[-3:])}")
+    if context.recent_turns:
+        recent_turn_notes = " | ".join(
+            (
+                f"{index + 1}. {turn.query}"
+                if not turn.topic and not turn.answer_focus
+                else f"{index + 1}. {turn.query} -> {turn.topic or turn.answer_focus}"
+            )
+            for index, turn in enumerate(context.recent_turns[-3:])
+        )
+        parts.append(f"- 최근 대화 캡슐: {recent_turn_notes}")
+    if context.recent_steps:
+        numbered_steps = " | ".join(
+            f"{index + 1}. {step}"
+            for index, step in enumerate(context.recent_steps[:3])
+        )
+        parts.append(f"- 최근 단계 메모: {numbered_steps}")
+    if context.recent_commands:
+        parts.append(f"- 최근 명령 메모: {' | '.join(context.recent_commands[:2])}")
     if context.ocp_version:
         parts.append(f"- OCP 버전: {context.ocp_version}")
     if context.mode:

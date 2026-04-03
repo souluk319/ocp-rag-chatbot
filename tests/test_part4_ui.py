@@ -13,6 +13,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from ocp_rag_part2.models import SessionContext
+from ocp_rag_part2.query import rewrite_query
 from ocp_rag_part3.models import AnswerResult, Citation
 from ocp_rag_part4.server import (
     _citation_href,
@@ -220,6 +221,65 @@ class Part4UiTests(unittest.TestCase):
         self.assertEqual("OpenShift", updated.current_topic)
         self.assertEqual(["OpenShift"], updated.open_entities)
         self.assertIsNone(updated.unresolved_question)
+
+    def test_derive_next_context_captures_memory_ledgers_from_answer(self) -> None:
+        result = AnswerResult(
+            query="특정 namespace만 admin 권한 주는 방법 단계별로 알려줘",
+            mode="ops",
+            answer=(
+                "답변: namespace에서 admin 권한을 부여하려면 RoleBinding을 사용합니다 [1].\n\n"
+                "1. **역할 바인딩 추가**\n"
+                "```bash\noc adm policy add-role-to-user admin alice -n joe\n```\n\n"
+                "2. **적용 결과 확인**\n"
+                "```bash\noc describe rolebinding -n joe\n```"
+            ),
+            rewritten_query="특정 namespace만 admin 권한 주는 방법 단계별로 알려줘",
+            citations=[
+                _citation(
+                    1,
+                    book_slug="authentication_and_authorization",
+                    section="9.6. 사용자 역할 추가",
+                )
+            ],
+            cited_indices=[1],
+        )
+
+        updated = _derive_next_context(
+            SessionContext(mode="ops", current_topic="OpenShift", ocp_version="4.20"),
+            query="특정 namespace만 admin 권한 주는 방법 단계별로 알려줘",
+            mode="ops",
+            result=result,
+        )
+
+        self.assertIn("RBAC", updated.topic_journal)
+        self.assertIn("authentication_and_authorization · 9.6. 사용자 역할 추가", updated.reference_hints)
+        self.assertEqual(["역할 바인딩 추가", "적용 결과 확인"], updated.recent_steps)
+        self.assertIn("oc adm policy add-role-to-user admin alice -n joe", updated.recent_commands)
+
+    def test_multiturn_memory_compacts_but_survives_beyond_ten_turns(self) -> None:
+        context = SessionContext(mode="ops", ocp_version="4.20")
+
+        for index in range(14):
+            result = AnswerResult(
+                query=f"질문 {index}",
+                mode="ops",
+                answer=f"답변: 항목 {index} 설명 [1]",
+                rewritten_query=f"질문 {index}",
+                citations=[_citation(1, book_slug="support", section=f"절차 {index}")],
+                cited_indices=[1],
+            )
+            context = _derive_next_context(
+                context,
+                query=f"질문 {index}",
+                mode="ops",
+                result=result,
+            )
+
+        self.assertEqual(12, len(context.recent_turns))
+        self.assertEqual("질문 2", context.recent_turns[0].query)
+        rewritten = rewrite_query("그거 다시 설명해줘", context)
+        self.assertIn("최근 대화 캡슐", rewritten)
+        self.assertIn("절차 13", rewritten)
 
     def test_suggest_follow_up_questions_for_rbac_answer(self) -> None:
         session = type(

@@ -8,6 +8,7 @@ from .models import SessionContext
 HANGUL_RE = re.compile(r"[\uac00-\ud7a3]")
 SPACE_RE = re.compile(r"\s+")
 VERSION_RE = re.compile(r"(?<!\d)4\.(\d+)(?!\d)")
+STEP_REFERENCE_RE = re.compile(r"(?<!\d)(1[0-2]|[1-9])번(?:\s*단계)?")
 OCP_RE = re.compile(r"(?<![a-z0-9])ocp(?![a-z0-9])", re.IGNORECASE)
 OPENSHIFT_RE = re.compile(r"(오픈시프트|openshift)", re.IGNORECASE)
 KUBERNETES_RE = re.compile(r"(쿠버네티스|kubernetes)", re.IGNORECASE)
@@ -115,6 +116,16 @@ FOLLOW_UP_HINTS = (
     "1번",
     "2번",
     "3번",
+)
+COMMAND_STYLE_HINTS = (
+    "그 명령",
+    "그 커맨드",
+    "그 yaml",
+    "그 매니페스트",
+    "yaml로",
+    "명령어로",
+    "커맨드로",
+    "cli로",
 )
 UNSUPPORTED_PRODUCTS = (
     "argo cd",
@@ -879,6 +890,11 @@ def needs_rewrite(query: str, context: SessionContext) -> bool:
             context.open_entities,
             context.ocp_version,
             context.unresolved_question,
+            context.recent_turns,
+            context.topic_journal,
+            context.reference_hints,
+            context.recent_steps,
+            context.recent_commands,
         ]
     ):
         return False
@@ -888,6 +904,58 @@ def needs_rewrite(query: str, context: SessionContext) -> bool:
     if has_explicit_topic_signal(normalized):
         return False
     return _token_count(normalized) <= 3
+
+
+def _resolve_step_reference(query: str, context: SessionContext) -> str | None:
+    match = STEP_REFERENCE_RE.search(query or "")
+    if not match or not context.recent_steps:
+        return None
+    index = int(match.group(1)) - 1
+    if index < 0 or index >= len(context.recent_steps):
+        return None
+    return context.recent_steps[index]
+
+
+def _needs_command_reference_hint(query: str) -> bool:
+    normalized = (query or "").lower()
+    return any(hint in normalized for hint in COMMAND_STYLE_HINTS)
+
+
+def _recent_turn_memory_hints(query: str, context: SessionContext) -> list[str]:
+    normalized = _collapse_spaces(query)
+    recent_turns = [turn for turn in context.recent_turns if turn.query or turn.topic or turn.answer_focus]
+    if not recent_turns:
+        return []
+
+    hints: list[str] = []
+    latest_turn = recent_turns[-1]
+    if has_follow_up_reference(normalized):
+        capsule_parts = []
+        if latest_turn.topic:
+            capsule_parts.append(f"topic={latest_turn.topic}")
+        if latest_turn.answer_focus:
+            capsule_parts.append(f"focus={latest_turn.answer_focus}")
+        if latest_turn.references:
+            capsule_parts.append(f"refs={' | '.join(latest_turn.references[:2])}")
+        if capsule_parts:
+            hints.append(f"최근 대화 캡슐 {' | '.join(capsule_parts)}")
+        return hints
+
+    if _token_count(normalized) <= 6:
+        capsules: list[str] = []
+        for turn in recent_turns[-2:]:
+            capsule_parts = []
+            if turn.topic:
+                capsule_parts.append(turn.topic)
+            if turn.answer_focus:
+                capsule_parts.append(turn.answer_focus)
+            if turn.references:
+                capsule_parts.append(turn.references[0])
+            if capsule_parts:
+                capsules.append(" / ".join(capsule_parts))
+        if capsules:
+            hints.append(f"최근 대화 캡슐 {' || '.join(capsules)}")
+    return hints
 
 
 def rewrite_query(query: str, context: SessionContext | None = None) -> str:
@@ -901,8 +969,32 @@ def rewrite_query(query: str, context: SessionContext | None = None) -> str:
         hints.append(f"OCP {context.ocp_version}")
     if context.current_topic:
         hints.append(f"주제 {context.current_topic}")
+    if context.topic_journal:
+        hints.append(f"최근 주제 흐름 {' -> '.join(context.topic_journal[-3:])}")
+    if context.recent_turns:
+        recent_turn_hint_parts: list[str] = []
+        for turn in context.recent_turns[-2:]:
+            capsule_parts = [f"query={turn.query}"]
+            if turn.topic:
+                capsule_parts.append(f"topic={turn.topic}")
+            if turn.answer_focus:
+                capsule_parts.append(f"focus={turn.answer_focus}")
+            if turn.references:
+                capsule_parts.append(f"refs={', '.join(turn.references[:1])}")
+            recent_turn_hint_parts.append(" / ".join(capsule_parts))
+        hints.append(f"최근 대화 캡슐 {' | '.join(recent_turn_hint_parts)}")
     if context.open_entities:
         hints.append(f"엔터티 {', '.join(context.open_entities)}")
+    if context.reference_hints:
+        hints.append(f"최근 근거 메모 {' | '.join(context.reference_hints[-2:])}")
+    step_reference = _resolve_step_reference(normalized, context)
+    if step_reference:
+        hints.append(f"참조 단계 {step_reference}")
+    elif context.recent_steps and has_follow_up_reference(normalized):
+        hints.append(f"최근 단계 {' | '.join(context.recent_steps[:3])}")
+    if context.recent_commands and _needs_command_reference_hint(normalized):
+        hints.append(f"최근 명령 {' | '.join(context.recent_commands[:2])}")
+    hints.extend(_recent_turn_memory_hints(normalized, context))
     if context.unresolved_question:
         hints.append(f"미해결 질문 {context.unresolved_question}")
     elif context.user_goal:
