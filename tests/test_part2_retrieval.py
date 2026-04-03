@@ -125,7 +125,7 @@ class RetrievalTests(unittest.TestCase):
         rewritten = rewrite_query("그거는 왜 그렇게 해?", context)
 
         self.assertIn("최근 대화 캡슐", rewritten)
-        self.assertIn("이전 질문 9 -> 주제 9", rewritten)
+        self.assertIn("이전 질문 10 -> 주제 10", rewritten)
         self.assertIn("1번=authentication_and_authorization", rewritten)
 
     def test_rewrite_query_does_not_force_prior_topic_for_explicit_new_topic(self) -> None:
@@ -884,6 +884,26 @@ class RetrievalTests(unittest.TestCase):
         self.assertIn("topic=RBAC", rewritten)
         self.assertIn("focus=namespace 단위 admin 권한은 RoleBinding으로 부여한다", rewritten)
         self.assertIn("refs=authentication_and_authorization", rewritten)
+
+    def test_session_context_from_dict_restores_recent_turns(self) -> None:
+        context = SessionContext.from_dict(
+            {
+                "mode": "ops",
+                "recent_turns": [
+                    {
+                        "query": "이전 질문",
+                        "topic": "RBAC",
+                        "answer_focus": "rolebinding",
+                        "entities": ["RBAC"],
+                        "references": ["1번=authentication_and_authorization · 9.6"],
+                    }
+                ],
+            }
+        )
+
+        self.assertEqual(1, len(context.recent_turns))
+        self.assertEqual("이전 질문", context.recent_turns[0].query)
+        self.assertEqual("RBAC", context.recent_turns[0].topic)
 
 if __name__ == "__main__":
     unittest.main()

@@ -973,15 +973,13 @@ def rewrite_query(query: str, context: SessionContext | None = None) -> str:
         hints.append(f"최근 주제 흐름 {' -> '.join(context.topic_journal[-3:])}")
     if context.recent_turns:
         recent_turn_hint_parts: list[str] = []
-        for turn in context.recent_turns[-2:]:
-            capsule_parts = [f"query={turn.query}"]
+        for turn in context.recent_turns[-3:]:
             if turn.topic:
-                capsule_parts.append(f"topic={turn.topic}")
-            if turn.answer_focus:
-                capsule_parts.append(f"focus={turn.answer_focus}")
-            if turn.references:
-                capsule_parts.append(f"refs={', '.join(turn.references[:1])}")
-            recent_turn_hint_parts.append(" / ".join(capsule_parts))
+                recent_turn_hint_parts.append(f"{turn.query} -> {turn.topic}")
+            elif turn.answer_focus:
+                recent_turn_hint_parts.append(f"{turn.query} -> {turn.answer_focus}")
+            else:
+                recent_turn_hint_parts.append(turn.query)
         hints.append(f"최근 대화 캡슐 {' | '.join(recent_turn_hint_parts)}")
     if context.open_entities:
         hints.append(f"엔터티 {', '.join(context.open_entities)}")
