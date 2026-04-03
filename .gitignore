@@ -10,5 +10,6 @@ artifacts/
 env
 .claude/
 .internal/
+.plan/
 AGENTS.md
 src/ocp_rag_v2.egg-info/
