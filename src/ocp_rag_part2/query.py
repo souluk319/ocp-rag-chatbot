@@ -930,15 +930,30 @@ def _recent_turn_memory_hints(query: str, context: SessionContext) -> list[str]:
     hints: list[str] = []
     latest_turn = recent_turns[-1]
     if has_follow_up_reference(normalized):
-        capsule_parts = [f"query={latest_turn.query}"]
-        if latest_turn.topic:
-            capsule_parts.append(f"topic={latest_turn.topic}")
-        if latest_turn.answer_focus:
-            capsule_parts.append(f"focus={latest_turn.answer_focus}")
-        if latest_turn.references:
-            capsule_parts.append(f"refs={' | '.join(latest_turn.references[:2])}")
-        if capsule_parts:
-            hints.append(f"최근 대화 캡슐 {' | '.join(capsule_parts)}")
+        if len(recent_turns) > 1:
+            capsules: list[str] = []
+            for turn in recent_turns[-2:]:
+                if turn.topic:
+                    capsules.append(f"{turn.query} -> {turn.topic}")
+                elif turn.answer_focus:
+                    capsules.append(f"{turn.query} -> {turn.answer_focus}")
+                else:
+                    capsules.append(turn.query)
+            if capsules:
+                hint = f"최근 대화 캡슐 {' || '.join(capsules)}"
+                if latest_turn.references:
+                    hint = f"{hint} | refs={' | '.join(latest_turn.references[:2])}"
+                hints.append(hint)
+        else:
+            capsule_parts = [f"query={latest_turn.query}"]
+            if latest_turn.topic:
+                capsule_parts.append(f"topic={latest_turn.topic}")
+            if latest_turn.answer_focus:
+                capsule_parts.append(f"focus={latest_turn.answer_focus}")
+            if latest_turn.references:
+                capsule_parts.append(f"refs={' | '.join(latest_turn.references[:2])}")
+            if capsule_parts:
+                hints.append(f"최근 대화 캡슐 {' | '.join(capsule_parts)}")
         return hints
 
     if _token_count(normalized) <= 6:
@@ -983,7 +998,6 @@ def rewrite_query(query: str, context: SessionContext | None = None) -> str:
         hints.append(f"최근 단계 {' | '.join(context.recent_steps[:3])}")
     if context.recent_commands and _needs_command_reference_hint(normalized):
         hints.append(f"최근 명령 {' | '.join(context.recent_commands[:2])}")
-    hints.extend(_recent_turn_memory_hints(normalized, context))
     if context.unresolved_question:
         hints.append(f"미해결 질문 {context.unresolved_question}")
     elif context.user_goal:

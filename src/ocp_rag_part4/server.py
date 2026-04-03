@@ -44,6 +44,7 @@ ANSWER_PREFIX_RE = re.compile(r"^\s*답변:\s*")
 CITATION_MARK_RE = re.compile(r"\[\d+\]")
 STEP_LINE_RE = re.compile(r"^\s*(\d+)\.\s+(.+?)\s*$", re.MULTILINE)
 CODE_BLOCK_RE = re.compile(r"```(?:[\w.+-]*)\n(.*?)```", re.DOTALL)
+DOC_HEADING_RE = re.compile(r"^\d+(?:\.\d+)+(?:\.\d+)*\.\s*")
 
 
 @dataclass(slots=True)
@@ -654,10 +655,20 @@ def _derive_next_context(
         next_context.unresolved_question = None if result.citations else query
     elif result.citations:
         primary = result.citations[0]
-        next_context.current_topic = primary.section or next_context.current_topic
+        inferred_topic = _infer_topic_from_citation(primary)
+        if inferred_topic:
+            next_context.current_topic = inferred_topic
+            next_context.open_entities = _infer_open_entities(inferred_topic)
         next_context.unresolved_question = None
     else:
         next_context.unresolved_question = query
+
+    stabilized_topic = _stabilize_topic_from_entities(
+        next_context.current_topic,
+        next_context.open_entities,
+    )
+    if stabilized_topic:
+        next_context.current_topic = stabilized_topic
 
     if next_context.current_topic:
         next_context.topic_journal = _merge_memory_items(
@@ -710,6 +721,53 @@ def _infer_explicit_topic(query: str) -> str | None:
         if ARCHITECTURE_RE.search(normalized):
             return "OpenShift 아키텍처"
         return "OpenShift"
+    return None
+
+
+def _infer_topic_from_citation(citation: Citation) -> str | None:
+    book_slug = (citation.book_slug or "").lower()
+    section = (citation.section or "").lower()
+    anchor = (citation.anchor or "").lower()
+    combined = " ".join(part for part in [book_slug, section, anchor] if part)
+
+    if "authentication_and_authorization" in book_slug or "role" in combined or "rbac" in combined:
+        return "RBAC"
+    if "etcd" in combined or "backup_and_restore" in book_slug:
+        if "backup" in combined or "restore" in combined or "백업" in combined or "복원" in combined:
+            return "etcd 백업/복원"
+        return "etcd"
+    if "machine_configuration" in book_slug or "machine config" in combined or "mco" in combined:
+        return "Machine Config Operator"
+    if book_slug in {"architecture", "overview"}:
+        if "architecture" in combined or "아키텍처" in combined:
+            return "OpenShift 아키텍처"
+        return "OpenShift"
+    if "openshift" in combined or "ocp" in combined:
+        return "OpenShift"
+    return None
+
+
+def _stabilize_topic_from_entities(topic: str | None, open_entities: list[str]) -> str | None:
+    cleaned_topic = (topic or "").strip()
+    if not cleaned_topic or not open_entities:
+        return None
+    if not DOC_HEADING_RE.match(cleaned_topic):
+        return None
+
+    entity_set = set(open_entities)
+    lowered = cleaned_topic.lower()
+    if "RBAC" in entity_set:
+        return "RBAC"
+    if "Machine Config Operator" in entity_set:
+        return "Machine Config Operator"
+    if "OpenShift" in entity_set:
+        if "architecture" in lowered or "아키텍처" in cleaned_topic:
+            return "OpenShift 아키텍처"
+        return "OpenShift"
+    if "etcd" in entity_set:
+        if any(token in lowered for token in ["backup", "restore", "백업", "복원"]):
+            return "etcd 백업/복원"
+        return "etcd"
     return None
 
 

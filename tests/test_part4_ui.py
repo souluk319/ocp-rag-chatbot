@@ -222,6 +222,38 @@ class Part4UiTests(unittest.TestCase):
         self.assertEqual(["OpenShift"], updated.open_entities)
         self.assertIsNone(updated.unresolved_question)
 
+    def test_derive_next_context_keeps_semantic_topic_when_citation_section_is_raw_heading(self) -> None:
+        result = AnswerResult(
+            query="그 명령 다시 보여줘",
+            mode="ops",
+            answer="답변: 명령은 이 문서를 참고하세요 [1]",
+            rewritten_query="그 명령 다시 보여줘",
+            citations=[
+                _citation(
+                    1,
+                    book_slug="postinstallation_configuration",
+                    section="3.2. 클러스터 재시작",
+                )
+            ],
+            cited_indices=[1],
+        )
+
+        updated = _derive_next_context(
+            SessionContext(
+                mode="ops",
+                current_topic="RBAC",
+                open_entities=["RBAC"],
+                ocp_version="4.20",
+            ),
+            query="그 명령 다시 보여줘",
+            mode="ops",
+            result=result,
+        )
+
+        self.assertEqual("RBAC", updated.current_topic)
+        self.assertEqual(["RBAC"], updated.open_entities)
+        self.assertIsNone(updated.unresolved_question)
+
     def test_derive_next_context_captures_memory_ledgers_from_answer(self) -> None:
         result = AnswerResult(
             query="특정 namespace만 admin 권한 주는 방법 단계별로 알려줘",
