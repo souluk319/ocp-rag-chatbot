@@ -17,7 +17,7 @@ from ocp_rag_part4 import serve
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run the Part 4 minimum QA UI")
     parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--port", type=int, default=8770)
     parser.add_argument("--no-browser", action="store_true")
     return parser
 

@@ -863,12 +863,12 @@ python scripts/check_runtime_endpoints.py
 #### 5) UI 실행
 
 ```powershell
-python scripts/run_part4_ui.py --host 127.0.0.1 --port 8765
+python scripts/run_part4_ui.py --host 127.0.0.1 --port 8770
 ```
 
 브라우저:
 
-- `http://127.0.0.1:8765`
+- `http://127.0.0.1:8770`
 
 #### 6) 발표 직전 최소 점검 질문
 
@@ -938,7 +938,7 @@ python3 scripts/run_part4_ui.py --no-browser
 
 브라우저:
 
-- `http://127.0.0.1:8765`
+- `http://127.0.0.1:8770`
 
 ### 12.5 RAGAS judge 평가
 

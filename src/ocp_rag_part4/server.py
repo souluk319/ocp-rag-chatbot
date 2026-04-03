@@ -952,7 +952,7 @@ def serve(
     answerer: Part3Answerer,
     root_dir: Path,
     host: str = "127.0.0.1",
-    port: int = 8765,
+    port: int = 8770,
     open_browser: bool = True,
 ) -> None:
     store = SessionStore()
