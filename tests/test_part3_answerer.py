@@ -13,6 +13,8 @@ if str(SRC) not in sys.path:
 from ocp_rag_part1.settings import Settings
 from ocp_rag_part2.models import ProcedureMemory, RetrievalHit, RetrievalResult, SessionContext, TurnMemory
 from ocp_rag_part3.answerer import (
+    _build_procedure_follow_up_answer,
+    _augment_query_with_procedure_focus,
     _ensure_korean_product_terms,
     _strip_intro_offtopic_noise,
     Part3Answerer,
@@ -264,6 +266,38 @@ class Part3AnswererTests(unittest.TestCase):
         self.assertIn("이전 대화 맥락은 해석 힌트일 뿐", messages[0]["content"])
         self.assertIn("follow-up이라도 현재 검색 근거가 약하면 단정하지 말고 확인 질문을 할 것", messages[1]["content"])
         self.assertIn("이전 맥락 때문에 현재 근거와 맞지 않는 대상을 끌어오지 말 것", messages[1]["content"])
+
+    def test_build_messages_adds_procedure_follow_up_rule_for_step_reference(self) -> None:
+        from ocp_rag_part3.context import assemble_context
+
+        hit = RetrievalHit(
+            chunk_id="chunk-1",
+            book_slug="authentication_and_authorization",
+            chapter="rbac",
+            section="RoleBinding",
+            anchor="adding-roles",
+            source_url="https://example.com/rbac",
+            viewer_path="/docs/rbac.html#adding-roles",
+            text="RoleBinding procedure",
+            source="hybrid",
+            raw_score=1.0,
+            fused_score=1.0,
+        )
+        bundle = assemble_context([hit])
+        messages = build_messages(
+            query="2번만 더 자세히",
+            mode="ops",
+            context_bundle=bundle,
+            session_summary=(
+                "- active procedure: namespace admin role\n"
+                "- procedure step command map: "
+                "1. Create binding => oc adm policy add-role-to-user admin alice -n joe | "
+                "2. Verify binding => oc describe rolebinding -n joe"
+            ),
+        )
+
+        self.assertIn("Procedure follow-up rule:", messages[1]["content"])
+        self.assertIn("preserve the mapped command for that step", messages[1]["content"])
 
     def test_build_messages_forces_brief_clarification_in_ambiguous_cases(self) -> None:
         messages = build_messages(
@@ -579,6 +613,65 @@ class Part3AnswererTests(unittest.TestCase):
         self.assertIn("최근 명령 메모", summary)
         self.assertIn("진행 중 절차", summary)
         self.assertIn("절차 근거 메모", summary)
+
+        self.assertIn("procedure step command map", summary)
+        self.assertIn("oc describe rolebinding -n joe", summary)
+
+    def test_augment_query_with_procedure_focus_prefers_requested_step(self) -> None:
+        query = _augment_query_with_procedure_focus(
+            "2번만 더 자세히",
+            SessionContext(
+                mode="ops",
+                procedure_memory=ProcedureMemory(
+                    goal="namespace admin role",
+                    steps=["Create binding", "Verify binding"],
+                    active_step_index=0,
+                    step_commands=[
+                        "oc adm policy add-role-to-user admin alice -n joe",
+                        "oc describe rolebinding -n joe",
+                    ],
+                ),
+            ),
+        )
+
+        self.assertIn("Focused procedure step: 2. Verify binding", query)
+        self.assertIn("Expected step command: oc describe rolebinding -n joe", query)
+        self.assertNotIn("Focused procedure step: 1. Create binding", query)
+
+    def test_build_procedure_follow_up_answer_uses_requested_step_command(self) -> None:
+        answer = _build_procedure_follow_up_answer(
+            "2번만 더 자세히",
+            SessionContext(
+                mode="ops",
+                procedure_memory=ProcedureMemory(
+                    goal="namespace admin role",
+                    steps=["Create binding", "Verify binding"],
+                    active_step_index=0,
+                    step_commands=[
+                        "oc adm policy add-role-to-user admin alice -n joe",
+                        "oc describe rolebinding -n joe",
+                    ],
+                ),
+            ),
+            [
+                Citation(
+                    index=1,
+                    chunk_id="chunk-1",
+                    book_slug="authentication_and_authorization",
+                    section="RoleBinding",
+                    anchor="adding-roles",
+                    source_url="https://example.com/rbac",
+                    viewer_path="/docs/rbac.html#adding-roles",
+                    excerpt="RoleBinding verification",
+                )
+            ],
+        )
+
+        self.assertIsNotNone(answer)
+        assert answer is not None
+        self.assertIn("2번 단계는 Verify binding입니다.", answer)
+        self.assertIn("oc describe rolebinding -n joe", answer)
+        self.assertNotIn("oc adm policy add-role-to-user admin alice -n joe", answer)
 
     def test_finalize_citations_collapses_duplicate_targets(self) -> None:
         citations = [

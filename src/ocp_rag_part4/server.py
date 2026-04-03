@@ -6,7 +6,7 @@ import re
 import threading
 import uuid
 import webbrowser
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from ocp_rag_part1.settings import load_settings
+from ocp_rag_part1.settings import HIGH_VALUE_SLUGS, load_settings
 from ocp_rag_part1.validation import read_jsonl
 from ocp_rag_part2.models import ProcedureMemory, SessionContext, TurnMemory
 from ocp_rag_part2.query import (
@@ -372,6 +372,64 @@ def _build_reference_hints(result: AnswerResult, *, topic: str | None) -> list[s
     return hints[:6]
 
 
+def _resolve_procedure_follow_up_index(
+    query: str,
+    context: SessionContext | None,
+) -> int | None:
+    if context is None or context.procedure_memory is None or not context.procedure_memory.steps:
+        return None
+
+    procedure = context.procedure_memory
+    normalized = query or ""
+    match = STEP_REFERENCE_RE.search(normalized)
+    if match:
+        index = int(match.group(1)) - 1
+        if 0 <= index < len(procedure.steps):
+            return index
+
+    if PROCEDURE_CURRENT_STEP_RE.search(normalized):
+        return procedure.active_step_index
+
+    if PROCEDURE_NEXT_STEP_RE.search(normalized):
+        if procedure.active_step_index is None:
+            return 0
+        return min(procedure.active_step_index + 1, len(procedure.steps) - 1)
+
+    return None
+
+
+def _override_answer_with_procedure_follow_up(
+    *,
+    query: str,
+    context: SessionContext | None,
+    result: AnswerResult,
+) -> AnswerResult:
+    focus_index = _resolve_procedure_follow_up_index(query, context)
+    if focus_index is None or context is None or context.procedure_memory is None:
+        return result
+
+    procedure = context.procedure_memory
+    if focus_index < 0 or focus_index >= len(procedure.steps):
+        return result
+
+    step = procedure.steps[focus_index]
+    command = procedure.command_for(focus_index)
+    citation_mark = " [1]" if result.citations else ""
+    lines = [f"답변: {focus_index + 1}번 단계는 {step}입니다.{citation_mark}"]
+    if command:
+        lines.extend(["", "```bash", command, "```"])
+
+    next_index = focus_index + 1
+    lowered = (query or "").lower()
+    if (
+        next_index < len(procedure.steps)
+        and ("자세히" in (query or "") or "detail" in lowered or "explain" in lowered)
+    ):
+        lines.extend(["", f"다음 단계: {next_index + 1}. {procedure.steps[next_index]}"])
+
+    return replace(result, answer="\n".join(lines))
+
+
 def _viewer_path_to_local_html(root_dir: Path, viewer_path: str) -> Path | None:
     parsed = _parse_viewer_path(viewer_path)
     if parsed is None:
@@ -498,6 +556,73 @@ def _load_normalized_sections(
     for row in read_jsonl(Path(normalized_docs_path)):
         sections_by_book.setdefault(str(row.get("book_slug", "")), []).append(row)
     return sections_by_book
+
+
+@lru_cache(maxsize=4)
+def _load_library_index(
+    normalized_docs_path: str,
+    mtime_ns: int,
+) -> list[dict[str, Any]]:
+    del mtime_ns
+    by_book: dict[str, dict[str, Any]] = {}
+    for row in read_jsonl(Path(normalized_docs_path)):
+        book_slug = str(row.get("book_slug") or "").strip()
+        if not book_slug:
+            continue
+        book_title = str(row.get("book_title") or book_slug).strip() or book_slug
+        heading = str(row.get("heading") or "").strip()
+        viewer_path = str(row.get("viewer_path") or "").strip()
+        source_url = str(row.get("source_url") or "").strip()
+        entry = by_book.setdefault(
+            book_slug,
+            {
+                "book_slug": book_slug,
+                "book_title": book_title,
+                "section_count": 0,
+                "source_url": source_url,
+                "viewer_path": viewer_path.split("#", 1)[0] if viewer_path else "",
+                "sample_sections": [],
+                "high_value": book_slug in HIGH_VALUE_SLUGS,
+            },
+        )
+        entry["section_count"] += 1
+        if not entry["source_url"] and source_url:
+            entry["source_url"] = source_url
+        if not entry["viewer_path"] and viewer_path:
+            entry["viewer_path"] = viewer_path.split("#", 1)[0]
+        if heading and heading not in entry["sample_sections"] and len(entry["sample_sections"]) < 3:
+            entry["sample_sections"].append(heading)
+    return sorted(
+        by_book.values(),
+        key=lambda item: (
+            0 if item["high_value"] else 1,
+            -int(item["section_count"]),
+            str(item["book_title"]).lower(),
+        ),
+    )
+
+
+def _build_library_payload(root_dir: Path) -> dict[str, Any]:
+    settings = load_settings(root_dir)
+    normalized_docs_path = settings.normalized_docs_path
+    if not normalized_docs_path.exists():
+        return {
+            "available": False,
+            "items": [],
+            "total_books": 0,
+            "total_sections": 0,
+        }
+
+    items = _load_library_index(
+        str(normalized_docs_path),
+        normalized_docs_path.stat().st_mtime_ns,
+    )
+    return {
+        "available": True,
+        "items": items,
+        "total_books": len(items),
+        "total_sections": sum(int(item["section_count"]) for item in items),
+    }
 
 
 def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
@@ -1176,6 +1301,9 @@ def _build_handler(
             if self.path == "/api/health":
                 self._send_json({"ok": True})
                 return
+            if self.path == "/api/library":
+                self._send_json(_build_library_payload(root_dir))
+                return
             internal_viewer = _internal_viewer_html(root_dir, self.path)
             if internal_viewer is not None:
                 self._send_html(internal_viewer)
@@ -1227,6 +1355,11 @@ def _build_handler(
                     top_k=5,
                     candidate_k=20,
                     max_context_chunks=6,
+                )
+                result = _override_answer_with_procedure_follow_up(
+                    query=query,
+                    context=session.context,
+                    result=result,
                 )
                 answerer.append_log(result)
             except Exception as exc:  # noqa: BLE001
@@ -1284,6 +1417,11 @@ def _build_handler(
                     candidate_k=20,
                     max_context_chunks=6,
                     trace_callback=emit_trace,
+                )
+                result = _override_answer_with_procedure_follow_up(
+                    query=query,
+                    context=session.context,
+                    result=result,
                 )
                 answerer.append_log(result)
             except Exception as exc:  # noqa: BLE001
@@ -1353,6 +1491,7 @@ __all__ = [
     "ChatSession",
     "SessionStore",
     "_citation_href",
+    "_build_library_payload",
     "_internal_viewer_html",
     "_viewer_path_to_local_html",
     "_derive_next_context",

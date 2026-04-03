@@ -9,8 +9,10 @@ from pathlib import Path
 from ocp_rag_part1.settings import Settings
 from ocp_rag_part2 import Part2Retriever, SessionContext
 from ocp_rag_part2.query import (
+    STEP_REFERENCE_RE,
     has_certificate_monitor_intent,
     has_cluster_node_usage_intent,
+    has_follow_up_reference,
     has_node_drain_intent,
     has_openshift_kubernetes_compare_intent,
     is_generic_intro_query,
@@ -208,6 +210,13 @@ def summarize_session_context(context: SessionContext | None) -> str:
             )
         else:
             parts.append(f"- 진행 중 절차: {context.procedure_memory.goal or context.current_topic or '절차'}")
+        step_command_pairs: list[str] = []
+        for index, step in enumerate(context.procedure_memory.steps[:4]):
+            command = context.procedure_memory.command_for(index)
+            if command:
+                step_command_pairs.append(f"{index + 1}. {step} => {command}")
+        if step_command_pairs:
+            parts.append(f"- procedure step command map: {' | '.join(step_command_pairs)}")
         if context.procedure_memory.references:
             parts.append(f"- 절차 근거 메모: {' | '.join(context.procedure_memory.references[:2])}")
     if context.ocp_version:
@@ -215,6 +224,90 @@ def summarize_session_context(context: SessionContext | None) -> str:
     if context.mode:
         parts.append(f"- 세션 모드: {context.mode}")
     return "\n".join(parts)
+
+
+def _augment_query_with_procedure_focus(query: str, context: SessionContext | None) -> str:
+    if context is None or context.procedure_memory is None or not context.procedure_memory.steps:
+        return query
+    match = STEP_REFERENCE_RE.search(query or "")
+    if match:
+        candidate = int(match.group(1)) - 1
+        if 0 <= candidate < len(context.procedure_memory.steps):
+            focused_index = candidate
+        else:
+            focused_index = context.procedure_memory.active_step_index
+    else:
+        if not has_follow_up_reference(query):
+            return query
+        focused_index = context.procedure_memory.active_step_index
+
+    if focused_index is None or focused_index < 0 or focused_index >= len(context.procedure_memory.steps):
+        return query
+
+    step = context.procedure_memory.steps[focused_index]
+    command = context.procedure_memory.command_for(focused_index)
+    parts = [query, f"Focused procedure step: {focused_index + 1}. {step}"]
+    if context.procedure_memory.goal:
+        parts.append(f"Procedure goal: {context.procedure_memory.goal}")
+    if command:
+        parts.append(f"Expected step command: {command}")
+    return "\n".join(parts)
+
+
+def _resolve_procedure_follow_up_index(query: str, context: SessionContext | None) -> int | None:
+    if context is None or context.procedure_memory is None or not context.procedure_memory.steps:
+        return None
+
+    procedure = context.procedure_memory
+    normalized = query or ""
+    match = STEP_REFERENCE_RE.search(normalized)
+    if match:
+        index = int(match.group(1)) - 1
+        if 0 <= index < len(procedure.steps):
+            return index
+
+    if not has_follow_up_reference(query):
+        return None
+
+    lowered = normalized.lower()
+    if "다음" in normalized or "next" in lowered:
+        if procedure.active_step_index is None:
+            return 0
+        return min(procedure.active_step_index + 1, len(procedure.steps) - 1)
+    if "현재" in normalized or "해당 단계" in normalized or "this step" in lowered or "current step" in lowered:
+        return procedure.active_step_index
+    return procedure.active_step_index
+
+
+def _build_procedure_follow_up_answer(
+    query: str,
+    context: SessionContext | None,
+    citations: list,
+) -> str | None:
+    focus_index = _resolve_procedure_follow_up_index(query, context)
+    if focus_index is None or context is None or context.procedure_memory is None:
+        return None
+
+    procedure = context.procedure_memory
+    if focus_index < 0 or focus_index >= len(procedure.steps):
+        return None
+
+    step = procedure.steps[focus_index]
+    command = procedure.command_for(focus_index)
+    citation_mark = " [1]" if citations else ""
+    lines = [f"답변: {focus_index + 1}번 단계는 {step}입니다.{citation_mark}"]
+    if command:
+        lines.extend(["", "```bash", command, "```"])
+
+    next_index = focus_index + 1
+    lowered = (query or "").lower()
+    if (
+        next_index < len(procedure.steps)
+        and ("자세히" in (query or "") or "detail" in lowered or "explain" in lowered)
+    ):
+        lines.extend(["", f"다음 단계: {next_index + 1}. {procedure.steps[next_index]}"])
+
+    return "\n".join(lines)
 
 
 def _citation_identity(citation) -> tuple[str, str]:
@@ -514,7 +607,7 @@ class Part3Answerer:
             }
         )
         messages = build_messages(
-            query=query,
+            query=_augment_query_with_procedure_focus(query, context),
             mode=mode,
             context_bundle=context_bundle,
             session_summary=summarize_session_context(context),
@@ -533,31 +626,51 @@ class Part3Answerer:
             }
         )
 
+        direct_follow_up_answer = None
+        if mode == "ops":
+            direct_follow_up_answer = _build_procedure_follow_up_answer(
+                query,
+                context,
+                context_bundle.citations,
+            )
+
         llm_started_at = time.perf_counter()
-        answer_text = reshape_ops_answer_text(
-            normalize_answer_text(
-                self.llm_client.generate(messages, trace_callback=emit)
-            ),
-            mode=mode,
-        )
-        answer_text = _ensure_korean_product_terms(answer_text, query=query)
-        answer_text = _align_answer_to_grounded_commands(
-            answer_text,
-            query=query,
-            citations=context_bundle.citations,
-        )
-        answer_text = _strip_weak_additional_guidance(
-            answer_text,
-            mode=mode,
-            citations=context_bundle.citations,
-        )
-        answer_text = _strip_intro_offtopic_noise(answer_text, query=query)
-        if mode == "ops" and context_bundle.citations and not CITATION_RE.search(answer_text):
-            answer_text = _inject_single_citation(answer_text, citation_index=1)
-        pipeline_timings_ms["llm_generate_total"] = round(
-            (time.perf_counter() - llm_started_at) * 1000,
-            1,
-        )
+        if direct_follow_up_answer is not None:
+            emit(
+                {
+                    "step": "procedure_follow_up",
+                    "label": "절차 follow-up 직접 구성 완료",
+                    "status": "done",
+                    "detail": "session procedure memory",
+                }
+            )
+            answer_text = direct_follow_up_answer
+            pipeline_timings_ms["llm_generate_total"] = 0.0
+        else:
+            answer_text = reshape_ops_answer_text(
+                normalize_answer_text(
+                    self.llm_client.generate(messages, trace_callback=emit)
+                ),
+                mode=mode,
+            )
+            answer_text = _ensure_korean_product_terms(answer_text, query=query)
+            answer_text = _align_answer_to_grounded_commands(
+                answer_text,
+                query=query,
+                citations=context_bundle.citations,
+            )
+            answer_text = _strip_weak_additional_guidance(
+                answer_text,
+                mode=mode,
+                citations=context_bundle.citations,
+            )
+            answer_text = _strip_intro_offtopic_noise(answer_text, query=query)
+            if mode == "ops" and context_bundle.citations and not CITATION_RE.search(answer_text):
+                answer_text = _inject_single_citation(answer_text, citation_index=1)
+            pipeline_timings_ms["llm_generate_total"] = round(
+                (time.perf_counter() - llm_started_at) * 1000,
+                1,
+            )
 
         finalize_started_at = time.perf_counter()
         emit(

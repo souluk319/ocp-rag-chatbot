@@ -4,6 +4,7 @@ from ocp_rag_part2.query import (
     has_backup_restore_intent,
     has_certificate_monitor_intent,
     has_cluster_node_usage_intent,
+    has_follow_up_reference,
     has_step_by_step_intent,
     has_project_finalizer_intent,
     has_project_terminating_intent,
@@ -24,6 +25,15 @@ def _step_by_step_hint(query: str, mode: str) -> str:
     return (
         "질문이 단계별 요청이면 답변 본문을 반드시 번호 목록 `1. 2. 3.` 형식으로 쓰고, "
         "각 단계마다 먼저 무엇을 확인하거나 수행하는지 한 줄로 말한 뒤 필요한 명령어나 YAML은 바로 아래 코드 블록으로 붙일 것."
+    )
+
+
+def _procedure_follow_up_hint(query: str) -> str:
+    if not has_follow_up_reference(query):
+        return ""
+    return (
+        "If session memory includes procedure steps and the user points to a numbered step or asks for the next step, "
+        "answer that referenced step first, preserve the mapped command for that step, and do not restart from step 1 unless the user asks to."
     )
 
 
@@ -107,6 +117,7 @@ def build_messages(
     )
     shape_hint = _intent_shape_hint(query, mode)
     step_by_step_hint = _step_by_step_hint(query, mode)
+    procedure_follow_up_hint = _procedure_follow_up_hint(query)
     session_block = f"세션 맥락:\n{session_summary}\n\n" if session_summary else ""
     user = (
         f"모드: {mode}\n"
@@ -133,6 +144,8 @@ def build_messages(
     )
     if step_by_step_hint:
         user += f"- 단계별 출력 규칙: {step_by_step_hint}\n"
+    if procedure_follow_up_hint:
+        user += f"- Procedure follow-up rule: {procedure_follow_up_hint}\n"
     if shape_hint:
         user += f"- 답변 구조 힌트: {shape_hint}\n"
     return [
