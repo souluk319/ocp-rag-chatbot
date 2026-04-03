@@ -16,7 +16,16 @@ from urllib.parse import urlparse
 
 from ocp_rag_part1.settings import HIGH_VALUE_SLUGS, load_settings
 from ocp_rag_part1.validation import read_jsonl
-from ocp_rag_part2.models import ProcedureMemory, SessionContext, TurnMemory
+from ocp_rag_part2.command_memory import (
+    build_command_template_follow_up_answer,
+    build_command_template_memory,
+)
+from ocp_rag_part2.models import (
+    CommandTemplateMemory,
+    ProcedureMemory,
+    SessionContext,
+    TurnMemory,
+)
 from ocp_rag_part2.query import (
     ARCHITECTURE_RE,
     ETCD_RE,
@@ -60,6 +69,34 @@ PROCEDURE_DONE_UNTIL_RE = re.compile(
 PROCEDURE_GOAL_NOISE_RE = re.compile(
     r"(단계별(?:로)?|순서대로|차근차근|하나씩|알려줘|알려 줘|설명해줘|설명해 줘|"
     r"보여줘|보여 줘|정리해줘|정리해 줘|다시|예시로|예시만|기준으로|만 더 자세히)",
+    re.IGNORECASE,
+)
+ROLE_BINDING_COMMAND_RE = re.compile(
+    r"^oc\s+adm\s+policy\s+add-role-to-(user|group)\s+(\S+)\s+(\S+)(?:\s+-n\s+(\S+))?\s*$",
+    re.IGNORECASE,
+)
+NAMESPACE_FLAG_RE = re.compile(r"(?:^|\s)(?:-n|--namespace)\s+(\S+)")
+INLINE_NAMESPACE_FLAG_RE = re.compile(r"--namespace=(\S+)")
+SERVICEACCOUNT_SUBJECT_RE = re.compile(
+    r"^system:serviceaccount:([A-Za-z0-9._-]+):([A-Za-z0-9._-]+)$",
+    re.IGNORECASE,
+)
+COMMAND_MUTATION_HINT_RE = re.compile(
+    r"(대신|바꿔|변경|수정|기준|serviceaccount|service account|서비스어카운트|\bsa\b|user|사용자|group|그룹|namespace|네임스페이스)",
+    re.IGNORECASE,
+)
+COMMAND_REPLACE_RE = re.compile(
+    r"([A-Za-z0-9:._-]+)\s+대신\s+([A-Za-z0-9:._-]+|serviceaccount|service account|서비스어카운트|sa|user|사용자|group|그룹)",
+    re.IGNORECASE,
+)
+COMMAND_NAMESPACE_RE = re.compile(
+    r"(?:namespace|네임스페이스)(?:는|를|만)?\s*([A-Za-z0-9:._-]+)\s*(?:로|기준)|([A-Za-z0-9:._-]+)\s*(?:namespace|네임스페이스)\s*기준",
+    re.IGNORECASE,
+)
+COMMAND_USER_RE = re.compile(r"(?:user|사용자)(?:는|를|만)?\s*([A-Za-z0-9:._-]+)\s*로", re.IGNORECASE)
+COMMAND_GROUP_RE = re.compile(r"(?:group|그룹)(?:는|를|만)?\s*([A-Za-z0-9:._-]+)\s*로", re.IGNORECASE)
+COMMAND_SERVICEACCOUNT_NAME_RE = re.compile(
+    r"(?:serviceaccount|service account|서비스어카운트|\bsa\b)(?:는|를|만)?\s*([A-Za-z0-9:._-]+)?\s*(?:로|기준)?",
     re.IGNORECASE,
 )
 
@@ -257,6 +294,223 @@ def _normalize_step_commands(step_commands: list[str], step_count: int) -> list[
     return normalized
 
 
+def _extract_namespace_from_command(command: str) -> str | None:
+    match = NAMESPACE_FLAG_RE.search(command)
+    if match:
+        return match.group(1).strip()
+    inline_match = INLINE_NAMESPACE_FLAG_RE.search(command)
+    if inline_match:
+        return inline_match.group(1).strip()
+    return None
+
+
+def _render_command_template(template: CommandTemplateMemory) -> str:
+    slots = dict(template.slots)
+    if template.operation == "oc_adm_policy_subject_binding":
+        role = (slots.get("role") or "<role>").strip()
+        namespace = (slots.get("namespace") or "").strip()
+        subject_kind = (slots.get("subject_kind") or "user").strip().lower()
+        subject_name = (slots.get("subject_name") or "").strip()
+        if subject_kind == "serviceaccount":
+            subject_namespace = (
+                slots.get("subject_namespace")
+                or namespace
+                or "<namespace>"
+            ).strip()
+            subject_name = subject_name or "<serviceaccount>"
+            subject_token = f"system:serviceaccount:{subject_namespace}:{subject_name}"
+            verb = "add-role-to-user"
+        else:
+            subject_token = subject_name or "<subject>"
+            verb = "add-role-to-group" if subject_kind == "group" else "add-role-to-user"
+        parts = ["oc", "adm", "policy", verb, role, subject_token]
+        if namespace:
+            parts.extend(["-n", namespace])
+        return " ".join(parts)
+
+    if template.operation == "namespace_scoped_command":
+        namespace = (slots.get("namespace") or "").strip()
+        rendered = (template.rendered or template.template).strip()
+        if not namespace or not rendered:
+            return rendered
+        replaced = re.sub(r"((?:^|\s)(?:-n|--namespace)\s+)\S+", rf"\1{namespace}", rendered, count=1)
+        if replaced != rendered:
+            return " ".join(replaced.split())
+        replaced = re.sub(r"(--namespace=)\S+", rf"\1{namespace}", rendered, count=1)
+        return " ".join(replaced.split())
+
+    return (template.rendered or template.template).strip()
+
+
+def _build_command_template(
+    command: str,
+    *,
+    references: list[str] | None = None,
+) -> CommandTemplateMemory | None:
+    return build_command_template_memory(command, references=references)
+
+
+def _normalize_step_command_templates(
+    step_commands: list[str],
+    step_count: int,
+    *,
+    references: list[str],
+) -> list[CommandTemplateMemory | None]:
+    normalized: list[CommandTemplateMemory | None] = [None] * step_count
+    for index, command in enumerate(step_commands[:step_count]):
+        normalized[index] = _build_command_template(command, references=references)
+    return normalized
+
+
+def _command_template_subject_display(template: CommandTemplateMemory) -> str:
+    slots = template.slots
+    subject_kind = (slots.get("subject_kind") or "").strip().lower()
+    subject_name = (slots.get("subject_name") or "").strip()
+    if subject_kind == "serviceaccount":
+        subject_namespace = (
+            slots.get("subject_namespace")
+            or slots.get("namespace")
+            or "<namespace>"
+        ).strip()
+        return f"system:serviceaccount:{subject_namespace}:{subject_name or '<serviceaccount>'}"
+    return subject_name or "<subject>"
+
+
+def _select_command_template(query: str, context: SessionContext | None) -> CommandTemplateMemory | None:
+    if context is None:
+        return None
+
+    procedure = context.procedure_memory
+    if procedure is not None and procedure.step_command_templates:
+        focus_index = _resolve_procedure_step_index(query, procedure)
+        if focus_index is not None:
+            candidate = procedure.command_template_for(focus_index)
+            if candidate is not None:
+                return candidate
+        if procedure.active_step_index is not None:
+            candidate = procedure.command_template_for(procedure.active_step_index)
+            if candidate is not None:
+                return candidate
+
+    for template in context.recent_command_templates:
+        if template.rendered or template.template:
+            return template
+
+    for command in context.recent_commands:
+        candidate = _build_command_template(command, references=context.reference_hints)
+        if candidate is not None:
+            return candidate
+    return None
+
+
+def _parse_command_mutation_request(
+    query: str,
+    template: CommandTemplateMemory,
+) -> dict[str, str] | None:
+    normalized = query or ""
+    lowered = normalized.lower()
+    if not COMMAND_MUTATION_HINT_RE.search(normalized):
+        return None
+
+    request: dict[str, str] = {}
+    namespace_match = COMMAND_NAMESPACE_RE.search(normalized)
+    if namespace_match:
+        request["namespace"] = (namespace_match.group(1) or namespace_match.group(2) or "").strip()
+
+    replace_match = COMMAND_REPLACE_RE.search(normalized)
+    if replace_match:
+        before = replace_match.group(1).strip()
+        after = replace_match.group(2).strip()
+        after_lower = after.lower()
+        current_namespace = (template.slots.get("namespace") or "").strip()
+        current_subject_name = (template.slots.get("subject_name") or "").strip()
+        current_subject_token = _command_template_subject_display(template)
+        current_role = (template.slots.get("role") or "").strip()
+        if before == current_namespace:
+            request["namespace"] = after
+        elif before in {current_subject_name, current_subject_token}:
+            if after_lower in {"serviceaccount", "service account", "서비스어카운트", "sa"}:
+                request["subject_kind"] = "serviceaccount"
+            elif after_lower in {"user", "사용자"}:
+                request["subject_kind"] = "user"
+            elif after_lower in {"group", "그룹"}:
+                request["subject_kind"] = "group"
+            else:
+                request["subject_name"] = after
+        elif before == current_role:
+            request["role"] = after
+
+    user_match = COMMAND_USER_RE.search(normalized)
+    if user_match:
+        request["subject_kind"] = "user"
+        request["subject_name"] = user_match.group(1).strip()
+
+    group_match = COMMAND_GROUP_RE.search(normalized)
+    if group_match:
+        request["subject_kind"] = "group"
+        request["subject_name"] = group_match.group(1).strip()
+
+    serviceaccount_match = COMMAND_SERVICEACCOUNT_NAME_RE.search(normalized)
+    if "serviceaccount" in lowered or "service account" in lowered or "서비스어카운트" in normalized or re.search(r"\bsa\b", lowered):
+        request["subject_kind"] = "serviceaccount"
+        if serviceaccount_match and serviceaccount_match.group(1):
+            request["subject_name"] = serviceaccount_match.group(1).strip()
+
+    if not request:
+        return None
+
+    subject_kind = request.get("subject_kind") or template.slots.get("subject_kind") or ""
+    if subject_kind == "serviceaccount":
+        request["subject_kind"] = "serviceaccount"
+        request["subject_name"] = request.get("subject_name") or template.slots.get("subject_name") or "<serviceaccount>"
+        request["subject_namespace"] = (
+            request.get("subject_namespace")
+            or request.get("namespace")
+            or template.slots.get("subject_namespace")
+            or template.slots.get("namespace")
+            or "<namespace>"
+        )
+    elif "subject_kind" in request and "subject_name" not in request:
+        request["subject_name"] = template.slots.get("subject_name") or "<subject>"
+
+    return request
+
+
+def _apply_command_mutation(
+    template: CommandTemplateMemory,
+    request: dict[str, str],
+) -> CommandTemplateMemory:
+    updated = CommandTemplateMemory.from_dict(template.to_dict())
+    updated.slots = dict(updated.slots)
+    for key in ("namespace", "role", "subject_name", "subject_kind", "subject_namespace"):
+        if request.get(key):
+            updated.slots[key] = request[key]
+    updated.rendered = _render_command_template(updated)
+    return updated
+
+
+def _summarize_command_template_diffs(
+    original: CommandTemplateMemory,
+    updated: CommandTemplateMemory,
+) -> list[str]:
+    diffs: list[str] = []
+    original_namespace = (original.slots.get("namespace") or "").strip()
+    updated_namespace = (updated.slots.get("namespace") or "").strip()
+    if original_namespace != updated_namespace and updated_namespace:
+        diffs.append(f"namespace {original_namespace or '-'} -> {updated_namespace}")
+
+    original_subject = _command_template_subject_display(original)
+    updated_subject = _command_template_subject_display(updated)
+    if original_subject != updated_subject:
+        diffs.append(f"subject {original_subject} -> {updated_subject}")
+
+    original_role = (original.slots.get("role") or "").strip()
+    updated_role = (updated.slots.get("role") or "").strip()
+    if original_role != updated_role and updated_role:
+        diffs.append(f"role {original_role or '-'} -> {updated_role}")
+    return diffs
+
+
 def _infer_procedure_goal(
     *,
     query: str,
@@ -319,6 +573,11 @@ def _derive_procedure_memory(
         _extract_step_commands(answer_text),
         len(extracted_steps),
     )
+    extracted_step_command_templates = _normalize_step_command_templates(
+        extracted_step_commands,
+        len(extracted_steps),
+        references=reference_hints,
+    )
 
     if extracted_steps:
         seeded_previous = previous if previous and previous.steps else None
@@ -327,6 +586,7 @@ def _derive_procedure_memory(
             steps=list(extracted_steps),
             active_step_index=0,
             step_commands=list(extracted_step_commands),
+            step_command_templates=list(extracted_step_command_templates),
             references=_merge_memory_items(
                 seeded_previous.references if seeded_previous else [],
                 reference_hints,
@@ -354,10 +614,18 @@ def _derive_procedure_memory(
     extracted_commands = _extract_answer_commands(answer_text)
     if extracted_commands and updated.steps:
         step_commands = _normalize_step_commands(updated.step_commands, len(updated.steps))
+        step_command_templates = list(updated.step_command_templates[: len(updated.steps)])
+        if len(step_command_templates) < len(updated.steps):
+            step_command_templates.extend([None] * (len(updated.steps) - len(step_command_templates)))
         focus_index = updated.active_step_index if updated.active_step_index is not None else 0
         if 0 <= focus_index < len(step_commands):
             step_commands[focus_index] = extracted_commands[0]
+            step_command_templates[focus_index] = _build_command_template(
+                extracted_commands[0],
+                references=updated.references,
+            )
         updated.step_commands = step_commands
+        updated.step_command_templates = step_command_templates
 
     return updated
 
@@ -427,6 +695,34 @@ def _override_answer_with_procedure_follow_up(
     ):
         lines.extend(["", f"다음 단계: {next_index + 1}. {procedure.steps[next_index]}"])
 
+    return replace(result, answer="\n".join(lines))
+
+
+def _override_answer_with_command_template_follow_up(
+    *,
+    query: str,
+    context: SessionContext | None,
+    result: AnswerResult,
+) -> AnswerResult:
+    template = _select_command_template(query, context)
+    if template is None:
+        return result
+
+    request = _parse_command_mutation_request(query, template)
+    if request is None:
+        return result
+
+    updated = _apply_command_mutation(template, request)
+    if updated.rendered == template.rendered:
+        return result
+
+    citation_mark = " [1]" if result.citations else ""
+    lines = [f"답변: 이전 명령에서 요청한 값만 바꿔 다시 적었습니다{citation_mark}."]
+    diffs = _summarize_command_template_diffs(template, updated)
+    if diffs:
+        lines.extend(["", "변경: " + " / ".join(diffs)])
+    fence = "yaml" if updated.format == "yaml" else "bash"
+    lines.extend(["", f"```{fence}", updated.rendered, "```"])
     return replace(result, answer="\n".join(lines))
 
 
@@ -970,6 +1266,11 @@ def _derive_next_context(
         next_context.recent_steps = list(next_context.procedure_memory.steps[:5])
         procedure_commands = [command for command in next_context.procedure_memory.step_commands if command]
         next_context.recent_commands = procedure_commands[:3]
+        next_context.recent_command_templates = [
+            template
+            for template in next_context.procedure_memory.step_command_templates
+            if template is not None
+        ][:3]
     else:
         extracted_steps = _extract_answer_steps(result.answer)
         if extracted_steps:
@@ -980,8 +1281,17 @@ def _derive_next_context(
         extracted_commands = _extract_answer_commands(result.answer)
         if extracted_commands:
             next_context.recent_commands = extracted_commands
+            next_context.recent_command_templates = [
+                template
+                for template in (
+                    _build_command_template(command, references=next_context.reference_hints)
+                    for command in extracted_commands
+                )
+                if template is not None
+            ][:3]
         elif explicit_topic and prior_topic and explicit_topic != prior_topic:
             next_context.recent_commands = []
+            next_context.recent_command_templates = []
 
     next_context.recent_turns = _merge_recent_turns(
         next_context.recent_turns,
@@ -1361,6 +1671,11 @@ def _build_handler(
                     context=session.context,
                     result=result,
                 )
+                result = _override_answer_with_command_template_follow_up(
+                    query=query,
+                    context=session.context,
+                    result=result,
+                )
                 answerer.append_log(result)
             except Exception as exc:  # noqa: BLE001
                 self._send_json(
@@ -1423,6 +1738,11 @@ def _build_handler(
                     context=session.context,
                     result=result,
                 )
+                result = _override_answer_with_command_template_follow_up(
+                    query=query,
+                    context=session.context,
+                    result=result,
+                )
                 answerer.append_log(result)
             except Exception as exc:  # noqa: BLE001
                 self._stream_event(
@@ -1462,6 +1782,18 @@ def _build_handler(
             )
 
     return ChatHandler
+
+
+def _override_answer_with_command_template_follow_up(
+    *,
+    query: str,
+    context: SessionContext | None,
+    result: AnswerResult,
+) -> AnswerResult:
+    answer = build_command_template_follow_up_answer(query, context, result.citations)
+    if not answer:
+        return result
+    return replace(result, answer=answer)
 
 
 def serve(

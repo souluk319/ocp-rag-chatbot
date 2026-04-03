@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from .command_memory import build_command_template_hints
 from .models import SessionContext
 
 
@@ -46,6 +47,7 @@ ROLE_ASSIGN_RE = re.compile(
 )
 ROLE_API_STYLE_RE = re.compile(r"(api|yaml|manifest|json|spec|필드|curl)", re.IGNORECASE)
 USER_SUBJECT_RE = re.compile(r"(사용자|유저|작업자|계정|그룹|serviceaccount|서비스 계정)", re.IGNORECASE)
+ROLE_OBJECT_RE = re.compile(r"(역할|\brole\b)", re.IGNORECASE)
 ADMIN_ROLE_RE = re.compile(r"(관리자|\badmin\b)", re.IGNORECASE)
 EDIT_ROLE_RE = re.compile(r"(편집|\bedit\b)", re.IGNORECASE)
 VIEW_ROLE_RE = re.compile(r"(읽기 전용|보기|\bview\b)", re.IGNORECASE)
@@ -242,9 +244,18 @@ def has_rbac_intent(query: str) -> bool:
     normalized = query or ""
     if RBAC_RE.search(normalized):
         return True
-    return bool(AUTHZ_RE.search(normalized)) and bool(
+    if bool(AUTHZ_RE.search(normalized)) and bool(
         PROJECT_SCOPE_RE.search(normalized)
         or ROLE_ASSIGN_RE.search(normalized)
+        or ADMIN_ROLE_RE.search(normalized)
+        or EDIT_ROLE_RE.search(normalized)
+        or VIEW_ROLE_RE.search(normalized)
+        or CLUSTER_ADMIN_RE.search(normalized)
+    ):
+        return True
+    return bool(PROJECT_SCOPE_RE.search(normalized)) and bool(ROLE_ASSIGN_RE.search(normalized)) and bool(
+        ROLE_OBJECT_RE.search(normalized)
+        or USER_SUBJECT_RE.search(normalized)
         or ADMIN_ROLE_RE.search(normalized)
         or EDIT_ROLE_RE.search(normalized)
         or VIEW_ROLE_RE.search(normalized)
@@ -1063,6 +1074,7 @@ def rewrite_query(query: str, context: SessionContext | None = None) -> str:
         hints.append(f"최근 주제 흐름 {' -> '.join(context.topic_journal[-3:])}")
     hints.extend(_recent_turn_memory_hints(normalized, context))
     hints.extend(_procedure_memory_hints(normalized, context))
+    hints.extend(build_command_template_hints(normalized, context))
     if context.open_entities:
         hints.append(f"엔터티 {', '.join(context.open_entities)}")
     if context.reference_hints:

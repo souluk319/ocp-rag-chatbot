@@ -37,6 +37,19 @@ def _procedure_follow_up_hint(query: str) -> str:
     )
 
 
+def _command_template_follow_up_hint(query: str) -> str:
+    lowered = (query or "").lower()
+    if not any(
+        token in lowered
+        for token in ("그 명령", "그 커맨드", "그 yaml", "serviceaccount", "group", "namespace", "대신", "바꿔", "변경")
+    ):
+        return ""
+    return (
+        "If session memory includes a structured recent command template, keep the same operation and mutate only the slots the user requested, "
+        "such as namespace, subject kind, or subject name. Do not invent a new command family."
+    )
+
+
 def _intent_shape_hint(query: str, mode: str) -> str:
     if has_openshift_kubernetes_compare_intent(query):
         return (
@@ -118,6 +131,7 @@ def build_messages(
     shape_hint = _intent_shape_hint(query, mode)
     step_by_step_hint = _step_by_step_hint(query, mode)
     procedure_follow_up_hint = _procedure_follow_up_hint(query)
+    command_template_follow_up_hint = _command_template_follow_up_hint(query)
     session_block = f"세션 맥락:\n{session_summary}\n\n" if session_summary else ""
     user = (
         f"모드: {mode}\n"
@@ -146,6 +160,8 @@ def build_messages(
         user += f"- 단계별 출력 규칙: {step_by_step_hint}\n"
     if procedure_follow_up_hint:
         user += f"- Procedure follow-up rule: {procedure_follow_up_hint}\n"
+    if command_template_follow_up_hint:
+        user += f"- Command template follow-up rule: {command_template_follow_up_hint}\n"
     if shape_hint:
         user += f"- 답변 구조 힌트: {shape_hint}\n"
     return [

@@ -190,6 +190,24 @@ class _WrongDrainCommandLLMClient:
         )
 
 
+class _ClarifyingLLMClient:
+    def generate(self, messages, trace_callback=None):  # noqa: ANN001
+        self.messages = messages
+        if trace_callback is not None:
+            trace_callback(
+                {
+                    "step": "llm_generate",
+                    "label": "LLM 응답 생성 완료",
+                    "status": "done",
+                    "duration_ms": 1.7,
+                }
+            )
+        return (
+            "답변: 질문의 실행 대상이 불명확합니다. "
+            "어떤 사용자 또는 namespace를 말씀하시는 건가요?"
+        )
+
+
 class _ExplodingRetriever:
     def retrieve(self, *args, **kwargs):  # noqa: ANN002, ANN003
         raise AssertionError("retriever should not be called for non-rag routes")
@@ -443,6 +461,58 @@ class Part3AnswererTests(unittest.TestCase):
         self.assertEqual("clarification", result.response_kind)
         self.assertIn("어떤 로그", result.answer)
         self.assertEqual([], result.citations)
+
+    def test_answerer_uses_first_turn_rbac_fast_lane_for_complete_runbook_question(self) -> None:
+        class _RbacRetriever:
+            def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
+                hit = RetrievalHit(
+                    chunk_id="chunk-rbac",
+                    book_slug="authentication_and_authorization",
+                    chapter="rbac",
+                    section="9.6. 사용자 역할 추가",
+                    anchor="adding-roles",
+                    source_url="https://example.com/rbac",
+                    viewer_path="/docs/rbac.html#adding-roles",
+                    text=(
+                        "사용자 역할 추가 절차입니다. "
+                        "oc adm policy add-role-to-user admin alice -n joe "
+                        "그리고 oc describe rolebinding -n joe 로 확인합니다."
+                    ),
+                    source="hybrid",
+                    raw_score=1.0,
+                    fused_score=1.0,
+                )
+                return RetrievalResult(
+                    query=query,
+                    normalized_query=query,
+                    rewritten_query=query,
+                    top_k=top_k,
+                    candidate_k=candidate_k,
+                    context=(context or SessionContext()).to_dict(),
+                    hits=[hit],
+                    trace={"warnings": [], "timings_ms": {"bm25_search": 1.0}},
+                )
+
+        settings = Settings(root_dir=ROOT)
+        answerer = Part3Answerer(
+            settings=settings,
+            retriever=_RbacRetriever(),
+            llm_client=_ClarifyingLLMClient(),
+        )
+
+        result = answerer.answer(
+            "alice 사용자에게 joe namespace admin 역할을 부여하고 확인하는 절차를 단계별로 알려줘",
+            mode="ops",
+        )
+
+        self.assertEqual("rag", result.response_kind)
+        self.assertIn("1. 사용자 `alice`에게 `joe` namespace의 `admin` 역할을 부여합니다.", result.answer)
+        self.assertIn("oc adm policy add-role-to-user admin alice -n joe", result.answer)
+        self.assertIn("oc describe rolebinding -n joe", result.answer)
+        self.assertNotIn("불명확합니다", result.answer)
+        self.assertTrue(
+            any(event.get("step") == "rbac_fast_lane" for event in result.pipeline_trace["events"])
+        )
 
     def test_answerer_aligns_drain_command_to_grounded_oc_command(self) -> None:
         class _DrainRetriever:

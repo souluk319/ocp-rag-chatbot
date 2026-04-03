@@ -3,11 +3,12 @@ from __future__ import annotations
 import json
 import re
 import time
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from ocp_rag_part1.settings import Settings
 from ocp_rag_part2 import Part2Retriever, SessionContext
+from ocp_rag_part2.command_memory import build_command_template_follow_up_answer
 from ocp_rag_part2.query import (
     STEP_REFERENCE_RE,
     has_certificate_monitor_intent,
@@ -15,6 +16,8 @@ from ocp_rag_part2.query import (
     has_follow_up_reference,
     has_node_drain_intent,
     has_openshift_kubernetes_compare_intent,
+    has_rbac_assignment_intent,
+    has_step_by_step_intent,
     is_generic_intro_query,
 )
 
@@ -53,6 +56,29 @@ BARE_COMMAND_ANSWER_RE = re.compile(
     r"^답변:\s*(?P<command>\$?\s*(?:oc|kubectl|etcdctl|podman|curl|openssl|openshift-install|journalctl|systemctl|helm)\b[^\n]*?)(?P<citations>(?:\s*\[\d+\])*)\s*$",
     re.IGNORECASE,
 )
+RBAC_NAMESPACE_RE = re.compile(
+    r"(?P<name>[A-Za-z0-9][A-Za-z0-9._:-]*)\s*(?:namespace|project|네임스페이스|프로젝트)",
+    re.IGNORECASE,
+)
+RBAC_ROLE_RE = re.compile(
+    r"(?P<role>cluster-admin|admin|edit|view|[A-Za-z0-9][A-Za-z0-9._:-]*)\s*(?:역할|role|권한)",
+    re.IGNORECASE,
+)
+RBAC_USER_SUBJECT_RE = re.compile(
+    r"(?P<name>[A-Za-z0-9][A-Za-z0-9._:-]*)\s*(?:사용자|유저|user)",
+    re.IGNORECASE,
+)
+RBAC_ASSIGNMENT_VERB_RE = re.compile(r"(부여|추가|바인딩|grant|assign)", re.IGNORECASE)
+RBAC_VERIFY_RE = re.compile(r"(확인|검증|verify|check)", re.IGNORECASE)
+RBAC_COMMAND_SUPPORT_RE = re.compile(r"oc\s+adm\s+policy\s+add-role-to-user", re.IGNORECASE)
+RBAC_ROLEBINDING_SUPPORT_RE = re.compile(r"rolebinding", re.IGNORECASE)
+
+
+@dataclass(slots=True)
+class RbacAssignmentRequest:
+    subject_name: str
+    namespace: str
+    role: str
 
 
 def normalize_answer_text(answer_text: str) -> str:
@@ -307,6 +333,71 @@ def _build_procedure_follow_up_answer(
     ):
         lines.extend(["", f"다음 단계: {next_index + 1}. {procedure.steps[next_index]}"])
 
+    return "\n".join(lines)
+
+
+def _extract_rbac_assignment_request(query: str) -> RbacAssignmentRequest | None:
+    if not has_rbac_assignment_intent(query) and not RBAC_ASSIGNMENT_VERB_RE.search(query or ""):
+        return None
+
+    namespace_match = RBAC_NAMESPACE_RE.search(query or "")
+    role_match = RBAC_ROLE_RE.search(query or "")
+    subject_match = RBAC_USER_SUBJECT_RE.search(query or "")
+    if namespace_match is None or role_match is None or subject_match is None:
+        return None
+
+    return RbacAssignmentRequest(
+        subject_name=subject_match.group("name").strip(),
+        namespace=namespace_match.group("name").strip(),
+        role=role_match.group("role").strip(),
+    )
+
+
+def _supports_rbac_assignment_fast_lane(citations: list) -> bool:
+    excerpt_blob = "\n".join((citation.excerpt or "") for citation in citations)
+    return bool(RBAC_COMMAND_SUPPORT_RE.search(excerpt_blob)) and bool(
+        RBAC_ROLEBINDING_SUPPORT_RE.search(excerpt_blob)
+    )
+
+
+def _build_first_turn_rbac_assignment_answer(
+    query: str,
+    citations: list,
+    *,
+    context: SessionContext | None,
+) -> str | None:
+    if context is not None and context.procedure_memory is not None and context.procedure_memory.steps:
+        return None
+    if not has_step_by_step_intent(query) and not RBAC_VERIFY_RE.search(query or ""):
+        return None
+
+    request = _extract_rbac_assignment_request(query)
+    if request is None or not _supports_rbac_assignment_fast_lane(citations):
+        return None
+
+    citation_mark = " [1]" if citations else ""
+    grant_command = (
+        f"oc adm policy add-role-to-user {request.role} {request.subject_name} -n {request.namespace}"
+    )
+    verify_command = f"oc describe rolebinding -n {request.namespace}"
+    lines = [
+        (
+            "답변: namespace 범위에서 사용자에게 역할을 부여하고 확인하는 기본 절차는 다음과 같습니다"
+            f"{citation_mark}."
+        ),
+        "",
+        f"1. 사용자 `{request.subject_name}`에게 `{request.namespace}` namespace의 `{request.role}` 역할을 부여합니다.",
+        "",
+        "```bash",
+        grant_command,
+        "```",
+        "",
+        f"2. RoleBinding이 생성되었는지 `{request.namespace}` namespace에서 확인합니다.",
+        "",
+        "```bash",
+        verify_command,
+        "```",
+    ]
     return "\n".join(lines)
 
 
@@ -626,25 +717,48 @@ class Part3Answerer:
             }
         )
 
-        direct_follow_up_answer = None
+        direct_answer = None
+        direct_answer_step = ""
+        direct_answer_detail = ""
         if mode == "ops":
-            direct_follow_up_answer = _build_procedure_follow_up_answer(
+            direct_answer = _build_procedure_follow_up_answer(
                 query,
                 context,
                 context_bundle.citations,
             )
+            if direct_answer is not None:
+                direct_answer_step = "procedure_follow_up"
+                direct_answer_detail = "session procedure memory"
+            if direct_answer is None:
+                direct_answer = build_command_template_follow_up_answer(
+                    query,
+                    context,
+                    context_bundle.citations,
+                )
+                if direct_answer is not None:
+                    direct_answer_step = "command_template_follow_up"
+                    direct_answer_detail = "session command template"
+            if direct_answer is None:
+                direct_answer = _build_first_turn_rbac_assignment_answer(
+                    query,
+                    context_bundle.citations,
+                    context=context,
+                )
+                if direct_answer is not None:
+                    direct_answer_step = "rbac_fast_lane"
+                    direct_answer_detail = "first-turn rbac assignment runbook"
 
         llm_started_at = time.perf_counter()
-        if direct_follow_up_answer is not None:
+        if direct_answer is not None:
             emit(
                 {
-                    "step": "procedure_follow_up",
-                    "label": "절차 follow-up 직접 구성 완료",
+                    "step": direct_answer_step or "direct_answer",
+                    "label": "직접 응답 구성 완료",
                     "status": "done",
-                    "detail": "session procedure memory",
+                    "detail": direct_answer_detail or "deterministic path",
                 }
             )
-            answer_text = direct_follow_up_answer
+            answer_text = direct_answer
             pipeline_timings_ms["llm_generate_total"] = 0.0
         else:
             answer_text = reshape_ops_answer_text(

@@ -19,6 +19,7 @@ from ocp_rag_part4.server import (
     _citation_href,
     _derive_next_context,
     _internal_viewer_html,
+    _override_answer_with_command_template_follow_up,
     _override_answer_with_procedure_follow_up,
     _viewer_path_to_local_html,
 )
@@ -156,6 +157,48 @@ class Part4UiTests(unittest.TestCase):
             "oc describe rolebinding -n joe",
             updated.procedure_memory.command_for(1),
         )
+        self.assertIsNotNone(updated.procedure_memory.command_template_for(0))
+        self.assertIsNotNone(updated.procedure_memory.command_template_for(1))
+        self.assertEqual(2, len(updated.recent_command_templates))
+
+    def test_override_answer_with_command_template_follow_up_clarifies_unsafe_kind_change(self) -> None:
+        result = AnswerResult(
+            query="serviceaccount 기준으로 다시",
+            mode="ops",
+            answer="Answer: generic follow-up",
+            rewritten_query="serviceaccount 기준으로 다시",
+            citations=[_citation(1)],
+            cited_indices=[1],
+        )
+
+        context = _derive_next_context(
+            SessionContext(mode="ops", current_topic="RBAC", ocp_version="4.20"),
+            query="Grant admin in one namespace with rolebinding",
+            mode="ops",
+            result=AnswerResult(
+                query="Grant admin in one namespace with rolebinding",
+                mode="ops",
+                answer=(
+                    "Answer: Use a RoleBinding for namespace-scoped admin.\n\n"
+                    "1. Create the binding\n"
+                    "```bash\noc adm policy add-role-to-user admin alice -n joe\n```\n\n"
+                    "2. Verify the binding\n"
+                    "```bash\noc describe rolebinding -n joe\n```"
+                ),
+                rewritten_query="Grant admin in one namespace with rolebinding",
+                citations=[_citation(1)],
+                cited_indices=[1],
+            ),
+        )
+
+        updated = _override_answer_with_command_template_follow_up(
+            query="serviceaccount 기준으로 다시",
+            context=context,
+            result=result,
+        )
+
+        self.assertIn("user/group/serviceaccount", updated.answer)
+        self.assertNotIn("add-role-to-serviceaccount", updated.answer)
 
     def test_override_answer_with_procedure_follow_up_prefers_requested_step(self) -> None:
         result = AnswerResult(

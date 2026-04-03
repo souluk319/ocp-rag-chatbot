@@ -268,6 +268,18 @@ class RetrievalTests(unittest.TestCase):
         self.assertIn("add-role-to-user", normalized)
         self.assertIn("admin", normalized)
 
+    def test_rbac_intent_accepts_natural_role_assignment_runbook_query(self) -> None:
+        query = "alice 사용자에게 joe namespace admin 역할을 부여하고 확인하는 절차를 단계별로 알려줘"
+
+        normalized = normalize_query(query)
+
+        self.assertTrue(has_rbac_intent(query))
+        self.assertTrue(has_project_scoped_rbac_intent(query))
+        self.assertTrue(has_rbac_assignment_intent(query))
+        self.assertIn("rolebinding", normalized)
+        self.assertIn("namespace", normalized)
+        self.assertIn("add-role-to-user", normalized)
+
     def test_normalize_query_expands_project_finalizer_cleanup_terms(self) -> None:
         normalized = normalize_query(
             "프로젝트를 oc delete로 지웠는데 계속 Terminating 상태야. finalizers 강제 제거 전에 걸린 리소스부터 찾고 싶어."

@@ -35,11 +35,44 @@ class TurnMemory:
 
 
 @dataclass(slots=True)
+class CommandTemplateMemory:
+    operation: str = ""
+    format: str = "command"
+    template: str = ""
+    rendered: str = ""
+    slots: dict[str, str] = field(default_factory=dict)
+    references: list[str] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any] | None) -> "CommandTemplateMemory":
+        if not payload:
+            return cls()
+        slots = payload.get("slots") or {}
+        if not isinstance(slots, dict):
+            slots = {}
+        references = payload.get("references") or []
+        if isinstance(references, str):
+            references = [references]
+        return cls(
+            operation=str(payload.get("operation") or ""),
+            format=str(payload.get("format") or "command"),
+            template=str(payload.get("template") or ""),
+            rendered=str(payload.get("rendered") or ""),
+            slots={str(key): str(value) for key, value in slots.items() if str(value).strip()},
+            references=list(references),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
 class ProcedureMemory:
     goal: str = ""
     steps: list[str] = field(default_factory=list)
     active_step_index: int | None = None
     step_commands: list[str] = field(default_factory=list)
+    step_command_templates: list[CommandTemplateMemory | None] = field(default_factory=list)
     references: list[str] = field(default_factory=list)
 
     @classmethod
@@ -52,6 +85,9 @@ class ProcedureMemory:
         step_commands = payload.get("step_commands") or []
         if isinstance(step_commands, str):
             step_commands = [step_commands]
+        step_command_templates = payload.get("step_command_templates") or []
+        if isinstance(step_command_templates, dict):
+            step_command_templates = [step_command_templates]
         references = payload.get("references") or []
         if isinstance(references, str):
             references = [references]
@@ -63,6 +99,14 @@ class ProcedureMemory:
             steps=list(steps),
             active_step_index=active_step_index,
             step_commands=list(step_commands),
+            step_command_templates=[
+                item
+                if isinstance(item, CommandTemplateMemory)
+                else CommandTemplateMemory.from_dict(item)
+                if item
+                else None
+                for item in step_command_templates
+            ],
             references=list(references),
         )
 
@@ -78,6 +122,11 @@ class ProcedureMemory:
             return None
         command = self.step_commands[index].strip()
         return command or None
+
+    def command_template_for(self, index: int) -> CommandTemplateMemory | None:
+        if index < 0 or index >= len(self.step_command_templates):
+            return None
+        return self.step_command_templates[index]
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -96,6 +145,7 @@ class SessionContext:
     reference_hints: list[str] = field(default_factory=list)
     recent_steps: list[str] = field(default_factory=list)
     recent_commands: list[str] = field(default_factory=list)
+    recent_command_templates: list[CommandTemplateMemory] = field(default_factory=list)
     procedure_memory: ProcedureMemory | None = None
 
     @classmethod
@@ -112,6 +162,9 @@ class SessionContext:
         reference_hints = payload.get("reference_hints") or []
         recent_steps = payload.get("recent_steps") or []
         recent_commands = payload.get("recent_commands") or []
+        recent_command_templates = payload.get("recent_command_templates") or []
+        if isinstance(recent_command_templates, dict):
+            recent_command_templates = [recent_command_templates]
         procedure_memory = payload.get("procedure_memory")
         return cls(
             mode=payload.get("mode"),
@@ -128,6 +181,12 @@ class SessionContext:
             reference_hints=list(reference_hints),
             recent_steps=list(recent_steps),
             recent_commands=list(recent_commands),
+            recent_command_templates=[
+                item
+                if isinstance(item, CommandTemplateMemory)
+                else CommandTemplateMemory.from_dict(item)
+                for item in recent_command_templates
+            ],
             procedure_memory=(
                 procedure_memory
                 if isinstance(procedure_memory, ProcedureMemory)
