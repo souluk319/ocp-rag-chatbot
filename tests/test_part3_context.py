@@ -9,8 +9,8 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part2.models import RetrievalHit
-from ocp_rag_part3.context import _should_force_clarification, assemble_context
+from ocp_rag.retrieval.models import RetrievalHit
+from ocp_rag.answering.context import _should_force_clarification, assemble_context
 
 
 def _hit(

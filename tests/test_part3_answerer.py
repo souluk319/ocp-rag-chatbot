@@ -10,8 +10,8 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part1.settings import Settings
-from ocp_rag_part2.models import (
+from ocp_rag.ingest.settings import Settings
+from ocp_rag.retrieval.models import (
     CitationGroupMemory,
     CitationMemory,
     ProcedureMemory,
@@ -20,7 +20,7 @@ from ocp_rag_part2.models import (
     SessionContext,
     TurnMemory,
 )
-from ocp_rag_part3.answerer import (
+from ocp_rag.answering.answerer import (
     _build_procedure_follow_up_answer,
     _augment_query_with_procedure_focus,
     _ensure_korean_product_terms,
@@ -32,9 +32,9 @@ from ocp_rag_part3.answerer import (
     _strip_weak_additional_guidance,
     summarize_session_context,
 )
-from ocp_rag_part3.models import Citation
-from ocp_rag_part3.llm import LLMClient
-from ocp_rag_part3.prompt import build_messages
+from ocp_rag.answering.models import Citation
+from ocp_rag.answering.llm import LLMClient
+from ocp_rag.answering.prompt import build_messages
 
 
 class _FakeRetriever:
@@ -252,7 +252,7 @@ class _FakeResponse:
 
 class Part3AnswererTests(unittest.TestCase):
     def test_build_messages_includes_grounding_context(self) -> None:
-        from ocp_rag_part3.context import assemble_context
+        from ocp_rag.answering.context import assemble_context
 
         hit = RetrievalHit(
             chunk_id="chunk-1",
@@ -281,7 +281,7 @@ class Part3AnswererTests(unittest.TestCase):
         self.assertIn("세션 맥락:", messages[1]["content"])
 
     def test_build_messages_hardens_follow_up_constraints(self) -> None:
-        from ocp_rag_part3.context import assemble_context
+        from ocp_rag.answering.context import assemble_context
 
         hit = RetrievalHit(
             chunk_id="chunk-1",
@@ -309,7 +309,7 @@ class Part3AnswererTests(unittest.TestCase):
         self.assertIn("이전 맥락 때문에 현재 근거와 맞지 않는 대상을 끌어오지 말 것", messages[1]["content"])
 
     def test_build_messages_adds_procedure_follow_up_rule_for_step_reference(self) -> None:
-        from ocp_rag_part3.context import assemble_context
+        from ocp_rag.answering.context import assemble_context
 
         hit = RetrievalHit(
             chunk_id="chunk-1",

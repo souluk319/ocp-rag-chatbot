@@ -10,9 +10,9 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part1.settings import load_settings
-from ocp_rag_part2.retriever import Part2Retriever
-from ocp_rag_part2.sanity import evaluate_case, read_jsonl, summarize_results
+from ocp_rag.ingest.settings import load_settings
+from ocp_rag.retrieval.retriever import Part2Retriever
+from ocp_rag.retrieval.sanity import evaluate_case, read_jsonl, summarize_results
 
 
 def build_parser() -> argparse.ArgumentParser:

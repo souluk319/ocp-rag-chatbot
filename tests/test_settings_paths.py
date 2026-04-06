@@ -11,7 +11,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part1.settings import load_settings
+from ocp_rag.ingest.settings import load_settings
 
 
 class SettingsPathTests(unittest.TestCase):

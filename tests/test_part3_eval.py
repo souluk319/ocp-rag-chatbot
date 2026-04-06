@@ -9,7 +9,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part3.eval import summarize_case_results
+from ocp_rag.answering.eval import summarize_case_results
 
 
 class Part3EvalTests(unittest.TestCase):

@@ -12,9 +12,9 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part1.embedding import EmbeddingClient
-from ocp_rag_part1.settings import load_settings
-from ocp_rag_part3.llm import LLMClient
+from ocp_rag.ingest.embedding import EmbeddingClient
+from ocp_rag.ingest.settings import load_settings
+from ocp_rag.answering.llm import LLMClient
 
 
 def _auth_headers(token: str) -> dict[str, str]:

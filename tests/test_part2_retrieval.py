@@ -9,10 +9,10 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part1.settings import Settings
-from ocp_rag_part2.bm25 import BM25Index
-from ocp_rag_part2.models import ProcedureMemory, RetrievalHit, SessionContext, TurnMemory
-from ocp_rag_part2.query import (
+from ocp_rag.ingest.settings import Settings
+from ocp_rag.retrieval.bm25 import BM25Index
+from ocp_rag.retrieval.models import ProcedureMemory, RetrievalHit, SessionContext, TurnMemory
+from ocp_rag.retrieval.query import (
     decompose_retrieval_queries,
     detect_out_of_corpus_version,
     detect_unsupported_product,
@@ -28,7 +28,7 @@ from ocp_rag_part2.query import (
     query_book_adjustments,
     rewrite_query,
 )
-from ocp_rag_part2.retriever import Part2Retriever, fuse_ranked_hits
+from ocp_rag.retrieval.retriever import Part2Retriever, fuse_ranked_hits
 
 
 class RetrievalTests(unittest.TestCase):

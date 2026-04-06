@@ -12,9 +12,9 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part2.models import ProcedureMemory, SessionContext
-from ocp_rag_part3.models import AnswerResult, Citation
-from ocp_rag_part4.server import (
+from ocp_rag.retrieval.models import ProcedureMemory, SessionContext
+from ocp_rag.answering.models import AnswerResult, Citation
+from ocp_rag.app.server import (
     _build_library_payload,
     _citation_href,
     _derive_next_context,
@@ -46,7 +46,7 @@ def _citation(
 
 class Part4UiTests(unittest.TestCase):
     def test_static_ui_contains_workspace_contract(self) -> None:
-        html = (ROOT / "src" / "ocp_rag_part4" / "static" / "index.html").read_text(
+        html = (ROOT / "src" / "ocp_rag" / "app" / "static" / "index.html").read_text(
             encoding="utf-8"
         )
 

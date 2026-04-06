@@ -12,14 +12,14 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part1.audit import (
+from ocp_rag.ingest.audit import (
     build_approved_manifest,
     build_data_quality_report,
     build_source_approval_report,
     looks_like_mojibake_title,
     write_approved_manifest,
 )
-from ocp_rag_part1.manifest import read_manifest
+from ocp_rag.ingest.manifest import read_manifest
 
 
 class Part1AuditTests(unittest.TestCase):

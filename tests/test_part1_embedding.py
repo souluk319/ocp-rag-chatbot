@@ -10,8 +10,8 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part1.embedding import EmbeddingClient
-from ocp_rag_part1.settings import Settings
+from ocp_rag.ingest.embedding import EmbeddingClient
+from ocp_rag.ingest.settings import Settings
 
 
 class _FakeResponse:
@@ -53,7 +53,7 @@ class EmbeddingTests(unittest.TestCase):
         settings.embedding_batch_size = 2
         settings.embedding_model = "dragonkue/bge-m3-ko"
 
-        with patch("ocp_rag_part1.embedding.requests.post", side_effect=fake_post):
+        with patch("ocp_rag.ingest.embedding.requests.post", side_effect=fake_post):
             client = EmbeddingClient(settings)
             vectors = client.embed_texts(["a", "b", "c"])
 
@@ -81,7 +81,7 @@ class EmbeddingTests(unittest.TestCase):
         settings.embedding_model = "dragonkue/bge-m3-ko"
         settings.embedding_api_key = "embed-secret"
 
-        with patch("ocp_rag_part1.embedding.requests.post", side_effect=fake_post):
+        with patch("ocp_rag.ingest.embedding.requests.post", side_effect=fake_post):
             client = EmbeddingClient(settings)
             vectors = client.embed_texts(["a"])
 

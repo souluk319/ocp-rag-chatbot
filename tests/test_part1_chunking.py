@@ -10,8 +10,8 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part1 import chunking
-from ocp_rag_part1.chunking import TokenCounter
+from ocp_rag.ingest import chunking
+from ocp_rag.ingest.chunking import TokenCounter
 
 
 class _FakeTokenizer:

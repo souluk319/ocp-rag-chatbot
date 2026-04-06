@@ -10,12 +10,12 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part1.audit import (
+from ocp_rag.ingest.audit import (
     build_approved_manifest,
     build_source_approval_report,
     write_approved_manifest,
 )
-from ocp_rag_part1.settings import load_settings
+from ocp_rag.ingest.settings import load_settings
 
 
 def _parse_args() -> argparse.Namespace:

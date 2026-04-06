@@ -9,10 +9,13 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part3.models import AnswerResult, Citation
-from ocp_rag_part3.ragas_eval import (
+from ocp_rag.answering.models import AnswerResult, Citation
+from ocp_rag.answering.ragas_eval import (
     DEFAULT_OPENAI_EMBEDDING_MODEL,
     DEFAULT_OPENAI_JUDGE_MODEL,
+    LANGCHAIN_OPENAI_AVAILABLE,
+    OPENAI_SDK_AVAILABLE,
+    RAGAS_AVAILABLE,
     build_openai_ragas_runtime,
     build_ragas_case_row,
     build_ragas_dataset,
@@ -104,6 +107,9 @@ class RagasEvalTests(unittest.TestCase):
         self.assertEqual(["support"], metadata["cited_books"])
 
     def test_build_ragas_dataset_accepts_normalized_rows(self) -> None:
+        if not RAGAS_AVAILABLE:
+            self.skipTest("ragas is not installed in this environment")
+
         dataset = build_ragas_dataset(
             [
                 {
@@ -125,6 +131,13 @@ class RagasEvalTests(unittest.TestCase):
         self.assertEqual(DEFAULT_OPENAI_EMBEDDING_MODEL, config.embedding_model)
 
     def test_build_openai_ragas_runtime_builds_client_wrappers(self) -> None:
+        if not RAGAS_AVAILABLE:
+            self.skipTest("ragas is not installed in this environment")
+        if not OPENAI_SDK_AVAILABLE:
+            self.skipTest("openai is not installed in this environment")
+        if not LANGCHAIN_OPENAI_AVAILABLE:
+            self.skipTest("langchain_openai is not installed in this environment")
+
         config = load_openai_judge_config_from_env(
             {
                 "OPENAI_API_KEY": "test-key",

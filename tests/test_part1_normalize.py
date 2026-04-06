@@ -9,8 +9,8 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part1.models import SourceManifestEntry
-from ocp_rag_part1.normalize import extract_sections
+from ocp_rag.ingest.models import SourceManifestEntry
+from ocp_rag.ingest.normalize import extract_sections
 
 
 class NormalizeTests(unittest.TestCase):

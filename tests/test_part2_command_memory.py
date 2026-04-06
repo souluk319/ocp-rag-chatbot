@@ -9,12 +9,12 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part2.command_memory import (  # noqa: E402
+from ocp_rag.retrieval.command_memory import (  # noqa: E402
     build_command_template_follow_up_answer,
     build_command_template_hints,
     build_command_template_memory,
 )
-from ocp_rag_part2.models import CommandTemplateMemory, ProcedureMemory, SessionContext  # noqa: E402
+from ocp_rag.retrieval.models import CommandTemplateMemory, ProcedureMemory, SessionContext  # noqa: E402
 
 
 class CommandMemoryTests(unittest.TestCase):

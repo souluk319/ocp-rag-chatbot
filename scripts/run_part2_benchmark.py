@@ -10,10 +10,10 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part1.settings import load_settings
-from ocp_rag_part2.eval import summarize_case_results
-from ocp_rag_part2.models import SessionContext
-from ocp_rag_part2.retriever import Part2Retriever
+from ocp_rag.ingest.settings import load_settings
+from ocp_rag.retrieval.eval import summarize_case_results
+from ocp_rag.retrieval.models import SessionContext
+from ocp_rag.retrieval.retriever import Part2Retriever
 
 
 def read_jsonl(path: Path) -> list[dict]:

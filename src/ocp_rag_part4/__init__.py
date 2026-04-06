@@ -1,3 +1,1 @@
-from .server import serve
-
-__all__ = ["serve"]
+from ocp_rag.app import *
