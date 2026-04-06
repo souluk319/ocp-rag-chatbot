@@ -12,8 +12,11 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
+from ocp_doc_to_book import DocSourceRequest, DocToBookDraftStore, DocToBookPlanner
+from ocp_doc_to_book.ingestion.capture import DocToBookCaptureService
+from ocp_doc_to_book.normalization.service import DocToBookNormalizeService
 from ocp_rag_part1.settings import load_settings
 from ocp_rag_part1.validation import read_jsonl
 from ocp_rag_part2.models import SessionContext
@@ -40,6 +43,10 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 INDEX_HTML_PATH = STATIC_DIR / "index.html"
 NORMALIZED_BLOCK_RE = re.compile(r"(\[CODE\].*?\[/CODE\]|\[TABLE\].*?\[/TABLE\])", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`([^`]+)`")
+SOURCE_VIEW_LEADING_NOISE_RE = re.compile(
+    r"^\s*Red Hat OpenShift Documentation Team(?:\s+법적 공지)?(?:\s+초록)?\s*",
+)
+SOURCE_VIEW_TOC_RE = re.compile(r"^\s*목차\s*(?:\n\n|\n)?")
 
 
 @dataclass(slots=True)
@@ -98,6 +105,10 @@ def _citation_href(citation: Citation) -> str:
     return citation.source_url
 
 
+def _humanize_book_slug(book_slug: str) -> str:
+    return " ".join(part for part in str(book_slug or "").replace("_", " ").split())
+
+
 def _viewer_path_to_local_html(root_dir: Path, viewer_path: str) -> Path | None:
     parsed = _parse_viewer_path(viewer_path)
     if parsed is None:
@@ -121,6 +132,93 @@ def _parse_viewer_path(viewer_path: str) -> tuple[str, str] | None:
     if len(parts) != 2 or parts[1] != "index.html":
         return None
     return parts[0], parsed.fragment.strip()
+
+
+@lru_cache(maxsize=4)
+def _load_manifest_entries(
+    manifest_path: str,
+    mtime_ns: int,
+) -> dict[str, dict[str, Any]]:
+    del mtime_ns
+    payload = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+    entries = payload.get("entries") or []
+    return {
+        str(entry.get("book_slug", "")).strip(): dict(entry)
+        for entry in entries
+        if str(entry.get("book_slug", "")).strip()
+    }
+
+
+def _manifest_entry_for_book(root_dir: Path, book_slug: str) -> dict[str, Any]:
+    settings = load_settings(root_dir)
+    manifest_path = settings.source_manifest_path
+    if not manifest_path.exists():
+        return {}
+    return _load_manifest_entries(
+        str(manifest_path),
+        manifest_path.stat().st_mtime_ns,
+    ).get(book_slug, {})
+
+
+def _normalized_row_for_viewer_path(root_dir: Path, viewer_path: str) -> dict[str, Any] | None:
+    parsed = _parse_viewer_path(viewer_path)
+    if parsed is None:
+        return None
+    book_slug, anchor = parsed
+    settings = load_settings(root_dir)
+    normalized_docs_path = settings.normalized_docs_path
+    if not normalized_docs_path.exists():
+        return None
+    sections_by_book = _load_normalized_sections(
+        str(normalized_docs_path),
+        normalized_docs_path.stat().st_mtime_ns,
+    )
+    sections = sections_by_book.get(book_slug, [])
+    if not sections:
+        return None
+    if not anchor:
+        return sections[0]
+
+    for row in sections:
+        if str(row.get("anchor") or "").strip() == anchor:
+            return row
+    # Some chunks point to a book-level viewer path even when the exact anchor
+    # cannot be recovered. In that case, fall back to the first section so the
+    # study panel can still open a readable document instead of failing hard.
+    return sections[0]
+
+
+def _clean_source_view_text(text: str) -> str:
+    cleaned = (text or "").replace("\r\n", "\n").replace("\r", "\n").strip()
+    cleaned = SOURCE_VIEW_LEADING_NOISE_RE.sub("", cleaned, count=1).lstrip()
+    cleaned = SOURCE_VIEW_TOC_RE.sub("", cleaned, count=1).lstrip()
+    return cleaned
+
+
+def _serialize_citation(root_dir: Path, citation: Citation) -> dict[str, Any]:
+    href = _citation_href(citation)
+    row = _normalized_row_for_viewer_path(root_dir, href)
+    manifest_entry = _manifest_entry_for_book(root_dir, citation.book_slug)
+
+    book_title = (
+        str((row or {}).get("book_title") or "")
+        or str(manifest_entry.get("title") or "")
+        or _humanize_book_slug(citation.book_slug)
+    )
+    section_path = [
+        str(item)
+        for item in ((row or {}).get("section_path") or [])
+        if str(item).strip()
+    ]
+    section_label = " > ".join(section_path) if section_path else citation.section or citation.anchor
+    return {
+        **citation.to_dict(),
+        "href": href,
+        "book_title": book_title,
+        "section_path": section_path,
+        "section_path_label": section_label,
+        "source_label": f"{book_title} · {section_label}" if section_label else book_title,
+    }
 
 
 def _render_inline_html(text: str) -> str:
@@ -188,7 +286,7 @@ def _render_table_block_html(table_text: str) -> str:
 
 def _render_normalized_section_html(text: str) -> str:
     blocks: list[str] = []
-    normalized = (text or "").replace("\r\n", "\n").replace("\r", "\n")
+    normalized = _clean_source_view_text(text)
     for part in NORMALIZED_BLOCK_RE.split(normalized):
         if not part:
             continue
@@ -214,48 +312,18 @@ def _render_normalized_section_html(text: str) -> str:
     return "\n".join(blocks)
 
 
-@lru_cache(maxsize=8)
-def _load_normalized_sections(
-    normalized_docs_path: str,
-    mtime_ns: int,
-) -> dict[str, list[dict[str, Any]]]:
-    del mtime_ns
-    sections_by_book: dict[str, list[dict[str, Any]]] = {}
-    for row in read_jsonl(Path(normalized_docs_path)):
-        sections_by_book.setdefault(str(row.get("book_slug", "")), []).append(row)
-    return sections_by_book
-
-
-def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
-    parsed = _parse_viewer_path(viewer_path)
-    if parsed is None:
-        return None
-
-    book_slug, target_anchor = parsed
-    settings = load_settings(root_dir)
-    normalized_docs_path = settings.normalized_docs_path
-    if not normalized_docs_path.exists():
-        return None
-
-    sections_by_book = _load_normalized_sections(
-        str(normalized_docs_path),
-        normalized_docs_path.stat().st_mtime_ns,
-    )
-    sections = sections_by_book.get(book_slug) or []
-    if not sections:
-        return None
-
-    first_row = sections[0]
-    book_title = str(first_row.get("book_title") or book_slug)
-    source_url = str(first_row.get("source_url") or "")
+def _build_study_section_cards(
+    sections: list[dict[str, Any]],
+    *,
+    target_anchor: str = "",
+) -> list[str]:
     cards: list[str] = []
-
     for row in sections:
         anchor = str(row.get("anchor") or "")
         heading = str(row.get("heading") or "")
         section_path = [str(item) for item in (row.get("section_path") or []) if str(item).strip()]
         breadcrumb = " > ".join(section_path) if section_path else heading
-        section_text = str(row.get("text") or "").strip()
+        section_text = _clean_source_view_text(str(row.get("text") or ""))
         is_target = bool(target_anchor) and anchor == target_anchor
         cards.append(
             """
@@ -272,7 +340,18 @@ def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
                 text=_render_normalized_section_html(section_text),
             ).strip()
         )
+    return cards
 
+
+def _render_study_viewer_html(
+    *,
+    title: str,
+    source_url: str,
+    cards: list[str],
+    section_count: int,
+    eyebrow: str,
+    summary: str,
+) -> str:
     return """
     <!DOCTYPE html>
     <html lang="ko">
@@ -303,9 +382,10 @@ def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
             font-family: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
           }}
           main {{
-            max-width: 980px;
+            width: min(1480px, calc(100vw - 32px));
+            max-width: none;
             margin: 0 auto;
-            padding: 32px 20px 48px;
+            padding: 28px 0 44px;
           }}
           .hero {{
             background: var(--panel);
@@ -376,19 +456,21 @@ def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
             color: var(--accent);
           }}
           .section-body code {{
-            display: inline-block;
-            padding: 0.08rem 0.42rem;
-            border-radius: 999px;
-            background: rgba(138, 45, 28, 0.08);
-            color: var(--accent);
+            display: inline;
+            padding: 0.08rem 0.32rem;
+            border-radius: 6px;
+            border: 1px solid rgba(138, 45, 28, 0.12);
+            background: rgba(138, 45, 28, 0.05);
+            color: #7c2f21;
             font-family: "SF Mono", "Menlo", monospace;
             font-size: 0.92em;
           }}
           .code-block {{
-            border: 1px solid rgba(138, 45, 28, 0.14);
+            border: 1px solid rgba(31, 28, 24, 0.08);
             border-radius: 16px;
             overflow: hidden;
-            background: rgba(255, 255, 255, 0.92);
+            background: #fcfbf8;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
           }}
           .code-header {{
             display: flex;
@@ -396,21 +478,21 @@ def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
             justify-content: space-between;
             gap: 12px;
             padding: 10px 12px;
-            background: rgba(138, 45, 28, 0.08);
-            border-bottom: 1px solid rgba(138, 45, 28, 0.12);
+            background: #f3ece2;
+            border-bottom: 1px solid rgba(31, 28, 24, 0.08);
           }}
           .code-label {{
-            color: var(--muted);
+            color: #7e6c58;
             font-size: 0.76rem;
             font-weight: 700;
             letter-spacing: 0.04em;
             text-transform: uppercase;
           }}
           .copy-button {{
-            border: 0;
-            border-radius: 999px;
-            padding: 7px 12px;
-            background: rgba(31, 28, 24, 0.08);
+            border: 1px solid rgba(31, 28, 24, 0.08);
+            border-radius: 10px;
+            padding: 7px 11px;
+            background: rgba(255, 255, 255, 0.85);
             color: var(--ink);
             font: inherit;
             font-size: 0.78rem;
@@ -418,17 +500,29 @@ def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
             cursor: pointer;
           }}
           .copy-button.is-copied {{
-            background: rgba(138, 45, 28, 0.14);
+            background: rgba(138, 45, 28, 0.12);
             color: var(--accent);
           }}
           .code-block pre {{
             margin: 0;
-            padding: 14px 16px 16px;
+            padding: 16px 18px 18px;
             overflow-x: auto;
             white-space: pre;
+            background: #fffdfa;
+            color: #2e261f;
             font-family: "SF Mono", "Menlo", monospace;
             font-size: 0.92rem;
             line-height: 1.65;
+          }}
+          .code-block code {{
+            display: block;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+            white-space: inherit;
           }}
           .table-wrap {{
             overflow-x: auto;
@@ -483,12 +577,9 @@ def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
       <body>
         <main>
           <section class="hero">
-            <div class="eyebrow">Internal Citation Viewer</div>
+            <div class="eyebrow">{eyebrow}</div>
             <h1>{title}</h1>
-            <p class="summary">
-              정규화된 한국어 본문 기준으로 출처를 보여줍니다.
-              필요한 경우 원문 문서도 함께 열 수 있습니다.
-            </p>
+            <p class="summary">{summary}</p>
             <div class="actions">
               <span>섹션 수: {section_count}</span>
               <a href="{source_url}" target="_blank" rel="noreferrer">원문 문서 열기</a>
@@ -501,11 +592,212 @@ def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
       </body>
     </html>
     """.format(
-        title=html.escape(book_title),
-        section_count=len(sections),
+        title=html.escape(title),
+        eyebrow=html.escape(eyebrow),
+        summary=html.escape(summary),
+        section_count=section_count,
         source_url=html.escape(source_url, quote=True),
         cards="\n".join(cards),
     ).strip()
+
+
+@lru_cache(maxsize=8)
+def _load_normalized_sections(
+    normalized_docs_path: str,
+    mtime_ns: int,
+) -> dict[str, list[dict[str, Any]]]:
+    del mtime_ns
+    sections_by_book: dict[str, list[dict[str, Any]]] = {}
+    for row in read_jsonl(Path(normalized_docs_path)):
+        sections_by_book.setdefault(str(row.get("book_slug", "")), []).append(row)
+    return sections_by_book
+
+
+def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
+    parsed = _parse_viewer_path(viewer_path)
+    if parsed is None:
+        return None
+
+    book_slug, target_anchor = parsed
+    settings = load_settings(root_dir)
+    normalized_docs_path = settings.normalized_docs_path
+    if not normalized_docs_path.exists():
+        return None
+
+    sections_by_book = _load_normalized_sections(
+        str(normalized_docs_path),
+        normalized_docs_path.stat().st_mtime_ns,
+    )
+    sections = sections_by_book.get(book_slug) or []
+    if not sections:
+        return None
+
+    first_row = sections[0]
+    book_title = str(first_row.get("book_title") or book_slug)
+    source_url = str(first_row.get("source_url") or "")
+    cards = _build_study_section_cards(sections, target_anchor=target_anchor)
+    return _render_study_viewer_html(
+        title=book_title,
+        source_url=source_url,
+        cards=cards,
+        section_count=len(sections),
+        eyebrow="Internal Citation Viewer",
+        summary="정규화된 한국어 본문 기준으로 출처를 보여줍니다. 필요한 경우 원문 문서도 함께 열 수 있습니다.",
+    )
+
+
+def _parse_doc_to_book_viewer_path(viewer_path: str) -> tuple[str, str] | None:
+    parsed = urlparse((viewer_path or "").strip())
+    request_path = parsed.path.strip()
+    prefix = "/docs/intake/"
+    if not request_path.startswith(prefix):
+        return None
+    remainder = request_path[len(prefix) :]
+    parts = [part for part in remainder.split("/") if part]
+    if len(parts) != 2 or parts[1] != "index.html":
+        return None
+    return parts[0], parsed.fragment.strip()
+
+
+def _load_doc_to_book_book(root_dir: Path, draft_id: str) -> dict[str, Any] | None:
+    record = DocToBookDraftStore(root_dir).get(draft_id)
+    if record is None or not record.canonical_book_path.strip():
+        return None
+    canonical_path = Path(record.canonical_book_path)
+    if not canonical_path.exists():
+        return None
+    payload = json.loads(canonical_path.read_text(encoding="utf-8"))
+    payload["draft_id"] = record.draft_id
+    payload["target_viewer_path"] = f"/docs/intake/{record.draft_id}/index.html"
+    payload["target_anchor"] = payload.get("target_anchor") or ""
+    return payload
+
+
+def _internal_doc_to_book_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
+    parsed = _parse_doc_to_book_viewer_path(viewer_path)
+    if parsed is None:
+        return None
+
+    draft_id, target_anchor = parsed
+    canonical_book = _load_doc_to_book_book(root_dir, draft_id)
+    if canonical_book is None:
+        return None
+
+    sections = list(canonical_book.get("sections") or [])
+    if not sections:
+        return None
+    cards = _build_study_section_cards(sections, target_anchor=target_anchor)
+    return _render_study_viewer_html(
+        title=str(canonical_book.get("title") or draft_id),
+        source_url=str(canonical_book.get("source_uri") or ""),
+        cards=cards,
+        section_count=len(sections),
+        eyebrow="Doc-to-Book Study Viewer",
+        summary="capture된 웹 문서를 canonical section으로 정리한 내부 study view입니다. 이후 retrieval chunk는 이 section들을 부모로 파생됩니다.",
+    )
+
+
+def _canonical_source_book(root_dir: Path, viewer_path: str) -> dict[str, Any] | None:
+    parsed = _parse_viewer_path(viewer_path)
+    if parsed is None:
+        return None
+
+    book_slug, target_anchor = parsed
+    settings = load_settings(root_dir)
+    normalized_docs_path = settings.normalized_docs_path
+    if not normalized_docs_path.exists():
+        return None
+
+    sections_by_book = _load_normalized_sections(
+        str(normalized_docs_path),
+        normalized_docs_path.stat().st_mtime_ns,
+    )
+    rows = sections_by_book.get(book_slug) or []
+    if not rows:
+        return None
+
+    first_row = rows[0]
+    manifest_entry = _manifest_entry_for_book(root_dir, book_slug)
+    request = DocSourceRequest(
+        source_type="web",
+        uri=str(first_row.get("source_url") or manifest_entry.get("source_url") or ""),
+        title=str(first_row.get("book_title") or manifest_entry.get("title") or book_slug),
+        language_hint="ko",
+    )
+    canonical_book = DocToBookPlanner().build_canonical_book(rows, request=request)
+    payload = canonical_book.to_dict()
+    payload["target_anchor"] = target_anchor
+    return payload
+
+
+def _build_doc_to_book_plan(payload: dict[str, Any]) -> dict[str, Any]:
+    request = _doc_to_book_request_from_payload(payload)
+    return DocToBookPlanner().plan(request).to_dict()
+
+
+def _doc_to_book_request_from_payload(payload: dict[str, Any]) -> DocSourceRequest:
+    source_type = str(payload.get("source_type") or "").strip().lower()
+    uri = str(payload.get("uri") or "").strip()
+    title = str(payload.get("title") or "").strip()
+    language_hint = str(payload.get("language_hint") or "ko").strip() or "ko"
+
+    if source_type not in {"web", "pdf"}:
+        raise ValueError("source_type은 web 또는 pdf여야 합니다.")
+    if not uri:
+        raise ValueError("uri가 필요합니다.")
+
+    return DocSourceRequest(
+        source_type=source_type,
+        uri=uri,
+        title=title,
+        language_hint=language_hint,
+    )
+
+
+def _create_doc_to_book_draft(root_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    request = _doc_to_book_request_from_payload(payload)
+    record = DocToBookDraftStore(root_dir).create(request)
+    return record.to_dict()
+
+
+def _load_doc_to_book_draft(root_dir: Path, draft_id: str) -> dict[str, Any] | None:
+    record = DocToBookDraftStore(root_dir).get(draft_id)
+    if record is None:
+        return None
+    return record.to_dict()
+
+
+def _list_doc_to_book_drafts(root_dir: Path) -> dict[str, Any]:
+    drafts = [record.to_summary() for record in DocToBookDraftStore(root_dir).list()]
+    return {"drafts": drafts}
+
+
+def _capture_doc_to_book_draft(root_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    draft_id = str(payload.get("draft_id") or "").strip()
+    request = None if draft_id else _doc_to_book_request_from_payload(payload)
+    record = DocToBookCaptureService(root_dir).capture(draft_id=draft_id, request=request)
+    return record.to_dict()
+
+
+def _normalize_doc_to_book_draft(root_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    draft_id = str(payload.get("draft_id") or "").strip()
+    if not draft_id:
+        raise ValueError("normalize할 draft_id가 필요합니다.")
+    record = DocToBookNormalizeService(root_dir).normalize(draft_id=draft_id)
+    return record.to_dict()
+
+
+def _load_doc_to_book_capture(
+    root_dir: Path,
+    draft_id: str,
+) -> tuple[bytes, str] | None:
+    record = DocToBookDraftStore(root_dir).get(draft_id)
+    if record is None or not record.capture_artifact_path.strip():
+        return None
+    artifact_path = Path(record.capture_artifact_path)
+    if not artifact_path.exists():
+        return None
+    return artifact_path.read_bytes(), record.capture_content_type or "application/octet-stream"
 
 
 def _derive_next_context(
@@ -721,6 +1013,7 @@ def _suggest_follow_up_questions(*, session: ChatSession, result: AnswerResult) 
 
 def _build_chat_payload(
     *,
+    root_dir: Path,
     session: ChatSession,
     result: AnswerResult,
 ) -> dict[str, Any]:
@@ -733,10 +1026,7 @@ def _build_chat_payload(
         "warnings": list(result.warnings),
         "cited_indices": list(result.cited_indices),
         "citations": [
-            {
-                **citation.to_dict(),
-                "href": _citation_href(citation),
-            }
+            _serialize_citation(root_dir, citation)
             for citation in result.citations
         ],
         "suggested_queries": _suggest_follow_up_questions(session=session, result=result),
@@ -775,6 +1065,19 @@ def _build_handler(
             self.end_headers()
             self.wfile.write(body)
 
+        def _send_bytes(
+            self,
+            body: bytes,
+            *,
+            content_type: str,
+            status: HTTPStatus = HTTPStatus.OK,
+        ) -> None:
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
         def _start_ndjson_stream(self) -> None:
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-Type", "application/x-ndjson; charset=utf-8")
@@ -791,11 +1094,33 @@ def _build_handler(
                 return
 
         def do_GET(self) -> None:  # noqa: N802
-            if self.path in {"/", "/index.html"}:
+            parsed_request = urlparse(self.path)
+            request_path = parsed_request.path
+
+            if request_path in {"/", "/index.html"}:
                 self._send_html(INDEX_HTML_PATH.read_text(encoding="utf-8"))
                 return
-            if self.path == "/api/health":
+            if request_path == "/api/health":
                 self._send_json({"ok": True})
+                return
+            if request_path == "/api/source-meta":
+                self._handle_source_meta(parsed_request.query)
+                return
+            if request_path == "/api/source-book":
+                self._handle_source_book(parsed_request.query)
+                return
+            if request_path == "/api/doc-to-book/drafts":
+                self._handle_doc_to_book_drafts(parsed_request.query)
+                return
+            if request_path == "/api/doc-to-book/book":
+                self._handle_doc_to_book_book(parsed_request.query)
+                return
+            if request_path == "/api/doc-to-book/captured":
+                self._handle_doc_to_book_captured(parsed_request.query)
+                return
+            internal_doc_to_book_viewer = _internal_doc_to_book_viewer_html(root_dir, self.path)
+            if internal_doc_to_book_viewer is not None:
+                self._send_html(internal_doc_to_book_viewer)
                 return
             internal_viewer = _internal_viewer_html(root_dir, self.path)
             if internal_viewer is not None:
@@ -822,10 +1147,202 @@ def _build_handler(
             if self.path == "/api/chat/stream":
                 self._handle_chat_stream(payload)
                 return
+            if self.path == "/api/doc-to-book/plan":
+                self._handle_doc_to_book_plan(payload)
+                return
+            if self.path == "/api/doc-to-book/drafts":
+                self._handle_doc_to_book_draft_create(payload)
+                return
+            if self.path == "/api/doc-to-book/capture":
+                self._handle_doc_to_book_capture(payload)
+                return
+            if self.path == "/api/doc-to-book/normalize":
+                self._handle_doc_to_book_normalize(payload)
+                return
             if self.path == "/api/reset":
                 self._handle_reset(payload)
                 return
             self.send_error(HTTPStatus.NOT_FOUND, "Not found")
+
+        def _handle_source_meta(self, query: str) -> None:
+            params = parse_qs(query, keep_blank_values=False)
+            viewer_path = str((params.get("viewer_path") or [""])[0]).strip()
+            if not viewer_path:
+                self._send_json(
+                    {"error": "viewer_path가 필요합니다."},
+                    HTTPStatus.BAD_REQUEST,
+                )
+                return
+
+            parsed = _parse_viewer_path(viewer_path)
+            if parsed is None:
+                self._send_json(
+                    {"error": "지원하지 않는 viewer_path입니다."},
+                    HTTPStatus.BAD_REQUEST,
+                )
+                return
+
+            book_slug, anchor = parsed
+            row = _normalized_row_for_viewer_path(root_dir, viewer_path)
+            manifest_entry = _manifest_entry_for_book(root_dir, book_slug)
+            book_title = (
+                str((row or {}).get("book_title") or "")
+                or str(manifest_entry.get("title") or "")
+                or _humanize_book_slug(book_slug)
+            )
+            section_path = [
+                str(item)
+                for item in ((row or {}).get("section_path") or [])
+                if str(item).strip()
+            ]
+            self._send_json(
+                {
+                    "book_slug": book_slug,
+                    "book_title": book_title,
+                    "anchor": anchor,
+                    "section": str((row or {}).get("heading") or ""),
+                    "section_path": section_path,
+                    "section_path_label": (
+                        " > ".join(section_path)
+                        if section_path
+                        else str((row or {}).get("heading") or "")
+                    ),
+                    "source_url": str((row or {}).get("source_url") or manifest_entry.get("source_url") or ""),
+                    "viewer_path": viewer_path,
+                }
+            )
+
+        def _handle_source_book(self, query: str) -> None:
+            params = parse_qs(query, keep_blank_values=False)
+            viewer_path = str((params.get("viewer_path") or [""])[0]).strip()
+            if not viewer_path:
+                self._send_json(
+                    {"error": "viewer_path가 필요합니다."},
+                    HTTPStatus.BAD_REQUEST,
+                )
+                return
+
+            canonical_book = _canonical_source_book(root_dir, viewer_path)
+            if canonical_book is None:
+                self._send_json(
+                    {"error": "canonical source book을 만들 수 없습니다."},
+                    HTTPStatus.NOT_FOUND,
+                )
+                return
+
+            self._send_json(canonical_book)
+
+        def _handle_doc_to_book_plan(self, payload: dict[str, Any]) -> None:
+            try:
+                plan = _build_doc_to_book_plan(payload)
+            except ValueError as exc:
+                self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                return
+
+            self._send_json(plan)
+
+        def _handle_doc_to_book_drafts(self, query: str) -> None:
+            params = parse_qs(query, keep_blank_values=False)
+            draft_id = str((params.get("draft_id") or [""])[0]).strip()
+            if not draft_id:
+                self._send_json(_list_doc_to_book_drafts(root_dir))
+                return
+
+            draft = _load_doc_to_book_draft(root_dir, draft_id)
+            if draft is None:
+                self._send_json(
+                    {"error": "doc-to-book draft를 찾을 수 없습니다."},
+                    HTTPStatus.NOT_FOUND,
+                )
+                return
+
+            self._send_json(draft)
+
+        def _handle_doc_to_book_captured(self, query: str) -> None:
+            params = parse_qs(query, keep_blank_values=False)
+            draft_id = str((params.get("draft_id") or [""])[0]).strip()
+            if not draft_id:
+                self._send_json(
+                    {"error": "draft_id가 필요합니다."},
+                    HTTPStatus.BAD_REQUEST,
+                )
+                return
+
+            capture = _load_doc_to_book_capture(root_dir, draft_id)
+            if capture is None:
+                self._send_json(
+                    {"error": "captured artifact를 찾을 수 없습니다."},
+                    HTTPStatus.NOT_FOUND,
+                )
+                return
+
+            body, content_type = capture
+            self._send_bytes(body, content_type=content_type)
+
+        def _handle_doc_to_book_book(self, query: str) -> None:
+            params = parse_qs(query, keep_blank_values=False)
+            draft_id = str((params.get("draft_id") or [""])[0]).strip()
+            if not draft_id:
+                self._send_json(
+                    {"error": "draft_id가 필요합니다."},
+                    HTTPStatus.BAD_REQUEST,
+                )
+                return
+
+            payload = _load_doc_to_book_book(root_dir, draft_id)
+            if payload is None:
+                self._send_json(
+                    {"error": "canonical doc-to-book book을 찾을 수 없습니다."},
+                    HTTPStatus.NOT_FOUND,
+                )
+                return
+
+            self._send_json(payload)
+
+        def _handle_doc_to_book_draft_create(self, payload: dict[str, Any]) -> None:
+            try:
+                draft = _create_doc_to_book_draft(root_dir, payload)
+            except ValueError as exc:
+                self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                return
+
+            self._send_json(draft, HTTPStatus.CREATED)
+
+        def _handle_doc_to_book_capture(self, payload: dict[str, Any]) -> None:
+            try:
+                draft = _capture_doc_to_book_draft(root_dir, payload)
+            except ValueError as exc:
+                self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                return
+            except FileNotFoundError as exc:
+                self._send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+                return
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(
+                    {"error": f"capture 중 오류가 발생했습니다: {exc}"},
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
+                return
+
+            self._send_json(draft, HTTPStatus.CREATED)
+
+        def _handle_doc_to_book_normalize(self, payload: dict[str, Any]) -> None:
+            try:
+                draft = _normalize_doc_to_book_draft(root_dir, payload)
+            except ValueError as exc:
+                self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                return
+            except FileNotFoundError as exc:
+                self._send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+                return
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(
+                    {"error": f"normalize 중 오류가 발생했습니다: {exc}"},
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
+                return
+
+            self._send_json(draft, HTTPStatus.CREATED)
 
         def _handle_chat(self, payload: dict[str, Any]) -> None:
             session_id = str(payload.get("session_id") or uuid.uuid4().hex)
@@ -867,7 +1384,7 @@ def _build_handler(
             session.history.append(Turn(query=query, mode=mode, answer=result.answer))
             session.history = session.history[-20:]
             store.update(session)
-            self._send_json(_build_chat_payload(session=session, result=result))
+            self._send_json(_build_chat_payload(root_dir=root_dir, session=session, result=result))
 
         def _handle_chat_stream(self, payload: dict[str, Any]) -> None:
             session_id = str(payload.get("session_id") or uuid.uuid4().hex)
@@ -929,7 +1446,11 @@ def _build_handler(
             self._stream_event(
                 {
                     "type": "result",
-                    "payload": _build_chat_payload(session=session, result=result),
+                    "payload": _build_chat_payload(
+                        root_dir=root_dir,
+                        session=session,
+                        result=result,
+                    ),
                 }
             )
 
@@ -973,7 +1494,18 @@ def serve(
 __all__ = [
     "ChatSession",
     "SessionStore",
+    "_build_doc_to_book_plan",
+    "_capture_doc_to_book_draft",
+    "_create_doc_to_book_draft",
+    "_load_doc_to_book_book",
+    "_load_doc_to_book_capture",
+    "_load_doc_to_book_draft",
+    "_list_doc_to_book_drafts",
+    "_normalize_doc_to_book_draft",
+    "_canonical_source_book",
+    "_clean_source_view_text",
     "_citation_href",
+    "_serialize_citation",
     "_internal_viewer_html",
     "_viewer_path_to_local_html",
     "_derive_next_context",

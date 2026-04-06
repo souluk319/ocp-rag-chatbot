@@ -17,6 +17,13 @@ LOGGING_RE = re.compile(r"(로그|로깅|logging)", re.IGNORECASE)
 AUDIT_RE = re.compile(r"(감사|audit)", re.IGNORECASE)
 EVENT_RE = re.compile(r"(이벤트|event)", re.IGNORECASE)
 APP_RE = re.compile(r"(애플리케이션|application|pod|컨테이너|container)", re.IGNORECASE)
+POD_PENDING_RE = re.compile(r"(pod|파드).*(pending|펜딩)|(pending|펜딩)", re.IGNORECASE)
+CRASH_LOOP_RE = re.compile(r"(crashloopbackoff|crash loop backoff|크래시루프백오프)", re.IGNORECASE)
+POD_LIFECYCLE_RE = re.compile(
+    r"(pod lifecycle|pod 라이프사이클|파드 라이프사이클|pod 생명주기|파드 생명주기|lifecycle)",
+    re.IGNORECASE,
+)
+OC_LOGIN_RE = re.compile(r"\boc\s+login\b|(로그인).*(\boc\b)", re.IGNORECASE)
 INFRA_RE = re.compile(r"(인프라|infra|노드|node|컨트롤 플레인|control plane)", re.IGNORECASE)
 MONITORING_RE = re.compile(r"(모니터링|monitoring)", re.IGNORECASE)
 SECURITY_RE = re.compile(r"(보안|security)", re.IGNORECASE)
@@ -180,6 +187,10 @@ def has_doc_locator_intent(query: str) -> bool:
     return bool(DOC_LOCATOR_RE.search(query or ""))
 
 
+def has_pod_pending_troubleshooting_intent(query: str) -> bool:
+    return bool(POD_PENDING_RE.search(query or ""))
+
+
 def has_backup_restore_intent(query: str) -> bool:
     return bool(BACKUP_RE.search(query or "") or RESTORE_RE.search(query or ""))
 
@@ -249,6 +260,15 @@ def has_openshift_kubernetes_compare_intent(query: str) -> bool:
 
 def is_explainer_query(query: str) -> bool:
     return bool(EXPLAINER_RE.search(query or ""))
+
+
+def has_pod_lifecycle_concept_intent(query: str) -> bool:
+    normalized = query or ""
+    return bool(POD_LIFECYCLE_RE.search(normalized)) and bool(is_explainer_query(normalized))
+
+
+def has_crash_loop_troubleshooting_intent(query: str) -> bool:
+    return bool(CRASH_LOOP_RE.search(query or ""))
 
 
 def has_operator_concept_intent(query: str) -> bool:
@@ -333,6 +353,16 @@ def decompose_retrieval_queries(query: str) -> list[str]:
     normalized = _collapse_spaces(query)
     if not normalized:
         return []
+
+    if POD_LIFECYCLE_RE.search(normalized) and is_explainer_query(normalized):
+        return _dedupe_queries(
+            [
+                normalized,
+                "Pod 정의와 Pod phase 개념",
+                "Pod status와 phase 차이",
+                "파드 생명주기 개념",
+            ]
+        )
 
     compare_match = COMPARE_DECOMPOSE_RE.match(normalized)
     if compare_match:
@@ -547,6 +577,75 @@ def query_book_adjustments(
         boosts["nodes"] = max(boosts.get("nodes", 1.0), 1.18)
         penalties["cli_tools"] = min(penalties.get("cli_tools", 1.0), 0.8)
 
+    if has_pod_pending_troubleshooting_intent(normalized) or has_crash_loop_troubleshooting_intent(normalized):
+        boosts["support"] = max(boosts.get("support", 1.0), 1.45)
+        boosts["validation_and_troubleshooting"] = max(
+            boosts.get("validation_and_troubleshooting", 1.0),
+            1.22,
+        )
+        boosts["nodes"] = max(boosts.get("nodes", 1.0), 1.12)
+        penalties["workloads_apis"] = min(penalties.get("workloads_apis", 1.0), 0.58)
+        penalties["monitoring_apis"] = min(penalties.get("monitoring_apis", 1.0), 0.74)
+        penalties["schedule_and_quota_apis"] = min(
+            penalties.get("schedule_and_quota_apis", 1.0),
+            0.76,
+        )
+        penalties["storage_apis"] = min(penalties.get("storage_apis", 1.0), 0.78)
+
+    if has_crash_loop_troubleshooting_intent(normalized):
+        boosts["support"] = max(boosts.get("support", 1.0), 1.58)
+        boosts["validation_and_troubleshooting"] = max(
+            boosts.get("validation_and_troubleshooting", 1.0),
+            1.26,
+        )
+        boosts["building_applications"] = max(
+            boosts.get("building_applications", 1.0),
+            1.14,
+        )
+        boosts["nodes"] = max(boosts.get("nodes", 1.0), 1.12)
+        penalties["security_and_compliance"] = min(
+            penalties.get("security_and_compliance", 1.0),
+            0.74,
+        )
+        penalties["monitoring_apis"] = min(
+            penalties.get("monitoring_apis", 1.0),
+            0.52,
+        )
+        penalties["network_apis"] = min(
+            penalties.get("network_apis", 1.0),
+            0.58,
+        )
+        penalties["installation_overview"] = min(
+            penalties.get("installation_overview", 1.0),
+            0.66,
+        )
+        penalties["specialized_hardware_and_driver_enablement"] = min(
+            penalties.get("specialized_hardware_and_driver_enablement", 1.0),
+            0.72,
+        )
+        penalties["hosted_control_planes"] = min(
+            penalties.get("hosted_control_planes", 1.0),
+            0.62,
+        )
+
+    if has_pod_lifecycle_concept_intent(normalized):
+        boosts["architecture"] = max(boosts.get("architecture", 1.0), 1.52)
+        boosts["overview"] = max(boosts.get("overview", 1.0), 1.18)
+        boosts["building_applications"] = max(
+            boosts.get("building_applications", 1.0),
+            1.08,
+        )
+        penalties["workloads_apis"] = min(penalties.get("workloads_apis", 1.0), 0.54)
+        penalties["nodes"] = min(penalties.get("nodes", 1.0), 0.78)
+        penalties["security_and_compliance"] = min(
+            penalties.get("security_and_compliance", 1.0),
+            0.64,
+        )
+        penalties["installation_overview"] = min(
+            penalties.get("installation_overview", 1.0),
+            0.58,
+        )
+
     if has_backup_restore_intent(normalized) and ETCD_RE.search(context_text) and not ETCD_RE.search(normalized):
         boosts["postinstallation_configuration"] = max(
             boosts.get("postinstallation_configuration", 1.0),
@@ -716,6 +815,76 @@ def normalize_query(query: str) -> str:
                 "memory",
             ]
         )
+    if has_pod_pending_troubleshooting_intent(normalized):
+        terms.extend(
+            [
+                "Pending",
+                "pod",
+                "status",
+                "scheduling",
+                "FailedScheduling",
+                "scheduler",
+                "events",
+                "describe",
+                "oc",
+                "logs",
+                "troubleshooting",
+                "pod issues",
+                "error states",
+                "node affinity",
+                "taint",
+                "toleration",
+            ]
+        )
+    if CRASH_LOOP_RE.search(normalized):
+        terms.extend(
+            [
+                "CrashLoopBackOff",
+                "pod",
+                "container",
+                "restart",
+                "back-off",
+                "restartCount",
+                "OOMKilled",
+                "ImagePullBackOff",
+                "ErrImagePull",
+                "Back-off restarting failed container",
+                "livenessProbe",
+                "readinessProbe",
+                "events",
+                "describe",
+                "oc",
+                "logs",
+                "troubleshooting",
+                "pod issues",
+                "error states",
+                "application diagnostics",
+                "애플리케이션 오류",
+            ]
+        )
+    if POD_LIFECYCLE_RE.search(normalized):
+        terms.extend(
+            [
+                "pod",
+                "lifecycle",
+                "phase",
+                "status",
+                "Pending",
+                "Running",
+                "Succeeded",
+                "Failed",
+                "Unknown",
+                "개념",
+                "overview",
+                "definition",
+                "glossary",
+                "용어집",
+                "pod phase",
+                "pod status",
+            ]
+        )
+    if OC_LOGIN_RE.search(normalized):
+        terms.extend(["oc", "login", "token", "--token", "--server", "cli"])
     if "기본 문서" in normalized:
         terms.extend(["개요", "overview"])
 

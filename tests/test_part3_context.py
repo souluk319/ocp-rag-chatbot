@@ -184,6 +184,97 @@ class ContextAssemblyTests(unittest.TestCase):
         self.assertIn(bundle.citations[0].book_slug, {"extensions", "overview", "architecture"})
         self.assertNotIn("support", [citation.book_slug for citation in bundle.citations])
 
+    def test_pod_lifecycle_concept_keeps_context_and_prefers_explainer_sections(self) -> None:
+        hits = [
+            _hit(
+                "chunk-1",
+                "nodes",
+                "2.1.1. Pod 이해",
+                "Pod에는 라이프사이클이 정의되어 있으며 Pod는 변경할 수 없는 배포 단위입니다.",
+                score=0.031,
+            ),
+            _hit(
+                "chunk-2",
+                "nodes",
+                "2.1.2. Pod 구성의 예",
+                "Pod 정의에는 라이프사이클이 시작된 후 채워지는 특성이 있습니다.",
+                score=0.029,
+            ),
+            _hit(
+                "chunk-3",
+                "workloads_apis",
+                "14.1.324. .status",
+                "PodStatus는 Pod 상태에 대한 정보를 나타냅니다.",
+                score=0.027,
+            ),
+        ]
+
+        bundle = assemble_context(
+            hits,
+            query="Pod lifecycle 개념을 초보자 기준으로 설명해줘",
+            max_chunks=4,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertEqual("nodes", bundle.citations[0].book_slug)
+        self.assertEqual("2.1.1. Pod 이해", bundle.citations[0].section)
+
+    def test_crash_loop_context_prefers_general_diagnostics_and_avoids_duplicate_oom_section(self) -> None:
+        hits = [
+            _hit(
+                "chunk-0",
+                "support",
+                "7.6.3. CLI를 사용하여 Operator 카탈로그 소스 상태 보기",
+                "example-catalog pod 상태는 ImagePullBackOff 이며 openshift-marketplace 네임스페이스에서 oc describe pod 로 확인합니다.",
+                score=0.043,
+            ),
+            _hit(
+                "chunk-1",
+                "nodes",
+                "8.4.4. OOM 종료 정책 이해",
+                "oc get pod -o yaml 로 OOMKilled 와 restartCount 를 확인합니다.",
+                score=0.041,
+            ),
+            _hit(
+                "chunk-2",
+                "nodes",
+                "8.4.4. OOM 종료 정책 이해",
+                "lastState.terminated.reason 이 OOMKilled 인지 확인합니다.",
+                score=0.039,
+            ),
+            _hit(
+                "chunk-3",
+                "support",
+                "7.8.3. 애플리케이션 오류 조사를 위한 애플리케이션 진단 데이터 수집",
+                "애플리케이션 Pod 이벤트를 보고 oc describe pod 와 oc logs -f 를 사용합니다.",
+                score=0.038,
+            ),
+            _hit(
+                "chunk-4",
+                "nodes",
+                "8.1.3. 이벤트 목록",
+                "BackOff 이벤트와 Failed 이벤트를 통해 재시작 실패를 확인합니다.",
+                score=0.036,
+            ),
+        ]
+
+        bundle = assemble_context(
+            hits,
+            query="CrashLoopBackOff가 반복될 때 확인 순서를 단계적으로 설명해줘",
+            max_chunks=5,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertEqual("support", bundle.citations[0].book_slug)
+        self.assertIn("애플리케이션 오류 조사", bundle.citations[0].section)
+        self.assertTrue(
+            all("카탈로그 소스 상태 보기" not in citation.section for citation in bundle.citations)
+        )
+        self.assertEqual(
+            1,
+            sum(int(c.section == "8.4.4. OOM 종료 정책 이해") for c in bundle.citations),
+        )
+
     def test_procedure_query_allows_more_same_book_chunks(self) -> None:
         hits = [
             _hit("chunk-1", "postinstallation_configuration", "4.12.5. etcd 데이터 백업", "oc debug --as-root node", score=0.041),

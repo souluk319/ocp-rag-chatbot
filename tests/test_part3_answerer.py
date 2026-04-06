@@ -13,12 +13,14 @@ if str(SRC) not in sys.path:
 from ocp_rag_part1.settings import Settings
 from ocp_rag_part2.models import RetrievalHit, RetrievalResult, SessionContext
 from ocp_rag_part3.answerer import (
+    _normalize_answer_markup_blocks,
     _ensure_korean_product_terms,
     _strip_intro_offtopic_noise,
     Part3Answerer,
     finalize_citations,
     normalize_answer_text,
     reshape_ops_answer_text,
+    select_fallback_citations,
     _strip_weak_additional_guidance,
     summarize_session_context,
 )
@@ -105,6 +107,132 @@ class _DuplicateCitationRetriever:
         )
 
 
+class _MultiCitationRetriever:
+    def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
+        hits = [
+            RetrievalHit(
+                chunk_id="chunk-1",
+                book_slug="architecture",
+                chapter="architecture",
+                section="OpenShift 아키텍처 개요",
+                anchor="overview",
+                source_url="https://example.com/architecture",
+                viewer_path="/docs/architecture.html#overview",
+                text="OpenShift 아키텍처는 컨트롤 플레인과 작업자 노드로 구성됩니다.",
+                source="hybrid",
+                raw_score=1.0,
+                fused_score=1.0,
+            ),
+            RetrievalHit(
+                chunk_id="chunk-2",
+                book_slug="overview",
+                chapter="overview",
+                section="플랫폼 개요",
+                anchor="platform-overview",
+                source_url="https://example.com/overview",
+                viewer_path="/docs/overview.html#platform-overview",
+                text="OpenShift Container Platform은 쿠버네티스 기반 플랫폼입니다.",
+                source="hybrid",
+                raw_score=0.94,
+                fused_score=0.94,
+            ),
+        ]
+        return RetrievalResult(
+            query=query,
+            normalized_query=query,
+            rewritten_query=query,
+            top_k=top_k,
+            candidate_k=candidate_k,
+            context=(context or SessionContext()).to_dict(),
+            hits=hits,
+            trace={"warnings": [], "timings_ms": {"bm25_search": 1.0}},
+        )
+
+
+class _PodLifecycleRetriever:
+    def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
+        hits = [
+            RetrievalHit(
+                chunk_id="chunk-1",
+                book_slug="nodes",
+                chapter="nodes",
+                section="2.1.1. Pod 이해",
+                anchor="pod-understanding",
+                source_url="https://example.com/nodes",
+                viewer_path="/docs/nodes.html#pod-understanding",
+                text="Pod에는 라이프사이클이 정의되어 있으며 노드에서 실행되도록 할당된 다음 컨테이너가 종료되거나 기타 이유로 제거될 때까지 실행됩니다.",
+                source="hybrid",
+                raw_score=1.0,
+                fused_score=1.0,
+            ),
+            RetrievalHit(
+                chunk_id="chunk-2",
+                book_slug="nodes",
+                chapter="nodes",
+                section="2.1.2. Pod 구성의 예",
+                anchor="pod-example",
+                source_url="https://example.com/nodes",
+                viewer_path="/docs/nodes.html#pod-example",
+                text="이 Pod 정의에는 Pod가 생성되고 해당 라이프사이클이 시작된 후 자동으로 채워지는 특성은 포함되지 않습니다.",
+                source="hybrid",
+                raw_score=0.95,
+                fused_score=0.95,
+            ),
+        ]
+        return RetrievalResult(
+            query=query,
+            normalized_query=query,
+            rewritten_query=query,
+            top_k=top_k,
+            candidate_k=candidate_k,
+            context=(context or SessionContext()).to_dict(),
+            hits=hits,
+            trace={"warnings": [], "timings_ms": {"bm25_search": 1.0}},
+        )
+
+
+class _PodPendingRetriever:
+    def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
+        hits = [
+            RetrievalHit(
+                chunk_id="chunk-1",
+                book_slug="nodes",
+                chapter="nodes",
+                section="8.1.3. 이벤트 목록",
+                anchor="nodes-containers-events-list_nodes-containers-events",
+                source_url="https://example.com/nodes",
+                viewer_path="/docs/nodes.html#nodes-containers-events-list_nodes-containers-events",
+                text="`FailedScheduling` 이벤트는 Pod 예약 실패 원인을 보여 주며 다양한 이유로 발생할 수 있습니다.",
+                source="hybrid",
+                raw_score=1.0,
+                fused_score=1.0,
+            ),
+            RetrievalHit(
+                chunk_id="chunk-2",
+                book_slug="nodes",
+                chapter="nodes",
+                section="4.4.4.2. 일치하는 라벨이 없는 노드 유사성",
+                anchor="admin-guide-sched-affinity-examples2_nodes-scheduler-node-affinity",
+                source_url="https://example.com/nodes",
+                viewer_path="/docs/nodes.html#admin-guide-sched-affinity-examples2_nodes-scheduler-node-affinity",
+                text="Pod는 node affinity 조건이 맞지 않으면 예약할 수 없으며, `oc describe pod` 출력의 Events로 이를 확인할 수 있습니다.",
+                source="hybrid",
+                raw_score=0.95,
+                fused_score=0.95,
+            ),
+        ]
+        return RetrievalResult(
+            query=query,
+            normalized_query=query,
+            rewritten_query=query,
+            top_k=top_k,
+            candidate_k=candidate_k,
+            context=(context or SessionContext()).to_dict(),
+            hits=hits,
+            trace={"warnings": [], "timings_ms": {"bm25_search": 1.0}},
+        )
+
+
 class _DuplicateCitationLLMClient:
     def generate(self, messages, trace_callback=None):  # noqa: ANN001
         self.messages = messages
@@ -168,6 +296,21 @@ class _BareCommandLLMClient:
                 }
         )
         return "답변: $ oc adm policy add-role-to-user admin <사용자명> -n <namespace> [1]"
+
+
+class _NarrativeNoCitationLLMClient:
+    def generate(self, messages, trace_callback=None):  # noqa: ANN001
+        self.messages = messages
+        if trace_callback is not None:
+            trace_callback(
+                {
+                    "step": "llm_generate",
+                    "label": "LLM 응답 생성 완료",
+                    "status": "done",
+                    "duration_ms": 1.9,
+                }
+            )
+        return "답변: OpenShift는 컨트롤 플레인과 작업자 노드로 구성된 플랫폼입니다."
 
 
 class _WrongDrainCommandLLMClient:
@@ -328,6 +471,32 @@ class Part3AnswererTests(unittest.TestCase):
         self.assertIn("정의 1문장", messages[1]["content"])
         self.assertIn("예시를 짧게", messages[1]["content"])
 
+    def test_build_messages_expands_learn_mode_explanations(self) -> None:
+        messages = build_messages(
+            query="CrashLoopBackOff가 반복될 때 확인 순서를 설명해줘",
+            mode="learn",
+            context_bundle=type("Bundle", (), {"prompt_context": "[1] ...", "citations": []})(),
+            session_summary="",
+        )
+
+        self.assertIn("단계별 이유와 확인 포인트를 충분히 설명하라", messages[0]["content"])
+        self.assertIn("각 단계의 이유와 확인 포인트를 충분히 풀어 답변", messages[1]["content"])
+        self.assertIn("단계마다 왜 필요한지와 무엇을 확인해야 하는지 1~2문장씩 덧붙일 것", messages[1]["content"])
+        self.assertIn("[CODE], [/CODE], [TABLE], [/TABLE] 같은 내부 태그를 답변에 그대로 노출하지 말고", messages[0]["content"])
+        self.assertIn("[CODE], [/CODE], [TABLE], [/TABLE] 같은 내부 태그를 답변에 그대로 쓰지 말 것", messages[1]["content"])
+        self.assertIn("OOM은 가능한 원인 중 하나", messages[1]["content"])
+
+    def test_build_messages_adds_pod_pending_shape_hint(self) -> None:
+        messages = build_messages(
+            query="Pod Pending일 때 어디부터 확인해야 해?",
+            mode="learn",
+            context_bundle=type("Bundle", (), {"prompt_context": "[1] ...", "citations": []})(),
+            session_summary="",
+        )
+
+        self.assertIn("이벤트로 FailedScheduling 이유 확인", messages[1]["content"])
+        self.assertIn("첫 단계는 Pod Events 확인", messages[1]["content"])
+
     def test_answerer_returns_citations_and_used_indices(self) -> None:
         settings = Settings(root_dir=ROOT)
         answerer = Part3Answerer(
@@ -471,6 +640,24 @@ class Part3AnswererTests(unittest.TestCase):
 
         self.assertEqual("답변: OpenShift 설명입니다. [1]", normalized)
 
+    def test_normalize_answer_markup_blocks_converts_internal_code_tags(self) -> None:
+        normalized = _normalize_answer_markup_blocks(
+            "답변: 확인 순서는 다음과 같습니다.\n[CODE]\noc describe pod/<pod>\n[/CODE]"
+        )
+
+        self.assertNotIn("[CODE]", normalized)
+        self.assertIn("```bash", normalized)
+        self.assertIn("oc describe pod/<pod>", normalized)
+
+    def test_normalize_answer_markup_blocks_converts_internal_table_tags(self) -> None:
+        normalized = _normalize_answer_markup_blocks(
+            "답변: 표는 아래와 같습니다.\n[TABLE]\n이름 | 상태\npod-a | Pending\n[/TABLE]"
+        )
+
+        self.assertNotIn("[TABLE]", normalized)
+        self.assertIn("```text", normalized)
+        self.assertIn("이름 | 상태", normalized)
+
     def test_reshape_ops_answer_text_wraps_bare_command(self) -> None:
         reshaped = reshape_ops_answer_text(
             "답변: $ oc adm policy add-role-to-user admin <사용자명> -n <namespace> [1]",
@@ -604,6 +791,100 @@ class Part3AnswererTests(unittest.TestCase):
         self.assertEqual([1], result.cited_indices)
         self.assertEqual(1, len(result.citations))
         self.assertNotIn("inline citations auto-repaired", result.warnings)
+
+    def test_select_fallback_citations_deduplicates_and_limits(self) -> None:
+        citations = [
+            Citation(
+                index=1,
+                chunk_id="chunk-1",
+                book_slug="support",
+                section="A",
+                anchor="same",
+                source_url="https://example.com/support",
+                viewer_path="/docs/support.html#same",
+                excerpt="first",
+            ),
+            Citation(
+                index=2,
+                chunk_id="chunk-2",
+                book_slug="support",
+                section="A",
+                anchor="same",
+                source_url="https://example.com/support",
+                viewer_path="/docs/support.html#same",
+                excerpt="second",
+            ),
+            Citation(
+                index=3,
+                chunk_id="chunk-3",
+                book_slug="nodes",
+                section="B",
+                anchor="other",
+                source_url="https://example.com/nodes",
+                viewer_path="/docs/nodes.html#other",
+                excerpt="third",
+            ),
+        ]
+
+        selected = select_fallback_citations(citations, limit=2)
+
+        self.assertEqual(2, len(selected))
+        self.assertEqual([1, 2], [citation.index for citation in selected])
+        self.assertEqual(
+            ["/docs/support.html#same", "/docs/nodes.html#other"],
+            [citation.viewer_path for citation in selected],
+        )
+
+    def test_answerer_preserves_source_tags_when_learn_answer_has_no_inline_citations(self) -> None:
+        settings = Settings(root_dir=ROOT)
+        answerer = Part3Answerer(
+            settings=settings,
+            retriever=_MultiCitationRetriever(),
+            llm_client=_NarrativeNoCitationLLMClient(),
+        )
+
+        result = answerer.answer("OpenShift 아키텍처를 설명해줘", mode="learn")
+
+        self.assertGreaterEqual(len(result.citations), 1)
+        self.assertEqual("/docs/architecture.html#overview", result.citations[0].viewer_path)
+        self.assertNotIn("inline citations auto-repaired", result.warnings)
+
+    def test_answerer_shapes_pod_lifecycle_learn_response_from_grounded_citations(self) -> None:
+        settings = Settings(root_dir=ROOT)
+        answerer = Part3Answerer(
+            settings=settings,
+            retriever=_PodLifecycleRetriever(),
+            llm_client=_NarrativeNoCitationLLMClient(),
+        )
+
+        result = answerer.answer("Pod lifecycle 개념을 초보자 기준으로 설명해줘", mode="learn")
+
+        self.assertIn("Pod 라이프사이클은 Pod가 노드에 할당되어 실행되고", result.answer)
+        self.assertIn("[1]", result.answer)
+        self.assertIn("[2]", result.answer)
+        self.assertEqual(
+            ["2.1.1. Pod 이해", "2.1.2. Pod 구성의 예"],
+            [citation.section for citation in result.citations],
+        )
+
+    def test_answerer_shapes_pod_pending_learn_response_from_grounded_citations(self) -> None:
+        settings = Settings(root_dir=ROOT)
+        answerer = Part3Answerer(
+            settings=settings,
+            retriever=_PodPendingRetriever(),
+            llm_client=_NarrativeNoCitationLLMClient(),
+        )
+
+        result = answerer.answer("Pod Pending일 때 어디부터 확인해야 해?", mode="learn")
+
+        self.assertIn("가장 먼저 해당 Pod의 `Events`", result.answer)
+        self.assertIn("FailedScheduling", result.answer)
+        self.assertIn("[1]", result.answer)
+        self.assertIn("[2]", result.answer)
+        self.assertEqual(
+            ["8.1.3. 이벤트 목록", "4.4.4.2. 일치하는 라벨이 없는 노드 유사성"],
+            [citation.section for citation in result.citations],
+        )
 
     def test_answerer_reshapes_bare_ops_command_response(self) -> None:
         settings = Settings(root_dir=ROOT)

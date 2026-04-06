@@ -17,7 +17,7 @@ def _decode_response_text(response: requests.Response) -> str:
     return response.text
 
 
-def _fetch_with_retry(url: str, settings: Settings) -> str:
+def fetch_html_text(url: str, settings: Settings) -> str:
     last_error: Exception | None = None
     for attempt in range(1, settings.request_retries + 1):
         try:
@@ -45,6 +45,6 @@ def collect_entry(entry: SourceManifestEntry, settings: Settings, force: bool = 
     target = raw_html_path(settings, entry.book_slug)
     if target.exists() and not force:
         return target
-    html = _fetch_with_retry(entry.source_url, settings)
+    html = fetch_html_text(entry.source_url, settings)
     target.write_text(html, encoding="utf-8")
     return target

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -36,6 +37,7 @@ HIGH_VALUE_SLUGS = (
     "web_console",
     "observability_overview",
 )
+ENV_REFERENCE_RE = re.compile(r"\$(?:\{([A-Za-z_][A-Za-z0-9_]*)\}|([A-Za-z_][A-Za-z0-9_]*))")
 
 
 @dataclass(slots=True)
@@ -71,11 +73,17 @@ class Settings:
     embedding_model: str = field(
         default_factory=lambda: os.getenv("EMBEDDING_MODEL", "dragonkue/bge-m3-ko")
     )
+    embedding_device: str = field(
+        default_factory=lambda: os.getenv("EMBEDDING_DEVICE", "auto").strip()
+    )
     embedding_api_key: str = field(
         default_factory=lambda: os.getenv("EMBEDDING_API_KEY", "").strip()
     )
     embedding_batch_size: int = field(
         default_factory=lambda: int(os.getenv("EMBEDDING_BATCH_SIZE", "32"))
+    )
+    embedding_timeout_seconds: float = field(
+        default_factory=lambda: float(os.getenv("EMBEDDING_TIMEOUT_SECONDS", "8"))
     )
     qdrant_url: str = field(
         default_factory=lambda: os.getenv("QDRANT_URL", "http://localhost:6333").rstrip("/")
@@ -109,7 +117,7 @@ class Settings:
         default_factory=lambda: float(os.getenv("LLM_TEMPERATURE", "0.2"))
     )
     llm_max_tokens: int = field(
-        default_factory=lambda: int(os.getenv("LLM_MAX_TOKENS", "700"))
+        default_factory=lambda: int(os.getenv("LLM_MAX_TOKENS", "1100"))
     )
 
     def __post_init__(self) -> None:
@@ -117,6 +125,9 @@ class Settings:
         self.part1_dir.mkdir(parents=True, exist_ok=True)
         self.part2_dir.mkdir(parents=True, exist_ok=True)
         self.part3_dir.mkdir(parents=True, exist_ok=True)
+        self.doc_to_book_drafts_dir.mkdir(parents=True, exist_ok=True)
+        self.doc_to_book_capture_dir.mkdir(parents=True, exist_ok=True)
+        self.doc_to_book_books_dir.mkdir(parents=True, exist_ok=True)
         self.raw_html_dir.mkdir(parents=True, exist_ok=True)
 
     def _resolve_optional_dir(self, value: str, default: Path) -> Path:
@@ -175,6 +186,22 @@ class Settings:
         return self.artifacts_dir / "part3"
 
     @property
+    def doc_to_book_dir(self) -> Path:
+        return self.artifacts_dir / "doc_to_book"
+
+    @property
+    def doc_to_book_drafts_dir(self) -> Path:
+        return self.doc_to_book_dir / "drafts"
+
+    @property
+    def doc_to_book_capture_dir(self) -> Path:
+        return self.doc_to_book_dir / "captures"
+
+    @property
+    def doc_to_book_books_dir(self) -> Path:
+        return self.doc_to_book_dir / "books"
+
+    @property
     def normalized_docs_path(self) -> Path:
         return self.part1_dir / "normalized_docs.jsonl"
 
@@ -206,10 +233,38 @@ class Settings:
 def load_settings(root_dir: str | Path) -> Settings:
     env_path = Path(root_dir) / ".env"
     if env_path.exists():
+        raw_values: dict[str, str] = {}
         for raw_line in env_path.read_text(encoding="utf-8").splitlines():
             line = raw_line.strip()
             if not line or line.startswith("#") or "=" not in line:
                 continue
             key, value = line.split("=", 1)
-            os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+            raw_values[key.strip()] = value.strip().strip('"').strip("'")
+
+        resolved_values: dict[str, str] = {}
+
+        def resolve_value(key: str, stack: set[str]) -> str:
+            if key in os.environ:
+                return os.environ[key]
+            cached = resolved_values.get(key)
+            if cached is not None:
+                return cached
+            raw_value = raw_values.get(key, "")
+            if key in stack:
+                return raw_value
+
+            def replace_reference(match: re.Match[str]) -> str:
+                reference = match.group(1) or match.group(2) or ""
+                if reference in os.environ:
+                    return os.environ[reference]
+                if reference not in raw_values:
+                    return ""
+                return resolve_value(reference, stack | {key})
+
+            resolved = ENV_REFERENCE_RE.sub(replace_reference, raw_value)
+            resolved_values[key] = resolved
+            return resolved
+
+        for key in raw_values:
+            os.environ.setdefault(key, resolve_value(key, set()))
     return Settings(root_dir=Path(root_dir))

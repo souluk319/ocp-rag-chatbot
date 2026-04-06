@@ -41,16 +41,25 @@ def main() -> int:
     }
 
     try:
-        embedding_models = requests.get(
-            f"{settings.embedding_base_url}/models",
-            headers=_auth_headers(settings.embedding_api_key),
-            timeout=20,
-        )
-        report["embedding"] = {
-            "base_url": settings.embedding_base_url,
-            "models_status": embedding_models.status_code,
-            "models_payload": _safe_json(embedding_models),
-        }
+        if settings.embedding_base_url:
+            embedding_models = requests.get(
+                f"{settings.embedding_base_url}/models",
+                headers=_auth_headers(settings.embedding_api_key),
+                timeout=20,
+            )
+            report["embedding"] = {
+                "mode": "remote",
+                "base_url": settings.embedding_base_url,
+                "models_status": embedding_models.status_code,
+                "models_payload": _safe_json(embedding_models),
+            }
+        else:
+            report["embedding"] = {
+                "mode": "local",
+                "model": settings.embedding_model,
+                "device": settings.embedding_device,
+            }
+
         try:
             embedding_client = EmbeddingClient(settings)
             probe_results: list[dict[str, object]] = []

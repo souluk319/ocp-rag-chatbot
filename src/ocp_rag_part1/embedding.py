@@ -6,17 +6,20 @@ from typing import Iterable
 import requests
 
 from .settings import Settings
+from .sentence_model import load_sentence_model
 
 
 class EmbeddingClient:
     def __init__(self, settings: Settings) -> None:
-        if not settings.embedding_base_url:
-            raise ValueError("EMBEDDING_BASE_URL must be configured for remote embeddings")
         self.base_url = settings.embedding_base_url
         self.model = settings.embedding_model
+        self.device = settings.embedding_device
         self.api_key = settings.embedding_api_key
         self.batch_size = settings.embedding_batch_size
-        self.timeout = max(settings.request_timeout_seconds, 120)
+        # Query-time vector retrieval should fail fast when the embedding runtime
+        # is unavailable so the chatbot can fall back to BM25 without hanging.
+        self.timeout = settings.embedding_timeout_seconds
+        self._use_remote = bool(self.base_url)
 
     def _headers(self) -> dict[str, str]:
         if not self.api_key:
@@ -24,6 +27,16 @@ class EmbeddingClient:
         if " " in self.api_key.strip():
             return {"Authorization": self.api_key.strip()}
         return {"Authorization": f"Bearer {self.api_key}"}
+
+    def _embed_texts_locally(self, batch: list[str]) -> list[list[float]]:
+        model = load_sentence_model(self.model, self.device)
+        vectors = model.encode(
+            batch,
+            batch_size=self.batch_size,
+            show_progress_bar=False,
+            convert_to_numpy=True,
+        )
+        return [list(map(float, vector)) for vector in vectors]
 
     def _candidate_models(self) -> list[str]:
         candidates: list[str] = [self.model]
@@ -69,7 +82,10 @@ class EmbeddingClient:
         total_batches = (len(items) + self.batch_size - 1) // self.batch_size
         for start in range(0, len(items), self.batch_size):
             batch = items[start : start + self.batch_size]
-            vectors.extend(self._request_embeddings(batch))
+            if self._use_remote:
+                vectors.extend(self._request_embeddings(batch))
+            else:
+                vectors.extend(self._embed_texts_locally(batch))
             if progress_callback is not None:
                 completed_batches = (start // self.batch_size) + 1
                 progress_callback(completed_batches, total_batches)

@@ -27,6 +27,10 @@ class SettingsPathTests(unittest.TestCase):
                 self.assertEqual(root / "artifacts", settings.artifacts_dir)
                 self.assertEqual(root / "artifacts" / "part1", settings.part1_dir)
                 self.assertEqual(root / "artifacts" / "part2", settings.part2_dir)
+                self.assertEqual(root / "artifacts" / "doc_to_book", settings.doc_to_book_dir)
+                self.assertEqual(root / "artifacts" / "doc_to_book" / "drafts", settings.doc_to_book_drafts_dir)
+                self.assertEqual(root / "artifacts" / "doc_to_book" / "captures", settings.doc_to_book_capture_dir)
+                self.assertEqual(root / "artifacts" / "doc_to_book" / "books", settings.doc_to_book_books_dir)
                 self.assertEqual(root / "artifacts" / "part1" / "raw_html", settings.raw_html_dir)
             finally:
                 if old_env is None:
@@ -51,6 +55,10 @@ class SettingsPathTests(unittest.TestCase):
                 self.assertEqual(external.resolve(), settings.artifacts_dir)
                 self.assertEqual((external / "part1").resolve(), settings.part1_dir)
                 self.assertEqual((external / "part2").resolve(), settings.part2_dir)
+                self.assertEqual((external / "doc_to_book").resolve(), settings.doc_to_book_dir)
+                self.assertEqual((external / "doc_to_book" / "drafts").resolve(), settings.doc_to_book_drafts_dir)
+                self.assertEqual((external / "doc_to_book" / "captures").resolve(), settings.doc_to_book_capture_dir)
+                self.assertEqual((external / "doc_to_book" / "books").resolve(), settings.doc_to_book_books_dir)
                 self.assertEqual((external / "part1" / "raw_html").resolve(), settings.raw_html_dir)
             finally:
                 if old_env is None:
@@ -146,14 +154,20 @@ class SettingsPathTests(unittest.TestCase):
             old_raw = os.environ.get("RAW_HTML_DIR")
             old_base_url = os.environ.get("EMBEDDING_BASE_URL")
             old_embedding = os.environ.get("EMBEDDING_MODEL")
+            old_device = os.environ.get("EMBEDDING_DEVICE")
+            old_timeout = os.environ.get("EMBEDDING_TIMEOUT_SECONDS")
             try:
                 os.environ.pop("ARTIFACTS_DIR", None)
                 os.environ.pop("RAW_HTML_DIR", None)
                 os.environ.pop("EMBEDDING_BASE_URL", None)
                 os.environ.pop("EMBEDDING_MODEL", None)
+                os.environ.pop("EMBEDDING_DEVICE", None)
+                os.environ.pop("EMBEDDING_TIMEOUT_SECONDS", None)
                 settings = load_settings(root)
                 self.assertEqual("dragonkue/bge-m3-ko", settings.embedding_model)
+                self.assertEqual("auto", settings.embedding_device)
                 self.assertEqual("", settings.embedding_base_url)
+                self.assertEqual(8.0, settings.embedding_timeout_seconds)
             finally:
                 if old_artifacts is None:
                     os.environ.pop("ARTIFACTS_DIR", None)
@@ -171,6 +185,54 @@ class SettingsPathTests(unittest.TestCase):
                     os.environ.pop("EMBEDDING_MODEL", None)
                 else:
                     os.environ["EMBEDDING_MODEL"] = old_embedding
+                if old_device is None:
+                    os.environ.pop("EMBEDDING_DEVICE", None)
+                else:
+                    os.environ["EMBEDDING_DEVICE"] = old_device
+                if old_timeout is None:
+                    os.environ.pop("EMBEDDING_TIMEOUT_SECONDS", None)
+                else:
+                    os.environ["EMBEDDING_TIMEOUT_SECONDS"] = old_timeout
+
+    def test_llm_max_tokens_defaults_to_1100(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            old_llm_max_tokens = os.environ.get("LLM_MAX_TOKENS")
+            try:
+                os.environ.pop("LLM_MAX_TOKENS", None)
+                settings = load_settings(root)
+                self.assertEqual(1100, settings.llm_max_tokens)
+            finally:
+                if old_llm_max_tokens is None:
+                    os.environ.pop("LLM_MAX_TOKENS", None)
+                else:
+                    os.environ["LLM_MAX_TOKENS"] = old_llm_max_tokens
+
+    def test_env_file_expands_referenced_values_for_llm_api_key(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / ".env").write_text(
+                "LLM_API_KEY=${OPENAI_API_KEY}\n"
+                "OPENAI_API_KEY=company-token\n",
+                encoding="utf-8",
+            )
+            old_llm = os.environ.get("LLM_API_KEY")
+            old_openai = os.environ.get("OPENAI_API_KEY")
+            try:
+                os.environ.pop("LLM_API_KEY", None)
+                os.environ.pop("OPENAI_API_KEY", None)
+                settings = load_settings(root)
+                self.assertEqual("company-token", settings.llm_api_key)
+                self.assertEqual("company-token", os.environ.get("OPENAI_API_KEY"))
+            finally:
+                if old_llm is None:
+                    os.environ.pop("LLM_API_KEY", None)
+                else:
+                    os.environ["LLM_API_KEY"] = old_llm
+                if old_openai is None:
+                    os.environ.pop("OPENAI_API_KEY", None)
+                else:
+                    os.environ["OPENAI_API_KEY"] = old_openai
 
 
 if __name__ == "__main__":

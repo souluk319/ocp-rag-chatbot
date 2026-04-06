@@ -4,10 +4,12 @@ from ocp_rag_part2.query import (
     has_backup_restore_intent,
     has_certificate_monitor_intent,
     has_cluster_node_usage_intent,
+    has_crash_loop_troubleshooting_intent,
     has_project_finalizer_intent,
     has_project_terminating_intent,
     has_openshift_kubernetes_compare_intent,
     has_node_drain_intent,
+    has_pod_pending_troubleshooting_intent,
     has_rbac_intent,
     has_mco_concept_intent,
     has_operator_concept_intent,
@@ -54,6 +56,14 @@ def _intent_shape_hint(query: str, mode: str) -> str:
         return (
             "drain 질문이면 '무슨 작업인지 1문장 -> 예시 명령 코드 블록 -> 주의점 1~2개' 순서로 답할 것."
         )
+    if has_pod_pending_troubleshooting_intent(query):
+        return (
+            "Pod Pending 질문이면 '이벤트로 FailedScheduling 이유 확인 -> node affinity/selector 같은 스케줄링 제약 확인 -> 이벤트에 드러난 리소스/노드 상태 원인 확인' 순서로 답할 것. 첫 단계는 Pod Events 확인으로 시작할 것."
+        )
+    if has_crash_loop_troubleshooting_intent(query):
+        return (
+            "CrashLoopBackOff 질문이면 '현재 상태와 이벤트 확인 -> 로그와 이전 종료 원인 확인 -> 이미지/프로브/설정 확인 -> OOM 같은 대표 원인 분기' 순서로 답할 것. OOM은 가능한 원인 중 하나로 설명하되 첫 문장에서 단정하지 말 것."
+        )
     if has_operator_concept_intent(query) or has_mco_concept_intent(query):
         return (
             "개념 질문이면 정의 1문장 뒤에, 실제로 무엇을 관리하거나 자동화하는지 2~3문장으로 설명하고 예시를 짧게 붙일 것."
@@ -71,7 +81,7 @@ def build_messages(
     style = (
         "운영자가 바로 실행할 수 있게 짧고 실무적으로 답변"
         if mode == "ops"
-        else "초보자도 따라올 수 있게 단계적으로 설명"
+        else "초보자도 따라올 수 있게 단계적으로 설명하고, 각 단계의 이유와 확인 포인트를 충분히 풀어 답변"
     )
     system = (
         "당신은 OCP 운영/교육 가이드 RAG 챗봇이다. "
@@ -79,11 +89,14 @@ def build_messages(
         "추측하거나 문서에 없는 명령어, 버전, 절차를 만들지 마라. "
         "답변은 항상 '답변:'으로 시작하라. "
         "핵심 제품명과 기술명은 처음 등장할 때 한국어를 먼저 쓰고 필요하면 괄호 안에 영문을 덧붙여라. "
+        "질문이 한국어면 답변 서술도 자연스러운 한국어 문장으로만 쓰고, CLI 옵션/상태명/고유명사 외의 불필요한 영문 단어를 섞지 마라. "
         "ops 모드에서 명령이나 절차를 답할 때는 bare command만 던지지 말고, "
         "먼저 무엇을 쓰는지 한 문장으로 말한 뒤 코드 블록으로 명령이나 YAML을 제시하라. "
         "가능하면 바로 아래에 범위, 영향, 전제, 예시 중 필요한 것만 한 줄로 덧붙여라. "
+        "learn 모드에서는 지나치게 압축하지 말고, 단계별 이유와 확인 포인트를 충분히 설명하라. "
         "필요할 때만 빈 줄 뒤에 '추가 가이드:' 섹션을 붙여라. "
         "인사말, 군더더기, 장황한 서론은 쓰지 마라. "
+        "근거 문서에 포함된 [CODE], [/CODE], [TABLE], [/TABLE] 같은 내부 태그를 답변에 그대로 노출하지 말고, 일반 markdown 코드 블록이나 자연어 설명으로 바꿔라. "
         "각 문장 뒤에는 직접 근거가 있는 경우에만 [1], [2]처럼 citation을 붙여라. "
         "질문이 애매하거나 여러 해석이 가능하면 많이 말하지 말고 짧게 되물어라. "
         "특히 근거가 비어 있거나 너무 약한데 질문 자체가 넓거나 모호하면, "
@@ -109,6 +122,9 @@ def build_messages(
         "- 답변 본문은 현재 질문에 바로 답할 것\n"
         "- ops 모드에서 명령 질문이면 '한 줄 설명 -> 코드 블록 -> 짧은 범위/예시' 순서를 우선할 것\n"
         "- ops 모드에서 명령만 한 줄로 툭 던지지 말 것\n"
+        "- learn 모드에서는 단계마다 왜 필요한지와 무엇을 확인해야 하는지 1~2문장씩 덧붙일 것\n"
+        "- 질문이 한국어면 서술 문장은 한국어로만 쓰고, 영문은 명령어/옵션/상태명/고유명사처럼 꼭 필요한 경우에만 쓸 것\n"
+        "- [CODE], [/CODE], [TABLE], [/TABLE] 같은 내부 태그를 답변에 그대로 쓰지 말 것\n"
         "- 추가 가이드는 꼭 필요할 때만 짧게 덧붙일 것\n"
         "- 세션 맥락은 현재 질문 해석을 돕는 힌트로만 사용할 것\n"
         "- follow-up이라도 현재 검색 근거가 약하면 단정하지 말고 확인 질문을 할 것\n"

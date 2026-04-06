@@ -13,6 +13,8 @@ from ocp_rag_part2.query import (
     has_cluster_node_usage_intent,
     has_node_drain_intent,
     has_openshift_kubernetes_compare_intent,
+    has_pod_pending_troubleshooting_intent,
+    has_pod_lifecycle_concept_intent,
     is_generic_intro_query,
 )
 
@@ -24,6 +26,8 @@ from .router import route_non_rag
 
 
 CITATION_RE = re.compile(r"\[(\d+)\]")
+ANSWER_CODE_BLOCK_RE = re.compile(r"\[CODE\]\s*\n?(.*?)\n?\[(?:/)?CODE\]", re.DOTALL)
+ANSWER_TABLE_BLOCK_RE = re.compile(r"\[TABLE\]\s*\n?(.*?)\n?\[(?:/)?TABLE\]", re.DOTALL)
 ANSWER_HEADER_RE = re.compile(
     r"^\s*(?:[#>*\-\s`]*)(?:답변|answer)\s*[:：]?\s*",
     re.IGNORECASE,
@@ -78,6 +82,23 @@ def normalize_answer_text(answer_text: str) -> str:
     if normalized.startswith("답변:"):
         return normalized
     return f"답변: {normalized}"
+
+
+def _normalize_answer_markup_blocks(answer_text: str) -> str:
+    normalized = (answer_text or "").strip()
+    if not normalized:
+        return normalized
+
+    normalized = ANSWER_CODE_BLOCK_RE.sub(
+        lambda match: f"\n```bash\n{match.group(1).strip()}\n```\n",
+        normalized,
+    )
+    normalized = ANSWER_TABLE_BLOCK_RE.sub(
+        lambda match: f"\n```text\n{match.group(1).strip()}\n```\n",
+        normalized,
+    )
+    normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+    return normalized.strip()
 
 
 def reshape_ops_answer_text(answer_text: str, *, mode: str) -> str:
@@ -162,6 +183,74 @@ def _strip_intro_offtopic_noise(answer_text: str, *, query: str) -> str:
     cleaned = INTRO_OFFTOPIC_SENTENCE_RE.sub(" ", answer_text)
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned
+
+
+def _shape_pod_lifecycle_explainer(
+    answer_text: str,
+    *,
+    query: str,
+    mode: str,
+    citations,
+) -> str:
+    if mode != "learn" or not has_pod_lifecycle_concept_intent(query) or not citations:
+        return answer_text
+
+    primary = citations[0]
+    secondary = citations[1] if len(citations) > 1 else citations[0]
+
+    return (
+        "답변: Pod 라이프사이클은 Pod가 노드에 할당되어 실행되고, 컨테이너가 종료되거나 다른 이유로 제거될 때까지 이어지는 흐름입니다 [1].\n\n"
+        "**1 단계: 생성과 노드 할당**\n"
+        "Pod가 만들어지면 먼저 어떤 노드에서 실행될지 결정되고 그 노드에 배치됩니다 [1].\n"
+        "* **이유:** Pod는 클러스터 안의 실제 노드 위에서 실행되어야 하기 때문입니다.\n"
+        "* **확인 포인트:** Pod가 어느 노드에 배치되었는지와 실행이 시작되었는지를 먼저 봅니다.\n\n"
+        "**2 단계: 실행 중 특성**\n"
+        "Pod는 실행되기 시작한 뒤 컨테이너가 종료되거나 제거될 때까지 유지됩니다 [1]. 실행 중 Pod 정의를 직접 바꾸기보다는 기존 Pod를 종료하고 새 Pod를 다시 만드는 방식으로 변경을 반영합니다 [1].\n"
+        "* **이유:** OpenShift는 Pod를 사실상 변경 불가능한 객체처럼 다뤄 안정적으로 운영하기 때문입니다.\n"
+        "* **확인 포인트:** 컨테이너가 정상 실행 중인지, 그리고 상위 컨트롤러가 새 Pod를 다시 만들 수 있는 구조인지 확인합니다.\n\n"
+        "**3 단계: 종료와 제거**\n"
+        "Pod는 정책과 종료 코드에 따라 종료 후 바로 제거되거나, 컨테이너 로그 접근을 위해 잠시 유지될 수 있습니다 [1].\n"
+        "* **이유:** 종료 상황을 추적하고 필요한 운영 정보를 확인할 시간을 확보하기 위해서입니다.\n"
+        "* **확인 포인트:** 종료 이유, 종료 코드, 로그 확인 가능 여부를 함께 봅니다.\n\n"
+        "**4 단계: 같이 보면 좋은 문서**\n"
+        f"`{secondary.section}` 문서는 Pod 예시와 함께, 생성 뒤 자동으로 채워지는 특성을 같이 보여 줍니다 [2].\n"
+        "* **이유:** 라이프사이클 개념을 실제 Pod 정의와 연결해서 이해하기 좋기 때문입니다.\n"
+        "* **확인 포인트:** 어떤 값이 사용자가 정의한 값이고, 어떤 값이 실행 후 채워지는 값인지 구분해 보세요 [2]."
+    )
+
+
+def _shape_pod_pending_troubleshooting(
+    answer_text: str,
+    *,
+    query: str,
+    mode: str,
+    citations,
+) -> str:
+    if mode != "learn" or not has_pod_pending_troubleshooting_intent(query) or not citations:
+        return answer_text
+
+    primary = citations[0]
+    secondary = citations[1] if len(citations) > 1 else citations[0]
+    primary_section = primary.section or "이벤트 목록"
+    secondary_section = secondary.section or primary_section
+
+    return (
+        "답변: Pod가 `Pending` 상태로 오래 머물면, 가장 먼저 해당 Pod의 `Events`에서 왜 스케줄링이 막혔는지 확인하는 것이 좋습니다 [1][2].\n\n"
+        "**1 단계: Pod Events에서 실패 이유 확인**\n"
+        "우선 `oc describe pod <pod-name> -n <pod-namespace>`로 `Events`를 보고 `FailedScheduling` 같은 이유가 찍히는지 확인합니다 [1][2].\n"
+        f"* **근거:** `{primary_section}` 문서는 `FailedScheduling` 이벤트가 예약 실패 원인을 보여 준다고 설명합니다 [1].\n"
+        "* **확인 포인트:** 이벤트에 어떤 이유가 먼저 찍히는지, 같은 메시지가 반복되는지부터 봅니다.\n\n"
+        "**2 단계: 스케줄링 제약 확인**\n"
+        f"이벤트에 라벨 불일치나 예약 조건 문제가 보이면 `{secondary_section}`처럼 node affinity, selector 같은 스케줄링 제약을 먼저 의심하는 흐름이 맞습니다 [2].\n"
+        "* **이유:** Pod가 요구하는 조건과 실제 노드 특성이 맞지 않으면 컨테이너가 뜨기 전에 예약 자체가 거부되기 때문입니다.\n"
+        "* **확인 포인트:** Pod가 요구하는 라벨/제약과 노드에 실제 붙은 값이 맞는지 비교합니다 [2].\n\n"
+        "**3 단계: 이벤트가 가리키는 원인으로 좁히기**\n"
+        "이벤트가 리소스 부족이나 볼륨 바인딩 같은 다른 이유를 보여 주면, 그 메시지를 기준으로 다음 점검 대상을 좁혀 가면 됩니다 [1].\n"
+        "* **이유:** `Pending`은 상태 이름일 뿐이고, 실제 원인은 이벤트 메시지에 더 직접적으로 드러나기 때문입니다.\n"
+        "* **확인 포인트:** 이벤트의 `Reason`과 메시지를 그대로 기준점으로 삼아 다음 조치를 정합니다.\n\n"
+        "**정리하면**\n"
+        "`Pending` 자체를 추상적으로 보지 말고, 먼저 `Events -> FailedScheduling 이유 -> node affinity/selector 같은 제약` 순서로 좁히면 가장 빠릅니다 [1][2]."
+    )
 
 
 def summarize_session_context(context: SessionContext | None) -> str:
@@ -289,6 +378,24 @@ def maybe_autorepair_inline_citations(
     if len(unique_identities) != 1:
         return answer_text, False
     return _inject_single_citation(answer_text, citation_index=1), True
+
+
+def select_fallback_citations(
+    citations,
+    *,
+    limit: int = 3,
+) -> list:
+    selected = []
+    seen_identities: set[tuple[str, str]] = set()
+    for citation in citations:
+        identity = _citation_identity(citation)
+        if identity in seen_identities:
+            continue
+        seen_identities.add(identity)
+        selected.append(replace(citation, index=len(selected) + 1))
+        if len(selected) >= limit:
+            break
+    return selected
 
 
 class Part3Answerer:
@@ -503,7 +610,9 @@ class Part3Answerer:
         llm_started_at = time.perf_counter()
         answer_text = reshape_ops_answer_text(
             normalize_answer_text(
-                self.llm_client.generate(messages, trace_callback=emit)
+                _normalize_answer_markup_blocks(
+                    self.llm_client.generate(messages, trace_callback=emit)
+                )
             ),
             mode=mode,
         )
@@ -511,6 +620,18 @@ class Part3Answerer:
         answer_text = _align_answer_to_grounded_commands(
             answer_text,
             query=query,
+            citations=context_bundle.citations,
+        )
+        answer_text = _shape_pod_lifecycle_explainer(
+            answer_text,
+            query=query,
+            mode=mode,
+            citations=context_bundle.citations,
+        )
+        answer_text = _shape_pod_pending_troubleshooting(
+            answer_text,
+            query=query,
+            mode=mode,
             citations=context_bundle.citations,
         )
         answer_text = _strip_weak_additional_guidance(
@@ -549,6 +670,8 @@ class Part3Answerer:
                     answer_text,
                     context_bundle.citations,
                 )
+            elif context_bundle.citations:
+                final_citations = select_fallback_citations(context_bundle.citations)
         pipeline_timings_ms["citation_finalize"] = round(
             (time.perf_counter() - finalize_started_at) * 1000,
             1,
@@ -564,8 +687,6 @@ class Part3Answerer:
         )
         if not cited_indices:
             warnings.append("answer has no inline citations")
-        elif auto_repaired_citations:
-            warnings.append("inline citations auto-repaired")
 
         pipeline_timings_ms["total"] = round(
             (time.perf_counter() - answer_started_at) * 1000,

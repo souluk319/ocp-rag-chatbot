@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -15,9 +16,21 @@ if str(SRC) not in sys.path:
 from ocp_rag_part2.models import SessionContext
 from ocp_rag_part3.models import AnswerResult, Citation
 from ocp_rag_part4.server import (
+    _build_doc_to_book_plan,
+    _capture_doc_to_book_draft,
+    _canonical_source_book,
+    _clean_source_view_text,
+    _create_doc_to_book_draft,
     _citation_href,
     _derive_next_context,
+    _internal_doc_to_book_viewer_html,
     _internal_viewer_html,
+    _list_doc_to_book_drafts,
+    _load_doc_to_book_book,
+    _load_doc_to_book_capture,
+    _load_doc_to_book_draft,
+    _normalize_doc_to_book_draft,
+    _serialize_citation,
     _suggest_follow_up_questions,
     _viewer_path_to_local_html,
 )
@@ -59,30 +72,57 @@ class Part4UiTests(unittest.TestCase):
         self.assertIn("function consumeChatStream", html)
         self.assertIn("function startStatusPulse", html)
         self.assertIn('id="pipeline-summary"', html)
-        self.assertIn("OpenShift Operations QA Console", html)
+        self.assertIn("OCP Knowledge Studio", html)
+        self.assertIn("OCP 운영·학습 Knowledge Platform", html)
         self.assertIn("--accent: #ee0000;", html)
+        self.assertIn("width: min(1840px, calc(100vw - 24px));", html)
+        self.assertIn("grid-template-columns: minmax(0, 1.16fr) minmax(520px, 0.98fr);", html)
         self.assertIn("function renderEmptyState", html)
         self.assertIn('class="sample-chip"', html)
         self.assertIn("function normalizeAssistantAnswer", html)
         self.assertIn('label.textContent = "Answer"', html)
-        self.assertIn('title.textContent = "Grounded Sources"', html)
+        self.assertIn('title.textContent = "근거 문서"', html)
         self.assertIn(".assistant-copy", html)
         self.assertIn(".citation-list-title", html)
         self.assertIn(".suggestion-list-title", html)
         self.assertIn(".followup-chip", html)
         self.assertIn('title.textContent = "이어서 볼 질문"', html)
         self.assertIn('sendMessage({ query: suggestedQuery })', html)
-        self.assertIn('id="inspector-toggle-btn"', html)
-        self.assertIn("function setInspectorVisible", html)
-        self.assertIn("function setInspectorTab", html)
-        self.assertIn('data-inspector-tab="pipeline"', html)
+        self.assertIn('id="source-panel-toggle-btn"', html)
+        self.assertIn("function setSourcePanelVisible", html)
+        self.assertIn("function setStudyTab", html)
+        self.assertIn('data-study-tab="source"', html)
+        self.assertIn("function fetchSourceMeta", html)
+        self.assertIn("function fetchSourceBook", html)
+        self.assertIn("function renderSourceBook", html)
+        self.assertIn("function openSourcePanel", html)
+        self.assertIn('id="source-viewer-frame"', html)
+        self.assertIn('id="source-outline"', html)
+        self.assertIn('data-study-tab="ingest"', html)
+        self.assertIn('id="ingest-plan-btn"', html)
+        self.assertIn('id="ingest-save-btn"', html)
+        self.assertIn('id="ingest-capture-btn"', html)
+        self.assertIn('id="ingest-normalize-btn"', html)
+        self.assertIn('id="ingest-open-capture-btn"', html)
+        self.assertIn('id="ingest-capture-meta"', html)
+        self.assertIn("function previewDocToBookPlan", html)
+        self.assertIn("function createDocToBookDraft", html)
+        self.assertIn("function captureDocToBookDraft", html)
+        self.assertIn("function normalizeDocToBookDraft", html)
+        self.assertIn("function fetchDocToBookBook", html)
+        self.assertIn("function openCapturedDocToBookDraft", html)
+        self.assertIn("function loadDocToBookDrafts", html)
+        self.assertIn("function openDocToBookDraft", html)
+        self.assertIn(".source-tag-group", html)
+        self.assertIn(".source-tag", html)
         self.assertIn(".summary-grid", html)
         self.assertIn("function humanizePipelineKey", html)
         self.assertIn("function summarizeTraceMeta", html)
         self.assertIn(".trace-step", html)
-        self.assertIn("function humanizePipelineKey", html)
-        self.assertIn("function summarizeTraceMeta", html)
         self.assertIn('class="summary-grid"', html)
+        self.assertIn("Capture Status", html)
+        self.assertIn("Canonical Draft Preview", html)
+        self.assertIn("Recent Drafts", html)
 
     def test_citation_href_prefers_internal_viewer_path(self) -> None:
         href = _citation_href(_citation(1, anchor="overview-anchor"))
@@ -91,6 +131,13 @@ class Part4UiTests(unittest.TestCase):
             "/docs/ocp/4.20/ko/architecture/index.html#overview",
             href,
         )
+
+    def test_clean_source_view_text_strips_notice_noise(self) -> None:
+        cleaned = _clean_source_view_text(
+            "Red Hat OpenShift Documentation Team 법적 공지 초록\n\n목차\n\n정상 본문입니다."
+        )
+
+        self.assertEqual("정상 본문입니다.", cleaned)
 
     def test_derive_next_context_updates_topic_when_grounded(self) -> None:
         result = AnswerResult(
@@ -262,13 +309,102 @@ class Part4UiTests(unittest.TestCase):
         )
 
     def test_viewer_path_maps_to_local_raw_html(self) -> None:
-        target = _viewer_path_to_local_html(
-            ROOT,
-            "/docs/ocp/4.20/ko/architecture/index.html#overview",
-        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            raw_html_dir = root / "custom_raw_html"
+            raw_html_dir.mkdir(parents=True)
+            expected = raw_html_dir / "architecture.html"
+            expected.write_text("<html><body>ok</body></html>", encoding="utf-8")
 
-        self.assertIsNotNone(target)
-        self.assertEqual("architecture.html", target.name)
+            old_artifacts = os.environ.get("ARTIFACTS_DIR")
+            old_raw = os.environ.get("RAW_HTML_DIR")
+            try:
+                os.environ.pop("ARTIFACTS_DIR", None)
+                os.environ["RAW_HTML_DIR"] = str(raw_html_dir)
+                target = _viewer_path_to_local_html(
+                    root,
+                    "/docs/ocp/4.20/ko/architecture/index.html#overview",
+                )
+            finally:
+                if old_artifacts is None:
+                    os.environ.pop("ARTIFACTS_DIR", None)
+                else:
+                    os.environ["ARTIFACTS_DIR"] = old_artifacts
+                if old_raw is None:
+                    os.environ.pop("RAW_HTML_DIR", None)
+                else:
+                    os.environ["RAW_HTML_DIR"] = old_raw
+
+        self.assertEqual(expected.resolve(), target)
+
+    def test_serialize_citation_enriches_source_labels(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            manifest_path = root / "manifests" / "ocp_ko_4_20_html_single.json"
+            manifest_path.parent.mkdir(parents=True)
+            manifest_path.write_text(
+                json.dumps(
+                    {
+                        "entries": [
+                            {
+                                "book_slug": "architecture",
+                                "title": "아키텍처",
+                                "source_url": "https://example.com/architecture",
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            normalized_docs_path = root / "artifacts" / "part1" / "normalized_docs.jsonl"
+            normalized_docs_path.parent.mkdir(parents=True)
+            normalized_docs_path.write_text(
+                json.dumps(
+                    {
+                        "book_slug": "architecture",
+                        "book_title": "아키텍처",
+                        "heading": "컨트롤 플레인",
+                        "section_level": 2,
+                        "section_path": ["개요", "컨트롤 플레인"],
+                        "anchor": "overview",
+                        "source_url": "https://example.com/architecture",
+                        "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html#overview",
+                        "text": "본문",
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            old_artifacts = os.environ.get("ARTIFACTS_DIR")
+            old_raw = os.environ.get("RAW_HTML_DIR")
+            old_manifest = os.environ.get("SOURCE_MANIFEST_PATH")
+            try:
+                os.environ.pop("ARTIFACTS_DIR", None)
+                os.environ.pop("RAW_HTML_DIR", None)
+                os.environ.pop("SOURCE_MANIFEST_PATH", None)
+                payload = _serialize_citation(root, _citation(1))
+            finally:
+                if old_artifacts is None:
+                    os.environ.pop("ARTIFACTS_DIR", None)
+                else:
+                    os.environ["ARTIFACTS_DIR"] = old_artifacts
+                if old_raw is None:
+                    os.environ.pop("RAW_HTML_DIR", None)
+                else:
+                    os.environ["RAW_HTML_DIR"] = old_raw
+                if old_manifest is None:
+                    os.environ.pop("SOURCE_MANIFEST_PATH", None)
+                else:
+                    os.environ["SOURCE_MANIFEST_PATH"] = old_manifest
+
+        self.assertEqual("아키텍처", payload["book_title"])
+        self.assertEqual(["개요", "컨트롤 플레인"], payload["section_path"])
+        self.assertEqual("개요 > 컨트롤 플레인", payload["section_path_label"])
+        self.assertEqual("아키텍처 · 개요 > 컨트롤 플레인", payload["source_label"])
 
     def test_internal_viewer_html_uses_normalized_sections(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -288,7 +424,7 @@ class Part4UiTests(unittest.TestCase):
                                 "anchor": "overview",
                                 "source_url": "https://example.com/architecture",
                                 "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html#overview",
-                                "text": "OpenShift 아키텍처는 `컨트롤 플레인`과 작업자 노드로 구성됩니다.\n\n[CODE]\noc get nodes\n[/CODE]",
+                                "text": "Red Hat OpenShift Documentation Team 법적 공지 초록\n\nOpenShift 아키텍처는 `컨트롤 플레인`과 작업자 노드로 구성됩니다.\n\n[CODE]\noc get nodes\n[/CODE]",
                             },
                             ensure_ascii=False,
                         ),
@@ -334,12 +470,215 @@ class Part4UiTests(unittest.TestCase):
         self.assertIsNotNone(html)
         self.assertIn("아키텍처", html)
         self.assertIn("Internal Citation Viewer", html)
+        self.assertIn("width: min(1480px, calc(100vw - 32px));", html)
         self.assertIn("section-card is-target", html)
+        self.assertIn(".code-block code {", html)
+        self.assertIn("background: transparent;", html)
         self.assertIn("OpenShift 아키텍처는 <code>컨트롤 플레인</code>과 작업자 노드로 구성됩니다.", html)
         self.assertIn('class="code-block"', html)
         self.assertIn("oc get nodes", html)
         self.assertIn(">복사<", html)
         self.assertNotIn("[CODE]", html)
+        self.assertNotIn("Red Hat OpenShift Documentation Team", html)
+
+    def test_canonical_source_book_projects_normalized_sections(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            normalized_docs_path = root / "artifacts" / "part1" / "normalized_docs.jsonl"
+            normalized_docs_path.parent.mkdir(parents=True)
+            normalized_docs_path.write_text(
+                "\n".join(
+                    [
+                        json.dumps(
+                            {
+                                "book_slug": "architecture",
+                                "book_title": "아키텍처",
+                                "heading": "개요",
+                                "section_level": 1,
+                                "section_path": ["개요"],
+                                "anchor": "overview",
+                                "source_url": "https://example.com/architecture",
+                                "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html#overview",
+                                "text": "설명 본문\n\n[CODE]\noc get nodes\n[/CODE]",
+                            },
+                            ensure_ascii=False,
+                        ),
+                        json.dumps(
+                            {
+                                "book_slug": "architecture",
+                                "book_title": "아키텍처",
+                                "heading": "컨트롤 플레인",
+                                "section_level": 2,
+                                "section_path": ["개요", "컨트롤 플레인"],
+                                "anchor": "control-plane",
+                                "source_url": "https://example.com/architecture",
+                                "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html#control-plane",
+                                "text": "구성 요소 설명",
+                            },
+                            ensure_ascii=False,
+                        ),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            payload = _canonical_source_book(
+                root,
+                "/docs/ocp/4.20/ko/architecture/index.html#control-plane",
+            )
+
+        self.assertIsNotNone(payload)
+        assert payload is not None
+        self.assertEqual("canonical_book_v1", payload["canonical_model"])
+        self.assertEqual("architecture", payload["book_slug"])
+        self.assertEqual("control-plane", payload["target_anchor"])
+        self.assertEqual("normalized_sections_v1", payload["source_view_strategy"])
+        self.assertEqual(2, len(payload["sections"]))
+        self.assertEqual("architecture:overview", payload["sections"][0]["section_key"])
+        self.assertEqual(["paragraph", "code"], payload["sections"][0]["block_kinds"])
+        self.assertEqual("개요 > 컨트롤 플레인", payload["sections"][1]["section_path_label"])
+
+    def test_build_doc_to_book_plan_returns_resolved_web_capture(self) -> None:
+        payload = _build_doc_to_book_plan(
+            {
+                "source_type": "web",
+                "uri": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html/nodes",
+                "title": "노드",
+            }
+        )
+
+        self.assertEqual("web", payload["source_type"])
+        self.assertEqual("docs_redhat_html_single_v1", payload["capture_strategy"])
+        self.assertEqual(
+            "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/nodes/index",
+            payload["acquisition_uri"],
+        )
+
+    def test_build_doc_to_book_plan_rejects_unknown_source_type(self) -> None:
+        with self.assertRaisesRegex(ValueError, "source_type은 web 또는 pdf여야 합니다."):
+            _build_doc_to_book_plan({"source_type": "docx", "uri": "/tmp/a.docx"})
+
+    def test_create_doc_to_book_draft_persists_payload(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            created = _create_doc_to_book_draft(
+                root,
+                {
+                    "source_type": "web",
+                    "uri": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html/nodes",
+                    "title": "노드 운영 가이드",
+                },
+            )
+            loaded = _load_doc_to_book_draft(root, str(created["draft_id"]))
+
+        self.assertEqual("planned", created["status"])
+        self.assertIsNotNone(loaded)
+        assert loaded is not None
+        self.assertEqual(created["draft_id"], loaded["draft_id"])
+        self.assertEqual("노드 운영 가이드", loaded["plan"]["title"])
+        self.assertEqual(
+            "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/nodes/index",
+            loaded["plan"]["acquisition_uri"],
+        )
+
+    def test_list_doc_to_book_drafts_returns_saved_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            _create_doc_to_book_draft(
+                root,
+                {
+                    "source_type": "pdf",
+                    "uri": "/tmp/openshift-troubleshooting.pdf",
+                    "title": "트러블슈팅 핸드북",
+                },
+            )
+            payload = _list_doc_to_book_drafts(root)
+
+        self.assertEqual(1, len(payload["drafts"]))
+        self.assertEqual("트러블슈팅 핸드북", payload["drafts"][0]["title"])
+        self.assertEqual("pdf_text_extract_v1", payload["drafts"][0]["capture_strategy"])
+
+    def test_capture_doc_to_book_draft_fetches_and_serves_web_artifact(self) -> None:
+        class _FakeResponse:
+            encoding = "utf-8"
+            apparent_encoding = "utf-8"
+            text = "<html><body>captured web source</body></html>"
+
+            def raise_for_status(self) -> None:
+                return None
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            with patch("ocp_rag_part1.collector.requests.get", return_value=_FakeResponse()):
+                created = _capture_doc_to_book_draft(
+                    root,
+                    {
+                        "source_type": "web",
+                        "uri": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html/nodes",
+                        "title": "노드 운영 가이드",
+                    },
+                )
+            served = _load_doc_to_book_capture(root, str(created["draft_id"]))
+
+        self.assertEqual("captured", created["status"])
+        self.assertIsNotNone(served)
+        assert served is not None
+        body, content_type = served
+        self.assertEqual("text/html; charset=utf-8", content_type)
+        self.assertIn("captured web source", body.decode("utf-8"))
+
+    def test_normalize_doc_to_book_draft_builds_internal_study_view(self) -> None:
+        class _FakeResponse:
+            encoding = "utf-8"
+            apparent_encoding = "utf-8"
+            text = """
+            <html>
+              <body>
+                <main id="main-content">
+                  <article>
+                    <h1>노드 운영</h1>
+                    <p>개요 설명입니다.</p>
+                    <h2 id="events">이벤트 확인</h2>
+                    <p>문제를 좁혀가는 절차를 설명합니다.</p>
+                  </article>
+                </main>
+              </body>
+            </html>
+            """
+
+            def raise_for_status(self) -> None:
+                return None
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            with patch("ocp_rag_part1.collector.requests.get", return_value=_FakeResponse()):
+                captured = _capture_doc_to_book_draft(
+                    root,
+                    {
+                        "source_type": "web",
+                        "uri": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html/nodes",
+                        "title": "노드 운영 가이드",
+                    },
+                )
+            normalized = _normalize_doc_to_book_draft(root, {"draft_id": str(captured["draft_id"])})
+            book = _load_doc_to_book_book(root, str(captured["draft_id"]))
+            viewer_html = _internal_doc_to_book_viewer_html(
+                root,
+                f"/docs/intake/{captured['draft_id']}/index.html#events",
+            )
+
+        self.assertEqual("normalized", normalized["status"])
+        self.assertIsNotNone(book)
+        assert book is not None
+        self.assertEqual(str(captured["draft_id"]), book["draft_id"])
+        self.assertEqual(2, len(book["sections"]))
+        self.assertEqual("events", book["sections"][1]["anchor"])
+        self.assertIn("/docs/intake/", book["target_viewer_path"])
+        self.assertIsNotNone(viewer_html)
+        assert viewer_html is not None
+        self.assertIn("Doc-to-Book Study Viewer", viewer_html)
+        self.assertIn("이벤트 확인", viewer_html)
 
 
 if __name__ == "__main__":

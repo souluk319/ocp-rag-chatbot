@@ -33,7 +33,7 @@ class EmbeddingTests(unittest.TestCase):
 
         def fake_post(url, json, headers, timeout):  # noqa: ANN001
             self.assertEqual("http://embed.local/v1/embeddings", url)
-            self.assertEqual(120, timeout)
+            self.assertEqual(8.0, timeout)
             self.assertEqual({}, headers)
             calls.append((json["model"], list(json["input"])))
             if json["model"] == "dragonkue/bge-m3-ko":
@@ -87,3 +87,27 @@ class EmbeddingTests(unittest.TestCase):
 
         self.assertEqual({"Authorization": "Bearer embed-secret"}, captured_headers)
         self.assertEqual([[0.0, 1.0]], vectors)
+
+    def test_embedding_client_can_use_local_sentence_transformer_when_remote_is_missing(self) -> None:
+        class _FakeSentenceModel:
+            def encode(self, texts, batch_size, show_progress_bar, convert_to_numpy):  # noqa: ANN001
+                self.called = {
+                    "texts": list(texts),
+                    "batch_size": batch_size,
+                    "show_progress_bar": show_progress_bar,
+                    "convert_to_numpy": convert_to_numpy,
+                }
+                return [[0.1, 0.2], [0.3, 0.4]]
+
+        fake_model = _FakeSentenceModel()
+        settings = Settings(root_dir=ROOT)
+        settings.embedding_base_url = ""
+        settings.embedding_model = "dragonkue/bge-m3-ko"
+        settings.embedding_device = "cpu"
+
+        with patch("ocp_rag_part1.embedding.load_sentence_model", return_value=fake_model) as loader:
+            client = EmbeddingClient(settings)
+            vectors = client.embed_texts(["a", "b"])
+
+        loader.assert_called_once_with("dragonkue/bge-m3-ko", "cpu")
+        self.assertEqual([[0.1, 0.2], [0.3, 0.4]], vectors)

@@ -56,6 +56,19 @@ class RetrievalTests(unittest.TestCase):
             queries,
         )
 
+    def test_decompose_retrieval_queries_adds_pod_lifecycle_concept_subqueries(self) -> None:
+        queries = decompose_retrieval_queries("Pod lifecycle 개념을 초보자 기준으로 설명해줘")
+
+        self.assertEqual(
+            [
+                "Pod lifecycle 개념을 초보자 기준으로 설명해줘",
+                "Pod 정의와 Pod phase 개념",
+                "Pod status와 phase 차이",
+                "파드 생명주기 개념",
+            ],
+            queries,
+        )
+
     def test_bm25_prefers_matching_korean_chunk(self) -> None:
         rows = [
             {
@@ -120,6 +133,49 @@ class RetrievalTests(unittest.TestCase):
         rewritten = rewrite_query("오픈시프트에 대해 새줄약해봐", context)
 
         self.assertEqual("오픈시프트에 대해 새줄약해봐", rewritten)
+
+    def test_normalize_query_expands_pod_pending_troubleshooting_terms(self) -> None:
+        normalized = normalize_query("Pod가 Pending 상태에서 오래 멈춰 있을 때 어떤 순서로 점검해야 해?")
+
+        self.assertIn("Pending", normalized)
+        self.assertIn("FailedScheduling", normalized)
+        self.assertIn("describe", normalized)
+        self.assertIn("events", normalized)
+        self.assertIn("troubleshooting", normalized)
+
+    def test_query_book_adjustments_penalize_api_books_for_pod_troubleshooting(self) -> None:
+        boosts, penalties = query_book_adjustments(
+            "CrashLoopBackOff가 반복될 때 원인 추적 순서를 알려줘"
+        )
+
+        self.assertGreater(boosts["support"], 1.0)
+        self.assertGreater(boosts["validation_and_troubleshooting"], 1.0)
+        self.assertGreater(boosts["nodes"], 1.0)
+        self.assertGreater(boosts["building_applications"], 1.0)
+        self.assertLess(penalties["workloads_apis"], 1.0)
+        self.assertLess(penalties["security_and_compliance"], 1.0)
+        self.assertLess(penalties["monitoring_apis"], 1.0)
+        self.assertLess(penalties["network_apis"], 1.0)
+
+    def test_normalize_query_expands_pod_lifecycle_concept_terms(self) -> None:
+        normalized = normalize_query("Pod lifecycle 개념을 초보자 관점에서 설명해줘")
+
+        self.assertIn("lifecycle", normalized)
+        self.assertIn("Pending", normalized)
+        self.assertIn("Running", normalized)
+        self.assertIn("glossary", normalized)
+        self.assertIn("status", normalized)
+
+    def test_query_book_adjustments_bias_lifecycle_explainer_toward_architecture(self) -> None:
+        boosts, penalties = query_book_adjustments(
+            "Pod lifecycle 개념을 초보자 기준으로 설명해줘"
+        )
+
+        self.assertGreater(boosts["architecture"], 1.0)
+        self.assertGreater(boosts["overview"], 1.0)
+        self.assertLess(penalties["workloads_apis"], 1.0)
+        self.assertLess(penalties["security_and_compliance"], 1.0)
+        self.assertLess(penalties["installation_overview"], 1.0)
 
     def test_normalize_query_expands_high_value_aliases(self) -> None:
         normalized = normalize_query("로그는 어디서 봐?")
@@ -426,6 +482,97 @@ class RetrievalTests(unittest.TestCase):
 
         self.assertEqual("overview-hit", hits[0].chunk_id)
 
+    def test_fusion_prefers_architecture_glossary_for_pod_lifecycle_explainer(self) -> None:
+        architecture_hit = RetrievalHit(
+            chunk_id="pod-glossary-hit",
+            book_slug="architecture",
+            chapter="아키텍처",
+            section="1.1. 일반 용어집",
+            anchor="glossary-pod",
+            source_url="https://example.com/architecture",
+            viewer_path="/docs/architecture.html#glossary-pod",
+            text="Pod는 Kubernetes에서 하나 이상의 컨테이너를 포함하는 가장 작은 배포 단위이며 Pod phase는 Pending, Running, Succeeded, Failed, Unknown 으로 표현됩니다.",
+            source="bm25",
+            raw_score=1.0,
+            fused_score=1.0,
+        )
+        api_hit = RetrievalHit(
+            chunk_id="pod-api-hit",
+            book_slug="workloads_apis",
+            chapter="workloads APIs",
+            section="PodStatus API 필드",
+            anchor="podstatus",
+            source_url="https://example.com/workloads-apis",
+            viewer_path="/docs/workloads-apis.html#podstatus",
+            text="status.phase 와 status.conditions 필드를 통해 Pod 상태를 표현합니다.",
+            source="vector",
+            raw_score=1.0,
+            fused_score=1.0,
+        )
+        noisy_hit = RetrievalHit(
+            chunk_id="node-status-hit",
+            book_slug="security_and_compliance",
+            chapter="보안",
+            section="6.6.4. FileIntegrityNodeStatuses 오브젝트 이해",
+            anchor="filenode-status",
+            source_url="https://example.com/security",
+            viewer_path="/docs/security.html#filenode-status",
+            text="FileIntegrityNodeStatuses 는 노드 상태를 추적합니다.",
+            source="bm25",
+            raw_score=1.0,
+            fused_score=1.0,
+        )
+
+        hits = fuse_ranked_hits(
+            "Pod lifecycle 개념을 초보자 기준으로 설명해줘",
+            {
+                "bm25": [noisy_hit, architecture_hit],
+                "vector": [api_hit, architecture_hit],
+            },
+            top_k=3,
+        )
+
+        self.assertEqual("pod-glossary-hit", hits[0].chunk_id)
+
+    def test_fusion_prefers_pod_understanding_over_operational_pod_failure_for_lifecycle(self) -> None:
+        concept_hit = RetrievalHit(
+            chunk_id="pod-understanding-hit",
+            book_slug="nodes",
+            chapter="노드",
+            section="2.1.1. Pod 이해",
+            anchor="pod-understanding",
+            source_url="https://example.com/nodes",
+            viewer_path="/docs/nodes.html#pod-understanding",
+            text="Pod에는 라이프사이클이 정의되어 있으며 Pod는 변경할 수 없는 배포 단위입니다.",
+            source="vector",
+            raw_score=1.0,
+            fused_score=1.0,
+        )
+        operational_hit = RetrievalHit(
+            chunk_id="pod-evicted-hit",
+            book_slug="nodes",
+            chapter="노드",
+            section="8.4.5. Pod 제거 이해",
+            anchor="pod-evicted",
+            source_url="https://example.com/nodes",
+            viewer_path="/docs/nodes.html#pod-evicted",
+            text="oc get pod test -o yaml 결과에서 Evicted 와 phase: Failed 를 확인합니다.",
+            source="bm25",
+            raw_score=1.0,
+            fused_score=1.0,
+        )
+
+        hits = fuse_ranked_hits(
+            "Pod lifecycle 개념을 초보자 기준으로 설명해줘",
+            {
+                "bm25": [operational_hit],
+                "vector": [concept_hit],
+            },
+            top_k=2,
+        )
+
+        self.assertEqual("pod-understanding-hit", hits[0].chunk_id)
+
     def test_fusion_boosts_books_supported_by_bm25_and_vector(self) -> None:
         vector_only_hit = RetrievalHit(
             chunk_id="nodes-hit",
@@ -477,6 +624,112 @@ class RetrievalTests(unittest.TestCase):
         )
 
         self.assertEqual("security_and_compliance", hits[0].book_slug)
+
+    def test_fusion_prefers_pod_troubleshooting_sections_for_crash_loop_question(self) -> None:
+        noisy_support_hit = RetrievalHit(
+            chunk_id="cli-log-hit",
+            book_slug="support",
+            chapter="support",
+            section="7.12.1. OpenShift CLI (oc) 로그 수준 이해",
+            anchor="oc-log-levels",
+            source_url="https://example.com/support-cli",
+            viewer_path="/docs/support.html#oc-log-levels",
+            text="oc 명령 관련 문제가 발생하면 oc 로그 수준을 높여 API 요청과 curl 요청 세부 정보를 확인할 수 있습니다.",
+            source="vector",
+            raw_score=0.93,
+            fused_score=0.93,
+        )
+        pod_diag_hit = RetrievalHit(
+            chunk_id="app-diag-hit",
+            book_slug="support",
+            chapter="support",
+            section="7.8.3. 애플리케이션 오류 조사를 위한 애플리케이션 진단 데이터 수집",
+            anchor="app-diag",
+            source_url="https://example.com/support-app-diag",
+            viewer_path="/docs/support.html#app-diag",
+            text="애플리케이션 Pod와 관련된 이벤트를 확인하려면 oc describe pod 를 실행하고, 로그는 oc logs -f pod/<pod-name> 로 검토합니다.",
+            source="bm25",
+            raw_score=0.88,
+            fused_score=0.88,
+        )
+        oom_hit = RetrievalHit(
+            chunk_id="oom-hit",
+            book_slug="nodes",
+            chapter="nodes",
+            section="8.4.4. OOM 종료 정책 이해",
+            anchor="oom",
+            source_url="https://example.com/nodes-oom",
+            viewer_path="/docs/nodes.html#oom",
+            text="Pod 상태에서 reason: OOMKilled 와 restartCount 를 확인하고 oc get pod -o yaml 로 마지막 종료 상태를 봅니다.",
+            source="vector",
+            raw_score=0.86,
+            fused_score=0.86,
+        )
+
+        hits = fuse_ranked_hits(
+            "CrashLoopBackOff가 반복될 때 확인 순서를 단계적으로 설명해줘 CrashLoopBackOff restartCount OOMKilled ImagePullBackOff events describe logs",
+            {
+                "bm25": [pod_diag_hit, noisy_support_hit, oom_hit],
+                "vector": [noisy_support_hit, oom_hit, pod_diag_hit],
+            },
+            top_k=3,
+        )
+
+        self.assertEqual("app-diag-hit", hits[0].chunk_id)
+        self.assertNotEqual("cli-log-hit", hits[0].chunk_id)
+
+    def test_fusion_penalizes_operator_image_pull_sections_for_crash_loop_question(self) -> None:
+        operator_hit = RetrievalHit(
+            chunk_id="operator-imagepull-hit",
+            book_slug="support",
+            chapter="support",
+            section="7.6.3. CLI를 사용하여 Operator 카탈로그 소스 상태 보기",
+            anchor="catalog-source",
+            source_url="https://example.com/support-operator",
+            viewer_path="/docs/support.html#catalog-source",
+            text="example-catalog pod 상태는 ImagePullBackOff 입니다. oc describe pod example-catalog -n openshift-marketplace 로 카탈로그 소스 상태를 확인합니다.",
+            source="vector",
+            raw_score=0.94,
+            fused_score=0.94,
+        )
+        app_diag_hit = RetrievalHit(
+            chunk_id="app-diag-hit",
+            book_slug="support",
+            chapter="support",
+            section="7.8.3. 애플리케이션 오류 조사를 위한 애플리케이션 진단 데이터 수집",
+            anchor="app-diag",
+            source_url="https://example.com/support-app-diag",
+            viewer_path="/docs/support.html#app-diag",
+            text="애플리케이션 Pod 이벤트를 보고 oc describe pod 와 oc logs -f 를 통해 CrashLoopBackOff 원인을 추적합니다.",
+            source="bm25",
+            raw_score=0.86,
+            fused_score=0.86,
+        )
+        oom_hit = RetrievalHit(
+            chunk_id="oom-hit",
+            book_slug="nodes",
+            chapter="nodes",
+            section="8.4.4. OOM 종료 정책 이해",
+            anchor="oom",
+            source_url="https://example.com/nodes-oom",
+            viewer_path="/docs/nodes.html#oom",
+            text="restartCount 와 OOMKilled 를 확인하고 oc get pod -o yaml 로 종료 상태를 봅니다.",
+            source="vector",
+            raw_score=0.84,
+            fused_score=0.84,
+        )
+
+        hits = fuse_ranked_hits(
+            "CrashLoopBackOff가 반복될 때 원인 추적 순서를 알려줘 CrashLoopBackOff restartCount OOMKilled events describe logs",
+            {
+                "bm25": [app_diag_hit, operator_hit, oom_hit],
+                "vector": [operator_hit, app_diag_hit, oom_hit],
+            },
+            top_k=3,
+        )
+
+        self.assertEqual("app-diag-hit", hits[0].chunk_id)
+        self.assertNotEqual("operator-imagepull-hit", hits[0].chunk_id)
 
     def test_fusion_prefers_architecture_for_generic_openshift_intro_query(self) -> None:
         architecture_hit = RetrievalHit(
@@ -785,6 +1038,42 @@ class RetrievalTests(unittest.TestCase):
         )
 
         self.assertEqual("cert-command", hits[0].chunk_id)
+
+    def test_fusion_prefers_pod_issue_section_over_installation_etcd_for_pending_question(self) -> None:
+        installation_hit = RetrievalHit(
+            chunk_id="support-install-etcd",
+            book_slug="support",
+            chapter="support",
+            section="7.1.9. etcd 설치 문제 조사",
+            anchor="investigating-etcd-installation-issues",
+            source_url="https://example.com/support",
+            viewer_path="/docs/support.html#investigating-etcd-installation-issues",
+            text="지원 7장. 문제 해결 > 7.1. 설치 문제 해결 > 7.1.9. etcd 설치 문제 조사 Pod의 이벤트를 검토합니다. oc describe pod/<pod_name> -n <namespace>",
+            source="bm25",
+            raw_score=1.0,
+            fused_score=1.0,
+        )
+        pod_issue_hit = RetrievalHit(
+            chunk_id="support-pod-issues",
+            book_slug="support",
+            chapter="support",
+            section="7.7.1. Pod 오류 상태 이해",
+            anchor="understanding-pod-error-states",
+            source_url="https://example.com/support",
+            viewer_path="/docs/support.html#understanding-pod-error-states",
+            text="지원 7장. 문제 해결 > 7.7. Pod 문제 조사 > 7.7.1. Pod 오류 상태 이해 FailedScheduling Pending node affinity taint toleration",
+            source="vector",
+            raw_score=0.97,
+            fused_score=0.97,
+        )
+
+        hits = fuse_ranked_hits(
+            "Pod가 Pending 상태로 오래 멈춰 있을 때 어디부터 확인해야 해? Pending FailedScheduling pod issues error states node affinity taint toleration",
+            {"bm25": [installation_hit], "vector": [pod_issue_hit]},
+            top_k=2,
+        )
+
+        self.assertEqual("support-pod-issues", hits[0].chunk_id)
 
     def test_retriever_short_circuits_unsupported_external_query(self) -> None:
         settings = Settings(ROOT)

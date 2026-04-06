@@ -108,20 +108,21 @@ OCP 문서는 양이 많고, 주제가 넓고, 운영 관점과 학습 관점이
 7. 그 근거만 LLM에 넘기고 답변을 만든 뒤, citation과 처리 과정을 화면에 같이 보여준다.
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'fontSize': '13px'}, 'flowchart': {'htmlLabels': true, 'nodeSpacing': 35, 'rankSpacing': 45}} }%%
 flowchart TD
-    A["원본 문서(html / 내부 정리 문서)"] --> B["문서 정리<br/>섹션 추출 + 코드 보존 + 불필요한 영역 제거"]
+    A["원본 문서<br/>html / 내부 정리 문서"] --> B["문서 정리<br/>섹션 추출<br/>코드 보존<br/>불필요한 영역 제거"]
     B --> C["정규화 섹션 파일<br/>normalized_docs.jsonl"]
     C --> D["청크 파일<br/>chunks.jsonl"]
     D --> E["BM25 검색 파일<br/>bm25_corpus.jsonl"]
     D --> F["Qdrant 벡터 컬렉션<br/>openshift_docs"]
-    G["사용자 질문"] --> H["질문 정리<br/>뜻 정리 + 복합 질문 분해 + 검색용 문장으로 다시 쓰기"]
+    G["사용자 질문"] --> H["질문 정리<br/>뜻 정리<br/>복합 질문 분해<br/>검색용 문장 재작성"]
     H --> I["키워드 검색(BM25)"]
     H --> J["의미 검색(Vector)"]
-    I --> K["결과 결합<br/>RRF + OCP 문서 우선순위 보정"]
+    I --> K["결과 결합<br/>RRF<br/>OCP 문서 우선순위 보정"]
     J --> K
-    K --> L["근거 다시 고르기<br/>애매하면 멈추고, 맞는 근거만 남김"]
+    K --> L["근거 다시 고르기<br/>애매하면 멈춤<br/>맞는 근거만 남김"]
     L --> M["LLM 답변 생성<br/>Qwen/Qwen3.5-9B"]
-    M --> N["답변 + citation + 경고 + 처리 단계 표시"]
+    M --> N["답변 표시<br/>citation<br/>경고<br/>처리 단계 표시"]
 ```
 
 이 분리가 중요한 이유는, 문제가 생겼을 때 원인을 단계별로 분해할 수 있기 때문이다.
@@ -147,7 +148,7 @@ flowchart TD
 | 의미 검색 | BGE-M3 임베딩, Qdrant | `1024차원`, `Cosine`, 후보 `top_k=20` 또는 `40` | Vector 후보 목록 |
 | 결과 결합 | Reciprocal Rank Fusion + 문서 우선순위 보정 | `rrf_k=60`, `BM25=1.0`, `Vector=1.1` | 하이브리드 최종 후보 |
 | 근거 다시 고르기 | 질문 유형별 cutoff와 책 수 제한 | 개념 질문 최대 4개, 절차 질문 최대 5개 | citation 후보 |
-| 답변 생성 | Qwen/Qwen3.5-9B, 모드별 프롬프트 | `temperature=0.2`, `max_tokens=700` | 답변 본문 + inline citation |
+| 답변 생성 | Qwen/Qwen3.5-9B, 모드별 프롬프트 | `temperature=0.2`, `max_tokens=1100` | 답변 본문 + inline citation |
 | 화면 표시 | NDJSON 스트리밍, 내부 문서 열람 화면 | 단계별 이벤트 표시 | 채팅 UI + 진단 패널 |
 
 이 표에서 제일 중요한 건, 이 프로젝트가 “Qdrant 하나 호출해서 끝”이 아니라는 점이다.  
@@ -632,8 +633,8 @@ citation은 단순한 링크가 아니라, 아래 조건을 만족해야 한다.
 
 ## 9. 화면 표시와 실시간 진단 단계
 
-현재 UI는 최종 제품이라기보다, **실답변 QA 콘솔**에 가깝다.  
-하지만 발표용 시연이 가능하도록 다음 기능을 갖춘다.
+현재 UI는 단순 QA 콘솔을 넘어, **16:9 knowledge/study platform MVP**를 목표로 한다.  
+좌측은 대화, 우측은 source study panel로 두고, query/session/pipeline 진단 정보는 secondary tab으로 남겼다.
 
 ### 9.1 기본 챗봇 UX
 
@@ -665,12 +666,27 @@ UI는 `/api/chat/stream`으로 NDJSON 스트림을 받아 단계별 이벤트를
 - [src/ocp_rag_part4/server.py](src/ocp_rag_part4/server.py)
 - [src/ocp_rag_part4/static/index.html](src/ocp_rag_part4/static/index.html)
 
-### 9.3 내부 문서 열람 화면
+### 9.3 source tag와 study panel
+
+assistant answer 아래에는 raw JSON 대신 source tag를 붙인다.  
+tag에는 `book_title`, `section_path_label`, `viewer_path` 기반 정보가 들어가고, 클릭하면 오른쪽 패널이 열린다.
+
+이 패널은 다음 역할을 한다.
+
+- source title / section path 표시
+- 내부 `/docs/...` source viewer iframe 렌더링
+- 외부 원문 링크 보존
+- query/session/pipeline trace를 secondary tab으로 유지
+
+### 9.4 내부 문서 열람 화면
 
 `viewer_path`가 있으면 외부 vendor HTML보다 내부 `/docs/...` 문서 열람 화면을 우선 연다.  
-정규화된 텍스트를 기준으로 citation 본문을 깔끔하게 보여주는 이유는, vendor HTML이 깨져 보이거나 영어 fallback이 섞이는 문제를 줄이기 위해서다.
+이때 raw chunk를 그대로 덤프하지 않고, `normalized_docs.jsonl`의 section text를 기반으로 읽기 좋은 source view를 구성한다.
 
-### 9.4 왜 처리 과정까지 같이 보여주는가
+이번 MVP에서는 citation이 가리키는 `viewer_path#anchor`에서 normalized section을 찾고, exact anchor가 없으면 같은 book의 첫 section으로 best-effort fallback 한다.  
+이 fallback은 source panel이 완전히 깨지는 것을 막기 위한 최소 장치다.
+
+### 9.5 왜 처리 과정까지 같이 보여주는가
 
 이 프로젝트는 “답변만 맞으면 된다”가 아니라, `어디서 오래 걸렸고`, `왜 그 책이 골라졌고`, `rewrite가 어떻게 되었는지`를 사람이 확인할 수 있어야 한다.
 
@@ -940,6 +956,56 @@ python3 scripts/run_part4_ui.py --no-browser
 
 - `http://127.0.0.1:8765`
 
+#### Knowledge Platform MVP 메모
+
+- retrieval text와 source-view text는 이미 분리되어 있다.
+  - source view: `normalized_docs.jsonl`
+  - retrieval: `chunks.jsonl`, `bm25_corpus.jsonl`, Qdrant payload
+- 이번 MVP는 이 기존 구조를 재사용하고, backend에는 `/api/source-meta`와 citation enrichment만 최소 추가했다.
+- `ocp_doc_to_book`에는 `canonical_book_v1` 계약을 추가했고, 현재 OCP `normalized_docs`는 이 canonical source-view 포맷으로 바로 승격할 수 있다.
+- backend에는 `/api/source-book`도 추가되어 `viewer_path -> canonical book JSON` 변환을 확인할 수 있다.
+- backend에는 `/api/doc-to-book/plan`도 추가되어 `web/pdf source -> acquisition_uri + capture_strategy + canonical draft`를 바로 확인할 수 있다.
+- backend에는 `/api/doc-to-book/drafts`도 추가되어 `문서 추가 요청 -> draft id 발급 -> 다시 조회/list` 흐름을 바로 확인할 수 있다.
+- backend에는 `/api/doc-to-book/capture`, `/api/doc-to-book/normalize`, `/api/doc-to-book/book`도 추가되어 `draft -> captured artifact -> canonical book` 흐름을 실제로 확인할 수 있다.
+- 우측 study panel에는 `Intake` 탭도 추가되어, 웹/PDF URI를 넣고 `plan preview -> draft 저장 -> capture -> normalize -> study panel 열기`까지 바로 실험할 수 있다.
+- 웹 문서는 현재 docs.redhat `.../html/<slug>`를 `.../html-single/<slug>/index`로 바꾸는 규칙까지 들어가 있다.
+- PDF는 아직 full parser는 아니고 `pdf_text_extract_v1` 전략으로 계획만 세운다.
+- Doc-to-Book draft는 `artifacts/doc_to_book/drafts/*.json`, capture artifact는 `artifacts/doc_to_book/captures/`, canonical book은 `artifacts/doc_to_book/books/`에 저장되며 같은 draft id를 중심으로 추적한다.
+- source tag 라벨은 `book_title + section_path_label` 기준으로 만들고, 우측 panel은 내부 `/docs/...` iframe을 우선 사용한다.
+- exact section 매핑이 어려운 경우에는 `viewer_path`의 book 단위 fallback을 허용한다.
+- `Pod lifecycle` 같은 개념형 질의는 retrieval/context 단계에서 `nodes > Pod 이해 / Pod 구성의 예` 같은 설명 섹션을 우선하도록 보정했고, learn 답변도 그 citation을 기준으로 정리한다.
+- future Doc-to-Book parser/ingestion은 아직이지만, 목표 포맷은 `source-view first -> canonical sections -> retrieval chunks downstream`으로 코드에 고정했다.
+- Playbook checklist state engine은 이번 범위에 포함하지 않았다.
+
+#### Data Audit 요약
+
+- 현재 데이터 표현
+  - `normalized_docs.jsonl`: 사람이 읽는 source-view용 정규화 문서
+  - `chunks.jsonl`, `bm25_corpus.jsonl`, Qdrant payload: retrieval용 파생 데이터
+  - source manifest: `book_slug`, `title`, `source_url`, `viewer_path` 같은 book-level 식별 정보
+- source-view와 retrieval 분리 여부
+  - 이미 분리되어 있고, 이번 MVP는 이 기존 구조를 그대로 재사용한다.
+  - 새 `canonical_book_v1`은 retrieval-friendly chunk보다 source-view를 상위 개념으로 두는 계약이다.
+- 이번에 재사용한 것
+  - `viewer_path`
+  - `normalized_docs`
+  - citation metadata (`book_slug`, `section`, `anchor`, `source_url`)
+  - 내부 `/docs/...` source viewer
+- 이번에 새로 추가한 것
+  - `/api/source-book`
+  - `/api/doc-to-book/plan`
+  - `/api/doc-to-book/drafts`
+  - `/api/doc-to-book/capture`
+  - `/api/doc-to-book/normalize`
+  - `/api/doc-to-book/book`
+  - `ocp_doc_to_book` canonical draft/store 스캐폴드
+  - study panel `Intake` 탭
+- 현재 한계
+  - 웹은 현재 docs.redhat html-single 기준 capture/normalize까지 된다.
+  - PDF는 `pdf_text_extract_v1` 전략만 잡혀 있고 실제 구조 복원은 다음 단계다.
+  - 새 intake 문서는 아직 기존 retrieval 인덱스에 자동 편입되지는 않는다.
+  - section jump는 현재 best-effort이며 exact anchor가 없는 경우 book-level fallback이 있다.
+
 ### 12.5 RAGAS judge 평가
 
 이 평가는 “실전 질문 세트에 대해 우리 답변이 실제 근거에 얼마나 충실한가”를 LLM judge로 한 번 더 보는 용도다.  
@@ -1175,13 +1241,14 @@ OpenDocuments와 비교했을 때:
 1. 일부 고가치 문서는 vendor 한국어 fallback 문제로 `en_only` 또는 `mixed` 상태다.
 2. learn 답변은 ops 답변보다 덜 안정적이다.
 3. caching 전략은 부분 구현 상태다.
-4. UI는 QA 콘솔로서 유용하지만, 최종 제품 UI로는 계속 다듬어야 한다.
+4. source viewer는 현재 `approved_ko`와 `normalized_docs` 품질에 직접 의존한다.
+5. Doc-to-Book / Playbook은 방향성만 잡았고, 실제 parser/state engine 구현은 다음 단계다.
 
 이 한계를 숨기기보다, 아래처럼 설명하는 편이 더 낫다.
 
 - “현재는 OCP 특화 vertical prototype이며, retrieval/answer를 분리 평가하는 구조를 먼저 확정했다.”
 - “운영형 질문과 멀티턴 처리 품질은 크게 개선되었고, learn 답변과 source gap이 남은 리스크다.”
-- “다음 단계는 approved corpus 고도화와 caching/제품 UX 보강이다.”
+- “다음 단계는 approved corpus 고도화, Doc-to-Book ingestion, Playbook state, caching/제품 UX 보강이다.”
 
 ---
 

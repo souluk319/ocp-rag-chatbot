@@ -7,10 +7,12 @@ from ocp_rag_part2.models import RetrievalHit
 from ocp_rag_part2.query import (
     has_backup_restore_intent,
     has_cluster_node_usage_intent,
+    has_crash_loop_troubleshooting_intent,
     has_mco_concept_intent,
     has_node_drain_intent,
     has_openshift_kubernetes_compare_intent,
     has_operator_concept_intent,
+    has_pod_lifecycle_concept_intent,
     has_project_finalizer_intent,
     has_project_terminating_intent,
     has_rbac_intent,
@@ -44,6 +46,50 @@ def _hit_score(hit: RetrievalHit) -> float:
     if hit.fused_score > 0:
         return float(hit.fused_score)
     return float(hit.raw_score)
+
+
+def _crash_loop_priority(hit: RetrievalHit) -> int:
+    lowered_section = (hit.section or "").lower()
+    lowered_text = (hit.text or "").lower()
+    if (
+        "애플리케이션 오류 조사" in hit.section
+        or "애플리케이션 진단 데이터 수집" in hit.section
+        or "oc describe pod/" in lowered_text
+        or "oc logs -f pod/" in lowered_text
+        or "애플리케이션 pod와 관련된 이벤트" in hit.text
+    ):
+        return 0
+    if (
+        "이벤트 목록" in hit.section
+        or ("이벤트" in hit.section and "backoff" in lowered_text)
+        or "back-off restarting failed container" in lowered_text
+    ):
+        return 1
+    if (
+        "상태 점검 이해" in hit.section
+        or "상태 점검 구성" in hit.section
+        or "livenessprobe" in lowered_text
+        or "readinessprobe" in lowered_text
+    ):
+        return 2
+    if (
+        "oom 종료 정책" in hit.section
+        or "oomkilled" in lowered_text
+        or "restartcount" in lowered_text
+    ):
+        return 3
+    if (
+        "operator 문제 해결" in hit.section
+        or "카탈로그 소스 상태 보기" in hit.section
+        or "실패한 서브스크립션 새로 고침" in hit.section
+        or (
+            ("imagepullbackoff" in lowered_text or "errimagepull" in lowered_text)
+            and "crashloopbackoff" not in lowered_text
+            and "애플리케이션" not in hit.text
+        )
+    ):
+        return 9
+    return 5
 
 
 def _hit_identity(hit: RetrievalHit) -> tuple[str, str, str]:
@@ -80,8 +126,10 @@ def _should_force_clarification(
             is_generic_intro_query(normalized),
             has_operator_concept_intent(normalized),
             has_mco_concept_intent(normalized),
+            has_pod_lifecycle_concept_intent(normalized),
             has_rbac_intent(normalized),
             has_backup_restore_intent(normalized),
+            has_crash_loop_troubleshooting_intent(normalized),
             has_project_terminating_intent(normalized),
             has_project_finalizer_intent(normalized),
             has_node_drain_intent(normalized),
@@ -131,11 +179,13 @@ def _select_hits(
             is_generic_intro_query(normalized),
             has_operator_concept_intent(normalized),
             has_mco_concept_intent(normalized),
+            has_pod_lifecycle_concept_intent(normalized),
         ]
     )
     is_procedure_query = any(
         [
             has_backup_restore_intent(normalized),
+            has_crash_loop_troubleshooting_intent(normalized),
             has_rbac_intent(normalized),
             has_project_terminating_intent(normalized),
             has_project_finalizer_intent(normalized),
@@ -161,6 +211,40 @@ def _select_hits(
             ),
         )
         support_window = ranked_hits[: max(max_chunks * 2, 6)]
+        top_score = _hit_score(support_window[0])
+        top_book = support_window[0].book_slug
+    elif has_pod_lifecycle_concept_intent(normalized):
+        preferred_books = {"nodes", "overview", "architecture", "building_applications"}
+        ranked_hits = sorted(
+            ranked_hits,
+            key=lambda hit: (
+                0 if hit.book_slug in preferred_books else 1,
+                -_hit_score(hit),
+                hit.book_slug,
+                hit.chunk_id,
+            ),
+        )
+        support_window = ranked_hits[: max(max_chunks * 2, 6)]
+        top_score = _hit_score(support_window[0])
+        top_book = support_window[0].book_slug
+    elif has_crash_loop_troubleshooting_intent(normalized):
+        preferred_order = {
+            "support": 0,
+            "validation_and_troubleshooting": 1,
+            "building_applications": 2,
+            "nodes": 3,
+        }
+        ranked_hits = sorted(
+            ranked_hits,
+            key=lambda hit: (
+                _crash_loop_priority(hit),
+                preferred_order.get(hit.book_slug, 9),
+                -_hit_score(hit),
+                hit.book_slug,
+                hit.chunk_id,
+            ),
+        )
+        support_window = ranked_hits[: max(max_chunks * 2, 8)]
         top_score = _hit_score(support_window[0])
         top_book = support_window[0].book_slug
     elif has_mco_concept_intent(normalized):
@@ -191,6 +275,14 @@ def _select_hits(
         for book_slug in ("overview", "extensions", "operators", "architecture"):
             if best_book_scores.get(book_slug, 0.0) >= top_score * 0.62:
                 allowed_books.add(book_slug)
+    if has_pod_lifecycle_concept_intent(normalized):
+        for book_slug in ("nodes", "overview", "architecture", "building_applications"):
+            if best_book_scores.get(book_slug, 0.0) >= top_score * 0.58:
+                allowed_books.add(book_slug)
+    if has_crash_loop_troubleshooting_intent(normalized):
+        for book_slug in ("support", "validation_and_troubleshooting", "building_applications", "nodes"):
+            if best_book_scores.get(book_slug, 0.0) >= top_score * 0.55:
+                allowed_books.add(book_slug)
     if has_mco_concept_intent(normalized):
         for book_slug in ("machine_configuration", "operators", "architecture", "extensions"):
             if best_book_scores.get(book_slug, 0.0) >= top_score * 0.62:
@@ -212,7 +304,11 @@ def _select_hits(
         score_cutoff = 0.0
     selected: list[RetrievalHit] = []
     per_book_counts: Counter[str] = Counter()
-    per_book_limit = 3 if is_procedure_query else 2
+    per_book_limit = 2 if has_crash_loop_troubleshooting_intent(normalized) else 3 if is_procedure_query else 2
+    seen_sections: set[tuple[str, str]] = set()
+    skip_crash_loop_noise = has_crash_loop_troubleshooting_intent(normalized) and any(
+        _crash_loop_priority(hit) < 9 for hit in ranked_hits
+    )
 
     for hit in ranked_hits:
         if len(selected) >= max_chunks:
@@ -221,10 +317,16 @@ def _select_hits(
             continue
         if _hit_score(hit) < score_cutoff:
             continue
+        if skip_crash_loop_noise and _crash_loop_priority(hit) >= 9:
+            continue
         if per_book_counts[hit.book_slug] >= per_book_limit:
+            continue
+        section_signature = (hit.book_slug, _section_core(hit.section))
+        if has_crash_loop_troubleshooting_intent(normalized) and section_signature in seen_sections:
             continue
         selected.append(hit)
         per_book_counts[hit.book_slug] += 1
+        seen_sections.add(section_signature)
 
     return selected[:max_chunks]
 
