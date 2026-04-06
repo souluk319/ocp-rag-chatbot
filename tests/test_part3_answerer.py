@@ -580,9 +580,11 @@ class Part3AnswererTests(unittest.TestCase):
         class _TrackingRetriever:
             def __init__(self) -> None:
                 self.called = False
+                self.last_query = ""
 
             def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
                 self.called = True
+                self.last_query = query
                 return _FakeRetriever().retrieve(
                     query,
                     context,
@@ -631,6 +633,168 @@ class Part3AnswererTests(unittest.TestCase):
                 and event.get("detail") == "requires_fresh_retrieval"
                 for event in result.pipeline_trace["events"]
             )
+        )
+
+    def test_answerer_replays_prior_branch_when_query_returns_to_named_topic(self) -> None:
+        context = SessionContext(
+            mode="ops",
+            current_topic="Certificates",
+            active_citation_group=CitationGroupMemory(
+                query="인증서 만료 확인",
+                topic="Certificates",
+                citations=[
+                    CitationMemory(
+                        chunk_id="chunk-cert",
+                        book_slug="security",
+                        section="인증서 만료 확인",
+                        anchor="cert-monitor",
+                        source_url="https://example.com/security",
+                        viewer_path="/docs/security.html#cert-monitor",
+                        excerpt="인증서 만료를 확인합니다.",
+                    )
+                ],
+            ),
+            citation_groups=[
+                CitationGroupMemory(
+                    query="RBAC rolebinding 설명",
+                    topic="RBAC",
+                    citations=[
+                        CitationMemory(
+                            chunk_id="chunk-rbac",
+                            book_slug="authentication_and_authorization",
+                            section="RoleBinding",
+                            anchor="adding-roles",
+                            source_url="https://example.com/rbac",
+                            viewer_path="/docs/rbac.html#adding-roles",
+                            excerpt="RoleBinding으로 권한을 부여합니다.",
+                        )
+                    ],
+                ),
+                CitationGroupMemory(
+                    query="인증서 만료 확인",
+                    topic="Certificates",
+                    citations=[
+                        CitationMemory(
+                            chunk_id="chunk-cert",
+                            book_slug="security",
+                            section="인증서 만료 확인",
+                            anchor="cert-monitor",
+                            source_url="https://example.com/security",
+                            viewer_path="/docs/security.html#cert-monitor",
+                            excerpt="인증서 만료를 확인합니다.",
+                        )
+                    ],
+                ),
+            ],
+        )
+        answerer = Part3Answerer(
+            settings=Settings(root_dir=ROOT),
+            retriever=_ExplodingRetriever(),
+            llm_client=_ReplayLLMClient(),
+        )
+
+        result = answerer.answer(
+            "그때 RBAC 문서 기준으로 다시 정리해줘",
+            mode="ops",
+            context=context,
+        )
+
+        self.assertEqual("replayed", result.citations[0].origin)
+        self.assertEqual("authentication_and_authorization", result.citations[0].book_slug)
+        self.assertTrue(
+            any(
+                event.get("step") == "citation_replay"
+                and event.get("status") == "done"
+                for event in result.pipeline_trace["events"]
+            )
+        )
+
+    def test_answerer_uses_prior_branch_focus_for_risky_return_query(self) -> None:
+        class _TrackingRetriever:
+            def __init__(self) -> None:
+                self.called = False
+                self.last_query = ""
+
+            def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
+                self.called = True
+                self.last_query = query
+                return _FakeRetriever().retrieve(
+                    query,
+                    context,
+                    top_k,
+                    candidate_k,
+                    trace_callback=trace_callback,
+                )
+
+        retriever = _TrackingRetriever()
+        context = SessionContext(
+            mode="ops",
+            current_topic="Certificates",
+            active_citation_group=CitationGroupMemory(
+                query="인증서 만료 확인",
+                topic="Certificates",
+                citations=[
+                    CitationMemory(
+                        chunk_id="chunk-cert",
+                        book_slug="security",
+                        section="인증서 만료 확인",
+                        anchor="cert-monitor",
+                        source_url="https://example.com/security",
+                        viewer_path="/docs/security.html#cert-monitor",
+                        excerpt="인증서 만료를 확인합니다.",
+                    )
+                ],
+            ),
+            citation_groups=[
+                CitationGroupMemory(
+                    query="RBAC rolebinding 설명",
+                    topic="RBAC",
+                    citations=[
+                        CitationMemory(
+                            chunk_id="chunk-rbac",
+                            book_slug="authentication_and_authorization",
+                            section="RoleBinding",
+                            anchor="adding-roles",
+                            source_url="https://example.com/rbac",
+                            viewer_path="/docs/rbac.html#adding-roles",
+                            excerpt="RoleBinding으로 권한을 부여합니다.",
+                        )
+                    ],
+                ),
+                CitationGroupMemory(
+                    query="인증서 만료 확인",
+                    topic="Certificates",
+                    citations=[
+                        CitationMemory(
+                            chunk_id="chunk-cert",
+                            book_slug="security",
+                            section="인증서 만료 확인",
+                            anchor="cert-monitor",
+                            source_url="https://example.com/security",
+                            viewer_path="/docs/security.html#cert-monitor",
+                            excerpt="인증서 만료를 확인합니다.",
+                        )
+                    ],
+                ),
+            ],
+        )
+        answerer = Part3Answerer(
+            settings=Settings(root_dir=ROOT),
+            retriever=retriever,
+            llm_client=_ReplayLLMClient(),
+        )
+
+        result = answerer.answer(
+            "그때 RBAC 문서 기준으로 왜 그런지 설명해줘",
+            mode="ops",
+            context=context,
+        )
+
+        self.assertTrue(retriever.called)
+        self.assertIn("Focused prior topic: RBAC", retriever.last_query)
+        self.assertEqual("retrieved", result.citations[0].origin)
+        self.assertTrue(
+            any(event.get("step") == "citation_branch" for event in result.pipeline_trace["events"])
         )
 
     def test_answerer_aligns_drain_command_to_grounded_oc_command(self) -> None:

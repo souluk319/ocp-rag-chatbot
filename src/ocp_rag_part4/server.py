@@ -670,6 +670,35 @@ def _build_citation_group_memory(
     )
 
 
+def _citation_group_identity(group: CitationGroupMemory) -> str:
+    primary = group.primary_citation()
+    if group.topic:
+        return f"topic::{group.topic.lower()}"
+    if primary is not None:
+        viewer = (primary.viewer_path or primary.source_url).strip().lower()
+        if viewer:
+            return f"viewer::{viewer}"
+        if primary.book_slug:
+            return f"book::{primary.book_slug.lower()}"
+    return f"query::{(group.query or '').strip().lower()}"
+
+
+def _merge_citation_groups(
+    existing: list[CitationGroupMemory],
+    addition: CitationGroupMemory,
+    *,
+    limit: int = 6,
+) -> list[CitationGroupMemory]:
+    identity = _citation_group_identity(addition)
+    merged: list[CitationGroupMemory] = [
+        group
+        for group in existing
+        if group.citations and _citation_group_identity(group) != identity
+    ]
+    merged.append(addition)
+    return merged[-limit:]
+
+
 def _resolve_procedure_follow_up_index(
     query: str,
     context: SessionContext | None,
@@ -1289,6 +1318,10 @@ def _derive_next_context(
     )
     if updated_citation_group is not None:
         next_context.active_citation_group = updated_citation_group
+        next_context.citation_groups = _merge_citation_groups(
+            next_context.citation_groups,
+            updated_citation_group,
+        )
     next_context.procedure_memory = _derive_procedure_memory(
         next_context.procedure_memory,
         query=query,

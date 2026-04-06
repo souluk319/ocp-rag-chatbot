@@ -8,6 +8,7 @@ from pathlib import Path
 
 from ocp_rag_part1.settings import Settings
 from ocp_rag_part2 import Part2Retriever, SessionContext
+from ocp_rag_part2.models import CitationGroupMemory
 from ocp_rag_part2.command_memory import build_command_template_follow_up_answer
 from ocp_rag_part2.query import (
     STEP_REFERENCE_RE,
@@ -100,6 +101,11 @@ ORDINAL_WORDS = {
     "네번째": 4,
     "네 번째": 4,
 }
+BRANCH_RETURN_RE = re.compile(
+    r"(\uc544\uae4c|\uadf8\ub54c|\uc6d0\ub798|\ub3cc\uc544\uac00|\ub2e4\uc2dc \ucc98\uc74c \uc8fc\uc81c|\ucc98\uc74c \uc8fc\uc81c|back to|return to|go back)",
+    re.IGNORECASE,
+)
+BRANCH_TOPIC_TOKEN_RE = re.compile(r"[A-Za-z0-9._:-]+|[\uac00-\ud7a3]{2,}")
 
 
 @dataclass(slots=True)
@@ -510,19 +516,131 @@ def _build_citation_replay_lookup_answer(citations: list[Citation]) -> str:
     return "\n".join(lines)
 
 
+def _citation_group_identity(group: CitationGroupMemory) -> str:
+    primary = group.primary_citation()
+    if group.topic:
+        return f"topic::{group.topic.lower()}"
+    if primary is not None:
+        viewer = (primary.viewer_path or primary.source_url).strip().lower()
+        if viewer:
+            return f"viewer::{viewer}"
+        if primary.book_slug:
+            return f"book::{primary.book_slug.lower()}"
+    return f"query::{(group.query or '').strip().lower()}"
+
+
+def _citation_group_list(context: SessionContext | None) -> list[CitationGroupMemory]:
+    if context is None:
+        return []
+    groups = [group for group in context.citation_groups if group.citations]
+    if context.active_citation_group is not None and context.active_citation_group.citations:
+        active_identity = _citation_group_identity(context.active_citation_group)
+        if not any(_citation_group_identity(group) == active_identity for group in groups):
+            groups.append(context.active_citation_group)
+    return groups
+
+
+def _branch_tokens(text: str) -> set[str]:
+    return {token.lower() for token in BRANCH_TOPIC_TOKEN_RE.findall(text or "") if len(token.strip()) >= 2}
+
+
+def _citation_group_tokens(group: CitationGroupMemory) -> set[str]:
+    primary = group.primary_citation()
+    texts = [group.topic or "", group.query or ""]
+    if primary is not None:
+        texts.extend([primary.book_slug or "", primary.section or "", primary.anchor or ""])
+    return _branch_tokens(" ".join(texts))
+
+
+def _select_citation_group_for_query(
+    query: str,
+    context: SessionContext | None,
+) -> tuple[CitationGroupMemory | None, str | None]:
+    if context is None:
+        return None, None
+    groups = _citation_group_list(context)
+    if not groups:
+        return None, None
+
+    normalized = " ".join((query or "").split()).lower()
+    if not normalized:
+        return context.active_citation_group, "active_branch"
+    if "\ucc98\uc74c \uc8fc\uc81c" in normalized or "\ucc98\uc74c \ubb38\uc11c" in normalized:
+        return groups[0], "initial_branch"
+
+    active_identity = (
+        _citation_group_identity(context.active_citation_group)
+        if context.active_citation_group is not None and context.active_citation_group.citations
+        else None
+    )
+    query_tokens = _branch_tokens(normalized)
+    branch_return = bool(BRANCH_RETURN_RE.search(query or ""))
+    scored: list[tuple[int, int, CitationGroupMemory]] = []
+
+    for index, group in enumerate(groups):
+        score = 0
+        group_tokens = _citation_group_tokens(group)
+        score += len(query_tokens & group_tokens)
+        topic_lower = (group.topic or "").strip().lower()
+        if topic_lower and topic_lower in normalized:
+            score += 5
+        primary = group.primary_citation()
+        if primary is not None:
+            book_slug = (primary.book_slug or "").strip().lower()
+            section = (primary.section or "").strip().lower()
+            if book_slug and book_slug in normalized:
+                score += 3
+            if section and section in normalized:
+                score += 2
+        if active_identity is not None and _citation_group_identity(group) == active_identity:
+            score += 1 if not branch_return else -1
+        scored.append((score, index, group))
+
+    scored.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    if scored and scored[0][0] > 0:
+        top_score = scored[0][0]
+        top_groups = [item for item in scored if item[0] == top_score]
+        if len(top_groups) > 1:
+            return None, "ambiguous_branch_reference"
+        chosen = top_groups[0][2]
+        return chosen, f"branch topic={chosen.topic or chosen.query or 'session'}"
+
+    if context.active_citation_group is not None and context.active_citation_group.citations:
+        return context.active_citation_group, "active_branch"
+    return groups[-1], "latest_branch"
+
+
+def _augment_query_with_branch_focus(query: str, group: CitationGroupMemory) -> str:
+    primary = group.primary_citation()
+    parts = [query]
+    if group.topic:
+        parts.append(f"Focused prior topic: {group.topic}")
+    if group.query:
+        parts.append(f"Focused prior question: {group.query}")
+    if primary is not None:
+        if primary.book_slug:
+            parts.append(f"Focused prior book: {primary.book_slug}")
+        if primary.section:
+            parts.append(f"Focused prior section: {primary.section}")
+    return "\n".join(parts)
+
+
 def _resolve_citation_replay_selection(
     query: str,
     context: SessionContext | None,
+    *,
+    target_group: CitationGroupMemory | None = None,
 ) -> tuple[CitationReplaySelection | None, str | None]:
-    if context is None or context.active_citation_group is None or not context.active_citation_group.citations:
+    if context is None:
         return None, None
     if not _has_explicit_citation_reference(query):
+        return None, None
+    group = target_group or context.active_citation_group
+    if group is None or not group.citations:
         return None, None
 
     if CITATION_RISKY_EXPANSION_RE.search(query or "") and not _is_source_lookup_query(query):
         return None, "requires_fresh_retrieval"
-
-    group = context.active_citation_group
     requested_index = _extract_citation_reference_index(query)
     if requested_index is not None:
         target = group.citation_for_index(requested_index)
@@ -996,7 +1114,15 @@ class Part3Answerer:
                 "duration_ms": pipeline_timings_ms["route_query"],
             }
         )
-        replay_selection, replay_miss_reason = _resolve_citation_replay_selection(query, context)
+        target_group, target_group_detail = _select_citation_group_for_query(query, context)
+        if target_group is None and target_group_detail == "ambiguous_branch_reference":
+            replay_selection, replay_miss_reason = None, "ambiguous_branch_reference"
+        else:
+            replay_selection, replay_miss_reason = _resolve_citation_replay_selection(
+                query,
+                context,
+                target_group=target_group,
+            )
         if replay_selection is not None:
             replay_result = _answer_from_citation_replay(
                 query=query,
@@ -1016,6 +1142,7 @@ class Part3Answerer:
                     "timings_ms": dict(pipeline_timings_ms),
                 },
             )
+        retrieval_query = query
         if replay_miss_reason:
             emit(
                 {
@@ -1025,6 +1152,42 @@ class Part3Answerer:
                     "detail": replay_miss_reason,
                 }
             )
+            if replay_miss_reason == "ambiguous_branch_reference":
+                pipeline_timings_ms["total"] = round(
+                    (time.perf_counter() - answer_started_at) * 1000,
+                    1,
+                )
+                emit(
+                    {
+                        "step": "pipeline_complete",
+                        "label": "answer complete",
+                        "status": "done",
+                        "detail": f"total {pipeline_timings_ms['total']}ms",
+                        "duration_ms": pipeline_timings_ms["total"],
+                    }
+                )
+                return AnswerResult(
+                    query=query,
+                    mode=mode,
+                    answer="답변: 어떤 이전 주제로 돌아가야 하는지 불명확합니다. 돌아갈 주제나 문서 이름을 한 번만 더 지정해 주세요.",
+                    rewritten_query=query,
+                    response_kind="clarification",
+                    citations=[],
+                    cited_indices=[],
+                    warnings=[],
+                    retrieval_trace={"warnings": [], "citation_replay": {"status": "ambiguous"}},
+                    pipeline_trace={"events": pipeline_events, "timings_ms": dict(pipeline_timings_ms)},
+                )
+            if replay_miss_reason == "requires_fresh_retrieval" and target_group is not None:
+                retrieval_query = _augment_query_with_branch_focus(query, target_group)
+                emit(
+                    {
+                        "step": "citation_branch",
+                        "label": "citation branch focus",
+                        "status": "done",
+                        "detail": target_group_detail or "focused prior branch",
+                    }
+                )
         emit(
             {
                 "step": "retrieval",
@@ -1035,7 +1198,7 @@ class Part3Answerer:
         )
         retrieval_started_at = time.perf_counter()
         retrieval = self.retriever.retrieve(
-            query,
+            retrieval_query,
             context=context,
             top_k=top_k,
             candidate_k=candidate_k,
@@ -1100,8 +1263,11 @@ class Part3Answerer:
                 "status": "running",
             }
         )
+        prompt_query = _augment_query_with_procedure_focus(query, context)
+        if replay_miss_reason == "requires_fresh_retrieval" and target_group is not None:
+            prompt_query = retrieval_query
         messages = build_messages(
-            query=_augment_query_with_procedure_focus(query, context),
+            query=prompt_query,
             mode=mode,
             context_bundle=context_bundle,
             session_summary=summarize_session_context(context),

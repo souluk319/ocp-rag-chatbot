@@ -218,6 +218,7 @@ class SessionContext:
     recent_command_templates: list[CommandTemplateMemory] = field(default_factory=list)
     procedure_memory: ProcedureMemory | None = None
     active_citation_group: CitationGroupMemory | None = None
+    citation_groups: list[CitationGroupMemory] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any] | None) -> "SessionContext":
@@ -238,6 +239,9 @@ class SessionContext:
             recent_command_templates = [recent_command_templates]
         procedure_memory = payload.get("procedure_memory")
         active_citation_group = payload.get("active_citation_group")
+        citation_groups = payload.get("citation_groups") or []
+        if isinstance(citation_groups, dict):
+            citation_groups = [citation_groups]
         return cls(
             mode=payload.get("mode"),
             user_goal=payload.get("user_goal"),
@@ -273,6 +277,13 @@ class SessionContext:
                 if active_citation_group
                 else None
             ),
+            citation_groups=[
+                item
+                if isinstance(item, CitationGroupMemory)
+                else CitationGroupMemory.from_dict(item)
+                for item in citation_groups
+                if item
+            ],
         )
 
     def to_dict(self) -> dict[str, Any]:

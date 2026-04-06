@@ -121,6 +121,46 @@ class Part4UiTests(unittest.TestCase):
         assert updated.active_citation_group is not None
         self.assertEqual(1, len(updated.active_citation_group.citations))
         self.assertEqual("architecture", updated.active_citation_group.citations[0].book_slug)
+        self.assertEqual(1, len(updated.citation_groups))
+
+    def test_derive_next_context_keeps_branch_order_for_multiple_topics(self) -> None:
+        first = _derive_next_context(
+            SessionContext(mode="learn", ocp_version="4.20"),
+            query="What is OpenShift architecture?",
+            mode="learn",
+            result=AnswerResult(
+                query="What is OpenShift architecture?",
+                mode="learn",
+                answer="Answer: OpenShift architecture overview [1]",
+                rewritten_query="What is OpenShift architecture?",
+                citations=[_citation(1, book_slug="architecture", section="Architecture overview")],
+                cited_indices=[1],
+            ),
+        )
+        second = _derive_next_context(
+            first,
+            query="Grant admin in one namespace with rolebinding",
+            mode="ops",
+            result=AnswerResult(
+                query="Grant admin in one namespace with rolebinding",
+                mode="ops",
+                answer="Answer: Use a RoleBinding [1]",
+                rewritten_query="Grant admin in one namespace with rolebinding",
+                citations=[
+                    _citation(
+                        1,
+                        book_slug="authentication_and_authorization",
+                        section="RoleBinding",
+                    )
+                ],
+                cited_indices=[1],
+            ),
+        )
+
+        self.assertEqual(2, len(second.citation_groups))
+        self.assertEqual("architecture", second.citation_groups[0].citations[0].book_slug)
+        self.assertEqual("authentication_and_authorization", second.citation_groups[1].citations[0].book_slug)
+        self.assertEqual("authentication_and_authorization", second.active_citation_group.citations[0].book_slug)
 
     def test_derive_next_context_builds_procedure_memory(self) -> None:
         result = AnswerResult(
