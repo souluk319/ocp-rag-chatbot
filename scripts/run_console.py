@@ -9,7 +9,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag.answering import Part3Answerer
+from ocp_rag.answering import Answerer
 from ocp_rag.app import serve
 from ocp_rag.shared.settings import load_settings
 
@@ -25,7 +25,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = build_parser().parse_args()
     settings = load_settings(ROOT, create_dirs=True)
-    answerer = Part3Answerer.from_settings(settings)
+    answerer = Answerer.from_settings(settings)
     serve(
         answerer=answerer,
         root_dir=ROOT,

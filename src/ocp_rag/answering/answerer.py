@@ -7,7 +7,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from ocp_rag.shared.settings import Settings
-from ocp_rag.retrieval import Part2Retriever
+from ocp_rag.retrieval import Retriever
 from ocp_rag.retrieval.command_memory import build_command_template_follow_up_answer
 from ocp_rag.retrieval.query import (
     STEP_REFERENCE_RE,
@@ -1027,11 +1027,11 @@ def maybe_autorepair_inline_citations(
     return _inject_single_citation(answer_text, citation_index=1), True
 
 
-class Part3Answerer:
+class Answerer:
     def __init__(
         self,
         settings: Settings,
-        retriever: Part2Retriever,
+        retriever: Retriever,
         llm_client: LLMClient,
     ) -> None:
         self.settings = settings
@@ -1039,10 +1039,10 @@ class Part3Answerer:
         self.llm_client = llm_client
 
     @classmethod
-    def from_settings(cls, settings: Settings) -> "Part3Answerer":
+    def from_settings(cls, settings: Settings) -> "Answerer":
         return cls(
             settings=settings,
-            retriever=Part2Retriever.from_settings(settings, enable_vector=True),
+            retriever=Retriever.from_settings(settings, enable_vector=True),
             llm_client=LLMClient(settings),
         )
 
@@ -1462,3 +1462,6 @@ class Part3Answerer:
             },
         )
         return result
+
+
+Part3Answerer = Answerer

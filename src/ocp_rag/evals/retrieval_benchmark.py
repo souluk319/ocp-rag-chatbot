@@ -5,11 +5,11 @@ from typing import Any
 
 from ocp_rag.session import SessionContext
 
-from ocp_rag.retrieval.retriever import Part2Retriever
+from ocp_rag.retrieval.retriever import Retriever
 
 
 def evaluate_case(
-    retriever: Part2Retriever,
+    retriever: Retriever,
     case: dict[str, Any],
     *,
     top_k: int,

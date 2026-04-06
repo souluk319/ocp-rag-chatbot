@@ -12,7 +12,7 @@ if str(SRC) not in sys.path:
 
 from ocp_rag.shared.settings import load_settings
 from ocp_rag.retrieval.models import SessionContext
-from ocp_rag.retrieval.retriever import Part2Retriever
+from ocp_rag.retrieval.retriever import Retriever
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -37,7 +37,7 @@ def load_context(path: Path | None) -> SessionContext:
 def main() -> int:
     args = build_parser().parse_args()
     settings = load_settings(ROOT, create_dirs=True)
-    retriever = Part2Retriever.from_settings(settings, enable_vector=not args.skip_vector)
+    retriever = Retriever.from_settings(settings, enable_vector=not args.skip_vector)
     context = load_context(args.context_file)
     result = retriever.retrieve(
         " ".join(args.query),

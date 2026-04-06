@@ -5,7 +5,7 @@ from collections import defaultdict
 from typing import Any
 
 from ocp_rag.session import SessionContext
-from ocp_rag.answering.answerer import Part3Answerer
+from ocp_rag.answering.answerer import Answerer
 
 
 HANGUL_RE = re.compile(r"[\uac00-\ud7a3]")
@@ -35,7 +35,7 @@ def _ordered_unique_books(rows: list[dict[str, Any]]) -> list[str]:
 
 
 def evaluate_case(
-    answerer: Part3Answerer,
+    answerer: Answerer,
     case: dict[str, Any],
     *,
     top_k: int,

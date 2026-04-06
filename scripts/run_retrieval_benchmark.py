@@ -14,7 +14,7 @@ from ocp_rag.shared.io import read_jsonl
 from ocp_rag.shared.settings import load_settings
 from ocp_rag.evals.retrieval import summarize_case_results
 from ocp_rag.retrieval.models import SessionContext
-from ocp_rag.retrieval.retriever import Part2Retriever
+from ocp_rag.retrieval.retriever import Retriever
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -33,7 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = build_parser().parse_args()
     settings = load_settings(ROOT, create_dirs=True)
-    retriever = Part2Retriever.from_settings(settings, enable_vector=not args.skip_vector)
+    retriever = Retriever.from_settings(settings, enable_vector=not args.skip_vector)
     cases = read_jsonl(args.cases)
 
     case_results: list[dict] = []

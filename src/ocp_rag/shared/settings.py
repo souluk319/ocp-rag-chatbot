@@ -60,7 +60,7 @@ class Settings:
         "openshift_container_platform/4.20/html-single/{slug}/index"
     )
     viewer_path_template: str = "/docs/ocp/4.20/ko/{slug}/index.html"
-    user_agent: str = "Mozilla/5.0 (compatible; OCPRAGPart1/1.0)"
+    user_agent: str = "Mozilla/5.0 (compatible; OCPRAGCoreV2/1.0)"
     request_timeout_seconds: int = 30
     request_retries: int = 3
     request_backoff_seconds: int = 2

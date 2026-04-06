@@ -12,7 +12,7 @@ if str(SRC) not in sys.path:
 
 from ocp_rag.shared.settings import load_settings
 from ocp_rag.retrieval.models import SessionContext
-from ocp_rag.answering import Part3Answerer
+from ocp_rag.answering import Answerer
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -30,7 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = build_parser().parse_args()
     settings = load_settings(ROOT, create_dirs=True)
-    answerer = Part3Answerer.from_settings(settings)
+    answerer = Answerer.from_settings(settings)
     context = SessionContext.from_dict(
         json.loads(args.context_json) if args.context_json else None
     )

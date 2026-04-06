@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from ocp_rag.answering import Part3Answerer
+from ocp_rag.answering import Answerer
 from ocp_rag.answering.answerer import _select_citation_group_for_query
 from ocp_rag.answering.models import AnswerResult, Citation
 from ocp_rag.session import (
@@ -1804,7 +1804,7 @@ def _build_chat_payload(
 
 def _build_handler(
     *,
-    answerer: Part3Answerer,
+    answerer: Answerer,
     store: SessionStore,
     root_dir: Path,
 ) -> type[BaseHTTPRequestHandler]:
@@ -2027,7 +2027,7 @@ def _build_handler(
     return ChatHandler
 def serve(
     *,
-    answerer: Part3Answerer,
+    answerer: Answerer,
     root_dir: Path,
     host: str = "127.0.0.1",
     port: int = 8770,

@@ -32,7 +32,7 @@ try:
 except ModuleNotFoundError:
     OpenAIEmbeddings = None
 
-from ocp_rag.answering.answerer import Part3Answerer
+from ocp_rag.answering.answerer import Answerer
 from ocp_rag.answering.models import AnswerResult
 
 
@@ -229,7 +229,7 @@ def build_ragas_dataset(rows: list[dict[str, Any]], *, name: str = "ocp-rag-eval
 
 
 def generate_answers_for_cases(
-    answerer: Part3Answerer,
+    answerer: Answerer,
     cases: list[dict[str, Any]],
     *,
     top_k: int,
@@ -256,7 +256,7 @@ def generate_answers_for_cases(
 
 
 def evaluate_cases_with_ragas(
-    answerer: Part3Answerer,
+    answerer: Answerer,
     cases: list[dict[str, Any]],
     *,
     judge_config: OpenAIJudgeConfig,
@@ -264,7 +264,7 @@ def evaluate_cases_with_ragas(
     candidate_k: int,
     max_context_chunks: int,
     batch_size: int | None = None,
-    experiment_name: str = "ocp-rag-part3-ragas",
+    experiment_name: str = "ocp-rag-answering-ragas",
 ) -> dict[str, Any]:
     generated_results = generate_answers_for_cases(
         answerer,

@@ -504,7 +504,7 @@ class VectorRetriever:
         raise ValueError(last_error)
 
 
-class Part2Retriever:
+class Retriever:
     def __init__(
         self,
         settings: Settings,
@@ -522,7 +522,7 @@ class Part2Retriever:
         settings: Settings,
         *,
         enable_vector: bool = True,
-    ) -> "Part2Retriever":
+    ) -> "Retriever":
         bm25_index = BM25Index.from_jsonl(settings.bm25_corpus_path)
         vector_retriever = VectorRetriever(settings) if enable_vector else None
         return cls(settings, bm25_index, vector_retriever=vector_retriever)
@@ -766,3 +766,6 @@ class Part2Retriever:
             hits=hits,
             trace=trace,
         )
+
+
+Part2Retriever = Retriever

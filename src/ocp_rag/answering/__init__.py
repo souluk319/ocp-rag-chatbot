@@ -1,4 +1,4 @@
-from .answerer import Part3Answerer
+from .answerer import Answerer, Part3Answerer
 from .context import assemble_context
 from .llm import LLMClient
 from .models import AnswerResult, Citation, ContextBundle
@@ -7,6 +7,7 @@ from .router import route_non_rag
 
 __all__ = [
     "AnswerResult",
+    "Answerer",
     "Citation",
     "ContextBundle",
     "LLMClient",

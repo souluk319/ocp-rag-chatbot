@@ -5,7 +5,7 @@ from typing import Any
 
 from ocp_rag.session import SessionContext
 
-from ocp_rag.retrieval.retriever import Part2Retriever
+from ocp_rag.retrieval.retriever import Retriever
 
 
 def _hit_at_k(top_book_slugs: list[str], expected_book_slugs: list[str], k: int) -> bool:
@@ -23,7 +23,7 @@ def _forbidden_at_k(top_book_slugs: list[str], forbidden_book_slugs: list[str], 
 
 
 def evaluate_case(
-    retriever: Part2Retriever,
+    retriever: Retriever,
     case: dict[str, Any],
     *,
     top_k: int,
