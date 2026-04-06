@@ -1,2109 +1,2686 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ko">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OCP Operations Workspace</title>
+  <title>OCP 운영/교육 가이드 RAG 챗봇</title>
   <style>
     :root {
-      --bg: #f4f1e8;
-      --panel: rgba(255, 252, 246, 0.94);
-      --panel-strong: #fffdf8;
-      --panel-muted: #f7f2e8;
-      --line: rgba(92, 67, 36, 0.16);
-      --text: #20170f;
-      --muted: #6f5a45;
-      --accent: #c2410c;
-      --accent-soft: rgba(194, 65, 12, 0.12);
-      --accent-strong: #8f2d09;
-      --success: #146c43;
-      --warning: #8a5b00;
-      --shadow: 0 22px 60px rgba(50, 36, 18, 0.12);
-      --radius-lg: 24px;
-      --radius-md: 18px;
-      --radius-sm: 12px;
-      --mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
-      --sans: "Segoe UI Variable", "Pretendard", "Noto Sans KR", sans-serif;
+      --bg: #f1f3f5;
+      --bg-deep: #e4e7ea;
+      --panel: rgba(255, 255, 255, 0.95);
+      --panel-strong: #ffffff;
+      --panel-muted: #f7f8f8;
+      --ink: #111418;
+      --muted: #5f666d;
+      --line: rgba(21, 21, 21, 0.12);
+      --line-strong: rgba(21, 21, 21, 0.2);
+      --accent: #ee0000;
+      --accent-dark: #a30000;
+      --accent-soft: rgba(238, 0, 0, 0.08);
+      --accent-warm: #ff7a00;
+      --success: #3d7317;
+      --warn: #ad6e00;
+      --shadow: 0 16px 44px rgba(21, 21, 21, 0.07);
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
     }
 
-    * {
-      box-sizing: border-box;
-    }
-
-    html,
+    * { box-sizing: border-box; }
     body {
       margin: 0;
-      min-height: 100%;
-      font-family: var(--sans);
-      color: var(--text);
+      font-family: "Red Hat Text", "Segoe UI Variable", "Malgun Gothic", sans-serif;
+      color: var(--ink);
       background:
-        radial-gradient(circle at top left, rgba(240, 141, 85, 0.14), transparent 28%),
-        radial-gradient(circle at bottom right, rgba(196, 168, 120, 0.18), transparent 24%),
-        var(--bg);
-    }
-
-    body {
+        radial-gradient(circle at top right, rgba(238, 0, 0, 0.08), transparent 26%),
+        linear-gradient(180deg, #f7f8f9 0%, #eceff2 100%);
       min-height: 100vh;
-      overflow: hidden;
     }
 
-    button,
-    textarea,
-    input {
+    .shell {
+      width: min(100vw - 24px, 1880px);
+      max-width: none;
+      margin: 0 auto;
+      padding: 12px 12px 16px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero-main {
+      padding: 22px 24px 20px;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 248, 248, 0.94));
+    }
+
+    .hero-main::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 5px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-warm));
+    }
+
+    .hero-main::after {
+      content: "";
+      position: absolute;
+      inset: auto -48px -72px auto;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(238, 0, 0, 0.1), transparent 70%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-size: 12px;
+      color: var(--accent-dark);
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    .topbar .eyebrow {
+      color: rgba(255, 255, 255, 0.64);
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-family: "Red Hat Display", "Red Hat Text", "Segoe UI Variable", sans-serif;
+      font-size: clamp(28px, 3.8vw, 42px);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+      max-width: 11ch;
+    }
+
+    .hero-main p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 68ch;
+      line-height: 1.55;
+      font-size: 15px;
+    }
+
+    .hero-side {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 245, 245, 0.94));
+    }
+
+    .status-row, .mode-row, .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .pill, button, textarea {
       font: inherit;
     }
 
-    button {
-      cursor: pointer;
-      border: 0;
-      color: inherit;
-      background: none;
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+      color: var(--muted);
     }
 
-    .app-shell {
+    .topbar .pill {
+      border-color: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(255, 255, 255, 0.84);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 5px rgba(61, 115, 23, 0.12);
+    }
+
+    .dot.live {
+      animation: pulse-dot 1s ease-in-out infinite;
+    }
+
+    .status-pill {
+      align-items: flex-start;
+    }
+
+    .status-block {
       display: grid;
-      grid-template-rows: auto 1fr;
-      min-height: 100vh;
-      padding: 18px;
+      gap: 2px;
+    }
+
+    .status-detail {
+      min-height: 1.2em;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .topbar .status-detail {
+      color: rgba(255, 255, 255, 0.58);
+    }
+
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+    }
+
+    .mode-toggle button,
+    .action-row button,
+    .composer button {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 11px 16px;
+      cursor: pointer;
+      transition: transform 120ms ease, opacity 120ms ease, background 120ms ease, border-color 120ms ease;
+    }
+
+    .mode-toggle button {
+      background: rgba(21, 21, 21, 0.04);
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .topbar .mode-toggle button,
+    .topbar .action-row button {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.88);
+    }
+
+    .mode-toggle button.active {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: white;
+    }
+
+    .topbar .mode-toggle button.active {
+      background: #ffffff;
+      border-color: #ffffff;
+      color: #111418;
+    }
+
+    .action-row button {
+      background: rgba(21, 21, 21, 0.04);
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .action-row button.primary,
+    .composer button.primary {
+      background: linear-gradient(90deg, var(--accent), #c9190b);
+      border-color: #c9190b;
+      color: white;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: default;
+      transform: none;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.22fr) minmax(400px, 0.78fr);
+      gap: 16px;
+      min-height: calc(100vh - 168px);
+    }
+
+    .shell.inspector-hidden .workspace {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .shell.inspector-hidden .side-panel {
+      display: none;
+    }
+
+    .chat-panel {
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at top left, rgba(238, 0, 0, 0.05), transparent 26%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(249, 250, 250, 0.98));
+    }
+
+    .messages {
+      min-height: 0;
+      max-height: calc(100vh - 226px);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding: 20px 22px 14px;
+      scrollbar-color: rgba(21, 21, 21, 0.22) transparent;
+    }
+
+    .message {
+      border-radius: 24px;
+      padding: 18px 20px;
+      max-width: min(100%, 1140px);
+      border: 1px solid var(--line);
+      line-height: 1.65;
+      box-shadow: 0 14px 30px rgba(21, 21, 21, 0.04);
+    }
+
+    .message .body {
+      display: grid;
       gap: 14px;
+    }
+
+    .message.user .body {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 15px;
+      line-height: 1.65;
+      font-weight: 500;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      max-width: min(82%, 980px);
+      background: linear-gradient(180deg, #edf3f6, #e4edf2);
+      border-color: rgba(21, 21, 21, 0.1);
+      box-shadow: none;
+    }
+
+    .message.assistant {
+      align-self: flex-start;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(250, 250, 250, 0.96));
+      border-color: rgba(21, 21, 21, 0.1);
+      padding: 22px 24px 18px;
+      position: relative;
+    }
+
+    .message.assistant::before {
+      content: "";
+      position: absolute;
+      inset: 18px auto 18px 0;
+      width: 3px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, var(--accent), var(--accent-warm));
+    }
+
+    .assistant-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .assistant-label {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: rgba(21, 21, 21, 0.05);
+      color: var(--ink);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .assistant-copy {
+      display: grid;
+      gap: 14px;
+      max-width: 88ch;
+    }
+
+    .pending-panel {
+      display: grid;
+      gap: 14px;
+      padding: 2px 2px 0;
+    }
+
+    .pending-kicker {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .pending-stage {
+      font-family: "Red Hat Display", "Red Hat Text", sans-serif;
+      font-size: 22px;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .pending-stage.live::after {
+      content: "";
+      display: inline-block;
+      width: 0.85em;
+      margin-left: 4px;
+      border-bottom: 2px solid currentColor;
+      animation: live-ellipsis 0.9s ease-in-out infinite;
+      vertical-align: middle;
+    }
+
+    .pending-detail {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      max-width: 64ch;
+    }
+
+    .progress-rail {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(21, 21, 21, 0.08);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-warm));
+      transition: width 180ms ease;
+      min-width: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-fill.live::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+      animation: progress-shimmer 1.05s linear infinite;
+    }
+
+    .stage-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .stage-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(21, 21, 21, 0.03);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+    }
+
+    .stage-chip.done {
+      background: rgba(61, 115, 23, 0.1);
+      border-color: rgba(61, 115, 23, 0.2);
+      color: #264b10;
+    }
+
+    .stage-chip.warning {
+      background: rgba(173, 110, 0, 0.1);
+      border-color: rgba(173, 110, 0, 0.18);
+      color: #8c5b00;
+    }
+
+    .stage-chip.running {
+      background: rgba(238, 0, 0, 0.08);
+      border-color: rgba(238, 0, 0, 0.18);
+      color: var(--accent-dark);
+      box-shadow: 0 0 0 1px rgba(238, 0, 0, 0.04);
+    }
+
+    .stage-chip.pending {
+      opacity: 0.72;
+    }
+
+    .pending-metrics,
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric-card {
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 12px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .metric-card.metric-hybrid {
+      border-color: rgba(238, 0, 0, 0.18);
+      background: rgba(238, 0, 0, 0.04);
+    }
+
+    .metric-card.metric-selected {
+      border-color: rgba(21, 21, 21, 0.12);
+      background: rgba(21, 21, 21, 0.025);
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      color: var(--ink);
+      font-size: 23px;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+    }
+
+    .metric-detail {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .assistant-copy p,
+    .assistant-copy ul,
+    .assistant-copy ol {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.78;
+    }
+
+    .assistant-copy p.assistant-lead {
+      font-size: 18px;
+      line-height: 1.72;
+      letter-spacing: -0.015em;
+      font-weight: 500;
+      color: #101418;
+    }
+
+    .assistant-copy ul,
+    .assistant-copy ol {
+      padding-left: 20px;
+    }
+
+    .assistant-copy li + li {
+      margin-top: 6px;
+    }
+
+    .inline-code {
+      display: inline-block;
+      padding: 0.08rem 0.45rem;
+      border-radius: 6px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(21, 21, 21, 0.04);
+      color: var(--ink);
+      font-family: "SF Mono", "Cascadia Code", monospace;
+      font-size: 0.92em;
+    }
+
+    .code-block {
+      border: 1px solid rgba(21, 21, 21, 0.12);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: #151515;
+    }
+
+    .code-block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      background: #232323;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .code-lang {
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .code-copy {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 999px;
+      padding: 7px 12px;
+      background: transparent;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .code-copy.copied {
+      background: rgba(238, 0, 0, 0.18);
+      border-color: rgba(238, 0, 0, 0.3);
+      color: #ffffff;
+    }
+
+    .code-block pre {
+      margin: 0;
+      padding: 14px 16px 16px;
+      overflow-x: auto;
+      background: #151515;
+      color: #f5f5f5;
+      font-family: "SF Mono", "Cascadia Code", monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      white-space: pre;
+    }
+
+    .assistant-footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 30px;
+      padding: 0 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(21, 21, 21, 0.03);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .citations {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .citation-list-title {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .citation {
+      border: 1px solid var(--line);
+      background: var(--panel-muted);
+      border-radius: 16px;
+      padding: 14px 15px 15px;
+      position: relative;
+      display: grid;
+      gap: 8px;
+    }
+
+    .citation::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 3px;
+      border-radius: 16px 0 0 16px;
+      background: linear-gradient(180deg, var(--accent), var(--accent-warm));
+    }
+
+    .citation-source {
+      padding-left: 10px;
+      color: var(--accent-dark);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .citation a {
+      display: block;
+      padding-left: 10px;
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .citation p {
+      margin: 0;
+      padding-left: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+
+    .source-tag-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .source-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(238, 0, 0, 0.14);
+      background: rgba(238, 0, 0, 0.05);
+      color: var(--accent-dark);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    button.source-tag {
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+
+    button.source-tag:hover {
+      transform: translateY(-1px);
+      border-color: rgba(238, 0, 0, 0.28);
+      background: rgba(238, 0, 0, 0.08);
+    }
+
+    .source-tag strong {
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .source-tag span {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .citations-panel {
+      padding: 12px;
+    }
+
+    .citations-panel .trace-empty {
+      padding: 2px 4px 6px;
+    }
+
+    .document-stack {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      min-height: 70vh;
+    }
+
+    .document-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 16px 0;
+      flex-wrap: wrap;
+    }
+
+    .document-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .ghost-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(21, 21, 21, 0.1);
+      background: rgba(21, 21, 21, 0.03);
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .document-empty {
+      padding: 12px 16px 16px;
+    }
+
+    .document-frame {
+      width: 100%;
+      min-height: 60vh;
+      border: 0;
+      border-top: 1px solid rgba(21, 21, 21, 0.06);
+      background: #ffffff;
+      display: none;
+    }
+
+    .document-frame.active {
+      display: block;
+    }
+
+    .pipeline-live {
+      padding: 12px;
+    }
+
+    .suggestion-list-title {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .followup-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .followup-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(21, 21, 21, 0.1);
+      background: #ffffff;
+      color: var(--ink);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+      box-shadow: 0 6px 16px rgba(21, 21, 21, 0.04);
+    }
+
+    .followup-chip:hover {
+      transform: translateY(-1px);
+      border-color: rgba(238, 0, 0, 0.28);
+      background: rgba(238, 0, 0, 0.04);
+      box-shadow: 0 10px 22px rgba(21, 21, 21, 0.07);
+    }
+
+    .composer {
+      display: grid;
+      gap: 12px;
+      margin: 0 24px 24px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid var(--line-strong);
+      box-shadow: 0 12px 28px rgba(21, 21, 21, 0.05);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 92px;
+      resize: vertical;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--ink);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .composer-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .side-panel {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      position: sticky;
+      top: 16px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 249, 250, 0.94));
+    }
+
+    .inspector-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 4px 0;
+    }
+
+    .inspector-title {
+      display: grid;
+      gap: 3px;
+    }
+
+    .inspector-title strong {
+      font-size: 15px;
+      letter-spacing: -0.01em;
+    }
+
+    .inspector-title span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .ghost-btn {
+      border: 1px solid rgba(21, 21, 21, 0.1);
+      background: rgba(21, 21, 21, 0.03);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .inspector-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      padding: 6px 4px 2px;
+    }
+
+    .inspector-tabs button {
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(21, 21, 21, 0.03);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 9px 10px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .inspector-tabs button.active {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: #ffffff;
+    }
+
+    .inspector-page {
+      display: none;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .inspector-page.active {
+      display: grid;
+    }
+
+    .stack {
+      padding: 0;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .stack h2 {
+      font-family: "Red Hat Display", "Red Hat Text", sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid rgba(21, 21, 21, 0.06);
+    }
+
+    .stack pre, .stack code {
+      font-family: Consolas, "Cascadia Code", monospace;
+      font-size: 13px;
+    }
+
+    .stack pre {
+      white-space: pre-wrap;
+      margin: 0;
+      color: var(--muted);
+      padding: 14px 16px 16px;
+      line-height: 1.6;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .summary-card {
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 12px;
+      display: grid;
+      gap: 5px;
+    }
+
+    .summary-card.bottleneck {
+      border-color: rgba(238, 0, 0, 0.16);
+      background: rgba(238, 0, 0, 0.04);
+    }
+
+    .summary-kicker {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .summary-value {
+      color: var(--ink);
+      font-size: 24px;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+    }
+
+    .summary-detail {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .trace-list {
+      display: grid;
+      gap: 12px;
+      max-height: 360px;
+      overflow-y: auto;
+      padding: 12px;
+    }
+
+    .trace-empty {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .trace-item {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 12px 13px;
+      display: grid;
+      gap: 6px;
+      position: relative;
+    }
+
+    .trace-item::before {
+      content: "";
+      position: absolute;
+      inset: 12px auto 12px 0;
+      width: 3px;
+      border-radius: 999px;
+      background: rgba(21, 21, 21, 0.08);
+    }
+
+    .trace-item.running {
+      border-color: rgba(238, 0, 0, 0.22);
+      background: rgba(238, 0, 0, 0.05);
+    }
+
+    .trace-item.warning {
+      border-color: rgba(173, 110, 0, 0.28);
+      background: rgba(173, 110, 0, 0.08);
+    }
+
+    .trace-item.running::before {
+      background: linear-gradient(180deg, var(--accent), var(--accent-warm));
+    }
+
+    .trace-item.warning::before {
+      background: rgba(173, 110, 0, 0.55);
+    }
+
+    .trace-step {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: rgba(21, 21, 21, 0.05);
+      color: var(--ink);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .trace-headline {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-left: 8px;
+    }
+
+    .trace-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      font-size: 13px;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .trace-duration {
+      color: var(--ink);
+      font-weight: 800;
+      font-size: 12px;
+    }
+
+    .trace-detail,
+    .trace-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+      padding-left: 44px;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.18); opacity: 0.72; }
+    }
+
+    .warning {
+      color: var(--warn);
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 14px 16px 16px;
     }
 
     .topbar {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
       gap: 12px;
-      padding: 18px 20px;
-      border: 1px solid var(--line);
-      border-radius: 26px;
-      background: linear-gradient(135deg, rgba(255, 250, 242, 0.96), rgba(247, 239, 225, 0.94));
-      box-shadow: var(--shadow);
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      align-items: start;
+      background: rgba(255, 255, 255, 0.96);
+      border-color: var(--line);
+      box-shadow: 0 10px 28px rgba(21, 21, 21, 0.06);
     }
 
-    .brand {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-      min-width: 0;
-    }
-
-    .brand-badge {
-      width: 46px;
-      height: 46px;
-      border-radius: 16px;
+    .topbar-main {
       display: grid;
-      place-items: center;
-      background: linear-gradient(135deg, var(--accent), #f08d55);
-      color: #fff7f0;
-      font-size: 19px;
-      font-weight: 700;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
-    }
-
-    .brand-copy {
+      gap: 6px;
       min-width: 0;
     }
 
-    .eyebrow {
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--accent-strong);
+    .topbar strong {
+      color: var(--ink);
     }
 
-    h1 {
-      margin: 4px 0 2px;
-      font-size: clamp(22px, 2vw, 30px);
-      line-height: 1.1;
-    }
-
-    .subtitle {
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .topbar-status {
+    .headline-row {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 12px;
       flex-wrap: wrap;
-      justify-content: flex-end;
     }
 
-    .status-pill,
-    .mode-chip,
-    .tag,
-    .summary-chip {
+    .topbar-main h1 {
+      margin: 0;
+      max-width: none;
+      font-size: clamp(22px, 2vw, 30px);
+      line-height: 1.12;
+      color: var(--ink);
+    }
+
+    .topbar-main p {
+      margin: 0;
+      max-width: 88ch;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .version-chip {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      min-height: 28px;
+      padding: 0 10px;
       border-radius: 999px;
-      padding: 9px 12px;
-      font-size: 12px;
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(21, 21, 21, 0.03);
       color: var(--muted);
-    }
-
-    .status-pill::before,
-    .mode-chip::before {
-      content: "";
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: currentColor;
-      opacity: 0.8;
-    }
-
-    .status-pill[data-tone="busy"] {
-      color: var(--accent-strong);
-      background: rgba(255, 237, 213, 0.82);
-      border-color: rgba(194, 65, 12, 0.18);
-    }
-
-    .status-pill[data-tone="ok"] {
-      color: var(--success);
-      background: rgba(221, 247, 232, 0.82);
-      border-color: rgba(20, 108, 67, 0.16);
-    }
-
-    .status-pill[data-tone="warning"] {
-      color: var(--warning);
-      background: rgba(255, 244, 214, 0.85);
-      border-color: rgba(138, 91, 0, 0.16);
-    }
-
-    .status-pill.is-pulsing::before {
-      animation: status-pulse 1.2s ease-in-out infinite;
-    }
-
-    @keyframes status-pulse {
-      0%, 100% { transform: scale(0.9); opacity: 0.5; }
-      50% { transform: scale(1.28); opacity: 1; }
-    }
-
-    .layout {
-      min-height: 0;
-      display: grid;
-      grid-template-columns: 280px minmax(0, 1fr) 400px;
-      gap: 14px;
-    }
-
-    .card {
-      min-height: 0;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-lg);
-      background: var(--panel);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      backdrop-filter: blur(12px);
-    }
-
-    .rail,
-    .copilot {
-      display: grid;
-      gap: 14px;
-      min-height: 0;
-      grid-template-rows: auto auto 1fr;
-    }
-
-    .panel {
-      padding: 18px;
-      display: grid;
-      gap: 14px;
-      min-height: 0;
-    }
-
-    .panel-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .panel-title h2,
-    .panel-title h3 {
-      margin: 0;
-      font-size: 16px;
-    }
-
-    .panel-kicker {
-      margin: 0;
       font-size: 12px;
-      color: var(--muted);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
       font-weight: 700;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
     }
 
-    .mode-toggle {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .mode-button,
-    .action-button,
-    .sample-chip {
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      background: var(--panel-strong);
-      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-    }
-
-    .mode-button {
-      padding: 12px 14px;
-      text-align: left;
-    }
-
-    .mode-button strong,
-    .sample-chip strong {
-      display: block;
-      font-size: 14px;
-      margin-bottom: 4px;
-    }
-
-    .mode-button span,
-    .sample-chip span,
-    .support-copy {
-      display: block;
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    .mode-button.is-active,
-    .sample-chip:hover,
-    .sample-chip:focus-visible,
-    .action-button:hover,
-    .action-button:focus-visible {
-      transform: translateY(-1px);
-      border-color: rgba(194, 65, 12, 0.26);
-      background: #fff8f1;
-    }
-
-    .mode-button.is-active {
-      box-shadow: inset 0 0 0 1px rgba(194, 65, 12, 0.18);
-    }
-
-    .sample-list,
-    .session-list,
-    .pipeline-summary,
-    .suggestion-list,
-    .source-tag-list {
-      display: grid;
-      gap: 10px;
-    }
-
-    .session-list {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .summary-chip {
-      display: grid;
-      gap: 4px;
-      border-radius: 16px;
-      background: var(--panel-muted);
-      padding: 12px;
-    }
-
-    .summary-chip-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-      font-weight: 700;
-    }
-
-    .summary-chip-value {
-      font-size: 15px;
-      font-weight: 600;
-      word-break: break-word;
-    }
-
-    .sample-chip {
-      padding: 14px;
-      text-align: left;
-    }
-
-    .library-card .panel,
-    .messages-card .panel,
-    .composer-card .panel,
-    .document-card .panel,
-    .source-card .panel,
-    .procedure-card .panel,
-    .pipeline-card .panel {
-      height: 100%;
-    }
-
-    .library-toolbar {
-      display: grid;
-      gap: 10px;
-    }
-
-    .library-search {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.92);
-      padding: 11px 12px;
-      color: var(--text);
-    }
-
-    .library-status {
-      padding: 12px 14px;
-      border-radius: 16px;
-      background: var(--panel-muted);
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.55;
-    }
-
-    .library-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      min-height: 0;
-      overflow: auto;
-      display: grid;
-      gap: 10px;
-    }
-
-    .library-item {
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      background: #fffdf9;
-    }
-
-    .library-item.is-selected {
-      border-color: rgba(194, 65, 12, 0.32);
-      background: rgba(255, 244, 236, 0.96);
-      box-shadow: inset 0 0 0 1px rgba(194, 65, 12, 0.12);
-    }
-
-    .library-item button {
-      width: 100%;
-      text-align: left;
-      padding: 14px;
+    .topbar-side {
       display: grid;
       gap: 8px;
-      border-radius: inherit;
+      min-width: 0;
     }
 
-    .library-item button:hover {
-      background: rgba(194, 65, 12, 0.03);
-    }
-
-    .library-item-title {
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .library-item-meta,
-    .library-item-sections {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.55;
-    }
-
-    .library-item-sections {
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .action-row {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .action-button {
-      padding: 11px 12px;
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    .workspace {
-      min-height: 0;
-      display: grid;
-      gap: 14px;
-      grid-template-rows: auto minmax(0, 1fr) auto;
-    }
-
-    .workspace-header,
-    .pipeline-card,
-    .messages-card,
-    .composer-card,
-    .document-card,
-    .source-card,
-    .procedure-card {
-      min-height: 0;
-    }
-
-    .workspace-header .panel {
-      gap: 12px;
-    }
-
-    .workspace-summary {
-      display: grid;
-      gap: 10px;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-    }
-
-    .workspace-surface {
-      min-height: 0;
-      display: grid;
-      gap: 14px;
-      grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
-    }
-
-    .stack {
-      min-height: 0;
-      display: grid;
-      gap: 14px;
-      grid-template-rows: minmax(0, 1fr) auto;
-    }
-
-    .document-frame-wrap {
-      min-height: 0;
-      border-radius: 18px;
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.88);
-      overflow: hidden;
-      display: grid;
-      grid-template-rows: auto auto 1fr;
-    }
-
-    .viewer-meta,
-    .viewer-excerpt {
-      padding: 12px 14px;
-    }
-
-    .viewer-meta {
-      border-bottom: 1px solid var(--line);
-      background: rgba(247, 242, 232, 0.86);
-      display: grid;
-      gap: 8px;
-    }
-
-    .viewer-excerpt {
-      border-bottom: 1px solid var(--line);
-      background: rgba(255, 249, 242, 0.9);
-      color: var(--muted);
-      line-height: 1.6;
-      font-size: 13px;
-    }
-
-    .viewer-frame {
-      width: 100%;
-      height: 100%;
-      min-height: 420px;
-      border: 0;
-      background: #ffffff;
-    }
-
-    .source-summary {
-      padding: 12px 14px;
-      border-radius: 16px;
-      background: var(--panel-muted);
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    .tag {
-      border-radius: 999px;
-      padding: 8px 10px;
-      background: rgba(255, 255, 255, 0.9);
-    }
-
-    .source-tag-list {
+    .status-strip,
+    .control-strip {
       display: flex;
       flex-wrap: wrap;
+      gap: 8px 10px;
+      padding: 8px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(21, 21, 21, 0.025);
     }
 
-    .source-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: grid;
-      gap: 10px;
-      min-height: 0;
-      overflow: auto;
+    .mode-row.compact,
+    .action-row.compact {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
     }
 
-    .source-item {
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      background: #fffdf9;
-      padding: 14px;
-      display: grid;
-      gap: 10px;
+    .action-row.compact {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
-    .source-item button {
-      width: 100%;
-      text-align: left;
-      padding: 0;
-    }
-
-    .source-title {
-      font-size: 14px;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .source-title-row {
+    .chat-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 4px;
+      gap: 16px;
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid rgba(21, 21, 21, 0.06);
+      background: rgba(255, 255, 255, 0.88);
     }
 
-    .source-origin-tag {
+    .chat-kicker {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .chat-header h2 {
+      margin: 0;
+      font-family: "Red Hat Display", "Red Hat Text", sans-serif;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+    }
+
+    .chat-subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      max-width: 60ch;
+    }
+
+    .chat-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .surface-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 10px;
       border-radius: 999px;
-      padding: 4px 8px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(21, 21, 21, 0.03);
+      color: var(--muted);
       font-size: 11px;
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      background: rgba(148, 163, 184, 0.16);
-      color: var(--muted);
-      flex-shrink: 0;
     }
 
-    .source-origin-tag.is-replayed {
-      background: rgba(194, 65, 12, 0.12);
-      color: #9a3412;
+    .composer-shell {
+      margin-top: auto;
+      padding: 0 20px 18px;
+      background: linear-gradient(180deg, rgba(248, 248, 248, 0), rgba(248, 248, 248, 0.94) 20%, rgba(248, 248, 248, 1) 100%);
     }
 
-    .source-origin-tag.is-fresh {
-      background: rgba(21, 128, 61, 0.12);
-      color: #166534;
-    }
-
-    .source-subtitle,
-    .trace-meta,
-    .procedure-copy,
-    .helper-text {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.55;
-    }
-
-    .source-excerpt {
-      font-size: 13px;
-      line-height: 1.65;
-      color: var(--text);
-    }
-
-    .procedure-grid {
+    .empty-state {
       display: grid;
-      gap: 12px;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      max-width: 980px;
+      margin: auto;
+      padding: 24px;
+      border-radius: 20px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(255, 255, 255, 0.97);
+      box-shadow: 0 12px 30px rgba(21, 21, 21, 0.05);
     }
 
-    .procedure-block {
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      background: #fffdf9;
-      padding: 14px;
+    .empty-state-header {
       display: grid;
       gap: 8px;
     }
 
-    .procedure-list {
+    .empty-state h3 {
       margin: 0;
-      padding-left: 18px;
-      display: grid;
-      gap: 8px;
+      font-family: "Red Hat Display", "Red Hat Text", sans-serif;
+      font-size: 26px;
+      letter-spacing: -0.03em;
     }
 
-    .procedure-list li.is-active {
-      font-weight: 700;
-      color: var(--accent-strong);
-    }
-
-    .command-card {
-      margin-top: 10px;
-      padding: 12px 14px;
-      border-radius: 16px;
-      background: #20170f;
-      color: #fff5eb;
-      font-family: var(--mono);
-      font-size: 12px;
+    .empty-state p {
+      margin: 0;
+      color: var(--muted);
       line-height: 1.6;
-      overflow-x: auto;
+      max-width: 72ch;
     }
 
-    .pipeline-summary {
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    }
-
-    .pipeline-trace {
-      list-style: none;
-      margin: 0;
-      padding: 0;
+    .sample-grid {
       display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
-      max-height: 190px;
-      overflow: auto;
     }
 
-    .trace-step {
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: #fffdf9;
-      padding: 12px 14px;
-      display: grid;
-      gap: 6px;
-    }
-
-    .trace-topline {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .copilot {
-      grid-template-rows: minmax(0, 1fr) auto;
-    }
-
-    .messages {
-      min-height: 0;
-      overflow: auto;
-      display: grid;
-      gap: 12px;
-      padding-right: 4px;
-    }
-
-    .message {
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: #fffdf9;
-      padding: 14px;
-      display: grid;
-      gap: 12px;
-    }
-
-    .message.user {
-      background: linear-gradient(135deg, rgba(194, 65, 12, 0.08), rgba(255, 244, 236, 0.96));
-    }
-
-    .message-header {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .message-role {
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-weight: 700;
-    }
-
-    .message-body {
-      font-size: 14px;
-      line-height: 1.75;
-      white-space: normal;
-    }
-
-    .message-body p {
-      margin: 0 0 10px;
-    }
-
-    .message-body p:last-child,
-    .message-body ul:last-child,
-    .message-body ol:last-child,
-    .message-body pre:last-child {
-      margin-bottom: 0;
-    }
-
-    .message-body code {
-      font-family: var(--mono);
-      background: rgba(32, 23, 15, 0.08);
-      border-radius: 6px;
-      padding: 2px 6px;
-    }
-
-    .message-body pre {
-      margin: 0 0 10px;
-      padding: 12px 14px;
-      border-radius: 14px;
-      background: #20170f;
-      color: #fff7f0;
-      font-family: var(--mono);
-      overflow-x: auto;
-    }
-
-    .assistant-copy {
-      padding: 7px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.9);
-      font-size: 12px;
-    }
-
-    .pending-dots {
-      display: inline-flex;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .pending-dots span {
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: var(--accent);
-      animation: dot-bounce 0.9s ease-in-out infinite;
-    }
-
-    .pending-dots span:nth-child(2) {
-      animation-delay: 0.15s;
-    }
-
-    .pending-dots span:nth-child(3) {
-      animation-delay: 0.3s;
-    }
-
-    @keyframes dot-bounce {
-      0%, 100% { transform: translateY(0); opacity: 0.4; }
-      50% { transform: translateY(-5px); opacity: 1; }
-    }
-
-    .suggestion-list button {
+    .sample-chip {
       width: 100%;
       text-align: left;
-      padding: 12px 14px;
-      border-radius: 14px;
-      border: 1px solid var(--line);
-      background: #fffdf9;
-      font-size: 13px;
-      transition: transform 0.18s ease, border-color 0.18s ease;
-    }
-
-    .suggestion-list button:hover,
-    .suggestion-list button:focus-visible {
-      transform: translateY(-1px);
-      border-color: rgba(194, 65, 12, 0.26);
-    }
-
-    .composer-area {
-      display: grid;
-      gap: 12px;
-    }
-
-    .composer-field {
-      min-height: 112px;
-      resize: vertical;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.92);
       padding: 14px 15px;
-      color: var(--text);
-      line-height: 1.6;
-    }
-
-    .composer-actions {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .button-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .button-primary,
-    .button-secondary,
-    .button-danger {
-      padding: 11px 14px;
       border-radius: 14px;
-      font-size: 13px;
-      font-weight: 700;
-      border: 1px solid transparent;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      line-height: 1.45;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+      box-shadow: 0 8px 20px rgba(21, 21, 21, 0.03);
     }
 
-    .button-primary {
-      background: linear-gradient(135deg, var(--accent), #f08d55);
-      color: #fffaf5;
+    .sample-chip:hover {
+      transform: translateY(-1px);
+      border-color: rgba(238, 0, 0, 0.22);
+      box-shadow: 0 12px 24px rgba(21, 21, 21, 0.06);
     }
 
-    .button-secondary {
-      background: #fffdf9;
-      border-color: var(--line);
-    }
-
-    .button-danger {
-      background: rgba(194, 65, 12, 0.12);
-      border-color: rgba(194, 65, 12, 0.18);
-      color: var(--accent-strong);
-    }
-
-    .button-primary:disabled,
-    .button-secondary:disabled,
-    .button-danger:disabled {
-      cursor: not-allowed;
-      opacity: 0.5;
-    }
-
-    .muted {
-      color: var(--muted);
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    @media (max-width: 1500px) {
-      .layout {
-        grid-template-columns: 250px minmax(0, 1fr) 360px;
-      }
-
-      .workspace-summary {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-    }
-
-    @media (max-width: 1240px) {
-      body {
-        overflow: auto;
-      }
-
-      .app-shell,
-      .layout,
-      .workspace,
-      .workspace-surface,
-      .rail,
-      .copilot {
-        min-height: unset;
-      }
-
-      .layout {
+    @media (max-width: 960px) {
+      .topbar,
+      .workspace {
         grid-template-columns: 1fr;
       }
 
-      .workspace-surface,
-      .procedure-grid,
-      .session-list {
+      .shell.inspector-hidden .workspace {
         grid-template-columns: 1fr;
       }
 
-      .viewer-frame {
-        min-height: 320px;
+      .messages {
+        max-height: none;
+        padding: 18px 16px 8px;
+      }
+
+      .composer {
+        margin: 0 16px 16px;
+      }
+
+      .message,
+      .message.user {
+        max-width: 100%;
+      }
+
+      .chat-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .inspector-tabs {
+        grid-template-columns: 1fr;
+      }
+
+      .sample-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
 </head>
 <body>
-  <div class="app-shell">
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-badge">OCP</div>
-        <div class="brand-copy">
-          <div class="eyebrow">Operations Workspace</div>
-          <h1>OCP 운영 워크스페이스</h1>
-          <div class="subtitle">문서, 근거, 절차, 코파일럿을 한 화면에서 같이 보는 16:9 작업 공간</div>
+  <div class="shell">
+    <header class="topbar card">
+      <div class="topbar-main">
+        <div class="eyebrow">OCP Guide Chat</div>
+        <div class="headline-row">
+          <h1>OCP 운영/교육 가이드 RAG 챗봇</h1>
+          <span class="version-chip">OCP 4.20 한국어 코퍼스</span>
         </div>
+        <p>운영 질문과 학습 질문을 채팅 중심으로 처리하고, 답변의 근거 문서를 오른쪽 패널에서 함께 읽을 수 있게 구성한 화면입니다.</p>
       </div>
-      <div class="topbar-status">
-        <span class="status-pill" id="global-status" data-tone="ok">Ready</span>
-        <span class="mode-chip" id="active-mode-chip">ops</span>
-        <span class="mode-chip" id="session-chip">session</span>
+      <div class="topbar-side">
+        <div class="status-strip">
+          <div class="pill status-pill">
+            <span class="dot" id="status-dot"></span>
+            <span class="status-block">
+              <span id="status-text">준비됨</span>
+              <span class="status-detail" id="status-detail">대기 중</span>
+            </span>
+          </div>
+          <div class="pill">Session <span id="session-id">-</span></div>
+        </div>
+        <div class="control-strip">
+          <div class="mode-row compact">
+            <strong>Mode</strong>
+            <div class="mode-toggle">
+              <button type="button" class="active" data-mode="ops">ops</button>
+              <button type="button" data-mode="learn">learn</button>
+            </div>
+          </div>
+          <div class="action-row compact">
+            <button type="button" id="reset-btn">세션 리셋</button>
+            <button type="button" id="regenerate-btn">재생성</button>
+            <button type="button" id="stop-btn">중지</button>
+          </div>
+        </div>
       </div>
     </header>
 
-    <main class="layout">
-      <aside class="rail">
-        <section class="card">
-          <div class="panel">
-            <div class="panel-title">
-              <div>
-                <div class="panel-kicker">Mode</div>
-                <h2>작업 성격</h2>
-              </div>
-            </div>
-            <div class="mode-toggle">
-              <button class="mode-button is-active" type="button" data-mode="ops">
-                <strong>ops</strong>
-                <span>운영, 명령어, 트러블슈팅 중심</span>
-              </button>
-              <button class="mode-button" type="button" data-mode="learn">
-                <strong>learn</strong>
-                <span>개념 설명, 교육, 단계별 학습 중심</span>
-              </button>
-            </div>
-            <div class="session-list">
-              <div class="summary-chip">
-                <span class="summary-chip-label">Current Topic</span>
-                <span class="summary-chip-value" id="workspace-topic">-</span>
-              </div>
-              <div class="summary-chip">
-                <span class="summary-chip-label">History</span>
-                <span class="summary-chip-value" id="history-size">0 turns</span>
-              </div>
-              <div class="summary-chip">
-                <span class="summary-chip-label">Response Kind</span>
-                <span class="summary-chip-value" id="workspace-response-kind">idle</span>
-              </div>
-              <div class="summary-chip">
-                <span class="summary-chip-label">Citations</span>
-                <span class="summary-chip-value" id="workspace-citation-count">0</span>
-              </div>
+    <section class="workspace">
+      <div class="card chat-panel">
+        <div class="chat-header">
+          <div>
+            <h2>질문과 답변</h2>
+            <p class="chat-subtitle">채팅이 메인이고, 출처 문서는 오른쪽 패널에서 함께 읽는 구조입니다.</p>
+          </div>
+          <div class="chat-tags">
+            <button type="button" class="ghost-btn" id="inspector-toggle-btn">출처 패널 열기</button>
+          </div>
+        </div>
+        <div class="messages" id="messages"></div>
+        <div class="composer-shell">
+          <div class="composer">
+            <textarea id="composer" placeholder="질문을 입력하세요. Enter 전송, Shift+Enter 줄바꿈"></textarea>
+            <div class="composer-footer">
+              <div class="hint">운영 절차, 교육 질문, 후속 질문을 같은 세션에서 이어서 확인합니다.</div>
+              <button type="button" class="primary" id="send-btn">전송</button>
             </div>
           </div>
-        </section>
+        </div>
+      </div>
 
-        <section class="card library-card" id="library-panel">
-          <div class="panel">
-            <div class="panel-title">
-              <div>
-                <div class="panel-kicker">Library</div>
-                <h3>문서 라이브러리</h3>
-              </div>
-            </div>
-            <div class="library-toolbar">
-              <input class="library-search" id="library-search" type="search" placeholder="책 제목, 섹션, slug 검색">
-              <div class="library-status" id="library-status">라이브러리 메타데이터를 불러오는 중입니다...</div>
-            </div>
-            <ol class="library-list" id="library-list"></ol>
-            <div class="sample-list">
-              <button class="sample-chip" type="button" data-query="OCP가 뭐야?">
-                <strong>개념 빠르게 보기</strong>
-                <span>OCP가 뭐야?</span>
-              </button>
-              <button class="sample-chip" type="button" data-query="특정 namespace만 admin 권한 주는 방법 단계별로 알려줘">
-                <strong>운영 절차 확인</strong>
-                <span>특정 namespace만 admin 권한 주는 방법 단계별로 알려줘</span>
-              </button>
-              <button class="sample-chip" type="button" data-query="etcd 백업 확인 명령어를 알려줘">
-                <strong>명령어 바로 찾기</strong>
-                <span>etcd 백업 확인 명령어를 알려줘</span>
-              </button>
-            </div>
+      <aside class="card side-panel">
+        <div class="inspector-header">
+          <div class="inspector-title">
+            <strong>출처 패널</strong>
+            <span>답변 근거와 문서를 같은 화면에서 확인합니다</span>
           </div>
-        </section>
-
-        <section class="card">
-          <div class="panel">
-            <div class="panel-title">
-              <div>
-                <div class="panel-kicker">Session</div>
-                <h3>도구 모음</h3>
-              </div>
-            </div>
-            <div class="action-row">
-              <button class="action-button" id="reset-btn" type="button">Reset</button>
-              <button class="action-button" id="regenerate-btn" type="button">Regenerate</button>
-              <button class="action-button" id="open-doc-btn" type="button">Open Doc</button>
-            </div>
-            <div class="support-copy" id="session-summary-copy">
-              같은 화면에서 근거 문서와 답변을 같이 보도록 설계되어 있습니다.
-            </div>
-          </div>
-        </section>
-      </aside>
-
-      <section class="workspace">
-        <section class="card workspace-header">
-          <div class="panel">
-            <div class="panel-title">
-              <div>
-                <div class="panel-kicker">Workspace</div>
-                <h2>현재 작업 맥락</h2>
-              </div>
-              <div class="helper-text" id="workspace-stage-detail">질문을 보내면 근거와 절차가 여기에 정리됩니다.</div>
-            </div>
-            <div class="workspace-summary">
-              <div class="summary-chip">
-                <span class="summary-chip-label">Mode</span>
-                <span class="summary-chip-value" id="workspace-mode">ops</span>
-              </div>
-              <div class="summary-chip">
-                <span class="summary-chip-label">Topic</span>
-                <span class="summary-chip-value" id="workspace-topic-duplicate">-</span>
-              </div>
-              <div class="summary-chip">
-                <span class="summary-chip-label">Kind</span>
-                <span class="summary-chip-value" id="workspace-response-kind-duplicate">idle</span>
-              </div>
-              <div class="summary-chip">
-                <span class="summary-chip-label">Grounding</span>
-                <span class="summary-chip-value" id="workspace-citation-count-duplicate">0</span>
-              </div>
-              <div class="summary-chip">
-                <span class="summary-chip-label">Stage</span>
-                <span class="summary-chip-value" id="workspace-stage">Idle</span>
-              </div>
-              <div class="summary-chip">
-                <span class="summary-chip-label">Stage Detail</span>
-                <span class="summary-chip-value" id="workspace-stage-detail-chip">Waiting</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="workspace-surface">
-          <section class="card document-card">
-            <div class="panel">
-              <div class="panel-title">
-                <div>
-                  <div class="panel-kicker">Document</div>
-                  <h2>원문 뷰어</h2>
-                </div>
-                <div class="helper-text" id="document-status">citation을 클릭하면 같은 화면에서 문서를 엽니다.</div>
-              </div>
-              <div class="document-frame-wrap">
-                <div class="viewer-meta" id="document-meta">문서가 아직 열리지 않았습니다.</div>
-                <div class="viewer-excerpt" id="document-excerpt">retrieved excerpt와 anchor 정보가 여기에 고정됩니다.</div>
-                <iframe class="viewer-frame" id="document-frame" title="Citation document viewer"></iframe>
-              </div>
-            </div>
-          </section>
-
+        </div>
+        <div class="inspector-tabs">
+          <button type="button" class="active" data-inspector-tab="sources">출처</button>
+          <button type="button" data-inspector-tab="document">문서</button>
+          <button type="button" data-inspector-tab="trace">검증</button>
+        </div>
+        <div class="inspector-page active" data-inspector-page="sources">
           <div class="stack">
-            <section class="card source-card">
-              <div class="panel">
-                <div class="panel-title">
-                  <div>
-                    <div class="panel-kicker">Evidence</div>
-                    <h2>Grounded Sources</h2>
-                  </div>
-                </div>
-                <div class="source-summary" id="source-summary">
-                  citation 수와 대표 section 태그를 분리해서 보여줍니다.
-                </div>
-                <div class="source-tag-list" id="source-tags"></div>
-                <ol class="source-list" id="source-list"></ol>
-              </div>
-            </section>
-
-            <section class="card procedure-card hidden" id="procedure-panel">
-              <div class="panel">
-                <div class="panel-title">
-                  <div>
-                    <div class="panel-kicker">Session Procedure Memory</div>
-                    <h2>세션 절차 메모</h2>
-                  </div>
-                </div>
-                <div class="procedure-copy" id="procedure-summary">
-                  이 패널은 검색 근거가 아니라 세션에서 유지되는 절차 상태를 표시합니다.
-                </div>
-                <div class="procedure-grid">
-                  <div class="procedure-block">
-                    <div class="summary-chip-label">Goal</div>
-                    <div id="procedure-goal">-</div>
-                  </div>
-                  <div class="procedure-block">
-                    <div class="summary-chip-label">Current Step</div>
-                    <div id="procedure-current-step">-</div>
-                  </div>
-                </div>
-                <ol class="procedure-list" id="procedure-steps"></ol>
-                <div class="procedure-block">
-                  <div class="summary-chip-label">Validation / Command</div>
-                  <div class="command-card" id="procedure-command">-</div>
-                </div>
-                <div class="procedure-block">
-                  <div class="summary-chip-label">References</div>
-                  <div id="procedure-references" class="procedure-copy">-</div>
-                </div>
-              </div>
-            </section>
-          </div>
-        </section>
-
-        <section class="card pipeline-card">
-          <div class="panel">
-            <div class="panel-title">
-              <div>
-                <div class="panel-kicker">Trace</div>
-                <h2>파이프라인 요약</h2>
-              </div>
-            </div>
-            <div class="pipeline-summary" id="pipeline-summary"></div>
-            <ol class="pipeline-trace" id="pipeline-trace"></ol>
-          </div>
-        </section>
-      </section>
-
-      <aside class="copilot">
-        <section class="card messages-card">
-          <div class="panel">
-            <div class="panel-title">
-              <div>
-                <div class="panel-kicker">Copilot</div>
-                <h2>대화</h2>
-              </div>
-              <div class="helper-text" id="copilot-status-text">질문을 보내면 스트리밍 상태가 여기에 반영됩니다.</div>
-            </div>
-            <div class="messages" id="chat-log"></div>
-            <div class="suggestion-list" id="suggestion-list"></div>
-          </div>
-        </section>
-
-        <section class="card composer-card">
-          <div class="panel">
-            <div class="composer-area">
-              <textarea
-                class="composer-field"
-                id="composer"
-                placeholder="운영 질문, 명령어, 개념 설명, 단계형 질문을 입력하세요. Enter 전송 / Shift+Enter 줄바꿈"
-              ></textarea>
-              <div class="composer-actions">
-                <div class="button-row">
-                  <button class="button-secondary" id="stop-btn" type="button" disabled>Stop</button>
-                  <button class="button-secondary" id="copy-last-btn" type="button">Copy Last</button>
-                </div>
-                <div class="button-row">
-                  <button class="button-danger" id="clear-btn" type="button">Clear</button>
-                  <button class="button-primary" id="send-btn" type="button">Send</button>
-                </div>
-              </div>
-              <div class="helper-text">중복 전송은 생성 중 자동으로 막습니다.</div>
+            <h2>답변 출처 태그</h2>
+            <div id="source-tags-panel" class="pipeline-live">
+              <div class="trace-empty">아직 표시할 출처 태그가 없습니다.</div>
             </div>
           </div>
-        </section>
+          <div class="stack">
+            <h2>근거 문서</h2>
+            <div id="source-list" class="citations citations-panel">
+              <div class="trace-empty">답변이 생성되면 관련 근거가 여기에 정리됩니다.</div>
+            </div>
+          </div>
+        </div>
+        <div class="inspector-page" data-inspector-page="document">
+          <div class="stack document-stack">
+            <h2>문서 보기</h2>
+            <div class="document-toolbar">
+              <div id="document-meta" class="document-meta">출처 태그를 누르면 관련 문서와 섹션을 이 패널에서 바로 읽을 수 있습니다.</div>
+              <a id="document-open-new" class="ghost-link" href="#" target="_blank" rel="noreferrer">새 탭으로 열기</a>
+            </div>
+            <div id="document-empty" class="trace-empty document-empty">아직 선택된 문서가 없습니다.</div>
+            <iframe id="document-frame" class="document-frame" title="Citation document viewer"></iframe>
+          </div>
+        </div>
+        <div class="inspector-page" data-inspector-page="trace">
+          <div class="stack">
+            <h2>재작성 질의</h2>
+            <pre id="rewritten-query">-</pre>
+          </div>
+          <div class="stack">
+            <h2>경고</h2>
+            <div id="warnings" class="warning">없음</div>
+          </div>
+          <div class="stack">
+            <h2>세션 컨텍스트</h2>
+            <pre id="session-context">-</pre>
+          </div>
+          <div class="stack">
+            <h2>실행 진행 상황</h2>
+            <div id="pipeline-live" class="pipeline-live">
+              <div class="trace-empty">질문을 보내면 현재 단계와 진행 상황이 여기에 표시됩니다.</div>
+            </div>
+          </div>
+          <div class="stack">
+            <h2>검색 지표</h2>
+            <div id="search-metrics" class="metric-grid">
+              <div class="trace-empty">질문을 보내면 BM25, Vector, Hybrid 점수가 표시됩니다.</div>
+            </div>
+          </div>
+          <div class="stack">
+            <h2>요약</h2>
+            <div id="pipeline-summary" class="summary-grid">
+              <div class="trace-empty">아직 실행 기록이 없습니다.</div>
+            </div>
+          </div>
+          <div class="stack">
+            <h2>처리 타임라인</h2>
+            <div id="pipeline-trace" class="trace-list">
+              <div class="trace-empty">아직 실행 기록이 없습니다.</div>
+            </div>
+          </div>
+        </div>
       </aside>
-    </main>
+    </section>
   </div>
 
   <script>
-    const state = {
-      sessionId: (window.crypto && window.crypto.randomUUID && window.crypto.randomUUID()) || ("session-" + Date.now()),
-      mode: "ops",
-      generating: false,
-      isComposing: false,
-      controller: null,
-      lastQuery: "",
-      lastAnswer: "",
-      payload: null,
-      traceEvents: [],
-      libraryAvailable: false,
-      libraryItems: [],
-      filteredLibraryItems: [],
-      libraryTotalBooks: 0,
-      libraryTotalSections: 0,
-      selectedLibraryItem: null
-    };
+    const shellEl = document.querySelector(".shell");
+    const messagesEl = document.getElementById("messages");
+    const composerEl = document.getElementById("composer");
+    const sendBtn = document.getElementById("send-btn");
+    const stopBtn = document.getElementById("stop-btn");
+    const resetBtn = document.getElementById("reset-btn");
+    const regenerateBtn = document.getElementById("regenerate-btn");
+    const statusDotEl = document.getElementById("status-dot");
+    const statusTextEl = document.getElementById("status-text");
+    const statusDetailEl = document.getElementById("status-detail");
+    const sessionIdEl = document.getElementById("session-id");
+    const sourceTagsPanelEl = document.getElementById("source-tags-panel");
+    const sourceListEl = document.getElementById("source-list");
+    const documentMetaEl = document.getElementById("document-meta");
+    const documentEmptyEl = document.getElementById("document-empty");
+    const documentFrameEl = document.getElementById("document-frame");
+    const documentOpenNewEl = document.getElementById("document-open-new");
+    const rewrittenQueryEl = document.getElementById("rewritten-query");
+    const sessionContextEl = document.getElementById("session-context");
+    const warningsEl = document.getElementById("warnings");
+    const pipelineLiveEl = document.getElementById("pipeline-live");
+    const searchMetricsEl = document.getElementById("search-metrics");
+    const pipelineSummaryEl = document.getElementById("pipeline-summary");
+    const pipelineTraceEl = document.getElementById("pipeline-trace");
+    const modeButtons = Array.from(document.querySelectorAll("[data-mode]"));
+    const inspectorToggleBtn = document.getElementById("inspector-toggle-btn");
+    const inspectorTabButtons = Array.from(document.querySelectorAll("[data-inspector-tab]"));
+    const inspectorPages = Array.from(document.querySelectorAll("[data-inspector-page]"));
+
+    let sessionId = crypto.randomUUID();
+    let currentMode = "ops";
+    let currentController = null;
+    let currentTyper = null;
+    let statusPulseTimer = null;
+    let statusBaseText = "준비됨";
+    let traceEvents = [];
+    let generating = false;
+    let lastQuery = "";
+    let isComposing = false;
+    let inspectorVisible = true;
+    let latestPayload = null;
+
+    const LIVE_STAGE_ORDER = [
+      "route_query",
+      "retrieval",
+      "context_assembly",
+      "prompt_build",
+      "llm_generate",
+      "citation_finalize",
+    ];
 
     const PIPELINE_LABELS = {
-      normalize: "Normalize",
-      rewrite: "Rewrite",
-      retrieve: "Retrieve",
-      rerank: "Rerank",
-      selection: "Selection",
-      answer: "Answer",
-      citation_replay: "Replay"
+      route_query: "질문 라우팅",
+      normalize_query: "질문 정리",
+      rewrite_query: "질문 재구성",
+      retrieval: "근거 검색",
+      bm25_search: "키워드 검색",
+      vector_search: "의미 검색",
+      fusion: "결과 합치기",
+      retrieval_total: "검색 전체",
+      context_assembly: "근거 조립",
+      prompt_build: "프롬프트 구성",
+      llm_generate: "LLM 응답 생성",
+      llm_generate_total: "LLM 응답 생성",
+      citation_finalize: "citation 정리",
+      total: "총 응답 시간",
     };
 
-    const elements = {};
+    sessionIdEl.textContent = sessionId.slice(0, 8);
 
-    function bootstrapPlatformLayout() {
-      Object.assign(elements, {
-        globalStatus: document.getElementById("global-status"),
-        activeModeChip: document.getElementById("active-mode-chip"),
-        sessionChip: document.getElementById("session-chip"),
-        workspaceMode: document.getElementById("workspace-mode"),
-        workspaceTopic: document.getElementById("workspace-topic"),
-        workspaceTopicDuplicate: document.getElementById("workspace-topic-duplicate"),
-        workspaceResponseKind: document.getElementById("workspace-response-kind"),
-        workspaceResponseKindDuplicate: document.getElementById("workspace-response-kind-duplicate"),
-        workspaceCitationCount: document.getElementById("workspace-citation-count"),
-        workspaceCitationCountDuplicate: document.getElementById("workspace-citation-count-duplicate"),
-        workspaceStage: document.getElementById("workspace-stage"),
-        workspaceStageDetail: document.getElementById("workspace-stage-detail"),
-        workspaceStageDetailChip: document.getElementById("workspace-stage-detail-chip"),
-        historySize: document.getElementById("history-size"),
-        chatLog: document.getElementById("chat-log"),
-        suggestionList: document.getElementById("suggestion-list"),
-        sourceSummary: document.getElementById("source-summary"),
-        sourceTags: document.getElementById("source-tags"),
-        sourceList: document.getElementById("source-list"),
-        documentMeta: document.getElementById("document-meta"),
-        documentExcerpt: document.getElementById("document-excerpt"),
-        documentFrame: document.getElementById("document-frame"),
-        documentStatus: document.getElementById("document-status"),
-        procedurePanel: document.getElementById("procedure-panel"),
-        procedureSummary: document.getElementById("procedure-summary"),
-        procedureGoal: document.getElementById("procedure-goal"),
-        procedureCurrentStep: document.getElementById("procedure-current-step"),
-        procedureSteps: document.getElementById("procedure-steps"),
-        procedureCommand: document.getElementById("procedure-command"),
-        procedureReferences: document.getElementById("procedure-references"),
-        pipelineSummary: document.getElementById("pipeline-summary"),
-        pipelineTrace: document.getElementById("pipeline-trace"),
-        copilotStatusText: document.getElementById("copilot-status-text"),
-        sessionSummaryCopy: document.getElementById("session-summary-copy"),
-        librarySearch: document.getElementById("library-search"),
-        libraryStatus: document.getElementById("library-status"),
-        libraryList: document.getElementById("library-list"),
-        composer: document.getElementById("composer"),
-        sendBtn: document.getElementById("send-btn"),
-        stopBtn: document.getElementById("stop-btn"),
-        clearBtn: document.getElementById("clear-btn"),
-        copyLastBtn: document.getElementById("copy-last-btn"),
-        resetBtn: document.getElementById("reset-btn"),
-        regenerateBtn: document.getElementById("regenerate-btn"),
-        openDocBtn: document.getElementById("open-doc-btn"),
-        modeButtons: Array.from(document.querySelectorAll("[data-mode]")),
-        sampleButtons: Array.from(document.querySelectorAll("[data-query]"))
-      });
-
-      bindModeButtons();
-      bindSampleQueryButtons();
-      bindComposer();
-      bindActionButtons();
-      bindLibrarySearch();
-      renderLibraryRail([]);
-      renderEmptyState();
-      updateSessionChip();
-      loadLibrary();
-      setStatus("Ready", "ok", "질문을 보내면 스트리밍 상태가 여기에 표시됩니다.");
-    }
-
-    function bindModeButtons() {
-      elements.modeButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          state.mode = button.dataset.mode || "ops";
-          elements.modeButtons.forEach((item) => item.classList.toggle("is-active", item === button));
-          elements.activeModeChip.textContent = state.mode;
-          elements.workspaceMode.textContent = state.mode;
-        });
-      });
-    }
-
-    function bindSampleQueryButtons() {
-      elements.sampleButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          const suggestedQuery = button.dataset.query || "";
-          elements.composer.value = suggestedQuery;
-          sendMessage({ query: suggestedQuery });
-        });
-      });
-    }
-
-    function bindLibrarySearch() {
-      elements.librarySearch.addEventListener("input", () => {
-        applyLibraryFilter(elements.librarySearch.value || "");
-      });
-    }
-
-    function bindComposer() {
-      elements.composer.addEventListener("compositionstart", () => {
-        state.isComposing = true;
-      });
-
-      elements.composer.addEventListener("compositionend", () => {
-        state.isComposing = false;
-      });
-
-      elements.composer.addEventListener("keydown", (event) => {
-        if (event.key !== "Enter" || event.shiftKey) {
-          return;
-        }
-        if (event.isComposing || event.keyCode === 229 || state.isComposing) {
-          return;
-        }
-        event.preventDefault();
-        sendMessage({ query: elements.composer.value });
-      });
-    }
-
-    function bindActionButtons() {
-      elements.sendBtn.addEventListener("click", () => {
-        sendMessage({ query: elements.composer.value });
-      });
-
-      elements.stopBtn.addEventListener("click", () => {
-        if (state.controller) {
-          state.controller.abort();
-        }
-      });
-
-      elements.clearBtn.addEventListener("click", () => {
-        elements.composer.value = "";
-        elements.composer.focus();
-      });
-
-      elements.copyLastBtn.addEventListener("click", async () => {
-        if (!state.lastAnswer) {
-          return;
-        }
-        await navigator.clipboard.writeText(state.lastAnswer);
-        setStatus("Copied", "ok", "마지막 답변을 클립보드에 복사했습니다.");
-      });
-
-      elements.resetBtn.addEventListener("click", resetSession);
-      elements.regenerateBtn.addEventListener("click", () => {
-        if (!state.lastQuery) {
-          return;
-        }
-        sendMessage({ query: state.lastQuery, regenerate: true });
-      });
-      elements.openDocBtn.addEventListener("click", () => {
-        openPreferredDocument();
-      });
-    }
-
-    async function loadLibrary() {
-      elements.libraryStatus.textContent = "Loading library metadata...";
-      try {
-        const response = await fetch("/api/library", {
-          headers: { Accept: "application/json" }
-        });
-        if (!response.ok) {
-          throw new Error("library request failed");
-        }
-        const payload = await response.json();
-        state.libraryAvailable = Boolean(payload.available);
-        state.libraryItems = Array.isArray(payload.items) ? payload.items : [];
-        state.filteredLibraryItems = state.libraryItems.slice();
-        state.libraryTotalBooks = Number(payload.total_books || state.libraryItems.length || 0);
-        state.libraryTotalSections = Number(payload.total_sections || 0);
-        applyLibraryFilter(elements.librarySearch.value || "");
-        renderLibraryFallbackDocument();
-      } catch (error) {
-        state.libraryAvailable = false;
-        state.libraryItems = [];
-        state.filteredLibraryItems = [];
-        state.libraryTotalBooks = 0;
-        state.libraryTotalSections = 0;
-        state.selectedLibraryItem = null;
-        renderLibraryRail([]);
-        updateLibraryStatus(String(error && error.message ? error.message : ""));
+    function formatDuration(value) {
+      if (typeof value !== "number" || !Number.isFinite(value)) return "";
+      if (value >= 1000) {
+        return `${(value / 1000).toFixed(2)}s`;
       }
+      return `${Math.round(value)}ms`;
     }
 
-    function applyLibraryFilter(rawQuery) {
-      const query = String(rawQuery || "").trim().toLowerCase();
-      state.filteredLibraryItems = state.libraryItems.filter((item) => {
-        if (!query) {
-          return true;
-        }
-        const sampleSections = Array.isArray(item.sample_sections) ? item.sample_sections : [];
-        const haystack = [
-          item.book_title || "",
-          item.book_slug || "",
-          sampleSections.join(" ")
-        ].join(" ").toLowerCase();
-        return haystack.includes(query);
-      });
-      renderLibraryRail(state.filteredLibraryItems);
-      updateLibraryStatus();
+    function stopStatusPulse() {
+      if (statusPulseTimer) {
+        clearInterval(statusPulseTimer);
+        statusPulseTimer = null;
+      }
+      statusDotEl.classList.remove("live");
+      statusTextEl.textContent = statusBaseText;
     }
 
-    function updateLibraryStatus(errorMessage = "") {
-      if (!state.libraryAvailable && !state.libraryItems.length) {
-        elements.libraryStatus.textContent = errorMessage
-          ? "Library metadata is unavailable right now."
-          : "Library is empty until normalized_docs.jsonl is ready.";
-        return;
-      }
-
-      if (!state.filteredLibraryItems.length) {
-        elements.libraryStatus.textContent = "No library matches the current filter.";
-        return;
-      }
-
-      const visibleCount = state.filteredLibraryItems.length;
-      const totalBooks = state.libraryTotalBooks || state.libraryItems.length;
-      const totalSections = state.libraryTotalSections || 0;
-      const filteredLabel = String(elements.librarySearch.value || "").trim() ? "filtered" : "available";
-      elements.libraryStatus.textContent = visibleCount + " of " + totalBooks + " books " + filteredLabel + " · " + totalSections + " sections indexed";
+    function startStatusPulse() {
+      stopStatusPulse();
+      let dots = 0;
+      statusDotEl.classList.add("live");
+      statusPulseTimer = setInterval(() => {
+        dots = (dots + 1) % 4;
+        statusTextEl.textContent = `${statusBaseText}${".".repeat(dots)}`;
+      }, 420);
     }
 
-    function renderLibraryRail(items) {
-      elements.libraryList.innerHTML = "";
-      if (!items.length) {
-        const empty = document.createElement("li");
-        empty.className = "library-item";
-        empty.innerHTML = [
-          "<button type=\"button\" disabled>",
-          "<div class=\"library-item-title\">No library results</div>",
-          "<div class=\"library-item-meta\">Try another filter or finish moving the artifacts.</div>",
-          "</button>"
-        ].join("");
-        elements.libraryList.appendChild(empty);
-        return;
-      }
-
-      items.forEach((item) => {
-        const card = document.createElement("li");
-        card.className = "library-item";
-        if (state.selectedLibraryItem && state.selectedLibraryItem.book_slug === item.book_slug) {
-          card.classList.add("is-selected");
-        }
-
-        const button = document.createElement("button");
-        button.type = "button";
-        const sampleSections = Array.isArray(item.sample_sections) ? item.sample_sections.filter(Boolean).slice(0, 3) : [];
-        button.innerHTML = [
-          "<div class=\"library-item-title\">" + escapeHtml(item.book_title || item.book_slug || "Untitled document") + "</div>",
-          "<div class=\"library-item-meta\">" + escapeHtml(item.book_slug || "-") + " · " + escapeHtml(String(item.section_count || 0)) + " sections" + (item.high_value ? " · high value" : "") + "</div>",
-          sampleSections.length ? "<div class=\"library-item-sections\">" + escapeHtml(sampleSections.join(" / ")) + "</div>" : ""
-        ].join("");
-        button.addEventListener("click", () => {
-          openLibraryItemInPanel(item);
-        });
-        card.appendChild(button);
-        elements.libraryList.appendChild(card);
-      });
-    }
-
-    function openPreferredDocument() {
-      if (state.payload && Array.isArray(state.payload.citations) && state.payload.citations.length) {
-        openCitationInPanel(state.payload.citations[0]);
-        return;
-      }
-      const preferredItem = state.selectedLibraryItem || state.filteredLibraryItems[0] || state.libraryItems[0];
-      if (preferredItem) {
-        openLibraryItemInPanel(preferredItem);
-      }
-    }
-
-    function renderLibraryFallbackDocument() {
-      if (state.payload && Array.isArray(state.payload.citations) && state.payload.citations.length) {
-        return;
-      }
-      if (state.selectedLibraryItem) {
-        openLibraryItemInPanel(state.selectedLibraryItem);
-        return;
-      }
-      if (!elements.documentFrame.getAttribute("src")) {
-        const firstItem = state.filteredLibraryItems[0] || state.libraryItems[0];
-        if (firstItem) {
-          openLibraryItemInPanel(firstItem);
-        }
-      }
-    }
-
-    function openLibraryItemInPanel(item) {
-      if (!item) {
-        return;
-      }
-      const selectedItem = state.libraryItems.find((candidate) => candidate.book_slug === item.book_slug) || item;
-      state.selectedLibraryItem = selectedItem;
-      renderLibraryRail(state.filteredLibraryItems);
-
-      const sampleSections = Array.isArray(selectedItem.sample_sections) ? selectedItem.sample_sections.filter(Boolean) : [];
-      elements.documentMeta.innerHTML = [
-        "<strong>Document Library</strong>",
-        escapeHtml((selectedItem.book_title || selectedItem.book_slug || "book") + " · " + (selectedItem.book_slug || "-")),
-        "<span class=\"muted\">" + escapeHtml(String(selectedItem.section_count || 0)) + " sections" + (selectedItem.high_value ? " · high value" : "") + "</span>"
-      ].join("<br>");
-      elements.documentExcerpt.textContent = sampleSections.length
-        ? "Key sections: " + sampleSections.join(" / ")
-        : "Open the full document in the workspace viewer.";
-
-      const target = selectedItem.viewer_path || selectedItem.source_url || "";
-      if (target) {
-        elements.documentFrame.src = target;
+    function setStatus(text, { live = false, detail = "" } = {}) {
+      statusBaseText = text || "대기 중";
+      statusDetailEl.textContent = detail || " ";
+      if (live) {
+        startStatusPulse();
       } else {
-        elements.documentFrame.removeAttribute("src");
+        stopStatusPulse();
       }
-      elements.documentStatus.textContent = "Library document is open in the workspace viewer.";
     }
 
-    async function resetSession() {
-      if (state.generating && state.controller) {
-        state.controller.abort();
-      }
-      const response = await fetch("/api/reset", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: state.sessionId })
+    function setGenerating(next) {
+      generating = next;
+      sendBtn.disabled = next;
+      resetBtn.disabled = next;
+      regenerateBtn.disabled = next || !lastQuery;
+      stopBtn.disabled = !next;
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      modeButtons.forEach((button) => {
+        button.classList.toggle("active", button.dataset.mode === mode);
       });
-      const payload = await response.json();
-      state.sessionId = payload.session_id;
-      state.payload = null;
-      state.traceEvents = [];
-      state.lastQuery = "";
-      state.lastAnswer = "";
-      updateSessionChip();
-      renderEmptyState();
-      setStatus("Ready", "ok", "세션을 초기화했습니다.");
     }
 
-    async function sendMessage({ query, regenerate = false }) {
-      const trimmed = String(query || "").trim();
-      if (!trimmed || state.generating) {
+    function setInspectorVisible(nextVisible) {
+      inspectorVisible = nextVisible;
+      shellEl.classList.toggle("inspector-hidden", !nextVisible);
+      inspectorToggleBtn.textContent = nextVisible ? "출처 패널 닫기" : "출처 패널 열기";
+    }
+
+    function setInspectorTab(tab) {
+      inspectorTabButtons.forEach((button) => {
+        button.classList.toggle("active", button.dataset.inspectorTab === tab);
+      });
+      inspectorPages.forEach((page) => {
+        page.classList.toggle("active", page.dataset.inspectorPage === tab);
+      });
+    }
+
+    function humanizePipelineKey(key) {
+      return PIPELINE_LABELS[key] || key;
+    }
+
+    function summarizeTraceMeta(meta) {
+      if (!meta || !Object.keys(meta).length) return "";
+      const preferred = ["provider", "model", "top_k", "selected", "hits", "citation_count"];
+      const lines = [];
+      preferred.forEach((key) => {
+        if (!(key in meta)) return;
+        const value = meta[key];
+        lines.push(`${key}: ${Array.isArray(value) ? value.join(", ") : String(value)}`);
+      });
+      Object.keys(meta).forEach((key) => {
+        if (preferred.includes(key)) return;
+        const value = meta[key];
+        lines.push(`${key}: ${Array.isArray(value) ? value.join(", ") : String(value)}`);
+      });
+      return lines.join("\n");
+    }
+
+    function resetPipelineTrace({ preserveDocument = false } = {}) {
+      traceEvents = [];
+      latestPayload = null;
+      sourceTagsPanelEl.innerHTML = '<div class="trace-empty">아직 표시할 출처 태그가 없습니다.</div>';
+      sourceListEl.innerHTML = '<div class="trace-empty">답변이 생성되면 관련 근거가 여기에 정리됩니다.</div>';
+      if (!preserveDocument) {
+      documentMetaEl.textContent = "근거 카드를 누르면 같은 화면에서 원문을 바로 확인할 수 있습니다.";
+      documentOpenNewEl.href = "#";
+      documentFrameEl.classList.remove("active");
+      documentFrameEl.removeAttribute("src");
+      documentEmptyEl.style.display = "";
+      }
+      pipelineLiveEl.innerHTML = '<div class="trace-empty">질문을 보내면 현재 단계와 진행 상황이 여기에 표시됩니다.</div>';
+      searchMetricsEl.innerHTML = '<div class="trace-empty">질문을 보내면 BM25, Vector, Hybrid 점수가 표시됩니다.</div>';
+      pipelineSummaryEl.innerHTML = '<div class="trace-empty">아직 실행 기록이 없습니다.</div>';
+      pipelineTraceEl.innerHTML = '<div class="trace-empty">아직 실행 기록이 없습니다.</div>';
+    }
+
+    function fallbackBookLabel(bookSlug) {
+      const normalized = String(bookSlug || "").trim();
+      if (!normalized) return "문서";
+      return normalized
+        .split(/[_-]+/g)
+        .filter(Boolean)
+        .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+        .join(" ");
+    }
+
+    function displayBookLabel(citationLike) {
+      return citationLike.book_title || fallbackBookLabel(citationLike.book_slug);
+    }
+
+    function displaySectionLabel(citationLike) {
+      return citationLike.section || citationLike.anchor || `근거 ${citationLike.index}`;
+    }
+
+    function collectSourceTags(citations) {
+      const unique = [];
+      const seen = new Set();
+      (citations || []).forEach((citation) => {
+        const section = (citation.section || citation.anchor || "").trim();
+        const key = `${citation.book_slug}::${section}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        unique.push({
+          bookSlug: citation.book_slug,
+          book_title: citation.book_title,
+          section,
+          href: citation.href,
+          index: citation.index,
+        });
+      });
+      return unique.slice(0, 4);
+    }
+
+    function createSourceTag(tag, { interactive = false } = {}) {
+      const node = document.createElement(interactive ? "button" : "div");
+      node.className = "source-tag";
+      if (interactive) {
+        node.type = "button";
+      }
+
+      const strong = document.createElement("strong");
+      strong.textContent = displayBookLabel(tag);
+
+      const span = document.createElement("span");
+      span.textContent = displaySectionLabel(tag);
+      span.textContent = tag.section || `근거 ${tag.index}`;
+
+      span.textContent = displaySectionLabel(tag);
+      node.append(strong, span);
+      return node;
+    }
+
+    function renderSourceTags(target, citations, { interactive = false } = {}) {
+      const tags = collectSourceTags(citations);
+      if (!tags.length) {
+        target.innerHTML = '<div class="trace-empty">아직 표시할 출처 태그가 없습니다.</div>';
         return;
       }
 
-      state.lastQuery = trimmed;
-      state.traceEvents = [];
-      state.controller = new AbortController();
-      state.generating = true;
-      syncControls();
-      setStatus("Generating", "busy", "근거를 찾고 답변을 조합하는 중입니다.");
+      target.innerHTML = "";
+      const strip = document.createElement("div");
+      strip.className = "source-tag-strip";
+
+      tags.forEach((tag) => {
+        const node = createSourceTag(tag, { interactive });
+        if (interactive) {
+          node.addEventListener("click", () => {
+            const citation = (citations || []).find((item) => item.href === tag.href) || citations[0];
+            if (citation) {
+              openCitationInPanel(citation);
+            }
+          });
+        }
+        strip.appendChild(node);
+      });
+      target.appendChild(strip);
+    }
+
+    function openCitationInPanel(citation) {
+      if (!citation || !citation.href) return;
+      documentMetaEl.textContent = `${displayBookLabel(citation)} 쨌 ${displaySectionLabel(citation)}`;
+      documentMetaEl.textContent = `${citation.book_slug} · ${citation.section || citation.anchor || `근거 ${citation.index}`}`;
+      documentMetaEl.textContent = `${displayBookLabel(citation)} 쨌 ${displaySectionLabel(citation)}`;
+      documentMetaEl.textContent = `${displayBookLabel(citation)} - ${displaySectionLabel(citation)}`;
+      documentOpenNewEl.href = citation.href;
+      documentEmptyEl.style.display = "none";
+      documentFrameEl.classList.add("active");
+      documentFrameEl.src = citation.href;
+      setInspectorVisible(true);
+      setInspectorTab("document");
+    }
+
+    function renderSourcesPanel(payload) {
+      const citations = Array.isArray(payload && payload.citations) ? payload.citations : [];
+      renderSourceTags(sourceTagsPanelEl, citations, { interactive: true });
+
+      if (!citations.length) {
+        sourceListEl.innerHTML = '<div class="trace-empty">답변이 생성되면 관련 근거가 여기에 정리됩니다.</div>';
+        return;
+      }
+
+      sourceListEl.innerHTML = "";
+      citations.forEach((citation) => {
+        const card = document.createElement("div");
+        card.className = "citation";
+
+        const source = document.createElement("div");
+        source.className = "citation-source";
+        source.textContent = displayBookLabel(citation);
+
+        const link = document.createElement("a");
+        link.href = citation.href;
+        link.textContent = `[${citation.index}] ${displaySectionLabel(citation)}`;
+        link.textContent = `[${citation.index}] ${citation.section || citation.anchor || "문서 열기"}`;
+        link.textContent = `[${citation.index}] ${displaySectionLabel(citation)}`;
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
+          openCitationInPanel(citation);
+        });
+
+        const excerpt = document.createElement("p");
+        excerpt.textContent = citation.excerpt;
+
+        card.append(source, link, excerpt);
+        sourceListEl.appendChild(card);
+      });
+    }
+
+    function renderSearchMetrics(retrievalTrace) {
+      const metrics = retrievalTrace && retrievalTrace.metrics ? retrievalTrace.metrics : null;
+      if (!metrics) {
+        searchMetricsEl.innerHTML = '<div class="trace-empty">질문을 보내면 BM25, Vector, Hybrid 점수가 표시됩니다.</div>';
+        return;
+      }
+
+      const cards = [
+        {
+          label: "BM25",
+          value: metrics.bm25 ? metrics.bm25.count : "-",
+          detail: metrics.bm25 && metrics.bm25.top_score != null ? `top score ${metrics.bm25.top_score}` : "검색 결과 없음",
+        },
+        {
+          label: "Vector",
+          value: metrics.vector ? metrics.vector.count : "-",
+          detail: metrics.vector && metrics.vector.top_score != null ? `top score ${metrics.vector.top_score}` : "검색 결과 없음",
+        },
+        {
+          label: "Hybrid",
+          value: metrics.hybrid ? metrics.hybrid.count : "-",
+          detail: metrics.hybrid && metrics.hybrid.top_score != null ? `top score ${metrics.hybrid.top_score}` : "검색 결과 없음",
+          className: "metric-hybrid",
+        },
+        {
+          label: "Selected",
+          value: retrievalTrace.selection && retrievalTrace.selection.selected_hits ? retrievalTrace.selection.selected_hits.length : 0,
+          detail: "최종 citation 조립에 사용된 근거 수",
+          className: "metric-selected",
+        },
+      ];
+
+      searchMetricsEl.innerHTML = "";
+      cards.forEach((card) => {
+        const node = document.createElement("div");
+        node.className = `metric-card ${card.className || ""}`.trim();
+
+        const label = document.createElement("div");
+        label.className = "metric-label";
+        label.textContent = card.label;
+
+        const value = document.createElement("div");
+        value.className = "metric-value";
+        value.textContent = card.value;
+
+        const detail = document.createElement("div");
+        detail.className = "metric-detail";
+        detail.textContent = card.detail;
+
+        node.append(label, value, detail);
+        searchMetricsEl.appendChild(node);
+      });
+    }
+
+    function renderPendingCard(target, event) {
+      const stageState = new Map();
+      traceEvents.forEach((traceEvent) => {
+        if (!LIVE_STAGE_ORDER.includes(traceEvent.step)) return;
+        const current = stageState.get(traceEvent.step);
+        if (!current || traceEvent.status === "running" || current.status !== "done") {
+          stageState.set(traceEvent.step, traceEvent);
+        }
+      });
+
+      const completedCount = LIVE_STAGE_ORDER.filter((step) => stageState.get(step)?.status === "done").length;
+      const activeStage = stageState.get(event.step) || event;
+      const stageIndex = Math.max(LIVE_STAGE_ORDER.indexOf(activeStage.step), 0);
+      const progress = Math.max(
+        12,
+        Math.round(((completedCount + (activeStage.status === "running" ? 0.5 : 0)) / LIVE_STAGE_ORDER.length) * 100)
+      );
+
+      target.innerHTML = "";
+
+      const panel = document.createElement("div");
+      panel.className = "pending-panel";
+
+      const kicker = document.createElement("div");
+      kicker.className = "pending-kicker";
+      kicker.textContent = "Generating";
+
+      const stage = document.createElement("div");
+      stage.className = `pending-stage ${activeStage.status === "running" ? "live" : ""}`.trim();
+      stage.textContent = activeStage.label || humanizePipelineKey(activeStage.step) || "처리 중";
+
+      const detail = document.createElement("div");
+      detail.className = "pending-detail";
+      detail.textContent = activeStage.detail || "질문을 해석하고 답변 근거를 준비하고 있습니다.";
+
+      const rail = document.createElement("div");
+      rail.className = "progress-rail";
+
+      const fill = document.createElement("div");
+      fill.className = `progress-fill ${activeStage.status === "running" ? "live" : ""}`.trim();
+      fill.style.width = `${progress}%`;
+      rail.appendChild(fill);
+
+      const strip = document.createElement("div");
+      strip.className = "stage-strip";
+      LIVE_STAGE_ORDER.forEach((stepKey, index) => {
+        const chip = document.createElement("div");
+        const stageEvent = stageState.get(stepKey);
+        let statusClass = "pending";
+        if (stageEvent?.status === "done") {
+          statusClass = "done";
+        } else if (stepKey === activeStage.step && activeStage.status === "running") {
+          statusClass = "running";
+        } else if (index < stageIndex && !stageEvent) {
+          statusClass = "done";
+        }
+        chip.className = `stage-chip ${statusClass}`;
+        chip.textContent = humanizePipelineKey(stepKey);
+        strip.appendChild(chip);
+      });
+
+      const metrics = document.createElement("div");
+      metrics.className = "pending-metrics";
+
+      const completedCard = document.createElement("div");
+      completedCard.className = "metric-card metric-selected";
+      completedCard.innerHTML = `<div class="metric-label">Completed</div><div class="metric-value">${completedCount}/${LIVE_STAGE_ORDER.length}</div><div class="metric-detail">지금까지 완료된 처리 단계</div>`;
+
+      const currentCard = document.createElement("div");
+      currentCard.className = "metric-card metric-hybrid";
+      currentCard.innerHTML = `<div class="metric-label">Now</div><div class="metric-value">${stageIndex + 1}</div><div class="metric-detail">${humanizePipelineKey(activeStage.step)}</div>`;
+
+      metrics.append(completedCard, currentCard);
+      panel.append(kicker, stage, detail, rail, strip, metrics);
+      target.appendChild(panel);
+    }
+
+    function renderPipelineSummary(trace) {
+      const timings = trace && trace.timings_ms ? trace.timings_ms : null;
+      if (!timings || !Object.keys(timings).length) {
+        pipelineSummaryEl.innerHTML = '<div class="trace-empty">아직 실행 기록이 없습니다.</div>';
+        return;
+      }
+
+      const bottleneckEntry = Object.entries(timings)
+        .filter(([key]) => key !== "total")
+        .sort((a, b) => (b[1] || 0) - (a[1] || 0))[0];
+
+      const cards = [
+        {
+          label: "총 응답",
+          value: formatDuration(timings.total || 0),
+          detail: "질문 입력부터 답변 완료까지",
+        },
+        {
+          label: "검색",
+          value: formatDuration(timings.retrieval_total || 0),
+          detail: `BM25 ${formatDuration(timings.bm25_search || 0)} · Vector ${formatDuration(timings.vector_search || 0)}`,
+        },
+        {
+          label: "LLM 생성",
+          value: formatDuration(timings.llm_generate_total || 0),
+          detail: "모델 응답 생성 시간",
+        },
+        {
+          label: "병목",
+          value: bottleneckEntry ? formatDuration(bottleneckEntry[1] || 0) : "-",
+          detail: bottleneckEntry ? humanizePipelineKey(bottleneckEntry[0]) : "아직 계산 전",
+          className: "bottleneck",
+        },
+      ];
+
+      pipelineSummaryEl.innerHTML = "";
+      cards.forEach((card) => {
+        const node = document.createElement("div");
+        node.className = `summary-card ${card.className || ""}`.trim();
+
+        const kicker = document.createElement("div");
+        kicker.className = "summary-kicker";
+        kicker.textContent = card.label;
+
+        const value = document.createElement("div");
+        value.className = "summary-value";
+        value.textContent = card.value;
+
+        const detail = document.createElement("div");
+        detail.className = "summary-detail";
+        detail.textContent = card.detail;
+
+        node.append(kicker, value, detail);
+        pipelineSummaryEl.appendChild(node);
+      });
+    }
+
+    function renderPipelineTrace() {
+      if (!traceEvents.length) {
+        pipelineTraceEl.innerHTML = '<div class="trace-empty">아직 실행 기록이 없습니다.</div>';
+        return;
+      }
+
+      pipelineTraceEl.innerHTML = "";
+      traceEvents.forEach((event, index) => {
+        const card = document.createElement("div");
+        card.className = `trace-item ${event.status || "info"}`;
+
+        const headline = document.createElement("div");
+        headline.className = "trace-headline";
+
+        const step = document.createElement("div");
+        step.className = "trace-step";
+        step.textContent = String(index + 1).padStart(2, "0");
+
+        const title = document.createElement("div");
+        title.className = "trace-title";
+
+        const label = document.createElement("span");
+        label.textContent = event.label || humanizePipelineKey(event.step) || "trace";
+
+        const duration = document.createElement("span");
+        duration.className = "trace-duration";
+        duration.textContent = event.duration_ms ? formatDuration(event.duration_ms) : "";
+
+        title.append(label, duration);
+        headline.append(step, title);
+        card.appendChild(headline);
+
+        if (event.detail) {
+          const detail = document.createElement("div");
+          detail.className = "trace-detail";
+          detail.textContent = event.detail;
+          card.appendChild(detail);
+        }
+
+        const metaParts = [];
+        if (typeof event.timestamp_ms === "number") {
+          metaParts.push(`t+${formatDuration(event.timestamp_ms)}`);
+        }
+        if (event.meta && Object.keys(event.meta).length) {
+          metaParts.push(summarizeTraceMeta(event.meta));
+        }
+        if (metaParts.length) {
+          const meta = document.createElement("div");
+          meta.className = "trace-meta";
+          meta.textContent = metaParts.join(" · ");
+          card.appendChild(meta);
+        }
+
+        pipelineTraceEl.appendChild(card);
+      });
+      pipelineTraceEl.scrollTop = pipelineTraceEl.scrollHeight;
+    }
+
+    function appendTraceEvent(event) {
+      traceEvents.push(event);
+      renderPipelineTrace();
+      const detailParts = [];
+      if (event.detail) detailParts.push(event.detail);
+      if (event.duration_ms) detailParts.push(formatDuration(event.duration_ms));
+      setStatus(event.label || "처리 중", {
+        live: event.status === "running",
+        detail: detailParts.join(" · "),
+      });
+    }
+
+    function appendInlineMarkup(target, text) {
+      const tokens = (text || "").split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
+      tokens.forEach((token) => {
+        if (!token) return;
+        if (token.startsWith("`") && token.endsWith("`") && token.length >= 2) {
+          const code = document.createElement("code");
+          code.className = "inline-code";
+          code.textContent = token.slice(1, -1);
+          target.appendChild(code);
+          return;
+        }
+        if (token.startsWith("**") && token.endsWith("**") && token.length >= 4) {
+          const strong = document.createElement("strong");
+          strong.textContent = token.slice(2, -2);
+          target.appendChild(strong);
+          return;
+        }
+        target.appendChild(document.createTextNode(token));
+      });
+    }
+
+    function createParagraph(text) {
+      const paragraph = document.createElement("p");
+      const lines = (text || "").split("\n");
+      lines.forEach((line, index) => {
+        if (index > 0) paragraph.appendChild(document.createElement("br"));
+        appendInlineMarkup(paragraph, line);
+      });
+      return paragraph;
+    }
+
+    async function copyCodeToClipboard(text, button) {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const helper = document.createElement("textarea");
+          helper.value = text;
+          helper.setAttribute("readonly", "true");
+          helper.style.position = "fixed";
+          helper.style.opacity = "0";
+          document.body.appendChild(helper);
+          helper.select();
+          document.execCommand("copy");
+          document.body.removeChild(helper);
+        }
+        const original = button.textContent;
+        button.textContent = "복사됨";
+        button.classList.add("copied");
+        window.setTimeout(() => {
+          button.textContent = original;
+          button.classList.remove("copied");
+        }, 1400);
+      } catch (error) {
+        button.textContent = "실패";
+        window.setTimeout(() => {
+          button.textContent = "복사";
+        }, 1400);
+      }
+    }
+
+    function createCodeBlock(code, language = "") {
+      const block = document.createElement("section");
+      block.className = "code-block";
+
+      const header = document.createElement("div");
+      header.className = "code-block-header";
+
+      const lang = document.createElement("span");
+      lang.className = "code-lang";
+      lang.textContent = language || "text";
+
+      const copyButton = document.createElement("button");
+      copyButton.type = "button";
+      copyButton.className = "code-copy";
+      copyButton.textContent = "복사";
+      copyButton.addEventListener("click", () => {
+        void copyCodeToClipboard(code, copyButton);
+      });
+
+      const pre = document.createElement("pre");
+      const codeEl = document.createElement("code");
+      codeEl.textContent = code;
+      pre.appendChild(codeEl);
+
+      header.append(lang, copyButton);
+      block.append(header, pre);
+      return block;
+    }
+
+    function renderMarkdownInto(element, text) {
+      element.innerHTML = "";
+      const fragment = document.createDocumentFragment();
+      const lines = (text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+      let paragraphLines = [];
+      let listItems = [];
+      let listType = "";
+      let inCode = false;
+      let codeLines = [];
+      let codeLanguage = "";
+
+      function flushParagraph() {
+        if (!paragraphLines.length) return;
+        fragment.appendChild(createParagraph(paragraphLines.join("\n")));
+        paragraphLines = [];
+      }
+
+      function flushList() {
+        if (!listItems.length) return;
+        const list = document.createElement(listType === "ol" ? "ol" : "ul");
+        listItems.forEach((item) => {
+          const li = document.createElement("li");
+          appendInlineMarkup(li, item);
+          list.appendChild(li);
+        });
+        fragment.appendChild(list);
+        listItems = [];
+        listType = "";
+      }
+
+      function flushCode() {
+        fragment.appendChild(createCodeBlock(codeLines.join("\n"), codeLanguage));
+        codeLines = [];
+        codeLanguage = "";
+      }
+
+      lines.forEach((line) => {
+        const fence = line.match(/^```([\w.+-]*)\s*$/);
+        if (fence) {
+          if (inCode) {
+            flushCode();
+            inCode = false;
+          } else {
+            flushParagraph();
+            flushList();
+            inCode = true;
+            codeLanguage = fence[1] || "text";
+          }
+          return;
+        }
+
+        if (inCode) {
+          codeLines.push(line);
+          return;
+        }
+
+        const trimmed = line.trim();
+        if (!trimmed) {
+          flushParagraph();
+          flushList();
+          return;
+        }
+
+        const unorderedItem = trimmed.match(/^[-*]\s+(.*)$/);
+        const orderedItem = trimmed.match(/^\d+\.\s+(.*)$/);
+        if (unorderedItem || orderedItem) {
+          flushParagraph();
+          const nextListType = orderedItem ? "ol" : "ul";
+          if (listItems.length && listType !== nextListType) {
+            flushList();
+          }
+          listType = nextListType;
+          listItems.push((unorderedItem || orderedItem)[1]);
+          return;
+        }
+
+        flushList();
+        paragraphLines.push(trimmed);
+      });
+
+      flushParagraph();
+      flushList();
+      if (inCode) {
+        flushCode();
+      }
+
+      if (!fragment.childNodes.length) {
+        fragment.appendChild(createParagraph(text || ""));
+      }
+
+      element.appendChild(fragment);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function renderMessageBody(role, element, text) {
+      if (role === "assistant") {
+        renderAssistantBody(element, text);
+        return;
+      }
+      element.textContent = text;
+    }
+
+    function normalizeAssistantAnswer(text) {
+      let normalized = (text || "").trim();
+      normalized = normalized.replace(/^답변:\s*/u, "");
+      normalized = normalized.replace(/\n{2,}추가 가이드:\s*/gu, "\n\n**추가 가이드**\n");
+      normalized = normalized.replace(/\n{2,}추가 안내:\s*/gu, "\n\n**추가 안내**\n");
+      return normalized;
+    }
+
+    function renderAssistantBody(element, text) {
+      element.innerHTML = "";
+
+      const head = document.createElement("div");
+      head.className = "assistant-head";
+
+      const label = document.createElement("span");
+      label.className = "assistant-label";
+      label.textContent = "답변";
+      head.appendChild(label);
+
+      const copy = document.createElement("div");
+      copy.className = "assistant-copy";
+      renderMarkdownInto(copy, normalizeAssistantAnswer(text));
+
+      const firstParagraph = copy.querySelector("p");
+      if (firstParagraph) {
+        firstParagraph.classList.add("assistant-lead");
+      }
+
+      element.append(head, copy);
+    }
+
+    function renderEmptyState() {
+      messagesEl.innerHTML = `
+        <section class="empty-state">
+          <div class="empty-state-header">
+            <div class="eyebrow">OCP RAG Chatbot</div>
+            <h3>실답변을 바로 검증하세요</h3>
+            <p>운영 절차, 개념 설명, 멀티턴 follow-up을 던지면 citation과 pipeline trace까지 함께 확인할 수 있습니다. 발표 시연에서는 아래 샘플로 바로 시작하면 흐름이 매끄럽습니다.</p>
+          </div>
+          <div class="sample-grid">
+            <button type="button" class="sample-chip" data-sample-query="프로젝트가 Terminating 상태에서 안 없어질 때 finalizers 확인부터 정리까지 어떻게 해?">프로젝트 삭제 stuck 대응</button>
+            <button type="button" class="sample-chip" data-sample-query="특정 namespace에만 admin 권한 주려면 어떤 명령 써?">namespace 권한 부여</button>
+            <button type="button" class="sample-chip" data-sample-query="etcd 백업은 실제로 어떤 절차로 해?">etcd 백업 절차</button>
+            <button type="button" class="sample-chip" data-sample-query="오픈시프트와 쿠버네티스 차이를 세 줄로 설명해줘">OpenShift 개념 소개</button>
+          </div>
+        </section>
+      `;
+      messagesEl.querySelectorAll(".sample-chip").forEach((button) => {
+        button.addEventListener("click", () => {
+          composerEl.value = button.dataset.sampleQuery || "";
+          composerEl.focus();
+        });
+      });
+    }
+
+    function clearEmptyState() {
+      const emptyState = messagesEl.querySelector(".empty-state");
+      if (emptyState && messagesEl.children.length === 1) {
+        messagesEl.innerHTML = "";
+      }
+    }
+
+    function appendMessage(role, text) {
+      clearEmptyState();
+      const wrapper = document.createElement("article");
+      wrapper.className = `message ${role}`;
+      const body = document.createElement("div");
+      body.className = "body";
+      renderMessageBody(role, body, text);
+      wrapper.appendChild(body);
+      messagesEl.appendChild(wrapper);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return { wrapper, body };
+    }
+
+    function renderAssistantMeta(wrapper, payload) {
+      if (payload.citations.length) {
+        const sourceTags = document.createElement("div");
+        renderSourceTags(sourceTags, payload.citations, { interactive: true });
+        wrapper.appendChild(sourceTags);
+      }
+
+      const meta = document.createElement("div");
+      meta.className = "assistant-footer";
+
+      const modeChip = document.createElement("span");
+      modeChip.className = "meta-chip";
+      modeChip.textContent = payload.mode === "learn" ? "학습 모드" : "운영 모드";
+      modeChip.textContent = payload.mode === "learn" ? "학습 모드" : "운영 모드";
+
+      const citationChip = document.createElement("span");
+      citationChip.className = "meta-chip";
+      citationChip.textContent = payload.citations.length
+        ? `근거 ${payload.citations.length}개`
+        : "근거 없음";
+
+      citationChip.textContent = payload.citations.length
+        ? `출처 ${payload.citations.length}개`
+        : "출처 없음";
+      meta.append(modeChip, citationChip);
+
+      if (payload.warnings && payload.warnings.length) {
+        const warningChip = document.createElement("span");
+        warningChip.className = "meta-chip";
+        warningChip.textContent = `경고 ${payload.warnings.length}개`;
+        warningChip.textContent = `경고 ${payload.warnings.length}개`;
+        warningChip.textContent = `경고 ${payload.warnings.length}개`;
+        meta.appendChild(warningChip);
+      }
+
+      wrapper.appendChild(meta);
+
+      const suggestedQueries = Array.isArray(payload.suggested_queries)
+        ? payload.suggested_queries.filter(Boolean)
+        : [];
+      if (suggestedQueries.length) {
+        const title = document.createElement("div");
+        title.className = "suggestion-list-title";
+        title.textContent = "이어서 볼 질문";
+
+        const followupGrid = document.createElement("div");
+        followupGrid.className = "followup-grid";
+
+        suggestedQueries.forEach((suggestedQuery) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "followup-chip";
+          button.textContent = suggestedQuery;
+          button.addEventListener("click", () => {
+            if (currentController) return;
+            sendMessage({ query: suggestedQuery });
+          });
+          followupGrid.appendChild(button);
+        });
+
+        wrapper.append(title, followupGrid);
+      }
+
+      if (payload.citations.length) {
+        const title = document.createElement("div");
+        title.className = "citation-list-title";
+        title.textContent = "근거 문서";
+
+        const citations = document.createElement("div");
+        citations.className = "citations";
+        payload.citations.forEach((citation) => {
+          const card = document.createElement("div");
+          card.className = "citation";
+
+          const source = document.createElement("div");
+          source.className = "citation-source";
+          source.textContent = citation.book_slug;
+
+          const link = document.createElement("a");
+          link.href = citation.href;
+          const titleText = citation.section || citation.anchor || "문서 열기";
+          link.textContent = `[${citation.index}] ${titleText}`;
+          link.addEventListener("click", (event) => {
+            event.preventDefault();
+            openCitationInPanel(citation);
+          });
+
+          const excerpt = document.createElement("p");
+          excerpt.textContent = citation.excerpt;
+
+          card.append(source, link, excerpt);
+          citations.appendChild(card);
+        });
+        wrapper.append(title, citations);
+      }
+    }
+
+    function updateSidePanel(payload) {
+      latestPayload = payload;
+      rewrittenQueryEl.textContent = payload.rewritten_query || "-";
+      sessionContextEl.textContent = JSON.stringify(payload.context || {}, null, 2);
+      warningsEl.textContent = payload.warnings && payload.warnings.length
+        ? payload.warnings.join("\n")
+        : "없음";
+      renderSourcesPanel(payload);
+      renderSearchMetrics(payload.retrieval_trace || {});
+      renderPipelineSummary(payload.pipeline_trace || {});
+    }
+
+    async function typeText(element, text, role = "assistant") {
+      if (currentTyper) {
+        clearInterval(currentTyper);
+        currentTyper = null;
+      }
+      element.textContent = "";
+      let index = 0;
+      await new Promise((resolve) => {
+        currentTyper = setInterval(() => {
+          index += 4;
+          element.textContent = text.slice(0, index);
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+          if (index >= text.length) {
+            clearInterval(currentTyper);
+            currentTyper = null;
+            renderMessageBody(role, element, text);
+            resolve();
+          }
+        }, 12);
+      });
+    }
+
+    function renderPendingStage(element, event) {
+      renderPendingCard(element, event);
+      renderPendingCard(pipelineLiveEl, event);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    async function consumeChatStream(response, onEvent) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          onEvent(JSON.parse(line));
+        }
+
+        if (done) break;
+      }
+
+      if (buffer.trim()) {
+        onEvent(JSON.parse(buffer));
+      }
+    }
+
+    async function sendMessage({ query, regenerate = false } = {}) {
+      const trimmed = (query ?? composerEl.value).trim();
+      if (!trimmed && !regenerate) return;
 
       if (!regenerate) {
-        appendMessage({ role: "user", text: trimmed });
+        appendMessage("user", trimmed);
+        composerEl.value = "";
+        lastQuery = trimmed;
       }
-      elements.composer.value = "";
 
-      const pendingCard = renderPendingCard();
-      elements.chatLog.appendChild(pendingCard);
-      scrollMessagesToEnd();
+      const { wrapper, body } = appendMessage("assistant", "생성 중...");
+      resetPipelineTrace({ preserveDocument: true });
+      setGenerating(true);
+      setStatus("파이프라인 시작", { live: true, detail: "질문을 분석하고 있습니다" });
+      currentController = new AbortController();
 
       try {
         const response = await fetch("/api/chat/stream", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            session_id: state.sessionId,
+            session_id: sessionId,
             query: trimmed,
-            mode: state.mode,
-            regenerate: regenerate
+            mode: currentMode,
+            regenerate,
           }),
-          signal: state.controller.signal
+          signal: currentController.signal,
         });
-
-        if (!response.ok || !response.body) {
-          throw new Error("stream request failed");
+        if (!response.ok) {
+          const payload = await response.json();
+          throw new Error(payload.error || "응답 생성 실패");
         }
 
-        await consumeChatStream(response.body, {
-          onTrace(event) {
-            state.traceEvents.push(event);
-            renderSearchMetrics(state.payload, state.traceEvents);
-            updateTraceStage(event);
-          },
-          onResult(payload) {
-            state.payload = payload;
-            state.sessionId = payload.session_id || state.sessionId;
-            state.lastAnswer = normalizeAssistantAnswer(payload.answer || "");
-            pendingCard.remove();
-            appendMessage({ role: "assistant", text: state.lastAnswer, payload: payload });
-            hydrateWorkspace(payload);
-            if (payload.citations && payload.citations.length) {
-              openCitationInPanel(payload.citations[0]);
-            } else {
-              renderLibraryFallbackDocument();
-            }
-          },
-          onError(message) {
-            throw new Error(message || "unknown stream error");
-          }
-        });
-
-        setStatus("Ready", "ok", "응답 생성이 끝났습니다.");
-      } catch (error) {
-        pendingCard.remove();
-        appendMessage({ role: "assistant", text: "오류가 발생했습니다. 다시 시도해 주세요." });
-        setStatus("Error", "warning", error.name === "AbortError" ? "생성을 중단했습니다." : String(error.message || error));
-      } finally {
-        state.generating = false;
-        state.controller = null;
-        syncControls();
-        updateSessionChip();
-      }
-    }
-
-    async function consumeChatStream(stream, handlers) {
-      const reader = stream.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const result = await reader.read();
-        if (result.done) {
-          break;
-        }
-        buffer += decoder.decode(result.value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) {
-            continue;
-          }
-          const event = JSON.parse(trimmed);
+        let payload = null;
+        let streamedError = null;
+        await consumeChatStream(response, (event) => {
           if (event.type === "trace") {
-            handlers.onTrace(event);
-          } else if (event.type === "result") {
-            handlers.onResult(event.payload || {});
-          } else if (event.type === "error") {
-            handlers.onError(event.error || "unknown error");
+            appendTraceEvent(event);
+            renderPendingStage(body, event);
+            return;
           }
+          if (event.type === "error") {
+            streamedError = event.error || "응답 생성 실패";
+            return;
+          }
+          if (event.type === "result") {
+            payload = event.payload || null;
+          }
+        });
+        if (streamedError) {
+          throw new Error(streamedError);
         }
+        if (!payload) {
+          throw new Error("스트리밍 응답이 비어 있습니다.");
+        }
+
+        sessionId = payload.session_id;
+        sessionIdEl.textContent = sessionId.slice(0, 8);
+        await typeText(body, payload.answer || "답변이 비어 있습니다.", "assistant");
+        renderAssistantMeta(wrapper, payload);
+        updateSidePanel(payload);
+        setStatus("완료", {
+          detail: payload.pipeline_trace && payload.pipeline_trace.timings_ms
+            ? `총 ${formatDuration(payload.pipeline_trace.timings_ms.total || 0)}`
+            : "응답 생성이 끝났습니다",
+        });
+      } catch (error) {
+        if (error.name === "AbortError") {
+          renderMessageBody("assistant", body, "응답 표시를 중단했습니다.");
+          setStatus("중단됨", { detail: "클라이언트에서 응답 표시를 멈췄습니다" });
+        } else {
+          renderMessageBody("assistant", body, error.message || "오류가 발생했습니다.");
+          setStatus("오류", { detail: error.message || "오류가 발생했습니다." });
+        }
+      } finally {
+        currentController = null;
+        setGenerating(false);
       }
     }
 
-    function hydrateWorkspace(payload) {
-      renderWorkspaceOverview(payload);
-      renderSourcesPanel(payload);
-      renderProcedurePanel(payload);
-      renderSearchMetrics(payload, state.traceEvents);
-      renderSuggestedQueries(payload.suggested_queries || []);
-    }
-
-    function renderWorkspaceOverview(payload) {
-      const context = payload.context || {};
-      const topic = context.current_topic || context.user_goal || "-";
-      const responseKind = payload.response_kind || "rag";
-      const citationCount = Array.isArray(payload.citations) ? payload.citations.length : 0;
-
-      elements.workspaceMode.textContent = payload.mode || state.mode;
-      elements.workspaceTopic.textContent = topic;
-      elements.workspaceTopicDuplicate.textContent = topic;
-      elements.workspaceResponseKind.textContent = responseKind;
-      elements.workspaceResponseKindDuplicate.textContent = responseKind;
-      elements.workspaceCitationCount.textContent = String(citationCount);
-      elements.workspaceCitationCountDuplicate.textContent = String(citationCount);
-      elements.historySize.textContent = String(payload.history_size || 0) + " turns";
-
-      const stageLabel = state.traceEvents.length ? (state.traceEvents[state.traceEvents.length - 1].label || "Completed") : "Completed";
-      const stageDetail = payload.rewritten_query || payload.answer || "";
-      elements.workspaceStage.textContent = stageLabel;
-      elements.workspaceStageDetail.textContent = stageDetail.slice(0, 140) || "응답이 도착했습니다.";
-      elements.workspaceStageDetailChip.textContent = stageDetail.slice(0, 72) || "Done";
-      elements.copilotStatusText.textContent = responseKind === "rag"
-        ? "검색된 근거를 바탕으로 응답했습니다."
-        : "직접 답변 대신 추가 확인이나 명확화가 필요합니다.";
-      elements.sessionSummaryCopy.textContent = responseKind === "rag"
-        ? "현재 세션은 근거 문서와 절차 메모를 분리해서 보여주고 있습니다."
-        : "현재 응답 유형을 기준으로 추가 질문 또는 근거 확인이 필요할 수 있습니다.";
-    }
-
-    function citationOrigin(citation) {
-      return citation && citation.origin === "replayed" ? "replayed" : "fresh";
-    }
-
-    function countReplaySources(citations) {
-      return (citations || []).filter((citation) => citationOrigin(citation) === "replayed").length;
-    }
-
-    function renderSourcesPanel(payload) {
-      const citations = Array.isArray(payload.citations) ? payload.citations : [];
-      const tags = collectSourceTags(citations);
-      const replayCount = countReplaySources(citations);
-      const freshCount = Math.max(0, citations.length - replayCount);
-      elements.sourceTags.innerHTML = "";
-      elements.sourceList.innerHTML = "";
-
-      elements.sourceSummary.textContent = "총 citation " + citations.length + "개 / 대표 section " + tags.sectionCount + "개" +
-        (tags.hiddenCount > 0 ? " / 대표 태그는 일부만 표시됨" : "");
-
-      tags.tags.forEach((tagText) => {
-        const tag = document.createElement("span");
-        tag.className = "tag";
-        tag.textContent = tagText;
-        elements.sourceTags.appendChild(tag);
+    async function resetSession() {
+      const response = await fetch("/api/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId }),
       });
-      if (tags.hiddenCount > 0) {
-        const extra = document.createElement("span");
-        extra.className = "tag";
-        extra.textContent = "+" + tags.hiddenCount + " more";
-        elements.sourceTags.appendChild(extra);
-      }
-      elements.sourceSummary.textContent = "Total citation " + citations.length + " / section " + tags.sectionCount + " / fresh " + freshCount + " / replayed " + replayCount +
-        (tags.hiddenCount > 0 ? " / +" + tags.hiddenCount + " more tags" : "");
+      const payload = await response.json();
+      sessionId = payload.session_id;
+      sessionIdEl.textContent = sessionId.slice(0, 8);
+      messagesEl.innerHTML = "";
+      renderEmptyState();
+      rewrittenQueryEl.textContent = "-";
+      sessionContextEl.textContent = JSON.stringify(payload.context || {}, null, 2);
+      warningsEl.textContent = "없음";
+      resetPipelineTrace();
+      lastQuery = "";
+      regenerateBtn.disabled = true;
+      setStatus("리셋됨", { detail: "새 세션으로 다시 시작합니다" });
+    }
 
-      if (!citations.length) {
-        const empty = document.createElement("li");
-        empty.className = "source-item";
-        empty.textContent = "이번 답변에는 표시할 citation이 없습니다.";
-        elements.sourceList.appendChild(empty);
+    composerEl.addEventListener("keydown", (event) => {
+      if (event.isComposing || event.keyCode === 229 || isComposing) {
         return;
       }
-
-      citations.forEach((citation, index) => {
-        const item = document.createElement("li");
-        item.className = "source-item";
-        const origin = citationOrigin(citation);
-        const originLabel = origin === "replayed" ? "replayed" : "fresh";
-        const button = document.createElement("button");
-        button.type = "button";
-        button.innerHTML = [
-          "<div class=\"source-title\">[" + (index + 1) + "] " + escapeHtml(citation.book_slug || "source") + "</div>",
-          "<div class=\"source-subtitle\">" + escapeHtml(citation.section || citation.anchor || "-") + " · chunk " + escapeHtml(citation.chunk_id || "-") + "</div>",
-          "<div class=\"source-excerpt\">" + escapeHtml(citation.excerpt || "excerpt unavailable") + "</div>"
-        ].join("");
-        button.innerHTML = [
-          "<div class=\"source-title-row\"><div class=\"source-title\">[" + (index + 1) + "] " + escapeHtml(citation.book_slug || "source") + "</div><span class=\"source-origin-tag is-" + escapeHtml(origin) + "\">" + escapeHtml(originLabel) + "</span></div>",
-          "<div class=\"source-subtitle\">" + escapeHtml(citation.section || citation.anchor || "-") + " 쨌 chunk " + escapeHtml(citation.chunk_id || "-") + "</div>",
-          "<div class=\"source-excerpt\">" + escapeHtml(citation.excerpt || "excerpt unavailable") + "</div>"
-        ].join("");
-        button.addEventListener("click", () => openCitationInPanel(citation));
-        item.appendChild(button);
-        elements.sourceList.appendChild(item);
-      });
-    }
-
-    function collectSourceTags(citations) {
-      const seen = new Set();
-      const all = [];
-      citations.forEach((citation) => {
-        const section = citation.section || citation.anchor || citation.book_slug || "source";
-        const key = (citation.book_slug || "source") + "::" + section;
-        if (!seen.has(key)) {
-          seen.add(key);
-          all.push((citation.book_slug || "source") + " · " + section);
-        }
-      });
-      return {
-        tags: all.slice(0, 4),
-        hiddenCount: Math.max(0, all.length - 4),
-        sectionCount: all.length
-      };
-    }
-
-    function openCitationInPanel(citation) {
-      if (!citation) {
-        return;
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
       }
-      const origin = citationOrigin(citation);
-      const matchingLibraryItem = state.libraryItems.find((item) => item.book_slug === citation.book_slug);
-      if (matchingLibraryItem) {
-        state.selectedLibraryItem = matchingLibraryItem;
-        renderLibraryRail(state.filteredLibraryItems);
+    });
+
+    composerEl.addEventListener("compositionstart", () => {
+      isComposing = true;
+    });
+
+    composerEl.addEventListener("compositionend", () => {
+      isComposing = false;
+    });
+
+    composerEl.addEventListener("blur", () => {
+      isComposing = false;
+    });
+
+    sendBtn.addEventListener("click", () => sendMessage());
+    regenerateBtn.addEventListener("click", () => sendMessage({ query: lastQuery, regenerate: true }));
+    stopBtn.addEventListener("click", () => {
+      if (currentController) currentController.abort();
+      if (currentTyper) {
+        clearInterval(currentTyper);
+        currentTyper = null;
       }
-      elements.documentMeta.innerHTML = [
-        "<strong>원문 뷰어</strong>",
-        escapeHtml((citation.book_slug || "source") + " · " + (citation.section || citation.anchor || "-")),
-        "<span class=\"muted\">anchor " + escapeHtml(citation.anchor || "-") + " · chunk " + escapeHtml(citation.chunk_id || "-") + "</span>"
-      ].join("<br>");
-      elements.documentMeta.innerHTML = [
-        "<strong>?먮Ц 酉곗뼱</strong>",
-        escapeHtml((citation.book_slug || "source") + " 쨌 " + (citation.section || citation.anchor || "-")),
-        "<span class=\"muted\">anchor " + escapeHtml(citation.anchor || "-") + " 쨌 chunk " + escapeHtml(citation.chunk_id || "-") + " 쨌 " + escapeHtml(origin) + "</span>"
-      ].join("<br>");
-      elements.documentExcerpt.textContent = citation.excerpt || "retrieved excerpt unavailable";
-      elements.documentFrame.src = citation.href || citation.source_url || "";
-      if (origin === "replayed") {
-        elements.documentStatus.textContent = "Session replay citation을 같은 화면 문서 패널에 다시 열었습니다.";
-      }
-      elements.documentStatus.textContent = "현재 선택한 근거를 같은 화면에서 보고 있습니다.";
-      if (origin === "replayed") {
-        elements.documentStatus.textContent = "Session replay citation reopened in the workspace viewer.";
-      }
-    }
+    });
+    resetBtn.addEventListener("click", resetSession);
+    inspectorToggleBtn.addEventListener("click", () => {
+      setInspectorVisible(!inspectorVisible);
+    });
+    inspectorTabButtons.forEach((button) => {
+      button.addEventListener("click", () => setInspectorTab(button.dataset.inspectorTab));
+    });
 
-    if (false) {
-      if (origin === "replayed") {
-        elements.documentStatus.textContent = "Session replay citation을 같은 화면 문서 패널에 다시 열었습니다.";
-      }
-    }
+    modeButtons.forEach((button) => {
+      button.addEventListener("click", () => setMode(button.dataset.mode));
+    });
 
-    function renderProcedurePanel(payload) {
-      const procedure = payload.context && payload.context.procedure_memory;
-      if (!procedure || !Array.isArray(procedure.steps) || !procedure.steps.length) {
-        elements.procedurePanel.classList.add("hidden");
-        return;
-      }
-
-      elements.procedurePanel.classList.remove("hidden");
-      elements.procedureSummary.textContent = "이 패널은 검색된 절차 원문이 아니라 세션에서 유지되는 절차 상태입니다.";
-      elements.procedureGoal.textContent = procedure.goal || "-";
-      elements.procedureCurrentStep.textContent = procedure.steps[procedure.active_step_index || 0] || "-";
-      elements.procedureCommand.textContent = commandForProcedure(procedure) || "-";
-      elements.procedureReferences.textContent = Array.isArray(procedure.references) && procedure.references.length
-        ? procedure.references.join(" / ")
-        : "-";
-
-      elements.procedureSteps.innerHTML = "";
-      procedure.steps.forEach((step, index) => {
-        const item = document.createElement("li");
-        item.textContent = step;
-        if (index === procedure.active_step_index) {
-          item.classList.add("is-active");
-        }
-        elements.procedureSteps.appendChild(item);
-      });
-    }
-
-    function commandForProcedure(procedure) {
-      const activeIndex = typeof procedure.active_step_index === "number" ? procedure.active_step_index : 0;
-      if (!Array.isArray(procedure.step_commands)) {
-        return "";
-      }
-      return procedure.step_commands[activeIndex] || procedure.step_commands.find(Boolean) || "";
-    }
-
-    function renderSearchMetrics(payload, traceEvents) {
-      const pipelineTrace = payload && payload.pipeline_trace ? payload.pipeline_trace : {};
-      const selectedHits = Array.isArray(pipelineTrace.selection && pipelineTrace.selection.selected_hits)
-        ? pipelineTrace.selection.selected_hits.length
-        : null;
-      const replayCount = payload && Array.isArray(payload.citations) ? countReplaySources(payload.citations) : 0;
-      const traceCards = [
-        ["Selected", selectedHits === null ? "-" : String(selectedHits)],
-        ["Citations", payload && Array.isArray(payload.citations) ? String(payload.citations.length) : "0"],
-        ["Replay", String(replayCount)],
-        ["History", payload && payload.history_size ? String(payload.history_size) : "0"],
-        ["Trace Steps", String((traceEvents || []).length)]
-      ];
-
-      Object.entries(pipelineTrace).slice(0, 4).forEach(([key, value]) => {
-        traceCards.push([humanizePipelineKey(key), summarizeTraceMeta(value)]);
-      });
-
-      elements.pipelineSummary.innerHTML = "";
-      traceCards.slice(0, 8).forEach(([label, value]) => {
-        const card = document.createElement("div");
-        card.className = "summary-chip";
-        card.innerHTML = "<span class=\"summary-chip-label\">" + escapeHtml(label) + "</span><span class=\"summary-chip-value\">" + escapeHtml(value) + "</span>";
-        elements.pipelineSummary.appendChild(card);
-      });
-
-      elements.pipelineTrace.innerHTML = "";
-      (traceEvents || []).forEach((event) => {
-        const item = document.createElement("li");
-        item.className = "trace-step";
-        item.innerHTML = [
-          "<div class=\"trace-topline\"><span>" + escapeHtml(event.label || event.step || "trace") + "</span><span>" + escapeHtml(event.status || "") + "</span></div>",
-          "<div class=\"trace-meta\">" + escapeHtml(event.detail || "") + "</div>"
-        ].join("");
-        elements.pipelineTrace.appendChild(item);
-      });
-
-      if (!traceEvents || !traceEvents.length) {
-        const item = document.createElement("li");
-        item.className = "trace-step";
-        item.innerHTML = "<div class=\"trace-topline\"><span>Trace waiting</span><span>idle</span></div><div class=\"trace-meta\">질문을 보내면 retrieval 흐름이 여기에 누적됩니다.</div>";
-        elements.pipelineTrace.appendChild(item);
-      }
-    }
-
-    function humanizePipelineKey(key) {
-      return PIPELINE_LABELS[key] || String(key || "pipeline");
-    }
-
-    function summarizeTraceMeta(value) {
-      if (Array.isArray(value)) {
-        return value.length + " items";
-      }
-      if (!value || typeof value !== "object") {
-        return String(value);
-      }
-      const arrayEntry = Object.values(value).find((item) => Array.isArray(item));
-      if (Array.isArray(arrayEntry)) {
-        return arrayEntry.length + " items";
-      }
-      return Object.keys(value).length + " fields";
-    }
-
-    function renderSuggestedQueries(queries) {
-      elements.suggestionList.innerHTML = "";
-      queries.forEach((query) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.textContent = query;
-        button.addEventListener("click", () => {
-          sendMessage({ query: query });
-        });
-        elements.suggestionList.appendChild(button);
-      });
-    }
-
-    function renderPendingCard() {
-      const wrapper = document.createElement("div");
-      wrapper.className = "message";
-      wrapper.innerHTML = [
-        "<div class=\"message-header\"><span class=\"message-role\">assistant</span><span class=\"helper-text\">generating</span></div>",
-        "<div class=\"message-body\"><div class=\"pending-dots\"><span></span><span></span><span></span></div><p>근거를 찾고 답변을 구성하는 중입니다.</p></div>"
-      ].join("");
-      return wrapper;
-    }
-
-    function appendMessage(options) {
-      const card = document.createElement("article");
-      card.className = "message " + options.role;
-
-      const header = document.createElement("div");
-      header.className = "message-header";
-      const label = document.createElement("span");
-      label.className = "message-role";
-      label.textContent = options.role;
-      header.appendChild(label);
-
-      if (options.role === "assistant") {
-        const copyButton = document.createElement("button");
-        copyButton.className = "assistant-copy";
-        copyButton.type = "button";
-        copyButton.textContent = "Copy";
-        copyButton.addEventListener("click", async () => {
-          await navigator.clipboard.writeText(options.text || "");
-          copyButton.textContent = "Copied";
-          window.setTimeout(() => {
-            copyButton.textContent = "Copy";
-          }, 1200);
-        });
-        header.appendChild(copyButton);
-      }
-
-      card.appendChild(header);
-
-      const body = document.createElement("div");
-      body.className = "message-body";
-      renderMarkdownInto(body, options.text || "");
-      card.appendChild(body);
-
-      if (options.role === "assistant" && options.payload && Array.isArray(options.payload.citations) && options.payload.citations.length) {
-        const tags = document.createElement("div");
-        tags.className = "source-tag-list";
-        if (countReplaySources(options.payload.citations) > 0) {
-          const replayTag = document.createElement("span");
-          replayTag.className = "tag";
-          replayTag.textContent = "replayed citation";
-          tags.appendChild(replayTag);
-        }
-        collectSourceTags(options.payload.citations).tags.forEach((tagText) => {
-          const tag = document.createElement("span");
-          tag.className = "tag";
-          tag.textContent = tagText;
-          tags.appendChild(tag);
-        });
-        card.appendChild(tags);
-      }
-
-      elements.chatLog.appendChild(card);
-      scrollMessagesToEnd();
-    }
-
-    function renderMarkdownInto(target, input) {
-      const text = normalizeAssistantAnswer(input);
-      const fencePattern = /```([\w.+-]*)\n([\s\S]*?)```/g;
-      let cursor = 0;
-      let html = "";
-      let match;
-
-      while ((match = fencePattern.exec(text)) !== null) {
-        const before = text.slice(cursor, match.index);
-        html += markdownParagraphs(before);
-        html += "<pre><code>" + escapeHtml(match[2].trim()) + "</code></pre>";
-        cursor = match.index + match[0].length;
-      }
-
-      html += markdownParagraphs(text.slice(cursor));
-      target.innerHTML = html || "<p class=\"muted\">내용이 없습니다.</p>";
-    }
-
-    function markdownParagraphs(text) {
-      return text
-        .split(/\n{2,}/)
-        .map((block) => block.trim())
-        .filter(Boolean)
-        .map((block) => {
-          if (/^(\d+\.\s+)/m.test(block)) {
-            const items = block.split("\n").map((line) => line.trim()).filter(Boolean).map((line) => "<li>" + inlineMarkdown(line.replace(/^\d+\.\s+/, "")) + "</li>").join("");
-            return "<ol>" + items + "</ol>";
-          }
-          if (/^(-\s+)/m.test(block)) {
-            const items = block.split("\n").map((line) => line.trim()).filter(Boolean).map((line) => "<li>" + inlineMarkdown(line.replace(/^-+\s+/, "")) + "</li>").join("");
-            return "<ul>" + items + "</ul>";
-          }
-          return "<p>" + inlineMarkdown(block).replace(/\n/g, "<br>") + "</p>";
-        })
-        .join("");
-    }
-
-    function inlineMarkdown(text) {
-      return escapeHtml(text)
-        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-        .replace(/`([^`]+)`/g, "<code>$1</code>");
-    }
-
-    function normalizeAssistantAnswer(text) {
-      return String(text || "").replace(/^\s*(답변|답)\s*:\s*/i, "").trim();
-    }
-
-    function setStatus(label, tone, detail) {
-      elements.globalStatus.textContent = label;
-      elements.globalStatus.dataset.tone = tone;
-      elements.copilotStatusText.textContent = detail;
-      elements.workspaceStageDetail.textContent = detail;
-      elements.workspaceStageDetailChip.textContent = detail.slice(0, 72);
-      if (tone === "busy") {
-        startStatusPulse();
-      } else {
-        elements.globalStatus.classList.remove("is-pulsing");
-      }
-    }
-
-    function startStatusPulse() {
-      elements.globalStatus.classList.add("is-pulsing");
-    }
-
-    function updateTraceStage(event) {
-      elements.workspaceStage.textContent = event.label || event.step || "Trace";
-      elements.workspaceStageDetail.textContent = event.detail || "처리 중입니다.";
-      elements.workspaceStageDetailChip.textContent = (event.detail || "처리 중입니다.").slice(0, 72);
-    }
-
-    function syncControls() {
-      elements.sendBtn.disabled = state.generating;
-      elements.regenerateBtn.disabled = state.generating || !state.lastQuery;
-      elements.resetBtn.disabled = state.generating;
-      elements.stopBtn.disabled = !state.generating;
-    }
-
-    function updateSessionChip() {
-      elements.activeModeChip.textContent = state.mode;
-      elements.sessionChip.textContent = state.sessionId.slice(0, 8);
-    }
-
-    function renderEmptyState() {
-      elements.chatLog.innerHTML = "";
-      elements.suggestionList.innerHTML = "";
-      elements.sourceList.innerHTML = "";
-      elements.sourceTags.innerHTML = "";
-      elements.pipelineSummary.innerHTML = "";
-      elements.pipelineTrace.innerHTML = "";
-      elements.documentMeta.textContent = "문서가 아직 열리지 않았습니다.";
-      elements.documentExcerpt.textContent = "retrieved excerpt와 anchor 정보가 여기에 고정됩니다.";
-      elements.documentFrame.removeAttribute("src");
-      elements.documentStatus.textContent = "citation을 클릭하면 같은 화면에서 문서를 엽니다.";
-      elements.procedurePanel.classList.add("hidden");
-      elements.workspaceMode.textContent = state.mode;
-      elements.workspaceTopic.textContent = "-";
-      elements.workspaceTopicDuplicate.textContent = "-";
-      elements.workspaceResponseKind.textContent = "idle";
-      elements.workspaceResponseKindDuplicate.textContent = "idle";
-      elements.workspaceCitationCount.textContent = "0";
-      elements.workspaceCitationCountDuplicate.textContent = "0";
-      elements.historySize.textContent = "0 turns";
-      elements.workspaceStage.textContent = "Idle";
-      elements.workspaceStageDetail.textContent = "질문을 보내면 근거와 절차가 여기에 정리됩니다.";
-      elements.workspaceStageDetailChip.textContent = "Waiting";
-      renderSearchMetrics(null, []);
-      appendMessage({
-        role: "assistant",
-        text: "문서가 메인이고 챗봇은 보조인 작업 공간입니다. 대표 질문을 누르거나 직접 질문을 입력해 보세요."
-      });
-      renderLibraryFallbackDocument();
-    }
-
-    function scrollMessagesToEnd() {
-      elements.chatLog.scrollTop = elements.chatLog.scrollHeight;
-    }
-
-    function escapeHtml(value) {
-      return String(value == null ? "" : value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    }
-
-    window.addEventListener("DOMContentLoaded", bootstrapPlatformLayout);
+    setGenerating(false);
+    setMode(currentMode);
+    setInspectorVisible(false);
+    setInspectorTab("sources");
+    sessionContextEl.textContent = JSON.stringify({ mode: currentMode, ocp_version: "4.20" }, null, 2);
+    resetPipelineTrace();
+    renderEmptyState();
   </script>
 </body>
 </html>

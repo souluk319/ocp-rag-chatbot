@@ -50,7 +50,7 @@ def _select_entries(
     return selected[:limit] if limit is not None else selected
 
 
-def run_part1(
+def run_ingest_pipeline(
     settings: Settings,
     *,
     refresh_manifest: bool = False,

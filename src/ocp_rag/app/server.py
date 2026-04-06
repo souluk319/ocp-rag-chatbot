@@ -790,7 +790,7 @@ def _viewer_path_to_local_html(root_dir: Path, viewer_path: str) -> Path | None:
     if parsed is None:
         return None
     book_slug, _ = parsed
-    settings = load_settings(root_dir)
+    settings = load_settings(root_dir, create_dirs=False)
     candidate = settings.raw_html_dir / f"{book_slug}.html"
     if not candidate.exists():
         return None
@@ -958,7 +958,7 @@ def _load_library_index(
 
 
 def _build_library_payload(root_dir: Path) -> dict[str, Any]:
-    settings = load_settings(root_dir)
+    settings = load_settings(root_dir, create_dirs=False)
     normalized_docs_path = settings.normalized_docs_path
     if not normalized_docs_path.exists():
         return {
@@ -980,13 +980,59 @@ def _build_library_payload(root_dir: Path) -> dict[str, Any]:
     }
 
 
+@lru_cache(maxsize=8)
+def _load_book_title_lookup(
+    normalized_docs_path: str,
+    mtime_ns: int,
+) -> dict[str, str]:
+    del mtime_ns
+    items = _load_library_index(
+        normalized_docs_path,
+        Path(normalized_docs_path).stat().st_mtime_ns,
+    )
+    return {
+        str(item.get("book_slug") or "").strip(): str(item.get("book_title") or "").strip()
+        for item in items
+        if str(item.get("book_slug") or "").strip()
+    }
+
+
+def _humanize_book_slug(book_slug: str) -> str:
+    cleaned = re.sub(r"[_-]+", " ", (book_slug or "").strip()).strip()
+    if not cleaned:
+        return "문서"
+    return cleaned.title()
+
+
+def _resolve_book_title(root_dir: Path, citation: Citation) -> str:
+    settings = load_settings(root_dir, create_dirs=False)
+    normalized_docs_path = settings.normalized_docs_path
+    if normalized_docs_path.exists():
+        lookup = _load_book_title_lookup(
+            str(normalized_docs_path),
+            normalized_docs_path.stat().st_mtime_ns,
+        )
+        book_title = lookup.get((citation.book_slug or "").strip())
+        if book_title:
+            return book_title
+    return _humanize_book_slug(citation.book_slug)
+
+
+def _citation_payload(root_dir: Path, citation: Citation) -> dict[str, Any]:
+    return {
+        **citation.to_dict(),
+        "href": _citation_href(citation),
+        "book_title": _resolve_book_title(root_dir, citation),
+    }
+
+
 def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
     parsed = _parse_viewer_path(viewer_path)
     if parsed is None:
         return None
 
     book_slug, target_anchor = parsed
-    settings = load_settings(root_dir)
+    settings = load_settings(root_dir, create_dirs=False)
     normalized_docs_path = settings.normalized_docs_path
     if not normalized_docs_path.exists():
         return None
@@ -1037,59 +1083,62 @@ def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
         <style>
           :root {{
             color-scheme: light;
-            --bg: #f5f1e8;
-            --panel: #fffdf8;
-            --line: #d8ccb8;
-            --ink: #1f1c18;
-            --muted: #675f54;
-            --accent: #8a2d1c;
-            --accent-soft: #f7e1da;
+            --bg: #f4f6f8;
+            --panel: #ffffff;
+            --panel-soft: #f8fafb;
+            --line: rgba(24, 28, 33, 0.11);
+            --ink: #171b21;
+            --muted: #5a6470;
+            --accent: #c9190b;
+            --accent-soft: rgba(201, 25, 11, 0.08);
+            --code-bg: #eef2f6;
+            --code-line: rgba(24, 28, 33, 0.08);
           }}
           * {{
             box-sizing: border-box;
           }}
           body {{
             margin: 0;
-            background:
-              radial-gradient(circle at top right, rgba(214, 123, 92, 0.16), transparent 24rem),
-              linear-gradient(180deg, #f7f0e6 0%, var(--bg) 100%);
+            background: linear-gradient(180deg, #fafbfc 0%, var(--bg) 100%);
             color: var(--ink);
             font-family: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
           }}
           main {{
-            max-width: 980px;
+            max-width: 100%;
             margin: 0 auto;
-            padding: 32px 20px 48px;
+            padding: 14px 14px 22px;
           }}
           .hero {{
             background: var(--panel);
             border: 1px solid var(--line);
-            border-radius: 20px;
-            padding: 24px;
-            box-shadow: 0 10px 40px rgba(75, 48, 26, 0.06);
+            border-radius: 14px;
+            padding: 14px 16px 12px;
+            box-shadow: 0 10px 28px rgba(24, 28, 33, 0.05);
           }}
           .eyebrow {{
             color: var(--accent);
-            font-size: 0.85rem;
+            font-size: 0.72rem;
             font-weight: 700;
             letter-spacing: 0.04em;
             text-transform: uppercase;
           }}
           h1 {{
-            margin: 10px 0 8px;
-            font-size: clamp(1.8rem, 3vw, 2.7rem);
-            line-height: 1.15;
+            margin: 6px 0 6px;
+            font-size: clamp(1.2rem, 2.4vw, 1.8rem);
+            line-height: 1.2;
           }}
           .summary {{
             margin: 0;
             color: var(--muted);
-            line-height: 1.6;
+            line-height: 1.5;
+            font-size: 0.94rem;
           }}
           .actions {{
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
-            margin-top: 18px;
+            margin-top: 10px;
+            font-size: 0.9rem;
           }}
           .actions a {{
             text-decoration: none;
@@ -1098,14 +1147,14 @@ def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
           }}
           .section-list {{
             display: grid;
-            gap: 16px;
-            margin-top: 20px;
+            gap: 12px;
+            margin-top: 12px;
           }}
           .section-card {{
-            background: rgba(255, 253, 248, 0.94);
+            background: var(--panel);
             border: 1px solid var(--line);
-            border-radius: 18px;
-            padding: 18px;
+            border-radius: 14px;
+            padding: 14px 15px;
             scroll-margin-top: 20px;
           }}
           .section-card.is-target {{
@@ -1113,13 +1162,13 @@ def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
             background: var(--accent-soft);
           }}
           .section-card h2 {{
-            margin: 6px 0 10px;
-            font-size: 1.15rem;
+            margin: 4px 0 8px;
+            font-size: 1.02rem;
             line-height: 1.4;
           }}
           .section-body {{
             display: grid;
-            gap: 14px;
+            gap: 10px;
           }}
           .section-body p,
           .section-body h3 {{
@@ -1130,28 +1179,29 @@ def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
             color: var(--accent);
           }}
           .section-body code {{
-            display: inline-block;
-            padding: 0.08rem 0.42rem;
-            border-radius: 999px;
-            background: rgba(138, 45, 28, 0.08);
-            color: var(--accent);
+            display: inline;
+            padding: 0.12rem 0.34rem;
+            border-radius: 4px;
+            border: 1px solid var(--code-line);
+            background: var(--code-bg);
+            color: #0f1720;
             font-family: "SF Mono", "Menlo", monospace;
-            font-size: 0.92em;
+            font-size: 0.9em;
           }}
           .code-block {{
-            border: 1px solid rgba(138, 45, 28, 0.14);
-            border-radius: 16px;
+            border: 1px solid var(--code-line);
+            border-radius: 10px;
             overflow: hidden;
-            background: rgba(255, 255, 255, 0.92);
+            background: #fbfcfd;
           }}
           .code-header {{
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            padding: 10px 12px;
-            background: rgba(138, 45, 28, 0.08);
-            border-bottom: 1px solid rgba(138, 45, 28, 0.12);
+            padding: 9px 12px;
+            background: var(--panel-soft);
+            border-bottom: 1px solid var(--code-line);
           }}
           .code-label {{
             color: var(--muted);
@@ -1161,10 +1211,10 @@ def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
             text-transform: uppercase;
           }}
           .copy-button {{
-            border: 0;
-            border-radius: 999px;
-            padding: 7px 12px;
-            background: rgba(31, 28, 24, 0.08);
+            border: 1px solid var(--code-line);
+            border-radius: 6px;
+            padding: 6px 10px;
+            background: #ffffff;
             color: var(--ink);
             font: inherit;
             font-size: 0.78rem;
@@ -1172,23 +1222,23 @@ def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
             cursor: pointer;
           }}
           .copy-button.is-copied {{
-            background: rgba(138, 45, 28, 0.14);
+            background: var(--accent-soft);
             color: var(--accent);
           }}
           .code-block pre {{
             margin: 0;
-            padding: 14px 16px 16px;
+            padding: 12px 14px 14px;
             overflow-x: auto;
             white-space: pre;
             font-family: "SF Mono", "Menlo", monospace;
             font-size: 0.92rem;
-            line-height: 1.65;
+            line-height: 1.62;
           }}
           .table-wrap {{
             overflow-x: auto;
             border: 1px solid var(--line);
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.88);
+            border-radius: 10px;
+            background: #ffffff;
           }}
           table {{
             width: 100%;
@@ -1196,7 +1246,7 @@ def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
           }}
           td {{
             padding: 10px 12px;
-            border-bottom: 1px solid rgba(216, 204, 184, 0.7);
+            border-bottom: 1px solid var(--line);
             text-align: left;
             vertical-align: top;
             font-size: 0.94rem;
@@ -1605,6 +1655,7 @@ def _suggest_follow_up_questions(*, session: ChatSession, result: AnswerResult) 
 
 def _build_chat_payload(
     *,
+    root_dir: Path,
     session: ChatSession,
     result: AnswerResult,
 ) -> dict[str, Any]:
@@ -1616,13 +1667,7 @@ def _build_chat_payload(
         "response_kind": result.response_kind,
         "warnings": list(result.warnings),
         "cited_indices": list(result.cited_indices),
-        "citations": [
-            {
-                **citation.to_dict(),
-                "href": _citation_href(citation),
-            }
-            for citation in result.citations
-        ],
+        "citations": [_citation_payload(root_dir, citation) for citation in result.citations],
         "suggested_queries": _suggest_follow_up_questions(session=session, result=result),
         "context": session.context.to_dict(),
         "history_size": len(session.history),
@@ -1638,7 +1683,7 @@ def _build_handler(
     root_dir: Path,
 ) -> type[BaseHTTPRequestHandler]:
     class ChatHandler(BaseHTTPRequestHandler):
-        server_version = "OCPRAGPart4/0.1"
+        server_version = "OCPRAGApp/0.1"
 
         def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
             return None
@@ -1764,7 +1809,7 @@ def _build_handler(
             session.history.append(Turn(query=query, mode=mode, answer=result.answer))
             session.history = session.history[-40:]
             store.update(session)
-            self._send_json(_build_chat_payload(session=session, result=result))
+            self._send_json(_build_chat_payload(root_dir=root_dir, session=session, result=result))
 
         def _handle_chat_stream(self, payload: dict[str, Any]) -> None:
             session_id = str(payload.get("session_id") or uuid.uuid4().hex)
@@ -1836,7 +1881,7 @@ def _build_handler(
             self._stream_event(
                 {
                     "type": "result",
-                    "payload": _build_chat_payload(session=session, result=result),
+                    "payload": _build_chat_payload(root_dir=root_dir, session=session, result=result),
                 }
             )
 
@@ -1878,7 +1923,7 @@ def serve(
     handler = _build_handler(answerer=answerer, store=store, root_dir=root_dir)
     server = ThreadingHTTPServer((host, port), handler)
     url = f"http://{host}:{port}"
-    print(f"Part 4 QA UI running at {url}")
+    print(f"OCP RAG chatbot running at {url}")
     if open_browser:
         webbrowser.open(url)
     try:

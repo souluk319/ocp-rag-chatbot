@@ -42,14 +42,14 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = _parse_args()
-    settings = load_settings(ROOT)
+    settings = load_settings(ROOT, create_dirs=True)
     allow_statuses = tuple(args.allow_statuses or ["approved_ko"])
 
     report = build_source_approval_report(settings)
     entries = build_approved_manifest(settings, allowed_statuses=allow_statuses)
 
     report_path = Path(args.report_path).expanduser() if args.report_path else (
-        settings.part1_dir / "source_approval_report.json"
+        settings.source_approval_report_path
     )
     if not report_path.is_absolute():
         report_path = (ROOT / report_path).resolve()

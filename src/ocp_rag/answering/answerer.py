@@ -1020,7 +1020,7 @@ class Part3Answerer:
         )
 
     def default_log_path(self) -> Path:
-        return self.settings.part3_answer_log_path
+        return self.settings.answer_log_path
 
     def append_log(self, result: AnswerResult, log_path: Path | None = None) -> Path:
         target = log_path or self.default_log_path()

@@ -18,6 +18,8 @@ dependencies = [
 eval = [
   "ragas>=0.4.3",
   "datasets>=4.8.4",
+  "openai>=1.0.0",
+  "langchain-openai>=0.3.0",
 ]
 
 [tool.setuptools]

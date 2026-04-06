@@ -183,7 +183,7 @@ HTML을 opaque blob으로 두지 않고, 사람이 검토 가능한 section reco
 
 ### 6.3 정규화 순서
 
-[src/ocp_rag_part1/normalize.py](src/ocp_rag_part1/normalize.py)는 아래 순서로 동작한다.
+[src/ocp_rag/ingest/normalize.py](src/ocp_rag/ingest/normalize.py)는 아래 순서로 동작한다.
 
 1. `article` 본문 선택
 2. `script/style/nav/footer` 제거
@@ -211,8 +211,8 @@ HTML을 opaque blob으로 두지 않고, 사람이 검토 가능한 section reco
 
 관련 파일:
 
-- [src/ocp_rag_part1/chunking.py](src/ocp_rag_part1/chunking.py)
-- [src/ocp_rag_part1/settings.py](src/ocp_rag_part1/settings.py)
+- [src/ocp_rag/ingest/chunking.py](src/ocp_rag/ingest/chunking.py)
+- [src/ocp_rag/shared/settings.py](src/ocp_rag/shared/settings.py)
 
 추가로 실제 구현은 아래처럼 동작한다.
 
@@ -227,8 +227,8 @@ HTML을 opaque blob으로 두지 않고, 사람이 검토 가능한 section reco
 
 임베딩은 원격 endpoint를 사용하지만, chunk 길이 계산은 로컬 tokenizer로 수행한다.
 
-- 임베딩 생성: [src/ocp_rag_part1/embedding.py](src/ocp_rag_part1/embedding.py)
-- tokenizer/model load cache: [src/ocp_rag_part1/sentence_model.py](src/ocp_rag_part1/sentence_model.py)
+- 임베딩 생성: [src/ocp_rag/ingest/embedding.py](src/ocp_rag/ingest/embedding.py)
+- tokenizer/model load cache: [src/ocp_rag/ingest/sentence_model.py](src/ocp_rag/ingest/sentence_model.py)
 
 이렇게 분리한 이유는:
 
@@ -375,7 +375,7 @@ Qdrant에는 청크마다 아래 구조로 저장된다.
 
 ### 7.1 질문을 검색용 문장으로 다시 다듬는 단계
 
-[src/ocp_rag_part2/query.py](src/ocp_rag_part2/query.py)는 단순 동의어 치환기가 아니다.  
+[src/ocp_rag/retrieval/query.py](src/ocp_rag/retrieval/query.py)는 단순 동의어 치환기가 아니다.  
 현재는 질문을 다음 질문 유형으로 구분한다.
 
 - intro / broad intro
@@ -422,7 +422,7 @@ Qdrant에는 청크마다 아래 구조로 저장된다.
 
 ### 7.3 BM25 + Vector + 하이브리드 결합
 
-[src/ocp_rag_part2/retriever.py](src/ocp_rag_part2/retriever.py)의 핵심은 하이브리드 검색이다.
+[src/ocp_rag/retrieval/retriever.py](src/ocp_rag/retrieval/retriever.py)의 핵심은 하이브리드 검색이다.
 
 1. BM25 검색
 2. Vector 검색
@@ -543,7 +543,7 @@ fused_score += weight / (rrf_k + rank)
 
 ### 8.1 답변에 넣을 근거를 한 번 더 고르는 단계
 
-[src/ocp_rag_part3/context.py](src/ocp_rag_part3/context.py)는 검색 결과 중 일부만 citation 후보로 선택한다.
+[src/ocp_rag/answering/context.py](src/ocp_rag/answering/context.py)는 검색 결과 중 일부만 citation 후보로 선택한다.
 
 주요 정책:
 
@@ -584,7 +584,7 @@ fused_score += weight / (rrf_k + rank)
 
 ### 8.2 답변 생성
 
-[src/ocp_rag_part3/answerer.py](src/ocp_rag_part3/answerer.py)는 아래 흐름으로 동작한다.
+[src/ocp_rag/answering/answerer.py](src/ocp_rag/answering/answerer.py)는 아래 흐름으로 동작한다.
 
 1. 질문 정리와 검색을 다시 실행한다.
 2. 답변에 넣을 근거를 다시 고른다.
@@ -662,8 +662,8 @@ UI는 `/api/chat/stream`으로 NDJSON 스트림을 받아 단계별 이벤트를
 
 관련 파일:
 
-- [src/ocp_rag_part4/server.py](src/ocp_rag_part4/server.py)
-- [src/ocp_rag_part4/static/index.html](src/ocp_rag_part4/static/index.html)
+- [src/ocp_rag/app/server.py](src/ocp_rag/app/server.py)
+- [src/ocp_rag/app/static/index.html](src/ocp_rag/app/static/index.html)
 
 ### 9.3 내부 문서 열람 화면
 
@@ -731,10 +731,10 @@ UI는 `/api/chat/stream`으로 NDJSON 스트림을 받아 단계별 이벤트를
 
 ### 11.1 코드 위치를 찾고 싶을 때
 
-- [src/ocp_rag_part1](src/ocp_rag_part1): 문서 정리, 청킹, 임베딩, Qdrant 적재
-- [src/ocp_rag_part2](src/ocp_rag_part2): 질문 정리, BM25, 벡터 검색, 점수 결합
-- [src/ocp_rag_part3](src/ocp_rag_part3): 근거 선택, 답변 생성, citation 정리
-- [src/ocp_rag_part4](src/ocp_rag_part4): API 서버, 스트리밍, 채팅 UI
+- [src/ocp_rag/ingest](src/ocp_rag/ingest): 문서 정리, 청킹, 임베딩, Qdrant 적재
+- [src/ocp_rag/retrieval](src/ocp_rag/retrieval): 질문 정리, BM25, 벡터 검색, 점수 결합
+- [src/ocp_rag/answering](src/ocp_rag/answering): 근거 선택, 답변 생성, citation 정리
+- [src/ocp_rag/app](src/ocp_rag/app): API 서버, 스트리밍, 채팅 UI
 - [scripts](scripts)
 - [manifests](manifests)
 - [tests](tests)
@@ -863,7 +863,7 @@ python scripts/check_runtime_endpoints.py
 #### 5) UI 실행
 
 ```powershell
-python scripts/run_part4_ui.py --host 127.0.0.1 --port 8770
+python scripts/run_console.py --host 127.0.0.1 --port 8770
 ```
 
 브라우저:
@@ -909,13 +909,13 @@ python3 scripts/build_source_approval.py
 #### 문서 준비 단계 전체 재빌드
 
 ```bash
-python3 scripts/run_part1.py --collect-subset all --process-subset all
+python3 scripts/run_ingest.py --collect-subset all --process-subset all
 ```
 
 #### retrieval sanity
 
 ```bash
-python3 scripts/run_part2_sanity.py
+python3 scripts/run_retrieval_sanity.py
 ```
 
 #### runtime endpoint 점검
@@ -927,13 +927,13 @@ python3 scripts/check_runtime_endpoints.py
 #### 단일 질의 테스트
 
 ```bash
-python3 scripts/run_part3_answer.py --mode ops --query "etcd 백업은 실제로 어떤 절차로 해?"
+python3 scripts/run_answer.py --mode ops --query "etcd 백업은 실제로 어떤 절차로 해?"
 ```
 
 #### UI 실행
 
 ```bash
-python3 scripts/run_part4_ui.py --no-browser
+python3 scripts/run_console.py --no-browser
 ```
 
 브라우저:
@@ -975,13 +975,13 @@ python3 scripts/run_part4_ui.py --no-browser
 이 기본값을 쓴 이유는, 현재 `ragas` 버전의 Chat Completions 경로와 호환성이 안정적이기 때문이다.
 
 ```bash
-python3 scripts/run_part3_ragas_eval.py --cases manifests/part3_ragas_eval_cases.jsonl
+python3 scripts/run_ragas_eval.py --cases manifests/part3_ragas_eval_cases.jsonl
 ```
 
 dry run:
 
 ```bash
-python3 scripts/run_part3_ragas_eval.py --cases manifests/part3_ragas_eval_cases.jsonl --dry-run
+python3 scripts/run_ragas_eval.py --cases manifests/part3_ragas_eval_cases.jsonl --dry-run
 ```
 
 출력:

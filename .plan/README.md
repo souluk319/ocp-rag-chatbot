@@ -1,5 +1,13 @@
 # OCP RAG Chatbot Planning Set
 
+## Latest Active Plan
+
+The active plan for the current cycle is:
+
+- [knowledge-platform-mvp/README.md](C:/Users/soulu/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-rebuild/.plan/knowledge-platform-mvp/README.md)
+
+This plan supersedes the older part-by-part planning set below for the immediate implementation direction.
+
 ## 1. 목적
 
 이 폴더는 `AGENTS.md` 기준으로 현재 코드베이스와 사용자 피드백 9개를 실행 가능한 계획 문서로 분해한 결과물이다.

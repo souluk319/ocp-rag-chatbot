@@ -41,6 +41,7 @@ HIGH_VALUE_SLUGS = (
 @dataclass(slots=True)
 class Settings:
     root_dir: Path
+    create_dirs: bool = False
     artifacts_dir_override: str = field(
         default_factory=lambda: os.getenv("ARTIFACTS_DIR", "").strip()
     )
@@ -114,10 +115,11 @@ class Settings:
 
     def __post_init__(self) -> None:
         self.manifest_dir.mkdir(parents=True, exist_ok=True)
-        self.part1_dir.mkdir(parents=True, exist_ok=True)
-        self.part2_dir.mkdir(parents=True, exist_ok=True)
-        self.part3_dir.mkdir(parents=True, exist_ok=True)
-        self.raw_html_dir.mkdir(parents=True, exist_ok=True)
+        if self.create_dirs:
+            self.ingest_dir.mkdir(parents=True, exist_ok=True)
+            self.retrieval_dir.mkdir(parents=True, exist_ok=True)
+            self.answering_dir.mkdir(parents=True, exist_ok=True)
+            self.raw_html_dir.mkdir(parents=True, exist_ok=True)
 
     def _resolve_optional_dir(self, value: str, default: Path) -> Path:
         if not value:
@@ -164,6 +166,14 @@ class Settings:
         return self.artifacts_dir / "part2"
 
     @property
+    def ingest_dir(self) -> Path:
+        return self.part1_dir
+
+    @property
+    def retrieval_dir(self) -> Path:
+        return self.part2_dir
+
+    @property
     def raw_html_dir(self) -> Path:
         return self._resolve_optional_dir(
             self.raw_html_dir_override,
@@ -173,6 +183,14 @@ class Settings:
     @property
     def part3_dir(self) -> Path:
         return self.artifacts_dir / "part3"
+
+    @property
+    def answering_dir(self) -> Path:
+        return self.part3_dir
+
+    @property
+    def ingest_raw_html_dir(self) -> Path:
+        return self.raw_html_dir
 
     @property
     def normalized_docs_path(self) -> Path:
@@ -195,15 +213,63 @@ class Settings:
         return self.part2_dir / "retrieval_log.jsonl"
 
     @property
+    def ingest_data_quality_report_path(self) -> Path:
+        return self.ingest_dir / "data_quality_report.json"
+
+    @property
+    def source_approval_report_path(self) -> Path:
+        return self.ingest_dir / "source_approval_report.json"
+
+    @property
+    def ingest_validation_report_path(self) -> Path:
+        return self.ingest_dir / "validation_report.json"
+
+    @property
+    def retrieval_benchmark_report_path(self) -> Path:
+        return self.retrieval_dir / "benchmark_report.json"
+
+    @property
+    def retrieval_eval_report_path(self) -> Path:
+        return self.retrieval_dir / "retrieval_eval_report.json"
+
+    @property
+    def retrieval_sanity_report_path(self) -> Path:
+        return self.retrieval_dir / "sanity_report.json"
+
+    @property
+    def retrieval_smoke_report_path(self) -> Path:
+        return self.retrieval_dir / "smoke_report.json"
+
+    @property
     def part2_smoke_report_path(self) -> Path:
-        return self.part2_dir / "smoke_report.json"
+        return self.retrieval_smoke_report_path
+
+    @property
+    def answer_log_path(self) -> Path:
+        return self.answering_dir / "answer_log.jsonl"
 
     @property
     def part3_answer_log_path(self) -> Path:
-        return self.part3_dir / "answer_log.jsonl"
+        return self.answer_log_path
+
+    @property
+    def answer_eval_report_path(self) -> Path:
+        return self.answering_dir / "answer_eval_report.json"
+
+    @property
+    def ragas_eval_dataset_preview_path(self) -> Path:
+        return self.answering_dir / "ragas_eval_dataset_preview.json"
+
+    @property
+    def ragas_eval_report_path(self) -> Path:
+        return self.answering_dir / "ragas_eval_report.json"
+
+    @property
+    def runtime_endpoint_report_path(self) -> Path:
+        return self.answering_dir / "runtime_endpoint_report.json"
 
 
-def load_settings(root_dir: str | Path) -> Settings:
+def load_settings(root_dir: str | Path, *, create_dirs: bool = False) -> Settings:
     env_path = Path(root_dir) / ".env"
     if env_path.exists():
         for raw_line in env_path.read_text(encoding="utf-8").splitlines():
@@ -211,5 +277,9 @@ def load_settings(root_dir: str | Path) -> Settings:
             if not line or line.startswith("#") or "=" not in line:
                 continue
             key, value = line.split("=", 1)
-            os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
-    return Settings(root_dir=Path(root_dir))
+            normalized_key = key.strip()
+            normalized_value = value.strip().strip('"').strip("'")
+            current_value = os.environ.get(normalized_key)
+            if current_value is None or not current_value.strip():
+                os.environ[normalized_key] = normalized_value
+    return Settings(root_dir=Path(root_dir), create_dirs=create_dirs)

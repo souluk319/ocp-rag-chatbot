@@ -7,11 +7,11 @@ import requests
 
 from ocp_rag.shared.settings import Settings
 
+from .sentence_model import load_sentence_model
+
 
 class EmbeddingClient:
     def __init__(self, settings: Settings) -> None:
-        if not settings.embedding_base_url:
-            raise ValueError("EMBEDDING_BASE_URL must be configured for remote embeddings")
         self.base_url = settings.embedding_base_url
         self.model = settings.embedding_model
         self.api_key = settings.embedding_api_key
@@ -36,7 +36,7 @@ class EmbeddingClient:
                 candidates.append(candidate)
         return candidates
 
-    def _request_embeddings(self, batch: list[str]) -> list[list[float]]:
+    def _request_remote_embeddings(self, batch: list[str]) -> list[list[float]]:
         last_error: Exception | None = None
         for model_name in self._candidate_models():
             try:
@@ -59,6 +59,35 @@ class EmbeddingClient:
             f"Failed to fetch embeddings from {self.base_url} using model '{self.model}'"
         ) from last_error
 
+    def _request_local_embeddings(self, batch: list[str]) -> list[list[float]]:
+        model = load_sentence_model(self.model)
+        vectors = model.encode(
+            batch,
+            normalize_embeddings=False,
+            show_progress_bar=False,
+        )
+        if hasattr(vectors, "tolist"):
+            vectors = vectors.tolist()
+        return [list(map(float, vector)) for vector in vectors]
+
+    def _request_embeddings(
+        self,
+        batch: list[str],
+        *,
+        prefer_local: bool = False,
+    ) -> list[list[float]]:
+        if prefer_local:
+            try:
+                return self._request_local_embeddings(batch)
+            except Exception:  # noqa: BLE001
+                pass
+        if self.base_url:
+            try:
+                return self._request_remote_embeddings(batch)
+            except Exception:  # noqa: BLE001
+                pass
+        return self._request_local_embeddings(batch)
+
     def embed_texts(
         self,
         texts: Iterable[str],
@@ -67,9 +96,10 @@ class EmbeddingClient:
         items = list(texts)
         vectors: list[list[float]] = []
         total_batches = (len(items) + self.batch_size - 1) // self.batch_size
+        prefer_local = len(items) == 1
         for start in range(0, len(items), self.batch_size):
             batch = items[start : start + self.batch_size]
-            vectors.extend(self._request_embeddings(batch))
+            vectors.extend(self._request_embeddings(batch, prefer_local=prefer_local))
             if progress_callback is not None:
                 completed_batches = (start // self.batch_size) + 1
                 progress_callback(completed_batches, total_batches)

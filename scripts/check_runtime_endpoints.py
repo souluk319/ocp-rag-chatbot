@@ -34,7 +34,7 @@ def _safe_json(response: requests.Response) -> dict | list | str:
 
 
 def main() -> int:
-    settings = load_settings(ROOT)
+    settings = load_settings(ROOT, create_dirs=True)
     report: dict[str, object] = {
         "embedding": {},
         "llm": {},
@@ -122,7 +122,7 @@ def main() -> int:
             "error": str(exc),
         }
 
-    output_path = settings.part3_dir / "runtime_endpoint_report.json"
+    output_path = settings.runtime_endpoint_report_path
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"wrote runtime endpoint report: {output_path}")

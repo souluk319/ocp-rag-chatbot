@@ -27,7 +27,11 @@ class SettingsPathTests(unittest.TestCase):
                 self.assertEqual(root / "artifacts", settings.artifacts_dir)
                 self.assertEqual(root / "artifacts" / "part1", settings.part1_dir)
                 self.assertEqual(root / "artifacts" / "part2", settings.part2_dir)
+                self.assertEqual(settings.part1_dir, settings.ingest_dir)
+                self.assertEqual(settings.part2_dir, settings.retrieval_dir)
+                self.assertEqual(root / "artifacts" / "part3", settings.answering_dir)
                 self.assertEqual(root / "artifacts" / "part1" / "raw_html", settings.raw_html_dir)
+                self.assertFalse((root / "artifacts").exists())
             finally:
                 if old_env is None:
                     os.environ.pop("ARTIFACTS_DIR", None)
@@ -51,7 +55,11 @@ class SettingsPathTests(unittest.TestCase):
                 self.assertEqual(external.resolve(), settings.artifacts_dir)
                 self.assertEqual((external / "part1").resolve(), settings.part1_dir)
                 self.assertEqual((external / "part2").resolve(), settings.part2_dir)
+                self.assertEqual((external / "part1").resolve(), settings.ingest_dir)
+                self.assertEqual((external / "part2").resolve(), settings.retrieval_dir)
+                self.assertEqual((external / "part3").resolve(), settings.answering_dir)
                 self.assertEqual((external / "part1" / "raw_html").resolve(), settings.raw_html_dir)
+                self.assertFalse((root / "artifacts").exists())
             finally:
                 if old_env is None:
                     os.environ.pop("ARTIFACTS_DIR", None)
@@ -76,6 +84,7 @@ class SettingsPathTests(unittest.TestCase):
                     (root / "artifacts" / "part1").resolve(),
                     settings.part1_dir.resolve(),
                 )
+                self.assertEqual(settings.ingest_dir.resolve(), settings.part1_dir.resolve())
                 self.assertEqual(external_raw.resolve(), settings.raw_html_dir.resolve())
             finally:
                 if old_env is None:
@@ -108,6 +117,37 @@ class SettingsPathTests(unittest.TestCase):
                     (root.parent / "shared-artifacts" / "part1" / "raw_html").resolve(),
                     settings.raw_html_dir,
                 )
+                self.assertEqual(settings.part2_smoke_report_path, settings.retrieval_smoke_report_path)
+                self.assertEqual(settings.part3_answer_log_path, settings.answer_log_path)
+            finally:
+                if old_env is None:
+                    os.environ.pop("ARTIFACTS_DIR", None)
+                else:
+                    os.environ["ARTIFACTS_DIR"] = old_env
+                if old_raw_env is None:
+                    os.environ.pop("RAW_HTML_DIR", None)
+                else:
+                    os.environ["RAW_HTML_DIR"] = old_raw_env
+
+    def test_env_file_override_wins_when_existing_env_is_blank(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            external = root.parent / "shared-artifacts"
+            (root / ".env").write_text(
+                f'ARTIFACTS_DIR="{external}"\n',
+                encoding="utf-8",
+            )
+            old_env = os.environ.get("ARTIFACTS_DIR")
+            old_raw_env = os.environ.get("RAW_HTML_DIR")
+            try:
+                os.environ["ARTIFACTS_DIR"] = ""
+                os.environ.pop("RAW_HTML_DIR", None)
+                settings = load_settings(root, create_dirs=True)
+                self.assertEqual(external.resolve(), settings.artifacts_dir)
+                self.assertTrue(settings.ingest_dir.exists())
+                self.assertTrue(settings.retrieval_dir.exists())
+                self.assertTrue(settings.answering_dir.exists())
+                self.assertFalse((root / "artifacts").exists())
             finally:
                 if old_env is None:
                     os.environ.pop("ARTIFACTS_DIR", None)
@@ -154,6 +194,18 @@ class SettingsPathTests(unittest.TestCase):
                 settings = load_settings(root)
                 self.assertEqual("dragonkue/bge-m3-ko", settings.embedding_model)
                 self.assertEqual("", settings.embedding_base_url)
+                self.assertEqual(
+                    root / "artifacts" / "part1" / "data_quality_report.json",
+                    settings.ingest_data_quality_report_path,
+                )
+                self.assertEqual(
+                    root / "artifacts" / "part2" / "benchmark_report.json",
+                    settings.retrieval_benchmark_report_path,
+                )
+                self.assertEqual(
+                    root / "artifacts" / "part3" / "answer_eval_report.json",
+                    settings.answer_eval_report_path,
+                )
             finally:
                 if old_artifacts is None:
                     os.environ.pop("ARTIFACTS_DIR", None)
