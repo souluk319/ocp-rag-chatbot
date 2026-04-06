@@ -431,6 +431,22 @@ class RetrievalTests(unittest.TestCase):
         self.assertTrue(has_follow_up_reference("거기서 안 넘어가고 걸려 있는 리소스 찾는 명령어는?"))
         self.assertTrue(has_follow_up_reference("찾았는데도 안 지워지면 finalizers는 어떻게 봐?"))
 
+    def test_has_follow_up_reference_ignores_discourse_starter_for_explicit_new_topic(self) -> None:
+        self.assertFalse(has_follow_up_reference("그리고 CrashLoopBackOff는?"))
+
+    def test_rewrite_query_keeps_explicit_new_topic_fresh(self) -> None:
+        context = SessionContext(
+            mode="ops",
+            current_topic="RBAC",
+            topic_journal=["RBAC"],
+            recent_turns=[TurnMemory(query="alice 사용자 권한 부여", topic="RBAC")],
+            recent_steps=["역할 바인딩 추가", "적용 결과 확인"],
+        )
+
+        rewritten = rewrite_query("그리고 CrashLoopBackOff는?", context)
+
+        self.assertEqual("그리고 CrashLoopBackOff는?", rewritten)
+
     def test_detect_unsupported_product_flags_external_install_query(self) -> None:
         self.assertEqual("harbor", detect_unsupported_product("Harbor 설치 방법 알려줘"))
         self.assertEqual("argo cd", detect_unsupported_product("Argo CD 설치 절차 알려줘"))

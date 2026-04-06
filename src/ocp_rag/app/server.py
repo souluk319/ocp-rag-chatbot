@@ -1430,6 +1430,8 @@ def _infer_explicit_topic(query: str) -> str | None:
     normalized = (query or "").strip()
     if not normalized:
         return None
+    if has_certificate_monitor_intent(normalized):
+        return "Certificates"
     if ETCD_RE.search(normalized):
         if has_backup_restore_intent(normalized):
             return "etcd 백업/복원"
@@ -1451,6 +1453,13 @@ def _infer_topic_from_citation(citation: Citation) -> str | None:
     anchor = (citation.anchor or "").lower()
     combined = " ".join(part for part in [book_slug, section, anchor] if part)
 
+    if (
+        "certificate" in combined
+        or "certificates" in combined
+        or "ocp-certificates" in combined
+        or "monitor-certificates" in combined
+    ):
+        return "Certificates"
     if "authentication_and_authorization" in book_slug or "role" in combined or "rbac" in combined:
         return "RBAC"
     if "etcd" in combined or "backup_and_restore" in book_slug:
@@ -1477,6 +1486,8 @@ def _stabilize_topic_from_entities(topic: str | None, open_entities: list[str]) 
 
     entity_set = set(open_entities)
     lowered = cleaned_topic.lower()
+    if "Certificates" in entity_set:
+        return "Certificates"
     if "RBAC" in entity_set:
         return "RBAC"
     if "Machine Config Operator" in entity_set:
@@ -1494,6 +1505,8 @@ def _stabilize_topic_from_entities(topic: str | None, open_entities: list[str]) 
 
 def _infer_open_entities(topic: str) -> list[str]:
     normalized = (topic or "").lower()
+    if "certificate" in normalized or "certificates" in normalized:
+        return ["Certificates"]
     if "etcd" in normalized:
         return ["etcd"]
     if "machine config operator" in normalized or "mco" in normalized:

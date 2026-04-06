@@ -124,10 +124,17 @@ FOLLOW_UP_HINTS = (
     "남아",
     "아까",
     "이전",
-    "해당",
-    "1번",
-    "2번",
-    "3번",
+)
+FOLLOW_UP_STARTERS = (
+    "그리고",
+    "그럼",
+    "그러면",
+    "이어서",
+    "그 다음",
+    "또 ",
+    "찾았는데도",
+    "거기서",
+    "그 상태에서",
 )
 COMMAND_STYLE_HINTS = (
     "그 명령",
@@ -156,9 +163,15 @@ UNSUPPORTED_INTENT_RE = re.compile(
 
 
 OC_LOGIN_RE = re.compile(r"\boc\s+login\b", re.IGNORECASE)
-POD_PENDING_RE = re.compile(r"\bpod\b.*\bpending\b|\bpending\b.*\bpod\b", re.IGNORECASE)
-CRASHLOOPBACKOFF_RE = re.compile(r"\bcrashloopbackoff\b", re.IGNORECASE)
-POD_LIFECYCLE_RE = re.compile(r"\bpod\b.*\blifecycle\b|\blifecycle\b.*\bpod\b", re.IGNORECASE)
+POD_PENDING_RE = re.compile(
+    r"(?:\bpod\b.*\bpending\b|\bpending\b.*\bpod\b|pod\s*pending(?:[가-힣]+)?)",
+    re.IGNORECASE,
+)
+CRASHLOOPBACKOFF_RE = re.compile(r"crashloopbackoff(?:[가-힣]+)?", re.IGNORECASE)
+POD_LIFECYCLE_RE = re.compile(
+    r"(?:\bpod\b.*\blifecycle\b|\blifecycle\b.*\bpod\b|pod\s*lifecycle(?:[가-힣]+)?)",
+    re.IGNORECASE,
+)
 
 
 def contains_hangul(text: str) -> bool:
@@ -976,21 +989,15 @@ def has_explicit_topic_signal(query: str) -> bool:
 def has_follow_up_reference(query: str) -> bool:
     normalized = _collapse_spaces(query)
     lowered = normalized.lower()
+    if STEP_REFERENCE_RE.search(normalized):
+        return True
+    if PROCEDURE_CURRENT_STEP_RE.search(normalized) or PROCEDURE_NEXT_STEP_RE.search(normalized):
+        return True
     if any(hint in normalized for hint in FOLLOW_UP_HINTS):
         return True
-    return lowered.startswith(
-        (
-            "그리고",
-            "그럼",
-            "그러면",
-            "이어서",
-            "그 다음",
-            "또 ",
-            "찾았는데도",
-            "거기서",
-            "그 상태에서",
-        )
-    )
+    if lowered.startswith(FOLLOW_UP_STARTERS):
+        return not has_explicit_topic_signal(normalized)
+    return False
 
 
 def needs_rewrite(query: str, context: SessionContext) -> bool:
@@ -1014,6 +1021,8 @@ def needs_rewrite(query: str, context: SessionContext) -> bool:
     ):
         return False
 
+    if _resolve_step_reference(normalized, context) or _resolve_procedure_step_index(normalized, context) is not None:
+        return True
     if has_follow_up_reference(normalized):
         return True
     if has_explicit_topic_signal(normalized):

@@ -552,6 +552,26 @@ def _citation_group_tokens(group: CitationGroupMemory) -> set[str]:
     return _branch_tokens(" ".join(texts))
 
 
+def _explicit_branch_match_score(normalized_query: str, group: CitationGroupMemory) -> int:
+    score = 0
+    topic_lower = (group.topic or "").strip().lower()
+    if topic_lower and topic_lower in normalized_query:
+        score += 5
+    query_lower = (group.query or "").strip().lower()
+    if query_lower and query_lower in normalized_query:
+        score += 4
+
+    primary = group.primary_citation()
+    if primary is not None:
+        book_slug = (primary.book_slug or "").strip().lower()
+        section = (primary.section or "").strip().lower()
+        if book_slug and book_slug in normalized_query:
+            score += 3
+        if section and section in normalized_query:
+            score += 2
+    return score
+
+
 def _select_citation_group_for_query(
     query: str,
     context: SessionContext | None,
@@ -574,27 +594,34 @@ def _select_citation_group_for_query(
         else None
     )
     query_tokens = _branch_tokens(normalized)
+    explicit_citation_reference = _has_explicit_citation_reference(query)
     branch_return = bool(BRANCH_RETURN_RE.search(query or ""))
+    explicit_matches: list[tuple[int, int, CitationGroupMemory]] = []
     scored: list[tuple[int, int, CitationGroupMemory]] = []
 
     for index, group in enumerate(groups):
         score = 0
         group_tokens = _citation_group_tokens(group)
         score += len(query_tokens & group_tokens)
-        topic_lower = (group.topic or "").strip().lower()
-        if topic_lower and topic_lower in normalized:
-            score += 5
-        primary = group.primary_citation()
-        if primary is not None:
-            book_slug = (primary.book_slug or "").strip().lower()
-            section = (primary.section or "").strip().lower()
-            if book_slug and book_slug in normalized:
-                score += 3
-            if section and section in normalized:
-                score += 2
+        explicit_score = _explicit_branch_match_score(normalized, group)
+        score += explicit_score
+        if explicit_score > 0:
+            explicit_matches.append((explicit_score, index, group))
         if active_identity is not None and _citation_group_identity(group) == active_identity:
-            score += 1 if not branch_return else -1
+            score += 1 if not branch_return else 0
         scored.append((score, index, group))
+
+    if explicit_matches:
+        explicit_matches.sort(key=lambda item: (item[0], item[1]), reverse=True)
+        top_score = explicit_matches[0][0]
+        top_groups = [item for item in explicit_matches if item[0] == top_score]
+        if len(top_groups) > 1:
+            return None, "ambiguous_branch_reference"
+        chosen = top_groups[0][2]
+        return chosen, f"branch topic={chosen.topic or chosen.query or 'session'}"
+
+    if explicit_citation_reference and context.active_citation_group is not None and context.active_citation_group.citations:
+        return context.active_citation_group, "active_branch"
 
     scored.sort(key=lambda item: (item[0], item[1]), reverse=True)
     if scored and scored[0][0] > 0:

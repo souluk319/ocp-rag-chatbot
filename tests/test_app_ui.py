@@ -163,6 +163,60 @@ class Part4UiTests(unittest.TestCase):
         self.assertEqual("authentication_and_authorization", second.citation_groups[1].citations[0].book_slug)
         self.assertEqual("authentication_and_authorization", second.active_citation_group.citations[0].book_slug)
 
+    def test_derive_next_context_sets_certificate_topic_from_explicit_query(self) -> None:
+        result = AnswerResult(
+            query="How do I check certificate expiry?",
+            mode="ops",
+            answer="Answer: Use oc adm ocp-certificates monitor-certificates [1]",
+            rewritten_query="How do I check certificate expiry?",
+            citations=[
+                _citation(
+                    1,
+                    book_slug="cli_tools",
+                    section="2.7.1.25. oc adm ocp-certificates monitor-certificates",
+                    anchor="oc-adm-ocp-certificates-monitor-certificates",
+                )
+            ],
+            cited_indices=[1],
+        )
+
+        updated = _derive_next_context(
+            SessionContext(mode="ops", current_topic="RBAC", ocp_version="4.20"),
+            query="How do I check certificate expiry?",
+            mode="ops",
+            result=result,
+        )
+
+        self.assertEqual("Certificates", updated.current_topic)
+        self.assertEqual(["Certificates"], updated.open_entities)
+
+    def test_derive_next_context_infers_certificate_topic_from_citation(self) -> None:
+        result = AnswerResult(
+            query="Which command should I use?",
+            mode="ops",
+            answer="Answer: Use oc adm ocp-certificates monitor-certificates [1]",
+            rewritten_query="Which command should I use?",
+            citations=[
+                _citation(
+                    1,
+                    book_slug="cli_tools",
+                    section="2.7.1.25. oc adm ocp-certificates monitor-certificates",
+                    anchor="oc-adm-ocp-certificates-monitor-certificates",
+                )
+            ],
+            cited_indices=[1],
+        )
+
+        updated = _derive_next_context(
+            SessionContext(mode="ops", current_topic="legacy", ocp_version="4.20"),
+            query="Which command should I use?",
+            mode="ops",
+            result=result,
+        )
+
+        self.assertEqual("Certificates", updated.current_topic)
+        self.assertEqual(["Certificates"], updated.open_entities)
+
     def test_derive_next_context_builds_procedure_memory(self) -> None:
         result = AnswerResult(
             query="Grant admin in one namespace with rolebinding",

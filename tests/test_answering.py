@@ -730,6 +730,74 @@ class Part3AnswererTests(unittest.TestCase):
             )
         )
 
+    def test_answerer_keeps_active_branch_for_implicit_same_document_return(self) -> None:
+        context = SessionContext(
+            mode="ops",
+            current_topic="Certificates",
+            active_citation_group=CitationGroupMemory(
+                query="인증서 만료 확인",
+                topic="Certificates",
+                citations=[
+                    CitationMemory(
+                        chunk_id="chunk-cert",
+                        book_slug="security",
+                        section="인증서 만료 확인",
+                        anchor="cert-monitor",
+                        source_url="https://example.com/security",
+                        viewer_path="/docs/security.html#cert-monitor",
+                        excerpt="인증서 만료를 확인합니다.",
+                    )
+                ],
+            ),
+            citation_groups=[
+                CitationGroupMemory(
+                    query="RBAC rolebinding 설명",
+                    topic="RBAC",
+                    citations=[
+                        CitationMemory(
+                            chunk_id="chunk-rbac",
+                            book_slug="authentication_and_authorization",
+                            section="RoleBinding",
+                            anchor="adding-roles",
+                            source_url="https://example.com/rbac",
+                            viewer_path="/docs/rbac.html#adding-roles",
+                            excerpt="RoleBinding으로 권한을 부여합니다.",
+                        )
+                    ],
+                ),
+                CitationGroupMemory(
+                    query="인증서 만료 확인",
+                    topic="Certificates",
+                    citations=[
+                        CitationMemory(
+                            chunk_id="chunk-cert",
+                            book_slug="security",
+                            section="인증서 만료 확인",
+                            anchor="cert-monitor",
+                            source_url="https://example.com/security",
+                            viewer_path="/docs/security.html#cert-monitor",
+                            excerpt="인증서 만료를 확인합니다.",
+                        )
+                    ],
+                ),
+            ],
+        )
+        answerer = Part3Answerer(
+            settings=Settings(root_dir=ROOT),
+            retriever=_ExplodingRetriever(),
+            llm_client=_ReplayLLMClient(),
+        )
+
+        result = answerer.answer(
+            "아까 그 문서 기준으로 다시 정리해줘",
+            mode="ops",
+            context=context,
+        )
+
+        self.assertEqual("replayed", result.citations[0].origin)
+        self.assertEqual("security", result.citations[0].book_slug)
+        self.assertEqual("hit", result.retrieval_trace["citation_replay"]["status"])
+
     def test_answerer_uses_prior_branch_focus_for_risky_return_query(self) -> None:
         class _TrackingRetriever:
             def __init__(self) -> None:
