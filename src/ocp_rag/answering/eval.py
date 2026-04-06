@@ -4,7 +4,7 @@ import re
 from collections import defaultdict
 from typing import Any
 
-from ocp_rag.retrieval.models import SessionContext
+from ocp_rag.session import SessionContext
 
 from .answerer import Part3Answerer
 

@@ -8,7 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from .models import SourceManifestEntry
-from .settings import HIGH_VALUE_SLUGS, Settings
+from ocp_rag.shared.settings import HIGH_VALUE_SLUGS, Settings
 
 
 BOOK_HREF_RE = re.compile(

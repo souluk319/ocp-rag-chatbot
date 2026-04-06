@@ -5,7 +5,7 @@ import time
 
 import requests
 
-from ocp_rag.ingest.settings import Settings
+from ocp_rag.shared.settings import Settings
 
 
 class LLMClient:

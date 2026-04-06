@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 
 from .models import SourceManifestEntry
-from .settings import Settings
+from ocp_rag.shared.settings import Settings
 
 
 def _decode_response_text(response: requests.Response) -> str:

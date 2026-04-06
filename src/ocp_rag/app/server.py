@@ -14,19 +14,21 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from ocp_rag.ingest.settings import HIGH_VALUE_SLUGS, load_settings
-from ocp_rag.ingest.validation import read_jsonl
-from ocp_rag.retrieval.command_memory import (
-    build_command_template_follow_up_answer,
-    build_command_template_memory,
-)
-from ocp_rag.retrieval.models import (
+from ocp_rag.answering import Part3Answerer
+from ocp_rag.answering.models import AnswerResult, Citation
+from ocp_rag.session import (
     CitationGroupMemory,
     CitationMemory,
     CommandTemplateMemory,
     ProcedureMemory,
     SessionContext,
     TurnMemory,
+)
+from ocp_rag.shared.io import read_jsonl
+from ocp_rag.shared.settings import HIGH_VALUE_SLUGS, load_settings
+from ocp_rag.retrieval.command_memory import (
+    build_command_template_follow_up_answer,
+    build_command_template_memory,
 )
 from ocp_rag.retrieval.query import (
     ARCHITECTURE_RE,
@@ -45,8 +47,6 @@ from ocp_rag.retrieval.query import (
     is_generic_intro_query,
     STEP_REFERENCE_RE,
 )
-from ocp_rag.answering import Part3Answerer
-from ocp_rag.answering.models import AnswerResult, Citation
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"

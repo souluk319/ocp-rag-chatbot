@@ -5,7 +5,7 @@ from collections.abc import Callable
 import requests
 
 from .models import ChunkRecord
-from .settings import Settings
+from ocp_rag.shared.settings import Settings
 
 
 def ensure_collection(settings: Settings) -> None:

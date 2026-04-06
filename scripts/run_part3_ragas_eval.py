@@ -10,7 +10,8 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag.ingest.settings import load_settings
+from ocp_rag.shared.io import read_jsonl
+from ocp_rag.shared.settings import load_settings
 from ocp_rag.answering import Part3Answerer
 from ocp_rag.answering.ragas_eval import (
     DEFAULT_OPENAI_EMBEDDING_MODEL,
@@ -18,7 +19,6 @@ from ocp_rag.answering.ragas_eval import (
     build_ragas_case_row,
     generate_answers_for_cases,
     load_openai_judge_config_from_env,
-    read_jsonl,
     evaluate_cases_with_ragas,
 )
 

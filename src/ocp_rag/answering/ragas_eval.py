@@ -7,6 +7,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from ocp_rag.session import SessionContext
+from ocp_rag.shared.io import read_jsonl
+
 try:
     from ragas import evaluate
     from ragas.dataset_schema import EvaluationDataset
@@ -30,8 +33,6 @@ try:
     from langchain_openai import OpenAIEmbeddings
 except ModuleNotFoundError:
     OpenAIEmbeddings = None
-
-from ocp_rag.retrieval.models import SessionContext
 
 from .answerer import Part3Answerer
 from .models import AnswerResult
@@ -62,16 +63,6 @@ class OpenAIJudgeConfig:
     judge_model: str = DEFAULT_OPENAI_JUDGE_MODEL
     embedding_model: str = DEFAULT_OPENAI_EMBEDDING_MODEL
     base_url: str | None = None
-
-
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    with path.open(encoding="utf-8") as handle:
-        for line in handle:
-            line = line.strip()
-            if line:
-                rows.append(json.loads(line))
-    return rows
 
 
 def _clean_text(value: Any) -> str:

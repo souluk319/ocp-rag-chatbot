@@ -10,7 +10,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from ocp_rag.ingest.audit import build_data_quality_report
-from ocp_rag.ingest.settings import load_settings
+from ocp_rag.shared.settings import load_settings
 
 
 def main() -> int:

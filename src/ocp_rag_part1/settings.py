@@ -1,1 +1,1 @@
-from ocp_rag.ingest.settings import *
+from ocp_rag.shared.settings import *

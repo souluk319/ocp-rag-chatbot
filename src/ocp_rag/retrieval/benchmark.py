@@ -1,22 +1,12 @@
 from __future__ import annotations
 
-import json
 from collections import defaultdict
-from pathlib import Path
 from typing import Any
 
-from .models import SessionContext
+from ocp_rag.session import SessionContext
+from ocp_rag.shared.io import read_jsonl
+
 from .retriever import Part2Retriever
-
-
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    with path.open(encoding="utf-8") as handle:
-        for line in handle:
-            line = line.strip()
-            if line:
-                rows.append(json.loads(line))
-    return rows
 
 
 def evaluate_case(

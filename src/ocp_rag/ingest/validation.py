@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import json
 import re
 from collections import Counter
 
 import requests
+from ocp_rag.shared.io import read_jsonl
 
 from .manifest import read_manifest
-from .settings import Settings
+from ocp_rag.shared.settings import Settings
 
 
 HANGUL_RE = re.compile(r"[가-힣]")
@@ -46,16 +46,6 @@ REQUIRED_BM25_KEYS = {
     "viewer_path",
     "text",
 }
-
-
-def read_jsonl(path) -> list[dict]:
-    rows: list[dict] = []
-    with path.open(encoding="utf-8") as handle:
-        for line in handle:
-            line = line.strip()
-            if line:
-                rows.append(json.loads(line))
-    return rows
 
 
 def _text_has_hangul(text: str) -> bool:

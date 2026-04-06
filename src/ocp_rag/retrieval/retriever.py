@@ -10,10 +10,11 @@ from typing import Any
 import requests
 
 from ocp_rag.ingest.embedding import EmbeddingClient
-from ocp_rag.ingest.settings import Settings
+from ocp_rag.shared.settings import Settings
+from ocp_rag.session import SessionContext
 
 from .bm25 import BM25Index
-from .models import RetrievalHit, RetrievalResult, SessionContext
+from .models import RetrievalHit, RetrievalResult
 from .query import (
     contains_hangul,
     decompose_retrieval_queries,

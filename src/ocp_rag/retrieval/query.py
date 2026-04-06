@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import re
 
+from ocp_rag.session import SessionContext
+
 from .command_memory import build_command_template_hints
-from .models import SessionContext
 
 
 HANGUL_RE = re.compile(r"[\uac00-\ud7a3]")

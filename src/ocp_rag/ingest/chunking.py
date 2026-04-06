@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from .models import ChunkRecord, NormalizedSection
 from .sentence_model import load_sentence_model
-from .settings import Settings
+from ocp_rag.shared.settings import Settings
 
 
 def _split_text_for_tokenizer(text: str, max_chars: int) -> list[str]:

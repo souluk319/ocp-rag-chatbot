@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
@@ -10,9 +9,10 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag.ingest.settings import load_settings
+from ocp_rag.shared.io import read_jsonl
+from ocp_rag.shared.settings import load_settings
 from ocp_rag.retrieval.retriever import Part2Retriever
-from ocp_rag.retrieval.sanity import evaluate_case, read_jsonl, summarize_results
+from ocp_rag.retrieval.sanity import evaluate_case, summarize_results
 
 
 def build_parser() -> argparse.ArgumentParser:

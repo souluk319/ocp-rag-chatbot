@@ -6,10 +6,10 @@ from collections import Counter
 from pathlib import Path
 
 from bs4 import BeautifulSoup
+from ocp_rag.shared.io import read_jsonl
 
 from .manifest import read_manifest, write_manifest
 from .models import SourceManifestEntry
-from .validation import read_jsonl
 
 
 HANGUL_SYLLABLE_RE = re.compile(r"[가-힣]")

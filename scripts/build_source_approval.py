@@ -15,7 +15,7 @@ from ocp_rag.ingest.audit import (
     build_source_approval_report,
     write_approved_manifest,
 )
-from ocp_rag.ingest.settings import load_settings
+from ocp_rag.shared.settings import load_settings
 
 
 def _parse_args() -> argparse.Namespace:

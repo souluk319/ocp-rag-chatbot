@@ -10,7 +10,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from ocp_rag.ingest.pipeline import run_part1
-from ocp_rag.ingest.settings import load_settings
+from ocp_rag.shared.settings import load_settings
 
 
 def build_parser() -> argparse.ArgumentParser:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from .models import CommandTemplateMemory, SessionContext
+from ocp_rag.session import CommandTemplateMemory, SessionContext
 
 
 STEP_REFERENCE_RE = re.compile(r"(?<!\d)(1[0-2]|[1-9])번(?:\s*단계)?")

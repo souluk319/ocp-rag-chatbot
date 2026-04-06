@@ -5,7 +5,7 @@ from typing import Iterable
 
 import requests
 
-from .settings import Settings
+from ocp_rag.shared.settings import Settings
 
 
 class EmbeddingClient:

@@ -10,7 +10,7 @@ from .manifest import fetch_docs_index, parse_manifest_entries, read_manifest, w
 from .models import ChunkRecord, NormalizedSection, PipelineLog, SourceManifestEntry
 from .normalize import extract_sections
 from .qdrant_store import ensure_collection, upsert_chunks
-from .settings import HIGH_VALUE_SLUGS, Settings
+from ocp_rag.shared.settings import HIGH_VALUE_SLUGS, Settings
 
 
 def _write_jsonl(path: Path, rows: list[dict]) -> None:

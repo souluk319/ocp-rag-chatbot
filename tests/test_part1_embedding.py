@@ -11,7 +11,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from ocp_rag.ingest.embedding import EmbeddingClient
-from ocp_rag.ingest.settings import Settings
+from ocp_rag.shared.settings import Settings
 
 
 class _FakeResponse:

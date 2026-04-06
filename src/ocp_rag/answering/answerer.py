@@ -6,9 +6,8 @@ import time
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-from ocp_rag.ingest.settings import Settings
-from ocp_rag.retrieval import Part2Retriever, SessionContext
-from ocp_rag.retrieval.models import CitationGroupMemory
+from ocp_rag.shared.settings import Settings
+from ocp_rag.retrieval import Part2Retriever
 from ocp_rag.retrieval.command_memory import build_command_template_follow_up_answer
 from ocp_rag.retrieval.query import (
     STEP_REFERENCE_RE,
@@ -22,6 +21,7 @@ from ocp_rag.retrieval.query import (
     has_step_by_step_intent,
     is_generic_intro_query,
 )
+from ocp_rag.session import CitationGroupMemory, SessionContext
 
 from .context import assemble_context, build_context_bundle_from_citations
 from .llm import LLMClient
