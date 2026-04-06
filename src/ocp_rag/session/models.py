@@ -203,6 +203,57 @@ class ProcedureMemory:
 
 
 @dataclass(slots=True)
+class BranchFocusSnapshot:
+    branch_key: str = ""
+    topic: str | None = None
+    citation_group: CitationGroupMemory | None = None
+    procedure_memory: ProcedureMemory | None = None
+    recent_steps: list[str] = field(default_factory=list)
+    recent_commands: list[str] = field(default_factory=list)
+    recent_command_templates: list[CommandTemplateMemory] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any] | None) -> "BranchFocusSnapshot":
+        if not payload:
+            return cls()
+        citation_group = payload.get("citation_group")
+        procedure_memory = payload.get("procedure_memory")
+        recent_command_templates = payload.get("recent_command_templates") or []
+        if isinstance(recent_command_templates, dict):
+            recent_command_templates = [recent_command_templates]
+        return cls(
+            branch_key=str(payload.get("branch_key") or ""),
+            topic=payload.get("topic"),
+            citation_group=(
+                citation_group
+                if isinstance(citation_group, CitationGroupMemory)
+                else CitationGroupMemory.from_dict(citation_group)
+                if citation_group
+                else None
+            ),
+            procedure_memory=(
+                procedure_memory
+                if isinstance(procedure_memory, ProcedureMemory)
+                else ProcedureMemory.from_dict(procedure_memory)
+                if procedure_memory
+                else None
+            ),
+            recent_steps=list(payload.get("recent_steps") or []),
+            recent_commands=list(payload.get("recent_commands") or []),
+            recent_command_templates=[
+                item
+                if isinstance(item, CommandTemplateMemory)
+                else CommandTemplateMemory.from_dict(item)
+                for item in recent_command_templates
+                if item
+            ],
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(slots=True)
 class SessionContext:
     mode: str | None = None
     user_goal: str | None = None
@@ -219,6 +270,7 @@ class SessionContext:
     procedure_memory: ProcedureMemory | None = None
     active_citation_group: CitationGroupMemory | None = None
     citation_groups: list[CitationGroupMemory] = field(default_factory=list)
+    branch_snapshots: list[BranchFocusSnapshot] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any] | None) -> "SessionContext":
@@ -242,6 +294,9 @@ class SessionContext:
         citation_groups = payload.get("citation_groups") or []
         if isinstance(citation_groups, dict):
             citation_groups = [citation_groups]
+        branch_snapshots = payload.get("branch_snapshots") or []
+        if isinstance(branch_snapshots, dict):
+            branch_snapshots = [branch_snapshots]
         return cls(
             mode=payload.get("mode"),
             user_goal=payload.get("user_goal"),
@@ -282,6 +337,13 @@ class SessionContext:
                 if isinstance(item, CitationGroupMemory)
                 else CitationGroupMemory.from_dict(item)
                 for item in citation_groups
+                if item
+            ],
+            branch_snapshots=[
+                item
+                if isinstance(item, BranchFocusSnapshot)
+                else BranchFocusSnapshot.from_dict(item)
+                for item in branch_snapshots
                 if item
             ],
         )

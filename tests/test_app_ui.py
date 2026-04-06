@@ -12,7 +12,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag.retrieval.models import ProcedureMemory, SessionContext
+from ocp_rag.retrieval.models import BranchFocusSnapshot, CitationGroupMemory, ProcedureMemory, SessionContext
 from ocp_rag.answering.models import AnswerResult, Citation
 from ocp_rag.app.server import (
     _build_chat_payload,
@@ -22,6 +22,7 @@ from ocp_rag.app.server import (
     _internal_viewer_html,
     _override_answer_with_command_template_follow_up,
     _override_answer_with_procedure_follow_up,
+    _resolve_branch_focus_context,
     _viewer_path_to_local_html,
 )
 
@@ -163,6 +164,238 @@ class Part4UiTests(unittest.TestCase):
         self.assertEqual("authentication_and_authorization", second.citation_groups[1].citations[0].book_slug)
         self.assertEqual("authentication_and_authorization", second.active_citation_group.citations[0].book_slug)
 
+    def test_derive_next_context_records_branch_snapshots(self) -> None:
+        first = _derive_next_context(
+            SessionContext(mode="ops", ocp_version="4.20"),
+            query="Grant admin in one namespace with rolebinding",
+            mode="ops",
+            result=AnswerResult(
+                query="Grant admin in one namespace with rolebinding",
+                mode="ops",
+                answer=(
+                    "Answer: Use a RoleBinding [1]\n\n"
+                    "1. Create the binding\n"
+                    "```bash\noc adm policy add-role-to-user admin alice -n joe\n```\n\n"
+                    "2. Verify binding\n"
+                    "```bash\noc describe rolebinding -n joe\n```"
+                ),
+                rewritten_query="Grant admin in one namespace with rolebinding",
+                citations=[_citation(1, book_slug="authentication_and_authorization", section="RoleBinding")],
+                cited_indices=[1],
+            ),
+        )
+        second = _derive_next_context(
+            first,
+            query="How do I check certificate expiry?",
+            mode="ops",
+            result=AnswerResult(
+                query="How do I check certificate expiry?",
+                mode="ops",
+                answer="Answer: Use oc adm ocp-certificates monitor-certificates [1]",
+                rewritten_query="How do I check certificate expiry?",
+                citations=[
+                    _citation(
+                        1,
+                        book_slug="cli_tools",
+                        section="2.7.1.25. oc adm ocp-certificates monitor-certificates",
+                        anchor="oc-adm-ocp-certificates-monitor-certificates",
+                    )
+                ],
+                cited_indices=[1],
+            ),
+        )
+
+        self.assertEqual(2, len(second.branch_snapshots))
+        self.assertEqual("Certificates", second.current_topic)
+
+    def test_resolve_branch_focus_context_restores_prior_branch_snapshot(self) -> None:
+        context = SessionContext(
+            mode="ops",
+            current_topic="Certificates",
+            open_entities=["Certificates"],
+            active_citation_group=CitationGroupMemory(
+                query="인증서 만료 확인",
+                topic="Certificates",
+                citations=[
+                    Citation(
+                        index=1,
+                        chunk_id="chunk-cert",
+                        book_slug="security",
+                        section="인증서 만료 확인",
+                        anchor="cert-monitor",
+                        source_url="https://example.com/security",
+                        viewer_path="/docs/security.html#cert-monitor",
+                        excerpt="인증서 만료를 확인합니다.",
+                    ).to_dict()
+                ],
+            ),
+            citation_groups=[
+                CitationGroupMemory(
+                    query="RBAC rolebinding 설명",
+                    topic="RBAC",
+                    citations=[
+                        {
+                            "chunk_id": "chunk-rbac",
+                            "book_slug": "authentication_and_authorization",
+                            "section": "RoleBinding",
+                            "anchor": "adding-roles",
+                            "source_url": "https://example.com/rbac",
+                            "viewer_path": "/docs/rbac.html#adding-roles",
+                            "excerpt": "RoleBinding으로 권한을 부여합니다.",
+                            "origin": "retrieved",
+                        }
+                    ],
+                ),
+                CitationGroupMemory(
+                    query="인증서 만료 확인",
+                    topic="Certificates",
+                    citations=[
+                        {
+                            "chunk_id": "chunk-cert",
+                            "book_slug": "security",
+                            "section": "인증서 만료 확인",
+                            "anchor": "cert-monitor",
+                            "source_url": "https://example.com/security",
+                            "viewer_path": "/docs/security.html#cert-monitor",
+                            "excerpt": "인증서 만료를 확인합니다.",
+                            "origin": "retrieved",
+                        }
+                    ],
+                ),
+            ],
+            branch_snapshots=[
+                BranchFocusSnapshot(
+                    branch_key="topic::rbac",
+                    topic="RBAC",
+                    citation_group=CitationGroupMemory(
+                        query="RBAC rolebinding 설명",
+                        topic="RBAC",
+                        citations=[
+                            {
+                                "chunk_id": "chunk-rbac",
+                                "book_slug": "authentication_and_authorization",
+                                "section": "RoleBinding",
+                                "anchor": "adding-roles",
+                                "source_url": "https://example.com/rbac",
+                                "viewer_path": "/docs/rbac.html#adding-roles",
+                                "excerpt": "RoleBinding으로 권한을 부여합니다.",
+                                "origin": "retrieved",
+                            }
+                        ],
+                    ),
+                    procedure_memory=ProcedureMemory(
+                        goal="namespace admin 권한 부여",
+                        steps=["역할 바인딩 추가", "적용 결과 확인"],
+                        active_step_index=1,
+                        step_commands=[
+                            "oc adm policy add-role-to-user admin alice -n joe",
+                            "oc describe rolebinding -n joe",
+                        ],
+                    ),
+                    recent_steps=["역할 바인딩 추가", "적용 결과 확인"],
+                    recent_commands=["oc describe rolebinding -n joe"],
+                ),
+                BranchFocusSnapshot(
+                    branch_key="topic::certificates",
+                    topic="Certificates",
+                    citation_group=CitationGroupMemory(
+                        query="인증서 만료 확인",
+                        topic="Certificates",
+                        citations=[
+                            {
+                                "chunk_id": "chunk-cert",
+                                "book_slug": "security",
+                                "section": "인증서 만료 확인",
+                                "anchor": "cert-monitor",
+                                "source_url": "https://example.com/security",
+                                "viewer_path": "/docs/security.html#cert-monitor",
+                                "excerpt": "인증서 만료를 확인합니다.",
+                                "origin": "retrieved",
+                            }
+                        ],
+                    ),
+                    recent_commands=["oc adm ocp-certificates monitor-certificates"],
+                ),
+            ],
+        )
+
+        resolved = _resolve_branch_focus_context(context, "그때 RBAC 2번만 더 자세히")
+
+        assert resolved is not None
+        self.assertEqual("RBAC", resolved.current_topic)
+        self.assertEqual("authentication_and_authorization", resolved.active_citation_group.citations[0].book_slug)
+        self.assertIsNotNone(resolved.procedure_memory)
+        assert resolved.procedure_memory is not None
+        self.assertEqual(1, resolved.procedure_memory.active_step_index)
+        self.assertEqual("oc describe rolebinding -n joe", resolved.recent_commands[0])
+
+    def test_resolve_branch_focus_context_keeps_active_branch_for_implicit_document_follow_up(self) -> None:
+        context = SessionContext(
+            mode="ops",
+            current_topic="Certificates",
+            open_entities=["Certificates"],
+            active_citation_group=CitationGroupMemory(
+                query="인증서 만료 확인",
+                topic="Certificates",
+                citations=[
+                    {
+                        "chunk_id": "chunk-cert",
+                        "book_slug": "security",
+                        "section": "인증서 만료 확인",
+                        "anchor": "cert-monitor",
+                        "source_url": "https://example.com/security",
+                        "viewer_path": "/docs/security.html#cert-monitor",
+                        "excerpt": "인증서 만료를 확인합니다.",
+                        "origin": "retrieved",
+                    }
+                ],
+            ),
+            citation_groups=[
+                CitationGroupMemory(
+                    query="RBAC rolebinding 설명",
+                    topic="RBAC",
+                    citations=[
+                        {
+                            "chunk_id": "chunk-rbac",
+                            "book_slug": "authentication_and_authorization",
+                            "section": "RoleBinding",
+                            "anchor": "adding-roles",
+                            "source_url": "https://example.com/rbac",
+                            "viewer_path": "/docs/rbac.html#adding-roles",
+                            "excerpt": "RoleBinding으로 권한을 부여합니다.",
+                            "origin": "retrieved",
+                        }
+                    ],
+                ),
+                CitationGroupMemory(
+                    query="인증서 만료 확인",
+                    topic="Certificates",
+                    citations=[
+                        {
+                            "chunk_id": "chunk-cert",
+                            "book_slug": "security",
+                            "section": "인증서 만료 확인",
+                            "anchor": "cert-monitor",
+                            "source_url": "https://example.com/security",
+                            "viewer_path": "/docs/security.html#cert-monitor",
+                            "excerpt": "인증서 만료를 확인합니다.",
+                            "origin": "retrieved",
+                        }
+                    ],
+                ),
+            ],
+            branch_snapshots=[
+                BranchFocusSnapshot(branch_key="topic::rbac", topic="RBAC"),
+                BranchFocusSnapshot(branch_key="topic::certificates", topic="Certificates"),
+            ],
+        )
+
+        resolved = _resolve_branch_focus_context(context, "아까 그 문서 기준으로 다시 정리해줘")
+
+        assert resolved is not None
+        self.assertEqual("Certificates", resolved.current_topic)
+        self.assertEqual("security", resolved.active_citation_group.citations[0].book_slug)
+
     def test_derive_next_context_sets_certificate_topic_from_explicit_query(self) -> None:
         result = AnswerResult(
             query="How do I check certificate expiry?",
@@ -286,12 +519,19 @@ class Part4UiTests(unittest.TestCase):
                     "```bash\noc adm policy add-role-to-user admin alice -n joe\n```\n\n"
                     "2. Verify the binding\n"
                     "```bash\noc describe rolebinding -n joe\n```"
-                ),
-                rewritten_query="Grant admin in one namespace with rolebinding",
-                citations=[_citation(1)],
-                cited_indices=[1],
-            ),
-        )
+                  ),
+                  rewritten_query="Grant admin in one namespace with rolebinding",
+                  citations=[
+                      _citation(
+                          1,
+                          book_slug="authentication_and_authorization",
+                          section="RoleBinding",
+                          anchor="adding-roles",
+                      )
+                  ],
+                  cited_indices=[1],
+              ),
+          )
 
         updated = _override_answer_with_command_template_follow_up(
             query="serviceaccount 기준으로 다시",
@@ -301,6 +541,7 @@ class Part4UiTests(unittest.TestCase):
 
         self.assertIn("user/group/serviceaccount", updated.answer)
         self.assertNotIn("add-role-to-serviceaccount", updated.answer)
+        self.assertEqual("authentication_and_authorization", updated.citations[0].book_slug)
 
     def test_override_answer_with_procedure_follow_up_prefers_requested_step(self) -> None:
         result = AnswerResult(
@@ -332,6 +573,53 @@ class Part4UiTests(unittest.TestCase):
         self.assertIn("답변: 2번 단계는 Verify binding입니다.", updated.answer)
         self.assertIn("oc describe rolebinding -n joe", updated.answer)
         self.assertNotIn("oc adm policy add-role-to-user admin alice -n joe", updated.answer)
+
+    def test_override_answer_with_procedure_follow_up_realigns_citations_to_active_branch(self) -> None:
+        result = AnswerResult(
+            query="그때 RBAC 2번만 더 자세히",
+            mode="ops",
+            answer="Answer: generic follow-up",
+            rewritten_query="그때 RBAC 2번만 더 자세히",
+            citations=[_citation(1, book_slug="cli_tools", section="certificate command")],
+            cited_indices=[1],
+        )
+
+        updated = _override_answer_with_procedure_follow_up(
+            query="그때 RBAC 2번만 더 자세히",
+            context=SessionContext(
+                mode="ops",
+                active_citation_group=CitationGroupMemory(
+                    query="RBAC rolebinding 설명",
+                    topic="RBAC",
+                    citations=[
+                        {
+                            "chunk_id": "chunk-rbac",
+                            "book_slug": "authentication_and_authorization",
+                            "section": "RoleBinding",
+                            "anchor": "adding-roles",
+                            "source_url": "https://example.com/rbac",
+                            "viewer_path": "/docs/rbac.html#adding-roles",
+                            "excerpt": "RoleBinding으로 권한을 부여합니다.",
+                            "origin": "retrieved",
+                        }
+                    ],
+                ),
+                procedure_memory=ProcedureMemory(
+                    goal="namespace admin role",
+                    steps=["Create binding", "Verify binding"],
+                    active_step_index=1,
+                    step_commands=[
+                        "oc adm policy add-role-to-user admin alice -n joe",
+                        "oc describe rolebinding -n joe",
+                    ],
+                ),
+            ),
+            result=result,
+        )
+
+        self.assertEqual("authentication_and_authorization", updated.citations[0].book_slug)
+        self.assertEqual([1], updated.cited_indices)
+        self.assertIn("oc describe rolebinding -n joe", updated.answer)
 
     def test_viewer_path_maps_to_local_raw_html(self) -> None:
         target = _viewer_path_to_local_html(

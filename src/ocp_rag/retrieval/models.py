@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from ocp_rag.session.models import (
+    BranchFocusSnapshot,
     CitationGroupMemory,
     CitationMemory,
     CommandTemplateMemory,
@@ -57,6 +58,7 @@ class RetrievalResult:
 
 
 __all__ = [
+    "BranchFocusSnapshot",
     "CitationGroupMemory",
     "CitationMemory",
     "CommandTemplateMemory",

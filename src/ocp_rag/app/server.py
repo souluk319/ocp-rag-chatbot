@@ -15,8 +15,10 @@ from typing import Any
 from urllib.parse import urlparse
 
 from ocp_rag.answering import Part3Answerer
+from ocp_rag.answering.answerer import _select_citation_group_for_query
 from ocp_rag.answering.models import AnswerResult, Citation
 from ocp_rag.session import (
+    BranchFocusSnapshot,
     CitationGroupMemory,
     CitationMemory,
     CommandTemplateMemory,
@@ -699,6 +701,76 @@ def _merge_citation_groups(
     return merged[-limit:]
 
 
+def _build_branch_focus_snapshot(context: SessionContext) -> BranchFocusSnapshot | None:
+    group = context.active_citation_group
+    if group is None or not group.citations:
+        return None
+    return BranchFocusSnapshot(
+        branch_key=_citation_group_identity(group),
+        topic=context.current_topic,
+        citation_group=CitationGroupMemory.from_dict(group.to_dict()),
+        procedure_memory=(
+            ProcedureMemory.from_dict(context.procedure_memory.to_dict())
+            if context.procedure_memory is not None and context.procedure_memory.steps
+            else None
+        ),
+        recent_steps=list(context.recent_steps[:5]),
+        recent_commands=list(context.recent_commands[:3]),
+        recent_command_templates=[
+            CommandTemplateMemory.from_dict(template.to_dict())
+            for template in context.recent_command_templates[:3]
+        ],
+    )
+
+
+def _merge_branch_snapshots(
+    existing: list[BranchFocusSnapshot],
+    addition: BranchFocusSnapshot,
+    *,
+    limit: int = 6,
+) -> list[BranchFocusSnapshot]:
+    merged = [snapshot for snapshot in existing if snapshot.branch_key and snapshot.branch_key != addition.branch_key]
+    merged.append(addition)
+    return merged[-limit:]
+
+
+def _resolve_branch_focus_context(context: SessionContext | None, query: str) -> SessionContext | None:
+    if context is None or not context.branch_snapshots:
+        return context
+
+    normalized_context = SessionContext.from_dict(context.to_dict())
+    target_group, _ = _select_citation_group_for_query(query, normalized_context)
+    if target_group is None or not target_group.citations:
+        return context
+
+    target_key = _citation_group_identity(target_group)
+    active_key = (
+        _citation_group_identity(normalized_context.active_citation_group)
+        if normalized_context.active_citation_group is not None and normalized_context.active_citation_group.citations
+        else None
+    )
+    if target_key == active_key:
+        return normalized_context
+
+    snapshot = next((item for item in normalized_context.branch_snapshots if item.branch_key == target_key), None)
+    if snapshot is None:
+        return normalized_context
+
+    if snapshot.topic:
+        normalized_context.current_topic = snapshot.topic
+        normalized_context.open_entities = _infer_open_entities(snapshot.topic)
+    if snapshot.citation_group is not None and snapshot.citation_group.citations:
+        normalized_context.active_citation_group = CitationGroupMemory.from_dict(snapshot.citation_group.to_dict())
+    if snapshot.procedure_memory is not None and snapshot.procedure_memory.steps:
+        normalized_context.procedure_memory = ProcedureMemory.from_dict(snapshot.procedure_memory.to_dict())
+    normalized_context.recent_steps = list(snapshot.recent_steps)
+    normalized_context.recent_commands = list(snapshot.recent_commands)
+    normalized_context.recent_command_templates = [
+        CommandTemplateMemory.from_dict(template.to_dict()) for template in snapshot.recent_command_templates
+    ]
+    return normalized_context
+
+
 def _resolve_procedure_follow_up_index(
     query: str,
     context: SessionContext | None,
@@ -723,6 +795,28 @@ def _resolve_procedure_follow_up_index(
         return min(procedure.active_step_index + 1, len(procedure.steps) - 1)
 
     return None
+
+
+def _citations_from_active_branch(context: SessionContext | None) -> list[Citation]:
+    if context is None or context.active_citation_group is None:
+        return []
+    citations: list[Citation] = []
+    for index, item in enumerate(context.active_citation_group.citations[:4], start=1):
+        memory = item if isinstance(item, CitationMemory) else CitationMemory.from_dict(item)
+        citations.append(
+            Citation(
+                index=index,
+                chunk_id=memory.chunk_id,
+                book_slug=memory.book_slug,
+                section=memory.section,
+                anchor=memory.anchor,
+                source_url=memory.source_url,
+                viewer_path=memory.viewer_path,
+                excerpt=memory.excerpt,
+                origin=memory.origin or "retrieved",
+            )
+        )
+    return citations
 
 
 def _override_answer_with_procedure_follow_up(
@@ -754,7 +848,14 @@ def _override_answer_with_procedure_follow_up(
     ):
         lines.extend(["", f"다음 단계: {next_index + 1}. {procedure.steps[next_index]}"])
 
-    return replace(result, answer="\n".join(lines))
+    grounded_citations = _citations_from_active_branch(context) or result.citations
+    grounded_indices = [citation.index for citation in grounded_citations]
+    return replace(
+        result,
+        answer="\n".join(lines),
+        citations=grounded_citations,
+        cited_indices=grounded_indices,
+    )
 
 
 def _override_answer_with_command_template_follow_up(
@@ -763,17 +864,18 @@ def _override_answer_with_command_template_follow_up(
     context: SessionContext | None,
     result: AnswerResult,
 ) -> AnswerResult:
-    template = _select_command_template(query, context)
-    if template is None:
+    grounded_citations = _citations_from_active_branch(context) or result.citations
+    answer = build_command_template_follow_up_answer(query, context, grounded_citations)
+    if answer is None:
         return result
 
-    request = _parse_command_mutation_request(query, template)
-    if request is None:
-        return result
-
-    updated = _apply_command_mutation(template, request)
-    if updated.rendered == template.rendered:
-        return result
+    grounded_indices = [citation.index for citation in grounded_citations]
+    return replace(
+        result,
+        answer=answer,
+        citations=grounded_citations,
+        cited_indices=grounded_indices,
+    )
 
     citation_mark = " [1]" if result.citations else ""
     lines = [f"답변: 이전 명령에서 요청한 값만 바꿔 다시 적었습니다{citation_mark}."]
@@ -782,7 +884,14 @@ def _override_answer_with_command_template_follow_up(
         lines.extend(["", "변경: " + " / ".join(diffs)])
     fence = "yaml" if updated.format == "yaml" else "bash"
     lines.extend(["", f"```{fence}", updated.rendered, "```"])
-    return replace(result, answer="\n".join(lines))
+    grounded_citations = _citations_from_active_branch(context) or result.citations
+    grounded_indices = [citation.index for citation in grounded_citations]
+    return replace(
+        result,
+        answer="\n".join(lines),
+        citations=grounded_citations,
+        cited_indices=grounded_indices,
+    )
 
 
 def _viewer_path_to_local_html(root_dir: Path, viewer_path: str) -> Path | None:
@@ -1413,6 +1522,10 @@ def _derive_next_context(
             next_context.recent_commands = []
             next_context.recent_command_templates = []
 
+    snapshot = _build_branch_focus_snapshot(next_context)
+    if snapshot is not None:
+        next_context.branch_snapshots = _merge_branch_snapshots(next_context.branch_snapshots, snapshot)
+
     next_context.recent_turns = _merge_recent_turns(
         next_context.recent_turns,
         _build_turn_memory(
@@ -1785,23 +1898,24 @@ def _build_handler(
                 self._send_json({"error": "질문을 입력해 주세요."}, HTTPStatus.BAD_REQUEST)
                 return
 
+            effective_context = _resolve_branch_focus_context(session.context, query)
             try:
                 result = answerer.answer(
                     query,
                     mode=mode,
-                    context=session.context,
+                    context=effective_context,
                     top_k=5,
                     candidate_k=20,
                     max_context_chunks=6,
                 )
                 result = _override_answer_with_procedure_follow_up(
                     query=query,
-                    context=session.context,
+                    context=effective_context,
                     result=result,
                 )
                 result = _override_answer_with_command_template_follow_up(
                     query=query,
-                    context=session.context,
+                    context=effective_context,
                     result=result,
                 )
                 answerer.append_log(result)
@@ -1814,7 +1928,7 @@ def _build_handler(
 
             session.mode = mode
             session.context = _derive_next_context(
-                session.context,
+                effective_context,
                 query=query,
                 mode=mode,
                 result=result,
@@ -1848,6 +1962,7 @@ def _build_handler(
                 }
             )
 
+            effective_context = _resolve_branch_focus_context(session.context, query)
             def emit_trace(event: dict[str, Any]) -> None:
                 self._stream_event(event)
 
@@ -1855,7 +1970,7 @@ def _build_handler(
                 result = answerer.answer(
                     query,
                     mode=mode,
-                    context=session.context,
+                    context=effective_context,
                     top_k=5,
                     candidate_k=20,
                     max_context_chunks=6,
@@ -1863,12 +1978,12 @@ def _build_handler(
                 )
                 result = _override_answer_with_procedure_follow_up(
                     query=query,
-                    context=session.context,
+                    context=effective_context,
                     result=result,
                 )
                 result = _override_answer_with_command_template_follow_up(
                     query=query,
-                    context=session.context,
+                    context=effective_context,
                     result=result,
                 )
                 answerer.append_log(result)
@@ -1883,7 +1998,7 @@ def _build_handler(
 
             session.mode = mode
             session.context = _derive_next_context(
-                session.context,
+                effective_context,
                 query=query,
                 mode=mode,
                 result=result,
@@ -1910,20 +2025,6 @@ def _build_handler(
             )
 
     return ChatHandler
-
-
-def _override_answer_with_command_template_follow_up(
-    *,
-    query: str,
-    context: SessionContext | None,
-    result: AnswerResult,
-) -> AnswerResult:
-    answer = build_command_template_follow_up_answer(query, context, result.citations)
-    if not answer:
-        return result
-    return replace(result, answer=answer)
-
-
 def serve(
     *,
     answerer: Part3Answerer,
