@@ -6,6 +6,7 @@ from pathlib import Path
 from .chunking import chunk_sections
 from .collector import collect_entry, raw_html_path
 from .embedding import EmbeddingClient
+from .local_docs import extract_sections_from_local_path
 from .manifest import fetch_docs_index, parse_manifest_entries, read_manifest, write_manifest
 from .models import ChunkRecord, NormalizedSection, PipelineLog, SourceManifestEntry
 from .normalize import extract_sections
@@ -29,6 +30,26 @@ def _save_log(settings: Settings, log: PipelineLog) -> None:
 
 def _progress(message: str) -> None:
     print(message, flush=True)
+
+
+def _write_chunk_outputs(settings: Settings, chunks: list[ChunkRecord], *, chunks_path: Path, bm25_path: Path) -> None:
+    _write_jsonl(chunks_path, [chunk.to_dict() for chunk in chunks])
+    _write_jsonl(
+        bm25_path,
+        [
+            {
+                "chunk_id": chunk.chunk_id,
+                "book_slug": chunk.book_slug,
+                "chapter": chunk.chapter,
+                "section": chunk.section,
+                "anchor": chunk.anchor,
+                "source_url": chunk.source_url,
+                "viewer_path": chunk.viewer_path,
+                "text": chunk.text,
+            }
+            for chunk in chunks
+        ],
+    )
 
 
 def ensure_manifest(settings: Settings, refresh: bool = False) -> list[SourceManifestEntry]:
@@ -130,22 +151,11 @@ def run_ingest_pipeline(
     for book_slug, count in chunk_counts.items():
         log.upsert_book_stat(book_slug, chunk_count=count)
     _progress(f"[chunk] total_chunks={len(chunks)}")
-    _write_jsonl(settings.chunks_path, [chunk.to_dict() for chunk in chunks])
-    _write_jsonl(
-        settings.bm25_corpus_path,
-        [
-            {
-                "chunk_id": chunk.chunk_id,
-                "book_slug": chunk.book_slug,
-                "chapter": chunk.chapter,
-                "section": chunk.section,
-                "anchor": chunk.anchor,
-                "source_url": chunk.source_url,
-                "viewer_path": chunk.viewer_path,
-                "text": chunk.text,
-            }
-            for chunk in chunks
-        ],
+    _write_chunk_outputs(
+        settings,
+        chunks,
+        chunks_path=settings.chunks_path,
+        bm25_path=settings.bm25_corpus_path,
     )
     _save_log(settings, log)
 
@@ -183,3 +193,41 @@ def run_ingest_pipeline(
     log.stage = "done"
     _save_log(settings, log)
     return log
+
+
+def run_local_document_pipeline(
+    settings: Settings,
+    *,
+    inputs: list[str | Path],
+    output_dir: str | Path | None = None,
+) -> dict[str, object]:
+    target_dir = Path(output_dir) if output_dir is not None else settings.ingest_dir / "local_document_preview"
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    manifest_rows: list[dict] = []
+    sections: list[NormalizedSection] = []
+    for item in inputs:
+        entry, doc_sections = extract_sections_from_local_path(item)
+        manifest_rows.append(entry.to_dict())
+        sections.extend(doc_sections)
+
+    chunks = chunk_sections(sections, settings)
+    normalized_path = target_dir / "normalized_docs.jsonl"
+    chunks_path = target_dir / "chunks.jsonl"
+    bm25_path = target_dir / "bm25_corpus.jsonl"
+    manifest_path = target_dir / "source_manifest_local.json"
+
+    _write_jsonl(normalized_path, [section.to_dict() for section in sections])
+    _write_chunk_outputs(settings, chunks, chunks_path=chunks_path, bm25_path=bm25_path)
+    manifest_path.write_text(json.dumps(manifest_rows, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    return {
+        "output_dir": str(target_dir),
+        "manifest_path": str(manifest_path),
+        "normalized_docs_path": str(normalized_path),
+        "chunks_path": str(chunks_path),
+        "bm25_corpus_path": str(bm25_path),
+        "document_count": len(manifest_rows),
+        "section_count": len(sections),
+        "chunk_count": len(chunks),
+    }

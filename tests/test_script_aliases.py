@@ -28,6 +28,7 @@ class ScriptEntrypointTests(unittest.TestCase):
         script_names = (
             "audit_data_quality.py",
             "run_ingest.py",
+            "run_local_doc_ingest.py",
             "validate_ingest_outputs.py",
             "run_retrieval_benchmark.py",
             "run_retrieval_eval.py",

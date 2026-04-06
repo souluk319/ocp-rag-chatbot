@@ -198,30 +198,30 @@ def _parse_marked_text(marked_text: str) -> tuple[str, list[dict[str, object]]]:
     return book_title or "Untitled", sections
 
 
-def extract_sections(html: str, entry: SourceManifestEntry) -> list[NormalizedSection]:
-    soup = BeautifulSoup(html, "html.parser")
-    article = soup.select_one("main#main-content article") or soup.select_one("article")
-    if article is None:
-        raise ValueError(f"Could not find article body for {entry.book_slug}")
+def _extract_sections_from_article(article: Tag, entry: SourceManifestEntry) -> list[NormalizedSection]:
+    article = BeautifulSoup(str(article), "html.parser")
+    root = article.find()
+    if root is None:
+        return []
 
     for selector in REMOVE_SELECTORS:
-        for node in article.select(selector):
+        for node in root.select(selector):
             node.decompose()
 
-    for tag in article.find_all("pre"):
+    for tag in root.find_all("pre"):
         code_text = _normalize_code(tag.get_text("", strip=False))
         tag.replace_with(NavigableString(f"\n\n[CODE]\n{code_text}\n[/CODE]\n\n"))
 
-    for tag in article.find_all("code"):
+    for tag in root.find_all("code"):
         inline_code = " ".join(tag.get_text(" ", strip=True).split())
         if inline_code:
             tag.replace_with(NavigableString(f"`{inline_code}`"))
 
-    for tag in article.find_all("table"):
+    for tag in root.find_all("table"):
         table_text = _table_to_text(tag)
         tag.replace_with(NavigableString(f"\n\n[TABLE]\n{table_text}\n[/TABLE]\n\n"))
 
-    for heading in article.find_all(re.compile(r"^h[1-6]$")):
+    for heading in root.find_all(re.compile(r"^h[1-6]$")):
         level = int(heading.name[1:])
         marker = json.dumps(
             {
@@ -233,7 +233,7 @@ def extract_sections(html: str, entry: SourceManifestEntry) -> list[NormalizedSe
         )
         heading.replace_with(NavigableString(f"\n\n<<<HEADING {marker} >>>\n\n"))
 
-    marked_text = article.get_text("\n")
+    marked_text = root.get_text("\n")
     book_title, parsed_sections = _parse_marked_text(marked_text)
     sections: list[NormalizedSection] = []
 
@@ -260,6 +260,20 @@ def extract_sections(html: str, entry: SourceManifestEntry) -> list[NormalizedSe
         )
 
     return sections
+
+
+def extract_sections_from_html_fragment(html: str, entry: SourceManifestEntry) -> list[NormalizedSection]:
+    soup = BeautifulSoup(html, "html.parser")
+    article = soup.select_one("main#main-content article") or soup.select_one("article") or soup.body or soup
+    return _extract_sections_from_article(article, entry)
+
+
+def extract_sections(html: str, entry: SourceManifestEntry) -> list[NormalizedSection]:
+    soup = BeautifulSoup(html, "html.parser")
+    article = soup.select_one("main#main-content article") or soup.select_one("article")
+    if article is None:
+        raise ValueError(f"Could not find article body for {entry.book_slug}")
+    return _extract_sections_from_article(article, entry)
 
 
 def iter_normalized_dicts(sections: Iterable[NormalizedSection]) -> list[dict[str, object]]:
