@@ -21,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--cases",
         type=Path,
-        default=ROOT / "manifests" / "part2_retrieval_sanity_cases.jsonl",
+        default=ROOT / "manifests" / "retrieval_sanity_cases.jsonl",
     )
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--candidate-k", type=int, default=20)

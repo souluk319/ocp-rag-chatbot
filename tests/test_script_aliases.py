@@ -10,6 +10,20 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ScriptEntrypointTests(unittest.TestCase):
+    def test_canonical_case_manifests_exist(self) -> None:
+        manifest_names = (
+            "retrieval_benchmark_cases.jsonl",
+            "retrieval_eval_cases.jsonl",
+            "retrieval_sanity_cases.jsonl",
+            "retrieval_smoke_queries.jsonl",
+            "answer_eval_cases.jsonl",
+            "ragas_eval_cases.jsonl",
+            "realworld_eval_cases.jsonl",
+        )
+        for manifest_name in manifest_names:
+            with self.subTest(manifest=manifest_name):
+                self.assertTrue((ROOT / "manifests" / manifest_name).exists())
+
     def test_canonical_entrypoints_expose_help(self) -> None:
         script_names = (
             "audit_data_quality.py",
