@@ -8,11 +8,15 @@ from ocp_rag.retrieval.query import (
     has_architecture_explainer_intent,
     has_backup_restore_intent,
     has_cluster_node_usage_intent,
+    has_crashloopbackoff_intent,
     has_kubernetes_compare_follow_up_intent,
     has_mco_concept_intent,
     has_node_drain_intent,
+    has_oc_login_intent,
     has_openshift_kubernetes_compare_intent,
     has_operator_concept_intent,
+    has_pod_lifecycle_intent,
+    has_pod_pending_intent,
     has_project_finalizer_intent,
     has_project_terminating_intent,
     has_rbac_intent,
@@ -128,12 +132,37 @@ def _should_force_clarification(
     top_books = {hit.book_slug for hit in top_hits}
     top_book = top_hits[0].book_slug
     top_book_count = sum(int(hit.book_slug == top_book) for hit in hits[:4])
+    coherent_low_score_cluster = top_book_count >= 3 and len(top_books) <= 2 and top_score >= 0.015
+    if coherent_low_score_cluster or has_oc_login_intent(normalized):
+        return False
+    if has_pod_pending_intent(normalized) and top_book in {
+        "cli_tools",
+        "nodes",
+        "support",
+        "storage",
+        "edge_computing",
+    } and top_book_count >= 2:
+        return False
+    if has_crashloopbackoff_intent(normalized) and top_book in {
+        "support",
+        "cli_tools",
+        "nodes",
+        "postinstallation_configuration",
+    } and top_book_count >= 2:
+        return False
+    if has_pod_lifecycle_intent(normalized) and top_book in {
+        "nodes",
+        "workloads_apis",
+        "template_apis",
+        "architecture",
+    } and top_book_count >= 2:
+        return False
     close_competitor = second_score >= top_score * 0.94 if top_score > 0 else False
     weak_support = top_book_count == 1 or (top_book_count == 2 and len(top_books) >= 3)
 
     # Use a very conservative absolute floor only when support is weak.
     low_top_score = top_score < 0.018
-    low_margin = (top_score - second_score) < 0.0025 if top_score > 0 else True
+    low_margin = (top_score - second_score) < 0.0025 if top_score > 0 and len(top_books) >= 2 else False
 
     return (weak_support and close_competitor) or (
         low_top_score and (weak_support or low_margin)

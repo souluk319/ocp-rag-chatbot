@@ -155,6 +155,12 @@ UNSUPPORTED_INTENT_RE = re.compile(
 )
 
 
+OC_LOGIN_RE = re.compile(r"\boc\s+login\b", re.IGNORECASE)
+POD_PENDING_RE = re.compile(r"\bpod\b.*\bpending\b|\bpending\b.*\bpod\b", re.IGNORECASE)
+CRASHLOOPBACKOFF_RE = re.compile(r"\bcrashloopbackoff\b", re.IGNORECASE)
+POD_LIFECYCLE_RE = re.compile(r"\bpod\b.*\blifecycle\b|\blifecycle\b.*\bpod\b", re.IGNORECASE)
+
+
 def contains_hangul(text: str) -> bool:
     return bool(HANGUL_RE.search(text or ""))
 
@@ -239,6 +245,22 @@ def has_certificate_monitor_intent(query: str) -> bool:
         or "모니터" in normalized
         or "monitor" in normalized.lower()
     )
+
+
+def has_oc_login_intent(query: str) -> bool:
+    return bool(OC_LOGIN_RE.search(query or ""))
+
+
+def has_pod_pending_intent(query: str) -> bool:
+    return bool(POD_PENDING_RE.search(query or ""))
+
+
+def has_crashloopbackoff_intent(query: str) -> bool:
+    return bool(CRASHLOOPBACKOFF_RE.search(query or ""))
+
+
+def has_pod_lifecycle_intent(query: str) -> bool:
+    return bool(POD_LIFECYCLE_RE.search(query or ""))
 
 
 def has_rbac_intent(query: str) -> bool:
@@ -498,6 +520,10 @@ def query_book_adjustments(
     project_scoped_rbac = has_project_scoped_rbac_intent(normalized)
     rbac_assignment = has_rbac_assignment_intent(normalized)
     prefers_rbac_api_docs = bool(ROLE_API_STYLE_RE.search(normalized))
+    oc_login_intent = has_oc_login_intent(normalized)
+    pod_pending_intent = has_pod_pending_intent(normalized)
+    crashloopbackoff_intent = has_crashloopbackoff_intent(normalized)
+    pod_lifecycle_intent = has_pod_lifecycle_intent(normalized)
 
     if is_generic_intro_query(normalized):
         boosts["architecture"] = 1.35
@@ -533,6 +559,61 @@ def query_book_adjustments(
         penalties["tutorials"] = min(penalties.get("tutorials", 1.0), 0.7)
         penalties["support"] = min(penalties.get("support", 1.0), 0.72)
         penalties["cli_tools"] = min(penalties.get("cli_tools", 1.0), 0.76)
+
+    if oc_login_intent:
+        boosts["cli_tools"] = max(boosts.get("cli_tools", 1.0), 1.65)
+        boosts["web_console"] = max(boosts.get("web_console", 1.0), 1.16)
+        boosts["authentication_and_authorization"] = max(
+            boosts.get("authentication_and_authorization", 1.0),
+            1.14,
+        )
+        penalties["release_notes"] = min(penalties.get("release_notes", 1.0), 0.72)
+        penalties["registry"] = min(penalties.get("registry", 1.0), 0.78)
+
+    if pod_pending_intent:
+        boosts["cli_tools"] = max(boosts.get("cli_tools", 1.0), 1.42)
+        boosts["nodes"] = max(boosts.get("nodes", 1.0), 1.3)
+        boosts["support"] = max(boosts.get("support", 1.0), 1.16)
+        boosts["edge_computing"] = max(boosts.get("edge_computing", 1.0), 1.1)
+        penalties["machine_management"] = min(penalties.get("machine_management", 1.0), 0.58)
+        penalties["updating_clusters"] = min(penalties.get("updating_clusters", 1.0), 0.62)
+        penalties["authentication_and_authorization"] = min(
+            penalties.get("authentication_and_authorization", 1.0),
+            0.72,
+        )
+        penalties["ingress_and_load_balancing"] = min(
+            penalties.get("ingress_and_load_balancing", 1.0),
+            0.76,
+        )
+
+    if crashloopbackoff_intent:
+        boosts["support"] = max(boosts.get("support", 1.0), 1.44)
+        boosts["cli_tools"] = max(boosts.get("cli_tools", 1.0), 1.34)
+        boosts["nodes"] = max(boosts.get("nodes", 1.0), 1.18)
+        boosts["postinstallation_configuration"] = max(
+            boosts.get("postinstallation_configuration", 1.0),
+            1.12,
+        )
+        penalties["hosted_control_planes"] = min(
+            penalties.get("hosted_control_planes", 1.0),
+            0.48,
+        )
+        penalties["ovn-kubernetes_network_plugin"] = min(
+            penalties.get("ovn-kubernetes_network_plugin", 1.0),
+            0.7,
+        )
+        penalties["specialized_hardware_and_driver_enablement"] = min(
+            penalties.get("specialized_hardware_and_driver_enablement", 1.0),
+            0.78,
+        )
+
+    if pod_lifecycle_intent:
+        boosts["nodes"] = max(boosts.get("nodes", 1.0), 1.52)
+        boosts["workloads_apis"] = max(boosts.get("workloads_apis", 1.0), 1.4)
+        boosts["template_apis"] = max(boosts.get("template_apis", 1.0), 1.12)
+        boosts["architecture"] = max(boosts.get("architecture", 1.0), 1.08)
+        penalties["edge_computing"] = min(penalties.get("edge_computing", 1.0), 0.42)
+        penalties["operators"] = min(penalties.get("operators", 1.0), 0.76)
 
     if has_doc_locator_intent(normalized):
         boosts["web_console"] = 1.35 if "콘솔" in normalized else boosts.get("web_console", 1.0)
@@ -838,6 +919,14 @@ def normalize_query(query: str) -> str:
         terms.extend(["소개", "overview", "architecture", "기본", "개념"])
     if has_architecture_explainer_intent(normalized):
         terms.extend(["OpenShift", "Container", "Platform"])
+    if has_oc_login_intent(normalized):
+        terms.extend(["cli", "login", "kubeconfig", "kubeadmin", "web", "browser"])
+    if has_pod_pending_intent(normalized):
+        terms.extend(["scheduling", "oc", "describe", "events", "resource", "namespace"])
+    if has_crashloopbackoff_intent(normalized):
+        terms.extend(["oc", "logs", "describe", "pod", "error", "troubleshooting"])
+    if has_pod_lifecycle_intent(normalized):
+        terms.extend(["nodes", "workloads", "initContainers", "restartPolicy", "spec", "status"])
     if has_openshift_kubernetes_compare_intent(normalized) or has_kubernetes_compare_follow_up_intent(
         normalized
     ):
@@ -876,6 +965,10 @@ def has_explicit_topic_signal(query: str) -> bool:
             bool(AUTHZ_RE.search(normalized)),
             bool(ARCHITECTURE_RE.search(normalized)),
             bool(OPERATOR_RE.search(normalized)),
+            has_oc_login_intent(normalized),
+            has_pod_pending_intent(normalized),
+            has_crashloopbackoff_intent(normalized),
+            has_pod_lifecycle_intent(normalized),
         ]
     )
 
