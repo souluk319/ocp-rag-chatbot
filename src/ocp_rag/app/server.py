@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 from ocp_rag.answering import Answerer
 from ocp_rag.answering.answerer import _select_citation_group_for_query
 from ocp_rag.answering.models import AnswerResult, Citation
+from ocp_rag.ingest.pipeline import run_local_document_pipeline
 from ocp_rag.session import (
     BranchFocusSnapshot,
     CitationGroupMemory,
@@ -898,7 +899,9 @@ def _viewer_path_to_local_html(root_dir: Path, viewer_path: str) -> Path | None:
     parsed = _parse_viewer_path(viewer_path)
     if parsed is None:
         return None
-    book_slug, _ = parsed
+    kind, book_slug, _ = parsed
+    if kind != "ocp":
+        return None
     settings = load_settings(root_dir, create_dirs=False)
     candidate = settings.raw_html_dir / f"{book_slug}.html"
     if not candidate.exists():
@@ -906,17 +909,18 @@ def _viewer_path_to_local_html(root_dir: Path, viewer_path: str) -> Path | None:
     return candidate
 
 
-def _parse_viewer_path(viewer_path: str) -> tuple[str, str] | None:
+def _parse_viewer_path(viewer_path: str) -> tuple[str, str, str] | None:
     parsed = urlparse((viewer_path or "").strip())
     request_path = parsed.path.strip()
-    prefix = "/docs/ocp/4.20/ko/"
-    if not request_path.startswith(prefix):
-        return None
-    remainder = request_path[len(prefix) :]
-    parts = [part for part in remainder.split("/") if part]
-    if len(parts) != 2 or parts[1] != "index.html":
-        return None
-    return parts[0], parsed.fragment.strip()
+    for prefix, kind in (("/docs/ocp/4.20/ko/", "ocp"), ("/docs/local/", "local")):
+        if not request_path.startswith(prefix):
+            continue
+        remainder = request_path[len(prefix) :]
+        parts = [part for part in remainder.split("/") if part]
+        if len(parts) != 2 or parts[1] != "index.html":
+            return None
+        return kind, parts[0], parsed.fragment.strip()
+    return None
 
 
 def _render_inline_html(text: str) -> str:
@@ -1089,6 +1093,40 @@ def _build_library_payload(root_dir: Path) -> dict[str, Any]:
     }
 
 
+def _local_document_preview_dir(root_dir: Path) -> Path:
+    settings = load_settings(root_dir, create_dirs=False)
+    return settings.ingest_dir / "local_document_preview"
+
+
+def _local_document_upload_dir(root_dir: Path) -> Path:
+    settings = load_settings(root_dir, create_dirs=True)
+    target = settings.ingest_dir / "local_uploads"
+    target.mkdir(parents=True, exist_ok=True)
+    return target
+
+
+def _build_local_docs_payload(root_dir: Path) -> dict[str, Any]:
+    normalized_docs_path = _local_document_preview_dir(root_dir) / "normalized_docs.jsonl"
+    if not normalized_docs_path.exists():
+        return {
+            "available": False,
+            "items": [],
+            "total_books": 0,
+            "total_sections": 0,
+        }
+
+    items = _load_library_index(
+        str(normalized_docs_path),
+        normalized_docs_path.stat().st_mtime_ns,
+    )
+    return {
+        "available": True,
+        "items": items,
+        "total_books": len(items),
+        "total_sections": sum(int(item["section_count"]) for item in items),
+    }
+
+
 @lru_cache(maxsize=8)
 def _load_book_title_lookup(
     normalized_docs_path: str,
@@ -1124,6 +1162,15 @@ def _resolve_book_title(root_dir: Path, citation: Citation) -> str:
         book_title = lookup.get((citation.book_slug or "").strip())
         if book_title:
             return book_title
+    local_docs_path = _local_document_preview_dir(root_dir) / "normalized_docs.jsonl"
+    if local_docs_path.exists():
+        lookup = _load_book_title_lookup(
+            str(local_docs_path),
+            local_docs_path.stat().st_mtime_ns,
+        )
+        book_title = lookup.get((citation.book_slug or "").strip())
+        if book_title:
+            return book_title
     return _humanize_book_slug(citation.book_slug)
 
 
@@ -1135,14 +1182,61 @@ def _citation_payload(root_dir: Path, citation: Citation) -> dict[str, Any]:
     }
 
 
+def _sanitize_local_doc_name(name: str) -> str:
+    candidate = Path((name or "").strip()).name
+    cleaned = re.sub(r"[^0-9A-Za-z가-힣._-]+", "_", candidate)
+    return cleaned or f"document-{uuid.uuid4().hex[:8]}.txt"
+
+
+def _save_local_docs_and_build_preview(root_dir: Path, docs: list[dict[str, Any]]) -> dict[str, Any]:
+    if not docs:
+        raise ValueError("등록할 문서가 없습니다.")
+
+    settings = load_settings(root_dir, create_dirs=True)
+    upload_dir = _local_document_upload_dir(root_dir)
+    ingest_inputs: list[dict[str, Any]] = []
+    allowed_suffixes = {".html", ".htm", ".md", ".markdown", ".txt"}
+
+    for index, doc in enumerate(docs, start=1):
+        name = _sanitize_local_doc_name(str(doc.get("name") or f"document-{index}.txt"))
+        suffix = Path(name).suffix.lower()
+        if suffix not in allowed_suffixes:
+            raise ValueError(f"지원하지 않는 형식입니다: {suffix or name}")
+        content = doc.get("content")
+        if not isinstance(content, str) or not content.strip():
+            raise ValueError(f"빈 문서는 등록할 수 없습니다: {name}")
+        target = upload_dir / f"{uuid.uuid4().hex[:8]}-{name}"
+        target.write_text(content, encoding="utf-8")
+        display_title = Path(name).stem.strip() or f"document-{index}"
+        ingest_inputs.append(
+            {
+                "path": target,
+                "title": display_title,
+                "book_slug": display_title,
+            }
+        )
+
+    preview_dir = _local_document_preview_dir(root_dir)
+    report = run_local_document_pipeline(settings, inputs=ingest_inputs, output_dir=preview_dir)
+    return {
+        "ok": True,
+        "report": report,
+        "library": _build_local_docs_payload(root_dir),
+    }
+
+
 def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
     parsed = _parse_viewer_path(viewer_path)
     if parsed is None:
         return None
 
-    book_slug, target_anchor = parsed
+    kind, book_slug, target_anchor = parsed
     settings = load_settings(root_dir, create_dirs=False)
-    normalized_docs_path = settings.normalized_docs_path
+    normalized_docs_path = (
+        settings.normalized_docs_path
+        if kind == "ocp"
+        else _local_document_preview_dir(root_dir) / "normalized_docs.jsonl"
+    )
     if not normalized_docs_path.exists():
         return None
 
@@ -1855,6 +1949,9 @@ def _build_handler(
             if self.path == "/api/library":
                 self._send_json(_build_library_payload(root_dir))
                 return
+            if self.path == "/api/local-docs":
+                self._send_json(_build_local_docs_payload(root_dir))
+                return
             internal_viewer = _internal_viewer_html(root_dir, self.path)
             if internal_viewer is not None:
                 self._send_html(internal_viewer)
@@ -1882,6 +1979,9 @@ def _build_handler(
                 return
             if self.path == "/api/reset":
                 self._handle_reset(payload)
+                return
+            if self.path == "/api/local-docs/upload":
+                self._handle_local_docs_upload(payload)
                 return
             self.send_error(HTTPStatus.NOT_FOUND, "Not found")
 
@@ -2024,6 +2124,24 @@ def _build_handler(
                 }
             )
 
+        def _handle_local_docs_upload(self, payload: dict[str, Any]) -> None:
+            docs = payload.get("docs")
+            if not isinstance(docs, list):
+                self._send_json({"error": "등록할 문서 목록이 필요합니다."}, HTTPStatus.BAD_REQUEST)
+                return
+            try:
+                result = _save_local_docs_and_build_preview(root_dir, docs)
+            except ValueError as exc:
+                self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                return
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(
+                    {"error": f"문서 등록 중 오류가 발생했습니다: {exc}"},
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
+                return
+            self._send_json(result)
+
     return ChatHandler
 def serve(
     *,
@@ -2053,6 +2171,7 @@ __all__ = [
     "SessionStore",
     "_citation_href",
     "_build_library_payload",
+    "_build_local_docs_payload",
     "_internal_viewer_html",
     "_viewer_path_to_local_html",
     "_derive_next_context",

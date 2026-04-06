@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from .chunking import chunk_sections
 from .collector import collect_entry, raw_html_path
@@ -198,7 +199,7 @@ def run_ingest_pipeline(
 def run_local_document_pipeline(
     settings: Settings,
     *,
-    inputs: list[str | Path],
+    inputs: list[str | Path | dict[str, Any]],
     output_dir: str | Path | None = None,
 ) -> dict[str, object]:
     target_dir = Path(output_dir) if output_dir is not None else settings.ingest_dir / "local_document_preview"
@@ -207,7 +208,17 @@ def run_local_document_pipeline(
     manifest_rows: list[dict] = []
     sections: list[NormalizedSection] = []
     for item in inputs:
-        entry, doc_sections = extract_sections_from_local_path(item)
+        if isinstance(item, dict):
+            path = item.get("path")
+            if path is None:
+                raise ValueError("local document input is missing path")
+            entry, doc_sections = extract_sections_from_local_path(
+                path,
+                book_slug=item.get("book_slug"),
+                title=item.get("title"),
+            )
+        else:
+            entry, doc_sections = extract_sections_from_local_path(item)
         manifest_rows.append(entry.to_dict())
         sections.extend(doc_sections)
 

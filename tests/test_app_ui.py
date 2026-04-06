@@ -17,6 +17,7 @@ from ocp_rag.answering.models import AnswerResult, Citation
 from ocp_rag.app.server import (
     _build_chat_payload,
     _build_library_payload,
+    _build_local_docs_payload,
     _citation_href,
     _derive_next_context,
     _internal_viewer_html,
@@ -88,10 +89,15 @@ class Part4UiTests(unittest.TestCase):
         self.assertIn('displayBookLabel(citation)', html)
         self.assertIn('displaySectionLabel(citation)', html)
         self.assertIn('class="sample-chip"', html)
+        self.assertIn('id="local-doc-upload-btn"', html)
+        self.assertIn('id="local-doc-file-input"', html)
+        self.assertIn('id="local-doc-list"', html)
+        self.assertIn("function loadLocalDocs", html)
+        self.assertIn("function uploadLocalDocs", html)
         self.assertIn("OCP RAG Chatbot", html)
         self.assertIn("setInspectorVisible(false)", html)
         self.assertNotIn("Operations Workspace", html)
-        self.assertNotIn("/api/library", html)
+        self.assertIn("/api/local-docs", html)
         self.assertNotIn("function loadLibrary", html)
         self.assertNotIn("renderLibraryFallbackDocument", html)
 
@@ -859,6 +865,120 @@ class Part4UiTests(unittest.TestCase):
         self.assertEqual([], payload["items"])
         self.assertEqual(0, payload["total_books"])
         self.assertEqual(0, payload["total_sections"])
+
+    def test_build_local_docs_payload_groups_preview_docs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            preview_path = (
+                root / "artifacts" / "part1" / "local_document_preview" / "normalized_docs.jsonl"
+            )
+            preview_path.parent.mkdir(parents=True)
+            preview_path.write_text(
+                "\n".join(
+                    [
+                        json.dumps(
+                            {
+                                "book_slug": "rbac-guide",
+                                "book_title": "RBAC Guide",
+                                "heading": "Overview",
+                                "section_level": 1,
+                                "section_path": ["Overview"],
+                                "anchor": "overview",
+                                "viewer_path": "/docs/local/rbac-guide/index.html#overview",
+                                "source_url": "file:///tmp/rbac-guide.md",
+                                "text": "RBAC overview body.",
+                            },
+                            ensure_ascii=False,
+                        ),
+                        json.dumps(
+                            {
+                                "book_slug": "rbac-guide",
+                                "book_title": "RBAC Guide",
+                                "heading": "Checklist",
+                                "section_level": 2,
+                                "section_path": ["Overview", "Checklist"],
+                                "anchor": "checklist",
+                                "viewer_path": "/docs/local/rbac-guide/index.html#checklist",
+                                "source_url": "file:///tmp/rbac-guide.md",
+                                "text": "oc auth can-i get pods",
+                            },
+                            ensure_ascii=False,
+                        ),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            old_artifacts = os.environ.get("ARTIFACTS_DIR")
+            old_raw = os.environ.get("RAW_HTML_DIR")
+            try:
+                os.environ.pop("ARTIFACTS_DIR", None)
+                os.environ.pop("RAW_HTML_DIR", None)
+                payload = _build_local_docs_payload(root)
+            finally:
+                if old_artifacts is None:
+                    os.environ.pop("ARTIFACTS_DIR", None)
+                else:
+                    os.environ["ARTIFACTS_DIR"] = old_artifacts
+                if old_raw is None:
+                    os.environ.pop("RAW_HTML_DIR", None)
+                else:
+                    os.environ["RAW_HTML_DIR"] = old_raw
+
+        self.assertTrue(payload["available"])
+        self.assertEqual(1, payload["total_books"])
+        self.assertEqual(2, payload["total_sections"])
+        self.assertEqual("RBAC Guide", payload["items"][0]["book_title"])
+        self.assertEqual("/docs/local/rbac-guide/index.html", payload["items"][0]["viewer_path"])
+
+    def test_internal_viewer_html_supports_local_preview_viewer(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            preview_path = (
+                root / "artifacts" / "part1" / "local_document_preview" / "normalized_docs.jsonl"
+            )
+            preview_path.parent.mkdir(parents=True)
+            preview_path.write_text(
+                json.dumps(
+                    {
+                        "book_slug": "ops-note",
+                        "book_title": "Ops Note",
+                        "heading": "Checklist",
+                        "section_level": 1,
+                        "section_path": ["Checklist"],
+                        "anchor": "checklist",
+                        "viewer_path": "/docs/local/ops-note/index.html#checklist",
+                        "source_url": "file:///tmp/ops-note.md",
+                        "text": "Check cluster health.\n\n```bash\noc get pods -A\n```",
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            old_artifacts = os.environ.get("ARTIFACTS_DIR")
+            old_raw = os.environ.get("RAW_HTML_DIR")
+            try:
+                os.environ.pop("ARTIFACTS_DIR", None)
+                os.environ.pop("RAW_HTML_DIR", None)
+                viewer_html = _internal_viewer_html(root, "/docs/local/ops-note/index.html#checklist")
+            finally:
+                if old_artifacts is None:
+                    os.environ.pop("ARTIFACTS_DIR", None)
+                else:
+                    os.environ["ARTIFACTS_DIR"] = old_artifacts
+                if old_raw is None:
+                    os.environ.pop("RAW_HTML_DIR", None)
+                else:
+                    os.environ["RAW_HTML_DIR"] = old_raw
+
+        self.assertIsNotNone(viewer_html)
+        assert viewer_html is not None
+        self.assertIn("Ops Note", viewer_html)
+        self.assertIn("oc get pods -A", viewer_html)
+        self.assertIn('class="section-card is-target"', viewer_html)
 
 
 if __name__ == "__main__":

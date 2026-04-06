@@ -740,6 +740,63 @@
       padding: 12px;
     }
 
+    .upload-row {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .upload-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .upload-hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .hidden-file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .local-doc-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .local-doc-card {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.94);
+      border-radius: 14px;
+      padding: 12px 13px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .local-doc-card button {
+      justify-self: start;
+    }
+
+    .local-doc-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .local-doc-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
     .citations-panel .trace-empty {
       padding: 2px 4px 6px;
     }
@@ -1471,6 +1528,19 @@
         </div>
         <div class="inspector-page active" data-inspector-page="sources">
           <div class="stack">
+            <h2>문서 등록</h2>
+            <div class="upload-row">
+              <div class="upload-actions">
+                <button type="button" class="ghost-btn" id="local-doc-upload-btn">문서 등록</button>
+                <input id="local-doc-file-input" class="hidden-file-input" type="file" multiple accept=".html,.htm,.md,.markdown,.txt">
+              </div>
+              <div id="local-doc-status" class="upload-hint">html, md, txt 문서를 등록하면 정규화된 문서와 검색용 청크를 바로 만듭니다.</div>
+              <div id="local-doc-list" class="local-doc-list">
+                <div class="trace-empty">아직 등록된 로컬 문서가 없습니다.</div>
+              </div>
+            </div>
+          </div>
+          <div class="stack">
             <h2>답변 출처 태그</h2>
             <div id="source-tags-panel" class="pipeline-live">
               <div class="trace-empty">아직 표시할 출처 태그가 없습니다.</div>
@@ -1550,6 +1620,10 @@
     const sessionIdEl = document.getElementById("session-id");
     const sourceTagsPanelEl = document.getElementById("source-tags-panel");
     const sourceListEl = document.getElementById("source-list");
+    const localDocUploadBtn = document.getElementById("local-doc-upload-btn");
+    const localDocFileInput = document.getElementById("local-doc-file-input");
+    const localDocStatusEl = document.getElementById("local-doc-status");
+    const localDocListEl = document.getElementById("local-doc-list");
     const documentMetaEl = document.getElementById("document-meta");
     const documentEmptyEl = document.getElementById("document-empty");
     const documentFrameEl = document.getElementById("document-frame");
@@ -1672,6 +1746,91 @@
       inspectorPages.forEach((page) => {
         page.classList.toggle("active", page.dataset.inspectorPage === tab);
       });
+    }
+
+    function renderLocalDocsPanel(payload) {
+      const items = Array.isArray(payload && payload.items) ? payload.items : [];
+      if (!items.length) {
+        localDocListEl.innerHTML = '<div class="trace-empty">아직 등록된 로컬 문서가 없습니다.</div>';
+        return;
+      }
+      localDocListEl.innerHTML = "";
+      items.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "local-doc-card";
+
+        const title = document.createElement("div");
+        title.className = "local-doc-title";
+        title.textContent = item.book_title || item.book_slug || "로컬 문서";
+        card.appendChild(title);
+
+        const meta = document.createElement("div");
+        meta.className = "local-doc-meta";
+        const sectionLabel = Array.isArray(item.sample_sections) && item.sample_sections.length
+          ? item.sample_sections.join(" / ")
+          : "섹션 정보 없음";
+        meta.textContent = `섹션 ${item.section_count || 0}개 · ${sectionLabel}`;
+        card.appendChild(meta);
+
+        const openBtn = document.createElement("button");
+        openBtn.type = "button";
+        openBtn.className = "ghost-btn";
+        openBtn.textContent = "우측 패널에서 보기";
+        openBtn.addEventListener("click", () => {
+          openCitationInPanel({
+            href: item.viewer_path,
+            viewer_path: item.viewer_path,
+            source_url: item.source_url,
+            book_title: item.book_title,
+            book_slug: item.book_slug,
+            section: Array.isArray(item.sample_sections) && item.sample_sections.length ? item.sample_sections[0] : "Overview",
+          });
+        });
+        card.appendChild(openBtn);
+
+        localDocListEl.appendChild(card);
+      });
+    }
+
+    async function loadLocalDocs() {
+      try {
+        const response = await fetch("/api/local-docs");
+        if (!response.ok) return;
+        const payload = await response.json();
+        renderLocalDocsPanel(payload);
+      } catch (error) {
+        localDocStatusEl.textContent = "로컬 문서 목록을 불러오지 못했습니다.";
+      }
+    }
+
+    async function uploadLocalDocs(files) {
+      const selected = Array.from(files || []);
+      if (!selected.length) return;
+      localDocStatusEl.textContent = `문서 ${selected.length}개를 정규화하는 중...`;
+      try {
+        const docs = await Promise.all(
+          selected.map(async (file) => ({
+            name: file.name,
+            content: await file.text(),
+          })),
+        );
+        const response = await fetch("/api/local-docs/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ docs }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || "문서 등록 실패");
+        }
+        renderLocalDocsPanel(payload.library || {});
+        const count = payload.report && payload.report.document_count ? payload.report.document_count : docs.length;
+        localDocStatusEl.textContent = `문서 ${count}개 등록 완료. 우측 패널에서 바로 읽을 수 있습니다.`;
+      } catch (error) {
+        localDocStatusEl.textContent = error.message || "문서 등록 중 오류가 발생했습니다.";
+      } finally {
+        localDocFileInput.value = "";
+      }
     }
 
     function humanizePipelineKey(key) {
@@ -2669,6 +2828,12 @@
     inspectorTabButtons.forEach((button) => {
       button.addEventListener("click", () => setInspectorTab(button.dataset.inspectorTab));
     });
+    localDocUploadBtn.addEventListener("click", () => {
+      localDocFileInput.click();
+    });
+    localDocFileInput.addEventListener("change", () => {
+      uploadLocalDocs(localDocFileInput.files);
+    });
 
     modeButtons.forEach((button) => {
       button.addEventListener("click", () => setMode(button.dataset.mode));
@@ -2681,6 +2846,7 @@
     sessionContextEl.textContent = JSON.stringify({ mode: currentMode, ocp_version: "4.20" }, null, 2);
     resetPipelineTrace();
     renderEmptyState();
+    loadLocalDocs();
   </script>
 </body>
 </html>

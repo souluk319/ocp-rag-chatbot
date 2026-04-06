@@ -83,6 +83,37 @@ class LocalDocumentIngestTests(unittest.TestCase):
             self.assertEqual(2, len(manifest_rows))
             self.assertEqual("normalized_local_doc", manifest_rows[0]["viewer_strategy"])
 
+    def test_run_local_document_pipeline_preserves_display_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = Settings(root, create_dirs=True)
+            markdown = root / "98ab12cd-ops-guide.md"
+            markdown.write_text("# Checklist\n\noc get pods -A", encoding="utf-8")
+
+            report = run_local_document_pipeline(
+                settings,
+                inputs=[
+                    {
+                        "path": markdown,
+                        "title": "ops-guide",
+                        "book_slug": "ops-guide",
+                    }
+                ],
+            )
+
+            output_dir = Path(report["output_dir"])
+            manifest_rows = json.loads((output_dir / "source_manifest_local.json").read_text(encoding="utf-8"))
+            normalized_rows = [
+                json.loads(line)
+                for line in (output_dir / "normalized_docs.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+
+            self.assertEqual("ops-guide", manifest_rows[0]["title"])
+            self.assertEqual("/docs/local/ops-guide/index.html", manifest_rows[0]["viewer_path"])
+            self.assertEqual("ops-guide", normalized_rows[0]["book_title"])
+            self.assertEqual("/docs/local/ops-guide/index.html#checklist", normalized_rows[0]["viewer_path"])
+
 
 if __name__ == "__main__":
     unittest.main()
