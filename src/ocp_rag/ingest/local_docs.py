@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from pypdf import PdfReader
+
 from .models import NormalizedSection, SourceManifestEntry
 from .normalize import extract_sections_from_html_fragment
 
@@ -140,6 +142,33 @@ def _markdown_sections_to_records(text: str, entry: SourceManifestEntry) -> list
     return sections
 
 
+def _pdf_sections_to_records(path: Path, entry: SourceManifestEntry) -> list[NormalizedSection]:
+    reader = PdfReader(str(path))
+    sections: list[NormalizedSection] = []
+    for index, page in enumerate(reader.pages, start=1):
+        body = (page.extract_text() or "").strip()
+        if not body:
+            continue
+        anchor = f"page-{index}"
+        sections.append(
+            NormalizedSection(
+                book_slug=entry.book_slug,
+                book_title=entry.title,
+                heading=f"Page {index}",
+                section_level=1,
+                section_path=[f"Page {index}"],
+                anchor=anchor,
+                source_url=entry.source_url,
+                viewer_path=f"{entry.viewer_path}#{anchor}",
+                text=body,
+            )
+        )
+    if sections:
+        return sections
+
+    raise ValueError(f"PDF 텍스트를 추출하지 못했습니다: {path.name}")
+
+
 def extract_sections_from_local_path(
     path: str | Path,
     *,
@@ -149,11 +178,14 @@ def extract_sections_from_local_path(
     source_path = Path(path)
     entry = _build_local_entry(source_path, book_slug=book_slug, title=title)
     suffix = source_path.suffix.lower()
-    text = source_path.read_text(encoding="utf-8")
     if suffix in {".html", ".htm"}:
+        text = source_path.read_text(encoding="utf-8")
         sections = extract_sections_from_html_fragment(text, entry)
     elif suffix in {".md", ".markdown", ".txt"}:
+        text = source_path.read_text(encoding="utf-8")
         sections = _markdown_sections_to_records(text, entry)
+    elif suffix == ".pdf":
+        sections = _pdf_sections_to_records(source_path, entry)
     else:
         raise ValueError(f"unsupported local document type: {suffix or source_path.name}")
     return entry, sections

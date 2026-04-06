@@ -5,6 +5,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,6 +25,7 @@ from ocp_rag.app.server import (
     _override_answer_with_command_template_follow_up,
     _override_answer_with_procedure_follow_up,
     _resolve_branch_focus_context,
+    _save_local_docs_and_build_preview,
     _viewer_path_to_local_html,
 )
 
@@ -94,6 +96,10 @@ class Part4UiTests(unittest.TestCase):
         self.assertIn('id="local-doc-list"', html)
         self.assertIn("function loadLocalDocs", html)
         self.assertIn("function uploadLocalDocs", html)
+        self.assertIn(".pdf", html)
+        self.assertIn("content_base64", html)
+        self.assertIn("file.arrayBuffer()", html)
+        self.assertIn('setInspectorTab("document")', html)
         self.assertIn("OCP RAG Chatbot", html)
         self.assertIn("setInspectorVisible(false)", html)
         self.assertNotIn("Operations Workspace", html)
@@ -979,6 +985,29 @@ class Part4UiTests(unittest.TestCase):
         self.assertIn("Ops Note", viewer_html)
         self.assertIn("oc get pods -A", viewer_html)
         self.assertIn('class="section-card is-target"', viewer_html)
+
+    def test_save_local_docs_and_build_preview_accepts_pdf_base64(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            fake_reader = mock.Mock()
+            fake_reader.pages = [
+                mock.Mock(extract_text=mock.Mock(return_value="PDF checklist\noc get pods -A")),
+            ]
+
+            with mock.patch("ocp_rag.ingest.local_docs.PdfReader", return_value=fake_reader):
+                result = _save_local_docs_and_build_preview(
+                    root,
+                    [
+                        {
+                            "name": "ops-guide.pdf",
+                            "content_base64": "JVBERi0xLjQKJWR1bW15",
+                        }
+                    ],
+                )
+
+        self.assertTrue(result["ok"])
+        self.assertEqual("ops-guide", result["library"]["items"][0]["book_slug"])
+        self.assertEqual("/docs/local/ops-guide/index.html", result["library"]["items"][0]["viewer_path"])
 
 
 if __name__ == "__main__":

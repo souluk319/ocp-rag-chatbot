@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -59,6 +60,27 @@ class LocalDocumentIngestTests(unittest.TestCase):
             self.assertEqual("Events 확인", sections[1].heading)
             self.assertIn("[CODE]", sections[1].text)
             self.assertTrue(sections[1].viewer_path.endswith("#check-events"))
+
+    def test_extract_sections_from_pdf_uses_page_text(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source = root / "ops.pdf"
+            source.write_bytes(b"%PDF-1.4\n%dummy")
+
+            fake_reader = mock.Mock()
+            fake_reader.pages = [
+                mock.Mock(extract_text=mock.Mock(return_value="Ops checklist\noc get pods -A")),
+                mock.Mock(extract_text=mock.Mock(return_value="")),
+            ]
+
+            with mock.patch("ocp_rag.ingest.local_docs.PdfReader", return_value=fake_reader):
+                entry, sections = extract_sections_from_local_path(source)
+
+            self.assertEqual("ops", entry.book_slug)
+            self.assertEqual(1, len(sections))
+            self.assertEqual("Page 1", sections[0].heading)
+            self.assertIn("oc get pods -A", sections[0].text)
+            self.assertTrue(sections[0].viewer_path.endswith("#page-1"))
 
     def test_run_local_document_pipeline_writes_preview_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

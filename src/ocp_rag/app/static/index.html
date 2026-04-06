@@ -1532,9 +1532,9 @@
             <div class="upload-row">
               <div class="upload-actions">
                 <button type="button" class="ghost-btn" id="local-doc-upload-btn">문서 등록</button>
-                <input id="local-doc-file-input" class="hidden-file-input" type="file" multiple accept=".html,.htm,.md,.markdown,.txt">
+                <input id="local-doc-file-input" class="hidden-file-input" type="file" multiple accept=".pdf,.html,.htm,.md,.markdown,.txt,application/pdf,text/plain,text/markdown,text/html">
               </div>
-              <div id="local-doc-status" class="upload-hint">html, md, txt 문서를 등록하면 정규화된 문서와 검색용 청크를 바로 만듭니다.</div>
+              <div id="local-doc-status" class="upload-hint">pdf, html, md, txt 문서를 등록하면 정규화된 문서와 검색용 청크를 바로 만듭니다.</div>
               <div id="local-doc-list" class="local-doc-list">
                 <div class="trace-empty">아직 등록된 로컬 문서가 없습니다.</div>
               </div>
@@ -1806,13 +1806,28 @@
     async function uploadLocalDocs(files) {
       const selected = Array.from(files || []);
       if (!selected.length) return;
+      localDocUploadBtn.disabled = true;
       localDocStatusEl.textContent = `문서 ${selected.length}개를 정규화하는 중...`;
       try {
         const docs = await Promise.all(
-          selected.map(async (file) => ({
-            name: file.name,
-            content: await file.text(),
-          })),
+          selected.map(async (file) => {
+            const lowerName = String(file.name || "").toLowerCase();
+            if (lowerName.endsWith(".pdf")) {
+              const bytes = new Uint8Array(await file.arrayBuffer());
+              let binary = "";
+              bytes.forEach((value) => {
+                binary += String.fromCharCode(value);
+              });
+              return {
+                name: file.name,
+                content_base64: btoa(binary),
+              };
+            }
+            return {
+              name: file.name,
+              content: await file.text(),
+            };
+          }),
         );
         const response = await fetch("/api/local-docs/upload", {
           method: "POST",
@@ -1826,10 +1841,24 @@
         renderLocalDocsPanel(payload.library || {});
         const count = payload.report && payload.report.document_count ? payload.report.document_count : docs.length;
         localDocStatusEl.textContent = `문서 ${count}개 등록 완료. 우측 패널에서 바로 읽을 수 있습니다.`;
+        const firstItem = payload.library && Array.isArray(payload.library.items) ? payload.library.items[0] : null;
+        if (firstItem && firstItem.viewer_path) {
+          openCitationInPanel({
+            href: firstItem.viewer_path,
+            viewer_path: firstItem.viewer_path,
+            source_url: firstItem.source_url,
+            book_title: firstItem.book_title,
+            book_slug: firstItem.book_slug,
+            section: Array.isArray(firstItem.sample_sections) && firstItem.sample_sections.length ? firstItem.sample_sections[0] : "Overview",
+          });
+          setInspectorVisible(true);
+          setInspectorTab("document");
+        }
       } catch (error) {
         localDocStatusEl.textContent = error.message || "문서 등록 중 오류가 발생했습니다.";
       } finally {
         localDocFileInput.value = "";
+        localDocUploadBtn.disabled = false;
       }
     }
 

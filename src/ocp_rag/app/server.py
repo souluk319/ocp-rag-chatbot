@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import html
 import json
 import re
@@ -1195,18 +1196,27 @@ def _save_local_docs_and_build_preview(root_dir: Path, docs: list[dict[str, Any]
     settings = load_settings(root_dir, create_dirs=True)
     upload_dir = _local_document_upload_dir(root_dir)
     ingest_inputs: list[dict[str, Any]] = []
-    allowed_suffixes = {".html", ".htm", ".md", ".markdown", ".txt"}
+    allowed_suffixes = {".html", ".htm", ".md", ".markdown", ".txt", ".pdf"}
 
     for index, doc in enumerate(docs, start=1):
         name = _sanitize_local_doc_name(str(doc.get("name") or f"document-{index}.txt"))
         suffix = Path(name).suffix.lower()
         if suffix not in allowed_suffixes:
             raise ValueError(f"지원하지 않는 형식입니다: {suffix or name}")
-        content = doc.get("content")
-        if not isinstance(content, str) or not content.strip():
-            raise ValueError(f"빈 문서는 등록할 수 없습니다: {name}")
         target = upload_dir / f"{uuid.uuid4().hex[:8]}-{name}"
-        target.write_text(content, encoding="utf-8")
+        if suffix == ".pdf":
+            encoded = doc.get("content_base64")
+            if not isinstance(encoded, str) or not encoded.strip():
+                raise ValueError(f"PDF 본문이 비어 있습니다: {name}")
+            try:
+                target.write_bytes(base64.b64decode(encoded))
+            except Exception as exc:  # noqa: BLE001
+                raise ValueError(f"PDF를 읽을 수 없습니다: {name}") from exc
+        else:
+            content = doc.get("content")
+            if not isinstance(content, str) or not content.strip():
+                raise ValueError(f"빈 문서는 등록할 수 없습니다: {name}")
+            target.write_text(content, encoding="utf-8")
         display_title = Path(name).stem.strip() or f"document-{index}"
         ingest_inputs.append(
             {
