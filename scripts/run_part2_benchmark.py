@@ -11,7 +11,7 @@ if str(SRC) not in sys.path:
 
 from ocp_rag.shared.settings import load_settings
 from ocp_rag.shared.io import read_jsonl
-from ocp_rag.retrieval.eval import summarize_case_results
+from ocp_rag.evals.retrieval import summarize_case_results
 from ocp_rag.retrieval.models import SessionContext
 from ocp_rag.retrieval.retriever import Part2Retriever
 

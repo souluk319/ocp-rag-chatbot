@@ -1,1 +1,1 @@
-from ocp_rag.retrieval.eval import *
+from ocp_rag.evals.retrieval import *

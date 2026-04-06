@@ -10,7 +10,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from ocp_rag.answering.models import AnswerResult, Citation
-from ocp_rag.answering.ragas_eval import (
+from ocp_rag.evals.ragas import (
     DEFAULT_OPENAI_EMBEDDING_MODEL,
     DEFAULT_OPENAI_JUDGE_MODEL,
     LANGCHAIN_OPENAI_AVAILABLE,

@@ -1,1 +1,1 @@
-from ocp_rag.retrieval.benchmark import *
+from ocp_rag.evals.retrieval_benchmark import *

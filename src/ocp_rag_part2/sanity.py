@@ -1,1 +1,1 @@
-from ocp_rag.retrieval.sanity import *
+from ocp_rag.evals.retrieval_sanity import *

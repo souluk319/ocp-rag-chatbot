@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import sys
 import unittest
 from pathlib import Path
@@ -9,10 +10,21 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag.answering.eval import summarize_case_results
+from ocp_rag.evals.answering import summarize_case_results
 
 
 class Part3EvalTests(unittest.TestCase):
+    def test_answering_runtime_import_does_not_eagerly_load_eval_module(self) -> None:
+        sys.modules.pop("ocp_rag.answering", None)
+        sys.modules.pop("ocp_rag.evals.answering", None)
+
+        answering_pkg = importlib.import_module("ocp_rag.answering")
+
+        self.assertNotIn("evaluate_case", answering_pkg.__all__)
+        self.assertNotIn("ocp_rag.evals.answering", sys.modules)
+        self.assertTrue(callable(answering_pkg.evaluate_case))
+        self.assertIn("ocp_rag.evals.answering", sys.modules)
+
     def test_summarize_case_results_tracks_guardrail_rates(self) -> None:
         details = [
             {

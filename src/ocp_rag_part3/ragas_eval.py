@@ -1,1 +1,1 @@
-from ocp_rag.answering.ragas_eval import *
+from ocp_rag.evals.ragas import *

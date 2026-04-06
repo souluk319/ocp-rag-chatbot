@@ -13,7 +13,7 @@ if str(SRC) not in sys.path:
 from ocp_rag.shared.io import read_jsonl
 from ocp_rag.shared.settings import load_settings
 from ocp_rag.answering import Part3Answerer
-from ocp_rag.answering.ragas_eval import (
+from ocp_rag.evals.ragas import (
     DEFAULT_OPENAI_EMBEDDING_MODEL,
     DEFAULT_OPENAI_JUDGE_MODEL,
     build_ragas_case_row,

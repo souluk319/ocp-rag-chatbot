@@ -12,7 +12,7 @@ if str(SRC) not in sys.path:
 from ocp_rag.shared.io import read_jsonl
 from ocp_rag.shared.settings import load_settings
 from ocp_rag.answering import Part3Answerer
-from ocp_rag.answering.eval import evaluate_case, summarize_case_results
+from ocp_rag.evals.answering import evaluate_case, summarize_case_results
 
 
 def build_parser() -> argparse.ArgumentParser:
