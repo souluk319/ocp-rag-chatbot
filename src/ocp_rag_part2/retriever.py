@@ -4,6 +4,7 @@ import copy
 import json
 import re
 import time
+from collections import Counter
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -686,8 +687,17 @@ def fuse_ranked_hits(
                 or "파드" in hit.text
                 or "파드" in hit.section
             )
+            is_command_section = hit.section.strip().startswith("$ ")
+            is_operational_pod_section = (
+                "검사" in hit.section
+                or "oc get pod" in lowered_text
+                or "oc get pods" in lowered_text
+                or "[code]" in lowered_text
+            )
             if hit.book_slug == "architecture":
                 hit.fused_score *= 1.28
+            if hit.book_slug == "nodes":
+                hit.fused_score *= 1.22
             if hit.book_slug in {"overview", "building_applications"}:
                 hit.fused_score *= 1.08
             if mentions_pod:
@@ -721,10 +731,17 @@ def fuse_ranked_hits(
                 or "정의" in hit.section
             ):
                 hit.fused_score *= 1.12
-            if "pod 이해" in hit.section or "pod 사용" in hit.section:
+            if (
+                "pod 이해" in hit.section
+                or "pod 사용" in hit.section
+                or hit.section.strip() == "Pod"
+                or "pod 구성의 예" in hit.section
+            ):
                 hit.fused_score *= 1.24
             if hit.book_slug.endswith("_apis"):
                 hit.fused_score *= 0.52
+            if is_command_section:
+                hit.fused_score *= 0.24
             if (
                 "[code]" in lowered_text
                 or "oc get pod" in lowered_text
@@ -732,6 +749,8 @@ def fuse_ranked_hits(
                 or "oomkilled" in lowered_text
             ) and "용어집" not in hit.section and "glossary" not in lowered_section:
                 hit.fused_score *= 0.72
+            if is_intake_doc and is_operational_pod_section and "pod 이해" not in hit.section:
+                hit.fused_score *= 0.46
             if (
                 "pod 제거 이해" in hit.section
                 or "oom 종료 정책 이해" in hit.section
@@ -790,6 +809,22 @@ def fuse_ranked_hits(
             item.chunk_id,
         )
     )
+    if pod_lifecycle_intent:
+        diversified_hits: list[RetrievalHit] = []
+        per_book_counts: Counter[str] = Counter()
+        seen_intake_sections: set[tuple[str, str]] = set()
+        for hit in fused_hits:
+            normalized_section = hit.section.strip().lower()
+            if hit.viewer_path.startswith("/docs/intake/"):
+                section_key = (hit.book_slug, normalized_section)
+                if section_key in seen_intake_sections:
+                    continue
+                seen_intake_sections.add(section_key)
+            if per_book_counts[hit.book_slug] >= 2:
+                continue
+            diversified_hits.append(hit)
+            per_book_counts[hit.book_slug] += 1
+        fused_hits = diversified_hits
     return fused_hits[:top_k]
 
 

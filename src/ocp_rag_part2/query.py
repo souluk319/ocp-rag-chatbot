@@ -713,13 +713,13 @@ def query_book_adjustments(
 
     if has_pod_lifecycle_concept_intent(normalized):
         boosts["architecture"] = max(boosts.get("architecture", 1.0), 1.52)
+        boosts["nodes"] = max(boosts.get("nodes", 1.0), 1.24)
         boosts["overview"] = max(boosts.get("overview", 1.0), 1.18)
         boosts["building_applications"] = max(
             boosts.get("building_applications", 1.0),
-            1.08,
+            1.12,
         )
         penalties["workloads_apis"] = min(penalties.get("workloads_apis", 1.0), 0.54)
-        penalties["nodes"] = min(penalties.get("nodes", 1.0), 0.78)
         penalties["security_and_compliance"] = min(
             penalties.get("security_and_compliance", 1.0),
             0.64,

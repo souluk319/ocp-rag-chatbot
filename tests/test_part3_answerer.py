@@ -522,8 +522,8 @@ class Part3AnswererTests(unittest.TestCase):
             session_summary="",
         )
 
-        self.assertIn("단계별 이유와 확인 포인트를 충분히 설명하라", messages[0]["content"])
-        self.assertIn("각 단계의 이유와 확인 포인트를 충분히 풀어 답변", messages[1]["content"])
+        self.assertIn("필요한 흐름과 이유와 확인 포인트를 충분히 설명하라", messages[0]["content"])
+        self.assertIn("단계마다 왜 필요한지와 무엇을 확인해야 하는지 1~2문장씩 덧붙일 것", messages[1]["content"])
         self.assertIn("단계마다 왜 필요한지와 무엇을 확인해야 하는지 1~2문장씩 덧붙일 것", messages[1]["content"])
         self.assertIn("[CODE], [/CODE], [TABLE], [/TABLE] 같은 내부 태그를 답변에 그대로 노출하지 말고", messages[0]["content"])
         self.assertIn("[CODE], [/CODE], [TABLE], [/TABLE] 같은 내부 태그를 답변에 그대로 쓰지 말 것", messages[1]["content"])
@@ -575,8 +575,7 @@ class Part3AnswererTests(unittest.TestCase):
         self.assertEqual([], result.citations)
         self.assertEqual([], result.cited_indices)
         self.assertFalse(result.warnings)
-        self.assertIn("안녕하세요", result.answer)
-        self.assertIn("OCP 운영 절차", result.answer)
+        self.assertIn("OCP 질문을 입력해 주세요.", result.answer)
         self.assertTrue(
             any(event.get("step") == "route_query" for event in result.pipeline_trace["events"])
         )
@@ -593,7 +592,7 @@ class Part3AnswererTests(unittest.TestCase):
         result = answerer.answer("넌 누구야?", mode="ops")
 
         self.assertEqual("meta", result.response_kind)
-        self.assertIn("RAG 챗봇", result.answer)
+        self.assertIn("OCP 질문에 답하는 챗봇", result.answer)
         self.assertEqual([], result.citations)
         self.assertFalse(result.warnings)
 
@@ -959,7 +958,7 @@ class Part3AnswererTests(unittest.TestCase):
 
         self.assertIn("Pod 라이프사이클은 Pod가 노드에 할당되어 실행되고", result.answer)
         self.assertIn("[1]", result.answer)
-        self.assertIn("[2]", result.answer)
+        self.assertNotIn("같이 보면 좋은 문서", result.answer)
         self.assertEqual(
             ["2.1.1. Pod 이해", "2.1.2. Pod 구성의 예"],
             [citation.section for citation in result.citations],

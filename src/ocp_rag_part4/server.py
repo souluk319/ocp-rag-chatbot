@@ -21,7 +21,7 @@ from ocp_doc_to_book import DocSourceRequest, DocToBookDraftStore, DocToBookPlan
 from ocp_doc_to_book.ingestion.capture import DocToBookCaptureService
 from ocp_doc_to_book.normalization.service import DocToBookNormalizeService
 from ocp_doc_to_book.service import evaluate_canonical_book_quality
-from ocp_rag_part1.settings import load_settings
+from ocp_rag_part1.settings import Settings, load_settings
 from ocp_rag_part1.validation import read_jsonl
 from ocp_rag_part2.models import SessionContext
 from ocp_rag_part2.query import (
@@ -37,6 +37,8 @@ from ocp_rag_part2.query import (
     has_deployment_scaling_intent,
     has_follow_up_reference,
     has_openshift_kubernetes_compare_intent,
+    has_pod_lifecycle_concept_intent,
+    has_pod_pending_troubleshooting_intent,
     has_rbac_intent,
     has_update_doc_locator_ambiguity,
     is_generic_intro_query,
@@ -47,12 +49,67 @@ from ocp_rag_part3.models import AnswerResult, Citation
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 INDEX_HTML_PATH = STATIC_DIR / "index.html"
+DEFAULT_RUNTIME_TOP_K = 8
+DEFAULT_RUNTIME_CANDIDATE_K = 20
+DEFAULT_RUNTIME_MAX_CONTEXT_CHUNKS = 6
+RUNTIME_CHAT_MODE = "chat"
 NORMALIZED_BLOCK_RE = re.compile(r"(\[CODE\].*?\[/CODE\]|\[TABLE\].*?\[/TABLE\])", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`([^`]+)`")
 SOURCE_VIEW_LEADING_NOISE_RE = re.compile(
     r"^\s*Red Hat OpenShift Documentation Team(?:\s+법적 공지)?(?:\s+초록)?\s*",
 )
 SOURCE_VIEW_TOC_RE = re.compile(r"^\s*목차\s*(?:\n\n|\n)?")
+
+
+def _llm_runtime_signature(settings: Settings) -> tuple[Any, ...]:
+    return (
+        settings.llm_endpoint,
+        settings.llm_model,
+        settings.llm_api_key,
+        settings.llm_temperature,
+        settings.llm_max_tokens,
+        settings.request_timeout_seconds,
+    )
+
+
+def _refresh_answerer_llm_settings(
+    answerer: Part3Answerer,
+    *,
+    root_dir: Path,
+    current_signature: tuple[Any, ...] | None,
+) -> tuple[Part3Answerer, tuple[Any, ...]]:
+    settings = load_settings(root_dir)
+    signature = _llm_runtime_signature(settings)
+    if signature == current_signature:
+        return answerer, signature
+    answerer.settings = settings
+    answerer.llm_client = answerer.llm_client.__class__(settings)
+    return answerer, signature
+
+
+def _build_health_payload(answerer: Part3Answerer) -> dict[str, Any]:
+    settings = answerer.settings
+    embedding_mode = "remote" if settings.embedding_base_url else "local"
+    llm_provider_hint = (
+        "ollama-native-preferred"
+        if ":" in settings.llm_model and "/" not in settings.llm_model
+        else "openai-compatible"
+    )
+    return {
+        "ok": True,
+        "runtime": {
+            "llm_endpoint": settings.llm_endpoint,
+            "llm_model": settings.llm_model,
+            "llm_provider_hint": llm_provider_hint,
+            "embedding_mode": embedding_mode,
+            "embedding_base_url": settings.embedding_base_url,
+            "embedding_model": settings.embedding_model,
+            "qdrant_url": settings.qdrant_url,
+            "qdrant_collection": settings.qdrant_collection,
+            "artifacts_dir": str(settings.artifacts_dir),
+            "source_manifest_path": str(settings.source_manifest_path),
+        },
+    }
 
 
 @dataclass(slots=True)
@@ -65,9 +122,9 @@ class Turn:
 @dataclass(slots=True)
 class ChatSession:
     session_id: str
-    mode: str = "ops"
+    mode: str = RUNTIME_CHAT_MODE
     context: SessionContext = field(
-        default_factory=lambda: SessionContext(mode="ops", ocp_version="4.20")
+        default_factory=lambda: SessionContext(mode=RUNTIME_CHAT_MODE, ocp_version="4.20")
     )
     history: list[Turn] = field(default_factory=list)
 
@@ -664,7 +721,7 @@ def _render_study_viewer_html(
             <p class="summary">{summary}</p>
             <div class="actions">
               <span>섹션 수: {section_count}</span>
-              <a href="{source_url}" target="_blank" rel="noreferrer">원문 문서 열기</a>
+              <a href="{source_url}" target="_blank" rel="noreferrer">원문 열기</a>
             </div>
           </section>
           <div class="section-list">
@@ -723,8 +780,8 @@ def _internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
         source_url=source_url,
         cards=cards,
         section_count=len(sections),
-        eyebrow="Internal Citation Viewer",
-        summary="정규화된 한국어 본문 기준으로 출처를 보여줍니다. 필요한 경우 원문 문서도 함께 열 수 있습니다.",
+        eyebrow="Reference Viewer",
+        summary="정리된 본문 기준으로 관련 구간을 보여줍니다.",
     )
 
 
@@ -1007,8 +1064,9 @@ def _derive_next_context(
     mode: str,
     result: AnswerResult,
 ) -> SessionContext:
+    del mode
     next_context = SessionContext.from_dict(previous.to_dict() if previous else None)
-    next_context.mode = mode
+    next_context.mode = RUNTIME_CHAT_MODE
     next_context.ocp_version = next_context.ocp_version or "4.20"
     normalized_query = (query or "").strip()
     follow_up_reference = has_follow_up_reference(normalized_query)
@@ -1051,8 +1109,9 @@ def _context_with_request_overrides(
     payload: dict[str, Any],
     mode: str,
 ) -> SessionContext:
+    del mode
     context = SessionContext.from_dict(previous.to_dict() if previous else None)
-    context.mode = mode
+    context.mode = RUNTIME_CHAT_MODE
     requested_version = str(payload.get("ocp_version") or "").strip()
     if requested_version:
         context.ocp_version = requested_version
@@ -1066,7 +1125,7 @@ def _context_with_request_overrides(
             for item in selected_draft_ids
             if str(item).strip()
         ]
-    context.restrict_uploaded_sources = bool(payload.get("restrict_uploaded_sources", False))
+    context.restrict_uploaded_sources = bool(payload.get("restrict_uploaded_sources", True))
     return context
 
 
@@ -1138,8 +1197,13 @@ def _dedupe_suggestions(candidates: list[str], *, query: str, limit: int = 3) ->
     return unique
 
 
-def _fallback_follow_up_questions(*, mode: str) -> list[str]:
-    if mode == "learn":
+def _fallback_follow_up_questions(*, query: str) -> list[str]:
+    if (
+        is_generic_intro_query(query)
+        or has_openshift_kubernetes_compare_intent(query)
+        or has_pod_lifecycle_concept_intent(query)
+        or has_pod_pending_troubleshooting_intent(query)
+    ):
         return [
             "초보자 기준으로 단계별로 설명해줘",
             "관련 문서 위치도 같이 알려줘",
@@ -1155,7 +1219,6 @@ def _fallback_follow_up_questions(*, mode: str) -> list[str]:
 def _suggest_follow_up_questions(*, session: ChatSession, result: AnswerResult) -> list[str]:
     query = (result.query or "").strip()
     normalized = query.lower()
-    mode = result.mode or session.mode or "ops"
     topic = (session.context.current_topic or "").strip()
     primary = result.citations[0] if result.citations else None
     book_slug = (primary.book_slug if primary else "").lower()
@@ -1180,7 +1243,7 @@ def _suggest_follow_up_questions(*, session: ChatSession, result: AnswerResult) 
                 "단일 클러스터 업데이트 문서부터 알려줘",
                 "업데이트 전 체크리스트 문서도 같이 알려줘",
             ]
-        return _fallback_follow_up_questions(mode=mode)
+        return _fallback_follow_up_questions(query=query)
 
     candidates: list[str] = []
 
@@ -1264,7 +1327,7 @@ def _suggest_follow_up_questions(*, session: ChatSession, result: AnswerResult) 
             "운영 중 주의사항도 정리해줘",
         ]
 
-    merged = _dedupe_suggestions(candidates + _fallback_follow_up_questions(mode=mode), query=query)
+    merged = _dedupe_suggestions(candidates + _fallback_follow_up_questions(query=query), query=query)
     return merged[:3]
 
 
@@ -1357,6 +1420,19 @@ def _build_handler(
     store: SessionStore,
     root_dir: Path,
 ) -> type[BaseHTTPRequestHandler]:
+    answerer_lock = threading.Lock()
+    current_llm_signature = _llm_runtime_signature(answerer.settings)
+
+    def current_answerer() -> Part3Answerer:
+        nonlocal answerer, current_llm_signature
+        with answerer_lock:
+            answerer, current_llm_signature = _refresh_answerer_llm_settings(
+                answerer,
+                root_dir=root_dir,
+                current_signature=current_llm_signature,
+            )
+            return answerer
+
     class ChatHandler(BaseHTTPRequestHandler):
         server_version = "OCPRAGPart4/0.1"
 
@@ -1737,9 +1813,10 @@ def _build_handler(
             self._send_json(draft, HTTPStatus.CREATED)
 
         def _handle_chat(self, payload: dict[str, Any]) -> None:
+            active_answerer = current_answerer()
             session_id = str(payload.get("session_id") or uuid.uuid4().hex)
             session = store.get(session_id)
-            mode = str(payload.get("mode") or session.mode or "ops")
+            mode = RUNTIME_CHAT_MODE
             regenerate = bool(payload.get("regenerate", False))
             query = str(payload.get("query") or "").strip()
             request_context = _context_with_request_overrides(
@@ -1756,15 +1833,15 @@ def _build_handler(
                 return
 
             try:
-                result = answerer.answer(
+                result = active_answerer.answer(
                     query,
                     mode=mode,
                     context=request_context,
-                    top_k=5,
-                    candidate_k=20,
-                    max_context_chunks=6,
+                    top_k=DEFAULT_RUNTIME_TOP_K,
+                    candidate_k=DEFAULT_RUNTIME_CANDIDATE_K,
+                    max_context_chunks=DEFAULT_RUNTIME_MAX_CONTEXT_CHUNKS,
                 )
-                answerer.append_log(result)
+                active_answerer.append_log(result)
             except Exception as exc:  # noqa: BLE001
                 self._send_json(
                     {"error": f"답변 생성 중 오류가 발생했습니다: {exc}"},
@@ -1772,7 +1849,7 @@ def _build_handler(
                 )
                 return
 
-            session.mode = mode
+            session.mode = RUNTIME_CHAT_MODE
             session.context = _derive_next_context(
                 request_context,
                 query=query,
@@ -1793,9 +1870,10 @@ def _build_handler(
             self._send_json(_build_chat_payload(root_dir=root_dir, session=session, result=result))
 
         def _handle_chat_stream(self, payload: dict[str, Any]) -> None:
+            active_answerer = current_answerer()
             session_id = str(payload.get("session_id") or uuid.uuid4().hex)
             session = store.get(session_id)
-            mode = str(payload.get("mode") or session.mode or "ops")
+            mode = RUNTIME_CHAT_MODE
             regenerate = bool(payload.get("regenerate", False))
             query = str(payload.get("query") or "").strip()
             request_context = _context_with_request_overrides(
@@ -1826,16 +1904,16 @@ def _build_handler(
                 self._stream_event(event)
 
             try:
-                result = answerer.answer(
+                result = active_answerer.answer(
                     query,
                     mode=mode,
                     context=request_context,
-                    top_k=5,
-                    candidate_k=20,
-                    max_context_chunks=6,
+                    top_k=DEFAULT_RUNTIME_TOP_K,
+                    candidate_k=DEFAULT_RUNTIME_CANDIDATE_K,
+                    max_context_chunks=DEFAULT_RUNTIME_MAX_CONTEXT_CHUNKS,
                     trace_callback=emit_trace,
                 )
-                answerer.append_log(result)
+                active_answerer.append_log(result)
             except Exception as exc:  # noqa: BLE001
                 self._stream_event(
                     {
@@ -1845,7 +1923,7 @@ def _build_handler(
                 )
                 return
 
-            session.mode = mode
+            session.mode = RUNTIME_CHAT_MODE
             session.context = _derive_next_context(
                 request_context,
                 query=query,

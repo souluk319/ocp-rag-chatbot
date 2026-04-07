@@ -234,6 +234,25 @@ class SettingsPathTests(unittest.TestCase):
                 else:
                     os.environ["OPENAI_API_KEY"] = old_openai
 
+    def test_env_file_overrides_existing_process_env_for_llm_endpoint(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / ".env").write_text(
+                "LLM_ENDPOINT=http://10.0.1.201:8010/v1\n",
+                encoding="utf-8",
+            )
+            old_llm_endpoint = os.environ.get("LLM_ENDPOINT")
+            try:
+                os.environ["LLM_ENDPOINT"] = "http://old-server:8080/v1"
+                settings = load_settings(root)
+                self.assertEqual("http://10.0.1.201:8010/v1", settings.llm_endpoint)
+                self.assertEqual("http://10.0.1.201:8010/v1", os.environ.get("LLM_ENDPOINT"))
+            finally:
+                if old_llm_endpoint is None:
+                    os.environ.pop("LLM_ENDPOINT", None)
+                else:
+                    os.environ["LLM_ENDPOINT"] = old_llm_endpoint
+
 
 if __name__ == "__main__":
     unittest.main()

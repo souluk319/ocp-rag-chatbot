@@ -243,6 +243,7 @@ class RetrievalTests(unittest.TestCase):
 
             result = retriever.retrieve(
                 "Pod Pending 이벤트 먼저 확인해야 해?",
+                context=SessionContext(restrict_uploaded_sources=False),
                 use_vector=False,
                 top_k=3,
                 candidate_k=5,
@@ -445,6 +446,7 @@ class RetrievalTests(unittest.TestCase):
         )
 
         self.assertGreater(boosts["architecture"], 1.0)
+        self.assertGreater(boosts["nodes"], 1.0)
         self.assertGreater(boosts["overview"], 1.0)
         self.assertLess(penalties["workloads_apis"], 1.0)
         self.assertLess(penalties["security_and_compliance"], 1.0)
@@ -845,6 +847,73 @@ class RetrievalTests(unittest.TestCase):
         )
 
         self.assertEqual("pod-understanding-hit", hits[0].chunk_id)
+
+    def test_fusion_deduplicates_intake_pod_command_sections_and_keeps_concept_hits(self) -> None:
+        intake_command_a = RetrievalHit(
+            chunk_id="dtb-a:oc-get-pods",
+            book_slug="openshift-container-platform-4-16-getting-started-ko-kr",
+            chapter="getting started",
+            section="$ oc get pods",
+            anchor="oc-get-pods",
+            source_url="https://example.com/intake-a",
+            viewer_path="/docs/intake/dtb-a/index.html#oc-get-pods",
+            text="출력 예와 함께 oc get pods 결과를 보여 줍니다. [CODE] $ oc get pods [/CODE]",
+            source="doc_to_book_bm25",
+            raw_score=1.0,
+            fused_score=1.0,
+        )
+        intake_command_b = RetrievalHit(
+            chunk_id="dtb-b:oc-get-pods",
+            book_slug="openshift-container-platform-4-16-getting-started-ko-kr",
+            chapter="getting started",
+            section="$ oc get pods",
+            anchor="oc-get-pods",
+            source_url="https://example.com/intake-b",
+            viewer_path="/docs/intake/dtb-b/index.html#oc-get-pods",
+            text="출력 예와 함께 oc get pods 결과를 보여 줍니다. [CODE] $ oc get pods [/CODE]",
+            source="doc_to_book_bm25",
+            raw_score=0.99,
+            fused_score=0.99,
+        )
+        concept_hit = RetrievalHit(
+            chunk_id="pod-understanding-hit",
+            book_slug="nodes",
+            chapter="노드",
+            section="2.1.1. Pod 이해",
+            anchor="pod-understanding",
+            source_url="https://example.com/nodes",
+            viewer_path="/docs/nodes.html#pod-understanding",
+            text="Pod에는 라이프사이클이 정의되어 있으며 Pod는 변경할 수 없는 배포 단위입니다.",
+            source="vector",
+            raw_score=0.92,
+            fused_score=0.92,
+        )
+        example_hit = RetrievalHit(
+            chunk_id="pod-example-hit",
+            book_slug="nodes",
+            chapter="노드",
+            section="2.1.2. Pod 구성의 예",
+            anchor="pod-example",
+            source_url="https://example.com/nodes",
+            viewer_path="/docs/nodes.html#pod-example",
+            text="Pod 정의에는 라이프사이클이 시작된 후 채워지는 특성이 있습니다.",
+            source="vector",
+            raw_score=0.9,
+            fused_score=0.9,
+        )
+
+        hits = fuse_ranked_hits(
+            "Pod lifecycle 개념을 초보자 기준으로 설명해줘",
+            {
+                "doc_to_book_bm25": [intake_command_a, intake_command_b],
+                "vector": [concept_hit, example_hit],
+            },
+            top_k=4,
+        )
+
+        self.assertEqual("pod-understanding-hit", hits[0].chunk_id)
+        self.assertEqual(2, len([hit for hit in hits if hit.book_slug == "nodes"]))
+        self.assertEqual(1, len([hit for hit in hits if hit.section == "$ oc get pods"]))
 
     def test_fusion_boosts_books_supported_by_bm25_and_vector(self) -> None:
         vector_only_hit = RetrievalHit(

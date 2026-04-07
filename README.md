@@ -16,7 +16,99 @@
 
 1. 이 프로젝트는 OCP 운영 질문과 교육 질문에 대해, 외부 검색 없이 내부 문서만으로 근거 기반 답변을 생성하는 폐쇄망 RAG 챗봇이다.
 2. 문서 정리, 하이브리드 검색, 멀티턴 세션 상태, 답변 문장 정리, 내부 문서 열람 화면, QA UI를 오픈소스 RAG 프레임워크 없이 직접 분리 구현했다.
-3. 현재 강점은 `각 단계가 눈으로 검증 가능한 구조`와 `도메인 특화 평가`, 약점은 `일부 고가치 문서의 한국어 source gap`과 `learn 답변 품질의 잔여 편차`다.
+3. 현재 강점은 `각 단계가 눈으로 검증 가능한 구조`와 `도메인 특화 평가`, 약점은 `일부 고가치 문서의 한국어 source gap`과 `개념형 답변 품질의 잔여 편차`다.
+
+---
+
+## 0. 현재 레포 빠른 지도
+
+README가 길기 때문에, 지금 레포를 처음 열었을 때 가장 먼저 봐야 하는 정보만 앞에 정리한다.
+
+### 0.1 루트 폴더 구조
+
+```text
+.
+├─ artifacts/                  # prebuilt corpus, eval report, runtime report
+├─ manifests/                  # source manifest, eval case, corpus manifest
+├─ scripts/                    # 실행 스크립트와 레거시 run_part* 진입점
+├─ src/
+│  ├─ ocp_doc_to_book/         # 업로드 문서 capture/normalize/canonical book
+│  ├─ ocp_rag_part1/           # corpus 준비: 정규화, 청킹, 임베딩, 적재
+│  ├─ ocp_rag_part2/           # retrieval: query rewrite, BM25, vector, fusion
+│  ├─ ocp_rag_part3/           # answering: context assembly, prompt, answer shaping
+│  └─ ocp_rag_part4/           # app runtime: server, streaming UI, study panel
+├─ tests/                      # unit / integration / eval regression tests
+├─ play_book.cmd               # 현재 제품 기준 단일 실행 진입점
+├─ ENTRYPOINTS.md              # canonical entrypoint 설명
+├─ SYSTEM_ROOT_CAUSE_AUDIT.md  # 구조적 문제와 우선순위 감사 기록
+└─ README.md
+```
+
+### 0.2 현재 구조를 읽는 법
+
+현재 `part1~4` 이름은 기능 기준이라기보다 **개발 단계에서 출발한 중간 구조**다.
+
+- `part1`: corpus 준비
+- `part2`: retrieval
+- `part3`: grounded answer generation
+- `part4`: runtime UI / API / diagnostics
+- `ocp_doc_to_book`: 업로드 문서를 같은 source-view 자산으로 정리하는 intake 축
+
+즉 지금 구조는 단기적으로는 쓸 수 있지만, 장기 제품 구조로는 아직 이상적이지 않다.  
+문제가 생기면 일단 `part1 -> 준비`, `part2 -> 검색`, `part3 -> 답변`, `part4 -> 런타임`으로 좁혀 보는 것이 가장 빠르다.
+
+### 0.3 현재 제품 기준 실행 진입점
+
+앞으로는 `scripts/run_part*.py`를 직접 뒤지지 않고 아래 한 파일만 보면 된다.
+
+```bash
+play_book.cmd ui
+play_book.cmd ask --query "Pod lifecycle 개념을 설명해줘"
+play_book.cmd eval
+play_book.cmd ragas --dry-run
+```
+
+- `ui`: 로컬 채팅 UI 실행
+- `ask`: 단건 질의 실행
+- `eval`: 멀티케이스 answer eval 실행
+- `ragas`: RAGAS judge eval 실행
+
+기존 `scripts/run_part*.py`는 레거시 진입점이다.  
+현재 제품 기준 진실원천은 `play_book.cmd -> scripts/play_book.py`다.
+
+### 0.4 현재 런타임 파이프라인
+
+지금 질문 한 개가 답으로 바뀌는 실제 런타임 흐름은 아래다.
+
+1. `play_book.cmd ui`가 `scripts/play_book.py`를 통해 UI 서버를 올린다.
+2. 브라우저 질문은 `src/ocp_rag_part4/server.py`의 `/api/chat` 또는 `/api/chat/stream`으로 들어간다.
+3. 서버는 `src/ocp_rag_part3/answerer.py`의 `Part3Answerer.answer()`를 호출한다.
+4. 답변기는 `src/ocp_rag_part2/retriever.py`로 들어가 `normalize_query -> decompose_retrieval_queries -> rewrite_query -> BM25/doc_to_book BM25/vector -> fusion` 순서로 후보를 만든다.
+5. `src/ocp_rag_part3/context.py`가 citation 후보를 다시 줄인다.
+6. `src/ocp_rag_part3/prompt.py`가 grounded prompt를 만들고 `src/ocp_rag_part3/llm.py`가 LLM endpoint를 호출한다.
+7. `src/ocp_rag_part3/answerer.py`가 답변 문장 정리, citation finalize, follow-up suggestion 준비를 끝낸다.
+8. `src/ocp_rag_part4/server.py`가 trace/citation/session payload를 만들어 UI로 돌려준다.
+
+### 0.5 현재 코드 품질 스냅샷
+
+현재 코드 품질을 짧게 요약하면 `기능 회귀 안정성은 올라왔지만, 구조는 아직 과도기`다.
+
+- 자동 회귀 상태: `203 passed, 8 warnings`
+- 강점:
+  - `.env` 기준 LLM 설정 반영
+  - 업로드 문서가 기본 검색에 자동 혼합되지 않도록 기본값 정리
+  - `ops/learn` 분기 제거 후 질문 의도 중심 답변 경로로 통일
+  - 제품 기준 단일 실행 진입점 도입
+- 남은 구조 부채:
+  - `part1~4` 패키지 이름이 기능 구조보다 개발 단계 흔적을 더 강하게 남김
+  - 레거시 `run_part*.py`가 여전히 남아 있어 처음 보는 사람에게 잡음이 큼
+  - retrieval은 아직 heuristic fusion 중심이고 cross-encoder reranker가 없다
+  - query rewrite는 존재하지만 규칙 기반이라 LLM rewriter 수준은 아니다
+  - vector raw hit 품질 편차가 있고, doc-to-book normalization 품질도 아직 균일하지 않다
+  - RAGAS import 경고처럼 바로 깨지진 않지만 버전 업 때 먼저 손봐야 하는 유지보수 부채가 남아 있다
+
+즉 현재 상태는 “겉만 번지르르한 데모”는 아니지만, “문제 생기면 한 번에 파악되는 제품 구조”도 아직 아니다.  
+그래서 README, entrypoint, audit 문서로 현재 구조를 먼저 고정해 두고, 다음 단계에서 패키지 재배치를 들어가는 것이 맞다.
 
 ---
 
@@ -905,7 +997,7 @@ python scripts/check_runtime_endpoints.py
 #### 5) UI 실행
 
 ```powershell
-python scripts/run_part4_ui.py --host 127.0.0.1 --port 8765
+play_book.cmd ui
 ```
 
 브라우저:
@@ -969,13 +1061,13 @@ python3 scripts/check_runtime_endpoints.py
 #### 단일 질의 테스트
 
 ```bash
-python3 scripts/run_part3_answer.py --mode ops --query "etcd 백업은 실제로 어떤 절차로 해?"
+play_book.cmd ask --query "etcd 백업은 실제로 어떤 절차로 해?"
 ```
 
 #### UI 실행
 
 ```bash
-python3 scripts/run_part4_ui.py --no-browser
+play_book.cmd ui
 ```
 
 브라우저:
@@ -1067,13 +1159,13 @@ python3 scripts/run_part4_ui.py --no-browser
 이 기본값을 쓴 이유는, 현재 `ragas` 버전의 Chat Completions 경로와 호환성이 안정적이기 때문이다.
 
 ```bash
-python3 scripts/run_part3_ragas_eval.py --cases manifests/part3_ragas_eval_cases.jsonl
+play_book.cmd ragas --cases manifests/part3_ragas_eval_cases.jsonl
 ```
 
 dry run:
 
 ```bash
-python3 scripts/run_part3_ragas_eval.py --cases manifests/part3_ragas_eval_cases.jsonl --dry-run
+play_book.cmd ragas --cases manifests/part3_ragas_eval_cases.jsonl --dry-run
 ```
 
 출력:

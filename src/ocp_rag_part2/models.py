@@ -12,7 +12,7 @@ class SessionContext:
     open_entities: list[str] = field(default_factory=list)
     ocp_version: str | None = None
     selected_draft_ids: list[str] = field(default_factory=list)
-    restrict_uploaded_sources: bool = False
+    restrict_uploaded_sources: bool = True
     unresolved_question: str | None = None
 
     @classmethod
@@ -34,7 +34,7 @@ class SessionContext:
             selected_draft_ids=[
                 str(item).strip() for item in selected_draft_ids if str(item).strip()
             ],
-            restrict_uploaded_sources=bool(payload.get("restrict_uploaded_sources", False)),
+            restrict_uploaded_sources=bool(payload.get("restrict_uploaded_sources", True)),
             unresolved_question=payload.get("unresolved_question"),
         )
 

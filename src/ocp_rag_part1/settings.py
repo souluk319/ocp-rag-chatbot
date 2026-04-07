@@ -253,8 +253,6 @@ def load_settings(root_dir: str | Path) -> Settings:
         resolved_values: dict[str, str] = {}
 
         def resolve_value(key: str, stack: set[str]) -> str:
-            if key in os.environ:
-                return os.environ[key]
             cached = resolved_values.get(key)
             if cached is not None:
                 return cached
@@ -264,16 +262,14 @@ def load_settings(root_dir: str | Path) -> Settings:
 
             def replace_reference(match: re.Match[str]) -> str:
                 reference = match.group(1) or match.group(2) or ""
-                if reference in os.environ:
-                    return os.environ[reference]
-                if reference not in raw_values:
-                    return ""
-                return resolve_value(reference, stack | {key})
+                if reference in raw_values:
+                    return resolve_value(reference, stack | {key})
+                return os.environ.get(reference, "")
 
             resolved = ENV_REFERENCE_RE.sub(replace_reference, raw_value)
             resolved_values[key] = resolved
             return resolved
 
         for key in raw_values:
-            os.environ.setdefault(key, resolve_value(key, set()))
+            os.environ[key] = resolve_value(key, set())
     return Settings(root_dir=Path(root_dir))

@@ -25,6 +25,7 @@ from ocp_rag_part4.server import (
     _clean_source_view_text,
     _create_doc_to_book_draft,
     _citation_href,
+    _context_with_request_overrides,
     _doc_to_book_meta_for_viewer_path,
     _derive_next_context,
     _internal_doc_to_book_viewer_html,
@@ -35,6 +36,7 @@ from ocp_rag_part4.server import (
     _load_doc_to_book_draft,
     _normalize_doc_to_book_draft,
     _append_chat_turn_log,
+    _refresh_answerer_llm_settings,
     _serialize_citation,
     _suggest_follow_up_questions,
     _upload_doc_to_book_draft,
@@ -62,6 +64,62 @@ def _citation(
 
 
 class Part4UiTests(unittest.TestCase):
+    def test_context_with_request_overrides_defaults_to_restrict_uploaded_sources(self) -> None:
+        context = _context_with_request_overrides(
+            SessionContext(selected_draft_ids=["draft-a"], restrict_uploaded_sources=False),
+            payload={},
+            mode="ops",
+        )
+
+        self.assertTrue(context.restrict_uploaded_sources)
+        self.assertEqual(["draft-a"], context.selected_draft_ids)
+
+    def test_refresh_answerer_llm_settings_reloads_endpoint_from_env(self) -> None:
+        class _FakeSettings:
+            def __init__(self, endpoint: str) -> None:
+                self.llm_endpoint = endpoint
+
+        class _FakeLlmClient:
+            def __init__(self, settings) -> None:
+                self.endpoint = settings.llm_endpoint
+
+        class _FakeAnswerer:
+            def __init__(self, endpoint: str) -> None:
+                self.settings = _FakeSettings(endpoint)
+                self.llm_client = _FakeLlmClient(self.settings)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / ".env").write_text(
+                "LLM_ENDPOINT=http://10.0.1.201:8010/v1\n"
+                "LLM_MODEL=Qwen/Qwen3.5-9B\n",
+                encoding="utf-8",
+            )
+            original_endpoint = os.environ.get("LLM_ENDPOINT")
+            original_model = os.environ.get("LLM_MODEL")
+            try:
+                os.environ["LLM_ENDPOINT"] = "http://old-server:8080/v1"
+                os.environ["LLM_MODEL"] = "old-model"
+                answerer = _FakeAnswerer("http://old-server:8080/v1")
+                refreshed, signature = _refresh_answerer_llm_settings(
+                    answerer,
+                    root_dir=root,
+                    current_signature=("http://old-server:8080/v1", "old-model", "", 0.2, 1100, 30),
+                )
+                self.assertIs(refreshed, answerer)
+                self.assertEqual("http://10.0.1.201:8010/v1", refreshed.settings.llm_endpoint)
+                self.assertEqual("http://10.0.1.201:8010/v1", refreshed.llm_client.endpoint)
+                self.assertEqual("http://10.0.1.201:8010/v1", signature[0])
+            finally:
+                if original_endpoint is None:
+                    os.environ.pop("LLM_ENDPOINT", None)
+                else:
+                    os.environ["LLM_ENDPOINT"] = original_endpoint
+                if original_model is None:
+                    os.environ.pop("LLM_MODEL", None)
+                else:
+                    os.environ["LLM_MODEL"] = original_model
+
     def test_static_ui_guards_enter_during_ime_composition(self) -> None:
         html = (
             ROOT / "src" / "ocp_rag_part4" / "static" / "index.html"
@@ -83,7 +141,7 @@ class Part4UiTests(unittest.TestCase):
         self.assertIn('id="pipeline-summary"', html)
         self.assertIn("OCP PLAY STUDIO", html)
         self.assertIn("<h1>OCP PLAY STUDIO</h1>", html)
-        self.assertIn("OCP RAG CHATBOT PLATFORM", html)
+        self.assertIn("지식 플랫폼", html)
         self.assertIn("--accent: #ee0000;", html)
         self.assertIn("--layout-gap: 16px;", html)
         self.assertIn("padding: var(--layout-gap);", html)
@@ -101,10 +159,10 @@ class Part4UiTests(unittest.TestCase):
         self.assertIn("const EMPTY_STATE_SAMPLES = Array.isArray(APP_CONFIG.emptyStateSamples)", html)
         self.assertIn("function shuffledEmptyStateSamples(limit = 4)", html)
         self.assertIn('id="version-chip"', html)
-        self.assertIn("Knowledge Packs", html)
+        self.assertIn("자료", html)
         self.assertIn('id="core-version-picker"', html)
-        self.assertIn("데이터 선택", html)
-        self.assertIn("KR corpus", html)
+        self.assertIn("자료 선택", html)
+        self.assertIn("기본 문서", html)
         self.assertIn('id="active-pack-title"', html)
         self.assertIn("core-pack-tab", html)
         self.assertIn("function renderCorePackOptions()", html)
@@ -113,22 +171,31 @@ class Part4UiTests(unittest.TestCase):
         self.assertIn('class="sample-chip"', html)
         self.assertIn('id="selected-source-count"', html)
         self.assertIn("function setUploadedDraftSelected", html)
+        self.assertNotIn("selectedDraftIds.add(draftId);", html)
+        self.assertNotIn("selectedDraftIds.add(normalized.draft_id);", html)
         self.assertIn("function prepareUploadedSource", html)
         self.assertIn("selected_draft_ids: selectedDraftIdList()", html)
         self.assertIn("function normalizeAssistantAnswer", html)
         self.assertIn('label.textContent = "Answer"', html)
-        self.assertIn('title.textContent = "근거 문서"', html)
+        self.assertIn('title.textContent = "참조"', html)
         self.assertIn(".assistant-copy", html)
         self.assertIn(".citation-list-title", html)
         self.assertIn(".suggestion-list-title", html)
         self.assertIn(".followup-chip", html)
-        self.assertIn('title.textContent = "이어서 볼 질문"', html)
+        self.assertIn('title.textContent = "추천 질문"', html)
         self.assertIn('sendMessage({ query: suggestedQuery })', html)
         self.assertIn('id="source-panel-toggle-btn"', html)
         self.assertIn("function setSourcePanelVisible", html)
         self.assertIn("function setStudyTab", html)
         self.assertIn('data-study-tab="source"', html)
         self.assertIn('data-study-tab="library"', html)
+        self.assertIn('data-study-tab="ingest"', html)
+        self.assertIn('data-study-tab="query"', html)
+        self.assertIn('data-study-tab="session"', html)
+        self.assertIn('data-study-tab="pipeline"', html)
+        self.assertIn('data-study-page="query"', html)
+        self.assertIn('data-study-page="session"', html)
+        self.assertIn('data-study-page="pipeline"', html)
         self.assertIn('data-study-page="library"', html)
         self.assertIn('id="library-summary"', html)
         self.assertIn('id="library-list"', html)
@@ -176,11 +243,11 @@ class Part4UiTests(unittest.TestCase):
         self.assertIn("function summarizeTraceMeta", html)
         self.assertIn(".trace-step", html)
         self.assertIn('class="summary-grid"', html)
-        self.assertIn("Capture Status", html)
-        self.assertIn("Knowledge Library", html)
-        self.assertIn("Ready Sources", html)
-        self.assertIn("Canonical Draft Preview", html)
-        self.assertIn("Recent Drafts", html)
+        self.assertIn("수집 상태", html)
+        self.assertIn("문서 보관함", html)
+        self.assertIn("준비된 자료", html)
+        self.assertIn("정리본 미리보기", html)
+        self.assertIn("최근 초안", html)
 
     def test_citation_href_prefers_internal_viewer_path(self) -> None:
         href = _citation_href(_citation(1, anchor="overview-anchor"))
@@ -278,7 +345,7 @@ class Part4UiTests(unittest.TestCase):
             result=result,
         )
 
-        self.assertEqual("learn", updated.mode)
+        self.assertEqual("chat", updated.mode)
         self.assertEqual("OpenShift 아키텍처", updated.current_topic)
         self.assertEqual("OpenShift 아키텍처 설명", updated.user_goal)
         self.assertIsNone(updated.unresolved_question)
@@ -735,7 +802,7 @@ class Part4UiTests(unittest.TestCase):
 
         self.assertIsNotNone(html)
         self.assertIn("아키텍처", html)
-        self.assertIn("Internal Citation Viewer", html)
+        self.assertIn("Reference Viewer", html)
         self.assertIn("width: min(1480px, calc(100vw - 32px));", html)
         self.assertIn("section-card is-target", html)
         self.assertIn(".code-block code {", html)

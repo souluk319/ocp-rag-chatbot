@@ -79,7 +79,7 @@ def normalize_answer_text(answer_text: str) -> str:
         if normalized.startswith(prefix):
             normalized = normalized[len(prefix) :].lstrip(" ,:\n")
             break
-    normalized = GUIDE_HEADER_RE.sub("\n\n추가 가이드: ", normalized)
+    normalized = GUIDE_HEADER_RE.sub("\n\n", normalized)
     normalized = normalized.strip()
 
     if not normalized:
@@ -106,10 +106,8 @@ def _normalize_answer_markup_blocks(answer_text: str) -> str:
     return normalized.strip()
 
 
-def reshape_ops_answer_text(answer_text: str, *, mode: str) -> str:
-    if mode != "ops":
-        return answer_text
-
+def reshape_ops_answer_text(answer_text: str, *, mode: str | None = None) -> str:
+    del mode
     match = BARE_COMMAND_ANSWER_RE.match(answer_text.strip())
     if not match:
         return answer_text
@@ -176,8 +174,14 @@ def _align_answer_to_grounded_commands(answer_text: str, *, query: str, citation
     return updated
 
 
-def _strip_weak_additional_guidance(answer_text: str, *, mode: str, citations) -> str:
-    if mode != "ops" or not citations:
+def _strip_weak_additional_guidance(
+    answer_text: str,
+    *,
+    mode: str | None = None,
+    citations,
+) -> str:
+    del mode
+    if not citations:
         return answer_text
     return WEAK_GUIDE_TAIL_RE.sub("", answer_text).strip()
 
@@ -190,23 +194,37 @@ def _strip_intro_offtopic_noise(answer_text: str, *, query: str) -> str:
     return cleaned
 
 
-def _strip_structured_key_extra_guidance(answer_text: str, *, query: str, mode: str) -> str:
-    if mode != "ops" or not STRUCTURED_QUERY_RE.search(query):
+def _strip_structured_key_extra_guidance(
+    answer_text: str,
+    *,
+    query: str,
+    mode: str | None = None,
+) -> str:
+    del mode
+    if not STRUCTURED_QUERY_RE.search(query):
         return answer_text
-    head, separator, _tail = answer_text.partition("\n\n추가 가이드:")
-    if not separator:
+    parts = re.split(r"\n\n(?:추가 가이드|참고):", answer_text, maxsplit=1)
+    if len(parts) < 2:
         return answer_text
-    return head.strip()
+    return parts[0].strip()
+
+
+def _trim_productization_noise(answer_text: str) -> str:
+    cleaned = re.sub(r"\n\n\*\*4 단계: 같이 보면 좋은 문서\*\*.*$", "", answer_text, flags=re.DOTALL)
+    cleaned = re.sub(r"\n\* \*\*근거:\*\* .*?(?=\n|$)", "", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
 
 
 def _shape_pod_lifecycle_explainer(
     answer_text: str,
     *,
     query: str,
-    mode: str,
+    mode: str | None = None,
     citations,
 ) -> str:
-    if mode != "learn" or not has_pod_lifecycle_concept_intent(query) or not citations:
+    del mode
+    if not has_pod_lifecycle_concept_intent(query) or not citations:
         return answer_text
 
     primary = citations[0]
@@ -226,10 +244,7 @@ def _shape_pod_lifecycle_explainer(
         "Pod는 정책과 종료 코드에 따라 종료 후 바로 제거되거나, 컨테이너 로그 접근을 위해 잠시 유지될 수 있습니다 [1].\n"
         "* **이유:** 종료 상황을 추적하고 필요한 운영 정보를 확인할 시간을 확보하기 위해서입니다.\n"
         "* **확인 포인트:** 종료 이유, 종료 코드, 로그 확인 가능 여부를 함께 봅니다.\n\n"
-        "**4 단계: 같이 보면 좋은 문서**\n"
-        f"`{secondary.section}` 문서는 Pod 예시와 함께, 생성 뒤 자동으로 채워지는 특성을 같이 보여 줍니다 [2].\n"
-        "* **이유:** 라이프사이클 개념을 실제 Pod 정의와 연결해서 이해하기 좋기 때문입니다.\n"
-        "* **확인 포인트:** 어떤 값이 사용자가 정의한 값이고, 어떤 값이 실행 후 채워지는 값인지 구분해 보세요 [2]."
+        f"\n`{secondary.section}` 문서는 Pod 예시와 함께, 생성 뒤 자동으로 채워지는 특성을 같이 보여 줍니다 [2]."
     )
 
 
@@ -237,10 +252,11 @@ def _shape_pod_pending_troubleshooting(
     answer_text: str,
     *,
     query: str,
-    mode: str,
+    mode: str | None = None,
     citations,
 ) -> str:
-    if mode != "learn" or not has_pod_pending_troubleshooting_intent(query) or not citations:
+    del mode
+    if not has_pod_pending_troubleshooting_intent(query) or not citations:
         return answer_text
 
     primary = citations[0]
@@ -282,8 +298,6 @@ def summarize_session_context(context: SessionContext | None) -> str:
         parts.append(f"- 사용자 목표: {context.user_goal}")
     if context.ocp_version:
         parts.append(f"- OCP 버전: {context.ocp_version}")
-    if context.mode:
-        parts.append(f"- 세션 모드: {context.mode}")
     return "\n".join(parts)
 
 
@@ -526,7 +540,7 @@ class Part3Answerer:
         self,
         query: str,
         *,
-        mode: str = "ops",
+        mode: str = "chat",
         context: SessionContext | None = None,
         top_k: int = 5,
         candidate_k: int = 20,
@@ -803,8 +817,9 @@ class Part3Answerer:
             query=query,
             mode=mode,
         )
+        answer_text = _trim_productization_noise(answer_text)
         answer_text = _strip_intro_offtopic_noise(answer_text, query=query)
-        if mode == "ops" and context_bundle.citations and not CITATION_RE.search(answer_text):
+        if context_bundle.citations and not CITATION_RE.search(answer_text):
             answer_text = _inject_single_citation(answer_text, citation_index=1)
         pipeline_timings_ms["llm_generate_total"] = round(
             (time.perf_counter() - llm_started_at) * 1000,

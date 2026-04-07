@@ -1,4 +1,4 @@
-{"id":"ops-001","category":"ops","query":"etcd 백업은 어떻게 하나?","expected_book_slugs":["backup_and_restore","etcd"]}
+{"id":"ops-001","category":"ops","query":"etcd 백업은 어떻게 하나?","expected_book_slugs":["backup_and_restore","etcd","postinstallation_configuration"]}
 {"id":"ops-002","category":"ops","query":"워커 노드를 드레이닝하려면 뭘 봐야 해?","expected_book_slugs":["nodes"]}
 {"id":"ops-003","category":"ops","query":"연결이 끊긴 환경에서 이미지 미러링은 어디 문서를 봐야 해?","expected_book_slugs":["disconnected_environments","registry","images"]}
 {"id":"ops-004","category":"ops","query":"클러스터 업데이트 전에 확인할 사항은?","expected_book_slugs":["updating_clusters","release_notes"]}
@@ -11,7 +11,7 @@
 {"id":"learn-005","category":"learn","query":"인증과 권한 부여 차이를 어디서 배우면 돼?","expected_book_slugs":["authentication_and_authorization","security_and_compliance"]}
 {"id":"follow-001","category":"follow_up","query":"그럼 외부로 공개할 땐 뭘 봐야 해?","context":{"current_topic":"Route와 Ingress 차이","open_entities":["Route","Ingress"],"unresolved_question":"외부 노출 관련 설정"},"expected_book_slugs":["ingress_and_load_balancing","networking_overview"]}
 {"id":"follow-002","category":"follow_up","query":"그거 재부팅은 왜 일어나?","context":{"current_topic":"Machine Config Operator","open_entities":["Machine Config Operator","MCO"],"ocp_version":"4.20","unresolved_question":"노드 재부팅 이유"},"expected_book_slugs":["machine_configuration","updating_clusters","operators"]}
-{"id":"follow-003","category":"follow_up","query":"그 복원 순서는?","context":{"current_topic":"etcd 백업","open_entities":["etcd"],"unresolved_question":"복원 절차"},"expected_book_slugs":["backup_and_restore","etcd"]}
+{"id":"follow-003","category":"follow_up","query":"그 복원 순서는?","context":{"current_topic":"etcd 백업","open_entities":["etcd"],"unresolved_question":"복원 절차"},"expected_book_slugs":["backup_and_restore","etcd","postinstallation_configuration"]}
 {"id":"follow-004","category":"follow_up","query":"아까 말한 그 보안 설정은 어디서 봐?","context":{"current_topic":"인증 및 권한 부여","open_entities":["OAuth","RBAC"],"unresolved_question":"보안 설정 시작점"},"expected_book_slugs":["authentication_and_authorization","security_and_compliance"]}
 {"id":"amb-001","category":"ambiguous","query":"로그는 어디서 봐?","expected_book_slugs":["logging","monitoring","observability_overview"]}
 {"id":"amb-002","category":"ambiguous","query":"보안 설정은 어디 문서부터 보면 돼?","expected_book_slugs":["security_and_compliance","authentication_and_authorization"]}

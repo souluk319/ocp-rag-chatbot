@@ -46,6 +46,20 @@ def route_non_rag(query: str) -> RoutedResponse | None:
         return None
 
     if GREETING_RE.match(normalized):
+        return RoutedResponse(route="smalltalk", answer="답변: OCP 질문을 입력해 주세요.")
+    if THANKS_RE.match(normalized):
+        return RoutedResponse(route="smalltalk", answer="답변: 필요하면 이어서 질문해 주세요.")
+    if FAREWELL_RE.match(normalized):
+        return RoutedResponse(route="smalltalk", answer="답변: 필요하면 다시 불러 주세요.")
+    if IDENTITY_RE.match(normalized):
+        return RoutedResponse(route="meta", answer="답변: 저는 OCP 질문에 답하는 챗봇입니다.")
+    if CAPABILITY_RE.search(normalized):
+        return RoutedResponse(
+            route="meta",
+            answer="답변: OCP 개념, 운영 절차, 트러블슈팅 질문에 답할 수 있습니다.",
+        )
+
+    if GREETING_RE.match(normalized):
         return RoutedResponse(
             route="smalltalk",
             answer=(
