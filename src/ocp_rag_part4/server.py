@@ -5,10 +5,8 @@ import html
 import json
 import mimetypes
 import re
-import threading
 import uuid
 import webbrowser
-from dataclasses import dataclass, field
 from datetime import datetime
 from functools import lru_cache
 from http import HTTPStatus
@@ -45,6 +43,18 @@ from ocp_rag_part2.query import (
 )
 from ocp_rag_part3 import Part3Answerer
 from ocp_rag_part3.models import AnswerResult, Citation
+from play_book_studio.app.presenters import (
+    _citation_href,
+    _core_pack_payload,
+    _humanize_book_slug,
+)
+from play_book_studio.app.sessions import (
+    RUNTIME_CHAT_MODE,
+    ChatSession,
+    SessionStore,
+    Turn,
+)
+from play_book_studio.app.viewers import _parse_viewer_path, _viewer_path_to_local_html
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -52,7 +62,6 @@ INDEX_HTML_PATH = STATIC_DIR / "index.html"
 DEFAULT_RUNTIME_TOP_K = 8
 DEFAULT_RUNTIME_CANDIDATE_K = 20
 DEFAULT_RUNTIME_MAX_CONTEXT_CHUNKS = 6
-RUNTIME_CHAT_MODE = "chat"
 NORMALIZED_BLOCK_RE = re.compile(r"(\[CODE\].*?\[/CODE\]|\[TABLE\].*?\[/TABLE\])", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`([^`]+)`")
 SOURCE_VIEW_LEADING_NOISE_RE = re.compile(
@@ -110,117 +119,6 @@ def _build_health_payload(answerer: Part3Answerer) -> dict[str, Any]:
             "source_manifest_path": str(settings.source_manifest_path),
         },
     }
-
-
-@dataclass(slots=True)
-class Turn:
-    query: str
-    mode: str
-    answer: str
-
-
-@dataclass(slots=True)
-class ChatSession:
-    session_id: str
-    mode: str = RUNTIME_CHAT_MODE
-    context: SessionContext = field(
-        default_factory=lambda: SessionContext(mode=RUNTIME_CHAT_MODE, ocp_version="4.20")
-    )
-    history: list[Turn] = field(default_factory=list)
-
-    @property
-    def last_query(self) -> str:
-        if not self.history:
-            return ""
-        return self.history[-1].query
-
-
-class SessionStore:
-    def __init__(self) -> None:
-        self._lock = threading.Lock()
-        self._sessions: dict[str, ChatSession] = {}
-        self._latest_session_id: str | None = None
-
-    def get(self, session_id: str) -> ChatSession:
-        with self._lock:
-            session = self._sessions.get(session_id)
-            if session is None:
-                session = ChatSession(session_id=session_id)
-                self._sessions[session_id] = session
-            self._latest_session_id = session_id
-            return session
-
-    def reset(self, session_id: str) -> ChatSession:
-        with self._lock:
-            session = ChatSession(session_id=session_id)
-            self._sessions[session_id] = session
-            self._latest_session_id = session_id
-            return session
-
-    def update(self, session: ChatSession) -> None:
-        with self._lock:
-            self._sessions[session.session_id] = session
-            self._latest_session_id = session.session_id
-
-    def peek(self, session_id: str) -> ChatSession | None:
-        with self._lock:
-            return self._sessions.get(session_id)
-
-    def latest(self) -> ChatSession | None:
-        with self._lock:
-            if not self._latest_session_id:
-                return None
-            return self._sessions.get(self._latest_session_id)
-
-
-def _citation_href(citation: Citation) -> str:
-    viewer_path = (citation.viewer_path or "").strip()
-    if viewer_path:
-        return viewer_path
-    if citation.anchor:
-        return f"{citation.source_url}#{citation.anchor}"
-    return citation.source_url
-
-
-def _humanize_book_slug(book_slug: str) -> str:
-    return " ".join(part for part in str(book_slug or "").replace("_", " ").split())
-
-
-def _core_pack_payload(*, version: str = "4.20") -> dict[str, str]:
-    version_token = version.replace(".", "-")
-    return {
-        "source_collection": "core",
-        "pack_id": f"openshift-{version_token}-core",
-        "pack_label": f"OpenShift {version} Core Pack",
-        "inferred_product": "openshift",
-        "inferred_version": version,
-    }
-
-
-def _viewer_path_to_local_html(root_dir: Path, viewer_path: str) -> Path | None:
-    parsed = _parse_viewer_path(viewer_path)
-    if parsed is None:
-        return None
-    book_slug, _ = parsed
-    settings = load_settings(root_dir)
-    candidate = settings.raw_html_dir / f"{book_slug}.html"
-    if not candidate.exists():
-        return None
-    return candidate
-
-
-def _parse_viewer_path(viewer_path: str) -> tuple[str, str] | None:
-    parsed = urlparse((viewer_path or "").strip())
-    request_path = parsed.path.strip()
-    prefix = "/docs/ocp/4.20/ko/"
-    if not request_path.startswith(prefix):
-        return None
-    remainder = request_path[len(prefix) :]
-    parts = [part for part in remainder.split("/") if part]
-    if len(parts) != 2 or parts[1] != "index.html":
-        return None
-    return parts[0], parsed.fragment.strip()
-
 
 @lru_cache(maxsize=4)
 def _load_manifest_entries(
