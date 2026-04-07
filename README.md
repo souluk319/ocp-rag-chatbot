@@ -833,15 +833,30 @@ python -m pip install --upgrade pip
 pip install -e .
 ```
 
+의존성 기준 파일은 [`pyproject.toml`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/pyproject.toml) 하나다. `requirements.txt`는 따로 두지 않는다.
+
+기본 설치 라이브러리:
+
+- `beautifulsoup4>=4.12`
+- `docling>=2.84.0`
+- `pypdf>=6.0`
+- `requests>=2.31`
+- `sentence-transformers==5.3.0`
+
 RAGAS까지 사용할 경우:
 
 ```powershell
 pip install -e ".[eval]"
 ```
 
+추가 설치 라이브러리:
+
+- `ragas>=0.4.3`
+- `datasets>=4.8.4`
+
 #### 2) `.env` 구성
 
-실행 기준은 repo 루트의 [`.env`](.env)다. 템플릿은 [`.env.example`](.env.example)을 참고한다.
+실행 기준은 repo 루트의 [`.env`](.env)다.
 
 발표용 최소 예시:
 
@@ -849,13 +864,13 @@ pip install -e ".[eval]"
 ARTIFACTS_DIR=C:/Users/<user>/cywell/ocp-rag-chatbot-data
 SOURCE_MANIFEST_PATH=C:/Users/<user>/cywell/ocp-rag-chatbot-v2/manifests/ocp_ko_4_20_approved_ko.json
 
-EMBEDDING_BASE_URL=http://<embedding-server>:8091/v1
+EMBEDDING_BASE_URL=
 EMBEDDING_MODEL=dragonkue/bge-m3-ko
 
 QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION=openshift_docs
 
-LLM_ENDPOINT=http://<llm-server>:8080/v1
+LLM_ENDPOINT=http://localhost:8080/v1
 LLM_MODEL=Qwen/Qwen3.5-9B
 
 OPENAI_API_KEY=<optional, ragas judge용>

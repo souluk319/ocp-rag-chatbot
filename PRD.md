@@ -581,7 +581,6 @@ volumes:
 ```
 documind/
 ├── docker-compose.yml
-├── .env.example
 ├── README.md
 │
 ├── backend/
