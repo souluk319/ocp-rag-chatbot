@@ -125,6 +125,7 @@ class Settings:
         self.part1_dir.mkdir(parents=True, exist_ok=True)
         self.part2_dir.mkdir(parents=True, exist_ok=True)
         self.part3_dir.mkdir(parents=True, exist_ok=True)
+        self.part4_dir.mkdir(parents=True, exist_ok=True)
         self.doc_to_book_drafts_dir.mkdir(parents=True, exist_ok=True)
         self.doc_to_book_capture_dir.mkdir(parents=True, exist_ok=True)
         self.doc_to_book_books_dir.mkdir(parents=True, exist_ok=True)
@@ -186,6 +187,10 @@ class Settings:
         return self.artifacts_dir / "part3"
 
     @property
+    def part4_dir(self) -> Path:
+        return self.artifacts_dir / "part4"
+
+    @property
     def doc_to_book_dir(self) -> Path:
         return self.artifacts_dir / "doc_to_book"
 
@@ -228,6 +233,10 @@ class Settings:
     @property
     def part3_answer_log_path(self) -> Path:
         return self.part3_dir / "answer_log.jsonl"
+
+    @property
+    def part4_chat_log_path(self) -> Path:
+        return self.part4_dir / "chat_turns.jsonl"
 
 
 def load_settings(root_dir: str | Path) -> Settings:

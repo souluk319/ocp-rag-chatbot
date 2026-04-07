@@ -5,6 +5,7 @@ from ocp_rag_part2.query import (
     has_certificate_monitor_intent,
     has_cluster_node_usage_intent,
     has_crash_loop_troubleshooting_intent,
+    has_deployment_scaling_intent,
     has_project_finalizer_intent,
     has_project_terminating_intent,
     has_openshift_kubernetes_compare_intent,
@@ -55,6 +56,10 @@ def _intent_shape_hint(query: str, mode: str) -> str:
     if mode == "ops" and has_node_drain_intent(query):
         return (
             "drain 질문이면 '무슨 작업인지 1문장 -> 예시 명령 코드 블록 -> 주의점 1~2개' 순서로 답할 것."
+        )
+    if mode == "ops" and has_deployment_scaling_intent(query):
+        return (
+            "Deployment 스케일링 질문이면 대상 리소스가 Deployment인지 DeploymentConfig인지 근거에 맞춰 구분하고, '무엇을 바꾸는 명령인지 1문장 -> oc scale 코드 블록 -> 범위/예시 1문장' 순서로 답할 것."
         )
     if has_pod_pending_troubleshooting_intent(query):
         return (

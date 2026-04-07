@@ -9,6 +9,7 @@ import threading
 import uuid
 import webbrowser
 from dataclasses import dataclass, field
+from datetime import datetime
 from functools import lru_cache
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -33,6 +34,8 @@ from ocp_rag_part2.query import (
     has_certificate_monitor_intent,
     has_logging_ambiguity,
     has_doc_locator_intent,
+    has_deployment_scaling_intent,
+    has_follow_up_reference,
     has_openshift_kubernetes_compare_intent,
     has_rbac_intent,
     has_update_doc_locator_ambiguity,
@@ -79,6 +82,7 @@ class SessionStore:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._sessions: dict[str, ChatSession] = {}
+        self._latest_session_id: str | None = None
 
     def get(self, session_id: str) -> ChatSession:
         with self._lock:
@@ -86,17 +90,30 @@ class SessionStore:
             if session is None:
                 session = ChatSession(session_id=session_id)
                 self._sessions[session_id] = session
+            self._latest_session_id = session_id
             return session
 
     def reset(self, session_id: str) -> ChatSession:
         with self._lock:
             session = ChatSession(session_id=session_id)
             self._sessions[session_id] = session
+            self._latest_session_id = session_id
             return session
 
     def update(self, session: ChatSession) -> None:
         with self._lock:
             self._sessions[session.session_id] = session
+            self._latest_session_id = session.session_id
+
+    def peek(self, session_id: str) -> ChatSession | None:
+        with self._lock:
+            return self._sessions.get(session_id)
+
+    def latest(self) -> ChatSession | None:
+        with self._lock:
+            if not self._latest_session_id:
+                return None
+            return self._sessions.get(self._latest_session_id)
 
 
 def _citation_href(citation: Citation) -> str:
@@ -175,31 +192,52 @@ def _manifest_entry_for_book(root_dir: Path, book_slug: str) -> dict[str, Any]:
 
 
 def _normalized_row_for_viewer_path(root_dir: Path, viewer_path: str) -> dict[str, Any] | None:
+    row, _matched_exact = _resolve_normalized_row_for_viewer_path(root_dir, viewer_path)
+    return row
+
+
+def _resolve_normalized_row_for_viewer_path(
+    root_dir: Path,
+    viewer_path: str,
+) -> tuple[dict[str, Any] | None, bool]:
     parsed = _parse_viewer_path(viewer_path)
     if parsed is None:
-        return None
+        return None, False
     book_slug, anchor = parsed
     settings = load_settings(root_dir)
     normalized_docs_path = settings.normalized_docs_path
     if not normalized_docs_path.exists():
-        return None
+        return None, False
     sections_by_book = _load_normalized_sections(
         str(normalized_docs_path),
         normalized_docs_path.stat().st_mtime_ns,
     )
     sections = sections_by_book.get(book_slug, [])
     if not sections:
-        return None
+        return None, False
     if not anchor:
-        return sections[0]
+        return sections[0], True
 
     for row in sections:
         if str(row.get("anchor") or "").strip() == anchor:
-            return row
+            return row, True
     # Some chunks point to a book-level viewer path even when the exact anchor
     # cannot be recovered. In that case, fall back to the first section so the
     # study panel can still open a readable document instead of failing hard.
-    return sections[0]
+    return sections[0], False
+
+
+def _default_doc_to_book_summary(payload: dict[str, Any]) -> str:
+    source_type = str(payload.get("source_type") or "").strip().lower()
+    if source_type == "pdf":
+        return (
+            "capture된 PDF를 canonical section으로 정리한 내부 study view입니다. "
+            "이후 retrieval chunk는 이 section들을 부모로 파생됩니다."
+        )
+    return (
+        "capture된 웹 문서를 canonical section으로 정리한 내부 study view입니다. "
+        "이후 retrieval chunk는 이 section들을 부모로 파생됩니다."
+    )
 
 
 def _clean_source_view_text(text: str) -> str:
@@ -211,7 +249,7 @@ def _clean_source_view_text(text: str) -> str:
 
 def _serialize_citation(root_dir: Path, citation: Citation) -> dict[str, Any]:
     href = _citation_href(citation)
-    row = _normalized_row_for_viewer_path(root_dir, href)
+    row, matched_exact = _resolve_normalized_row_for_viewer_path(root_dir, href)
     doc_to_book_meta = _doc_to_book_meta_for_viewer_path(root_dir, href)
     manifest_entry = _manifest_entry_for_book(root_dir, citation.book_slug)
 
@@ -239,6 +277,7 @@ def _serialize_citation(root_dir: Path, citation: Citation) -> dict[str, Any]:
             "pack_label": str(doc_to_book_meta.get("pack_label") or ""),
             "inferred_product": str(doc_to_book_meta.get("inferred_product") or "unknown"),
             "inferred_version": str(doc_to_book_meta.get("inferred_version") or "unknown"),
+            "section_match_exact": bool(doc_to_book_meta.get("section_match_exact", True)),
         }
 
     book_title = (
@@ -260,6 +299,7 @@ def _serialize_citation(root_dir: Path, citation: Citation) -> dict[str, Any]:
         "section_path_label": section_label,
         "source_label": f"{book_title} · {section_label}" if section_label else book_title,
         **_core_pack_payload(),
+        "section_match_exact": matched_exact,
     }
 
 
@@ -744,9 +784,11 @@ def _doc_to_book_meta_for_viewer_path(root_dir: Path, viewer_path: str) -> dict[
         return None
     target_anchor = str(payload.get("target_anchor") or "").strip()
     target = sections[0]
+    matched_exact = not target_anchor
     for section in sections:
         if str(section.get("anchor") or "").strip() == target_anchor:
             target = section
+            matched_exact = True
             break
     section_path = [str(item) for item in (target.get("section_path") or []) if str(item).strip()]
     return {
@@ -770,6 +812,7 @@ def _doc_to_book_meta_for_viewer_path(root_dir: Path, viewer_path: str) -> dict[
         "quality_score": int(payload.get("quality_score") or 0),
         "quality_summary": str(payload.get("quality_summary") or ""),
         "quality_flags": list(payload.get("quality_flags") or []),
+        "section_match_exact": matched_exact,
     }
 
 
@@ -787,7 +830,9 @@ def _internal_doc_to_book_viewer_html(root_dir: Path, viewer_path: str) -> str |
     if not sections:
         return None
     cards = _build_study_section_cards(sections, target_anchor=target_anchor)
-    summary = str(canonical_book.get("quality_summary") or "capture된 웹 문서를 canonical section으로 정리한 내부 study view입니다. 이후 retrieval chunk는 이 section들을 부모로 파생됩니다.")
+    base_summary = _default_doc_to_book_summary(canonical_book)
+    quality_summary = str(canonical_book.get("quality_summary") or "").strip()
+    summary = f"{base_summary} {quality_summary}".strip() if quality_summary else base_summary
     if str(canonical_book.get("quality_status") or "ready") != "ready":
         summary = f"{summary} 이 자산은 아직 review needed 상태입니다."
     return _render_study_viewer_html(
@@ -965,31 +1010,86 @@ def _derive_next_context(
     next_context = SessionContext.from_dict(previous.to_dict() if previous else None)
     next_context.mode = mode
     next_context.ocp_version = next_context.ocp_version or "4.20"
+    normalized_query = (query or "").strip()
+    follow_up_reference = has_follow_up_reference(normalized_query)
+    prior_goal = (next_context.user_goal or "").strip()
+    prior_unresolved = (next_context.unresolved_question or "").strip()
 
     if result.response_kind in {"smalltalk", "meta"}:
         return next_context
     if result.response_kind in {"clarification", "no_answer"}:
+        if normalized_query and not follow_up_reference:
+            next_context.user_goal = normalized_query
+        elif not prior_goal and prior_unresolved:
+            next_context.user_goal = prior_unresolved
         next_context.unresolved_question = query
         return next_context
 
     explicit_topic = _infer_explicit_topic(query)
+    if normalized_query:
+        if follow_up_reference:
+            next_context.user_goal = prior_goal or prior_unresolved or normalized_query
+        else:
+            next_context.user_goal = normalized_query
     if explicit_topic:
         next_context.current_topic = explicit_topic
         next_context.open_entities = _infer_open_entities(explicit_topic)
         next_context.unresolved_question = None if result.citations else query
     elif result.citations:
         primary = result.citations[0]
-        next_context.current_topic = primary.section or next_context.current_topic
+        if not (follow_up_reference and _is_task_topic(next_context.current_topic or "")):
+            next_context.current_topic = primary.section or next_context.current_topic
         next_context.unresolved_question = None
     else:
         next_context.unresolved_question = query
     return next_context
 
 
+def _context_with_request_overrides(
+    previous: SessionContext | None,
+    *,
+    payload: dict[str, Any],
+    mode: str,
+) -> SessionContext:
+    context = SessionContext.from_dict(previous.to_dict() if previous else None)
+    context.mode = mode
+    requested_version = str(payload.get("ocp_version") or "").strip()
+    if requested_version:
+        context.ocp_version = requested_version
+    elif not context.ocp_version:
+        context.ocp_version = "4.20"
+
+    selected_draft_ids = payload.get("selected_draft_ids")
+    if isinstance(selected_draft_ids, list):
+        context.selected_draft_ids = [
+            str(item).strip()
+            for item in selected_draft_ids
+            if str(item).strip()
+        ]
+    context.restrict_uploaded_sources = bool(payload.get("restrict_uploaded_sources", False))
+    return context
+
+
+def _is_task_topic(topic: str) -> bool:
+    normalized = (topic or "").strip()
+    if not normalized:
+        return False
+    return normalized in {
+        "Deployment 스케일링",
+        "etcd 백업/복원",
+        "RBAC",
+        "Machine Config Operator",
+        "OpenShift 아키텍처",
+        "OpenShift",
+    }
+
+
 def _infer_explicit_topic(query: str) -> str | None:
     normalized = (query or "").strip()
     if not normalized:
         return None
+    if has_deployment_scaling_intent(normalized):
+        return "Deployment 스케일링"
     if ETCD_RE.search(normalized):
         if has_backup_restore_intent(normalized):
             return "etcd 백업/복원"
@@ -1007,6 +1107,8 @@ def _infer_explicit_topic(query: str) -> str | None:
 
 def _infer_open_entities(topic: str) -> list[str]:
     normalized = (topic or "").lower()
+    if "deployment" in normalized and "스케일" in normalized:
+        return ["Deployment", "replicas"]
     if "etcd" in normalized:
         return ["etcd"]
     if "machine config operator" in normalized or "mco" in normalized:
@@ -1192,6 +1294,63 @@ def _build_chat_payload(
     }
 
 
+def _serialize_turn(turn: Turn) -> dict[str, str]:
+    return {
+        "query": turn.query,
+        "mode": turn.mode,
+        "answer": turn.answer,
+    }
+
+
+def _build_session_debug_payload(session: ChatSession) -> dict[str, Any]:
+    return {
+        "session_id": session.session_id,
+        "mode": session.mode,
+        "context": session.context.to_dict(),
+        "history_size": len(session.history),
+        "last_query": session.last_query,
+        "history": [_serialize_turn(turn) for turn in session.history],
+    }
+
+
+def _append_chat_turn_log(
+    root_dir: Path,
+    *,
+    session: ChatSession,
+    query: str,
+    result: AnswerResult,
+    context_before: SessionContext | None,
+    context_after: SessionContext | None,
+) -> Path:
+    settings = load_settings(root_dir)
+    target = settings.part4_chat_log_path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "session_id": session.session_id,
+        "mode": session.mode,
+        "query": query,
+        "rewritten_query": result.rewritten_query,
+        "answer": result.answer,
+        "response_kind": result.response_kind,
+        "warnings": list(result.warnings),
+        "cited_indices": list(result.cited_indices),
+        "citations": [
+            _serialize_citation(root_dir, citation)
+            for citation in result.citations
+        ],
+        "context_before": context_before.to_dict() if context_before else {},
+        "context_after": context_after.to_dict() if context_after else {},
+        "history_size": len(session.history),
+        "history": [_serialize_turn(turn) for turn in session.history],
+        "retrieval_trace": dict(result.retrieval_trace),
+        "pipeline_trace": dict(result.pipeline_trace),
+    }
+    with target.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    return target
+
+
 def _build_handler(
     *,
     answerer: Part3Answerer,
@@ -1267,6 +1426,12 @@ def _build_handler(
                 return
             if request_path == "/api/health":
                 self._send_json({"ok": True})
+                return
+            if request_path == "/api/debug/session":
+                self._handle_debug_session(parsed_request.query)
+                return
+            if request_path == "/api/debug/chat-log":
+                self._handle_debug_chat_log(parsed_request.query)
                 return
             if request_path == "/api/source-meta":
                 self._handle_source_meta(parsed_request.query)
@@ -1355,7 +1520,7 @@ def _build_handler(
                 return
 
             book_slug, anchor = parsed
-            row = _normalized_row_for_viewer_path(root_dir, viewer_path)
+            row, matched_exact = _resolve_normalized_row_for_viewer_path(root_dir, viewer_path)
             manifest_entry = _manifest_entry_for_book(root_dir, book_slug)
             book_title = (
                 str((row or {}).get("book_title") or "")
@@ -1381,7 +1546,44 @@ def _build_handler(
                     ),
                     "source_url": str((row or {}).get("source_url") or manifest_entry.get("source_url") or ""),
                     "viewer_path": viewer_path,
+                    "section_match_exact": matched_exact,
                     **_core_pack_payload(),
+                }
+            )
+
+        def _handle_debug_session(self, query: str) -> None:
+            params = parse_qs(query, keep_blank_values=False)
+            session_id = str((params.get("session_id") or [""])[0]).strip()
+            session = store.peek(session_id) if session_id else store.latest()
+            if session is None:
+                self._send_json(
+                    {"error": "조회할 세션이 없습니다."},
+                    HTTPStatus.NOT_FOUND,
+                )
+                return
+            self._send_json(_build_session_debug_payload(session))
+
+        def _handle_debug_chat_log(self, query: str) -> None:
+            params = parse_qs(query, keep_blank_values=False)
+            limit_raw = str((params.get("limit") or ["20"])[0]).strip()
+            try:
+                limit = max(1, min(200, int(limit_raw or "20")))
+            except ValueError:
+                self._send_json({"error": "limit는 정수여야 합니다."}, HTTPStatus.BAD_REQUEST)
+                return
+
+            log_path = load_settings(root_dir).part4_chat_log_path
+            if not log_path.exists():
+                self._send_json({"entries": [], "count": 0, "path": str(log_path)})
+                return
+
+            lines = log_path.read_text(encoding="utf-8").splitlines()
+            entries = [json.loads(line) for line in lines[-limit:] if line.strip()]
+            self._send_json(
+                {
+                    "entries": entries,
+                    "count": len(entries),
+                    "path": str(log_path),
                 }
             )
 
@@ -1540,6 +1742,12 @@ def _build_handler(
             mode = str(payload.get("mode") or session.mode or "ops")
             regenerate = bool(payload.get("regenerate", False))
             query = str(payload.get("query") or "").strip()
+            request_context = _context_with_request_overrides(
+                session.context,
+                payload=payload,
+                mode=mode,
+            )
+            context_before = SessionContext.from_dict(request_context.to_dict())
             if regenerate and not query:
                 query = session.last_query
 
@@ -1551,7 +1759,7 @@ def _build_handler(
                 result = answerer.answer(
                     query,
                     mode=mode,
-                    context=session.context,
+                    context=request_context,
                     top_k=5,
                     candidate_k=20,
                     max_context_chunks=6,
@@ -1566,7 +1774,7 @@ def _build_handler(
 
             session.mode = mode
             session.context = _derive_next_context(
-                session.context,
+                request_context,
                 query=query,
                 mode=mode,
                 result=result,
@@ -1574,6 +1782,14 @@ def _build_handler(
             session.history.append(Turn(query=query, mode=mode, answer=result.answer))
             session.history = session.history[-20:]
             store.update(session)
+            _append_chat_turn_log(
+                root_dir,
+                session=session,
+                query=query,
+                result=result,
+                context_before=context_before,
+                context_after=session.context,
+            )
             self._send_json(_build_chat_payload(root_dir=root_dir, session=session, result=result))
 
         def _handle_chat_stream(self, payload: dict[str, Any]) -> None:
@@ -1582,6 +1798,12 @@ def _build_handler(
             mode = str(payload.get("mode") or session.mode or "ops")
             regenerate = bool(payload.get("regenerate", False))
             query = str(payload.get("query") or "").strip()
+            request_context = _context_with_request_overrides(
+                session.context,
+                payload=payload,
+                mode=mode,
+            )
+            context_before = SessionContext.from_dict(request_context.to_dict())
             if regenerate and not query:
                 query = session.last_query
 
@@ -1607,7 +1829,7 @@ def _build_handler(
                 result = answerer.answer(
                     query,
                     mode=mode,
-                    context=session.context,
+                    context=request_context,
                     top_k=5,
                     candidate_k=20,
                     max_context_chunks=6,
@@ -1625,7 +1847,7 @@ def _build_handler(
 
             session.mode = mode
             session.context = _derive_next_context(
-                session.context,
+                request_context,
                 query=query,
                 mode=mode,
                 result=result,
@@ -1633,6 +1855,14 @@ def _build_handler(
             session.history.append(Turn(query=query, mode=mode, answer=result.answer))
             session.history = session.history[-20:]
             store.update(session)
+            _append_chat_turn_log(
+                root_dir,
+                session=session,
+                query=query,
+                result=result,
+                context_before=context_before,
+                context_after=session.context,
+            )
             self._stream_event(
                 {
                     "type": "result",

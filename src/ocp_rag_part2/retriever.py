@@ -119,6 +119,39 @@ def _extract_structured_query_terms(text: str) -> tuple[str, ...]:
     return tuple(terms)
 
 
+def _draft_id_from_intake_hit(hit: RetrievalHit) -> str:
+    chunk_id = str(hit.chunk_id or "").strip()
+    if ":" in chunk_id:
+        return chunk_id.split(":", 1)[0].strip()
+    viewer_path = str(hit.viewer_path or "").strip()
+    match = re.match(r"^/docs/intake/([^/]+)/", viewer_path)
+    if match:
+        return match.group(1).strip()
+    return ""
+
+
+def _filter_doc_to_book_hits_by_selection(
+    hits: list[RetrievalHit],
+    *,
+    context: SessionContext | None = None,
+) -> list[RetrievalHit]:
+    context = context or SessionContext()
+    if not context.restrict_uploaded_sources:
+        return hits
+    selected = {
+        str(draft_id).strip()
+        for draft_id in context.selected_draft_ids
+        if str(draft_id).strip()
+    }
+    if not selected:
+        return []
+    return [
+        hit
+        for hit in hits
+        if _draft_id_from_intake_hit(hit) in selected
+    ]
+
+
 def _summarize_hit(hit: RetrievalHit, *, score_key: str = "raw_score") -> dict[str, Any]:
     summary = {
         "chunk_id": hit.chunk_id,
@@ -974,6 +1007,10 @@ class Part2Retriever:
                     intake_hit_sets,
                     source_name="doc_to_book_bm25",
                     top_k=effective_candidate_k,
+                )
+                intake_bm25_hits = _filter_doc_to_book_hits_by_selection(
+                    intake_bm25_hits,
+                    context=context,
                 )
             timings_ms["bm25_search"] = _duration_ms(bm25_started_at)
             _emit_trace_event(

@@ -348,7 +348,7 @@ Qdrant에는 청크마다 아래 구조로 저장된다.
 
 주요 산출물:
 
-- `../ocp-rag-chatbot-data/part1/source_approval_report.json`
+- `artifacts/part1/source_approval_report.json`
 - `manifests/ocp_ko_4_20_approved_ko.json`
 
 현재 승인 상태:
@@ -764,23 +764,25 @@ tag에는 `book_title`, `section_path_label`, `viewer_path` 기반 정보가 들
 - `part4`: runtime UX / API / study panel
 - `ocp_doc_to_book`: 업로드 문서를 같은 canonical source-view 자산으로 승격하는 플랫폼 축
 
-### 11.2 repo 밖 데이터 폴더
+### 11.2 artifacts 데이터 폴더
 
-기본 artifacts 루트는 repo 내부가 아니라 바깥 경로를 쓴다.
+기본 artifacts 루트는 repo 내부 [`artifacts`](artifacts) 다.  
+필요하면 `.env`의 `ARTIFACTS_DIR`로 외부 경로를 지정할 수 있다.
 
-- 기본값: `../ocp-rag-chatbot-data`
+- 기본값: `artifacts/`
+- 외부 override 예시: `ARTIFACTS_DIR=C:/Users/<user>/cywell/ocp-rag-chatbot-data`
 
 주요 산출물:
 
-- `part1/raw_html/*.html`
-- `part1/normalized_docs.jsonl`
-- `part1/chunks.jsonl`
-- `part1/bm25_corpus.jsonl`
-- `part1/source_approval_report.json`
-- `part2/sanity_report.json`
-- `part3/answer_eval_report.json`
-- `part3/ragas_eval_report.json`
-- `part3/runtime_endpoint_report.json`
+- `artifacts/part1/raw_html/*.html`
+- `artifacts/part1/normalized_docs.jsonl`
+- `artifacts/part1/chunks.jsonl`
+- `artifacts/part1/bm25_corpus.jsonl`
+- `artifacts/part1/source_approval_report.json`
+- `artifacts/part2/sanity_report.json`
+- `artifacts/part3/answer_eval_report.json`
+- `artifacts/part3/ragas_eval_report.json`
+- `artifacts/part3/runtime_endpoint_report.json`
 
 ---
 
@@ -928,7 +930,7 @@ python3 scripts/build_source_approval.py
 
 산출물:
 
-- `../ocp-rag-chatbot-data/part1/source_approval_report.json`
+- `artifacts/part1/source_approval_report.json`
 - `manifests/ocp_ko_4_20_approved_ko.json`
 
 #### 문서 준비 단계 전체 재빌드
@@ -979,7 +981,7 @@ python3 scripts/run_part4_ui.py --no-browser
 - 우측 study panel에는 `Intake` 탭도 추가되어, 웹/PDF URI를 넣고 `plan preview -> draft 저장 -> capture -> normalize -> study panel 열기`까지 바로 실험할 수 있다.
 - 웹 문서는 현재 docs.redhat `.../html/<slug>`를 `.../html-single/<slug>/index`로 바꾸는 규칙까지 들어가 있다.
 - PDF는 아직 full parser는 아니고 `pdf_text_extract_v1` 전략으로 계획만 세운다.
-- Doc-to-Book draft는 `../ocp-rag-chatbot-data/doc_to_book/drafts/*.json`, capture artifact는 `../ocp-rag-chatbot-data/doc_to_book/captures/`, canonical book은 `../ocp-rag-chatbot-data/doc_to_book/books/`에 저장되며 같은 draft id를 중심으로 추적한다.
+- Doc-to-Book draft는 `artifacts/doc_to_book/drafts/*.json`, capture artifact는 `artifacts/doc_to_book/captures/`, canonical book은 `artifacts/doc_to_book/books/`에 저장되며 같은 draft id를 중심으로 추적한다.
 - source tag 라벨은 `book_title + section_path_label` 기준으로 만들고, 우측 panel은 내부 `/docs/...` iframe을 우선 사용한다.
 - exact section 매핑이 어려운 경우에는 `viewer_path`의 book 단위 fallback을 허용한다.
 - `Pod lifecycle` 같은 개념형 질의는 retrieval/context 단계에서 `nodes > Pod 이해 / Pod 구성의 예` 같은 설명 섹션을 우선하도록 보정했고, learn 답변도 그 citation을 기준으로 정리한다.
@@ -1061,8 +1063,8 @@ python3 scripts/run_part3_ragas_eval.py --cases manifests/part3_ragas_eval_cases
 
 출력:
 
-- `../ocp-rag-chatbot-data/part3/ragas_eval_report.json`
-- `../ocp-rag-chatbot-data/part3/ragas_eval_dataset_preview.json`
+- `artifacts/part3/ragas_eval_report.json`
+- `artifacts/part3/ragas_eval_dataset_preview.json`
 
 발표 때는 이렇게 설명하면 된다.
 
@@ -1086,7 +1088,7 @@ python3 scripts/run_part3_ragas_eval.py --cases manifests/part3_ragas_eval_cases
 
 파일:
 
-- `../ocp-rag-chatbot-data/part2/sanity_report.json`
+- `artifacts/part2/sanity_report.json`
 
 현재 수치:
 
@@ -1105,7 +1107,7 @@ python3 scripts/run_part3_ragas_eval.py --cases manifests/part3_ragas_eval_cases
 
 파일:
 
-- `../ocp-rag-chatbot-data/part3/answer_eval_report.json`
+- `artifacts/part3/answer_eval_report.json`
 
 현재 수치:
 
@@ -1129,7 +1131,7 @@ python3 scripts/run_part3_ragas_eval.py --cases manifests/part3_ragas_eval_cases
 
 파일:
 
-- `../ocp-rag-chatbot-data/part3/ragas_eval_report.json`
+- `artifacts/part3/ragas_eval_report.json`
 
 현재 수치:
 

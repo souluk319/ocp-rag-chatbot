@@ -32,6 +32,10 @@ AUTHZ_RE = re.compile(r"(권한|authorization)", re.IGNORECASE)
 UPDATE_RE = re.compile(r"(업데이트|upgrade|update|업그레이드)", re.IGNORECASE)
 CERT_RE = re.compile(r"(인증서|certificate|certificates|cert)", re.IGNORECASE)
 EXPIRY_RE = re.compile(r"(만료|만료일|만료 상태|expire|expiry|expiration|남았)", re.IGNORECASE)
+DEPLOYMENT_RE = re.compile(r"(deployment(?!config)|deployments|디플로이먼트|배포)", re.IGNORECASE)
+DEPLOYMENTCONFIG_RE = re.compile(r"(deploymentconfig|\bdc\b|디플로이먼트컨피그)", re.IGNORECASE)
+SCALE_RE = re.compile(r"(스케일|scale|늘리|줄이|변경|조정)", re.IGNORECASE)
+REPLICA_RE = re.compile(r"(복제본|replica|replicas)", re.IGNORECASE)
 RBAC_RE = re.compile(
     r"(\brbac\b|역할 기반 액세스 제어|rolebinding|clusterrolebinding|clusterrole|역할 바인딩|role binding)",
     re.IGNORECASE,
@@ -118,6 +122,16 @@ FOLLOW_UP_HINTS = (
     "1번",
     "2번",
     "3번",
+)
+CORRECTIVE_FOLLOW_UP_HINTS = (
+    "아니",
+    "그게 아니라",
+    "그 말 말고",
+    "다시",
+    "정확히",
+    "그러니까",
+    "명령어라도",
+    "커맨드라도",
 )
 UNSUPPORTED_PRODUCTS = (
     "argo cd",
@@ -241,6 +255,48 @@ def has_rbac_assignment_intent(query: str) -> bool:
     )
 
 
+def has_deployment_scaling_intent(query: str) -> bool:
+    normalized = query or ""
+    mentions_scale = bool(SCALE_RE.search(normalized)) or bool(REPLICA_RE.search(normalized))
+    if not mentions_scale:
+        return False
+    if DEPLOYMENTCONFIG_RE.search(normalized):
+        return False
+    if DEPLOYMENT_RE.search(normalized):
+        return True
+    lowered = normalized.lower()
+    return any(
+        token in lowered
+        for token in (
+            "oc scale deployment",
+            "deployment/",
+            "deployments.apps/scale",
+            "replicas를",
+            "복제본 개수",
+            "복제본 수",
+        )
+    )
+
+
+def has_command_request(query: str) -> bool:
+    normalized = query or ""
+    return bool(
+        re.search(
+            r"(명령어|커맨드|cli|oc\s|kubectl\s|yaml|예시|예제로|어떤 명령|뭐라고 쳐|입력하면)",
+            normalized,
+            re.IGNORECASE,
+        )
+    )
+
+
+def has_corrective_follow_up(query: str) -> bool:
+    normalized = _collapse_spaces(query)
+    lowered = normalized.lower()
+    if any(hint in normalized for hint in CORRECTIVE_FOLLOW_UP_HINTS):
+        return True
+    return lowered.startswith(("아니", "그게 아니라", "다시", "정확히", "그러니까"))
+
+
 def is_generic_intro_query(query: str) -> bool:
     lowered = (query or "").lower()
     if GENERIC_INTRO_RE.search(query or ""):
@@ -353,6 +409,16 @@ def decompose_retrieval_queries(query: str) -> list[str]:
     normalized = _collapse_spaces(query)
     if not normalized:
         return []
+
+    if has_deployment_scaling_intent(normalized):
+        return _dedupe_queries(
+            [
+                normalized,
+                "oc scale deployment replicas",
+                "deployment 수동 스케일링",
+                "oc scale --replicas deployment",
+            ]
+        )
 
     if POD_LIFECYCLE_RE.search(normalized) and is_explainer_query(normalized):
         return _dedupe_queries(
@@ -576,6 +642,23 @@ def query_book_adjustments(
         boosts["support"] = max(boosts.get("support", 1.0), 1.5)
         boosts["nodes"] = max(boosts.get("nodes", 1.0), 1.18)
         penalties["cli_tools"] = min(penalties.get("cli_tools", 1.0), 0.8)
+
+    if has_deployment_scaling_intent(normalized) or has_deployment_scaling_intent(context_text):
+        boosts["cli_tools"] = max(boosts.get("cli_tools", 1.0), 1.82)
+        boosts["building_applications"] = max(boosts.get("building_applications", 1.0), 1.35)
+        penalties["authentication_and_authorization"] = min(
+            penalties.get("authentication_and_authorization", 1.0),
+            0.32,
+        )
+        penalties["postinstallation_configuration"] = min(
+            penalties.get("postinstallation_configuration", 1.0),
+            0.38,
+        )
+        penalties["machine_management"] = min(
+            penalties.get("machine_management", 1.0),
+            0.46,
+        )
+        penalties["nodes"] = min(penalties.get("nodes", 1.0), 0.72)
 
     if has_pod_pending_troubleshooting_intent(normalized) or has_crash_loop_troubleshooting_intent(normalized):
         boosts["support"] = max(boosts.get("support", 1.0), 1.45)
@@ -815,6 +898,19 @@ def normalize_query(query: str) -> str:
                 "memory",
             ]
         )
+    if has_deployment_scaling_intent(normalized):
+        terms.extend(
+            [
+                "deployment",
+                "deployments",
+                "replicas",
+                "oc",
+                "scale",
+                "--replicas",
+                "deployment/mysql",
+                "수동 스케일링",
+            ]
+        )
     if has_pod_pending_troubleshooting_intent(normalized):
         terms.extend(
             [
@@ -941,6 +1037,7 @@ def has_explicit_topic_signal(query: str) -> bool:
             bool(SECURITY_RE.search(normalized)),
             bool(AUTH_RE.search(normalized)),
             bool(AUTHZ_RE.search(normalized)),
+            bool(DEPLOYMENT_RE.search(normalized) and (SCALE_RE.search(normalized) or REPLICA_RE.search(normalized))),
             bool(ARCHITECTURE_RE.search(normalized)),
             bool(OPERATOR_RE.search(normalized)),
         ]
@@ -950,6 +1047,8 @@ def has_explicit_topic_signal(query: str) -> bool:
 def has_follow_up_reference(query: str) -> bool:
     normalized = _collapse_spaces(query)
     lowered = normalized.lower()
+    if has_corrective_follow_up(normalized):
+        return True
     if any(hint in normalized for hint in FOLLOW_UP_HINTS):
         return True
     return lowered.startswith(

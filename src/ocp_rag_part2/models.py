@@ -11,6 +11,8 @@ class SessionContext:
     current_topic: str | None = None
     open_entities: list[str] = field(default_factory=list)
     ocp_version: str | None = None
+    selected_draft_ids: list[str] = field(default_factory=list)
+    restrict_uploaded_sources: bool = False
     unresolved_question: str | None = None
 
     @classmethod
@@ -20,12 +22,19 @@ class SessionContext:
         open_entities = payload.get("open_entities") or []
         if isinstance(open_entities, str):
             open_entities = [open_entities]
+        selected_draft_ids = payload.get("selected_draft_ids") or []
+        if isinstance(selected_draft_ids, str):
+            selected_draft_ids = [selected_draft_ids]
         return cls(
             mode=payload.get("mode"),
             user_goal=payload.get("user_goal"),
             current_topic=payload.get("current_topic"),
             open_entities=list(open_entities),
             ocp_version=payload.get("ocp_version"),
+            selected_draft_ids=[
+                str(item).strip() for item in selected_draft_ids if str(item).strip()
+            ],
+            restrict_uploaded_sources=bool(payload.get("restrict_uploaded_sources", False)),
             unresolved_question=payload.get("unresolved_question"),
         )
 

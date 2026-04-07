@@ -332,6 +332,48 @@ class _WrongDrainCommandLLMClient:
         )
 
 
+class _DeploymentScaleRetriever:
+    def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
+        hits = [
+            RetrievalHit(
+                chunk_id="cli-scale",
+                book_slug="cli_tools",
+                chapter="2장. OpenShift CLI(oc)",
+                section="2.6.1.124. oc scale",
+                anchor="oc-scale",
+                source_url="https://example.com/cli",
+                viewer_path="/docs/ocp/4.20/ko/cli_tools/index.html#oc-scale",
+                text="oc scale --current-replicas=2 --replicas=3 deployment/mysql",
+                source="hybrid",
+                raw_score=1.0,
+                fused_score=1.0,
+            ),
+            RetrievalHit(
+                chunk_id="rollover",
+                book_slug="building_applications",
+                chapter="7장. 배포",
+                section="7.1.4.2.1. 롤오버",
+                anchor="rollover",
+                source_url="https://example.com/building",
+                viewer_path="/docs/ocp/4.20/ko/building_applications/index.html#rollover",
+                text="기존 복제본 세트를 축소하고 새 복제본 세트를 확장합니다.",
+                source="hybrid",
+                raw_score=0.8,
+                fused_score=0.8,
+            ),
+        ]
+        return RetrievalResult(
+            query=query,
+            normalized_query=query,
+            rewritten_query=query,
+            top_k=top_k,
+            candidate_k=candidate_k,
+            context=(context or SessionContext()).to_dict(),
+            hits=hits,
+            trace={"warnings": [], "timings_ms": {"bm25_search": 1.0}},
+        )
+
+
 class _ExplodingRetriever:
     def retrieve(self, *args, **kwargs):  # noqa: ANN002, ANN003
         raise AssertionError("retriever should not be called for non-rag routes")
@@ -607,6 +649,52 @@ class Part3AnswererTests(unittest.TestCase):
 
         self.assertIn("oc adm drain", result.answer)
         self.assertNotIn("kubectl drain", result.answer)
+
+    def test_answerer_returns_deterministic_deployment_scale_command_when_grounded(self) -> None:
+        settings = Settings(root_dir=ROOT)
+        answerer = Part3Answerer(
+            settings=settings,
+            retriever=_DeploymentScaleRetriever(),
+            llm_client=_FakeLLMClient(),
+        )
+
+        result = answerer.answer(
+            "5개에서 10개로 변경도돼?",
+            mode="ops",
+            context=SessionContext(
+                mode="ops",
+                user_goal="실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해?",
+                current_topic="Deployment 스케일링",
+                ocp_version="4.20",
+            ),
+        )
+
+        self.assertIn("oc scale --current-replicas=5 --replicas=10", result.answer)
+        self.assertIn("deployment/<deployment-name>", result.answer)
+        self.assertEqual("rag", result.response_kind)
+        self.assertEqual("cli_tools", result.citations[0].book_slug)
+
+    def test_answerer_asks_for_target_when_corrective_command_request_lacks_numbers(self) -> None:
+        settings = Settings(root_dir=ROOT)
+        answerer = Part3Answerer(
+            settings=settings,
+            retriever=_DeploymentScaleRetriever(),
+            llm_client=_FakeLLMClient(),
+        )
+
+        result = answerer.answer(
+            "그럼 명령어라도 알려줘",
+            mode="ops",
+            context=SessionContext(
+                mode="ops",
+                user_goal="실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해?",
+                current_topic="Deployment 스케일링",
+                ocp_version="4.20",
+            ),
+        )
+
+        self.assertEqual("clarification", result.response_kind)
+        self.assertIn("몇 개로 바꾸려는지", result.answer)
 
     def test_answerer_routes_out_of_corpus_version_question_without_retrieval(self) -> None:
         settings = Settings(root_dir=ROOT)

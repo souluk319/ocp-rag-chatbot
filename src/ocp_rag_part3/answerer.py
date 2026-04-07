@@ -11,6 +11,9 @@ from ocp_rag_part2 import Part2Retriever, SessionContext
 from ocp_rag_part2.query import (
     has_certificate_monitor_intent,
     has_cluster_node_usage_intent,
+    has_command_request,
+    has_corrective_follow_up,
+    has_deployment_scaling_intent,
     has_node_drain_intent,
     has_openshift_kubernetes_compare_intent,
     has_pod_pending_troubleshooting_intent,
@@ -56,6 +59,7 @@ BARE_COMMAND_ANSWER_RE = re.compile(
     re.IGNORECASE,
 )
 STRUCTURED_QUERY_RE = re.compile(r"[a-z0-9_.-]+/[a-z0-9_.-]+(?:=[a-z0-9_.-]+)?", re.IGNORECASE)
+REPLICA_COUNT_RE = re.compile(r"(?<!\d)(\d+)\s*개")
 
 
 def normalize_answer_text(answer_text: str) -> str:
@@ -281,6 +285,87 @@ def summarize_session_context(context: SessionContext | None) -> str:
     if context.mode:
         parts.append(f"- 세션 모드: {context.mode}")
     return "\n".join(parts)
+
+
+def _has_grounded_deployment_scale_citation(citations) -> bool:
+    for citation in citations:
+        lowered_section = (citation.section or "").lower()
+        lowered_excerpt = (citation.excerpt or "").lower()
+        if citation.book_slug == "cli_tools" and (
+            "oc scale" in lowered_section
+            or "oc scale" in lowered_excerpt
+            or "deployment/" in lowered_excerpt
+        ):
+            return True
+    return False
+
+
+def _extract_replica_counts(query: str) -> list[int]:
+    explicit = [int(match.group(1)) for match in REPLICA_COUNT_RE.finditer(query or "")]
+    if explicit:
+        return explicit
+    return [int(token) for token in re.findall(r"(?<![\w.])(\d+)(?![\w.])", query or "")]
+
+
+def _deployment_scaling_signal(query: str, context: SessionContext | None) -> bool:
+    if has_deployment_scaling_intent(query):
+        return True
+    if context is None:
+        return False
+    if (context.current_topic or "").strip() == "Deployment 스케일링":
+        return True
+    return has_deployment_scaling_intent(context.user_goal or "")
+
+
+def _build_deployment_scaling_answer(
+    *,
+    query: str,
+    context: SessionContext | None,
+    citations,
+) -> str | None:
+    if not _deployment_scaling_signal(query, context):
+        return None
+    if not _has_grounded_deployment_scale_citation(citations):
+        if has_command_request(query) or has_corrective_follow_up(query):
+            return (
+                "답변: 지금 검색된 근거가 `Deployment` 스케일 명령으로 바로 이어지지 않아 "
+                "명령을 단정하기 어렵습니다. `deployment/my-app을 5개에서 10개로`처럼 "
+                "대상 Deployment와 목표 복제본 수를 함께 다시 말해 주세요."
+            )
+        return None
+
+    counts = _extract_replica_counts(query)
+    if not counts:
+        if has_command_request(query) or has_corrective_follow_up(query):
+            return (
+                "답변: 지금은 몇 개로 바꾸려는지 숫자가 현재 질문에 없습니다. "
+                "예를 들어 `5개에서 10개로 변경하는 명령어`처럼 목표 복제본 수를 함께 알려주세요."
+            )
+        return None
+
+    target = counts[-1]
+    if len(counts) >= 2:
+        current = counts[0]
+        command = (
+            f"oc scale --current-replicas={current} --replicas={target} "
+            "deployment/<deployment-name>"
+        )
+        return (
+            "답변: 실행 중인 Deployment의 복제본 수를 바꾸려면 `oc scale` 명령으로 "
+            f"현재 값 {current}개에서 목표 값 {target}개로 조정하면 됩니다 [1].\n\n"
+            f"```bash\n{command}\n```\n\n"
+            f"* 범위: 지정한 Deployment의 Pod 수만 {target}개로 조정됩니다.\n"
+            f"* 예시: `oc scale --current-replicas={current} --replicas={target} deployment/my-app` [1]"
+        )
+
+    command = f"oc scale deployment/<deployment-name> --replicas={target}"
+    return (
+        "답변: 실행 중인 Deployment의 복제본 수를 바꾸려면 `oc scale` 명령으로 "
+        f"목표 값을 {target}개로 지정하면 됩니다 [1].\n\n"
+        f"```bash\n{command}\n```\n\n"
+        f"* 범위: 지정한 Deployment의 Pod 수만 {target}개로 조정됩니다.\n"
+        f"* 예시: `oc scale deployment/my-app --replicas={target}` [1]"
+    )
 
 
 def _citation_identity(citation) -> tuple[str, str]:
@@ -588,6 +673,70 @@ class Part3Answerer:
         warnings: list[str] = []
         if not context_bundle.citations:
             warnings.append("no context citations assembled")
+
+        deployment_scaling_answer = _build_deployment_scaling_answer(
+            query=query,
+            context=context,
+            citations=context_bundle.citations,
+        )
+        if deployment_scaling_answer is not None:
+            answer_text = deployment_scaling_answer
+            final_citations = select_fallback_citations(context_bundle.citations, limit=1)
+            answer_text, final_citations, cited_indices = finalize_citations(
+                answer_text,
+                final_citations,
+            )
+            if not cited_indices and final_citations:
+                answer_text = _inject_single_citation(answer_text, citation_index=1)
+                answer_text, final_citations, cited_indices = finalize_citations(
+                    answer_text,
+                    final_citations,
+                )
+            pipeline_timings_ms["total"] = round(
+                (time.perf_counter() - answer_started_at) * 1000,
+                1,
+            )
+            emit(
+                {
+                    "step": "deterministic_answer",
+                    "label": "전용 명령 답변 생성 완료",
+                    "status": "done",
+                    "detail": "deployment scaling",
+                }
+            )
+            emit(
+                {
+                    "step": "pipeline_complete",
+                    "label": "답변 생성 완료",
+                    "status": "done",
+                    "detail": f"총 {pipeline_timings_ms['total']}ms",
+                    "duration_ms": pipeline_timings_ms["total"],
+                }
+            )
+            return AnswerResult(
+                query=query,
+                mode=mode,
+                answer=answer_text,
+                rewritten_query=retrieval.rewritten_query,
+                response_kind="clarification" if "숫자가 현재 질문에 없습니다" in answer_text else "rag",
+                citations=final_citations,
+                cited_indices=cited_indices,
+                warnings=warnings + list(retrieval.trace.get("warnings", [])),
+                retrieval_trace=retrieval.trace,
+                pipeline_trace={
+                    "events": pipeline_events,
+                    "timings_ms": {
+                        **retrieval.trace.get("timings_ms", {}),
+                        **pipeline_timings_ms,
+                    },
+                    "selection": {
+                        "selected_hits": _summarize_selected_citations(
+                            context_bundle.citations,
+                            retrieval.hits,
+                        )
+                    },
+                },
+            )
 
         prompt_started_at = time.perf_counter()
         emit(

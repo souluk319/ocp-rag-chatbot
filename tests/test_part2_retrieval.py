@@ -18,7 +18,10 @@ from ocp_rag_part2.query import (
     decompose_retrieval_queries,
     detect_out_of_corpus_version,
     detect_unsupported_product,
+    has_corrective_follow_up,
     has_cluster_node_usage_intent,
+    has_command_request,
+    has_deployment_scaling_intent,
     has_follow_up_reference,
     has_logging_ambiguity,
     has_node_drain_intent,
@@ -30,7 +33,11 @@ from ocp_rag_part2.query import (
     query_book_adjustments,
     rewrite_query,
 )
-from ocp_rag_part2.retriever import Part2Retriever, fuse_ranked_hits
+from ocp_rag_part2.retriever import (
+    Part2Retriever,
+    _filter_doc_to_book_hits_by_selection,
+    fuse_ranked_hits,
+)
 
 
 class RetrievalTests(unittest.TestCase):
@@ -135,6 +142,66 @@ class RetrievalTests(unittest.TestCase):
         self.assertEqual("demo-guide", fused[0].book_slug)
         self.assertEqual("/docs/intake/dtb-demo/index.html#safety-switch", fused[0].viewer_path)
 
+    def test_filter_doc_to_book_hits_by_selection_keeps_only_checked_drafts(self) -> None:
+        selected_hit = RetrievalHit(
+            chunk_id="draft-a:overview",
+            book_slug="draft-a",
+            chapter="개요",
+            section="선택 문서",
+            anchor="overview",
+            source_url="/tmp/a.pdf",
+            viewer_path="/docs/intake/draft-a/index.html#overview",
+            text="선택된 업로드 문서",
+            source="doc_to_book_bm25",
+            raw_score=1.0,
+        )
+        unselected_hit = RetrievalHit(
+            chunk_id="draft-b:overview",
+            book_slug="draft-b",
+            chapter="개요",
+            section="제외 문서",
+            anchor="overview",
+            source_url="/tmp/b.pdf",
+            viewer_path="/docs/intake/draft-b/index.html#overview",
+            text="선택되지 않은 업로드 문서",
+            source="doc_to_book_bm25",
+            raw_score=0.9,
+        )
+
+        filtered = _filter_doc_to_book_hits_by_selection(
+            [selected_hit, unselected_hit],
+            context=SessionContext(
+                selected_draft_ids=["draft-a"],
+                restrict_uploaded_sources=True,
+            ),
+        )
+
+        self.assertEqual(["draft-a:overview"], [hit.chunk_id for hit in filtered])
+
+    def test_filter_doc_to_book_hits_by_selection_returns_no_overlay_hits_when_none_checked(self) -> None:
+        hit = RetrievalHit(
+            chunk_id="draft-a:overview",
+            book_slug="draft-a",
+            chapter="개요",
+            section="선택 문서",
+            anchor="overview",
+            source_url="/tmp/a.pdf",
+            viewer_path="/docs/intake/draft-a/index.html#overview",
+            text="선택된 업로드 문서",
+            source="doc_to_book_bm25",
+            raw_score=1.0,
+        )
+
+        filtered = _filter_doc_to_book_hits_by_selection(
+            [hit],
+            context=SessionContext(
+                selected_draft_ids=[],
+                restrict_uploaded_sources=True,
+            ),
+        )
+
+        self.assertEqual([], filtered)
+
     def test_retriever_includes_doc_to_book_overlay_sections_in_bm25(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -186,6 +253,58 @@ class RetrievalTests(unittest.TestCase):
         self.assertEqual("/docs/intake/dtb-demo/index.html#events", result.hits[0].viewer_path)
         self.assertTrue(result.trace["doc_to_book_bm25"])
         self.assertGreater(result.trace["metrics"]["doc_to_book_bm25"]["count"], 0)
+
+    def test_has_deployment_scaling_intent_detects_replica_change_question(self) -> None:
+        self.assertTrue(
+            has_deployment_scaling_intent(
+                "실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해?"
+            )
+        )
+        self.assertFalse(
+            has_deployment_scaling_intent(
+                "DeploymentConfig를 수동으로 스케일링하려면?"
+            )
+        )
+
+    def test_fuse_ranked_hits_prefers_cli_scale_doc_for_deployment_scaling_intent(self) -> None:
+        cli_hit = RetrievalHit(
+            chunk_id="cli-scale",
+            book_slug="cli_tools",
+            chapter="2장. OpenShift CLI(oc)",
+            section="2.6.1.124. oc scale",
+            anchor="oc-scale",
+            source_url="https://example.com/cli",
+            viewer_path="/docs/ocp/4.20/ko/cli_tools/index.html#oc-scale",
+            text="oc scale --current-replicas=2 --replicas=3 deployment/mysql",
+            source="bm25",
+            raw_score=1.0,
+        )
+        rbac_hit = RetrievalHit(
+            chunk_id="rbac-scale",
+            book_slug="authentication_and_authorization",
+            chapter="9장. RBAC",
+            section="9.4. 클러스터 역할 및 바인딩 보기",
+            anchor="roles",
+            source_url="https://example.com/rbac",
+            viewer_path="/docs/ocp/4.20/ko/authentication_and_authorization/index.html#roles",
+            text="deployments.apps/scale deploymentconfigs/scale 권한 예시",
+            source="vector",
+            raw_score=1.0,
+        )
+
+        fused = fuse_ranked_hits(
+            "OCP 4.20 | 사용자 목표 실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해? | 5개에서 10개로 변경도돼?",
+            {"bm25": [cli_hit], "vector": [rbac_hit]},
+            context=SessionContext(
+                user_goal="실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해?",
+                current_topic="Deployment 스케일링",
+                ocp_version="4.20",
+            ),
+            top_k=2,
+        )
+
+        self.assertEqual("cli_tools", fused[0].book_slug)
+        self.assertEqual("2.6.1.124. oc scale", fused[0].section)
 
     def test_fuse_ranked_hits_prefers_intake_structured_key_over_generic_intro_doc(self) -> None:
         intake_hit = RetrievalHit(
@@ -247,6 +366,36 @@ class RetrievalTests(unittest.TestCase):
         self.assertIn("etcd 백업", rewritten)
         self.assertIn("4.20", rewritten)
         self.assertIn("복구는?", rewritten)
+
+    def test_rewrite_query_uses_user_goal_for_shorthand_numeric_follow_up(self) -> None:
+        context = SessionContext(
+            user_goal="실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해?",
+            current_topic="Deployment replicas",
+            ocp_version="4.20",
+        )
+
+        rewritten = rewrite_query("그럼 5개에서 10개로 변경하려면?", context)
+
+        self.assertIn("Deployment의 복제본", rewritten)
+        self.assertIn("3개에서 5개", rewritten)
+        self.assertIn("그럼 5개에서 10개로 변경하려면?", rewritten)
+
+    def test_corrective_follow_up_requests_are_detected_and_rewritten(self) -> None:
+        context = SessionContext(
+            user_goal="실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해?",
+            current_topic="Deployment 스케일링",
+            ocp_version="4.20",
+        )
+
+        self.assertTrue(has_corrective_follow_up("아니 5개에서 10개로 변경하는 명령어"))
+        self.assertTrue(has_follow_up_reference("그럼 명령어라도 알려줘"))
+        self.assertTrue(has_command_request("그럼 명령어라도 알려줘"))
+
+        rewritten = rewrite_query("아니 5개에서 10개로 변경하는 명령어", context)
+
+        self.assertIn("사용자 목표", rewritten)
+        self.assertIn("Deployment의 복제본", rewritten)
+        self.assertIn("5개에서 10개", rewritten)
 
     def test_rewrite_query_does_not_force_prior_topic_for_explicit_new_topic(self) -> None:
         context = SessionContext(

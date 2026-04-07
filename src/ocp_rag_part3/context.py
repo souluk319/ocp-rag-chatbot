@@ -8,6 +8,7 @@ from ocp_rag_part2.query import (
     has_backup_restore_intent,
     has_cluster_node_usage_intent,
     has_crash_loop_troubleshooting_intent,
+    has_deployment_scaling_intent,
     has_mco_concept_intent,
     has_node_drain_intent,
     has_openshift_kubernetes_compare_intent,
@@ -134,6 +135,7 @@ def _should_force_clarification(
             has_project_finalizer_intent(normalized),
             has_node_drain_intent(normalized),
             has_cluster_node_usage_intent(normalized),
+            has_deployment_scaling_intent(normalized),
         ]
     ):
         return False
@@ -191,6 +193,7 @@ def _select_hits(
             has_project_finalizer_intent(normalized),
             has_node_drain_intent(normalized),
             has_cluster_node_usage_intent(normalized),
+            has_deployment_scaling_intent(normalized),
         ]
     )
 
@@ -261,6 +264,23 @@ def _select_hits(
         support_window = ranked_hits[: max(max_chunks * 2, 6)]
         top_score = _hit_score(support_window[0])
         top_book = support_window[0].book_slug
+    elif has_deployment_scaling_intent(normalized):
+        preferred_order = {
+            "cli_tools": 0,
+            "building_applications": 1,
+        }
+        ranked_hits = sorted(
+            ranked_hits,
+            key=lambda hit: (
+                preferred_order.get(hit.book_slug, 9),
+                -_hit_score(hit),
+                hit.book_slug,
+                hit.chunk_id,
+            ),
+        )
+        support_window = ranked_hits[: max(max_chunks * 2, 8)]
+        top_score = _hit_score(support_window[0])
+        top_book = support_window[0].book_slug
 
     book_counts = Counter(hit.book_slug for hit in support_window)
     best_book_scores: dict[str, float] = defaultdict(float)
@@ -287,6 +307,10 @@ def _select_hits(
         for book_slug in ("machine_configuration", "operators", "architecture", "extensions"):
             if best_book_scores.get(book_slug, 0.0) >= top_score * 0.62:
                 allowed_books.add(book_slug)
+    if has_deployment_scaling_intent(normalized):
+        for book_slug in ("cli_tools", "building_applications"):
+            if best_book_scores.get(book_slug, 0.0) >= top_score * 0.52:
+                allowed_books.add(book_slug)
     for book_slug, count in book_counts.items():
         if book_slug == top_book:
             continue
@@ -295,6 +319,8 @@ def _select_hits(
             threshold = 0.72
         elif is_procedure_query:
             threshold = 0.84
+        if has_deployment_scaling_intent(normalized):
+            threshold = 0.58
         if count >= 2 and best_book_scores[book_slug] >= top_score * threshold:
             allowed_books.add(book_slug)
 
@@ -302,6 +328,8 @@ def _select_hits(
         score_cutoff = top_score * (0.68 if is_concept_query else 0.74 if is_procedure_query else 0.82)
     else:
         score_cutoff = 0.0
+    if has_deployment_scaling_intent(normalized) and top_score > 0:
+        score_cutoff = top_score * 0.5
     selected: list[RetrievalHit] = []
     per_book_counts: Counter[str] = Counter()
     per_book_limit = 2 if has_crash_loop_troubleshooting_intent(normalized) else 3 if is_procedure_query else 2

@@ -16,7 +16,10 @@ if str(SRC) not in sys.path:
 from ocp_rag_part2.models import SessionContext
 from ocp_rag_part3.models import AnswerResult, Citation
 from ocp_rag_part4.server import (
+    ChatSession,
+    Turn,
     _build_doc_to_book_plan,
+    _build_session_debug_payload,
     _capture_doc_to_book_draft,
     _canonical_source_book,
     _clean_source_view_text,
@@ -31,6 +34,7 @@ from ocp_rag_part4.server import (
     _load_doc_to_book_capture,
     _load_doc_to_book_draft,
     _normalize_doc_to_book_draft,
+    _append_chat_turn_log,
     _serialize_citation,
     _suggest_follow_up_questions,
     _upload_doc_to_book_draft,
@@ -62,6 +66,9 @@ class Part4UiTests(unittest.TestCase):
         html = (
             ROOT / "src" / "ocp_rag_part4" / "static" / "index.html"
         ).read_text(encoding="utf-8")
+        app_config = (
+            ROOT / "src" / "ocp_rag_part4" / "static" / "assets" / "app-config.js"
+        ).read_text(encoding="utf-8")
 
         self.assertIn("event.isComposing || event.keyCode === 229 || isComposing", html)
         self.assertIn('composerEl.addEventListener("compositionstart"', html)
@@ -78,11 +85,36 @@ class Part4UiTests(unittest.TestCase):
         self.assertIn("<h1>OCP PLAY STUDIO</h1>", html)
         self.assertIn("OCP RAG CHATBOT PLATFORM", html)
         self.assertIn("--accent: #ee0000;", html)
-        self.assertIn("width: calc(100vw - 12px);", html)
-        self.assertIn("grid-template-columns: 0 minmax(0, 1.28fr) minmax(620px, 1.04fr);", html)
+        self.assertIn("--layout-gap: 16px;", html)
+        self.assertIn("padding: var(--layout-gap);", html)
+        self.assertIn("height: 100dvh;", html)
+        self.assertIn("flex: 1 1 auto;", html)
+        self.assertIn("grid-template-columns: 0 minmax(0, 1.22fr) minmax(620px, 1.04fr);", html)
         self.assertIn("function syncViewportLayout()", html)
+        self.assertIn("function syncChatPanelState()", html)
+        self.assertIn('<script src="/assets/app-config.js"></script>', html)
+        self.assertIn("window.OCP_PLAY_STUDIO_CONFIG", app_config)
+        self.assertIn('version: "4.20"', app_config)
+        self.assertIn("Deployment 복제본 조정", app_config)
         self.assertIn("function renderEmptyState", html)
+        self.assertIn("function escapeHtml(value)", html)
+        self.assertIn("const EMPTY_STATE_SAMPLES = Array.isArray(APP_CONFIG.emptyStateSamples)", html)
+        self.assertIn("function shuffledEmptyStateSamples(limit = 4)", html)
+        self.assertIn('id="version-chip"', html)
+        self.assertIn("Knowledge Packs", html)
+        self.assertIn('id="core-version-picker"', html)
+        self.assertIn("데이터 선택", html)
+        self.assertIn("KR corpus", html)
+        self.assertIn('id="active-pack-title"', html)
+        self.assertIn("core-pack-tab", html)
+        self.assertIn("function renderCorePackOptions()", html)
+        self.assertIn('data-pack-version="${pack.version}"', html)
+        self.assertIn("function setCorePack(", html)
         self.assertIn('class="sample-chip"', html)
+        self.assertIn('id="selected-source-count"', html)
+        self.assertIn("function setUploadedDraftSelected", html)
+        self.assertIn("function prepareUploadedSource", html)
+        self.assertIn("selected_draft_ids: selectedDraftIdList()", html)
         self.assertIn("function normalizeAssistantAnswer", html)
         self.assertIn('label.textContent = "Answer"', html)
         self.assertIn('title.textContent = "근거 문서"', html)
@@ -165,6 +197,70 @@ class Part4UiTests(unittest.TestCase):
 
         self.assertEqual("정상 본문입니다.", cleaned)
 
+    def test_build_session_debug_payload_includes_history(self) -> None:
+        session = ChatSession(
+            session_id="session-1",
+            mode="ops",
+            context=SessionContext(mode="ops", user_goal="replicas 조정", ocp_version="4.20"),
+            history=[
+                Turn(
+                    query="Deployment replicas를 3에서 5로 바꾸려면?",
+                    mode="ops",
+                    answer="답변: `oc scale`을 사용하세요.",
+                )
+            ],
+        )
+
+        payload = _build_session_debug_payload(session)
+
+        self.assertEqual("session-1", payload["session_id"])
+        self.assertEqual(1, payload["history_size"])
+        self.assertEqual("Deployment replicas를 3에서 5로 바꾸려면?", payload["last_query"])
+        self.assertEqual("replicas 조정", payload["context"]["user_goal"])
+        self.assertEqual("답변: `oc scale`을 사용하세요.", payload["history"][0]["answer"])
+
+    def test_append_chat_turn_log_writes_jsonl_entry(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            session = ChatSession(
+                session_id="session-2",
+                mode="ops",
+                context=SessionContext(mode="ops", user_goal="replicas 조정", ocp_version="4.20"),
+                history=[
+                    Turn(
+                        query="그럼 5개에서 10개로 변경하려면?",
+                        mode="ops",
+                        answer="답변: replicas를 10으로 바꾸세요.",
+                    )
+                ],
+            )
+            result = AnswerResult(
+                query="그럼 5개에서 10개로 변경하려면?",
+                mode="ops",
+                answer="답변: replicas를 10으로 바꾸세요.",
+                rewritten_query="OCP 4.20 | 사용자 목표 replicas 조정 | 그럼 5개에서 10개로 변경하려면?",
+                citations=[],
+                retrieval_trace={"query": "rewritten"},
+                pipeline_trace={"timings_ms": {"total": 10}},
+            )
+
+            target = _append_chat_turn_log(
+                root,
+                session=session,
+                query=result.query,
+                result=result,
+                context_before=SessionContext(mode="ops", user_goal="replicas 조정", ocp_version="4.20"),
+                context_after=session.context,
+            )
+
+            self.assertTrue(target.exists())
+            rows = [json.loads(line) for line in target.read_text(encoding="utf-8").splitlines() if line.strip()]
+            self.assertEqual(1, len(rows))
+            self.assertEqual("session-2", rows[0]["session_id"])
+            self.assertEqual("그럼 5개에서 10개로 변경하려면?", rows[0]["query"])
+            self.assertEqual("replicas 조정", rows[0]["context_after"]["user_goal"])
+            self.assertEqual(1, rows[0]["history_size"])
+
     def test_derive_next_context_updates_topic_when_grounded(self) -> None:
         result = AnswerResult(
             query="OpenShift 아키텍처 설명",
@@ -184,7 +280,87 @@ class Part4UiTests(unittest.TestCase):
 
         self.assertEqual("learn", updated.mode)
         self.assertEqual("OpenShift 아키텍처", updated.current_topic)
+        self.assertEqual("OpenShift 아키텍처 설명", updated.user_goal)
         self.assertIsNone(updated.unresolved_question)
+
+    def test_derive_next_context_preserves_rich_user_goal_for_follow_up_reference(self) -> None:
+        result = AnswerResult(
+            query="그럼 5개에서 10개로 변경하려면?",
+            mode="ops",
+            answer="답변: `oc scale` 명령으로 replicas를 10으로 바꾸면 됩니다. [1]",
+            rewritten_query="OCP 4.20 | 사용자 목표 실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해? | 그럼 5개에서 10개로 변경하려면?",
+            citations=[_citation(1, section="Deployments")],
+            cited_indices=[1],
+        )
+
+        updated = _derive_next_context(
+            SessionContext(
+                mode="ops",
+                user_goal="실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해?",
+                current_topic="Deployment replicas",
+                ocp_version="4.20",
+            ),
+            query="그럼 5개에서 10개로 변경하려면?",
+            mode="ops",
+            result=result,
+        )
+
+        self.assertEqual(
+            "실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해?",
+            updated.user_goal,
+        )
+        self.assertEqual("Deployments", updated.current_topic)
+        self.assertIsNone(updated.unresolved_question)
+
+    def test_derive_next_context_tracks_deployment_scaling_topic(self) -> None:
+        result = AnswerResult(
+            query="실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해?",
+            mode="ops",
+            answer="답변: `oc scale` 명령을 사용합니다. [1]",
+            rewritten_query="실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해?",
+            citations=[_citation(1, section="2.6.1.124. oc scale", book_slug="cli_tools")],
+            cited_indices=[1],
+        )
+
+        updated = _derive_next_context(
+            SessionContext(mode="ops", ocp_version="4.20"),
+            query="실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해?",
+            mode="ops",
+            result=result,
+        )
+
+        self.assertEqual("Deployment 스케일링", updated.current_topic)
+        self.assertEqual(["Deployment", "replicas"], updated.open_entities)
+        self.assertEqual(
+            "실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해?",
+            updated.user_goal,
+        )
+
+    def test_derive_next_context_preserves_task_topic_for_corrective_follow_up(self) -> None:
+        result = AnswerResult(
+            query="그럼 명령어라도 알려줘",
+            mode="ops",
+            answer="답변: `oc scale` 명령을 사용합니다. [1]",
+            rewritten_query="OCP 4.20 | 주제 Deployment 스케일링 | 사용자 목표 실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해? | 그럼 명령어라도 알려줘",
+            citations=[_citation(1, section="2.6.1.124. oc scale", book_slug="cli_tools")],
+            cited_indices=[1],
+        )
+
+        updated = _derive_next_context(
+            SessionContext(
+                mode="ops",
+                user_goal="실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해?",
+                current_topic="Deployment 스케일링",
+                open_entities=["Deployment", "replicas"],
+                ocp_version="4.20",
+            ),
+            query="그럼 명령어라도 알려줘",
+            mode="ops",
+            result=result,
+        )
+
+        self.assertEqual("Deployment 스케일링", updated.current_topic)
+        self.assertEqual(["Deployment", "replicas"], updated.open_entities)
 
     def test_derive_next_context_marks_unresolved_when_no_citations(self) -> None:
         result = AnswerResult(
@@ -436,6 +612,65 @@ class Part4UiTests(unittest.TestCase):
         self.assertEqual("OpenShift 4.20 Core Pack", payload["pack_label"])
         self.assertEqual("openshift", payload["inferred_product"])
         self.assertEqual("4.20", payload["inferred_version"])
+        self.assertTrue(payload["section_match_exact"])
+
+    def test_serialize_citation_marks_section_fallback_when_anchor_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            manifest_path = root / "manifests" / "ocp_ko_4_20_html_single.json"
+            manifest_path.parent.mkdir(parents=True)
+            manifest_path.write_text(
+                json.dumps(
+                    {
+                        "entries": [
+                            {
+                                "book_slug": "architecture",
+                                "title": "아키텍처",
+                                "source_url": "https://example.com/architecture",
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            normalized_docs_path = root / "artifacts" / "part1" / "normalized_docs.jsonl"
+            normalized_docs_path.parent.mkdir(parents=True)
+            normalized_docs_path.write_text(
+                json.dumps(
+                    {
+                        "book_slug": "architecture",
+                        "book_title": "아키텍처",
+                        "heading": "개요",
+                        "section_level": 1,
+                        "section_path": ["개요"],
+                        "anchor": "overview",
+                        "source_url": "https://example.com/architecture",
+                        "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html#overview",
+                        "text": "본문",
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            payload = _serialize_citation(
+                root,
+                Citation(
+                    index=1,
+                    chunk_id="chunk-1",
+                    book_slug="architecture",
+                    section="존재하지 않는 섹션",
+                    anchor="missing-anchor",
+                    source_url="https://example.com/architecture",
+                    viewer_path="/docs/ocp/4.20/ko/architecture/index.html#missing-anchor",
+                    excerpt="본문",
+                ),
+            )
+
+        self.assertFalse(payload["section_match_exact"])
 
     def test_internal_viewer_html_uses_normalized_sections(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -750,6 +985,7 @@ class Part4UiTests(unittest.TestCase):
         assert viewer_html is not None
         self.assertIn("Doc-to-Book Study Viewer", viewer_html)
         self.assertIn("이벤트 확인", viewer_html)
+        self.assertIn("capture된 웹 문서를 canonical section으로 정리한 내부 study view입니다.", viewer_html)
 
     def test_doc_to_book_meta_prefers_captured_source_url_and_quality(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -870,6 +1106,99 @@ class Part4UiTests(unittest.TestCase):
         self.assertEqual("/api/doc-to-book/captured?draft_id=dtb-review", meta["source_url"])
         self.assertEqual("review", meta["quality_status"])
         self.assertIn("정규화 품질 검토", meta["quality_summary"])
+        self.assertTrue(meta["section_match_exact"])
+
+    def test_doc_to_book_meta_marks_fallback_when_anchor_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            draft_dir = root / "artifacts" / "doc_to_book" / "drafts"
+            book_dir = root / "artifacts" / "doc_to_book" / "books"
+            draft_dir.mkdir(parents=True)
+            book_dir.mkdir(parents=True)
+
+            (draft_dir / "dtb-review.json").write_text(
+                json.dumps(
+                    {
+                        "draft_id": "dtb-review",
+                        "status": "normalized",
+                        "created_at": "2026-04-06T00:00:00Z",
+                        "updated_at": "2026-04-06T00:00:00Z",
+                        "request": {
+                            "source_type": "pdf",
+                            "uri": "/tmp/demo.pdf",
+                            "title": "데모 PDF",
+                            "language_hint": "ko",
+                        },
+                        "plan": {
+                            "book_slug": "demo-pdf",
+                            "title": "데모 PDF",
+                            "source_type": "pdf",
+                            "source_uri": "/tmp/demo.pdf",
+                            "source_collection": "uploaded",
+                            "pack_id": "openshift-4-16-custom",
+                            "pack_label": "OpenShift 4.16 Custom Pack",
+                            "inferred_product": "openshift",
+                            "inferred_version": "4.16",
+                            "acquisition_uri": "/tmp/demo.pdf",
+                            "capture_strategy": "pdf_text_extract_v1",
+                            "acquisition_step": "capture",
+                            "normalization_step": "normalize",
+                            "derivation_step": "derive",
+                            "notes": [],
+                            "canonical_model": "canonical_book_v1",
+                            "source_view_strategy": "source_view_first",
+                            "retrieval_derivation": "chunks_from_canonical_sections",
+                        },
+                        "capture_artifact_path": "/tmp/demo.pdf",
+                        "capture_content_type": "application/pdf",
+                        "capture_byte_size": 12,
+                        "capture_error": "",
+                        "canonical_book_path": str(book_dir / "dtb-review.json"),
+                        "normalized_section_count": 1,
+                        "normalize_error": "",
+                    },
+                    ensure_ascii=False,
+                ) + "\n",
+                encoding="utf-8",
+            )
+            (book_dir / "dtb-review.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "canonical_book_v1",
+                        "book_slug": "demo-pdf",
+                        "title": "데모 PDF",
+                        "source_type": "pdf",
+                        "source_uri": "/tmp/demo.pdf",
+                        "language_hint": "ko",
+                        "source_view_strategy": "normalized_sections_v1",
+                        "retrieval_derivation": "chunks_from_canonical_sections",
+                        "sections": [
+                            {
+                                "ordinal": 1,
+                                "section_key": "demo-pdf:short-a",
+                                "heading": "온프레미스",
+                                "section_level": 1,
+                                "section_path": ["Page 1", "온프레미스"],
+                                "section_path_label": "Page 1 > 온프레미스",
+                                "anchor": "short-a",
+                                "viewer_path": "/docs/intake/dtb-review/index.html#short-a",
+                                "source_url": "/tmp/demo.pdf",
+                                "text": "온프레미스",
+                                "block_kinds": ["paragraph"],
+                            },
+                        ],
+                        "notes": [],
+                    },
+                    ensure_ascii=False,
+                ) + "\n",
+                encoding="utf-8",
+            )
+
+            meta = _doc_to_book_meta_for_viewer_path(root, "/docs/intake/dtb-review/index.html#missing")
+
+        self.assertIsNotNone(meta)
+        assert meta is not None
+        self.assertFalse(meta["section_match_exact"])
 
     def test_serialize_citation_enriches_doc_to_book_source_labels(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -968,6 +1297,99 @@ class Part4UiTests(unittest.TestCase):
         self.assertEqual("데모 가이드", payload["book_title"])
         self.assertEqual("문제 해결 > 이벤트 확인", payload["section_path_label"])
         self.assertEqual("데모 가이드 · 문제 해결 > 이벤트 확인", payload["source_label"])
+        self.assertTrue(payload["section_match_exact"])
+
+    def test_internal_doc_to_book_viewer_html_uses_pdf_summary_for_pdf_source(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            draft_dir = root / "artifacts" / "doc_to_book" / "drafts"
+            book_dir = root / "artifacts" / "doc_to_book" / "books"
+            draft_dir.mkdir(parents=True)
+            book_dir.mkdir(parents=True)
+
+            (draft_dir / "dtb-pdf.json").write_text(
+                json.dumps(
+                    {
+                        "draft_id": "dtb-pdf",
+                        "status": "normalized",
+                        "created_at": "2026-04-06T00:00:00Z",
+                        "updated_at": "2026-04-06T00:00:00Z",
+                        "request": {
+                            "source_type": "pdf",
+                            "uri": "/tmp/demo.pdf",
+                            "title": "데모 PDF",
+                            "language_hint": "ko",
+                        },
+                        "plan": {
+                            "book_slug": "demo-pdf",
+                            "title": "데모 PDF",
+                            "source_type": "pdf",
+                            "source_uri": "/tmp/demo.pdf",
+                            "source_collection": "uploaded",
+                            "pack_id": "openshift-4-16-custom",
+                            "pack_label": "OpenShift 4.16 Custom Pack",
+                            "inferred_product": "openshift",
+                            "inferred_version": "4.16",
+                            "acquisition_uri": "/tmp/demo.pdf",
+                            "capture_strategy": "pdf_text_extract_v1",
+                            "acquisition_step": "capture",
+                            "normalization_step": "normalize",
+                            "derivation_step": "derive",
+                            "notes": [],
+                            "canonical_model": "canonical_book_v1",
+                            "source_view_strategy": "source_view_first",
+                            "retrieval_derivation": "chunks_from_canonical_sections",
+                        },
+                        "capture_artifact_path": "/tmp/demo.pdf",
+                        "capture_content_type": "application/pdf",
+                        "capture_byte_size": 12,
+                        "capture_error": "",
+                        "canonical_book_path": str(book_dir / "dtb-pdf.json"),
+                        "normalized_section_count": 1,
+                        "normalize_error": "",
+                    },
+                    ensure_ascii=False,
+                ) + "\n",
+                encoding="utf-8",
+            )
+            (book_dir / "dtb-pdf.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "canonical_book_v1",
+                        "book_slug": "demo-pdf",
+                        "title": "데모 PDF",
+                        "source_type": "pdf",
+                        "source_uri": "/tmp/demo.pdf",
+                        "language_hint": "ko",
+                        "source_view_strategy": "normalized_sections_v1",
+                        "retrieval_derivation": "chunks_from_canonical_sections",
+                        "sections": [
+                            {
+                                "ordinal": 1,
+                                "section_key": "demo-pdf:short-a",
+                                "heading": "온프레미스",
+                                "section_level": 1,
+                                "section_path": ["Page 1", "온프레미스"],
+                                "section_path_label": "Page 1 > 온프레미스",
+                                "anchor": "short-a",
+                                "viewer_path": "/docs/intake/dtb-pdf/index.html#short-a",
+                                "source_url": "/tmp/demo.pdf",
+                                "text": "온프레미스",
+                                "block_kinds": ["paragraph"],
+                            },
+                        ],
+                        "notes": [],
+                    },
+                    ensure_ascii=False,
+                ) + "\n",
+                encoding="utf-8",
+            )
+
+            viewer_html = _internal_doc_to_book_viewer_html(root, "/docs/intake/dtb-pdf/index.html#short-a")
+
+        self.assertIsNotNone(viewer_html)
+        assert viewer_html is not None
+        self.assertIn("capture된 PDF를 canonical section으로 정리한 내부 study view입니다.", viewer_html)
 
 
 if __name__ == "__main__":
