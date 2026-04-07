@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import base64
 import html
 import json
+import mimetypes
 import re
 import threading
 import uuid
@@ -17,6 +19,7 @@ from urllib.parse import parse_qs, urlparse
 from ocp_doc_to_book import DocSourceRequest, DocToBookDraftStore, DocToBookPlanner
 from ocp_doc_to_book.ingestion.capture import DocToBookCaptureService
 from ocp_doc_to_book.normalization.service import DocToBookNormalizeService
+from ocp_doc_to_book.service import evaluate_canonical_book_quality
 from ocp_rag_part1.settings import load_settings
 from ocp_rag_part1.validation import read_jsonl
 from ocp_rag_part2.models import SessionContext
@@ -109,6 +112,17 @@ def _humanize_book_slug(book_slug: str) -> str:
     return " ".join(part for part in str(book_slug or "").replace("_", " ").split())
 
 
+def _core_pack_payload(*, version: str = "4.20") -> dict[str, str]:
+    version_token = version.replace(".", "-")
+    return {
+        "source_collection": "core",
+        "pack_id": f"openshift-{version_token}-core",
+        "pack_label": f"OpenShift {version} Core Pack",
+        "inferred_product": "openshift",
+        "inferred_version": version,
+    }
+
+
 def _viewer_path_to_local_html(root_dir: Path, viewer_path: str) -> Path | None:
     parsed = _parse_viewer_path(viewer_path)
     if parsed is None:
@@ -198,7 +212,34 @@ def _clean_source_view_text(text: str) -> str:
 def _serialize_citation(root_dir: Path, citation: Citation) -> dict[str, Any]:
     href = _citation_href(citation)
     row = _normalized_row_for_viewer_path(root_dir, href)
+    doc_to_book_meta = _doc_to_book_meta_for_viewer_path(root_dir, href)
     manifest_entry = _manifest_entry_for_book(root_dir, citation.book_slug)
+
+    if row is None and doc_to_book_meta is not None:
+        book_title = str(doc_to_book_meta.get("book_title") or "") or _humanize_book_slug(citation.book_slug)
+        section_path = [
+            str(item)
+            for item in (doc_to_book_meta.get("section_path") or [])
+            if str(item).strip()
+        ]
+        section_label = (
+            str(doc_to_book_meta.get("section_path_label") or "").strip()
+            or citation.section
+            or citation.anchor
+        )
+        return {
+            **citation.to_dict(),
+            "href": href,
+            "book_title": book_title,
+            "section_path": section_path,
+            "section_path_label": section_label,
+            "source_label": f"{book_title} · {section_label}" if section_label else book_title,
+            "source_collection": str(doc_to_book_meta.get("source_collection") or "uploaded"),
+            "pack_id": str(doc_to_book_meta.get("pack_id") or ""),
+            "pack_label": str(doc_to_book_meta.get("pack_label") or ""),
+            "inferred_product": str(doc_to_book_meta.get("inferred_product") or "unknown"),
+            "inferred_version": str(doc_to_book_meta.get("inferred_version") or "unknown"),
+        }
 
     book_title = (
         str((row or {}).get("book_title") or "")
@@ -218,6 +259,7 @@ def _serialize_citation(root_dir: Path, citation: Citation) -> dict[str, Any]:
         "section_path": section_path,
         "section_path_label": section_label,
         "source_label": f"{book_title} · {section_label}" if section_label else book_title,
+        **_core_pack_payload(),
     }
 
 
@@ -670,7 +712,65 @@ def _load_doc_to_book_book(root_dir: Path, draft_id: str) -> dict[str, Any] | No
     payload["draft_id"] = record.draft_id
     payload["target_viewer_path"] = f"/docs/intake/{record.draft_id}/index.html"
     payload["target_anchor"] = payload.get("target_anchor") or ""
+    payload["source_origin_url"] = f"/api/doc-to-book/captured?draft_id={record.draft_id}"
+    payload.setdefault("source_collection", record.plan.source_collection)
+    payload.setdefault("pack_id", record.plan.pack_id)
+    payload.setdefault("pack_label", record.plan.pack_label)
+    payload.setdefault("inferred_product", record.plan.inferred_product)
+    payload.setdefault("inferred_version", record.plan.inferred_version)
+    payload.update(evaluate_canonical_book_quality(payload))
     return payload
+
+
+def _doc_to_book_book_for_viewer_path(root_dir: Path, viewer_path: str) -> dict[str, Any] | None:
+    parsed = _parse_doc_to_book_viewer_path(viewer_path)
+    if parsed is None:
+        return None
+    draft_id, target_anchor = parsed
+    payload = _load_doc_to_book_book(root_dir, draft_id)
+    if payload is None:
+        return None
+    payload = dict(payload)
+    payload["target_anchor"] = target_anchor
+    return payload
+
+
+def _doc_to_book_meta_for_viewer_path(root_dir: Path, viewer_path: str) -> dict[str, Any] | None:
+    payload = _doc_to_book_book_for_viewer_path(root_dir, viewer_path)
+    if payload is None:
+        return None
+    sections = [dict(section) for section in (payload.get("sections") or []) if isinstance(section, dict)]
+    if not sections:
+        return None
+    target_anchor = str(payload.get("target_anchor") or "").strip()
+    target = sections[0]
+    for section in sections:
+        if str(section.get("anchor") or "").strip() == target_anchor:
+            target = section
+            break
+    section_path = [str(item) for item in (target.get("section_path") or []) if str(item).strip()]
+    return {
+        "book_slug": str(payload.get("book_slug") or ""),
+        "book_title": str(payload.get("title") or payload.get("book_slug") or ""),
+        "anchor": str(target.get("anchor") or target_anchor),
+        "section": str(target.get("heading") or ""),
+        "section_path": section_path,
+        "section_path_label": (
+            str(target.get("section_path_label") or "").strip()
+            or (" > ".join(section_path) if section_path else str(target.get("heading") or ""))
+        ),
+        "source_url": str(payload.get("source_origin_url") or target.get("source_url") or payload.get("source_uri") or ""),
+        "viewer_path": viewer_path,
+        "source_collection": str(payload.get("source_collection") or "uploaded"),
+        "pack_id": str(payload.get("pack_id") or ""),
+        "pack_label": str(payload.get("pack_label") or ""),
+        "inferred_product": str(payload.get("inferred_product") or "unknown"),
+        "inferred_version": str(payload.get("inferred_version") or "unknown"),
+        "quality_status": str(payload.get("quality_status") or "ready"),
+        "quality_score": int(payload.get("quality_score") or 0),
+        "quality_summary": str(payload.get("quality_summary") or ""),
+        "quality_flags": list(payload.get("quality_flags") or []),
+    }
 
 
 def _internal_doc_to_book_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
@@ -687,13 +787,16 @@ def _internal_doc_to_book_viewer_html(root_dir: Path, viewer_path: str) -> str |
     if not sections:
         return None
     cards = _build_study_section_cards(sections, target_anchor=target_anchor)
+    summary = str(canonical_book.get("quality_summary") or "capture된 웹 문서를 canonical section으로 정리한 내부 study view입니다. 이후 retrieval chunk는 이 section들을 부모로 파생됩니다.")
+    if str(canonical_book.get("quality_status") or "ready") != "ready":
+        summary = f"{summary} 이 자산은 아직 review needed 상태입니다."
     return _render_study_viewer_html(
         title=str(canonical_book.get("title") or draft_id),
-        source_url=str(canonical_book.get("source_uri") or ""),
+        source_url=str(canonical_book.get("source_origin_url") or canonical_book.get("source_uri") or ""),
         cards=cards,
         section_count=len(sections),
         eyebrow="Doc-to-Book Study Viewer",
-        summary="capture된 웹 문서를 canonical section으로 정리한 내부 study view입니다. 이후 retrieval chunk는 이 section들을 부모로 파생됩니다.",
+        summary=summary,
     )
 
 
@@ -727,6 +830,7 @@ def _canonical_source_book(root_dir: Path, viewer_path: str) -> dict[str, Any] |
     canonical_book = DocToBookPlanner().build_canonical_book(rows, request=request)
     payload = canonical_book.to_dict()
     payload["target_anchor"] = target_anchor
+    payload.update(_core_pack_payload())
     return payload
 
 
@@ -760,6 +864,46 @@ def _create_doc_to_book_draft(root_dir: Path, payload: dict[str, Any]) -> dict[s
     return record.to_dict()
 
 
+def _upload_doc_to_book_draft(root_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    request = _doc_to_book_request_from_payload(payload)
+    file_name = str(payload.get("file_name") or "").strip()
+    content_base64 = str(payload.get("content_base64") or "").strip()
+    if not file_name:
+        raise ValueError("업로드할 file_name이 필요합니다.")
+    if not content_base64:
+        raise ValueError("업로드할 content_base64가 필요합니다.")
+
+    try:
+        content = base64.b64decode(content_base64.encode("utf-8"), validate=True)
+    except Exception as exc:  # noqa: BLE001
+        raise ValueError(f"업로드 파일 디코딩에 실패했습니다: {exc}") from exc
+    if not content:
+        raise ValueError("빈 파일은 업로드할 수 없습니다.")
+
+    settings = load_settings(root_dir)
+    upload_dir = settings.doc_to_book_capture_dir / "_uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    source_suffix = Path(file_name).suffix or (".pdf" if request.source_type == "pdf" else ".html")
+    safe_stem = re.sub(r"[^A-Za-z0-9가-힣._-]+", "-", Path(file_name).stem).strip("-") or "upload"
+    target = upload_dir / f"{uuid.uuid4().hex[:10]}-{safe_stem}{source_suffix}"
+    target.write_bytes(content)
+
+    uploaded_request = DocSourceRequest(
+        source_type=request.source_type,
+        uri=str(target),
+        title=request.title or Path(file_name).stem,
+        language_hint=request.language_hint,
+    )
+    store = DocToBookDraftStore(root_dir)
+    record = store.create(uploaded_request)
+    record.uploaded_file_name = file_name
+    record.uploaded_file_path = str(target)
+    record.uploaded_byte_size = len(content)
+    store.save(record)
+    return record.to_dict()
+
+
 def _load_doc_to_book_draft(root_dir: Path, draft_id: str) -> dict[str, Any] | None:
     record = DocToBookDraftStore(root_dir).get(draft_id)
     if record is None:
@@ -768,7 +912,18 @@ def _load_doc_to_book_draft(root_dir: Path, draft_id: str) -> dict[str, Any] | N
 
 
 def _list_doc_to_book_drafts(root_dir: Path) -> dict[str, Any]:
-    drafts = [record.to_summary() for record in DocToBookDraftStore(root_dir).list()]
+    drafts: list[dict[str, Any]] = []
+    store = DocToBookDraftStore(root_dir)
+    for record in store.list():
+        summary = record.to_summary()
+        if record.canonical_book_path.strip():
+            payload = _load_doc_to_book_book(root_dir, record.draft_id)
+            if payload is not None:
+                summary["quality_status"] = payload.get("quality_status")
+                summary["quality_score"] = payload.get("quality_score")
+                summary["quality_summary"] = payload.get("quality_summary")
+                summary["quality_flags"] = payload.get("quality_flags")
+        drafts.append(summary)
     return {"drafts": drafts}
 
 
@@ -1100,6 +1255,16 @@ def _build_handler(
             if request_path in {"/", "/index.html"}:
                 self._send_html(INDEX_HTML_PATH.read_text(encoding="utf-8"))
                 return
+            if request_path.startswith("/assets/"):
+                relative = request_path.removeprefix("/assets/").strip("/")
+                asset_path = (STATIC_DIR / "assets" / relative).resolve()
+                assets_root = (STATIC_DIR / "assets").resolve()
+                if assets_root in asset_path.parents and asset_path.is_file():
+                    content_type = mimetypes.guess_type(str(asset_path))[0] or "application/octet-stream"
+                    self._send_bytes(asset_path.read_bytes(), content_type=content_type)
+                    return
+                self.send_error(HTTPStatus.NOT_FOUND, "Not found")
+                return
             if request_path == "/api/health":
                 self._send_json({"ok": True})
                 return
@@ -1153,6 +1318,9 @@ def _build_handler(
             if self.path == "/api/doc-to-book/drafts":
                 self._handle_doc_to_book_draft_create(payload)
                 return
+            if self.path == "/api/doc-to-book/upload-draft":
+                self._handle_doc_to_book_upload_draft(payload)
+                return
             if self.path == "/api/doc-to-book/capture":
                 self._handle_doc_to_book_capture(payload)
                 return
@@ -1176,10 +1344,14 @@ def _build_handler(
 
             parsed = _parse_viewer_path(viewer_path)
             if parsed is None:
-                self._send_json(
-                    {"error": "지원하지 않는 viewer_path입니다."},
-                    HTTPStatus.BAD_REQUEST,
-                )
+                payload = _doc_to_book_meta_for_viewer_path(root_dir, viewer_path)
+                if payload is None:
+                    self._send_json(
+                        {"error": "지원하지 않는 viewer_path입니다."},
+                        HTTPStatus.BAD_REQUEST,
+                    )
+                    return
+                self._send_json(payload)
                 return
 
             book_slug, anchor = parsed
@@ -1209,6 +1381,7 @@ def _build_handler(
                     ),
                     "source_url": str((row or {}).get("source_url") or manifest_entry.get("source_url") or ""),
                     "viewer_path": viewer_path,
+                    **_core_pack_payload(),
                 }
             )
 
@@ -1223,6 +1396,8 @@ def _build_handler(
                 return
 
             canonical_book = _canonical_source_book(root_dir, viewer_path)
+            if canonical_book is None:
+                canonical_book = _doc_to_book_book_for_viewer_path(root_dir, viewer_path)
             if canonical_book is None:
                 self._send_json(
                     {"error": "canonical source book을 만들 수 없습니다."},
@@ -1304,6 +1479,21 @@ def _build_handler(
                 draft = _create_doc_to_book_draft(root_dir, payload)
             except ValueError as exc:
                 self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                return
+
+            self._send_json(draft, HTTPStatus.CREATED)
+
+        def _handle_doc_to_book_upload_draft(self, payload: dict[str, Any]) -> None:
+            try:
+                draft = _upload_doc_to_book_draft(root_dir, payload)
+            except ValueError as exc:
+                self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                return
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(
+                    {"error": f"파일 업로드 중 오류가 발생했습니다: {exc}"},
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
                 return
 
             self._send_json(draft, HTTPStatus.CREATED)

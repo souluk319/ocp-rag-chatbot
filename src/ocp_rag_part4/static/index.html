@@ -1,9 +1,10 @@
 <!doctype html>
 <html lang="ko">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OCP Knowledge Studio</title>
+  <title>OCP PLAY STUDIO</title>
   <style>
     :root {
       --bg: #f1f3f5;
@@ -25,25 +26,30 @@
       --radius-lg: 20px;
       --radius-md: 14px;
       --radius-sm: 10px;
+      --chrome-offset: 168px;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       font-family: "Red Hat Text", "Segoe UI Variable", "Malgun Gothic", sans-serif;
       color: var(--ink);
       background:
-        linear-gradient(180deg, #13161a 0 132px, transparent 132px),
-        radial-gradient(circle at top right, rgba(238, 0, 0, 0.12), transparent 24%),
+        radial-gradient(circle at top right, rgba(238, 0, 0, 0.1), transparent 24%),
+        radial-gradient(circle at top left, rgba(255, 122, 0, 0.04), transparent 18%),
         linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
       min-height: 100vh;
     }
 
     .shell {
-      width: min(1840px, calc(100vw - 24px));
+      width: calc(100vw - 12px);
       max-width: none;
       margin: 0 auto;
-      padding: 14px 0 20px;
+      padding: 8px 0 6px;
+      min-height: 100vh;
     }
 
     .hero {
@@ -125,14 +131,18 @@
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 245, 245, 0.94));
     }
 
-    .status-row, .mode-row, .action-row {
+    .status-row,
+    .mode-row,
+    .action-row {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
       align-items: center;
     }
 
-    .pill, button, textarea {
+    .pill,
+    button,
+    textarea {
       font: inherit;
     }
 
@@ -166,23 +176,28 @@
     }
 
     .status-pill {
-      align-items: flex-start;
+      justify-content: flex-start;
+      white-space: nowrap;
+      position: relative;
+      padding-left: 26px !important;
     }
 
-    .status-block {
-      display: grid;
-      gap: 2px;
+    .status-pill .dot {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: block;
+      z-index: 1;
+      box-shadow:
+        0 0 0 5px rgba(61, 115, 23, 0.12),
+        0 0 10px rgba(61, 115, 23, 0.35);
     }
 
-    .status-detail {
-      min-height: 1.2em;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.4;
-    }
-
-    .topbar .status-detail {
-      color: rgba(255, 255, 255, 0.58);
+    .status-pill #status-text {
+      display: block;
+      width: 100%;
+      text-align: center;
     }
 
     .mode-toggle {
@@ -246,17 +261,166 @@
 
     .workspace {
       display: grid;
-      grid-template-columns: minmax(0, 1.16fr) minmax(520px, 0.98fr);
-      gap: 16px;
-      min-height: calc(100vh - 196px);
+      grid-template-columns: 280px minmax(0, 1.28fr) minmax(620px, 1.04fr);
+      gap: 18px;
+      min-height: calc(100vh - var(--chrome-offset));
+      height: calc(100vh - var(--chrome-offset));
+      align-items: stretch;
+      transition: grid-template-columns 280ms cubic-bezier(0.22, 1, 0.36, 1), gap 220ms ease;
+    }
+
+    .shell.left-hidden .workspace {
+      grid-template-columns: 0 minmax(0, 1.28fr) minmax(620px, 1.04fr);
     }
 
     .shell.source-hidden .workspace {
-      grid-template-columns: minmax(0, 1fr);
+      grid-template-columns: 280px minmax(0, 1fr) 0;
     }
 
-    .shell.source-hidden .side-panel {
-      display: none;
+    .shell.left-hidden.source-hidden .workspace {
+      grid-template-columns: 0 minmax(0, 1fr) 0;
+    }
+
+    .left-rail {
+      padding: 12px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+      align-self: stretch;
+      position: sticky;
+      top: 8px;
+      min-height: 0;
+      height: 100%;
+      max-height: calc(100vh - var(--chrome-offset));
+      overflow-y: auto;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 249, 250, 0.94));
+      min-width: 0;
+      width: 100%;
+      opacity: 1;
+      transform: translateX(0);
+      transform-origin: left center;
+      clip-path: inset(0 0 0 0 round 20px);
+      transition: opacity 220ms ease, transform 280ms cubic-bezier(0.22, 1, 0.36, 1), clip-path 280ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 180ms ease, max-width 280ms cubic-bezier(0.22, 1, 0.36, 1), padding 220ms ease, border-width 180ms ease;
+      will-change: transform, opacity;
+    }
+
+    .shell.left-hidden .left-rail {
+      opacity: 0;
+      transform: translateX(-18px) scaleX(0.985);
+      clip-path: inset(0 100% 0 0 round 20px);
+      pointer-events: none;
+      max-width: 0;
+      padding: 0;
+      border-width: 0;
+      overflow: hidden;
+    }
+
+    .left-rail-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 4px 4px 0;
+    }
+
+    .left-rail-title {
+      display: grid;
+      gap: 3px;
+    }
+
+    .left-rail-title strong {
+      font-size: 15px;
+      letter-spacing: -0.01em;
+    }
+
+    .left-rail-title span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .rail-stack {
+      padding: 0;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .rail-stack h2 {
+      font-family: "Red Hat Display", "Red Hat Text", sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid rgba(21, 21, 21, 0.06);
+    }
+
+    .pack-stack,
+    .rail-list,
+    .rail-actions {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .pack-card,
+    .rail-item,
+    .rail-action {
+      display: grid;
+      gap: 5px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(255, 255, 255, 0.94);
+    }
+
+    .pack-card.active {
+      border-color: rgba(238, 0, 0, 0.22);
+      background: rgba(238, 0, 0, 0.04);
+    }
+
+    .rail-kicker {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .pack-card strong,
+    .rail-item strong {
+      font-size: 14px;
+      line-height: 1.35;
+      letter-spacing: -0.02em;
+    }
+
+    .pack-card span,
+    .rail-item span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .rail-item {
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+    }
+
+    .rail-item:hover {
+      transform: translateY(-1px);
+      border-color: rgba(238, 0, 0, 0.22);
+      background: rgba(238, 0, 0, 0.04);
+      box-shadow: 0 12px 24px rgba(21, 21, 21, 0.06);
+    }
+
+    .rail-action {
+      align-items: start;
+    }
+
+    .rail-action button {
+      justify-self: start;
     }
 
     .chat-panel {
@@ -264,27 +428,45 @@
       display: flex;
       flex-direction: column;
       gap: 0;
+      min-height: 0;
+      height: 100%;
       overflow: hidden;
+      transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease;
+      will-change: transform;
       background:
         radial-gradient(circle at top left, rgba(238, 0, 0, 0.05), transparent 26%),
         linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(249, 250, 250, 0.98));
     }
 
+    .shell.motion-nudge-left .chat-panel {
+      transform: translateX(-8px);
+    }
+
+    .shell.motion-nudge-right .chat-panel {
+      transform: translateX(8px);
+    }
+
     .messages {
       min-height: 0;
-      max-height: calc(100vh - 260px);
+      flex: 0 1 auto;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
+      justify-content: flex-start;
+      align-items: stretch;
       gap: 18px;
-      padding: 24px 28px 14px;
+      padding: 16px 14px 10px;
       scrollbar-color: rgba(21, 21, 21, 0.22) transparent;
+    }
+
+    .chat-panel.has-messages .messages {
+      flex: 1 1 auto;
     }
 
     .message {
       border-radius: 24px;
       padding: 18px 20px;
-      max-width: min(100%, 920px);
+      max-width: 100%;
       border: 1px solid var(--line);
       line-height: 1.65;
       box-shadow: 0 14px 30px rgba(21, 21, 21, 0.04);
@@ -305,7 +487,7 @@
 
     .message.user {
       align-self: flex-end;
-      max-width: min(74%, 720px);
+      max-width: min(84%, 980px);
       background: linear-gradient(180deg, #edf3f6, #e4edf2);
       border-color: rgba(21, 21, 21, 0.1);
       box-shadow: none;
@@ -352,7 +534,7 @@
     .assistant-copy {
       display: grid;
       gap: 14px;
-      max-width: 74ch;
+      max-width: none;
     }
 
     .pending-panel {
@@ -388,11 +570,17 @@
       vertical-align: middle;
     }
 
+    .pending-stage.live,
+    .stage-chip.running,
+    .message.assistant.streaming .assistant-label {
+      animation: soft-blink 1.05s ease-in-out infinite;
+    }
+
     .pending-detail {
       color: var(--muted);
       font-size: 14px;
       line-height: 1.6;
-      max-width: 64ch;
+      max-width: 78ch;
     }
 
     .progress-rail {
@@ -557,7 +745,7 @@
       padding-left: 20px;
     }
 
-    .assistant-copy li + li {
+    .assistant-copy li+li {
       margin-top: 6px;
     }
 
@@ -672,8 +860,8 @@
     }
 
     .source-tag {
-      min-width: min(100%, 280px);
-      max-width: min(100%, 320px);
+      min-width: min(100%, 320px);
+      max-width: min(100%, 420px);
       display: grid;
       justify-items: start;
       gap: 3px;
@@ -730,6 +918,39 @@
       line-height: 1.45;
     }
 
+    .inline-citation {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.7em;
+      min-height: 1.7em;
+      margin: 0 0.1rem;
+      padding: 0 0.45rem;
+      border-radius: 999px;
+      border: 1px solid rgba(238, 0, 0, 0.18);
+      background: rgba(238, 0, 0, 0.08);
+      color: var(--accent-dark);
+      font-size: 0.72em;
+      font-weight: 800;
+      line-height: 1;
+      vertical-align: super;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+    }
+
+    .inline-citation:hover {
+      transform: translateY(-1px);
+      border-color: rgba(238, 0, 0, 0.32);
+      background: rgba(238, 0, 0, 0.14);
+      box-shadow: 0 8px 18px rgba(238, 0, 0, 0.12);
+    }
+
+    .inline-citation.active {
+      border-color: rgba(238, 0, 0, 0.42);
+      background: rgba(238, 0, 0, 0.18);
+      box-shadow: 0 0 0 1px rgba(238, 0, 0, 0.1);
+    }
+
     .suggestion-list-title {
       margin-top: 18px;
       color: var(--muted);
@@ -772,10 +993,12 @@
     }
 
     .composer {
-      display: grid;
-      gap: 12px;
-      margin: 0 24px 24px;
-      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 4px 8px;
+      padding: 7px 12px;
+      min-height: 50px;
       border-radius: 16px;
       background: rgba(255, 255, 255, 0.98);
       border: 1px solid var(--line-strong);
@@ -783,39 +1006,67 @@
     }
 
     textarea {
+      flex: 1 1 auto;
       width: 100%;
-      min-height: 92px;
-      resize: vertical;
+      min-height: 24px;
+      height: 24px;
+      max-height: 88px;
+      resize: none;
       border: 0;
       outline: none;
       background: transparent;
       color: var(--ink);
-      line-height: 1.6;
-      font-size: 15px;
+      line-height: 1.25;
+      font-size: 14px;
+      padding: 0;
+      overflow-y: auto;
     }
 
     .composer-footer {
       display: flex;
-      justify-content: space-between;
-      gap: 10px;
       align-items: center;
+      flex: 0 0 auto;
     }
 
-    .hint {
-      color: var(--muted);
-      font-size: 13px;
+    #send-btn {
+      min-height: 36px;
+      padding: 0 16px;
+      border-radius: 12px;
     }
 
     .side-panel {
-      padding: 12px;
+      padding: 14px;
       display: grid;
-      gap: 10px;
-      align-content: start;
-      max-height: calc(100vh - 32px);
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 12px;
+      align-content: stretch;
+      align-self: stretch;
+      min-height: 0;
+      height: 100%;
+      max-height: calc(100vh - var(--chrome-offset));
       overflow-y: auto;
       position: sticky;
-      top: 16px;
+      top: 8px;
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 249, 250, 0.94));
+      min-width: 0;
+      width: 100%;
+      opacity: 1;
+      transform: translateX(0);
+      transform-origin: right center;
+      clip-path: inset(0 0 0 0 round 20px);
+      transition: opacity 220ms ease, transform 280ms cubic-bezier(0.22, 1, 0.36, 1), clip-path 280ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 180ms ease, max-width 280ms cubic-bezier(0.22, 1, 0.36, 1), padding 220ms ease, border-width 180ms ease;
+      will-change: transform, opacity;
+    }
+
+    .shell.source-hidden .side-panel {
+      opacity: 0;
+      transform: translateX(18px) scaleX(0.985);
+      clip-path: inset(0 0 0 100% round 20px);
+      pointer-events: none;
+      max-width: 0;
+      padding: 0;
+      border-width: 0;
+      overflow: hidden;
     }
 
     .inspector-header {
@@ -853,9 +1104,107 @@
       cursor: pointer;
     }
 
+    .panel-icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      border: 1px solid rgba(21, 21, 21, 0.1);
+      background: rgba(21, 21, 21, 0.03);
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, color 160ms ease;
+    }
+
+    .panel-icon-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(238, 0, 0, 0.22);
+      background: rgba(238, 0, 0, 0.05);
+      box-shadow: 0 10px 20px rgba(21, 21, 21, 0.06);
+    }
+
+    .panel-icon-btn svg,
+    .edge-toggle svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+      overflow: visible;
+    }
+
+    .panel-icon-btn path,
+    .edge-toggle path {
+      stroke: currentColor;
+      stroke-width: 2.35;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .panel-icon-btn:hover svg {
+      transform: scale(1.04);
+    }
+
+    .edge-toggle {
+      position: fixed;
+      top: calc(var(--chrome-offset) + 14px);
+      z-index: 20;
+      width: 38px;
+      height: 52px;
+      border-radius: 14px;
+      border: 1px solid rgba(21, 21, 21, 0.12);
+      background: rgba(255, 255, 255, 0.96);
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 14px 28px rgba(21, 21, 21, 0.08);
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 900;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease, transform 240ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+    }
+
+    .edge-toggle.left {
+      left: 8px;
+      transform: translateX(-14px);
+    }
+
+    .edge-toggle.right {
+      right: 8px;
+      transform: translateX(14px);
+    }
+
+    .shell.left-hidden .edge-toggle.left,
+    .shell.source-hidden .edge-toggle.right {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+
+    .edge-toggle:hover {
+      border-color: rgba(238, 0, 0, 0.22);
+      background: rgba(255, 255, 255, 1);
+      box-shadow: 0 16px 30px rgba(21, 21, 21, 0.1);
+    }
+
+    .edge-toggle.left:hover {
+      transform: translateX(2px);
+    }
+
+    .edge-toggle.right:hover {
+      transform: translateX(-2px);
+    }
+
     .inspector-tabs {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: 8px;
       padding: 6px 4px 2px;
     }
@@ -884,10 +1233,17 @@
       display: none;
       gap: 10px;
       align-content: start;
+      min-height: 0;
     }
 
     .inspector-page.active {
       display: grid;
+      animation: panel-fade-in 220ms ease;
+    }
+
+    .inspector-page[data-study-page="source"].active {
+      grid-template-rows: auto minmax(0, 1fr);
+      min-height: 0;
     }
 
     .source-hero {
@@ -1007,13 +1363,20 @@
     }
 
     .source-frame-shell {
-      min-height: 480px;
+      min-height: 0;
+      height: 100%;
       display: grid;
       border-radius: 18px;
       overflow: hidden;
       border: 1px solid rgba(21, 21, 21, 0.08);
       background: rgba(255, 255, 255, 0.94);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+      transition: box-shadow 180ms ease, border-color 180ms ease, transform 180ms ease;
+    }
+
+    .source-frame-shell.loading {
+      border-color: rgba(238, 0, 0, 0.18);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 0 0 4px rgba(238, 0, 0, 0.05);
     }
 
     .source-empty {
@@ -1021,7 +1384,7 @@
       display: grid;
       gap: 10px;
       align-content: center;
-      min-height: 480px;
+      min-height: 100%;
       background:
         linear-gradient(180deg, rgba(250, 245, 238, 0.98), rgba(247, 247, 247, 0.96)),
         radial-gradient(circle at top right, rgba(238, 0, 0, 0.08), transparent 40%);
@@ -1044,7 +1407,8 @@
 
     .source-viewer-frame {
       width: 100%;
-      min-height: 720px;
+      min-height: 100%;
+      height: 100%;
       border: 0;
       background: #ffffff;
     }
@@ -1068,7 +1432,8 @@
       border-bottom: 1px solid rgba(21, 21, 21, 0.06);
     }
 
-    .stack pre, .stack code {
+    .stack pre,
+    .stack code {
       font-family: Consolas, "Cascadia Code", monospace;
       font-size: 13px;
     }
@@ -1085,6 +1450,75 @@
       display: grid;
       gap: 12px;
       padding: 14px 16px 16px;
+    }
+
+    .ingest-dropzone {
+      display: grid;
+      gap: 8px;
+      padding: 16px;
+      border: 1.5px dashed rgba(21, 21, 21, 0.16);
+      border-radius: 16px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(249, 245, 240, 0.96)),
+        radial-gradient(circle at top right, rgba(238, 0, 0, 0.08), transparent 40%);
+      transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+    }
+
+    .ingest-dropzone.is-dragover {
+      border-color: rgba(238, 0, 0, 0.42);
+      background:
+        linear-gradient(180deg, rgba(255, 252, 250, 1), rgba(255, 247, 241, 0.98)),
+        radial-gradient(circle at top right, rgba(238, 0, 0, 0.12), transparent 42%);
+      box-shadow: 0 0 0 4px rgba(238, 0, 0, 0.06);
+    }
+
+    .ingest-drop-title {
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .ingest-drop-detail {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .ingest-drop-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .ingest-drop-actions button {
+      border: 1px solid rgba(21, 21, 21, 0.1);
+      border-radius: 999px;
+      min-height: 36px;
+      padding: 0 14px;
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--ink);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .ingest-file-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 32px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      width: fit-content;
+      max-width: 100%;
     }
 
     .ingest-field {
@@ -1150,6 +1584,17 @@
       font-size: 13px;
       line-height: 1.5;
       padding: 0 16px 16px;
+      transition: color 160ms ease, opacity 160ms ease;
+    }
+
+    .ingest-status[data-busy="true"]::after {
+      content: "";
+      display: inline-block;
+      width: 0.9em;
+      margin-left: 6px;
+      border-bottom: 2px solid currentColor;
+      animation: live-ellipsis 0.9s ease-in-out infinite;
+      vertical-align: middle;
     }
 
     .ingest-status[data-tone="success"] {
@@ -1204,6 +1649,89 @@
 
     .draft-card button {
       justify-self: start;
+    }
+
+    .draft-card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .asset-trace {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .asset-trace-empty {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .asset-trace-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .asset-trace-card {
+      display: grid;
+      gap: 6px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(255, 255, 255, 0.94);
+    }
+
+    .asset-trace-card strong {
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.45;
+      letter-spacing: -0.01em;
+    }
+
+    .asset-trace-card span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .asset-trace-steps {
+      display: grid;
+      gap: 8px;
+    }
+
+    .asset-trace-step {
+      display: grid;
+      gap: 5px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(255, 255, 255, 0.94);
+    }
+
+    .asset-trace-step-kicker {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .asset-trace-step-body {
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.65;
+      word-break: break-word;
+    }
+
+    .asset-trace-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
     .draft-preview {
@@ -1302,6 +1830,48 @@
       padding: 12px;
     }
 
+    .pipeline-live {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .pipeline-live .pending-panel {
+      padding: 12px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 10px 24px rgba(21, 21, 21, 0.04);
+    }
+
+    .button-busy {
+      position: relative;
+    }
+
+    .button-busy.is-busy {
+      padding-left: 36px;
+    }
+
+    .button-busy.is-busy::before {
+      content: "";
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      width: 12px;
+      height: 12px;
+      margin-top: -7px;
+      border-radius: 50%;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      animation: spin 0.8s linear infinite;
+      opacity: 0.9;
+    }
+
+    .message.assistant.streaming {
+      border-color: rgba(238, 0, 0, 0.16);
+      box-shadow: 0 14px 36px rgba(238, 0, 0, 0.06);
+    }
+
     .trace-empty {
       color: var(--muted);
       font-size: 13px;
@@ -1393,8 +1963,75 @@
     }
 
     @keyframes pulse-dot {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.18); opacity: 0.72; }
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(1.18);
+        opacity: 0.72;
+      }
+    }
+
+    @keyframes panel-fade-in {
+      0% {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes live-ellipsis {
+
+      0%,
+      100% {
+        transform: scaleX(0.3);
+        opacity: 0.45;
+      }
+
+      50% {
+        transform: scaleX(1);
+        opacity: 1;
+      }
+    }
+
+    @keyframes progress-shimmer {
+      0% {
+        transform: translateX(-100%);
+      }
+
+      100% {
+        transform: translateX(100%);
+      }
+    }
+
+    @keyframes soft-blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.46;
+      }
     }
 
     .warning {
@@ -1406,54 +2043,91 @@
 
     .topbar {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 410px;
-      gap: 18px;
-      padding: 18px 20px;
-      margin-bottom: 18px;
-      align-items: start;
-      background: linear-gradient(135deg, rgba(20, 23, 27, 0.98), rgba(12, 14, 17, 0.96));
-      border-color: rgba(255, 255, 255, 0.06);
-      box-shadow: 0 20px 44px rgba(0, 0, 0, 0.24);
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      padding: 8px 16px;
+      margin-bottom: 8px;
+      align-items: center;
+      background: linear-gradient(135deg, rgba(22, 24, 28, 0.98), rgba(15, 18, 22, 0.96));
+      border-color: rgba(10, 12, 16, 0.16);
+      box-shadow:
+        0 20px 44px rgba(16, 19, 23, 0.12),
+        0 2px 0 rgba(255, 255, 255, 0.04) inset;
     }
 
     .topbar-main {
       display: grid;
-      gap: 10px;
+      gap: 3px;
       min-width: 0;
+      align-content: center;
     }
 
     .topbar strong {
       color: rgba(255, 255, 255, 0.82);
     }
 
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 56px;
+      height: 40px;
+      object-fit: contain;
+      object-position: center;
+      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.22));
+      flex: 0 0 auto;
+    }
+
+    .brand-divider {
+      width: 1px;
+      height: 38px;
+      background: rgba(255, 255, 255, 0.68);
+      flex: 0 0 auto;
+    }
+
+    .brand-copy {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .brand-copy .eyebrow {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.64);
+    }
+
     .headline-row {
       display: flex;
-      align-items: flex-start;
-      gap: 12px;
+      align-items: center;
+      gap: 6px;
       flex-wrap: wrap;
     }
 
     .topbar-main h1 {
       margin: 0;
       max-width: none;
-      font-size: clamp(28px, 3vw, 38px);
-      line-height: 1.04;
+      font-size: clamp(19px, 2.1vw, 27px);
+      line-height: 1;
       color: #ffffff;
     }
 
     .topbar-main p {
       margin: 0;
-      max-width: 74ch;
+      max-width: 62ch;
       color: rgba(255, 255, 255, 0.72);
-      font-size: 14px;
-      line-height: 1.65;
+      font-size: 10px;
+      line-height: 1.25;
     }
 
     .version-chip {
       display: inline-flex;
       align-items: center;
-      min-height: 34px;
-      padding: 0 12px;
+      min-height: 25px;
+      padding: 0 8px;
       border-radius: 999px;
       border: 1px solid rgba(255, 255, 255, 0.12);
       background: rgba(255, 255, 255, 0.06);
@@ -1466,32 +2140,93 @@
 
     .topbar-side {
       display: grid;
-      gap: 12px;
+      grid-template-columns: 1fr;
+      gap: 5px;
       min-width: 0;
+      width: fit-content;
+      justify-self: end;
+      align-items: stretch;
     }
 
     .status-strip,
     .control-strip {
       display: grid;
+      gap: 6px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.04)),
+        radial-gradient(circle at top right, rgba(238, 0, 0, 0.06), transparent 60%);
+      min-height: 100%;
+      width: 100%;
+      min-width: 0;
+      align-content: center;
+    }
+
+    .status-strip {
+      grid-template-columns: minmax(116px, 1fr) auto;
+      align-items: center;
+      justify-content: end;
+    }
+
+    .control-strip {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
       gap: 10px;
-      padding: 12px;
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(255, 255, 255, 0.05);
     }
 
     .mode-row.compact,
     .action-row.compact {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 10px;
+      display: flex;
+      gap: 8px;
       align-items: center;
     }
 
     .action-row.compact {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
+      flex-wrap: nowrap;
+      gap: 6px;
+      justify-content: flex-end;
+      flex: 0 0 auto;
+    }
+
+    .status-strip .pill {
+      min-height: 28px;
+      padding: 4px 9px;
+      min-width: 0;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    .status-strip .pill:last-child {
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    .control-strip strong {
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.56);
+    }
+
+    .control-strip .mode-toggle button,
+    .control-strip .action-row button {
+      min-height: 27px;
+      padding: 4px 9px;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    .composer button.is-stop {
+      background: #1f2329;
+      border-color: #1f2329;
+      color: #ffffff;
+    }
+
+    .topbar .eyebrow {
+      margin-bottom: 1px;
     }
 
     .chat-header {
@@ -1499,7 +2234,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      padding: 18px 24px 14px;
+      padding: 14px 16px 10px;
       border-bottom: 1px solid rgba(21, 21, 21, 0.06);
       background: rgba(255, 255, 255, 0.78);
     }
@@ -1521,11 +2256,11 @@
     }
 
     .chat-subtitle {
-      margin: 6px 0 0;
+      margin: 4px 0 0;
       color: var(--muted);
-      font-size: 13px;
-      line-height: 1.55;
-      max-width: 60ch;
+      font-size: 11px;
+      line-height: 1.35;
+      max-width: 42ch;
     }
 
     .chat-tags {
@@ -1552,16 +2287,18 @@
 
     .composer-shell {
       margin-top: auto;
-      padding: 0 24px 24px;
+      padding: 0 14px 14px;
       background: linear-gradient(180deg, rgba(248, 248, 248, 0), rgba(248, 248, 248, 0.92) 20%, rgba(248, 248, 248, 1) 100%);
     }
 
     .empty-state {
       display: grid;
-      gap: 16px;
-      max-width: 760px;
-      margin: auto;
-      padding: 28px;
+      gap: 10px;
+      max-width: none;
+      margin: 0;
+      align-self: flex-start;
+      width: 100%;
+      padding: 20px 20px 18px;
       border-radius: 22px;
       border: 1px solid rgba(21, 21, 21, 0.08);
       background:
@@ -1572,33 +2309,34 @@
 
     .empty-state-header {
       display: grid;
-      gap: 8px;
+      gap: 6px;
     }
 
     .empty-state h3 {
       margin: 0;
       font-family: "Red Hat Display", "Red Hat Text", sans-serif;
-      font-size: 26px;
+      font-size: 22px;
       letter-spacing: -0.03em;
     }
 
     .empty-state p {
       margin: 0;
       color: var(--muted);
-      line-height: 1.6;
-      max-width: 58ch;
+      font-size: 12px;
+      line-height: 1.4;
+      max-width: 46ch;
     }
 
     .sample-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
+      gap: 8px;
     }
 
     .sample-chip {
       width: 100%;
       text-align: left;
-      padding: 14px 15px;
+      padding: 12px 14px;
       border-radius: 14px;
       border: 1px solid rgba(21, 21, 21, 0.08);
       background: #fff;
@@ -1617,22 +2355,82 @@
     }
 
     @media (max-width: 1280px) {
+      .topbar {
+        grid-template-columns: minmax(0, 1fr) 280px;
+      }
+
+      .topbar-side {
+        grid-template-columns: 1fr;
+      }
+
+      .brand-mark {
+        width: 60px;
+        height: 44px;
+      }
+
+      .brand-divider {
+        height: 42px;
+      }
+
       .workspace {
-        grid-template-columns: minmax(0, 1.04fr) minmax(420px, 0.96fr);
+        grid-template-columns: 240px minmax(0, 1.06fr) minmax(420px, 0.94fr);
+      }
+
+      .shell.left-hidden .workspace {
+        grid-template-columns: 0 minmax(0, 1.08fr) minmax(460px, 0.92fr);
+      }
+
+      .shell.source-hidden .workspace {
+        grid-template-columns: 240px minmax(0, 1.04fr) 0;
       }
 
       .source-viewer-frame {
-        min-height: 620px;
+        min-height: 720px;
       }
     }
 
     @media (max-width: 960px) {
+
       .topbar,
       .workspace {
         grid-template-columns: 1fr;
       }
 
+      .topbar-side {
+        grid-template-columns: 1fr;
+      }
+
+      .brand-lockup {
+        align-items: flex-start;
+      }
+
+      .brand-mark {
+        width: 56px;
+        height: 42px;
+      }
+
+      .brand-divider {
+        height: 42px;
+      }
+
+      .left-rail,
+      .side-panel {
+        position: static;
+        min-height: auto;
+        height: auto;
+        max-height: none;
+      }
+
+      .chat-panel {
+        min-height: auto;
+        height: auto;
+      }
+
       .shell.source-hidden .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .shell.left-hidden .workspace {
         grid-template-columns: 1fr;
       }
 
@@ -1662,28 +2460,44 @@
       .sample-grid {
         grid-template-columns: 1fr;
       }
+
+      .desktop-toggle {
+        width: 100%;
+      }
     }
   </style>
 </head>
+
 <body>
   <div class="shell">
+    <button type="button" class="edge-toggle left" id="left-panel-toggle-btn" aria-label="왼쪽 패널 열기"
+      title="왼쪽 패널 열기"><svg viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M6 3.5 10.5 8 6 12.5"></path>
+      </svg></button>
+    <button type="button" class="edge-toggle right" id="source-panel-edge-btn" aria-label="자료 패널 열기"
+      title="자료 패널 열기"><svg viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M10 3.5 5.5 8 10 12.5"></path>
+      </svg></button>
     <header class="topbar card">
       <div class="topbar-main">
-        <div class="eyebrow">OCP Knowledge Studio</div>
-        <div class="headline-row">
-          <h1>OCP 운영·학습 Knowledge Platform</h1>
-          <span class="version-chip">Korean corpus · 4.20</span>
+        <div class="brand-lockup">
+          <img class="brand-mark" src="/assets/red-hat-hat.png" alt="Red Hat style hat mark">
+          <span class="brand-divider" aria-hidden="true"></span>
+          <div class="brand-copy">
+            <div class="eyebrow">OCP RAG CHATBOT PLATFORM</div>
+            <div class="headline-row">
+              <h1>OCP PLAY STUDIO</h1>
+              <span class="version-chip">Korean corpus · 4.20</span>
+            </div>
+          </div>
         </div>
-        <p>질문을 던지고, 답변 아래 source tag를 눌러 오른쪽 패널에서 원문을 바로 읽는 흐름으로 설계했습니다. 챗봇이 아니라 OCP 문서를 공부하고 운영 지식을 축적하는 16:9 지식 스튜디오를 목표로 합니다.</p>
+        <p>공식 문서 기반 OCP 운영·학습 워크스페이스.</p>
       </div>
       <div class="topbar-side">
         <div class="status-strip">
           <div class="pill status-pill">
             <span class="dot" id="status-dot"></span>
-            <span class="status-block">
-              <span id="status-text">준비됨</span>
-              <span class="status-detail" id="status-detail">대기 중</span>
-            </span>
+            <span id="status-text">준비됨</span>
           </div>
           <div class="pill">Session <span id="session-id">-</span></div>
         </div>
@@ -1697,35 +2511,83 @@
           </div>
           <div class="action-row compact">
             <button type="button" id="reset-btn">세션 리셋</button>
-            <button type="button" id="regenerate-btn">재생성</button>
-            <button type="button" id="stop-btn">중지</button>
+            <button type="button" id="new-session-btn">새 세션</button>
           </div>
         </div>
       </div>
     </header>
 
     <section class="workspace">
+      <aside class="card left-rail">
+        <div class="left-rail-header">
+          <div class="left-rail-title">
+            <strong>Knowledge Rail</strong>
+            <span>팩과 문서 자산</span>
+          </div>
+          <button type="button" class="panel-icon-btn" id="left-rail-toggle-btn" aria-label="왼쪽 패널 닫기"
+            title="왼쪽 패널 닫기"><svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M10 3.5 5.5 8 10 12.5"></path>
+            </svg></button>
+        </div>
+        <div class="rail-stack">
+          <h2>Current Packs</h2>
+          <div class="pack-stack" id="pack-stack">
+            <article class="pack-card active">
+              <div class="rail-kicker">Core Pack</div>
+              <strong>OpenShift 4.20 Core Pack</strong>
+              <span>승인된 한글 코퍼스를 기본 학습/운영 기준으로 사용한다.</span>
+            </article>
+            <article class="pack-card">
+              <div class="rail-kicker">Custom Pack</div>
+              <strong>Uploaded Sources</strong>
+              <span>사용자가 올린 PDF/HTML 문서를 정규화해서 별도 자산으로 유지한다.</span>
+            </article>
+          </div>
+        </div>
+        <div class="rail-stack">
+          <h2>Recent Assets</h2>
+          <div class="rail-list" id="rail-library-list">
+            <div class="trace-empty">정규화된 문서 자산이 여기에 표시됩니다.</div>
+          </div>
+        </div>
+        <div class="rail-stack">
+          <h2>Quick Actions</h2>
+          <div class="rail-actions">
+            <article class="rail-action">
+              <div class="rail-kicker">Ingest</div>
+              <strong>새 문서 넣기</strong>
+              <span>PDF나 HTML을 올려 custom pack 자산으로 편입한다.</span>
+              <button type="button" class="ghost-btn" id="rail-open-intake-btn">Intake 열기</button>
+            </article>
+            <article class="rail-action">
+              <div class="rail-kicker">Library</div>
+              <strong>처리과정 확인</strong>
+              <span>정규화 경로와 source-view 결과를 바로 검토한다.</span>
+              <button type="button" class="ghost-btn" id="rail-open-library-btn">Library 열기</button>
+            </article>
+          </div>
+        </div>
+      </aside>
+
       <div class="card chat-panel">
         <div class="chat-header">
           <div>
             <div class="chat-kicker">Chat + Source Study</div>
             <h2>대화와 근거 학습</h2>
-            <p class="chat-subtitle">답변은 읽기 좋게 정리하고, 근거는 태그처럼 붙여서 바로 오른쪽 study panel로 이어집니다.</p>
+            <p class="chat-subtitle">답변과 근거 문서를 같이 본다.</p>
           </div>
           <div class="chat-tags">
             <span class="surface-tag">Source-linked answers</span>
-            <button type="button" class="ghost-btn" id="source-panel-toggle-btn">자료 패널 열기</button>
           </div>
         </div>
         <div class="messages" id="messages"></div>
         <div class="composer-shell">
           <div class="composer">
-            <textarea id="composer" placeholder="질문을 입력하세요. Enter 전송, Shift+Enter 줄바꿈"></textarea>
-            <div class="composer-footer">
-              <div class="hint">운영 절차, 개념 질문, follow-up을 source-grounded 방식으로 이어갑니다.</div>
-              <button type="button" class="primary" id="send-btn">전송</button>
+              <textarea id="composer" rows="1" placeholder="질문을 입력하세요."></textarea>
+              <div class="composer-footer">
+                <button type="button" class="primary" id="send-btn">전송</button>
+              </div>
             </div>
-          </div>
         </div>
       </div>
 
@@ -1735,9 +2597,14 @@
             <strong>Study Panel</strong>
             <span>근거 문서와 세션 흐름</span>
           </div>
+          <button type="button" class="panel-icon-btn" id="source-panel-toggle-btn" aria-label="자료 패널 닫기"
+            title="자료 패널 닫기"><svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M6 3.5 10.5 8 6 12.5"></path>
+            </svg></button>
         </div>
         <div class="inspector-tabs">
           <button type="button" class="active" data-study-tab="source">Source</button>
+          <button type="button" data-study-tab="library">Library</button>
           <button type="button" data-study-tab="ingest">Intake</button>
           <button type="button" data-study-tab="query">질문</button>
           <button type="button" data-study-tab="session">세션</button>
@@ -1748,7 +2615,8 @@
             <div class="source-kicker">Study Source</div>
             <h2 class="source-title" id="source-title">근거 문서를 열어보세요</h2>
             <p class="source-path" id="source-path">답변 아래 source tag를 클릭하면 해당 문서와 섹션이 이 패널에서 열립니다.</p>
-            <p class="source-note" id="source-note">현재는 OCP 4.20 approved_ko normalized source를 기반으로 읽기 좋은 study view를 제공합니다.</p>
+            <p class="source-note" id="source-note">현재는 OCP 4.20 approved_ko normalized source를 기반으로 읽기 좋은 study view를
+              제공합니다.</p>
             <div class="source-link-row">
               <a class="source-link" id="source-open-doc" href="#" target="_blank" rel="noreferrer" hidden>문서 탭으로 열기</a>
               <a class="source-link" id="source-open-origin" href="#" target="_blank" rel="noreferrer" hidden>원문 링크</a>
@@ -1763,15 +2631,48 @@
           <section class="source-frame-shell">
             <div class="source-empty" id="source-empty">
               <h3 id="source-empty-title">채팅하면서 원문을 같이 보세요</h3>
-              <p id="source-empty-detail">근거 태그를 누르면 문서 title, section path, 원문 iframe이 함께 열립니다. raw chunk를 그대로 보여주지 않고 normalized 문서를 기준으로 렌더링합니다.</p>
+              <p id="source-empty-detail">근거 태그를 누르면 문서 title, section path, 원문 iframe이 함께 열립니다. raw chunk를 그대로 보여주지 않고
+                normalized 문서를 기준으로 렌더링합니다.</p>
             </div>
-            <iframe class="source-viewer-frame" id="source-viewer-frame" title="Selected source viewer" loading="lazy" hidden></iframe>
+            <iframe class="source-viewer-frame" id="source-viewer-frame" title="Selected source viewer" loading="lazy"
+              hidden></iframe>
           </section>
+        </div>
+        <div class="inspector-page" data-study-page="library">
+          <div class="stack">
+            <h2>Knowledge Library</h2>
+            <div id="library-summary" class="summary-grid">
+              <div class="trace-empty">아직 정리된 문서 자산이 없습니다.</div>
+            </div>
+          </div>
+          <div class="stack">
+            <h2>Ready Sources</h2>
+            <div id="library-list" class="draft-list">
+              <div class="trace-empty">normalize가 끝난 문서가 여기에 표시됩니다.</div>
+            </div>
+          </div>
+          <div class="stack">
+            <h2>Processing Trace</h2>
+            <div id="library-detail" class="asset-trace">
+              <div class="asset-trace-empty">문서 자산을 선택하면 raw source, capture, normalize, derivation 과정을 여기서 확인할 수 있습니다.
+              </div>
+            </div>
+          </div>
         </div>
         <div class="inspector-page" data-study-page="ingest">
           <div class="stack">
             <h2>Doc Intake</h2>
             <div class="ingest-form">
+              <div class="ingest-dropzone" id="ingest-dropzone">
+                <div class="ingest-drop-title">자료를 올리거나 붙여 넣어 초안을 만들자</div>
+                <div class="ingest-drop-detail" id="ingest-drop-detail">PDF는 업로드해서 바로 draft로 만들 수 있고, 웹 문서는 URL로 넣거나
+                  HTML 파일을 올려도 된다.</div>
+                <div class="ingest-drop-actions">
+                  <button type="button" id="ingest-file-btn">파일 올리기</button>
+                  <span class="ingest-file-pill" id="ingest-file-pill">선택된 파일 없음</span>
+                </div>
+                <input id="ingest-file-input" type="file" hidden />
+              </div>
               <div class="ingest-field">
                 <label for="ingest-source-type">Source Type</label>
                 <select id="ingest-source-type" class="ingest-select">
@@ -1781,7 +2682,7 @@
               </div>
               <div class="ingest-field">
                 <label for="ingest-uri">URI</label>
-                <input id="ingest-uri" class="ingest-input" type="text" placeholder="웹 문서 URL 또는 PDF 경로를 입력해" />
+                <input id="ingest-uri" class="ingest-input" type="text" placeholder="웹 문서 URL 또는 업로드된 파일 경로가 여기에 표시돼" />
               </div>
               <div class="ingest-field">
                 <label for="ingest-title">Title</label>
@@ -1864,36 +2765,52 @@
 
   <script>
     const shellEl = document.querySelector(".shell");
+    const topbarEl = document.querySelector(".topbar");
     const messagesEl = document.getElementById("messages");
     const composerEl = document.getElementById("composer");
     const sendBtn = document.getElementById("send-btn");
-    const stopBtn = document.getElementById("stop-btn");
     const resetBtn = document.getElementById("reset-btn");
-    const regenerateBtn = document.getElementById("regenerate-btn");
+    const newSessionBtn = document.getElementById("new-session-btn");
     const statusDotEl = document.getElementById("status-dot");
     const statusTextEl = document.getElementById("status-text");
-    const statusDetailEl = document.getElementById("status-detail");
     const sessionIdEl = document.getElementById("session-id");
     const rewrittenQueryEl = document.getElementById("rewritten-query");
     const sessionContextEl = document.getElementById("session-context");
     const warningsEl = document.getElementById("warnings");
     const pipelineSummaryEl = document.getElementById("pipeline-summary");
     const pipelineTraceEl = document.getElementById("pipeline-trace");
+    const pipelineLiveEl = document.getElementById("pipeline-live");
+    const searchMetricsEl = document.getElementById("search-metrics");
     const modeButtons = Array.from(document.querySelectorAll("[data-mode]"));
+    const leftRailToggleBtn = document.getElementById("left-rail-toggle-btn");
+    const leftPanelToggleBtn = document.getElementById("left-panel-toggle-btn");
     const sourcePanelToggleBtn = document.getElementById("source-panel-toggle-btn");
+    const sourcePanelEdgeBtn = document.getElementById("source-panel-edge-btn");
     const studyTabButtons = Array.from(document.querySelectorAll("[data-study-tab]"));
     const studyPages = Array.from(document.querySelectorAll("[data-study-page]"));
+    const railLibraryListEl = document.getElementById("rail-library-list");
+    const railOpenIntakeBtn = document.getElementById("rail-open-intake-btn");
+    const railOpenLibraryBtn = document.getElementById("rail-open-library-btn");
     const sourceTitleEl = document.getElementById("source-title");
     const sourcePathEl = document.getElementById("source-path");
     const sourceNoteEl = document.getElementById("source-note");
     const sourceEmptyEl = document.getElementById("source-empty");
     const sourceEmptyTitleEl = document.getElementById("source-empty-title");
     const sourceEmptyDetailEl = document.getElementById("source-empty-detail");
+    const sourceFrameShellEl = document.querySelector(".source-frame-shell");
     const sourceViewerFrameEl = document.getElementById("source-viewer-frame");
     const sourceOpenDocEl = document.getElementById("source-open-doc");
     const sourceOpenOriginEl = document.getElementById("source-open-origin");
     const sourceSummaryStripEl = document.getElementById("source-summary-strip");
     const sourceOutlineEl = document.getElementById("source-outline");
+    const librarySummaryEl = document.getElementById("library-summary");
+    const libraryListEl = document.getElementById("library-list");
+    const libraryDetailEl = document.getElementById("library-detail");
+    const ingestDropzoneEl = document.getElementById("ingest-dropzone");
+    const ingestDropDetailEl = document.getElementById("ingest-drop-detail");
+    const ingestFileBtn = document.getElementById("ingest-file-btn");
+    const ingestFileInputEl = document.getElementById("ingest-file-input");
+    const ingestFilePillEl = document.getElementById("ingest-file-pill");
     const ingestSourceTypeEl = document.getElementById("ingest-source-type");
     const ingestUriEl = document.getElementById("ingest-uri");
     const ingestTitleEl = document.getElementById("ingest-title");
@@ -1912,15 +2829,76 @@
     let currentController = null;
     let currentTyper = null;
     let statusPulseTimer = null;
+    let layoutMotionTimer = null;
     let statusBaseText = "준비됨";
     let traceEvents = [];
     let generating = false;
     let lastQuery = "";
     let isComposing = false;
+    let leftPanelVisible = true;
     let sourcePanelVisible = true;
     let activeSourceKey = "";
     let activeIngestDraftId = "";
     let activeIngestDraft = null;
+    let docToBookDraftCache = [];
+    let activeIngestUpload = null;
+    let activeLibraryDraftId = "";
+    const PIPELINE_STAGE_ORDER = [
+      "normalize_query",
+      "rewrite_query",
+      "bm25_search",
+      "vector_search",
+      "fusion",
+      "retrieval_total",
+      "context_assembly",
+      "prompt_build",
+      "llm_generate_total",
+      "citation_finalize",
+      "total",
+    ];
+
+    function resizeComposer() {
+      composerEl.style.height = "22px";
+      composerEl.style.height = `${Math.min(composerEl.scrollHeight, 88)}px`;
+    }
+
+    function syncViewportLayout() {
+      const topbarHeight = topbarEl ? Math.ceil(topbarEl.getBoundingClientRect().height) : 0;
+      const shellStyle = getComputedStyle(shellEl);
+      const shellPadTop = parseFloat(shellStyle.paddingTop || "0");
+      const shellPadBottom = parseFloat(shellStyle.paddingBottom || "0");
+      const chromeOffset = Math.max(148, topbarHeight + shellPadTop + shellPadBottom + 24);
+      shellEl.style.setProperty("--chrome-offset", `${chromeOffset}px`);
+    }
+
+    function setButtonBusy(button, busy) {
+      if (!button) return;
+      button.classList.add("button-busy");
+      button.classList.toggle("is-busy", Boolean(busy));
+      button.setAttribute("aria-busy", busy ? "true" : "false");
+    }
+
+    function setIngestBusy(busy, message = "", activeButton = null) {
+      ingestStatusEl.dataset.busy = busy ? "true" : "false";
+      [
+        ingestFileBtn,
+        ingestPlanBtn,
+        ingestSaveBtn,
+        ingestCaptureBtn,
+        ingestNormalizeBtn,
+        ingestOpenCaptureBtn,
+      ].forEach((button) => {
+        setButtonBusy(button, busy && button === activeButton);
+      });
+      if (message) {
+        setIngestStatus(message, "muted");
+      }
+    }
+
+    function setSourceFrameLoading(loading) {
+      if (!sourceFrameShellEl) return;
+      sourceFrameShellEl.classList.toggle("loading", Boolean(loading));
+    }
 
     const PIPELINE_LABELS = {
       normalize_query: "질문 정리",
@@ -1957,6 +2935,40 @@
       return `${Math.round(value)} B`;
     }
 
+    function fileAcceptForSourceType(sourceType) {
+      return sourceType === "pdf" ? ".pdf,application/pdf" : ".html,.htm,.md,.txt,text/html,text/plain";
+    }
+
+    function syncIngestUploadHint() {
+      const sourceType = ingestSourceTypeEl.value || "web";
+      ingestFileInputEl.accept = fileAcceptForSourceType(sourceType);
+      ingestDropDetailEl.textContent = sourceType === "pdf"
+        ? "PDF는 바로 업로드해서 draft를 만들고, capture -> normalize로 study asset으로 올릴 수 있다."
+        : "웹 문서는 URL을 그대로 넣거나, 저장해 둔 HTML/Markdown 파일을 올려서 바로 draft로 만들 수 있다.";
+    }
+
+    function setIngestSelectedFile(file) {
+      activeIngestUpload = file || null;
+      if (!file) {
+        ingestFilePillEl.textContent = "선택된 파일 없음";
+        return;
+      }
+      ingestFilePillEl.textContent = `${file.name} · ${formatByteSize(file.size)}`;
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("파일을 읽지 못했습니다."));
+        reader.onload = () => {
+          const result = typeof reader.result === "string" ? reader.result : "";
+          const parts = result.split(",", 2);
+          resolve(parts.length === 2 ? parts[1] : result);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
     function stopStatusPulse() {
       if (statusPulseTimer) {
         clearInterval(statusPulseTimer);
@@ -1977,8 +2989,7 @@
     }
 
     function setStatus(text, { live = false, detail = "" } = {}) {
-      statusBaseText = text || "대기 중";
-      statusDetailEl.textContent = detail || " ";
+      statusBaseText = text || "준비됨";
       if (live) {
         startStatusPulse();
       } else {
@@ -1988,10 +2999,12 @@
 
     function setGenerating(next) {
       generating = next;
-      sendBtn.disabled = next;
+      sendBtn.disabled = false;
+      sendBtn.textContent = next ? "중지" : "전송";
+      sendBtn.classList.toggle("is-stop", next);
       resetBtn.disabled = next;
-      regenerateBtn.disabled = next || !lastQuery;
-      stopBtn.disabled = !next;
+      newSessionBtn.disabled = next;
+      setButtonBusy(sendBtn, next);
     }
 
     function setMode(mode) {
@@ -2001,10 +3014,50 @@
       });
     }
 
+    function chevronIcon(direction) {
+      const path = direction === "left"
+        ? "M10 3.5 5.5 8 10 12.5"
+        : "M6 3.5 10.5 8 6 12.5";
+      return `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="${path}"></path></svg>`;
+    }
+
+    function nudgeWorkspace(direction) {
+      if (layoutMotionTimer) {
+        clearTimeout(layoutMotionTimer);
+      }
+      shellEl.classList.remove("motion-nudge-left", "motion-nudge-right");
+      if (direction !== "left" && direction !== "right") {
+        return;
+      }
+      shellEl.classList.add(direction === "left" ? "motion-nudge-left" : "motion-nudge-right");
+      layoutMotionTimer = window.setTimeout(() => {
+        shellEl.classList.remove("motion-nudge-left", "motion-nudge-right");
+        layoutMotionTimer = null;
+      }, 320);
+    }
+
     function setSourcePanelVisible(nextVisible) {
+      nudgeWorkspace(nextVisible ? "left" : "right");
       sourcePanelVisible = nextVisible;
       shellEl.classList.toggle("source-hidden", !nextVisible);
-      sourcePanelToggleBtn.textContent = nextVisible ? "자료 패널 닫기" : "자료 패널 열기";
+      sourcePanelToggleBtn.innerHTML = chevronIcon("right");
+      sourcePanelToggleBtn.setAttribute("aria-label", nextVisible ? "자료 패널 닫기" : "자료 패널 열기");
+      sourcePanelToggleBtn.setAttribute("title", nextVisible ? "자료 패널 닫기" : "자료 패널 열기");
+      sourcePanelEdgeBtn.innerHTML = chevronIcon("left");
+      sourcePanelEdgeBtn.setAttribute("aria-label", nextVisible ? "자료 패널 닫기" : "자료 패널 열기");
+      sourcePanelEdgeBtn.setAttribute("title", nextVisible ? "자료 패널 닫기" : "자료 패널 열기");
+    }
+
+    function setLeftPanelVisible(nextVisible) {
+      nudgeWorkspace(nextVisible ? "right" : "left");
+      leftPanelVisible = nextVisible;
+      shellEl.classList.toggle("left-hidden", !nextVisible);
+      leftRailToggleBtn.innerHTML = chevronIcon("left");
+      leftRailToggleBtn.setAttribute("aria-label", nextVisible ? "왼쪽 패널 닫기" : "왼쪽 패널 열기");
+      leftRailToggleBtn.setAttribute("title", nextVisible ? "왼쪽 패널 닫기" : "왼쪽 패널 열기");
+      leftPanelToggleBtn.innerHTML = chevronIcon("right");
+      leftPanelToggleBtn.setAttribute("aria-label", nextVisible ? "왼쪽 패널 닫기" : "왼쪽 패널 열기");
+      leftPanelToggleBtn.setAttribute("title", nextVisible ? "왼쪽 패널 닫기" : "왼쪽 패널 열기");
     }
 
     function setStudyTab(tab) {
@@ -2020,13 +3073,29 @@
       return citation.viewer_path || citation.href || citation.source_url || `${citation.book_slug}-${citation.anchor}`;
     }
 
+    function inlineCitationLabel(index) {
+      const circled = ["", "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩", "⑪", "⑫", "⑬", "⑭", "⑮", "⑯", "⑰", "⑱", "⑲", "⑳"];
+      return circled[index] || `근${index}`;
+    }
+
     function syncActiveSourceTags() {
-      document.querySelectorAll(".source-tag").forEach((button) => {
+      document.querySelectorAll(".source-tag, .inline-citation").forEach((button) => {
         button.classList.toggle("active", button.dataset.sourceKey === activeSourceKey);
       });
     }
 
+    function citationMapByIndex(citations = []) {
+      const mapped = new Map();
+      citations.forEach((citation) => {
+        if (citation && Number.isFinite(Number(citation.index))) {
+          mapped.set(String(citation.index), citation);
+        }
+      });
+      return mapped;
+    }
+
     function setSourceEmptyState(title, detail) {
+      setSourceFrameLoading(false);
       sourceEmptyTitleEl.textContent = title;
       sourceEmptyDetailEl.textContent = detail;
       sourceEmptyEl.hidden = false;
@@ -2071,6 +3140,12 @@
         : "web";
       ingestUriEl.value = payload && payload.request && payload.request.uri ? payload.request.uri : "";
       ingestTitleEl.value = payload && payload.request && payload.request.title ? payload.request.title : "";
+      if (payload && payload.uploaded_file_name) {
+        ingestFilePillEl.textContent = `${payload.uploaded_file_name} · ${formatByteSize(payload.uploaded_byte_size)}`;
+      } else if (!(payload && payload.request && payload.request.uri)) {
+        setIngestSelectedFile(null);
+      }
+      syncIngestUploadHint();
     }
 
     function renderIngestCaptureMeta(payload) {
@@ -2203,6 +3278,159 @@
       return card;
     }
 
+    function createAssetTraceCard(title, value, detail = "") {
+      const card = document.createElement("article");
+      card.className = "asset-trace-card";
+
+      const strong = document.createElement("strong");
+      strong.textContent = title;
+
+      const valueEl = document.createElement("span");
+      valueEl.textContent = value;
+
+      card.append(strong, valueEl);
+      if (detail) {
+        const detailEl = document.createElement("span");
+        detailEl.textContent = detail;
+        card.appendChild(detailEl);
+      }
+      return card;
+    }
+
+    function createAssetTraceStep(kicker, body) {
+      const step = document.createElement("section");
+      step.className = "asset-trace-step";
+
+      const kickerEl = document.createElement("div");
+      kickerEl.className = "asset-trace-step-kicker";
+      kickerEl.textContent = kicker;
+
+      const bodyEl = document.createElement("div");
+      bodyEl.className = "asset-trace-step-body";
+      bodyEl.textContent = body;
+
+      step.append(kickerEl, bodyEl);
+      return step;
+    }
+
+    function resetLibraryDetail() {
+      activeLibraryDraftId = "";
+      libraryDetailEl.innerHTML = '<div class="asset-trace-empty">문서 자산을 선택하면 raw source, capture, normalize, derivation 과정을 여기서 확인할 수 있습니다.</div>';
+    }
+
+    function renderLibraryDetail(draft, book = null) {
+      activeLibraryDraftId = draft && draft.draft_id ? draft.draft_id : "";
+      if (!draft) {
+        resetLibraryDetail();
+        return;
+      }
+
+      libraryDetailEl.innerHTML = "";
+
+      const summary = document.createElement("div");
+      summary.className = "asset-trace-grid";
+      summary.append(
+        createAssetTraceCard("Collection", humanizeSourceCollection(draft.source_collection), `${draft.pack_label || "Custom Pack"} · ${formatInferredScope(draft)}`),
+        createAssetTraceCard("Capture", humanizeDraftValue(draft.capture_strategy), draft.capture_content_type || draft.acquisition_uri || "-"),
+        createAssetTraceCard("Canonical", humanizeDraftValue(draft.canonical_model || (draft.plan && draft.plan.canonical_model)), `${draft.normalized_section_count || 0} sections`),
+        createAssetTraceCard("Quality", qualityStatusLabel(draft) || "검토 전", qualitySummaryText(draft) || "정규화 품질 판정 전"),
+        createAssetTraceCard("Origin", draft.source_uri || "-", draft.book_slug || "-"),
+      );
+
+      const actions = document.createElement("div");
+      actions.className = "asset-trace-actions";
+
+      const studyButton = document.createElement("button");
+      studyButton.type = "button";
+      studyButton.className = "ghost-btn";
+      studyButton.textContent = isReviewNeeded(draft) ? "정규 문서 보류" : "정규 문서 열기";
+      studyButton.disabled = isReviewNeeded(draft);
+      studyButton.addEventListener("click", () => {
+        void openLibraryAsset(draft.draft_id);
+      });
+      actions.appendChild(studyButton);
+
+      if (draft.capture_artifact_path) {
+        const capturedLink = document.createElement("a");
+        capturedLink.className = "source-link";
+        capturedLink.href = `/api/doc-to-book/captured?draft_id=${encodeURIComponent(draft.draft_id)}`;
+        capturedLink.target = "_blank";
+        capturedLink.rel = "noreferrer";
+        capturedLink.textContent = "Captured 보기";
+        actions.appendChild(capturedLink);
+      }
+
+      const steps = document.createElement("div");
+      steps.className = "asset-trace-steps";
+      steps.append(
+        createAssetTraceStep(
+          "Raw Source",
+          [
+            `사용자 입력: ${draft.source_uri || "-"}`,
+            draft.uploaded_file_path ? `업로드 파일: ${draft.uploaded_file_path}` : "",
+            `Collection: ${humanizeSourceCollection(draft.source_collection)}`,
+            `Pack: ${draft.pack_label || "Custom Pack"}`,
+            `Scope: ${formatInferredScope(draft)}`,
+          ].filter(Boolean).join("\n"),
+        ),
+        createAssetTraceStep(
+          "Acquisition",
+          [
+            draft.acquisition_uri ? `Acquisition URI: ${draft.acquisition_uri}` : "",
+            draft.plan && draft.plan.acquisition_step ? draft.plan.acquisition_step : "",
+          ].filter(Boolean).join("\n"),
+        ),
+        createAssetTraceStep(
+          "Normalization",
+          [
+            draft.plan && draft.plan.normalization_step ? draft.plan.normalization_step : "",
+            `Canonical model: ${draft.plan && draft.plan.canonical_model ? draft.plan.canonical_model : draft.canonical_model || "-"}`,
+            `Section count: ${draft.normalized_section_count || 0}`,
+          ].join("\n"),
+        ),
+        createAssetTraceStep(
+          "Derivation",
+          [
+            draft.plan && draft.plan.derivation_step ? draft.plan.derivation_step : "",
+            draft.plan && draft.plan.retrieval_derivation ? `Retrieval: ${draft.plan.retrieval_derivation}` : "",
+          ].filter(Boolean).join("\n"),
+        ),
+      );
+
+      const notes = Array.isArray(draft.plan && draft.plan.notes) ? draft.plan.notes.filter(Boolean) : [];
+      if (notes.length) {
+        steps.appendChild(createAssetTraceStep("Preprocessing Notes", notes.join("\n")));
+      }
+      if (qualitySummaryText(draft)) {
+        steps.appendChild(
+          createAssetTraceStep(
+            "Quality Gate",
+            [
+              qualityStatusLabel(draft) || "검토 전",
+              qualitySummaryText(draft),
+              Array.isArray(draft.quality_flags) && draft.quality_flags.length
+                ? `Flags: ${draft.quality_flags.join(", ")}`
+                : "",
+            ].filter(Boolean).join("\n"),
+          ),
+        );
+      }
+      if (book && Array.isArray(book.sections) && book.sections.length) {
+        steps.appendChild(
+          createAssetTraceStep(
+            "Section Preview",
+            book.sections
+              .slice(0, 4)
+              .map((section) => section.section_path_label || section.heading || section.anchor)
+              .filter(Boolean)
+              .join("\n"),
+          ),
+        );
+      }
+
+      libraryDetailEl.append(summary, actions, steps);
+    }
+
     function humanizeDraftValue(value) {
       const token = String(value || "").trim();
       if (!token) return "-";
@@ -2212,6 +3440,55 @@
       if (token === "source_view_first") return "Source-first";
       if (token === "chunks_from_canonical_sections") return "Chunk derivation";
       return token.replace(/_/g, " ");
+    }
+
+    function humanizeSourceCollection(value) {
+      const token = String(value || "").trim().toLowerCase();
+      if (!token) return "Collection unknown";
+      if (token === "core") return "Core Corpus";
+      if (token === "uploaded") return "Uploaded Sources";
+      return token;
+    }
+
+    function humanizeInferredProduct(value) {
+      const token = String(value || "").trim().toLowerCase();
+      if (!token || token === "unknown") return "";
+      if (token === "openshift") return "OpenShift";
+      if (token === "kubernetes") return "Kubernetes";
+      return token;
+    }
+
+    function formatInferredScope(entity) {
+      if (!entity || typeof entity !== "object") return "Version unknown";
+      const product = humanizeInferredProduct(entity.inferred_product);
+      const version = String(entity.inferred_version || "").trim();
+      if (product && version && version !== "unknown") return `${product} ${version}`;
+      if (product) return `${product} version unknown`;
+      if (version && version !== "unknown") return `Version ${version}`;
+      return "Version unknown";
+    }
+
+    function qualityStatusLabel(entity) {
+      const status = String((entity && entity.quality_status) || "").trim().toLowerCase();
+      if (!status) return "";
+      if (status === "ready") return "품질 검증 통과";
+      if (status === "review") return "정규화 검토 필요";
+      return status;
+    }
+
+    function qualitySummaryText(entity) {
+      return String((entity && entity.quality_summary) || "").trim();
+    }
+
+    function isReviewNeeded(entity) {
+      return String((entity && entity.quality_status) || "").trim().toLowerCase() === "review";
+    }
+
+    function createSummaryChip(label) {
+      const chip = document.createElement("span");
+      chip.className = "source-summary-chip";
+      chip.textContent = label;
+      return chip;
     }
 
     function renderDocToBookPreview(payload) {
@@ -2229,8 +3506,8 @@
       [
         { label: "Title", value: draft.title || "-", detail: draft.book_slug || "-" },
         { label: "Capture", value: humanizeDraftValue(draft.capture_strategy), detail: `${draft.source_type || "-"} · ${draft.capture_strategy || "-"}` },
-        { label: "Canonical", value: humanizeDraftValue(draft.canonical_model), detail: humanizeDraftValue(draft.source_view_strategy) },
-        { label: "Downstream", value: humanizeDraftValue(draft.retrieval_derivation), detail: payload && payload.draft_id ? `draft ${payload.draft_id}` : "plan preview" },
+        { label: "Pack", value: draft.pack_label || "Custom Pack", detail: `${humanizeSourceCollection(draft.source_collection)} · ${formatInferredScope(draft)}` },
+        { label: "Canonical", value: humanizeDraftValue(draft.canonical_model), detail: payload && payload.draft_id ? `draft ${payload.draft_id}` : humanizeDraftValue(draft.source_view_strategy) },
       ].forEach((item) => {
         const card = document.createElement("div");
         card.className = "summary-card";
@@ -2307,34 +3584,207 @@
 
     function renderDocToBookDrafts(payload, activeDraftId = "") {
       const drafts = Array.isArray(payload && payload.drafts) ? payload.drafts : [];
+      docToBookDraftCache = drafts;
       if (!drafts.length) {
         ingestDraftListEl.innerHTML = '<div class="trace-empty">아직 저장된 draft가 없습니다.</div>';
+      } else {
+        ingestDraftListEl.innerHTML = "";
+        drafts.forEach((draft) => {
+          ingestDraftListEl.appendChild(buildDraftCard(draft, activeDraftId));
+        });
+      }
+      renderDocToBookLibrary(drafts, activeDraftId);
+    }
+
+    function buildLibraryCard(draft, activeDraftId = "") {
+      const card = document.createElement("article");
+      card.className = `draft-card ${draft.draft_id === activeDraftId ? "active" : ""}`.trim();
+
+      const head = document.createElement("div");
+      head.className = "draft-card-head";
+
+      const title = document.createElement("div");
+      title.className = "draft-card-title";
+      title.textContent = draft.title || draft.book_slug || "Untitled source";
+
+      const meta = document.createElement("div");
+      meta.className = "draft-card-meta";
+      meta.textContent = [
+        `${humanizeSourceCollection(draft.source_collection)} · ${draft.pack_label || "Custom Pack"}`,
+        `${formatInferredScope(draft)} · ${draft.source_type || "-"} · ${draft.capture_strategy || "-"}`,
+        qualityStatusLabel(draft) ? `${qualityStatusLabel(draft)} · ${draft.quality_score || 0}점` : "",
+        `${draft.normalized_section_count || 0} sections`,
+        draft.source_uri || "",
+      ].filter(Boolean).join("\n");
+
+      head.append(title, meta);
+
+      const actions = document.createElement("div");
+      actions.className = "draft-card-actions";
+
+      const traceButton = document.createElement("button");
+      traceButton.type = "button";
+      traceButton.className = "ghost-btn";
+      traceButton.textContent = "처리과정";
+      traceButton.addEventListener("click", () => {
+        void openLibraryTrace(draft.draft_id);
+      });
+
+      const openButton = document.createElement("button");
+      openButton.type = "button";
+      openButton.className = "ghost-btn";
+      openButton.textContent = isReviewNeeded(draft) ? "검토 필요" : "정규 문서";
+      openButton.disabled = isReviewNeeded(draft);
+      openButton.addEventListener("click", () => {
+        void openLibraryAsset(draft.draft_id);
+      });
+
+      actions.append(traceButton, openButton);
+      card.append(head, actions);
+      return card;
+    }
+
+    function buildRailLibraryItem(draft, activeDraftId = "") {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = `rail-item ${draft.draft_id === activeDraftId ? "active" : ""}`.trim();
+
+      const kicker = document.createElement("div");
+      kicker.className = "rail-kicker";
+      kicker.textContent = `${humanizeSourceCollection(draft.source_collection)} · ${draft.source_type || "-"}`;
+
+      const title = document.createElement("strong");
+      title.textContent = draft.title || draft.book_slug || "Untitled source";
+
+      const meta = document.createElement("span");
+      meta.textContent = [
+        draft.pack_label || "Custom Pack",
+        formatInferredScope(draft),
+        `${draft.normalized_section_count || 0} sections`,
+      ].filter(Boolean).join(" · ");
+
+      item.append(kicker, title, meta);
+      item.addEventListener("click", () => {
+        void openLibraryAsset(draft.draft_id);
+      });
+      return item;
+    }
+
+    function renderLibrarySummaryCards(total, normalizedCount, webCount, pdfCount) {
+      librarySummaryEl.innerHTML = "";
+      [
+        { label: "Assets", value: String(normalizedCount), detail: `${total} drafts tracked` },
+        { label: "Web", value: String(webCount), detail: "normalized web sources" },
+        { label: "PDF", value: String(pdfCount), detail: "normalized pdf sources" },
+        { label: "Pack", value: "Custom", detail: "uploaded sources stay isolated from core corpus" },
+      ].forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "summary-card";
+        const kicker = document.createElement("div");
+        kicker.className = "summary-kicker";
+        kicker.textContent = item.label;
+        const value = document.createElement("div");
+        value.className = "summary-value";
+        value.textContent = item.value;
+        const detail = document.createElement("div");
+        detail.className = "summary-detail";
+        detail.textContent = item.detail;
+        card.append(kicker, value, detail);
+        librarySummaryEl.appendChild(card);
+      });
+    }
+
+    function renderDocToBookLibrary(drafts, activeDraftId = "") {
+      const normalizedDrafts = drafts.filter((draft) => draft.status === "normalized" && draft.canonical_book_path);
+      const webCount = normalizedDrafts.filter((draft) => draft.source_type === "web").length;
+      const pdfCount = normalizedDrafts.filter((draft) => draft.source_type === "pdf").length;
+      if (!normalizedDrafts.length) {
+        librarySummaryEl.innerHTML = '<div class="trace-empty">아직 정리된 문서 자산이 없습니다.</div>';
+        libraryListEl.innerHTML = '<div class="trace-empty">normalize가 끝난 문서가 여기에 표시됩니다.</div>';
+        railLibraryListEl.innerHTML = '<div class="trace-empty">정규화된 문서 자산이 여기에 표시됩니다.</div>';
+        resetLibraryDetail();
         return;
       }
-      ingestDraftListEl.innerHTML = "";
-      drafts.forEach((draft) => {
-        ingestDraftListEl.appendChild(buildDraftCard(draft, activeDraftId));
+      renderLibrarySummaryCards(drafts.length, normalizedDrafts.length, webCount, pdfCount);
+      libraryListEl.innerHTML = "";
+      railLibraryListEl.innerHTML = "";
+      normalizedDrafts.forEach((draft) => {
+        libraryListEl.appendChild(buildLibraryCard(draft, activeDraftId));
       });
+      normalizedDrafts.slice(0, 6).forEach((draft) => {
+        railLibraryListEl.appendChild(buildRailLibraryItem(draft, activeDraftId));
+      });
+    }
+
+    async function openLibraryTrace(draftId) {
+      const payload = await openDocToBookDraft(draftId);
+      let book = null;
+      if (payload.status === "normalized" && payload.canonical_book_path) {
+        try {
+          book = await fetchDocToBookBook(draftId);
+        } catch (error) {
+          book = null;
+        }
+      }
+      renderLibraryDetail(payload, book);
+      setStudyTab("library");
+      setSourcePanelVisible(true);
+      await loadDocToBookDrafts(draftId);
+      return payload;
+    }
+
+    async function openLibraryAsset(draftId) {
+      const payload = await openLibraryTrace(draftId);
+      if (isReviewNeeded(payload)) {
+        setStudyTab("library");
+        setSourcePanelVisible(true);
+        setSourceLink(sourceOpenDocEl, "");
+        setSourceLink(
+          sourceOpenOriginEl,
+          `/api/doc-to-book/captured?draft_id=${encodeURIComponent(payload.draft_id)}`,
+        );
+        setSourceEmptyState(
+          "정규화 검토 필요",
+          qualitySummaryText(payload) || "이 문서는 아직 source-view 자산으로 쓰기엔 구조가 불안정합니다. 처리과정과 원문 PDF를 먼저 확인해줘.",
+        );
+        sourceSummaryStripEl.innerHTML = "";
+        [
+          humanizeSourceCollection(payload.source_collection),
+          payload.pack_label || "Custom Pack",
+          formatInferredScope(payload),
+          qualityStatusLabel(payload) || "검토 전",
+        ].forEach((label) => {
+          sourceSummaryStripEl.appendChild(createSummaryChip(label));
+        });
+        return;
+      }
+      if (payload.status === "normalized" || payload.capture_artifact_path) {
+        await openCapturedDocToBookDraft();
+      }
     }
 
     async function previewDocToBookPlan() {
       const requestPayload = getDocToBookRequestPayload();
-      setIngestStatus("canonical draft 계획을 계산하는 중이야.", "muted");
-      const response = await fetch("/api/doc-to-book/plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestPayload),
-      });
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.error || "doc-to-book plan을 만들지 못했습니다.");
+      setIngestBusy(true, "canonical draft 계획을 계산하는 중이야.", ingestPlanBtn);
+      try {
+        const response = await fetch("/api/doc-to-book/plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestPayload),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || "doc-to-book plan을 만들지 못했습니다.");
+        }
+        renderDocToBookPreview(payload);
+        setIngestStatus(
+          `plan ready · ${payload.capture_strategy} · ${payload.canonical_model}`,
+          "success",
+        );
+        return payload;
+      } finally {
+        setIngestBusy(false);
       }
-      renderDocToBookPreview(payload);
-      setIngestStatus(
-        `plan ready · ${payload.capture_strategy} · ${payload.canonical_model}`,
-        "success",
-      );
-      return payload;
     }
 
     async function loadDocToBookDrafts(activeDraftId = "") {
@@ -2367,28 +3817,86 @@
     }
 
     async function createDocToBookDraft() {
-      const requestPayload = getDocToBookRequestPayload();
-      setIngestStatus("doc-to-book draft를 저장하는 중이야.", "muted");
-      const response = await fetch("/api/doc-to-book/drafts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestPayload),
-      });
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.error || "doc-to-book draft를 저장하지 못했습니다.");
+      if (activeIngestUpload) {
+        return uploadDocToBookFile(activeIngestUpload);
       }
-      populateDocToBookForm(payload);
-      renderDocToBookPreview(payload);
-      renderIngestCaptureMeta(payload);
-      setStudyTab("ingest");
-      setSourcePanelVisible(true);
-      setIngestStatus(
-        `draft saved · ${payload.plan.capture_strategy} · ${payload.draft_id}`,
-        "success",
-      );
-      await loadDocToBookDrafts(payload.draft_id || "");
-      return payload;
+      const requestPayload = getDocToBookRequestPayload();
+      setIngestBusy(true, "doc-to-book draft를 저장하는 중이야.", ingestSaveBtn);
+      try {
+        const response = await fetch("/api/doc-to-book/drafts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestPayload),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || "doc-to-book draft를 저장하지 못했습니다.");
+        }
+        populateDocToBookForm(payload);
+        renderDocToBookPreview(payload);
+        renderIngestCaptureMeta(payload);
+        setStudyTab("ingest");
+        setSourcePanelVisible(true);
+        setIngestStatus(
+          `draft saved · ${payload.plan.capture_strategy} · ${payload.draft_id}`,
+          "success",
+        );
+        await loadDocToBookDrafts(payload.draft_id || "");
+        return payload;
+      } finally {
+        setIngestBusy(false);
+      }
+    }
+
+    async function uploadDocToBookFile(file) {
+      if (!file) {
+        throw new Error("올릴 파일을 먼저 선택해.");
+      }
+      const requestPayload = {
+        source_type: ingestSourceTypeEl.value || "web",
+        uri: file.name,
+        title: (ingestTitleEl.value || "").trim(),
+        language_hint: "ko",
+        file_name: file.name,
+        content_base64: await fileToBase64(file),
+      };
+      setIngestBusy(true, "파일을 업로드해서 draft를 만드는 중이야.", ingestFileBtn);
+      try {
+        const response = await fetch("/api/doc-to-book/upload-draft", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestPayload),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || "파일 업로드 draft를 만들지 못했습니다.");
+        }
+        populateDocToBookForm(payload);
+        renderDocToBookPreview(payload);
+        renderIngestCaptureMeta(payload);
+        setStudyTab("ingest");
+        setSourcePanelVisible(true);
+        setIngestStatus(
+          `upload ready · ${payload.request.source_type} · ${payload.draft_id}`,
+          "success",
+        );
+        activeIngestUpload = null;
+        ingestFilePillEl.textContent = `${payload.uploaded_file_name || payload.request.uri} · 업로드됨`;
+        await loadDocToBookDrafts(payload.draft_id || "");
+        return payload;
+      } finally {
+        setIngestBusy(false);
+      }
+    }
+
+    async function handleIngestFileSelection(file) {
+      if (!file) return;
+      setIngestSelectedFile(file);
+      if (!ingestTitleEl.value.trim()) {
+        ingestTitleEl.value = file.name.replace(/\.[^.]+$/, "");
+      }
+      ingestUriEl.value = file.name;
+      await uploadDocToBookFile(file);
     }
 
     async function fetchDocToBookBook(draftId) {
@@ -2405,8 +3913,17 @@
         return;
       }
 
+      let normalizedBook = null;
       const normalizedReady = Boolean(activeIngestDraft.canonical_book_path);
-      const href = normalizedReady
+      if (normalizedReady) {
+        try {
+          normalizedBook = await fetchDocToBookBook(activeIngestDraft.draft_id);
+        } catch (error) {
+          normalizedBook = null;
+        }
+      }
+      const reviewNeeded = isReviewNeeded(normalizedBook);
+      const href = normalizedReady && !reviewNeeded
         ? `/docs/intake/${encodeURIComponent(activeIngestDraft.draft_id)}/index.html`
         : `/api/doc-to-book/captured?draft_id=${encodeURIComponent(activeIngestDraft.draft_id)}`;
       sourceTitleEl.textContent = activeIngestDraft.plan && activeIngestDraft.plan.title
@@ -2424,43 +3941,59 @@
         ? activeIngestDraft.normalize_error
         : activeIngestDraft.capture_error
           ? activeIngestDraft.capture_error
-          : normalizedReady
-            ? "capture된 문서를 canonical section으로 정리한 study view다. 이제 source-view가 retrieval의 부모가 된다."
-            : "capture artifact를 study panel에서 바로 검토하는 단계야. 다음은 normalized/canonical section으로 올리는 작업이다.";
+          : reviewNeeded
+            ? (qualitySummaryText(normalizedBook) || "정규화 결과가 아직 불안정해서 source-view 대신 원문 artifact만 보여줍니다.")
+            : normalizedReady
+              ? "capture된 문서를 canonical section으로 정리한 study view다. 이제 source-view가 retrieval의 부모가 된다."
+              : "capture artifact를 study panel에서 바로 검토하는 단계야. 다음은 normalized/canonical section으로 올리는 작업이다.";
       setSourceLink(sourceOpenDocEl, href);
       setSourceLink(
         sourceOpenOriginEl,
-        (activeIngestDraft.plan && activeIngestDraft.plan.source_uri)
-          || (activeIngestDraft.request && activeIngestDraft.request.uri)
-          || "",
+        `/api/doc-to-book/captured?draft_id=${encodeURIComponent(activeIngestDraft.draft_id)}`,
       );
       sourceSummaryStripEl.innerHTML = "";
       [
+        humanizeSourceCollection(activeIngestDraft.source_collection),
+        activeIngestDraft.pack_label || "Custom Pack",
+        formatInferredScope(activeIngestDraft),
+        reviewNeeded ? "정규화 검토 필요" : "",
         activeIngestDraft.status || "captured",
         normalizedReady
           ? `${activeIngestDraft.normalized_section_count || 0} sections`
           : (activeIngestDraft.capture_content_type || "artifact"),
         formatByteSize(activeIngestDraft.capture_byte_size),
       ].forEach((label) => {
-        const chip = document.createElement("span");
-        chip.className = "source-summary-chip";
-        chip.textContent = label;
-        sourceSummaryStripEl.appendChild(chip);
+        sourceSummaryStripEl.appendChild(createSummaryChip(label));
       });
-      sourceEmptyEl.hidden = true;
-      sourceViewerFrameEl.hidden = false;
-      sourceViewerFrameEl.src = href;
       setStudyTab("source");
       setSourcePanelVisible(true);
 
       if (!normalizedReady) {
+        sourceEmptyEl.hidden = true;
+        sourceViewerFrameEl.hidden = false;
+        setSourceFrameLoading(true);
+        sourceViewerFrameEl.src = href;
         sourceOutlineEl.innerHTML = '<div class="trace-empty">이 artifact는 아직 capture 단계라 section outline이 없습니다. 다음 normalization 단계에서 canonical section이 생성됩니다.</div>';
         return;
       }
 
+      if (reviewNeeded) {
+        setSourceEmptyState(
+          "정규화 검토 필요",
+          qualitySummaryText(normalizedBook) || "이 문서는 아직 canonical source-view로 직접 열지 않습니다. 원문 PDF와 처리과정을 먼저 확인해 주세요.",
+        );
+        sourceOutlineEl.innerHTML = '<div class="trace-empty">검토가 끝난 뒤 section outline이 열립니다.</div>';
+        return;
+      }
+
+      sourceEmptyEl.hidden = true;
+      sourceViewerFrameEl.hidden = false;
+      setSourceFrameLoading(true);
+      sourceViewerFrameEl.src = href;
+
       sourceOutlineEl.innerHTML = '<div class="trace-empty">canonical section outline을 불러오는 중입니다.</div>';
       try {
-        const book = await fetchDocToBookBook(activeIngestDraft.draft_id);
+        const book = normalizedBook || await fetchDocToBookBook(activeIngestDraft.draft_id);
         if (!activeIngestDraft || activeIngestDraft.draft_id !== book.draft_id) return;
         renderSourceBook(book, "");
       } catch (error) {
@@ -2472,54 +4005,62 @@
       const requestPayload = activeIngestDraftId
         ? { draft_id: activeIngestDraftId }
         : getDocToBookRequestPayload();
-      setIngestStatus("source artifact를 capture하는 중이야.", "muted");
-      const response = await fetch("/api/doc-to-book/capture", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestPayload),
-      });
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.error || "doc-to-book capture를 실행하지 못했습니다.");
+      setIngestBusy(true, "source artifact를 capture하는 중이야.", ingestCaptureBtn);
+      try {
+        const response = await fetch("/api/doc-to-book/capture", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestPayload),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || "doc-to-book capture를 실행하지 못했습니다.");
+        }
+        populateDocToBookForm(payload);
+        renderDocToBookPreview(payload);
+        renderIngestCaptureMeta(payload);
+        setStudyTab("ingest");
+        setSourcePanelVisible(true);
+        setIngestStatus(
+          `capture ready · ${payload.status} · ${formatByteSize(payload.capture_byte_size)}`,
+          "success",
+        );
+        await loadDocToBookDrafts(payload.draft_id || "");
+        return payload;
+      } finally {
+        setIngestBusy(false);
       }
-      populateDocToBookForm(payload);
-      renderDocToBookPreview(payload);
-      renderIngestCaptureMeta(payload);
-      setStudyTab("ingest");
-      setSourcePanelVisible(true);
-      setIngestStatus(
-        `capture ready · ${payload.status} · ${formatByteSize(payload.capture_byte_size)}`,
-        "success",
-      );
-      await loadDocToBookDrafts(payload.draft_id || "");
-      return payload;
     }
 
     async function normalizeDocToBookDraft() {
       if (!activeIngestDraftId) {
         throw new Error("먼저 draft를 저장하고 capture까지 끝내야 해.");
       }
-      setIngestStatus("canonical section으로 normalize하는 중이야.", "muted");
-      const response = await fetch("/api/doc-to-book/normalize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ draft_id: activeIngestDraftId }),
-      });
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.error || "doc-to-book normalize를 실행하지 못했습니다.");
+      setIngestBusy(true, "canonical section으로 normalize하는 중이야.", ingestNormalizeBtn);
+      try {
+        const response = await fetch("/api/doc-to-book/normalize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ draft_id: activeIngestDraftId }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || "doc-to-book normalize를 실행하지 못했습니다.");
+        }
+        populateDocToBookForm(payload);
+        renderDocToBookPreview(payload);
+        renderIngestCaptureMeta(payload);
+        setStudyTab("ingest");
+        setSourcePanelVisible(true);
+        setIngestStatus(
+          `normalize ready · ${payload.status} · ${payload.normalized_section_count || 0} sections`,
+          "success",
+        );
+        await loadDocToBookDrafts(payload.draft_id || "");
+        return payload;
+      } finally {
+        setIngestBusy(false);
       }
-      populateDocToBookForm(payload);
-      renderDocToBookPreview(payload);
-      renderIngestCaptureMeta(payload);
-      setStudyTab("ingest");
-      setSourcePanelVisible(true);
-      setIngestStatus(
-        `normalize ready · ${payload.status} · ${payload.normalized_section_count || 0} sections`,
-        "success",
-      );
-      await loadDocToBookDrafts(payload.draft_id || "");
-      return payload;
     }
 
     async function fetchSourceMeta(viewerPath) {
@@ -2545,14 +4086,14 @@
       sourceSummaryStripEl.innerHTML = "";
 
       [
+        book && book.source_collection ? humanizeSourceCollection(book.source_collection) : "Collection unknown",
+        book && book.pack_label ? book.pack_label : "Pack unknown",
+        formatInferredScope(book),
         `${sections.length} sections`,
         book && book.canonical_model ? humanizeDraftValue(book.canonical_model) : "source book",
         book && book.source_view_strategy ? humanizeDraftValue(book.source_view_strategy) : "normalized view",
       ].forEach((label) => {
-        const chip = document.createElement("span");
-        chip.className = "source-summary-chip";
-        chip.textContent = label;
-        sourceSummaryStripEl.appendChild(chip);
+        sourceSummaryStripEl.appendChild(createSummaryChip(label));
       });
 
       if (!sections.length) {
@@ -2587,12 +4128,20 @@
         ? meta.section_path_label
         : citation.section_path_label || citation.section || citation.anchor || "문서 전체";
       const excerpt = (citation.excerpt || "").trim();
+      const packLine = [
+        meta && meta.source_collection ? humanizeSourceCollection(meta.source_collection) : "",
+        meta && meta.pack_label ? meta.pack_label : "",
+        formatInferredScope(meta || citation),
+      ].filter(Boolean).join(" · ");
+      const qualityLine = meta && qualityStatusLabel(meta)
+        ? `${qualityStatusLabel(meta)}${qualitySummaryText(meta) ? ` · ${qualitySummaryText(meta)}` : ""}`
+        : "";
 
       sourceTitleEl.textContent = bookTitle;
       sourcePathEl.textContent = sectionLabel;
       sourceNoteEl.textContent = excerpt
-        ? excerpt
-        : "선택한 citation이 가리키는 normalized 문서를 오른쪽 패널에서 이어서 읽을 수 있습니다.";
+        ? ([packLine, qualityLine, excerpt].filter(Boolean).join("\n"))
+        : ([packLine, qualityLine].filter(Boolean).join("\n") || "선택한 citation이 가리키는 normalized 문서를 오른쪽 패널에서 이어서 읽을 수 있습니다.");
       setSourceLink(sourceOpenDocEl, citation.href || citation.viewer_path || "");
       setSourceLink(sourceOpenOriginEl, (meta && meta.source_url) || citation.source_url || "");
     }
@@ -2610,6 +4159,7 @@
       if (href && href.startsWith("/docs/")) {
         sourceEmptyEl.hidden = true;
         sourceViewerFrameEl.hidden = false;
+        setSourceFrameLoading(true);
         sourceViewerFrameEl.src = href;
       } else {
         setSourceEmptyState(
@@ -2625,6 +4175,15 @@
         const meta = await fetchSourceMeta(viewerPath);
         if (activeSourceKey !== sourceKeyFor(citation)) return;
         applySourcePanelState(citation, meta);
+        if (isReviewNeeded(meta)) {
+          setSourceLink(sourceOpenDocEl, "");
+          setSourceEmptyState(
+            "정규화 검토 필요",
+            qualitySummaryText(meta) || "이 문서는 아직 source-view로 직접 여는 대신 원문과 처리과정을 먼저 확인해야 합니다.",
+          );
+          sourceOutlineEl.innerHTML = '<div class="trace-empty">검토가 끝난 뒤 outline이 열립니다.</div>';
+          return;
+        }
       } catch (error) {
         if (activeSourceKey !== sourceKeyFor(citation)) return;
         sourceNoteEl.textContent = citation.excerpt || (error.message || "source metadata를 불러오지 못했습니다.");
@@ -2663,8 +4222,132 @@
 
     function resetPipelineTrace() {
       traceEvents = [];
+      pipelineLiveEl.innerHTML = '<div class="trace-empty">질문을 보내면 현재 단계와 진행 상황이 여기에 표시됩니다.</div>';
+      searchMetricsEl.innerHTML = '<div class="trace-empty">질문을 보내면 BM25, Vector, Hybrid 점수가 표시됩니다.</div>';
       pipelineSummaryEl.innerHTML = '<div class="trace-empty">아직 실행 기록이 없습니다.</div>';
       pipelineTraceEl.innerHTML = '<div class="trace-empty">아직 실행 기록이 없습니다.</div>';
+    }
+
+    function pipelineProgressPercent() {
+      if (!traceEvents.length) {
+        return generating ? 8 : 0;
+      }
+      const seenSteps = new Set(traceEvents.map((event) => event.step).filter(Boolean));
+      const completed = PIPELINE_STAGE_ORDER.filter((step) => seenSteps.has(step)).length;
+      const percent = Math.round((completed / PIPELINE_STAGE_ORDER.length) * 100);
+      if (generating) {
+        return Math.max(12, Math.min(94, percent || 16));
+      }
+      return Math.max(0, Math.min(100, percent || 100));
+    }
+
+    function renderSearchMetrics() {
+      const metricEvents = new Map();
+      traceEvents.forEach((event) => {
+        if (!event || !event.step) return;
+        if (["bm25_search", "vector_search", "fusion"].includes(event.step)) {
+          metricEvents.set(event.step, event);
+        }
+      });
+
+      if (!metricEvents.size) {
+        searchMetricsEl.innerHTML = generating
+          ? '<div class="trace-empty">검색 지표를 계산하는 중입니다.</div>'
+          : '<div class="trace-empty">질문을 보내면 BM25, Vector, Hybrid 점수가 표시됩니다.</div>';
+        return;
+      }
+
+      searchMetricsEl.innerHTML = "";
+      [
+        ["bm25_search", "BM25"],
+        ["vector_search", "Vector"],
+        ["fusion", "Hybrid"],
+      ].forEach(([step, label]) => {
+        const event = metricEvents.get(step);
+        if (!event) return;
+        const card = document.createElement("div");
+        card.className = `metric-card ${step === "fusion" ? "metric-hybrid" : "metric-selected"}`.trim();
+
+        const kicker = document.createElement("div");
+        kicker.className = "metric-label";
+        kicker.textContent = label;
+
+        const value = document.createElement("div");
+        value.className = "metric-value";
+        value.textContent = event.duration_ms ? formatDuration(event.duration_ms) : (event.status === "running" ? "..." : "-");
+
+        const detail = document.createElement("div");
+        detail.className = "metric-detail";
+        detail.textContent = event.detail || summarizeTraceMeta(event.meta) || humanizePipelineKey(step);
+
+        card.append(kicker, value, detail);
+        searchMetricsEl.appendChild(card);
+      });
+    }
+
+    function renderPipelineLive() {
+      if (!traceEvents.length) {
+        pipelineLiveEl.innerHTML = generating
+          ? '<div class="trace-empty">질문을 받아 파이프라인을 준비하는 중입니다.</div>'
+          : '<div class="trace-empty">질문을 보내면 현재 단계와 진행 상황이 여기에 표시됩니다.</div>';
+        return;
+      }
+
+      const latestEvent = traceEvents[traceEvents.length - 1];
+      const runningEvent = [...traceEvents].reverse().find((event) => event.status === "running") || latestEvent;
+      const liveStage = runningEvent || latestEvent;
+      const seenSteps = new Set(traceEvents.map((event) => event.step).filter(Boolean));
+      const currentStep = liveStage && liveStage.step ? liveStage.step : "";
+      const progress = pipelineProgressPercent();
+
+      const panel = document.createElement("div");
+      panel.className = "pending-panel";
+
+      const kicker = document.createElement("div");
+      kicker.className = "pending-kicker";
+      kicker.textContent = generating ? "Live Pipeline" : "최근 파이프라인";
+
+      const stage = document.createElement("div");
+      stage.className = `pending-stage ${generating ? "live" : ""}`.trim();
+      stage.textContent = liveStage && (liveStage.label || humanizePipelineKey(liveStage.step))
+        ? (liveStage.label || humanizePipelineKey(liveStage.step))
+        : (generating ? "응답을 준비하는 중" : "파이프라인 완료");
+
+      const detail = document.createElement("div");
+      detail.className = "pending-detail";
+      detail.textContent = liveStage && liveStage.detail
+        ? liveStage.detail
+        : (generating
+          ? "질문 정리, 검색, context 조립, 답변 생성 흐름을 순서대로 진행하고 있습니다."
+          : "가장 최근 실행된 단계 기록입니다.");
+
+      const rail = document.createElement("div");
+      rail.className = "progress-rail";
+
+      const fill = document.createElement("div");
+      fill.className = `progress-fill ${generating ? "live" : ""}`.trim();
+      fill.style.width = `${progress}%`;
+      rail.appendChild(fill);
+
+      const strip = document.createElement("div");
+      strip.className = "stage-strip";
+      PIPELINE_STAGE_ORDER.forEach((stepKey) => {
+        const chip = document.createElement("span");
+        chip.className = "stage-chip pending";
+        chip.textContent = humanizePipelineKey(stepKey);
+        if (seenSteps.has(stepKey)) {
+          chip.classList.remove("pending");
+          chip.classList.add(stepKey === currentStep && generating ? "running" : "done");
+        } else if (stepKey === currentStep && generating) {
+          chip.classList.remove("pending");
+          chip.classList.add("running");
+        }
+        strip.appendChild(chip);
+      });
+
+      panel.append(kicker, stage, detail, rail, strip);
+      pipelineLiveEl.innerHTML = "";
+      pipelineLiveEl.appendChild(panel);
     }
 
     function renderPipelineSummary(trace) {
@@ -2780,6 +4463,8 @@
         pipelineTraceEl.appendChild(card);
       });
       pipelineTraceEl.scrollTop = pipelineTraceEl.scrollHeight;
+      renderPipelineLive();
+      renderSearchMetrics();
     }
 
     function appendTraceEvent(event) {
@@ -2794,8 +4479,8 @@
       });
     }
 
-    function appendInlineMarkup(target, text) {
-      const tokens = (text || "").split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
+    function appendInlineMarkup(target, text, citationsByIndex = null) {
+      const tokens = (text || "").split(/(`[^`]+`|\*\*[^*]+\*\*|\[\d+\])/g);
       tokens.forEach((token) => {
         if (!token) return;
         if (token.startsWith("`") && token.endsWith("`") && token.length >= 2) {
@@ -2811,16 +4496,33 @@
           target.appendChild(strong);
           return;
         }
+        if (/^\[\d+\]$/.test(token)) {
+          const index = token.slice(1, -1);
+          const citation = citationsByIndex ? citationsByIndex.get(index) : null;
+          if (citation) {
+            const chip = document.createElement("button");
+            chip.type = "button";
+            chip.className = "inline-citation";
+            chip.dataset.sourceKey = sourceKeyFor(citation);
+            chip.setAttribute("aria-label", `근거 ${index} 열기`);
+            chip.textContent = inlineCitationLabel(Number(index));
+            chip.addEventListener("click", () => {
+              void openSourcePanel(citation);
+            });
+            target.appendChild(chip);
+            return;
+          }
+        }
         target.appendChild(document.createTextNode(token));
       });
     }
 
-    function createParagraph(text) {
+    function createParagraph(text, citationsByIndex = null) {
       const paragraph = document.createElement("p");
       const lines = (text || "").split("\n");
       lines.forEach((line, index) => {
         if (index > 0) paragraph.appendChild(document.createElement("br"));
-        appendInlineMarkup(paragraph, line);
+        appendInlineMarkup(paragraph, line, citationsByIndex);
       });
       return paragraph;
     }
@@ -2884,8 +4586,9 @@
       return block;
     }
 
-    function renderMarkdownInto(element, text) {
+    function renderMarkdownInto(element, text, citations = []) {
       element.innerHTML = "";
+      const citationsByIndex = citationMapByIndex(citations);
       const fragment = document.createDocumentFragment();
       const lines = (text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
       let paragraphLines = [];
@@ -2897,7 +4600,7 @@
 
       function flushParagraph() {
         if (!paragraphLines.length) return;
-        fragment.appendChild(createParagraph(paragraphLines.join("\n")));
+        fragment.appendChild(createParagraph(paragraphLines.join("\n"), citationsByIndex));
         paragraphLines = [];
       }
 
@@ -2906,7 +4609,7 @@
         const list = document.createElement(listType === "ol" ? "ol" : "ul");
         listItems.forEach((item) => {
           const li = document.createElement("li");
-          appendInlineMarkup(li, item);
+          appendInlineMarkup(li, item, citationsByIndex);
           list.appendChild(li);
         });
         fragment.appendChild(list);
@@ -2952,7 +4655,7 @@
           flushParagraph();
           flushList();
           const headingEl = document.createElement(heading[1].length === 1 ? "h2" : "h3");
-          appendInlineMarkup(headingEl, heading[2]);
+          appendInlineMarkup(headingEl, heading[2], citationsByIndex);
           fragment.appendChild(headingEl);
           return;
         }
@@ -2981,7 +4684,7 @@
       }
 
       if (!fragment.childNodes.length) {
-        fragment.appendChild(createParagraph(text || ""));
+        fragment.appendChild(createParagraph(text || "", citationsByIndex));
       }
 
       element.appendChild(fragment);
@@ -3004,7 +4707,7 @@
       return normalized;
     }
 
-    function renderAssistantBody(element, text) {
+    function renderAssistantBody(element, text, citations = []) {
       element.innerHTML = "";
 
       const head = document.createElement("div");
@@ -3017,7 +4720,7 @@
 
       const copy = document.createElement("div");
       copy.className = "assistant-copy";
-      renderMarkdownInto(copy, normalizeAssistantAnswer(text));
+      renderMarkdownInto(copy, normalizeAssistantAnswer(text), citations);
 
       const firstParagraph = copy.querySelector("p");
       if (firstParagraph) {
@@ -3031,9 +4734,9 @@
       messagesEl.innerHTML = `
         <section class="empty-state">
           <div class="empty-state-header">
-            <div class="eyebrow">NotebookLM-style OCP Study</div>
+            <div class="eyebrow">OCP Play Studio</div>
             <h3>질문하고, 근거 문서를 같이 읽으세요</h3>
-            <p>답변 아래 source tag를 누르면 오른쪽 panel에서 실제 OCP 원문이 열립니다. 운영 절차, 개념 질문, follow-up을 문서와 함께 검증하는 흐름에 맞춰 시작점을 골라보세요.</p>
+            <p>source tag를 누르면 오른쪽에서 원문을 바로 연다.</p>
           </div>
           <div class="sample-grid">
             <button type="button" class="sample-chip" data-sample-query="Pod가 Pending 상태에서 오래 멈춰 있을 때 어떤 순서로 점검해야 해?">Pod Pending 점검 순서</button>
@@ -3046,6 +4749,7 @@
       messagesEl.querySelectorAll(".sample-chip").forEach((button) => {
         button.addEventListener("click", () => {
           composerEl.value = button.dataset.sampleQuery || "";
+          resizeComposer();
           composerEl.focus();
         });
       });
@@ -3141,7 +4845,7 @@
 
           const index = document.createElement("span");
           index.className = "source-tag-index";
-          index.textContent = `[${citation.index}]`;
+          index.textContent = `근거 ${citation.index}`;
 
           const main = document.createElement("span");
           main.className = "source-tag-main";
@@ -3195,11 +4899,26 @@
     }
 
     function renderPendingStage(element, event) {
-      const lines = [event.label || "처리 중"];
-      if (event.detail) {
-        lines.push(event.detail);
-      }
-      element.textContent = lines.join("\n");
+      element.innerHTML = "";
+      const panel = document.createElement("div");
+      panel.className = "pending-panel";
+
+      const kicker = document.createElement("div");
+      kicker.className = "pending-kicker";
+      kicker.textContent = "응답 생성 중";
+
+      const stage = document.createElement("div");
+      stage.className = "pending-stage live";
+      stage.textContent = event.label || humanizePipelineKey(event.step) || "처리 중";
+
+      const detail = document.createElement("div");
+      detail.className = "pending-detail";
+      detail.textContent = event.detail
+        || summarizeTraceMeta(event.meta)
+        || "질문을 정리하고 문서를 찾은 뒤 grounded answer를 생성하는 중입니다.";
+
+      panel.append(kicker, stage, detail);
+      element.appendChild(panel);
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
@@ -3234,12 +4953,15 @@
       if (!regenerate) {
         appendMessage("user", trimmed);
         composerEl.value = "";
+        resizeComposer();
         lastQuery = trimmed;
       }
 
       const { wrapper, body } = appendMessage("assistant", "생성 중...");
+      wrapper.classList.add("streaming");
       resetPipelineTrace();
       setGenerating(true);
+      renderPipelineLive();
       setStatus("파이프라인 시작", { live: true, detail: "질문을 분석하고 있습니다" });
       currentController = new AbortController();
 
@@ -3286,6 +5008,8 @@
         sessionId = payload.session_id;
         sessionIdEl.textContent = sessionId.slice(0, 8);
         await typeText(body, payload.answer || "답변이 비어 있습니다.", "assistant");
+        renderAssistantBody(body, payload.answer || "답변이 비어 있습니다.", payload.citations || []);
+        wrapper.classList.remove("streaming");
         renderAssistantMeta(wrapper, payload);
         updateSidePanel(payload);
         setStatus("완료", {
@@ -3294,6 +5018,7 @@
             : "응답 생성이 끝났습니다",
         });
       } catch (error) {
+        wrapper.classList.remove("streaming");
         if (error.name === "AbortError") {
           renderMessageBody("assistant", body, "응답 표시를 중단했습니다.");
           setStatus("중단됨", { detail: "클라이언트에서 응답 표시를 멈췄습니다" });
@@ -3304,6 +5029,7 @@
       } finally {
         currentController = null;
         setGenerating(false);
+        renderPipelineLive();
       }
     }
 
@@ -3323,9 +5049,28 @@
       warningsEl.textContent = "없음";
       resetPipelineTrace();
       lastQuery = "";
-      regenerateBtn.disabled = true;
       resetSourcePanel();
       setStatus("리셋됨", { detail: "새 세션으로 다시 시작합니다" });
+    }
+
+    async function startNewSession() {
+      const response = await fetch("/api/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: crypto.randomUUID() }),
+      });
+      const payload = await response.json();
+      sessionId = payload.session_id;
+      sessionIdEl.textContent = sessionId.slice(0, 8);
+      messagesEl.innerHTML = "";
+      renderEmptyState();
+      rewrittenQueryEl.textContent = "-";
+      sessionContextEl.textContent = JSON.stringify(payload.context || {}, null, 2);
+      warningsEl.textContent = "없음";
+      resetPipelineTrace();
+      lastQuery = "";
+      resetSourcePanel();
+      setStatus("새 세션", { detail: "새 대화를 시작합니다" });
     }
 
     composerEl.addEventListener("keydown", (event) => {
@@ -3336,6 +5081,10 @@
         event.preventDefault();
         sendMessage();
       }
+    });
+
+    composerEl.addEventListener("input", () => {
+      resizeComposer();
     });
 
     composerEl.addEventListener("compositionstart", () => {
@@ -3350,18 +5099,45 @@
       isComposing = false;
     });
 
-    sendBtn.addEventListener("click", () => sendMessage());
-    regenerateBtn.addEventListener("click", () => sendMessage({ query: lastQuery, regenerate: true }));
-    stopBtn.addEventListener("click", () => {
+    sendBtn.addEventListener("click", () => {
+      if (!generating) {
+        void sendMessage();
+        return;
+      }
       if (currentController) currentController.abort();
       if (currentTyper) {
         clearInterval(currentTyper);
         currentTyper = null;
       }
     });
+
+    resizeComposer();
+    sourceViewerFrameEl.addEventListener("load", () => {
+      setSourceFrameLoading(false);
+    });
     resetBtn.addEventListener("click", resetSession);
+    newSessionBtn.addEventListener("click", startNewSession);
     sourcePanelToggleBtn.addEventListener("click", () => {
       setSourcePanelVisible(!sourcePanelVisible);
+    });
+    sourcePanelEdgeBtn.addEventListener("click", () => {
+      setSourcePanelVisible(!sourcePanelVisible);
+    });
+    leftRailToggleBtn.addEventListener("click", () => {
+      setLeftPanelVisible(!leftPanelVisible);
+    });
+    leftPanelToggleBtn.addEventListener("click", () => {
+      setLeftPanelVisible(!leftPanelVisible);
+    });
+    railOpenIntakeBtn.addEventListener("click", () => {
+      setLeftPanelVisible(true);
+      setSourcePanelVisible(true);
+      setStudyTab("ingest");
+    });
+    railOpenLibraryBtn.addEventListener("click", () => {
+      setLeftPanelVisible(true);
+      setSourcePanelVisible(true);
+      setStudyTab("library");
     });
     ingestPlanBtn.addEventListener("click", () => {
       void previewDocToBookPlan().catch((error) => {
@@ -3383,6 +5159,41 @@
         setIngestStatus(error.message || "doc-to-book normalize 실패", "error");
       });
     });
+    ingestFileBtn.addEventListener("click", () => {
+      ingestFileInputEl.click();
+    });
+    ingestFileInputEl.addEventListener("change", () => {
+      const file = ingestFileInputEl.files && ingestFileInputEl.files[0];
+      void handleIngestFileSelection(file).catch((error) => {
+        setIngestStatus(error.message || "파일 업로드 실패", "error");
+      }).finally(() => {
+        ingestFileInputEl.value = "";
+      });
+    });
+    ingestDropzoneEl.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      ingestDropzoneEl.classList.add("is-dragover");
+    });
+    ingestDropzoneEl.addEventListener("dragleave", () => {
+      ingestDropzoneEl.classList.remove("is-dragover");
+    });
+    ingestDropzoneEl.addEventListener("drop", (event) => {
+      event.preventDefault();
+      ingestDropzoneEl.classList.remove("is-dragover");
+      const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+      void handleIngestFileSelection(file).catch((error) => {
+        setIngestStatus(error.message || "파일 업로드 실패", "error");
+      });
+    });
+    ingestSourceTypeEl.addEventListener("change", () => {
+      syncIngestUploadHint();
+      setIngestSelectedFile(null);
+      if (ingestSourceTypeEl.value === "pdf") {
+        ingestUriEl.placeholder = "PDF는 파일 업로드를 권장해. 필요하면 서버 경로를 직접 넣어도 돼";
+      } else {
+        ingestUriEl.placeholder = "웹 문서 URL 또는 업로드된 HTML 파일 경로가 여기에 표시돼";
+      }
+    });
     ingestOpenCaptureBtn.addEventListener("click", () => {
       void openCapturedDocToBookDraft();
     });
@@ -3394,13 +5205,25 @@
       button.addEventListener("click", () => setMode(button.dataset.mode));
     });
 
+    window.addEventListener("resize", syncViewportLayout);
+    if (typeof ResizeObserver !== "undefined" && topbarEl) {
+      const topbarObserver = new ResizeObserver(() => syncViewportLayout());
+      topbarObserver.observe(topbarEl);
+    }
+
+    syncViewportLayout();
     setGenerating(false);
+    setIngestBusy(false);
     setMode(currentMode);
-    setSourcePanelVisible(false);
+    setLeftPanelVisible(true);
+    setSourcePanelVisible(true);
     setStudyTab("source");
+    syncIngestUploadHint();
+    setIngestSelectedFile(null);
     sessionContextEl.textContent = JSON.stringify({ mode: currentMode, ocp_version: "4.20" }, null, 2);
     resetPipelineTrace();
     resetSourcePanel();
+    resetLibraryDetail();
     renderEmptyState();
     renderIngestCaptureMeta(null);
     void loadDocToBookDrafts().catch((error) => {
@@ -3408,4 +5231,5 @@
     });
   </script>
 </body>
+
 </html>

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -97,6 +99,128 @@ class RetrievalTests(unittest.TestCase):
         hits = index.search("etcd 백업 방법", top_k=2)
 
         self.assertEqual("chunk-etcd", hits[0].chunk_id)
+
+    def test_fuse_ranked_hits_prefers_doc_to_book_overlay_over_vector_for_exact_match(self) -> None:
+        intake_hit = RetrievalHit(
+            chunk_id="dtb-demo:events",
+            book_slug="demo-guide",
+            chapter="문제 해결",
+            section="Safety Switch 확인",
+            anchor="safety-switch",
+            source_url="https://example.com/demo",
+            viewer_path="/docs/intake/dtb-demo/index.html#safety-switch",
+            text="maintenance token 77A 와 nebula-drain 플래그를 먼저 확인합니다.",
+            source="doc_to_book_bm25",
+            raw_score=1.0,
+        )
+        vector_hit = RetrievalHit(
+            chunk_id="vector-1",
+            book_slug="nodes",
+            chapter="nodes",
+            section="안전한 sysctl 및 안전하지 않은 sysctl",
+            anchor="sysctl",
+            source_url="https://example.com/nodes",
+            viewer_path="/docs/ocp/4.20/ko/nodes/index.html#sysctl",
+            text="sysctl 설정을 설명합니다.",
+            source="vector",
+            raw_score=1.0,
+        )
+
+        fused = fuse_ranked_hits(
+            "maintenance token 77A랑 nebula-drain 플래그는 어디서 확인해?",
+            {"doc_to_book_bm25": [intake_hit], "vector": [vector_hit]},
+            top_k=2,
+        )
+
+        self.assertEqual("demo-guide", fused[0].book_slug)
+        self.assertEqual("/docs/intake/dtb-demo/index.html#safety-switch", fused[0].viewer_path)
+
+    def test_retriever_includes_doc_to_book_overlay_sections_in_bm25(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = Settings(root_dir=root)
+            (settings.doc_to_book_books_dir / "dtb-demo.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "canonical_book_v1",
+                        "book_slug": "demo-guide",
+                        "title": "데모 가이드",
+                        "source_type": "web",
+                        "source_uri": "https://example.com/demo",
+                        "language_hint": "ko",
+                        "source_view_strategy": "normalized_sections_v1",
+                        "retrieval_derivation": "chunks_from_canonical_sections",
+                        "sections": [
+                            {
+                                "ordinal": 1,
+                                "section_key": "demo-guide:events",
+                                "heading": "이벤트 확인",
+                                "section_level": 2,
+                                "section_path": ["문제 해결", "이벤트 확인"],
+                                "section_path_label": "문제 해결 > 이벤트 확인",
+                                "anchor": "events",
+                                "viewer_path": "/docs/intake/dtb-demo/index.html#events",
+                                "source_url": "https://example.com/demo",
+                                "text": "Pod Pending 문제를 볼 때는 FailedScheduling 이벤트와 describe 결과를 먼저 확인합니다.",
+                                "block_kinds": ["paragraph"],
+                            }
+                        ],
+                        "notes": [],
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            retriever = Part2Retriever(settings, BM25Index.from_rows([]), vector_retriever=None)
+
+            result = retriever.retrieve(
+                "Pod Pending 이벤트 먼저 확인해야 해?",
+                use_vector=False,
+                top_k=3,
+                candidate_k=5,
+            )
+
+        self.assertTrue(result.hits)
+        self.assertEqual("demo-guide", result.hits[0].book_slug)
+        self.assertEqual("/docs/intake/dtb-demo/index.html#events", result.hits[0].viewer_path)
+        self.assertTrue(result.trace["doc_to_book_bm25"])
+        self.assertGreater(result.trace["metrics"]["doc_to_book_bm25"]["count"], 0)
+
+    def test_fuse_ranked_hits_prefers_intake_structured_key_over_generic_intro_doc(self) -> None:
+        intake_hit = RetrievalHit(
+            chunk_id="dtb-demo:unique-switch",
+            book_slug="orion-pdf-guide",
+            chapter="Page 1",
+            section="Unique Switch",
+            anchor="unique-switch",
+            source_url="/tmp/orion.pdf",
+            viewer_path="/docs/intake/dtb-demo/index.html#unique-switch",
+            text="orion.unique/flag=starfall-88 값을 migration 전에 설정합니다.",
+            source="doc_to_book_bm25",
+            raw_score=1.0,
+        )
+        generic_intro_hit = RetrievalHit(
+            chunk_id="nodes:overview",
+            book_slug="architecture",
+            chapter="개요",
+            section="아키텍처 개요",
+            anchor="overview",
+            source_url="https://example.com/architecture",
+            viewer_path="/docs/ocp/4.20/ko/architecture/index.html#overview",
+            text="OpenShift 아키텍처 소개 문서입니다.",
+            source="bm25",
+            raw_score=1.0,
+        )
+
+        fused = fuse_ranked_hits(
+            "orion.unique/flag 값이 뭐야?",
+            {"doc_to_book_bm25": [intake_hit], "bm25": [generic_intro_hit]},
+            top_k=2,
+        )
+
+        self.assertEqual("orion-pdf-guide", fused[0].book_slug)
+        self.assertEqual("/docs/intake/dtb-demo/index.html#unique-switch", fused[0].viewer_path)
 
     def test_rewrite_query_uses_session_context_for_follow_up(self) -> None:
         context = SessionContext(

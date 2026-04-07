@@ -4,11 +4,13 @@ import copy
 import json
 import re
 import time
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 import requests
 
+from ocp_doc_to_book.service import evaluate_canonical_book_quality
 from ocp_rag_part1.embedding import EmbeddingClient
 from ocp_rag_part1.settings import Settings
 
@@ -46,6 +48,7 @@ from .query import (
 
 
 NOISE_SECTION_RE = re.compile(r"^Legal Notice$", re.IGNORECASE)
+STRUCTURED_KEY_RE = re.compile(r"[a-z0-9_.-]+/[a-z0-9_.-]+(?:=[a-z0-9_.-]+)?", re.IGNORECASE)
 
 
 def _duration_ms(started_at: float) -> float:
@@ -105,6 +108,17 @@ def _round_score(value: float | None) -> float | None:
     return round(float(value), 4)
 
 
+def _extract_structured_query_terms(text: str) -> tuple[str, ...]:
+    terms = []
+    seen: set[str] = set()
+    for match in STRUCTURED_KEY_RE.finditer((text or "").lower()):
+        term = match.group(0).strip()
+        if term and term not in seen:
+            seen.add(term)
+            terms.append(term)
+    return tuple(terms)
+
+
 def _summarize_hit(hit: RetrievalHit, *, score_key: str = "raw_score") -> dict[str, Any]:
     summary = {
         "chunk_id": hit.chunk_id,
@@ -130,6 +144,67 @@ def _summarize_hit_list(
         "top_score": _round_score(getattr(hits[0], score_key, 0.0)) if hits else None,
         "top_hits": top_hits,
     }
+
+
+def _doc_to_book_books_fingerprint(books_dir: Path) -> tuple[tuple[str, int], ...]:
+    if not books_dir.exists():
+        return ()
+    return tuple(
+        sorted(
+            (path.name, path.stat().st_mtime_ns)
+            for path in books_dir.glob("*.json")
+            if path.is_file()
+        )
+    )
+
+
+def _doc_to_book_row_from_section(
+    payload: dict[str, Any],
+    section: dict[str, Any],
+    *,
+    draft_id: str,
+) -> dict[str, Any]:
+    anchor = str(section.get("anchor") or "").strip()
+    viewer_path = str(section.get("viewer_path") or "").strip()
+    if not viewer_path:
+        viewer_path = f"/docs/intake/{draft_id}/index.html"
+        if anchor:
+            viewer_path = f"{viewer_path}#{anchor}"
+    section_path = [str(item).strip() for item in (section.get("section_path") or []) if str(item).strip()]
+    title = str(payload.get("title") or payload.get("book_slug") or draft_id).strip()
+    return {
+        "chunk_id": f"{draft_id}:{str(section.get('section_key') or anchor or section.get('ordinal') or 'section').strip()}",
+        "book_slug": str(payload.get("book_slug") or draft_id).strip(),
+        "chapter": section_path[0] if section_path else title,
+        "section": str(section.get("heading") or section.get("section_path_label") or title).strip(),
+        "anchor": anchor,
+        "source_url": str(section.get("source_url") or payload.get("source_uri") or "").strip(),
+        "viewer_path": viewer_path,
+        "text": str(section.get("text") or "").strip(),
+    }
+
+
+@lru_cache(maxsize=4)
+def _load_doc_to_book_overlay_index(
+    books_dir_str: str,
+    fingerprint: tuple[tuple[str, int], ...],
+) -> BM25Index | None:
+    del fingerprint
+    books_dir = Path(books_dir_str)
+    rows: list[dict[str, Any]] = []
+    for path in sorted(books_dir.glob("*.json")):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if str(evaluate_canonical_book_quality(payload).get("quality_status") or "review") != "ready":
+            continue
+        sections = [dict(section) for section in (payload.get("sections") or []) if isinstance(section, dict)]
+        draft_id = path.stem
+        for section in sections:
+            row = _doc_to_book_row_from_section(payload, section, draft_id=draft_id)
+            if row["text"]:
+                rows.append(row)
+    if not rows:
+        return None
+    return BM25Index.from_rows(rows)
 
 
 def _rrf_merge_hit_lists(
@@ -178,11 +253,12 @@ def fuse_ranked_hits(
     weights: dict[str, float] | None = None,
 ) -> list[RetrievalHit]:
     # Give semantic hits a small edge during ties while keeping fusion explainable.
-    weights = weights or {"bm25": 1.0, "vector": 1.1}
+    weights = weights or {"bm25": 1.0, "doc_to_book_bm25": 1.35, "vector": 1.1}
     context = context or SessionContext()
     fused_by_id: dict[str, RetrievalHit] = {}
     book_sources: dict[str, set[str]] = {}
     query_has_hangul = contains_hangul(query)
+    structured_query_terms = _extract_structured_query_terms(query)
     book_boosts, book_penalties = query_book_adjustments(query, context=context)
     doc_locator_intent = has_doc_locator_intent(query)
     backup_restore_intent = has_backup_restore_intent(query)
@@ -230,10 +306,22 @@ def fuse_ranked_hits(
 
     fused_hits = list(fused_by_id.values())
     for hit in fused_hits:
+        is_intake_doc = hit.viewer_path.startswith("/docs/intake/")
+        lowered_text = hit.text.lower()
         if len(book_sources.get(hit.book_slug, set())) >= 2:
             hit.fused_score *= 1.1
         elif query_has_hangul and "vector_score" in hit.component_scores and "bm25_score" not in hit.component_scores:
             hit.fused_score *= 0.95
+        if (
+            is_intake_doc
+            and structured_query_terms
+            and "doc_to_book_bm25_score" in hit.component_scores
+            and any(term in lowered_text for term in structured_query_terms)
+        ):
+            # Uploaded runbooks often contain operational keys such as
+            # annotations, flags, or config names that must beat generic OCP
+            # overview sections when the user asks for that exact token.
+            hit.fused_score *= 1.42
         if query_has_hangul:
             if contains_hangul(hit.text):
                 hit.fused_score *= 1.05
@@ -762,6 +850,13 @@ class Part2Retriever:
             handle.write(json.dumps(result.to_dict(), ensure_ascii=False) + "\n")
         return target
 
+    def _doc_to_book_overlay_index(self) -> BM25Index | None:
+        books_dir = self.settings.doc_to_book_books_dir
+        fingerprint = _doc_to_book_books_fingerprint(books_dir)
+        if not fingerprint:
+            return None
+        return _load_doc_to_book_overlay_index(str(books_dir), fingerprint)
+
     def retrieve(
         self,
         query: str,
@@ -850,6 +945,7 @@ class Part2Retriever:
         ]
 
         bm25_hits = []
+        intake_bm25_hits: list[RetrievalHit] = []
         if use_bm25:
             _emit_trace_event(
                 trace_callback,
@@ -867,16 +963,30 @@ class Part2Retriever:
                 source_name="bm25",
                 top_k=effective_candidate_k,
             )
+            overlay_index = self._doc_to_book_overlay_index()
+            intake_hit_sets: list[list[RetrievalHit]] = []
+            if overlay_index is not None:
+                intake_hit_sets = [
+                    overlay_index.search(subquery, top_k=effective_candidate_k)
+                    for subquery in rewritten_queries
+                ]
+                intake_bm25_hits = _rrf_merge_hit_lists(
+                    intake_hit_sets,
+                    source_name="doc_to_book_bm25",
+                    top_k=effective_candidate_k,
+                )
             timings_ms["bm25_search"] = _duration_ms(bm25_started_at)
             _emit_trace_event(
                 trace_callback,
                 step="bm25_search",
                 label="키워드 검색 완료",
                 status="done",
-                detail=f"후보 {len(bm25_hits)}개",
+                detail=f"코어 {len(bm25_hits)}개 · intake {len(intake_bm25_hits)}개",
                 duration_ms=timings_ms["bm25_search"],
                 meta={
                     "candidate_k": effective_candidate_k,
+                    "core_hits": len(bm25_hits),
+                    "intake_hits": len(intake_bm25_hits),
                     "summary": _summarize_hit_list(bm25_hits),
                 },
             )
@@ -941,7 +1051,11 @@ class Part2Retriever:
         fusion_started_at = time.perf_counter()
         hits = fuse_ranked_hits(
             rewritten_query,
-            {"bm25": bm25_hits, "vector": vector_hits},
+            {
+                "bm25": bm25_hits,
+                "doc_to_book_bm25": intake_bm25_hits,
+                "vector": vector_hits,
+            },
             context=context,
             top_k=top_k,
         )
@@ -967,10 +1081,14 @@ class Part2Retriever:
         trace = {
             "warnings": warnings,
             "bm25": [hit.to_dict() for hit in bm25_hits[: min(candidate_k, 10)]],
+            "doc_to_book_bm25": [
+                hit.to_dict() for hit in intake_bm25_hits[: min(candidate_k, 10)]
+            ],
             "vector": [hit.to_dict() for hit in vector_hits[: min(candidate_k, 10)]],
             "hybrid": [hit.to_dict() for hit in hits[: min(top_k, 5)]],
             "metrics": {
                 "bm25": bm25_summary,
+                "doc_to_book_bm25": _summarize_hit_list(intake_bm25_hits),
                 "vector": vector_summary,
                 "hybrid": hybrid_summary,
             },

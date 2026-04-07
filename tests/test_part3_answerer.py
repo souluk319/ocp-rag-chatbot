@@ -16,6 +16,7 @@ from ocp_rag_part3.answerer import (
     _normalize_answer_markup_blocks,
     _ensure_korean_product_terms,
     _strip_intro_offtopic_noise,
+    _strip_structured_key_extra_guidance,
     Part3Answerer,
     finalize_citations,
     normalize_answer_text,
@@ -685,6 +686,15 @@ class Part3AnswererTests(unittest.TestCase):
         )
 
         self.assertEqual("답변: 표준 절차는 다음과 같습니다 [1].", stripped)
+
+    def test_strip_structured_key_extra_guidance_removes_speculative_tail(self) -> None:
+        stripped = _strip_structured_key_extra_guidance(
+            "답변: 값은 `starfall-88` 입니다 [1].\n\n추가 가이드: 예: orion status check 등으로 확인하세요.",
+            query="orion.unique/flag 값이 뭐야?",
+            mode="ops",
+        )
+
+        self.assertEqual("답변: 값은 `starfall-88` 입니다 [1].", stripped)
 
     def test_ensure_korean_product_terms_keeps_both_names_for_compare_answer(self) -> None:
         updated = _ensure_korean_product_terms(

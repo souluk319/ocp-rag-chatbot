@@ -751,9 +751,18 @@ tag에는 `book_title`, `section_path_label`, `viewer_path` 기반 정보가 들
 - [src/ocp_rag_part2](src/ocp_rag_part2): 질문 정리, BM25, 벡터 검색, 점수 결합
 - [src/ocp_rag_part3](src/ocp_rag_part3): 근거 선택, 답변 생성, citation 정리
 - [src/ocp_rag_part4](src/ocp_rag_part4): API 서버, 스트리밍, 채팅 UI
+- [src/ocp_doc_to_book](src/ocp_doc_to_book): 문서 intake, capture, normalize, canonical book, pack 메타데이터
 - [scripts](scripts)
 - [manifests](manifests)
 - [tests](tests)
+
+현재 프로젝트는 이름은 `part1~4`지만, 실제 의미는 작업 순서 메모가 아니라 **RAG 파이프라인 단계**다.
+
+- `part1`: corpus 준비
+- `part2`: retrieval
+- `part3`: grounded answer generation
+- `part4`: runtime UX / API / study panel
+- `ocp_doc_to_book`: 업로드 문서를 같은 canonical source-view 자산으로 승격하는 플랫폼 축
 
 ### 11.2 repo 밖 데이터 폴더
 
@@ -970,7 +979,7 @@ python3 scripts/run_part4_ui.py --no-browser
 - 우측 study panel에는 `Intake` 탭도 추가되어, 웹/PDF URI를 넣고 `plan preview -> draft 저장 -> capture -> normalize -> study panel 열기`까지 바로 실험할 수 있다.
 - 웹 문서는 현재 docs.redhat `.../html/<slug>`를 `.../html-single/<slug>/index`로 바꾸는 규칙까지 들어가 있다.
 - PDF는 아직 full parser는 아니고 `pdf_text_extract_v1` 전략으로 계획만 세운다.
-- Doc-to-Book draft는 `artifacts/doc_to_book/drafts/*.json`, capture artifact는 `artifacts/doc_to_book/captures/`, canonical book은 `artifacts/doc_to_book/books/`에 저장되며 같은 draft id를 중심으로 추적한다.
+- Doc-to-Book draft는 `../ocp-rag-chatbot-data/doc_to_book/drafts/*.json`, capture artifact는 `../ocp-rag-chatbot-data/doc_to_book/captures/`, canonical book은 `../ocp-rag-chatbot-data/doc_to_book/books/`에 저장되며 같은 draft id를 중심으로 추적한다.
 - source tag 라벨은 `book_title + section_path_label` 기준으로 만들고, 우측 panel은 내부 `/docs/...` iframe을 우선 사용한다.
 - exact section 매핑이 어려운 경우에는 `viewer_path`의 book 단위 fallback을 허용한다.
 - `Pod lifecycle` 같은 개념형 질의는 retrieval/context 단계에서 `nodes > Pod 이해 / Pod 구성의 예` 같은 설명 섹션을 우선하도록 보정했고, learn 답변도 그 citation을 기준으로 정리한다.

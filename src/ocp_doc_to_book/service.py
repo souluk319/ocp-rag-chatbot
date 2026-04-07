@@ -29,6 +29,45 @@ def _infer_title(request: DocSourceRequest) -> str:
     return parsed.netloc or "Web source"
 
 
+def _infer_product(*values: str) -> str:
+    haystack = " ".join(value.strip().lower() for value in values if value).strip()
+    if not haystack:
+        return "unknown"
+    if (
+        "openshift" in haystack
+        or "openshift_container_platform" in haystack
+        or re.search(r"\bocp\b", haystack)
+    ):
+        return "openshift"
+    if "kubernetes" in haystack or re.search(r"\bk8s\b", haystack):
+        return "kubernetes"
+    return "unknown"
+
+
+def _infer_version(*values: str) -> str:
+    haystack = " ".join(value.strip() for value in values if value).strip()
+    if not haystack:
+        return "unknown"
+    match = re.search(r"\b(\d+\.\d+)\b", haystack)
+    if match:
+        return match.group(1)
+    return "unknown"
+
+
+def _pack_label_for_uploaded(product: str, version: str) -> str:
+    if product == "openshift" and version != "unknown":
+        return f"OpenShift {version} Custom Pack"
+    if product == "openshift":
+        return "OpenShift Custom Pack"
+    return "User Custom Pack"
+
+
+def _pack_id_for_uploaded(product: str, version: str) -> str:
+    product_token = product if product != "unknown" else "custom"
+    version_token = version.replace(".", "-") if version != "unknown" else "uploaded"
+    return f"{product_token}-{version_token}-custom"
+
+
 def _detect_block_kinds(text: str) -> tuple[str, ...]:
     kinds: list[str] = []
     normalized = text or ""
@@ -53,10 +92,87 @@ def _section_key(book_slug: str, anchor: str, ordinal: int) -> str:
     return f"{book_slug}:section-{ordinal}"
 
 
+def evaluate_canonical_book_quality(payload: dict[str, object]) -> dict[str, object]:
+    sections = [dict(section) for section in (payload.get("sections") or []) if isinstance(section, dict)]
+    if not sections:
+        return {
+            "quality_status": "review",
+            "quality_score": 0,
+            "quality_flags": ["no_sections"],
+            "quality_summary": "섹션이 없어 study asset으로 사용할 수 없습니다.",
+        }
+
+    headings = [str(section.get("heading") or "").strip() for section in sections]
+    texts = [str(section.get("text") or "").strip() for section in sections]
+    page_summary_count = sum(heading == "Page Summary" for heading in headings)
+    same_text_count = sum(
+        1
+        for heading, text in zip(headings, texts)
+        if heading and text and text == heading
+    )
+    short_text_count = sum(1 for text in texts if 0 < len(text) <= 30)
+    chapter_footer_count = sum(
+        1
+        for text in texts
+        if re.search(r"(?:^|\n)\s*\d+\s*장\s*\.\s*[^\n]{4,}(?:\n|$)", text)
+    )
+    toc_artifact_count = sum(
+        1
+        for text in texts
+        if re.search(r"(?:\.\s*){8,}", text) or "table of contents" in text.lower()
+    )
+
+    total = max(len(sections), 1)
+    page_summary_ratio = page_summary_count / total
+    same_text_ratio = same_text_count / total
+    short_text_ratio = short_text_count / total
+    chapter_footer_ratio = chapter_footer_count / total
+    toc_artifact_ratio = toc_artifact_count / total
+
+    flags: list[str] = []
+    score = 100
+    if page_summary_ratio >= 0.25:
+        flags.append("too_many_page_summary_sections")
+        score -= 35
+    if same_text_ratio >= 0.25:
+        flags.append("too_many_heading_only_sections")
+        score -= 30
+    if len(sections) >= 8 and short_text_ratio >= 0.35:
+        flags.append("too_many_short_sections")
+        score -= 20
+    if len(sections) >= 500:
+        flags.append("section_count_too_high")
+        score -= 15
+    if len(sections) >= 8 and chapter_footer_ratio >= 0.12:
+        flags.append("chapter_footer_contamination")
+        score -= 20
+    if toc_artifact_ratio >= 0.08:
+        flags.append("toc_artifacts_remaining")
+        score -= 15
+
+    status = "ready" if score >= 70 and not flags else "review"
+    summary = (
+        "정규화 품질이 충분해 study asset으로 사용할 수 있습니다."
+        if status == "ready"
+        else "정규화 품질 검토가 필요합니다. section 구조가 아직 불안정합니다."
+    )
+    return {
+        "quality_status": status,
+        "quality_score": max(score, 0),
+        "quality_flags": flags,
+        "quality_summary": summary,
+    }
+
+
 class DocToBookPlanner:
     def plan(self, request: DocSourceRequest) -> CanonicalBookDraft:
         title = _infer_title(request)
         slug = _slugify(title)
+        inferred_product = _infer_product(request.title, request.uri, title)
+        inferred_version = _infer_version(request.title, request.uri, title)
+        source_collection = "uploaded"
+        pack_id = _pack_id_for_uploaded(inferred_product, inferred_version)
+        pack_label = _pack_label_for_uploaded(inferred_product, inferred_version)
 
         if request.source_type == "web":
             acquisition_uri, capture_strategy = resolve_web_capture_url(request.uri)
@@ -78,6 +194,11 @@ class DocToBookPlanner:
             title=title,
             source_type=request.source_type,
             source_uri=request.uri,
+            source_collection=source_collection,
+            pack_id=pack_id,
+            pack_label=pack_label,
+            inferred_product=inferred_product,
+            inferred_version=inferred_version,
             acquisition_uri=acquisition_uri,
             capture_strategy=capture_strategy,
             acquisition_step=acquisition_step,
@@ -139,6 +260,11 @@ class DocToBookPlanner:
             title=title,
             source_type=request.source_type,
             source_uri=source_uri,
+            source_collection=draft.source_collection,
+            pack_id=draft.pack_id,
+            pack_label=draft.pack_label,
+            inferred_product=draft.inferred_product,
+            inferred_version=draft.inferred_version,
             language_hint=request.language_hint,
             source_view_strategy="normalized_sections_v1",
             retrieval_derivation=draft.retrieval_derivation,

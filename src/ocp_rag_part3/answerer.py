@@ -55,6 +55,7 @@ BARE_COMMAND_ANSWER_RE = re.compile(
     r"^답변:\s*(?P<command>\$?\s*(?:oc|kubectl|etcdctl|podman|curl|openssl|openshift-install|journalctl|systemctl|helm)\b[^\n]*?)(?P<citations>(?:\s*\[\d+\])*)\s*$",
     re.IGNORECASE,
 )
+STRUCTURED_QUERY_RE = re.compile(r"[a-z0-9_.-]+/[a-z0-9_.-]+(?:=[a-z0-9_.-]+)?", re.IGNORECASE)
 
 
 def normalize_answer_text(answer_text: str) -> str:
@@ -183,6 +184,15 @@ def _strip_intro_offtopic_noise(answer_text: str, *, query: str) -> str:
     cleaned = INTRO_OFFTOPIC_SENTENCE_RE.sub(" ", answer_text)
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned
+
+
+def _strip_structured_key_extra_guidance(answer_text: str, *, query: str, mode: str) -> str:
+    if mode != "ops" or not STRUCTURED_QUERY_RE.search(query):
+        return answer_text
+    head, separator, _tail = answer_text.partition("\n\n추가 가이드:")
+    if not separator:
+        return answer_text
+    return head.strip()
 
 
 def _shape_pod_lifecycle_explainer(
@@ -638,6 +648,11 @@ class Part3Answerer:
             answer_text,
             mode=mode,
             citations=context_bundle.citations,
+        )
+        answer_text = _strip_structured_key_extra_guidance(
+            answer_text,
+            query=query,
+            mode=mode,
         )
         answer_text = _strip_intro_offtopic_noise(answer_text, query=query)
         if mode == "ops" and context_bundle.citations and not CITATION_RE.search(answer_text):

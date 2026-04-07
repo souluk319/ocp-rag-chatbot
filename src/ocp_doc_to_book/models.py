@@ -21,6 +21,11 @@ class CanonicalBookDraft:
     title: str
     source_type: SourceType
     source_uri: str
+    source_collection: str
+    pack_id: str
+    pack_label: str
+    inferred_product: str
+    inferred_version: str
     acquisition_uri: str
     capture_strategy: str
     acquisition_step: str
@@ -72,6 +77,11 @@ class CanonicalBook:
     title: str
     source_type: SourceType
     source_uri: str
+    source_collection: str
+    pack_id: str
+    pack_label: str
+    inferred_product: str
+    inferred_version: str
     language_hint: str
     source_view_strategy: str
     retrieval_derivation: str
@@ -85,6 +95,11 @@ class CanonicalBook:
             "title": self.title,
             "source_type": self.source_type,
             "source_uri": self.source_uri,
+            "source_collection": self.source_collection,
+            "pack_id": self.pack_id,
+            "pack_label": self.pack_label,
+            "inferred_product": self.inferred_product,
+            "inferred_version": self.inferred_version,
             "language_hint": self.language_hint,
             "source_view_strategy": self.source_view_strategy,
             "retrieval_derivation": self.retrieval_derivation,
@@ -101,6 +116,9 @@ class DocToBookDraftRecord:
     updated_at: str
     request: DocSourceRequest
     plan: CanonicalBookDraft
+    uploaded_file_name: str = ""
+    uploaded_file_path: str = ""
+    uploaded_byte_size: int = 0
     capture_artifact_path: str = ""
     capture_content_type: str = ""
     capture_byte_size: int = 0
@@ -115,8 +133,23 @@ class DocToBookDraftRecord:
             "status": self.status,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "source_type": self.request.source_type,
+            "title": self.plan.title,
+            "book_slug": self.plan.book_slug,
+            "source_uri": self.request.uri,
+            "source_collection": self.plan.source_collection,
+            "pack_id": self.plan.pack_id,
+            "pack_label": self.plan.pack_label,
+            "inferred_product": self.plan.inferred_product,
+            "inferred_version": self.plan.inferred_version,
+            "acquisition_uri": self.plan.acquisition_uri,
+            "capture_strategy": self.plan.capture_strategy,
+            "canonical_model": self.plan.canonical_model,
             "request": asdict(self.request),
             "plan": self.plan.to_dict(),
+            "uploaded_file_name": self.uploaded_file_name,
+            "uploaded_file_path": self.uploaded_file_path,
+            "uploaded_byte_size": self.uploaded_byte_size,
             "capture_artifact_path": self.capture_artifact_path,
             "capture_content_type": self.capture_content_type,
             "capture_byte_size": self.capture_byte_size,
@@ -136,9 +169,17 @@ class DocToBookDraftRecord:
             "title": self.plan.title,
             "book_slug": self.plan.book_slug,
             "source_uri": self.request.uri,
+            "source_collection": self.plan.source_collection,
+            "pack_id": self.plan.pack_id,
+            "pack_label": self.plan.pack_label,
+            "inferred_product": self.plan.inferred_product,
+            "inferred_version": self.plan.inferred_version,
             "acquisition_uri": self.plan.acquisition_uri,
             "capture_strategy": self.plan.capture_strategy,
             "canonical_model": self.plan.canonical_model,
+            "uploaded_file_name": self.uploaded_file_name,
+            "uploaded_file_path": self.uploaded_file_path,
+            "uploaded_byte_size": self.uploaded_byte_size,
             "capture_artifact_path": self.capture_artifact_path,
             "capture_content_type": self.capture_content_type,
             "capture_byte_size": self.capture_byte_size,
@@ -168,6 +209,11 @@ class DocToBookDraftRecord:
                 title=str(plan_payload.get("title") or "").strip(),
                 source_type=str(plan_payload.get("source_type") or request_payload.get("source_type") or "web").strip(),  # type: ignore[arg-type]
                 source_uri=str(plan_payload.get("source_uri") or request_payload.get("uri") or "").strip(),
+                source_collection=str(plan_payload.get("source_collection") or "uploaded").strip() or "uploaded",
+                pack_id=str(plan_payload.get("pack_id") or "custom-uploaded").strip() or "custom-uploaded",
+                pack_label=str(plan_payload.get("pack_label") or "User Custom Pack").strip() or "User Custom Pack",
+                inferred_product=str(plan_payload.get("inferred_product") or "unknown").strip() or "unknown",
+                inferred_version=str(plan_payload.get("inferred_version") or "unknown").strip() or "unknown",
                 acquisition_uri=str(plan_payload.get("acquisition_uri") or "").strip(),
                 capture_strategy=str(plan_payload.get("capture_strategy") or "").strip(),
                 acquisition_step=str(plan_payload.get("acquisition_step") or "").strip(),
@@ -178,6 +224,9 @@ class DocToBookDraftRecord:
                 source_view_strategy=str(plan_payload.get("source_view_strategy") or "source_view_first").strip(),
                 retrieval_derivation=str(plan_payload.get("retrieval_derivation") or "chunks_from_canonical_sections").strip(),
             ),
+            uploaded_file_name=str(payload.get("uploaded_file_name") or "").strip(),
+            uploaded_file_path=str(payload.get("uploaded_file_path") or "").strip(),
+            uploaded_byte_size=int(payload.get("uploaded_byte_size") or 0),
             capture_artifact_path=str(payload.get("capture_artifact_path") or "").strip(),
             capture_content_type=str(payload.get("capture_content_type") or "").strip(),
             capture_byte_size=int(payload.get("capture_byte_size") or 0),
