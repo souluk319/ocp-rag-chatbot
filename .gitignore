@@ -11,6 +11,8 @@ env
 .claude/
 .internal/
 AGENTS.md
+study.md
 src/ocp_rag_v2.egg-info/
 C:/
 tmp/
+PRD.md

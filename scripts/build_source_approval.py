@@ -1,3 +1,5 @@
+# source catalog를 읽어 승인 가능한 한국어 코퍼스 목록과 approval 리포트를 만든다.
+# runtime에서 실제로 쓸 문서 범위를 고정할 때 먼저 실행하는 스크립트다.
 from __future__ import annotations
 
 import argparse
@@ -10,12 +12,13 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from ocp_rag_part1.audit import (
+from play_book_studio.ingestion.audit import (
     build_approved_manifest,
+    build_corpus_gap_report,
     build_source_approval_report,
     write_approved_manifest,
 )
-from ocp_rag_part1.settings import load_settings
+from play_book_studio.config.settings import load_settings
 
 
 def _parse_args() -> argparse.Namespace:
@@ -34,6 +37,10 @@ def _parse_args() -> argparse.Namespace:
         help="Optional output path for the approval report JSON.",
     )
     parser.add_argument(
+        "--gap-report-path",
+        help="Optional output path for the corpus gap report JSON.",
+    )
+    parser.add_argument(
         "--output-manifest-path",
         help="Optional output path for the approved manifest JSON.",
     )
@@ -46,20 +53,25 @@ def main() -> int:
     allow_statuses = tuple(args.allow_statuses or ["approved_ko"])
 
     report = build_source_approval_report(settings)
+    gap_report = build_corpus_gap_report(settings)
     entries = build_approved_manifest(settings, allowed_statuses=allow_statuses)
 
-    report_path = Path(args.report_path).expanduser() if args.report_path else (
-        settings.part1_dir / "source_approval_report.json"
-    )
+    report_path = Path(args.report_path).expanduser() if args.report_path else settings.source_approval_report_path
     if not report_path.is_absolute():
         report_path = (ROOT / report_path).resolve()
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    gap_report_path = Path(args.gap_report_path).expanduser() if args.gap_report_path else settings.corpus_gap_report_path
+    if not gap_report_path.is_absolute():
+        gap_report_path = (ROOT / gap_report_path).resolve()
+    gap_report_path.parent.mkdir(parents=True, exist_ok=True)
+    gap_report_path.write_text(json.dumps(gap_report, ensure_ascii=False, indent=2), encoding="utf-8")
+
     output_manifest_path = (
         Path(args.output_manifest_path).expanduser()
         if args.output_manifest_path
-        else (settings.manifest_dir / "ocp_ko_4_20_approved_ko.json")
+        else settings.source_manifest_path
     )
     if not output_manifest_path.is_absolute():
         output_manifest_path = (ROOT / output_manifest_path).resolve()
@@ -67,6 +79,7 @@ def main() -> int:
     write_approved_manifest(output_manifest_path, entries)
 
     print(f"wrote source approval report: {report_path}")
+    print(f"wrote corpus gap report: {gap_report_path}")
     print(f"wrote approved manifest ({len(entries)} books): {output_manifest_path}")
     print(json.dumps(report["summary"], ensure_ascii=False, indent=2))
     return 0

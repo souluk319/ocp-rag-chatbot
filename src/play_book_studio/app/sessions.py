@@ -1,11 +1,14 @@
+# 세션 기록, 최근 대화 snapshot, 디버그용 turn 모델을 관리한다.
 from __future__ import annotations
 
 import threading
 from dataclasses import dataclass, field
 
-from ocp_rag_part2.models import SessionContext
+from play_book_studio.config.packs import default_core_pack
+from play_book_studio.retrieval.models import SessionContext
 
 RUNTIME_CHAT_MODE = "chat"
+DEFAULT_CORE_VERSION = default_core_pack().version
 
 
 @dataclass(slots=True)
@@ -13,6 +16,11 @@ class Turn:
     query: str
     mode: str
     answer: str
+    rewritten_query: str = ""
+    response_kind: str = ""
+    warnings: list[str] = field(default_factory=list)
+    stages: list[dict[str, object]] = field(default_factory=list)
+    diagnosis: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
@@ -20,7 +28,7 @@ class ChatSession:
     session_id: str
     mode: str = RUNTIME_CHAT_MODE
     context: SessionContext = field(
-        default_factory=lambda: SessionContext(mode=RUNTIME_CHAT_MODE, ocp_version="4.20")
+        default_factory=lambda: SessionContext(mode=RUNTIME_CHAT_MODE, ocp_version=DEFAULT_CORE_VERSION)
     )
     history: list[Turn] = field(default_factory=list)
 

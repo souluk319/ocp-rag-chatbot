@@ -6,6 +6,7 @@
 
 - `src/`에는 실제 로직만 둔다.
 - `scripts/`는 얇은 진입점만 둔다.
+- 일회성 디버그 스크립트와 리포트는 `tmp/` 아래로 격리한다.
 - 무거운 `artifacts`는 repo 밖 외부 디렉토리로 유지한다.
 - 전면 이사보다 `새 패키지 생성 -> 진입점 전환 -> 구패키지 shim 정리` 순서로 간다.
 
@@ -18,7 +19,11 @@
 ├─ manifests/
 ├─ scripts/
 │  ├─ play_book.py
-│  └─ check_runtime_endpoints.py
+│  ├─ check_runtime_endpoints.py
+│  ├─ run_ingestion.py
+│  ├─ run_retrieval_eval.py
+│  ├─ run_answer_eval.py
+│  └─ run_ragas_eval.py
 ├─ src/
 │  └─ play_book_studio/
 │     ├─ __init__.py
@@ -29,23 +34,31 @@
 │     │  └─ validation.py
 │     ├─ ingestion/
 │     │  ├─ __init__.py
-│     │  ├─ models.py
-│     │  ├─ sources/
-│     │  ├─ normalize/
-│     │  ├─ chunking.py
-│     │  ├─ indexing.py
-│     │  ├─ qdrant_store.py
-│     │  ├─ manifest.py
 │     │  ├─ audit.py
-│     │  └─ sentence_model.py
+│     │  ├─ chunking.py
+│     │  ├─ collector.py
+│     │  ├─ embedding.py
+│     │  ├─ manifest.py
+│     │  ├─ models.py
+│     │  ├─ normalize.py
+│     │  ├─ pipeline.py
+│     │  ├─ qdrant_store.py
+│     │  ├─ sentence_model.py
+│     │  └─ validation.py
+│     ├─ intake/
+│     │  ├─ __init__.py
+│     │  ├─ models.py
+│     │  ├─ planner.py
+│     │  ├─ service.py
+│     │  ├─ books/
+│     │  ├─ capture/
+│     │  └─ normalization/
 │     ├─ retrieval/
 │     │  ├─ __init__.py
-│     │  ├─ benchmark.py
 │     │  ├─ bm25.py
 │     │  ├─ models.py
 │     │  ├─ query.py
 │     │  ├─ retriever.py
-│     │  ├─ sanity.py
 │     │  └─ reranker.py
 │     ├─ answering/
 │     │  ├─ __init__.py
@@ -64,9 +77,11 @@
 │     │  └─ static/
 │     └─ evals/
 │        ├─ __init__.py
+│        ├─ benchmark.py
 │        ├─ retrieval_eval.py
 │        ├─ answer_eval.py
-│        └─ ragas_eval.py
+│        ├─ ragas_eval.py
+│        └─ sanity.py
 ├─ tests/
 ├─ play_book.cmd
 ├─ README.md
@@ -77,29 +92,32 @@
 
 ```text
 ..\\ocp-rag-chatbot-data\\
-├─ part1/
-├─ part2/
-├─ part3/
-├─ part4/
-└─ raw_html/
+├─ corpus/
+│  └─ raw_html/
+├─ retrieval/
+├─ answering/
+├─ runtime/
+└─ doc_to_book/
 ```
 
 ## 3. 지금 단계의 실제 범위
 
-이번 1차 구조개편은 전부 옮기지 않는다.
-
-먼저 옮기는 축:
+현재 단계 기준으로 이관 완료된 축:
 
 - `config`
+- `ingestion`
+- `intake`
 - `retrieval`
 - `answering`
 - `app`
 - `evals`
 
-나중에 옮기는 축:
+남은 축:
 
-- `ingestion`
-- 구패키지 shim 제거
+- retrieval/runtime cluster 추가 분리
+- intake normalization 잔여 helper 분리
+- app/static의 shell/helper 잔여 분리
+- 문서 최종 동기화
 
 ## 4. scripts 와 src 경계
 
@@ -107,31 +125,33 @@
   - 실제 비즈니스 로직
 - `scripts/play_book.py`
   - `play_book_studio.cli.main()` 호출만 담당
-- 나머지 `run_part*.py`
-  - 당장은 유지해도 되지만 점진적으로 축소 대상
+- `scripts/check_runtime_endpoints.py`
+  - 런타임 endpoint 확인용 공식 진단 스크립트
+- `scripts/run_*.py`
+  - 기능별 진단/평가/단건 실행 진입점
+- `tmp/`
+  - scratch/debug/test 산출물과 one-off 스크립트 보관용
 
 ## 5. server.py 분리 목표
 
-현재 [server.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/ocp_rag_part4/server.py)는 너무 많은 책임을 가진다.
+현재 [server.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/app/server.py)는 여전히 많은 책임을 가지지만, 1차 분리는 이미 진행됐다.
 
-1차 분리 대상:
+이미 분리된 축:
 
-- `sessions.py`
-  - `Turn`
-  - `ChatSession`
-  - `SessionStore`
-- `presenters.py`
-  - citation / book label / pack payload 직렬화 보조
-- `viewers.py`
-  - viewer path 파싱
-  - 로컬 html 탐색
+- `chat_debug.py`
+- `intake_api.py`
+- `source_books.py`
+- `session_flow.py`
+
+남은 분리 후보:
+
+- route registration/helper
+- HTTP response writer
+- runtime refresh / health assembly
 
 나중 분리 대상:
 
-- doc-to-book draft 핸들링
-- normalized viewer 렌더링
-- chat payload assembly
-- HTTP handler
+- retrieval/query 대형 파일이 줄어든 뒤 다시 판단
 
 ## 6. 실제 이동 순서
 
@@ -140,7 +160,8 @@
 3. `scripts/play_book.py`를 새 CLI로 전환
 4. `app/sessions.py`, `app/presenters.py`, `app/viewers.py` 1차 분리
 5. `config / retrieval / answering / evals` 최소 facade 생성
-6. 이후 제품화 작업을 새 패키지 기준으로 진행
+6. `intake`, `server`, `frontend renderer` 축 분리
+7. 이후 retrieval/query 대형 파일 구조개편
 
 ## 7. 한 줄 결론
 
@@ -148,6 +169,6 @@
 
 - 문제 위치를 빨리 좁히고
 - 제품화 실험이 가능한 새 기준 경로를 만들고
-- 구구절절한 `part1~4` 중심 사고에서 빠져나오는 것
+- 구구절절한 단계명 중심 사고에서 빠져나오는 것
 
 이다.

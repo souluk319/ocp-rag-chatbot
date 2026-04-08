@@ -28,52 +28,59 @@ README가 길기 때문에, 지금 레포를 처음 열었을 때 가장 먼저 
 
 ```text
 .
-├─ artifacts/                  # prebuilt corpus, eval report, runtime report
 ├─ manifests/                  # source manifest, eval case, corpus manifest
-├─ scripts/                    # 실행 스크립트와 레거시 run_part* 진입점
+├─ scripts/                    # 실행/평가/점검용 얇은 진입점
 ├─ src/
-│  ├─ ocp_doc_to_book/         # 업로드 문서 capture/normalize/canonical book
-│  ├─ ocp_rag_part1/           # corpus 준비: 정규화, 청킹, 임베딩, 적재
-│  ├─ ocp_rag_part2/           # retrieval: query rewrite, BM25, vector, fusion
-│  ├─ ocp_rag_part3/           # answering: context assembly, prompt, answer shaping
-│  └─ ocp_rag_part4/           # app runtime: server, streaming UI, study panel
+│  └─ play_book_studio/        # config, ingestion, intake, retrieval, answering, app, evals
 ├─ tests/                      # unit / integration / eval regression tests
 ├─ play_book.cmd               # 현재 제품 기준 단일 실행 진입점
+├─ CODE_READING_GUIDE.md       # 코드 읽기 순서와 파이프라인 학습 가이드
+├─ FILE_ROLE_GUIDE.md          # manifests / scripts 파일 역할 가이드
+├─ QUICKSTART.md               # 시연/운영용 최소 실행 순서
 ├─ ENTRYPOINTS.md              # canonical entrypoint 설명
+├─ PACK_BOUNDARY_AUDIT.md      # Play Book Studio와 OCP core pack 경계 문서
+├─ STRUCTURE_REFACTOR_BACKLOG.md # 남은 구조개편 후보와 우선순위
 ├─ SYSTEM_ROOT_CAUSE_AUDIT.md  # 구조적 문제와 우선순위 감사 기록
 └─ README.md
 ```
 
+실제 운영용 산출물 데이터는 보통 repo 밖 `../ocp-rag-chatbot-data/`에 둔다.  
+즉 이 저장소는 코드/manifest 중심이고, 무거운 corpus/eval/runtime 산출물은 외부 경로로 분리하는 게 현재 기준선이다.
+
+`manifests/`와 `scripts/`처럼 파일 수는 적지 않은데 안을 열어보기 전엔 역할이 안 보이는 영역은 [FILE_ROLE_GUIDE.md](FILE_ROLE_GUIDE.md)부터 보면 된다.
+
 ### 0.2 현재 구조를 읽는 법
 
-현재 `part1~4` 이름은 기능 기준이라기보다 **개발 단계에서 출발한 중간 구조**다.
+현재는 예전 단계명보다 아래 기능 축으로 읽는 게 맞다.
 
-- `part1`: corpus 준비
-- `part2`: retrieval
-- `part3`: grounded answer generation
-- `part4`: runtime UI / API / diagnostics
-- `ocp_doc_to_book`: 업로드 문서를 같은 source-view 자산으로 정리하는 intake 축
+- `config`: endpoint, pack, manifest, artifacts 경로
+- `ingestion`: 공식 OCP 코퍼스 수집/정규화/청킹/임베딩
+- `intake`: 업로드 문서를 canonical study asset으로 바꾸는 축
+- `retrieval`: query rewrite, BM25/vector/reranker/fusion
+- `answering`: context, prompt, LLM, answer shaping, citation finalize
+- `app`: server, session flow, viewer, UI payload, static
+- `evals`: retrieval / answer / ragas / benchmark / sanity
 
-즉 지금 구조는 단기적으로는 쓸 수 있지만, 장기 제품 구조로는 아직 이상적이지 않다.  
-문제가 생기면 일단 `part1 -> 준비`, `part2 -> 검색`, `part3 -> 답변`, `part4 -> 런타임`으로 좁혀 보는 것이 가장 빠르다.
+즉 지금 레포는 `play_book_studio` 하나를 기능 단위로 나눈 구조이고, 과거 `part*` 흔적과 구 `ocp_doc_to_book` shim은 기준 코드와 운영 artifact 계약에서 제거됐다.
 
 ### 0.3 현재 제품 기준 실행 진입점
 
-앞으로는 `scripts/run_part*.py`를 직접 뒤지지 않고 아래 한 파일만 보면 된다.
+앞으로는 예전 `run_part*.py`가 아니라 아래 한 파일만 보면 된다.
 
 ```bash
 play_book.cmd ui
 play_book.cmd ask --query "Pod lifecycle 개념을 설명해줘"
 play_book.cmd eval
 play_book.cmd ragas --dry-run
+play_book.cmd runtime
 ```
 
 - `ui`: 로컬 채팅 UI 실행
 - `ask`: 단건 질의 실행
 - `eval`: 멀티케이스 answer eval 실행
 - `ragas`: RAGAS judge eval 실행
+- `runtime`: 현재 활성 runtime / artifact / endpoint readiness report 생성
 
-기존 `scripts/run_part*.py`는 레거시 진입점이다.  
 현재 제품 기준 진실원천은 `play_book.cmd -> scripts/play_book.py`다.
 
 ### 0.4 현재 런타임 파이프라인
@@ -81,31 +88,33 @@ play_book.cmd ragas --dry-run
 지금 질문 한 개가 답으로 바뀌는 실제 런타임 흐름은 아래다.
 
 1. `play_book.cmd ui`가 `scripts/play_book.py`를 통해 UI 서버를 올린다.
-2. 브라우저 질문은 `src/ocp_rag_part4/server.py`의 `/api/chat` 또는 `/api/chat/stream`으로 들어간다.
-3. 서버는 `src/ocp_rag_part3/answerer.py`의 `Part3Answerer.answer()`를 호출한다.
-4. 답변기는 `src/ocp_rag_part2/retriever.py`로 들어가 `normalize_query -> decompose_retrieval_queries -> rewrite_query -> BM25/doc_to_book BM25/vector -> fusion` 순서로 후보를 만든다.
-5. `src/ocp_rag_part3/context.py`가 citation 후보를 다시 줄인다.
-6. `src/ocp_rag_part3/prompt.py`가 grounded prompt를 만들고 `src/ocp_rag_part3/llm.py`가 LLM endpoint를 호출한다.
-7. `src/ocp_rag_part3/answerer.py`가 답변 문장 정리, citation finalize, follow-up suggestion 준비를 끝낸다.
-8. `src/ocp_rag_part4/server.py`가 trace/citation/session payload를 만들어 UI로 돌려준다.
+2. 브라우저 질문은 `src/play_book_studio/app/server.py`의 `/api/chat` 또는 `/api/chat/stream`으로 들어간다.
+3. 서버는 `src/play_book_studio/answering/answerer.py`의 메인 answerer 진입점을 호출한다.
+4. 답변기는 `src/play_book_studio/retrieval/retriever.py`로 들어가 `normalize_query -> decompose_retrieval_queries -> rewrite_query -> BM25/doc_to_book BM25/vector -> fusion` 순서로 후보를 만든다.
+5. `src/play_book_studio/answering/context.py`가 citation 후보를 다시 줄인다.
+6. `src/play_book_studio/answering/prompt.py`가 grounded prompt를 만들고 `src/play_book_studio/answering/llm.py`가 LLM endpoint를 호출한다.
+7. `src/play_book_studio/answering/answerer.py`가 답변 문장 정리, citation finalize, follow-up suggestion 준비를 끝낸다.
+8. `src/play_book_studio/app/server.py`가 trace/citation/session payload를 만들어 UI로 돌려준다.
 
 ### 0.5 현재 코드 품질 스냅샷
 
-현재 코드 품질을 짧게 요약하면 `기능 회귀 안정성은 올라왔지만, 구조는 아직 과도기`다.
+현재 코드 품질을 짧게 요약하면 `핵심 기능은 안정화됐고, 남은 일은 큰 파일을 더 읽기 좋은 단위로 쪼개는 구조개편`이다.
 
-- 자동 회귀 상태: `203 passed, 8 warnings`
-- 강점:
-  - `.env` 기준 LLM 설정 반영
-  - 업로드 문서가 기본 검색에 자동 혼합되지 않도록 기본값 정리
-  - `ops/learn` 분기 제거 후 질문 의도 중심 답변 경로로 통일
-  - 제품 기준 단일 실행 진입점 도입
+- 현재 기준선:
+  - `.env` 기준 LLM / embedding / qdrant / reranker 설정 반영
+  - 제품 기준 단일 실행 진입점 유지
+  - 업로드 자료 기본 비혼합, OCP core pack 우선 흐름 유지
+  - 핵심 회귀 테스트와 CLI 도움말 통과
 - 남은 구조 부채:
-  - `part1~4` 패키지 이름이 기능 구조보다 개발 단계 흔적을 더 강하게 남김
-  - 레거시 `run_part*.py`가 여전히 남아 있어 처음 보는 사람에게 잡음이 큼
-  - retrieval은 아직 heuristic fusion 중심이고 cross-encoder reranker가 없다
-  - query rewrite는 존재하지만 규칙 기반이라 LLM rewriter 수준은 아니다
-  - vector raw hit 품질 편차가 있고, doc-to-book normalization 품질도 아직 균일하지 않다
-  - RAGAS import 경고처럼 바로 깨지진 않지만 버전 업 때 먼저 손봐야 하는 유지보수 부채가 남아 있다
+  - [index.html](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/app/static/index.html) 에 앱 bootstrap/state wiring이 아직 많이 남아 있음
+  - [retriever.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/retrieval/retriever.py), [query.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/retrieval/query.py) 가 매우 큰 상태
+  - [service.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/intake/normalization/service.py) 도 책임이 무거움
+  - heuristic retrieval shaping 비중이 여전히 크고, reranker는 실험 경로로만 존재
+
+남은 구조개편 후보와 추천 순서는 [STRUCTURE_REFACTOR_BACKLOG.md](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/STRUCTURE_REFACTOR_BACKLOG.md)에 따로 고정해 두었다.
+
+현재 앱 정체성은 `Play Book Studio`이고, 현재 선택 코퍼스 정체성은 `OpenShift 4.20 core pack`이다.  
+이 경계는 [PACK_BOUNDARY_AUDIT.md](PACK_BOUNDARY_AUDIT.md)에 따로 정리해 두었다.
 
 즉 현재 상태는 “겉만 번지르르한 데모”는 아니지만, “문제 생기면 한 번에 파악되는 제품 구조”도 아직 아니다.  
 그래서 README, entrypoint, audit 문서로 현재 구조를 먼저 고정해 두고, 다음 단계에서 패키지 재배치를 들어가는 것이 맞다.
@@ -276,7 +285,7 @@ HTML을 opaque blob으로 두지 않고, 사람이 검토 가능한 section reco
 
 ### 6.3 정규화 순서
 
-[src/ocp_rag_part1/normalize.py](src/ocp_rag_part1/normalize.py)는 아래 순서로 동작한다.
+[src/play_book_studio/ingestion/normalize.py](src/play_book_studio/ingestion/normalize.py)는 아래 순서로 동작한다.
 
 1. `article` 본문 선택
 2. `script/style/nav/footer` 제거
@@ -304,8 +313,8 @@ HTML을 opaque blob으로 두지 않고, 사람이 검토 가능한 section reco
 
 관련 파일:
 
-- [src/ocp_rag_part1/chunking.py](src/ocp_rag_part1/chunking.py)
-- [src/ocp_rag_part1/settings.py](src/ocp_rag_part1/settings.py)
+- [src/play_book_studio/ingestion/chunking.py](src/play_book_studio/ingestion/chunking.py)
+- [src/play_book_studio/config/settings.py](src/play_book_studio/config/settings.py)
 
 추가로 실제 구현은 아래처럼 동작한다.
 
@@ -320,8 +329,8 @@ HTML을 opaque blob으로 두지 않고, 사람이 검토 가능한 section reco
 
 임베딩은 원격 endpoint를 사용하지만, chunk 길이 계산은 로컬 tokenizer로 수행한다.
 
-- 임베딩 생성: [src/ocp_rag_part1/embedding.py](src/ocp_rag_part1/embedding.py)
-- tokenizer/model load cache: [src/ocp_rag_part1/sentence_model.py](src/ocp_rag_part1/sentence_model.py)
+- 임베딩 생성: [src/play_book_studio/ingestion/embedding.py](src/play_book_studio/ingestion/embedding.py)
+- tokenizer/model load cache: [src/play_book_studio/ingestion/sentence_model.py](src/play_book_studio/ingestion/sentence_model.py)
 
 이렇게 분리한 이유는:
 
@@ -440,13 +449,16 @@ Qdrant에는 청크마다 아래 구조로 저장된다.
 
 주요 산출물:
 
-- `artifacts/part1/source_approval_report.json`
+- `../ocp-rag-chatbot-data/corpus/source_approval_report.json`
+- `../ocp-rag-chatbot-data/corpus/source_manifest_update_report.json`
+- `manifests/ocp_ko_4_20_html_single.json`
 - `manifests/ocp_ko_4_20_approved_ko.json`
 
 현재 승인 상태:
 
 - 전체 책: `113`
 - `approved_ko`: `75`
+- `translated_ko_draft`: `0`
 - `mixed`: `15`
 - `en_only`: `23`
 - 중요 문서 품질 이슈: `6`
@@ -458,6 +470,32 @@ Qdrant에는 청크마다 아래 구조로 저장된다.
 - `monitoring`
 - `installing_on_any_platform`
 
+현재 상태값 의미:
+
+- `approved_ko`
+  - 기본 citation 가능 코퍼스에 들어간다.
+- `translated_ko_draft`
+  - 한글 번역/보강 초안이 있지만 아직 검토 전이므로 citation 기본값에서는 제외한다.
+- `mixed`
+  - 한국어와 비한국어 본문이 섞여 있어 기본 citation 코퍼스에서는 제외한다.
+- `en_only`
+  - vendor가 한국어 미지원 fallback을 내린 문서다.
+- `blocked`
+  - normalized/chunk 산출물이 부족하거나 구조가 깨져 현재 ingestion 기준선에 못 미친다.
+
+현재 단계의 source policy는 다음과 같다.
+
+- 1차 source of truth는 `docs.redhat.com`의 published Korean `html-single` 문서다.
+- `openshift/openshift-docs` GitHub repo는 지금 당장 주 코퍼스 소스가 아니라, 변경 추적과 영문 보조 source 후보로 본다.
+- 즉 지금은 범용 NotebookLM이 아니라 `OCP Playbook Studio`를 먼저 완성하는 단계이며, OCP 외 자료는 기본 코퍼스에 넣지 않는다.
+
+지속 업데이트 기준도 같이 잡아둔다.
+
+- `build_source_manifest.py`는 published Korean source catalog를 다시 긁고, 신규/삭제/변경 slug diff를 `source_manifest_update_report.json`에 남긴다.
+- `build_source_approval.py`는 source catalog를 읽어 approved runtime manifest를 다시 만든다.
+- 즉 `html_single catalog -> approval report -> approved_ko manifest`의 3단 구조로 본다.
+- runtime은 `approved_ko manifest`를 보고, update tracking은 `html_single catalog`를 본다.
+
 즉 현재 시스템은 단순히 “검색되면 쓴다”가 아니라, `문서 적합성` 자체를 별도 관리한다.
 
 ---
@@ -468,7 +506,7 @@ Qdrant에는 청크마다 아래 구조로 저장된다.
 
 ### 7.1 질문을 검색용 문장으로 다시 다듬는 단계
 
-[src/ocp_rag_part2/query.py](src/ocp_rag_part2/query.py)는 단순 동의어 치환기가 아니다.  
+[src/play_book_studio/retrieval/query.py](src/play_book_studio/retrieval/query.py)는 단순 동의어 치환기가 아니다.  
 현재는 질문을 다음 질문 유형으로 구분한다.
 
 - intro / broad intro
@@ -515,7 +553,7 @@ Qdrant에는 청크마다 아래 구조로 저장된다.
 
 ### 7.3 BM25 + Vector + 하이브리드 결합
 
-[src/ocp_rag_part2/retriever.py](src/ocp_rag_part2/retriever.py)의 핵심은 하이브리드 검색이다.
+[src/play_book_studio/retrieval/retriever.py](src/play_book_studio/retrieval/retriever.py)의 핵심은 하이브리드 검색이다.
 
 1. BM25 검색
 2. Vector 검색
@@ -636,7 +674,7 @@ fused_score += weight / (rrf_k + rank)
 
 ### 8.1 답변에 넣을 근거를 한 번 더 고르는 단계
 
-[src/ocp_rag_part3/context.py](src/ocp_rag_part3/context.py)는 검색 결과 중 일부만 citation 후보로 선택한다.
+[src/play_book_studio/answering/context.py](src/play_book_studio/answering/context.py)는 검색 결과 중 일부만 citation 후보로 선택한다.
 
 주요 정책:
 
@@ -677,26 +715,26 @@ fused_score += weight / (rrf_k + rank)
 
 ### 8.2 답변 생성
 
-[src/ocp_rag_part3/answerer.py](src/ocp_rag_part3/answerer.py)는 아래 흐름으로 동작한다.
+[src/play_book_studio/answering/answerer.py](src/play_book_studio/answering/answerer.py)는 아래 흐름으로 동작한다.
 
 1. 질문 정리와 검색을 다시 실행한다.
 2. 답변에 넣을 근거를 다시 고른다.
-3. mode에 맞는 프롬프트를 만든다.
+3. 질문 유형과 현재 문맥에 맞는 grounded 프롬프트를 만든다.
 4. Qwen/Qwen3.5-9B를 호출한다.
 5. 답변 문장을 정리한다.
 6. 명령어가 근거와 맞는지 한 번 더 맞춘다.
 7. citation 번호와 실제 근거 목록을 정리한다.
 
-### 8.3 ops / learn 모드
+### 8.3 질문 유형별 답변 스타일
 
-- `ops`
+- 운영 절차형 질문
   - 짧고 실행 가능해야 함
   - 명령, 범위, 주의사항이 중요
-- `learn`
+- 개념 설명형 질문
   - 개념과 배경 설명이 중요
-  - 초보자 관점 설명 필요
+  - 초보자 관점 설명이 필요
 
-같은 질문이라도 mode에 따라 answer shape가 달라진다.
+현재는 예전처럼 런타임 `ops / learn` 분기를 타기보다, 질문 유형과 문맥에 따라 답변 밀도와 설명 방식을 조정한다.
 
 ### 8.4 no-answer / clarification 정책
 
@@ -736,7 +774,7 @@ citation은 단순한 링크가 아니라, 아래 조건을 만족해야 한다.
 - 중복 전송 방지
 - stop / regenerate
 - session reset
-- mode 전환 (`ops` / `learn`)
+- 세션 리셋 / 새 세션 전환
 
 ### 9.2 streaming 응답
 
@@ -755,8 +793,8 @@ UI는 `/api/chat/stream`으로 NDJSON 스트림을 받아 단계별 이벤트를
 
 관련 파일:
 
-- [src/ocp_rag_part4/server.py](src/ocp_rag_part4/server.py)
-- [src/ocp_rag_part4/static/index.html](src/ocp_rag_part4/static/index.html)
+- [src/play_book_studio/app/server.py](src/play_book_studio/app/server.py)
+- [src/play_book_studio/app/static/index.html](src/play_book_studio/app/static/index.html)
 
 ### 9.3 source tag와 study panel
 
@@ -839,42 +877,43 @@ tag에는 `book_title`, `section_path_label`, `viewer_path` 기반 정보가 들
 
 ### 11.1 코드 위치를 찾고 싶을 때
 
-- [src/ocp_rag_part1](src/ocp_rag_part1): 문서 정리, 청킹, 임베딩, Qdrant 적재
-- [src/ocp_rag_part2](src/ocp_rag_part2): 질문 정리, BM25, 벡터 검색, 점수 결합
-- [src/ocp_rag_part3](src/ocp_rag_part3): 근거 선택, 답변 생성, citation 정리
-- [src/ocp_rag_part4](src/ocp_rag_part4): API 서버, 스트리밍, 채팅 UI
-- [src/ocp_doc_to_book](src/ocp_doc_to_book): 문서 intake, capture, normalize, canonical book, pack 메타데이터
+- [src/play_book_studio/ingestion](src/play_book_studio/ingestion): 공식 OCP 코퍼스 수집, 정규화, 청킹, 임베딩, Qdrant 적재
+- [src/play_book_studio/intake](src/play_book_studio/intake): 업로드 문서 intake, capture, normalize, canonical book, pack 메타데이터
+- [src/play_book_studio/retrieval](src/play_book_studio/retrieval): 질문 정리, BM25, 벡터 검색, reranker, 점수 결합
+- [src/play_book_studio/answering](src/play_book_studio/answering): 근거 선택, 답변 생성, citation 정리
+- [src/play_book_studio/app](src/play_book_studio/app): API 서버, 스트리밍, 채팅 UI, viewer, session/debug
 - [scripts](scripts)
 - [manifests](manifests)
 - [tests](tests)
 
-현재 프로젝트는 이름은 `part1~4`지만, 실제 의미는 작업 순서 메모가 아니라 **RAG 파이프라인 단계**다.
+현재 프로젝트는 기능 축 기준으로 읽는 게 맞다.
 
-- `part1`: corpus 준비
-- `part2`: retrieval
-- `part3`: grounded answer generation
-- `part4`: runtime UX / API / study panel
-- `ocp_doc_to_book`: 업로드 문서를 같은 canonical source-view 자산으로 승격하는 플랫폼 축
+- `ingestion`: corpus 준비
+- `retrieval`: hybrid retrieval / scoring / reranker
+- `answering`: grounded answer generation
+- `app`: runtime UX / API / study panel
+- `intake`: 업로드 문서를 같은 canonical source-view 자산으로 승격하는 플랫폼 축
 
 ### 11.2 artifacts 데이터 폴더
 
-기본 artifacts 루트는 repo 내부 [`artifacts`](artifacts) 다.  
-필요하면 `.env`의 `ARTIFACTS_DIR`로 외부 경로를 지정할 수 있다.
+현재 운영 기준 artifacts 루트는 repo 밖 `../ocp-rag-chatbot-data/` 다.  
+실제 경로는 `.env`의 `ARTIFACTS_DIR`가 source of truth이고, 이 저장소 안 `artifacts/`는 더 이상 기준 경로로 쓰지 않는다.
 
-- 기본값: `artifacts/`
-- 외부 override 예시: `ARTIFACTS_DIR=C:/Users/<user>/cywell/ocp-rag-chatbot-data`
+- 현재 권장값: `ARTIFACTS_DIR=../ocp-rag-chatbot-data`
+- 절대경로 예시: `ARTIFACTS_DIR=C:/Users/<user>/cywell/ocp-rag-chatbot-data`
 
 주요 산출물:
 
-- `artifacts/part1/raw_html/*.html`
-- `artifacts/part1/normalized_docs.jsonl`
-- `artifacts/part1/chunks.jsonl`
-- `artifacts/part1/bm25_corpus.jsonl`
-- `artifacts/part1/source_approval_report.json`
-- `artifacts/part2/sanity_report.json`
-- `artifacts/part3/answer_eval_report.json`
-- `artifacts/part3/ragas_eval_report.json`
-- `artifacts/part3/runtime_endpoint_report.json`
+- `../ocp-rag-chatbot-data/corpus/raw_html/*.html`
+- `../ocp-rag-chatbot-data/corpus/normalized_docs.jsonl`
+- `../ocp-rag-chatbot-data/corpus/chunks.jsonl`
+- `../ocp-rag-chatbot-data/corpus/bm25_corpus.jsonl`
+- `../ocp-rag-chatbot-data/corpus/source_approval_report.json`
+- `../ocp-rag-chatbot-data/corpus/corpus_gap_report.json`
+- `../ocp-rag-chatbot-data/retrieval/sanity_report.json`
+- `../ocp-rag-chatbot-data/answering/answer_eval_report.json`
+- `../ocp-rag-chatbot-data/answering/ragas_eval_report.json`
+- `../ocp-rag-chatbot-data/runtime/runtime_endpoint_report.json`
 
 ---
 
@@ -896,7 +935,7 @@ tag에는 `book_title`, `section_path_label`, `viewer_path` 기반 정보가 들
 
 ```text
 C:/Users/<user>/cywell/
-├─ ocp-rag-chatbot-v2/
+├─ ocp-play-studio/
 └─ ocp-rag-chatbot-data/
 ```
 
@@ -904,7 +943,8 @@ C:/Users/<user>/cywell/
 
 ```env
 ARTIFACTS_DIR=C:/Users/<user>/cywell/ocp-rag-chatbot-data
-SOURCE_MANIFEST_PATH=C:/Users/<user>/cywell/ocp-rag-chatbot-v2/manifests/ocp_ko_4_20_approved_ko.json
+SOURCE_CATALOG_PATH=C:/Users/<user>/cywell/ocp-play-studio/manifests/ocp_ko_4_20_html_single.json
+SOURCE_MANIFEST_PATH=C:/Users/<user>/cywell/ocp-play-studio/manifests/ocp_ko_4_20_approved_ko.json
 ```
 
 중요:
@@ -925,7 +965,7 @@ python -m pip install --upgrade pip
 pip install -e .
 ```
 
-의존성 기준 파일은 [`pyproject.toml`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/pyproject.toml) 하나다. `requirements.txt`는 따로 두지 않는다.
+의존성 기준 파일은 [`pyproject.toml`](pyproject.toml) 하나다. `requirements.txt`는 따로 두지 않는다.
 
 기본 설치 라이브러리:
 
@@ -954,7 +994,8 @@ pip install -e ".[eval]"
 
 ```env
 ARTIFACTS_DIR=C:/Users/<user>/cywell/ocp-rag-chatbot-data
-SOURCE_MANIFEST_PATH=C:/Users/<user>/cywell/ocp-rag-chatbot-v2/manifests/ocp_ko_4_20_approved_ko.json
+SOURCE_CATALOG_PATH=C:/Users/<user>/cywell/ocp-play-studio/manifests/ocp_ko_4_20_html_single.json
+SOURCE_MANIFEST_PATH=C:/Users/<user>/cywell/ocp-play-studio/manifests/ocp_ko_4_20_approved_ko.json
 
 EMBEDDING_BASE_URL=
 EMBEDDING_MODEL=dragonkue/bge-m3-ko
@@ -1037,19 +1078,32 @@ python3 scripts/build_source_approval.py
 
 산출물:
 
-- `artifacts/part1/source_approval_report.json`
+- `../ocp-rag-chatbot-data/corpus/source_approval_report.json`
+- `../ocp-rag-chatbot-data/corpus/corpus_gap_report.json`
 - `manifests/ocp_ko_4_20_approved_ko.json`
+
+#### source catalog 갱신 / 업데이트 diff 확인
+
+```bash
+python3 scripts/build_source_manifest.py
+```
+
+산출물:
+
+- `manifests/ocp_ko_4_20_html_single.json`
+- `../ocp-rag-chatbot-data/corpus/source_manifest_update_report.json`
+- `../ocp-rag-chatbot-data/corpus/corpus_gap_report.json`
 
 #### 문서 준비 단계 전체 재빌드
 
 ```bash
-python3 scripts/run_part1.py --collect-subset all --process-subset all
+python3 scripts/run_ingestion.py --collect-subset all --process-subset all
 ```
 
 #### retrieval sanity
 
 ```bash
-python3 scripts/run_part2_sanity.py
+python3 scripts/run_retrieval_sanity.py
 ```
 
 #### runtime endpoint 점검
@@ -1080,7 +1134,7 @@ play_book.cmd ui
   - source view: `normalized_docs.jsonl`
   - retrieval: `chunks.jsonl`, `bm25_corpus.jsonl`, Qdrant payload
 - 이번 MVP는 이 기존 구조를 재사용하고, backend에는 `/api/source-meta`와 citation enrichment만 최소 추가했다.
-- `ocp_doc_to_book`에는 `canonical_book_v1` 계약을 추가했고, 현재 OCP `normalized_docs`는 이 canonical source-view 포맷으로 바로 승격할 수 있다.
+- `play_book_studio/intake`에는 `canonical_book_v1` 계약을 추가했고, 현재 OCP `normalized_docs`는 이 canonical source-view 포맷으로 바로 승격할 수 있다.
 - backend에는 `/api/source-book`도 추가되어 `viewer_path -> canonical book JSON` 변환을 확인할 수 있다.
 - backend에는 `/api/doc-to-book/plan`도 추가되어 `web/pdf source -> acquisition_uri + capture_strategy + canonical draft`를 바로 확인할 수 있다.
 - backend에는 `/api/doc-to-book/drafts`도 추가되어 `문서 추가 요청 -> draft id 발급 -> 다시 조회/list` 흐름을 바로 확인할 수 있다.
@@ -1088,7 +1142,7 @@ play_book.cmd ui
 - 우측 study panel에는 `Intake` 탭도 추가되어, 웹/PDF URI를 넣고 `plan preview -> draft 저장 -> capture -> normalize -> study panel 열기`까지 바로 실험할 수 있다.
 - 웹 문서는 현재 docs.redhat `.../html/<slug>`를 `.../html-single/<slug>/index`로 바꾸는 규칙까지 들어가 있다.
 - PDF는 아직 full parser는 아니고 `pdf_text_extract_v1` 전략으로 계획만 세운다.
-- Doc-to-Book draft는 `artifacts/doc_to_book/drafts/*.json`, capture artifact는 `artifacts/doc_to_book/captures/`, canonical book은 `artifacts/doc_to_book/books/`에 저장되며 같은 draft id를 중심으로 추적한다.
+- Doc-to-Book draft는 `../ocp-rag-chatbot-data/doc_to_book/drafts/*.json`, capture artifact는 `../ocp-rag-chatbot-data/doc_to_book/captures/`, canonical book은 `../ocp-rag-chatbot-data/doc_to_book/books/`에 저장되며 같은 draft id를 중심으로 추적한다.
 - source tag 라벨은 `book_title + section_path_label` 기준으로 만들고, 우측 panel은 내부 `/docs/...` iframe을 우선 사용한다.
 - exact section 매핑이 어려운 경우에는 `viewer_path`의 book 단위 fallback을 허용한다.
 - `Pod lifecycle` 같은 개념형 질의는 retrieval/context 단계에서 `nodes > Pod 이해 / Pod 구성의 예` 같은 설명 섹션을 우선하도록 보정했고, learn 답변도 그 citation을 기준으로 정리한다.
@@ -1116,7 +1170,7 @@ play_book.cmd ui
   - `/api/doc-to-book/capture`
   - `/api/doc-to-book/normalize`
   - `/api/doc-to-book/book`
-  - `ocp_doc_to_book` canonical draft/store 스캐폴드
+  - `play_book_studio/intake` canonical draft/store 스캐폴드
   - study panel `Intake` 탭
 - 현재 한계
   - 웹은 현재 docs.redhat html-single 기준 capture/normalize까지 된다.
@@ -1159,19 +1213,19 @@ play_book.cmd ui
 이 기본값을 쓴 이유는, 현재 `ragas` 버전의 Chat Completions 경로와 호환성이 안정적이기 때문이다.
 
 ```bash
-play_book.cmd ragas --cases manifests/part3_ragas_eval_cases.jsonl
+play_book.cmd ragas --cases manifests/ragas_eval_cases.jsonl
 ```
 
 dry run:
 
 ```bash
-play_book.cmd ragas --cases manifests/part3_ragas_eval_cases.jsonl --dry-run
+play_book.cmd ragas --cases manifests/ragas_eval_cases.jsonl --dry-run
 ```
 
 출력:
 
-- `artifacts/part3/ragas_eval_report.json`
-- `artifacts/part3/ragas_eval_dataset_preview.json`
+- `../ocp-rag-chatbot-data/answering/ragas_eval_report.json`
+- `../ocp-rag-chatbot-data/answering/ragas_eval_dataset_preview.json`
 
 발표 때는 이렇게 설명하면 된다.
 
@@ -1195,7 +1249,7 @@ play_book.cmd ragas --cases manifests/part3_ragas_eval_cases.jsonl --dry-run
 
 파일:
 
-- `artifacts/part2/sanity_report.json`
+- `../ocp-rag-chatbot-data/retrieval/sanity_report.json`
 
 현재 수치:
 
@@ -1214,7 +1268,7 @@ play_book.cmd ragas --cases manifests/part3_ragas_eval_cases.jsonl --dry-run
 
 파일:
 
-- `artifacts/part3/answer_eval_report.json`
+- `../ocp-rag-chatbot-data/answering/answer_eval_report.json`
 
 현재 수치:
 
@@ -1238,7 +1292,7 @@ play_book.cmd ragas --cases manifests/part3_ragas_eval_cases.jsonl --dry-run
 
 파일:
 
-- `artifacts/part3/ragas_eval_report.json`
+- `../ocp-rag-chatbot-data/answering/ragas_eval_report.json`
 
 현재 수치:
 
@@ -1357,16 +1411,17 @@ OpenDocuments와 비교했을 때:
 ## 16. 현재 한계와 발표 시 정직하게 말해야 하는 부분
 
 1. 일부 고가치 문서는 vendor 한국어 fallback 문제로 `en_only` 또는 `mixed` 상태다.
-2. learn 답변은 ops 답변보다 덜 안정적이다.
-3. caching 전략은 부분 구현 상태다.
-4. source viewer는 현재 `approved_ko`와 `normalized_docs` 품질에 직접 의존한다.
-5. Doc-to-Book / Playbook은 방향성만 잡았고, 실제 parser/state engine 구현은 다음 단계다.
+2. `translated_ko_draft` lane은 상태값과 승인 규칙만 먼저 정의됐고, 실제 번역/검수 파이프라인은 다음 단계다.
+3. learn 답변은 ops 답변보다 덜 안정적이다.
+4. caching 전략은 부분 구현 상태다.
+5. source viewer는 현재 `approved_ko`와 `normalized_docs` 품질에 직접 의존한다.
+6. Doc-to-Book / Playbook은 방향성만 잡았고, 실제 parser/state engine 구현은 다음 단계다.
 
 이 한계를 숨기기보다, 아래처럼 설명하는 편이 더 낫다.
 
 - “현재는 OCP 특화 vertical prototype이며, retrieval/answer를 분리 평가하는 구조를 먼저 확정했다.”
 - “운영형 질문과 멀티턴 처리 품질은 크게 개선되었고, learn 답변과 source gap이 남은 리스크다.”
-- “다음 단계는 approved corpus 고도화, Doc-to-Book ingestion, Playbook state, caching/제품 UX 보강이다.”
+- “다음 단계는 OCP 한글 코퍼스 보강, vendor fallback 문서 번역 lane, 지속 업데이트 ingestion, Playbook state, caching/제품 UX 보강이다.”
 
 ---
 

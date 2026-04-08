@@ -1,3 +1,9 @@
+"""제품 전체의 표준 실행 진입점.
+
+어떤 명령이 존재하고, 각 명령이 어떤 런타임을 띄우는지 이해하려면
+가장 먼저 이 파일을 보면 된다.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -5,6 +11,7 @@ import json
 from pathlib import Path
 
 from play_book_studio.answering.answerer import Part3Answerer
+from play_book_studio.app.runtime_report import write_runtime_report
 from play_book_studio.app.server import serve
 from play_book_studio.config.settings import load_settings
 from play_book_studio.evals.answer_eval import evaluate_case, summarize_case_results
@@ -27,6 +34,8 @@ def _add_runtime_args(parser: argparse.ArgumentParser) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    # 지원하는 명령을 한곳에 모아 두어, 하위 모듈로 내려가기 전에
+    # 전체 실행 구조를 한 파일에서 설명할 수 있게 한다.
     parser = argparse.ArgumentParser(
         description="Play Book Studio canonical entrypoint",
     )
@@ -52,7 +61,7 @@ def build_parser() -> argparse.ArgumentParser:
     eval_parser.add_argument(
         "--cases",
         type=Path,
-        default=ROOT / "manifests" / "part3_answer_eval_cases.jsonl",
+        default=ROOT / "manifests" / "answer_eval_cases.jsonl",
     )
     _add_runtime_args(eval_parser)
 
@@ -60,13 +69,19 @@ def build_parser() -> argparse.ArgumentParser:
     ragas_parser.add_argument(
         "--cases",
         type=Path,
-        default=ROOT / "manifests" / "part3_ragas_eval_cases.jsonl",
+        default=ROOT / "manifests" / "ragas_eval_cases.jsonl",
     )
     ragas_parser.add_argument("--batch-size", type=int, default=2)
     ragas_parser.add_argument("--judge-model", default=None)
     ragas_parser.add_argument("--embedding-model", default=None)
     ragas_parser.add_argument("--dry-run", action="store_true")
     _add_runtime_args(ragas_parser)
+
+    runtime_parser = subparsers.add_parser("runtime", help="Write a runtime readiness report")
+    runtime_parser.add_argument("--output", type=Path, default=None)
+    runtime_parser.add_argument("--ui-base-url", default="http://127.0.0.1:8765")
+    runtime_parser.add_argument("--recent-turns", type=int, default=3)
+    runtime_parser.add_argument("--skip-samples", action="store_true")
 
     return parser
 
@@ -131,7 +146,7 @@ def _run_eval(args: argparse.Namespace) -> int:
         **summarize_case_results(details),
         "details": details,
     }
-    output_path = settings.part3_dir / "answer_eval_report.json"
+    output_path = settings.answer_eval_report_path
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"wrote answer eval report: {output_path}")
@@ -156,7 +171,7 @@ def _run_ragas(args: argparse.Namespace) -> int:
         for case, generated_result in zip(cases, generated_results, strict=True):
             row, metadata = build_ragas_case_row(case, generated_result=generated_result)
             rows.append({**metadata, **row})
-        output_path = settings.part3_dir / "ragas_eval_dataset_preview.json"
+        output_path = settings.ragas_dataset_preview_path
         output_path.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"wrote ragas dataset preview: {output_path}")
         print(
@@ -187,10 +202,23 @@ def _run_ragas(args: argparse.Namespace) -> int:
         max_context_chunks=args.max_context_chunks,
         batch_size=args.batch_size,
     )
-    output_path = settings.part3_dir / "ragas_eval_report.json"
+    output_path = settings.ragas_eval_report_path
     output_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"wrote ragas eval report: {output_path}")
     print(json.dumps(report["summary"], ensure_ascii=False, indent=2))
+    return 0
+
+
+def _run_runtime(args: argparse.Namespace) -> int:
+    output_path, report = write_runtime_report(
+        ROOT,
+        output_path=args.output,
+        ui_base_url=args.ui_base_url,
+        recent_turns=args.recent_turns,
+        sample=not args.skip_samples,
+    )
+    print(f"wrote runtime report: {output_path}")
+    print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0
 
 
@@ -204,5 +232,6 @@ def main() -> int:
         return _run_eval(args)
     if args.command == "ragas":
         return _run_ragas(args)
+    if args.command == "runtime":
+        return _run_runtime(args)
     raise ValueError(f"unsupported command: {args.command}")
-

@@ -48,11 +48,11 @@ major work는 아래 순서로 진행한다.
 
 ### 2. 책임 범위 확인
 
-- preprocessing 변경이면 [`src/ocp_rag_part1`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/src/ocp_rag_part1)
-- retrieval 변경이면 [`src/ocp_rag_part2`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/src/ocp_rag_part2)
-- answer 변경이면 [`src/ocp_rag_part3`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/src/ocp_rag_part3)
-- runtime / UI 변경이면 [`src/ocp_rag_part4`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/src/ocp_rag_part4)
-- 업로드 문서 파이프라인이면 [`src/ocp_doc_to_book`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/src/ocp_doc_to_book)
+- preprocessing 변경이면 [`src/play_book_studio/ingestion`](src/play_book_studio/ingestion)
+- retrieval 변경이면 [`src/play_book_studio/retrieval`](src/play_book_studio/retrieval)
+- answer 변경이면 [`src/play_book_studio/answering`](src/play_book_studio/answering)
+- runtime / UI 변경이면 [`src/play_book_studio/app`](src/play_book_studio/app)
+- 업로드 문서 파이프라인이면 [src/play_book_studio/intake](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/intake)
 
 ### 3. 테스트 영향 확인
 
@@ -131,7 +131,7 @@ release decision 직전에는 각 역할이 아래를 확인한다.
 - `Sieve`: retrieval / source-view grounding
 - `Echo`: follow-up behavior
 - `Console`: chatbot-first UX
-- `RedPen`: [`EVALS.md`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/EVALS.md) baseline/release gates
+- `RedPen`: [`EVALS.md`](EVALS.md) baseline/release gates
 
 한 역할이라도 blocker를 잡으면, 해소되거나 명시적으로 수용되기 전까지 release는 열어두어야 한다.
 

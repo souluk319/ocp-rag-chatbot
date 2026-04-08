@@ -1,2 +1,1 @@
-"""App package for Play Book Studio."""
-
+"""Play Book Studio app/runtime 패키지."""

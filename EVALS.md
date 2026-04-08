@@ -170,9 +170,9 @@ release는 자동 테스트만으로 닫지 않는다.
 
 관련:
 
-- [`tests/test_part1_normalize.py`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/tests/test_part1_normalize.py)
-- [`tests/test_part1_chunking.py`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/tests/test_part1_chunking.py)
-- [`tests/test_part1_audit.py`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/tests/test_part1_audit.py)
+- [tests/test_ingestion_normalize.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/tests/test_ingestion_normalize.py)
+- [tests/test_ingestion_chunking.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/tests/test_ingestion_chunking.py)
+- [tests/test_ingestion_audit.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/tests/test_ingestion_audit.py)
 
 ### retrieval
 
@@ -183,22 +183,22 @@ release는 자동 테스트만으로 닫지 않는다.
 
 관련:
 
-- [`manifests/part2_retrieval_sanity_cases.jsonl`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/manifests/part2_retrieval_sanity_cases.jsonl)
-- [`manifests/part2_retrieval_eval_cases.jsonl`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/manifests/part2_retrieval_eval_cases.jsonl)
-- [`tests/test_part2_retrieval.py`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/tests/test_part2_retrieval.py)
+- [`manifests/retrieval_sanity_cases.jsonl`](manifests/retrieval_sanity_cases.jsonl)
+- [`manifests/retrieval_eval_cases.jsonl`](manifests/retrieval_eval_cases.jsonl)
+- [tests/test_retrieval_core.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/tests/test_retrieval_core.py)
 
 ### answer generation
 
 - 답변이 실제 citation과 정합적인지
-- `ops` / `learn` 스타일 차이가 유지되는지
+- 질문 유형별 답변 스타일 차이가 유지되는지
 - 근거 부족 시 과장 답변 대신 경고/질문으로 꺾는지
 - corrective follow-up에서도 주제가 유지되는지
 
 관련:
 
-- [`manifests/part3_answer_eval_cases.jsonl`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/manifests/part3_answer_eval_cases.jsonl)
-- [`manifests/part3_ragas_eval_cases.jsonl`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/manifests/part3_ragas_eval_cases.jsonl)
-- [`tests/test_part3_answerer.py`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/tests/test_part3_answerer.py)
+- [`manifests/answer_eval_cases.jsonl`](manifests/answer_eval_cases.jsonl)
+- [`manifests/ragas_eval_cases.jsonl`](manifests/ragas_eval_cases.jsonl)
+- [tests/test_answering_answerer.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/tests/test_answering_answerer.py)
 
 ### runtime / UI
 
@@ -209,7 +209,7 @@ release는 자동 테스트만으로 닫지 않는다.
 
 관련:
 
-- [`tests/test_part4_ui.py`](/Users/kugnus/cywell/ocp-rag-chatbot-v2/ocp-rag-chatbot-v2/tests/test_part4_ui.py)
+- [tests/test_app_ui.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/tests/test_app_ui.py)
 
 ## 추적해야 하는 실패 케이스
 
