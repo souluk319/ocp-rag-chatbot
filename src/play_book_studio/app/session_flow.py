@@ -23,6 +23,7 @@ from play_book_studio.retrieval.query import (
     has_pod_lifecycle_concept_intent,
     has_pod_pending_troubleshooting_intent,
     has_rbac_intent,
+    has_route_ingress_compare_intent,
     has_update_doc_locator_ambiguity,
     is_generic_intro_query,
 )
@@ -68,6 +69,7 @@ def is_task_topic(topic: str) -> bool:
         "Machine Config Operator",
         "OpenShift 아키텍처",
         "OpenShift",
+        "Route와 Ingress 비교",
     }
 
 
@@ -77,6 +79,8 @@ def infer_explicit_topic(query: str) -> str | None:
         return None
     if has_deployment_scaling_intent(normalized):
         return "Deployment 스케일링"
+    if has_route_ingress_compare_intent(normalized):
+        return "Route와 Ingress 비교"
     if ETCD_RE.search(normalized):
         if has_backup_restore_intent(normalized):
             return "etcd 백업/복원"
@@ -102,6 +106,8 @@ def infer_open_entities(topic: str) -> list[str]:
         return ["Machine Config Operator"]
     if "rbac" in normalized:
         return ["RBAC"]
+    if "route와 ingress 비교" in normalized:
+        return ["OpenShift", "Route", "Ingress"]
     if "openshift" in normalized:
         return ["OpenShift"]
     return []

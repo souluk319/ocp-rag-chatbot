@@ -23,6 +23,7 @@ def query_book_adjustments(
             [
                 context.current_topic or "",
                 *context.open_entities,
+                context.user_goal or "",
                 context.unresolved_question or "",
             ]
         )

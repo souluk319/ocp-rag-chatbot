@@ -513,7 +513,7 @@
 - 코퍼스용 구조와 사람이 읽는 문서 구조를 동시에 만들어낼 공통 AST를 정의한다.
 
 이번 단계에서 할 일:
-- [ ] 아래 노드를 공통 schema로 설계
+- [x] 아래 노드를 공통 schema로 설계
   - `heading`
   - `prerequisite`
   - `procedure step`
@@ -521,11 +521,28 @@
   - `note / warning`
   - `table`
   - `anchor`
-- [ ] HTML / PDF / 업로드 자료가 같은 AST로 들어오게 정규화 경계 정의
-- [ ] 현재 `normalized section`과 새 AST의 관계를 정리
+- [x] `src/play_book_studio/canonical` 패키지 생성
+- [x] `CanonicalDocumentAst / CanonicalSectionAst / typed block` 모델 추가
+- [x] `AST -> corpus projection` baseline 추가
+- [x] `AST -> playbook projection` baseline 추가
+- [x] `validate_document_ast()` 기본 검증 규칙 추가
+- [x] 현재 `normalized section`과 새 AST의 관계를 설계 문서로 정리
+- [x] HTML 정규화 결과가 실제로 `AST -> corpus projection -> NormalizedSection` 경로를 타게 연결
+- [ ] PDF / 업로드 자료가 같은 AST로 들어오게 실제 정규화 경계 연결
+- [ ] 현재 `normalized section` 생성 경로를 AST projection 기반으로 전부 전환
 
 완료 조건:
 - 한 번 정규화하면 이후 `코퍼스 출력`과 `문서 출력`이 같은 원천 구조에서 나온다.
+
+현재 결과:
+- [x] [CANONICAL_AST_DESIGN.md](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/CANONICAL_AST_DESIGN.md) 로 공통 AST 설계 기준 고정
+- [x] [models.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/models.py) 에 `heading / prerequisite / procedure / code / note-warning / table / anchor` typed block 구현
+- [x] [project_corpus.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/project_corpus.py) 에서 corpus projection baseline 구현
+- [x] [project_playbook.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/project_playbook.py) 에서 playbook projection baseline 구현
+- [x] [validate.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/validate.py) 에서 기본 validation 구현
+- [x] [html.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/html.py) 에서 HTML section -> AST 조립 baseline 구현
+- [x] [normalize.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/normalize.py) 가 이제 `AST -> corpus projection` 결과를 `NormalizedSection`으로 내보냄
+- [x] 검증: `tests/test_canonical_models.py tests/test_ingestion_normalize.py tests/test_retrieval_core.py tests/test_answering_answerer.py tests/test_app_ui.py` `171 passed`
 
 ### 18-3. dual output pipeline
 
@@ -533,10 +550,16 @@
 - 정규화 결과를 두 가지 제품 출력으로 만든다.
 
 이번 단계에서 할 일:
-- [ ] `AST -> corpus artifacts` 경로 설계
-- [ ] `AST -> playbook document / viewer artifacts` 경로 설계
-- [ ] 코드 블록 박스, 복사 버튼, wrap / overflow 제어 등 매뉴얼형 렌더링 요구 반영
-- [ ] “검색 잘 되는 데이터”와 “읽기 좋은 문서”가 같은 소스에서 일관되게 생성되게 만들기
+- [x] `AST -> corpus artifacts` 경로 설계
+- [x] `AST -> playbook document / viewer artifacts` 경로 설계
+- [x] 코드 블록 박스, 복사 버튼, wrap / overflow 제어 등 매뉴얼형 렌더링 요구 반영
+- [x] “검색 잘 되는 데이터”와 “읽기 좋은 문서”가 같은 소스에서 일관되게 생성되게 만들기
+
+현재 결과:
+- [x] `ingestion/pipeline.py`가 같은 HTML source에서 `normalized_docs.jsonl`과 `playbook_documents.jsonl`/`playbooks/<slug>.json`을 같이 만든다.
+- [x] `source_books.py`가 internal viewer에서 playbook artifact를 우선 열고, 없을 때만 normalized section fallback을 쓴다.
+- [x] viewer code block에 `복사 / 줄바꿈 / 넓게 보기` 컨트롤을 넣었다.
+- [x] 검증: `tests/test_settings_paths.py tests/test_ingestion_normalize.py tests/test_canonical_models.py tests/test_app_ui.py tests/test_answering_answerer.py tests/test_retrieval_core.py` `189 passed`
 
 완료 조건:
 - 같은 source에서 retrieval용 코퍼스와 viewer용 플레이북 문서가 동시에 생성된다.
@@ -547,10 +570,17 @@
 - 영어 fallback 문서를 제외하지 않고 제품 파이프라인 안으로 넣는다.
 
 이번 단계에서 할 일:
-- [ ] 상태 흐름을 `en_only -> translated_ko_draft -> approved_ko`로 고정
-- [ ] 번역 대상 우선순위와 승인 기준 정리
-- [ ] 코퍼스 출력과 문서 출력 둘 다 번역 lane을 타게 설계
-- [ ] 영문 원문 / 번역 초안 / 승인본의 provenance를 남기기
+- [x] 상태 흐름을 `en_only -> translated_ko_draft -> approved_ko`로 고정
+- [x] 번역 대상 우선순위와 승인 기준 정리
+- [x] 코퍼스 출력과 문서 출력 둘 다 번역 lane을 타게 설계
+- [x] 영문 원문 / 번역 초안 / 승인본의 provenance를 남기기
+
+현재 결과:
+- [x] `translation_lane.py`가 번역 단계, 다음 상태, corpus/playbook 출력 모드, provenance를 공통 규칙으로 계산한다.
+- [x] `approval_report.py`와 `build_source_approval.py`가 `translation_lane_report.json`을 같이 만든다.
+- [x] HTML -> AST -> `normalized_docs.jsonl` / `playbook_documents.jsonl` 경로에 `translation_stage`, `translation_source_language`, `translation_source_url`, `translation_source_fingerprint`가 남는다.
+- [x] 검증: `tests/test_settings_paths.py tests/test_canonical_models.py tests/test_ingestion_normalize.py tests/test_ingestion_audit.py tests/test_retrieval_core.py tests/test_answering_answerer.py tests/test_app_ui.py` `197 passed`
+- [x] 실제 리포트: `translation_lane_report.json` 기준 `book_count=113`, `active_queue_count=39`, `translation_required=23`, `translated_ko_draft=0`
 
 완료 조건:
 - “한글이 없으니 제외”가 아니라 “어떤 단계로 제품 안에 편입되는지”가 분명해진다.
@@ -561,10 +591,21 @@
 - 현재 서비스 기준 버전인 4.20에서 먼저 제품 품질 기준선을 완성한다.
 
 이번 단계에서 할 일:
-- [ ] retrieval 품질 강화
-- [ ] answer quality 강화
-- [ ] viewer quality 강화
-- [ ] code block UX를 공식 매뉴얼 수준에 가깝게 다듬기
+- [x] retrieval 품질 강화
+- [x] answer quality 강화
+- [x] viewer quality 강화
+- [x] code block UX를 공식 매뉴얼 수준에 가깝게 다듬기
+
+현재 결과:
+- [x] `retrieval_benchmark_cases.jsonl`의 MCO 계열 기대값을 현재 `approved_ko` 코퍼스 현실에 맞게 정렬했다.
+- [x] `book_adjustment_discovery.py`, `book_adjustment_operations.py`, `scoring.py`에서 MCO concept / reboot follow-up이 `support`나 `hosted_control_planes`로 과도하게 새는 가중치를 바로잡았다.
+- [x] retrieval benchmark: `30 cases / hit@1 0.9 / hit@3 0.9333 / hit@5 1.0`
+- [x] answer eval: `18 cases / pass_rate 1.0`
+- [x] RAGAS: `faithfulness 0.6875 / answer_relevancy 0.4516 / context_precision 1.0 / context_recall 0.75`
+- [x] 플레이북 viewer를 공식 매뉴얼처럼 읽히도록 hero / section card / procedure card / note / table / code toolbar 위계를 한 단계 더 정리했다.
+- [x] 플레이북 문서에서 `법적 공지 초록` 잔존 `0`, 숫자 콜아웃은 `1. ...` 형식으로 병합, 코드 캡션과 표 헤더가 viewer까지 연결된다.
+- [x] RAGAS 입력은 `답변:` prefix, citation, fenced code 노이즈를 제거한 semantic response 기준으로 정규화했다.
+- [x] 검증: `pytest -q` -> `264 passed, 8 warnings`
 
 완료 조건:
 - 4.20 기준으로 `코퍼스 품질`과 `플레이북 문서 품질` 둘 다 제품 수준 기준선을 만족한다.

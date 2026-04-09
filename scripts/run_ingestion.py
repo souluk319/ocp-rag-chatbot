@@ -25,12 +25,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--force-collect", action="store_true")
     parser.add_argument("--skip-embeddings", action="store_true")
     parser.add_argument("--skip-qdrant", action="store_true")
+    parser.add_argument("--source-manifest-path")
     return parser
 
 
 def main() -> int:
     args = build_parser().parse_args()
     settings = load_settings(ROOT)
+    if args.source_manifest_path:
+        settings.source_manifest_path_override = args.source_manifest_path
     log = run_ingestion_pipeline(
         settings,
         refresh_manifest=args.refresh_manifest,

@@ -31,10 +31,11 @@ README가 길기 때문에, 지금 레포를 처음 열었을 때 가장 먼저 
 ├─ manifests/                  # source manifest, eval case, corpus manifest
 ├─ scripts/                    # 실행/평가/점검용 얇은 진입점
 ├─ src/
-│  └─ play_book_studio/        # config, ingestion, intake, retrieval, answering, app, evals
+│  └─ play_book_studio/        # config, canonical, ingestion, intake, retrieval, answering, app, evals
 ├─ tests/                      # unit / integration / eval regression tests
 ├─ play_book.cmd               # 현재 제품 기준 단일 실행 진입점
 ├─ CODE_READING_GUIDE.md       # 코드 읽기 순서와 파이프라인 학습 가이드
+├─ CANONICAL_AST_DESIGN.md     # 코퍼스/플레이북 공통 AST 설계 기준
 ├─ FILE_ROLE_GUIDE.md          # manifests / scripts 파일 역할 가이드
 ├─ QUICKSTART.md               # 시연/운영용 최소 실행 순서
 ├─ ENTRYPOINTS.md              # canonical entrypoint 설명
@@ -54,6 +55,7 @@ README가 길기 때문에, 지금 레포를 처음 열었을 때 가장 먼저 
 현재는 예전 단계명보다 아래 기능 축으로 읽는 게 맞다.
 
 - `config`: endpoint, pack, manifest, artifacts 경로
+- `canonical`: 코퍼스와 플레이북 문서가 같이 보는 공통 AST
 - `ingestion`: 공식 OCP 코퍼스 수집/정규화/청킹/임베딩
 - `intake`: 업로드 문서를 canonical study asset으로 바꾸는 축
 - `retrieval`: query rewrite, BM25/vector/reranker/fusion
@@ -201,18 +203,26 @@ OCP 문서는 양이 많고, 주제가 넓고, 운영 관점과 학습 관점이
 이 시스템은 아래 순서로 움직인다.
 
 1. 문서를 사람과 기계가 같이 읽을 수 있는 형태로 정리한다.
-2. 정리된 문서를 검색용 조각으로 나누고, 각 조각을 벡터로 만든다.
-3. 질문이 들어오면 검색하기 좋은 문장으로 다시 다듬는다.
-4. 키워드 검색과 의미 검색을 동시에 돌린다.
-5. 두 검색 결과를 합쳐서 가장 관련 있는 문서를 위로 올린다.
-6. 상위 결과를 전부 쓰지 않고, 실제 답변 근거로 쓸 문서 몇 개만 다시 고른다.
-7. 그 근거만 LLM에 넘기고 답변을 만든 뒤, citation과 처리 과정을 화면에 같이 보여준다.
+2. 정리된 결과를 `canonical AST`로 만들고, 여기서 `코퍼스 출력`과 `플레이북 문서 출력`을 같이 만든다.
+3. 코퍼스 출력은 검색용 조각으로 나누고, 각 조각을 벡터로 만든다.
+4. 질문이 들어오면 검색하기 좋은 문장으로 다시 다듬는다.
+5. 키워드 검색과 의미 검색을 동시에 돌린다.
+6. 두 검색 결과를 합쳐서 가장 관련 있는 문서를 위로 올린다.
+7. 상위 결과를 전부 쓰지 않고, 실제 답변 근거로 쓸 문서 몇 개만 다시 고른다.
+8. 그 근거만 LLM에 넘기고 답변을 만든 뒤, citation과 처리 과정을 화면에 같이 보여준다.
+
+현재 기준으로 HTML 정규화 경로는 이미 이 AST를 거친다.  
+즉 `normalize.py`가 바로 `NormalizedSection`을 손으로 만드는 구조가 아니라, 먼저 `canonical/html.py`에서 AST를 만들고 `project_corpus.py`를 통해 retrieval용 section으로 내보내는 방향으로 전환되기 시작했다.
+
+그리고 같은 AST에서 viewer용 플레이북 문서도 같이 만든다.  
+즉 현재 ingestion 결과는 retrieval용 `normalized_docs.jsonl`만 생기는 게 아니라, `playbook_documents.jsonl`과 `playbooks/<slug>.json`도 같이 만들어지고, 내부 reference viewer는 이 playbook artifact를 우선 열도록 바뀌었다.
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'fontSize': '13px'}, 'flowchart': {'htmlLabels': true, 'nodeSpacing': 35, 'rankSpacing': 45}} }%%
 flowchart TD
     A["원본 문서<br/>html / 내부 정리 문서"] --> B["문서 정리<br/>섹션 추출<br/>코드 보존<br/>불필요한 영역 제거"]
     B --> C["정규화 섹션 파일<br/>normalized_docs.jsonl"]
+    B --> C2["플레이북 문서 파일<br/>playbook_documents.jsonl / playbooks/&lt;slug&gt;.json"]
     C --> D["청크 파일<br/>chunks.jsonl"]
     D --> E["BM25 검색 파일<br/>bm25_corpus.jsonl"]
     D --> F["Qdrant 벡터 컬렉션<br/>openshift_docs"]
@@ -457,11 +467,12 @@ Qdrant에는 청크마다 아래 구조로 저장된다.
 현재 승인 상태:
 
 - 전체 책: `113`
-- `approved_ko`: `75`
+- `approved_ko`: `74`
 - `translated_ko_draft`: `0`
-- `mixed`: `15`
+- `mixed`: `0`
 - `en_only`: `23`
 - 중요 문서 품질 이슈: `6`
+- translation lane active queue: `39`
 
 대표 고가치 이슈:
 
@@ -492,9 +503,10 @@ Qdrant에는 청크마다 아래 구조로 저장된다.
 지속 업데이트 기준도 같이 잡아둔다.
 
 - `build_source_manifest.py`는 published Korean source catalog를 다시 긁고, 신규/삭제/변경 slug diff를 `source_manifest_update_report.json`에 남긴다.
-- `build_source_approval.py`는 source catalog를 읽어 approved runtime manifest를 다시 만든다.
+- `build_source_approval.py`는 source catalog를 읽어 approved runtime manifest, approval report, translation lane report를 다시 만든다.
 - 즉 `html_single catalog -> approval report -> approved_ko manifest`의 3단 구조로 본다.
 - runtime은 `approved_ko manifest`를 보고, update tracking은 `html_single catalog`를 본다.
+- `translation_lane_report.json`은 `en_only -> translated_ko_draft -> approved_ko` 편입 경로를 별도로 추적한다.
 
 즉 현재 시스템은 단순히 “검색되면 쓴다”가 아니라, `문서 적합성` 자체를 별도 관리한다.
 
@@ -910,6 +922,7 @@ tag에는 `book_title`, `section_path_label`, `viewer_path` 기반 정보가 들
 - `../ocp-rag-chatbot-data/corpus/bm25_corpus.jsonl`
 - `../ocp-rag-chatbot-data/corpus/source_approval_report.json`
 - `../ocp-rag-chatbot-data/corpus/corpus_gap_report.json`
+- `../ocp-rag-chatbot-data/corpus/translation_lane_report.json`
 - `../ocp-rag-chatbot-data/retrieval/sanity_report.json`
 - `../ocp-rag-chatbot-data/answering/answer_eval_report.json`
 - `../ocp-rag-chatbot-data/answering/ragas_eval_report.json`
@@ -1080,6 +1093,7 @@ python3 scripts/build_source_approval.py
 
 - `../ocp-rag-chatbot-data/corpus/source_approval_report.json`
 - `../ocp-rag-chatbot-data/corpus/corpus_gap_report.json`
+- `../ocp-rag-chatbot-data/corpus/translation_lane_report.json`
 - `manifests/ocp_ko_4_20_approved_ko.json`
 
 #### source catalog 갱신 / 업데이트 diff 확인
@@ -1093,6 +1107,7 @@ python3 scripts/build_source_manifest.py
 - `manifests/ocp_ko_4_20_html_single.json`
 - `../ocp-rag-chatbot-data/corpus/source_manifest_update_report.json`
 - `../ocp-rag-chatbot-data/corpus/corpus_gap_report.json`
+- `../ocp-rag-chatbot-data/corpus/translation_lane_report.json`
 
 #### 문서 준비 단계 전체 재빌드
 
@@ -1296,15 +1311,17 @@ play_book.cmd ragas --cases manifests/ragas_eval_cases.jsonl --dry-run
 
 현재 수치:
 
-- `faithfulness = 0.875`
-- `answer_relevancy = 0.5719`
+- `faithfulness = 0.6875`
+- `answer_relevancy = 0.4516`
 - `context_precision = 1.0`
 - `context_recall = 0.75`
 
 해석:
 
-- 찾은 근거 안에서 답하는 성향은 좋아졌다.
+- 찾은 근거 안에서 답하는 성향은 기본선 이상으로 유지되고 있다.
 - 반면 답변 문장 자체의 relevancy와 설명 밀도는 여전히 개선 여지가 있다.
+- 현재 RAGAS 입력은 `답변:` prefix, citation, fenced code 노이즈를 제거한 semantic response 기준으로 정리한다.
+- judge LLM이 `requested 3, got 1 generation` 경고를 내는 경우가 있어, RAGAS 수치는 절대값보다 추세 지표로 보는 편이 맞다.
 
 이 수치를 사람 말로 풀면 이렇다.
 

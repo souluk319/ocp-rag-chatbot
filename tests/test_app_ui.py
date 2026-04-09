@@ -439,6 +439,8 @@ class Part4UiTests(unittest.TestCase):
         )
         self.assertIn('class="source-frame-shell" hidden', html)
         self.assertIn(".source-frame-shell[hidden]", html)
+        self.assertNotIn("열린 문서가 없습니다", html)
+        self.assertNotIn('class="source-empty"', html)
 
     def test_server_static_responses_disable_cache(self) -> None:
         server_source = (
@@ -599,6 +601,73 @@ class Part4UiTests(unittest.TestCase):
         self.assertEqual(["Deployment", "replicas"], updated.open_entities)
         self.assertEqual(
             "실행 중인 Deployment의 복제본(Replicas) 개수를 3개에서 5개로 변경하려면 어떻게 해야 해?",
+            updated.user_goal,
+        )
+
+    def test_derive_next_context_tracks_route_ingress_compare_topic(self) -> None:
+        result = AnswerResult(
+            query="OpenShift에서 Route와 Ingress 차이를 운영 관점에서 설명해줘",
+            mode="learn",
+            answer="답변: Route와 Ingress는 노출 방식이 다릅니다. [1]",
+            rewritten_query="OpenShift에서 Route와 Ingress 차이를 운영 관점에서 설명해줘",
+            citations=[
+                _citation(
+                    1,
+                    section="1.3.1. Ingress 및 Route 오브젝트를 사용하여 애플리케이션 노출",
+                    book_slug="networking_overview",
+                )
+            ],
+            cited_indices=[1],
+        )
+
+        updated = _derive_next_context(
+            SessionContext(mode="learn", ocp_version="4.20"),
+            query="OpenShift에서 Route와 Ingress 차이를 운영 관점에서 설명해줘",
+            mode="learn",
+            result=result,
+        )
+
+        self.assertEqual("Route와 Ingress 비교", updated.current_topic)
+        self.assertEqual(["OpenShift", "Route", "Ingress"], updated.open_entities)
+        self.assertEqual(
+            "OpenShift에서 Route와 Ingress 차이를 운영 관점에서 설명해줘",
+            updated.user_goal,
+        )
+        self.assertIsNone(updated.unresolved_question)
+
+    def test_derive_next_context_preserves_route_ingress_topic_for_compare_follow_up(self) -> None:
+        result = AnswerResult(
+            query="쿠버네티스와 차이도 설명해줘",
+            mode="learn",
+            answer="답변: Kubernetes Ingress와 대비하면 Route는 노출 계층이 다릅니다. [1]",
+            rewritten_query="OCP 4.20 | 주제 Route와 Ingress 비교 | 엔터티 OpenShift, Route, Ingress | 사용자 목표 OpenShift에서 Route와 Ingress 차이를 운영 관점에서 설명해줘 | 쿠버네티스와 차이도 설명해줘",
+            citations=[
+                _citation(
+                    1,
+                    section="1.3.1. Ingress 및 Route 오브젝트를 사용하여 애플리케이션 노출",
+                    book_slug="networking_overview",
+                )
+            ],
+            cited_indices=[1],
+        )
+
+        updated = _derive_next_context(
+            SessionContext(
+                mode="learn",
+                user_goal="OpenShift에서 Route와 Ingress 차이를 운영 관점에서 설명해줘",
+                current_topic="Route와 Ingress 비교",
+                open_entities=["OpenShift", "Route", "Ingress"],
+                ocp_version="4.20",
+            ),
+            query="쿠버네티스와 차이도 설명해줘",
+            mode="learn",
+            result=result,
+        )
+
+        self.assertEqual("Route와 Ingress 비교", updated.current_topic)
+        self.assertEqual(["OpenShift", "Route", "Ingress"], updated.open_entities)
+        self.assertEqual(
+            "OpenShift에서 Route와 Ingress 차이를 운영 관점에서 설명해줘",
             updated.user_goal,
         )
 
@@ -1089,8 +1158,141 @@ class Part4UiTests(unittest.TestCase):
         self.assertIn('class="code-block"', html)
         self.assertIn("oc get nodes", html)
         self.assertIn(">복사<", html)
+        self.assertIn(">줄바꿈<", html)
+        self.assertIn(">넓게 보기<", html)
         self.assertNotIn("[CODE]", html)
         self.assertNotIn("Red Hat OpenShift Documentation Team", html)
+
+    def test_internal_viewer_html_prefers_playbook_artifact_when_available(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            playbook_dir = root / "artifacts" / "corpus" / "playbooks"
+            playbook_dir.mkdir(parents=True)
+            (playbook_dir / "architecture.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "playbook_document_v1",
+                        "source_view_strategy": "playbook_ast_v1",
+                        "book_slug": "architecture",
+                        "title": "아키텍처",
+                        "source_uri": "https://example.com/architecture",
+                        "language_hint": "ko",
+                        "pack_id": "openshift-4-20-core",
+                        "inferred_version": "4.20",
+                        "sections": [
+                            {
+                                "section_id": "architecture:overview",
+                                "section_key": "architecture:overview",
+                                "ordinal": 1,
+                                "heading": "개요",
+                                "level": 1,
+                                "path": ["개요"],
+                                "section_path": ["개요"],
+                                "section_path_label": "개요",
+                                "anchor": "overview",
+                                "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html#overview",
+                                "semantic_role": "overview",
+                                "block_kinds": ["prerequisite", "procedure", "code", "note"],
+                                "blocks": [
+                                    {"kind": "prerequisite", "items": ["cluster-admin 권한", "oc CLI 설치"]},
+                                    {"kind": "procedure", "steps": [{"ordinal": 1, "text": "리소스를 확인합니다.", "substeps": ["출력 결과를 검토합니다."]}]},
+                                    {"kind": "code", "language": "shell", "code": "oc get nodes", "copy_text": "oc get nodes", "wrap_hint": True, "overflow_hint": "toggle", "caption": "예제 명령"},
+                                    {"kind": "note", "variant": "warning", "title": "주의", "text": "운영 중에는 영향도를 먼저 확인합니다."},
+                                ],
+                            }
+                        ],
+                        "quality_status": "draft",
+                        "quality_score": 0.0,
+                        "quality_flags": [],
+                    },
+                    ensure_ascii=False,
+                ) + "\n",
+                encoding="utf-8",
+            )
+
+            html = _internal_viewer_html(
+                root,
+                "/docs/ocp/4.20/ko/architecture/index.html#overview",
+            )
+
+        self.assertIsNotNone(html)
+        assert html is not None
+        self.assertIn("정리된 AST 기준으로 관련 구간을 보여줍니다.", html)
+        self.assertIn("사전 요구 사항", html)
+        self.assertIn("리소스를 확인합니다.", html)
+        self.assertIn("운영 중에는 영향도를 먼저 확인합니다.", html)
+        self.assertIn("예제 명령", html)
+        self.assertIn(">줄바꿈 해제<", html)
+        self.assertIn(">넓게 보기<", html)
+
+    def test_internal_viewer_html_renders_table_headers_and_code_caption(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            playbook_dir = root / "artifacts" / "corpus" / "playbooks"
+            playbook_dir.mkdir(parents=True)
+            (playbook_dir / "nodes.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "playbook_document_v1",
+                        "source_view_strategy": "playbook_ast_v1",
+                        "book_slug": "nodes",
+                        "title": "노드",
+                        "source_uri": "https://example.com/nodes",
+                        "language_hint": "ko",
+                        "pack_id": "openshift-4-20-core",
+                        "inferred_version": "4.20",
+                        "sections": [
+                            {
+                                "section_id": "nodes:overview",
+                                "section_key": "nodes:overview",
+                                "ordinal": 1,
+                                "heading": "개요",
+                                "level": 1,
+                                "path": ["개요"],
+                                "section_path": ["개요"],
+                                "section_path_label": "개요",
+                                "anchor": "overview",
+                                "viewer_path": "/docs/ocp/4.20/ko/nodes/index.html#overview",
+                                "semantic_role": "overview",
+                                "block_kinds": ["code", "table"],
+                                "blocks": [
+                                    {
+                                        "kind": "code",
+                                        "language": "yaml",
+                                        "code": "kind: Pod",
+                                        "copy_text": "kind: Pod",
+                                        "wrap_hint": True,
+                                        "overflow_hint": "toggle",
+                                        "caption": "Pod 오브젝트 정의(YAML)",
+                                    },
+                                    {
+                                        "kind": "table",
+                                        "headers": ["이름", "역할"],
+                                        "rows": [["master-0", "control-plane"]],
+                                        "caption": "노드 역할",
+                                    },
+                                ],
+                            }
+                        ],
+                        "quality_status": "ready",
+                        "quality_score": 0.9,
+                        "quality_flags": [],
+                    },
+                    ensure_ascii=False,
+                ) + "\n",
+                encoding="utf-8",
+            )
+
+            html = _internal_viewer_html(
+                root,
+                "/docs/ocp/4.20/ko/nodes/index.html#overview",
+            )
+
+        self.assertIsNotNone(html)
+        assert html is not None
+        self.assertIn("Pod 오브젝트 정의(YAML)", html)
+        self.assertIn("노드 역할", html)
+        self.assertIn("<thead><tr><th>이름</th><th>역할</th></tr></thead>", html)
 
     def test_canonical_source_book_projects_normalized_sections(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1154,6 +1356,63 @@ class Part4UiTests(unittest.TestCase):
         self.assertEqual("architecture:overview", payload["sections"][0]["section_key"])
         self.assertEqual(["paragraph", "code"], payload["sections"][0]["block_kinds"])
         self.assertEqual("개요 > 컨트롤 플레인", payload["sections"][1]["section_path_label"])
+
+    def test_canonical_source_book_prefers_playbook_artifact_when_available(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            playbook_dir = root / "artifacts" / "corpus" / "playbooks"
+            playbook_dir.mkdir(parents=True)
+            (playbook_dir / "architecture.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "playbook_document_v1",
+                        "source_view_strategy": "playbook_ast_v1",
+                        "book_slug": "architecture",
+                        "title": "아키텍처",
+                        "source_uri": "https://example.com/architecture",
+                        "language_hint": "ko",
+                        "pack_id": "openshift-4-20-core",
+                        "inferred_version": "4.20",
+                        "sections": [
+                            {
+                                "section_id": "architecture:overview",
+                                "section_key": "architecture:overview",
+                                "ordinal": 1,
+                                "heading": "개요",
+                                "level": 1,
+                                "path": ["개요"],
+                                "section_path": ["개요"],
+                                "section_path_label": "개요",
+                                "anchor": "overview",
+                                "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html#overview",
+                                "semantic_role": "overview",
+                                "block_kinds": ["paragraph", "code"],
+                                "blocks": [
+                                    {"kind": "paragraph", "text": "설명 본문"},
+                                    {"kind": "code", "language": "shell", "code": "oc get nodes"},
+                                ],
+                            }
+                        ],
+                        "quality_status": "draft",
+                        "quality_score": 0.0,
+                        "quality_flags": [],
+                    },
+                    ensure_ascii=False,
+                ) + "\n",
+                encoding="utf-8",
+            )
+
+            payload = _canonical_source_book(
+                root,
+                "/docs/ocp/4.20/ko/architecture/index.html#overview",
+            )
+
+        self.assertIsNotNone(payload)
+        assert payload is not None
+        self.assertEqual("playbook_document_v1", payload["canonical_model"])
+        self.assertEqual("playbook_ast_v1", payload["source_view_strategy"])
+        self.assertEqual("overview", payload["target_anchor"])
+        self.assertEqual("openshift-4-20-core", payload["pack_id"])
 
     def test_build_doc_to_book_plan_returns_resolved_web_capture(self) -> None:
         payload = _build_doc_to_book_plan(

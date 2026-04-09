@@ -48,6 +48,11 @@ CORRECTIVE_FOLLOW_UP_HINTS = (
     "커맨드라도",
 )
 
+FOLLOW_UP_COMPARE_RE = re.compile(
+    r"(차이도|비교도).*(설명|말해|정리|알려|보여)",
+    re.IGNORECASE,
+)
+
 
 def _collapse_spaces(text: str) -> str:
     return SPACE_RE.sub(" ", (text or "")).strip()
@@ -65,6 +70,8 @@ def has_follow_up_reference(query: str) -> bool:
     normalized = _collapse_spaces(query)
     lowered = normalized.lower()
     if has_corrective_follow_up(normalized):
+        return True
+    if FOLLOW_UP_COMPARE_RE.search(normalized):
         return True
     if DEMONSTRATIVE_TOPIC_RE.search(normalized):
         return True

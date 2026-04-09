@@ -8,6 +8,8 @@ OCP_RE = re.compile(r"(?<![a-z0-9])ocp(?![a-z0-9])", re.IGNORECASE)
 OPENSHIFT_RE = re.compile(r"(오픈시프트|openshift)", re.IGNORECASE)
 KUBERNETES_RE = re.compile(r"(쿠버네티스|kubernetes)", re.IGNORECASE)
 COMPARE_RE = re.compile(r"(차이|다른 점|비교|vs|versus|유사점)", re.IGNORECASE)
+ROUTE_RE = re.compile(r"(route|routes|루트)", re.IGNORECASE)
+INGRESS_RE = re.compile(r"(ingress|ingresses|인그레스)", re.IGNORECASE)
 ARCHITECTURE_RE = re.compile(r"(아키텍처|architecture)", re.IGNORECASE)
 LOGGING_RE = re.compile(r"(로그|로깅|logging)", re.IGNORECASE)
 AUDIT_RE = re.compile(r"(감사|audit)", re.IGNORECASE)
@@ -228,6 +230,8 @@ def has_command_request(query: str) -> bool:
 
 
 def is_generic_intro_query(query: str) -> bool:
+    if has_route_ingress_compare_intent(query):
+        return False
     lowered = (query or "").lower()
     if GENERIC_INTRO_RE.search(query or ""):
         return True
@@ -241,6 +245,21 @@ def has_openshift_kubernetes_compare_intent(query: str) -> bool:
     normalized = query or ""
     return bool(OPENSHIFT_RE.search(normalized)) and bool(KUBERNETES_RE.search(normalized)) and bool(
         COMPARE_RE.search(normalized) or "차이를" in normalized or "차이점" in normalized
+    )
+
+
+def has_route_ingress_compare_intent(query: str) -> bool:
+    normalized = query or ""
+    if not ROUTE_RE.search(normalized) or not INGRESS_RE.search(normalized):
+        return False
+    return bool(
+        COMPARE_RE.search(normalized)
+        or "차이를" in normalized
+        or "차이점" in normalized
+        or (
+            "운영 관점" in normalized
+            and EXPLAINER_RE.search(normalized)
+        )
     )
 
 
@@ -352,5 +371,6 @@ def has_explicit_topic_signal(query: str) -> bool:
             bool(DEPLOYMENT_RE.search(normalized) and (SCALE_RE.search(normalized) or REPLICA_RE.search(normalized))),
             bool(ARCHITECTURE_RE.search(normalized)),
             bool(OPERATOR_RE.search(normalized)),
+            bool(has_route_ingress_compare_intent(normalized)),
         ]
     )

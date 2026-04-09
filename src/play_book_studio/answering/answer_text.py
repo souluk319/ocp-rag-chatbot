@@ -144,7 +144,7 @@ def align_answer_to_grounded_commands(answer_text: str, *, query: str, citations
 
     if has_cluster_node_usage_intent(query) and "oc adm top nodes" in excerpt_text:
         return (
-            "답변: 클러스터 전체 노드의 CPU와 메모리 사용량은 아래 명령으로 확인합니다 [1].\n\n"
+            "답변: 클러스터 전체 노드의 CPU와 메모리 사용량은 `oc adm top nodes` 명령으로 한 번에 확인합니다 [1].\n\n"
             "```bash\noc adm top nodes\n```"
         )
 
@@ -168,7 +168,8 @@ def align_answer_to_grounded_commands(answer_text: str, *, query: str, citations
         and "add-role-to-user admin" in excerpt_text
     ):
         return (
-            "답변: 특정 프로젝트 또는 namespace에만 `admin` 권한을 주려면 아래 명령으로 "
+            "답변: 특정 프로젝트 또는 namespace에만 `admin` 권한을 주려면 "
+            "`oc adm policy add-role-to-user admin <user> -n <project>` 명령으로 "
             "로컬 역할 바인딩을 추가합니다 [1].\n\n"
             "```bash\noc adm policy add-role-to-user admin <user> -n <project>\n```"
         )
@@ -191,7 +192,8 @@ def shape_etcd_backup_answer(
         return answer_text
     return (
         "답변: 컨트롤 플레인 노드에서 `oc debug --as-root node/<node_name>`로 디버그 세션을 시작하고 "
-        "`chroot /host`로 전환한 뒤, 아래 명령을 실행해 etcd 스냅샷과 정적 Pod 리소스를 백업합니다 [1].\n\n"
+        "`chroot /host`로 전환한 뒤 `/usr/local/bin/cluster-backup.sh /home/core/assets/backup`를 실행해 "
+        "etcd 스냅샷과 정적 Pod 리소스를 백업합니다 [1].\n\n"
         "```bash\n/usr/local/bin/cluster-backup.sh /home/core/assets/backup\n```"
     )
 
@@ -208,7 +210,7 @@ def shape_certificate_monitor_answer(
     if "monitor-certificates" not in excerpt_text:
         return answer_text
     return (
-        "답변: 플랫폼 인증서 만료 상태는 아래 명령으로 확인합니다 [1].\n\n"
+        "답변: 플랫폼 인증서 만료 상태는 `oc adm ocp-certificates monitor-certificates` 명령으로 모니터링해 확인합니다 [1].\n\n"
         "```bash\noc adm ocp-certificates monitor-certificates\n```"
     )
 

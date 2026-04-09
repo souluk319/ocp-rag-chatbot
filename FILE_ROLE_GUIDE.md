@@ -21,6 +21,8 @@
   - 현재 승인 상태, fallback 여부, 책별 한글 비율을 본다.
 - `../ocp-rag-chatbot-data/corpus/corpus_gap_report.json`
   - high-value 문서를 `translation_first / manual_review_first`로 나눈 다음 보강 순서를 본다.
+- `../ocp-rag-chatbot-data/corpus/translation_lane_report.json`
+  - `en_only -> translated_ko_draft -> approved_ko` 흐름에서 지금 어떤 책이 어디에 서 있는지 본다.
 
 ### 1.2 retrieval 평가 관련
 
@@ -57,7 +59,7 @@
 | 파일 | 역할 | 메모 |
 |---|---|---|
 | `build_source_manifest.py` | source manifest/catalog 갱신 | 문서 업데이트 추적 시작점 |
-| `build_source_approval.py` | approved 코퍼스/approval report 생성 | runtime 코퍼스 기준선 고정 |
+| `build_source_approval.py` | approved 코퍼스/approval report/translation lane report 생성 | runtime 코퍼스 기준선과 번역 대기열 동시 갱신 |
 | `run_ingestion.py` | collect -> normalize -> chunk -> embed -> qdrant 전체 실행 | 코퍼스 재구축 표준 진입점 |
 | `audit_ingestion_data_quality.py` | 정규화/청킹 품질 감사 | 코퍼스 품질 이슈 점검 |
 | `validate_ingestion_outputs.py` | ingestion 산출물 스키마/파일 존재 검증 | 중간 산출물 점검 |

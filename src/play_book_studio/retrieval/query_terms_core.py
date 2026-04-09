@@ -6,6 +6,8 @@ from .intents import *  # noqa: F403
 
 
 def append_core_query_terms(normalized: str, terms: list[str]) -> None:
+    route_ingress_compare = has_route_ingress_compare_intent(normalized)
+
     if OCP_RE.search(normalized):
         terms.extend(["OpenShift", "Container", "Platform"])
     if OPENSHIFT_RE.search(normalized):
@@ -26,6 +28,21 @@ def append_core_query_terms(normalized: str, terms: list[str]) -> None:
         terms.extend(["certificate", "certificates"])
     if AUTHZ_RE.search(normalized):
         terms.extend(["authorization"])
+    if route_ingress_compare:
+        terms.extend(
+            [
+                "route",
+                "ingress",
+                "networking",
+                "router",
+                "ingresscontroller",
+                "application exposure",
+                "애플리케이션 노출",
+                "comparison",
+                "difference",
+                "Kubernetes",
+            ]
+        )
 
     if MCO_RE.search(normalized):
         terms.extend(["Machine", "Config", "Operator", "machine", "configuration", "operators"])
@@ -81,7 +98,7 @@ def append_core_query_terms(normalized: str, terms: list[str]) -> None:
         terms.extend(["backup"])
     if RESTORE_RE.search(normalized):
         terms.extend(["restore", "복원"])
-    if is_explainer_query(normalized):
+    if is_explainer_query(normalized) and not route_ingress_compare:
         terms.extend(["개요", "overview"])
     if is_generic_intro_query(normalized):
         terms.extend(["소개", "overview", "architecture", "기본", "개념"])

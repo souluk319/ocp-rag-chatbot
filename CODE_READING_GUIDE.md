@@ -19,6 +19,18 @@
 - 앱 정체성(`Play Book Studio`)과 현재 코퍼스 정체성(`OpenShift 4.20 core pack`)을 분리해서 이해할 수 있다.
 - 버전/언어별 viewer path와 manifest naming도 여기서 본다.
 
+여기까지 읽고 나면, 다음으로는 `공통 AST`를 먼저 보는 것이 좋다.
+
+- [models.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/models.py)
+- [html.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/html.py)
+- [project_corpus.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/project_corpus.py)
+- [project_playbook.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/project_playbook.py)
+- [validate.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/validate.py)
+
+이 묶음은 `고품질 코퍼스 + 사람이 읽는 플레이북 문서`를 같은 원천 구조에서 만들기 위한 새 기준선이다.
+즉 `heading / prerequisite / procedure / code / note-warning / table / anchor`를 typed block으로 보관하고,
+`html.py`가 현재 HTML 정규화 결과를 AST로 올리고, 이후 corpus projection과 playbook projection이 둘 다 여기서 나온다.
+
 4. [server.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/app/server.py)
 - 실제 채팅 요청이 들어와서 어떤 순서로 answerer를 호출하고 세션을 업데이트하는지 본다.
 - route wiring과 request 흐름은 여기에 있다.
@@ -106,6 +118,7 @@
 25. [pipeline.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/pipeline.py)
 - ingestion 전체 orchestration이다.
 - `manifest -> collect -> normalize -> chunk -> embed -> qdrant` 순서를 본다.
+- 현재 normalize 단계는 `canonical AST`를 거쳐 retrieval용 `normalized_docs.jsonl`과 viewer용 `playbook_documents.jsonl`/`playbooks/<slug>.json`을 같이 만든다.
 
 26. [collector.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/collector.py)
 - 실제 원문 HTML을 가져와 raw cache로 저장하는 부분이다.
@@ -119,9 +132,9 @@
 - canonical section이 어떤 chunk 크기와 경계로 잘리는지 본다.
 - chunk size/overlap, book별 chunk profile 튜닝 지점이다.
 
-29. [audit.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/audit.py), [audit_rules.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/audit_rules.py), [data_quality.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/data_quality.py), [approval_report.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/approval_report.py)
+29. [audit.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/audit.py), [audit_rules.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/audit_rules.py), [data_quality.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/data_quality.py), [approval_report.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/approval_report.py), [translation_lane.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/translation_lane.py)
 - ingestion audit는 이제 네 층으로 읽는다.
-- `audit.py`는 공개 façade, `audit_rules.py`는 언어/승인 판정 규칙, `data_quality.py`는 제목/본문/경로 품질 리포트, `approval_report.py`는 승인 리포트와 runtime manifest 조립을 맡는다.
+- `audit.py`는 공개 façade, `audit_rules.py`는 언어/승인 판정 규칙, `data_quality.py`는 제목/본문/경로 품질 리포트, `approval_report.py`는 승인 리포트와 runtime manifest 조립, `translation_lane.py`는 `en_only -> translated_ko_draft -> approved_ko` provenance 규칙을 맡는다.
 
 30. [presenters.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/app/presenters.py)
 - UI에 내려가는 health payload, citation payload, runtime fingerprint, source viewer payload를 만든다.
@@ -137,6 +150,7 @@
 
 34. [source_books.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/app/source_books.py)
 - 내부 reference viewer, canonical source book, intake draft viewer helper를 담당한다.
+- 지금은 `corpus/playbooks/<slug>.json` playbook artifact를 우선 열고, 없을 때만 normalized section fallback을 쓴다.
 
 35. [runtime_report.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/app/runtime_report.py)
 - 지금 프로세스가 어느 endpoint/collection/artifact를 보고 있는지 자동 리포트로 뽑아낸다.
@@ -172,6 +186,7 @@ play_book.cmd ui / ask
 source catalog / approved manifest
 -> collector.py
 -> normalize.py
+-> canonical AST
 -> chunking.py
 -> embedding.py
 -> qdrant_store.py
@@ -182,6 +197,8 @@ source catalog / approved manifest
 - 원문 source URL/승인 manifest: [manifest.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/manifest.py)
 - 원문 HTML 수집: [collector.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/collector.py)
 - section 정규화: [normalize.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/normalize.py)
+- 공통 원천 구조: [models.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/models.py), [html.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/html.py), [project_corpus.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/project_corpus.py), [project_playbook.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/project_playbook.py)
+- 주요 AST 산출물: `../ocp-rag-chatbot-data/corpus/normalized_docs.jsonl`, `../ocp-rag-chatbot-data/corpus/playbook_documents.jsonl`, `../ocp-rag-chatbot-data/corpus/playbooks/<slug>.json`
 - chunk 생성: [chunking.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/chunking.py)
 - vector 적재: [embedding.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/embedding.py), [qdrant_store.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/qdrant_store.py)
 
@@ -194,10 +211,14 @@ source catalog / approved manifest
 
 ### 정규화가 지저분할 때
 - [normalize.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/normalize.py)
+- [models.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/models.py)
+- [validate.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/validate.py)
+- [project_playbook.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/project_playbook.py)
 - [chunking.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/chunking.py)
 - [audit.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/audit.py)
 - [data_quality.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/data_quality.py)
 - [approval_report.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/approval_report.py)
+- [translation_lane.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/ingestion/translation_lane.py)
 
 ### endpoint/모델/collection이 헷갈릴 때
 - [settings.py](C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/config/settings.py)

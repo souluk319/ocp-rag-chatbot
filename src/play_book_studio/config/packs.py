@@ -64,6 +64,10 @@ class PackConfig:
     def translated_manifest_name(self) -> str:
         return f"{self.manifest_prefix}_translated_ko_draft.json"
 
+    @property
+    def corpus_working_manifest_name(self) -> str:
+        return f"{self.manifest_prefix}_corpus_working_set.json"
+
     def payload(self) -> dict[str, str]:
         return {
             "source_collection": self.source_collection,

@@ -198,6 +198,7 @@ class Settings:
         self.doc_to_book_drafts_dir.mkdir(parents=True, exist_ok=True)
         self.doc_to_book_capture_dir.mkdir(parents=True, exist_ok=True)
         self.doc_to_book_books_dir.mkdir(parents=True, exist_ok=True)
+        self.playbook_books_dir.mkdir(parents=True, exist_ok=True)
         self.raw_html_dir.mkdir(parents=True, exist_ok=True)
 
     def _resolve_optional_dir(self, value: str, default: Path) -> Path:
@@ -315,6 +316,14 @@ class Settings:
         )
 
     @property
+    def translation_draft_manifest_path(self) -> Path:
+        return self.manifest_dir / self.active_pack.translated_manifest_name
+
+    @property
+    def corpus_working_manifest_path(self) -> Path:
+        return self.manifest_dir / self.active_pack.corpus_working_manifest_name
+
+    @property
     def artifacts_dir(self) -> Path:
         return self._resolve_optional_dir(
             self.artifacts_dir_override,
@@ -373,6 +382,14 @@ class Settings:
         return self.corpus_dir / "bm25_corpus.jsonl"
 
     @property
+    def playbook_documents_path(self) -> Path:
+        return self.corpus_dir / "playbook_documents.jsonl"
+
+    @property
+    def playbook_books_dir(self) -> Path:
+        return self.corpus_dir / "playbooks"
+
+    @property
     def preprocessing_log_path(self) -> Path:
         return self.corpus_dir / "preprocessing_log.json"
 
@@ -387,6 +404,10 @@ class Settings:
     @property
     def corpus_gap_report_path(self) -> Path:
         return self.corpus_dir / "corpus_gap_report.json"
+
+    @property
+    def translation_lane_report_path(self) -> Path:
+        return self.corpus_dir / "translation_lane_report.json"
 
     @property
     def retrieval_log_path(self) -> Path:

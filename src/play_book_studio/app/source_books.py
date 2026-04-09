@@ -25,6 +25,18 @@ from .viewers import (
 )
 
 
+def _playbook_book_path(root_dir: Path, book_slug: str) -> Path:
+    settings = load_settings(root_dir)
+    return settings.playbook_books_dir / f"{book_slug}.json"
+
+
+def _load_playbook_book(root_dir: Path, book_slug: str) -> dict[str, Any] | None:
+    path = _playbook_book_path(root_dir, book_slug)
+    if not path.exists():
+        return None
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 @lru_cache(maxsize=8)
 def internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
     parsed = _parse_viewer_path(viewer_path)
@@ -32,22 +44,33 @@ def internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
         return None
 
     book_slug, target_anchor = parsed
-    settings = load_settings(root_dir)
-    normalized_docs_path = settings.normalized_docs_path
-    if not normalized_docs_path.exists():
-        return None
+    playbook_book = _load_playbook_book(root_dir, book_slug)
+    if playbook_book is not None:
+        sections = [dict(section) for section in (playbook_book.get("sections") or []) if isinstance(section, dict)]
+        if not sections:
+            return None
+        book_title = str(playbook_book.get("title") or book_slug)
+        source_url = str(playbook_book.get("source_uri") or "")
+        summary = "정리된 AST 기준으로 관련 구간을 보여줍니다."
+    else:
+        settings = load_settings(root_dir)
+        normalized_docs_path = settings.normalized_docs_path
+        if not normalized_docs_path.exists():
+            return None
 
-    sections_by_book = _load_normalized_sections(
-        str(normalized_docs_path),
-        normalized_docs_path.stat().st_mtime_ns,
-    )
-    sections = sections_by_book.get(book_slug) or []
-    if not sections:
-        return None
+        sections_by_book = _load_normalized_sections(
+            str(normalized_docs_path),
+            normalized_docs_path.stat().st_mtime_ns,
+        )
+        sections = sections_by_book.get(book_slug) or []
+        if not sections:
+            return None
 
-    first_row = sections[0]
-    book_title = str(first_row.get("book_title") or book_slug)
-    source_url = str(first_row.get("source_url") or "")
+        first_row = sections[0]
+        book_title = str(first_row.get("book_title") or book_slug)
+        source_url = str(first_row.get("source_url") or "")
+        summary = "정리된 본문 기준으로 관련 구간을 보여줍니다."
+
     cards = _build_study_section_cards(sections, target_anchor=target_anchor)
     return _render_study_viewer_html(
         title=book_title,
@@ -55,7 +78,7 @@ def internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
         cards=cards,
         section_count=len(sections),
         eyebrow="Reference Viewer",
-        summary="정리된 본문 기준으로 관련 구간을 보여줍니다.",
+        summary=summary,
     )
 
 
@@ -128,6 +151,13 @@ def canonical_source_book(root_dir: Path, viewer_path: str) -> dict[str, Any] | 
         return None
 
     book_slug, target_anchor = parsed
+    playbook_book = _load_playbook_book(root_dir, book_slug)
+    if playbook_book is not None:
+        settings = load_settings(root_dir)
+        playbook_book["target_anchor"] = target_anchor
+        playbook_book.update(_core_pack_payload(version=settings.ocp_version, language=settings.docs_language))
+        return playbook_book
+
     settings = load_settings(root_dir)
     normalized_docs_path = settings.normalized_docs_path
     if not normalized_docs_path.exists():

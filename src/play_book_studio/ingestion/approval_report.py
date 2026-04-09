@@ -28,11 +28,15 @@ from .models import (
     CONTENT_STATUS_TRANSLATED_KO_DRAFT,
     SourceManifestEntry,
 )
+from .translation_lane import (
+    TRANSLATION_STAGE_APPROVED,
+    build_translation_metadata,
+)
 from .validation import read_jsonl
 
 
 def build_source_approval_report(settings) -> dict[str, object]:
-    manifest = runtime_catalog_entries(read_manifest(settings.source_catalog_path), settings)
+    manifest = _runtime_manifest_with_translation_overlay(settings)
     normalized_docs = read_jsonl(settings.normalized_docs_path)
     chunks = read_jsonl(settings.chunks_path)
 
@@ -82,6 +86,12 @@ def build_source_approval_report(settings) -> dict[str, object]:
             content_status=content_status,
             fallback_detected=fallback_detected,
         )
+        translation_lane = build_translation_metadata(
+            entry,
+            content_status=content_status,
+            citation_eligible=citation_eligible,
+            corpus_dir=getattr(settings, "corpus_dir", None),
+        )
 
         record = {
             "product_slug": entry.product_slug,
@@ -117,6 +127,7 @@ def build_source_approval_report(settings) -> dict[str, object]:
             "gap_lane": gap_lane,
             "gap_priority": gap_priority,
             "gap_action": gap_action,
+            "translation_lane": translation_lane,
         }
         counts[content_status] += 1
         per_book.append(record)
@@ -160,6 +171,71 @@ def build_source_approval_report(settings) -> dict[str, object]:
         },
         "high_value_issues": high_value_issues,
         "books": per_book,
+    }
+
+
+def _entry_identity(entry: SourceManifestEntry) -> tuple[str, str, str, str]:
+    return (
+        entry.ocp_version,
+        entry.docs_language,
+        entry.source_kind,
+        entry.book_slug,
+    )
+
+
+def _runtime_manifest_with_translation_overlay(settings) -> list[SourceManifestEntry]:
+    manifest = runtime_catalog_entries(read_manifest(settings.source_catalog_path), settings)
+    translation_manifest_path = getattr(settings, "translation_draft_manifest_path", None)
+    if translation_manifest_path is None or not Path(translation_manifest_path).exists():
+        return manifest
+
+    overlays = read_manifest(Path(translation_manifest_path))
+    overlay_map = {_entry_identity(entry): entry for entry in overlays}
+    merged: list[SourceManifestEntry] = []
+    seen = set()
+    for entry in manifest:
+        key = _entry_identity(entry)
+        merged.append(overlay_map.get(key, entry))
+        seen.add(key)
+    for entry in overlays:
+        key = _entry_identity(entry)
+        if key not in seen:
+            merged.append(entry)
+    return merged
+
+
+def build_translation_lane_report(settings) -> dict[str, object]:
+    approval_report = build_source_approval_report(settings)
+    books = list(approval_report["books"])
+    stage_counts: Counter[str] = Counter(
+        str(item.get("translation_lane", {}).get("stage", "unknown")) for item in books
+    )
+    active_queue = [
+        item
+        for item in books
+        if str(item.get("translation_lane", {}).get("stage", "")) != TRANSLATION_STAGE_APPROVED
+    ]
+    return {
+        "summary": {
+            "book_count": len(books),
+            "approved_ko_count": stage_counts[TRANSLATION_STAGE_APPROVED],
+            "translated_ko_draft_count": stage_counts[CONTENT_STATUS_TRANSLATED_KO_DRAFT],
+            "translation_required_count": stage_counts[CONTENT_STATUS_EN_ONLY],
+            "mixed_review_count": stage_counts["mixed_review"],
+            "blocked_count": stage_counts[CONTENT_STATUS_BLOCKED],
+            "active_queue_count": len(active_queue),
+        },
+        "policy": {
+            "lane_flow": [
+                CONTENT_STATUS_EN_ONLY,
+                CONTENT_STATUS_TRANSLATED_KO_DRAFT,
+                CONTENT_STATUS_APPROVED_KO,
+            ],
+            "runtime_gate_statuses": list(CITATION_ELIGIBLE_STATUSES),
+            "translation_default_target_language": getattr(settings, "docs_language", "ko"),
+        },
+        "active_queue": active_queue,
+        "books": books,
     }
 
 

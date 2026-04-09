@@ -89,9 +89,6 @@ window.createAppBootstrap = function createAppBootstrap(deps) {
         leftPanelToggleBtn: refs.leftPanelToggleBtn,
         leftRailToggleBtn: refs.leftRailToggleBtn,
         shellEl: refs.shellEl,
-        sourceEmptyDetailEl: refs.sourceEmptyDetailEl,
-        sourceEmptyEl: refs.sourceEmptyEl,
-        sourceEmptyTitleEl: refs.sourceEmptyTitleEl,
         sourceFrameShellEl: refs.sourceFrameShellEl,
         sourceNoteEl: refs.sourceNoteEl,
         sourceOpenDocEl: refs.sourceOpenDocEl,
@@ -297,7 +294,6 @@ window.createAppBootstrap = function createAppBootstrap(deps) {
         get activeIngestDraft() { return state.activeIngestDraft; },
       },
       refs: {
-        sourceEmptyEl: refs.sourceEmptyEl,
         sourceFrameShellEl: refs.sourceFrameShellEl,
         sourceNoteEl: refs.sourceNoteEl,
         sourceOpenDocEl: refs.sourceOpenDocEl,

@@ -75,12 +75,9 @@ window.createPanelController = function createPanelController(deps) {
     return mapped;
   }
 
-  function setSourceEmptyState(title, detail) {
+  function setSourceEmptyState() {
     callbacks.setSourceFrameLoading(false);
-    refs.sourceEmptyTitleEl.textContent = title;
-    refs.sourceEmptyDetailEl.textContent = detail;
     refs.sourceFrameShellEl.hidden = true;
-    refs.sourceEmptyEl.hidden = false;
     refs.sourceViewerFrameEl.hidden = true;
     refs.sourceViewerFrameEl.removeAttribute("src");
   }
@@ -104,10 +101,7 @@ window.createPanelController = function createPanelController(deps) {
     refs.sourceOutlineEl.innerHTML = '<div class="trace-empty">문서를 열면 핵심 구간이 여기에 표시됩니다.</div>';
     setSourceLink(refs.sourceOpenDocEl, "");
     setSourceLink(refs.sourceOpenOriginEl, "");
-    setSourceEmptyState(
-      "열린 문서가 없습니다",
-      "답변 속 번호를 누르면 여기서 바로 봅니다.",
-    );
+    setSourceEmptyState();
     syncActiveSourceTags();
   }
 
@@ -218,15 +212,14 @@ window.createPanelController = function createPanelController(deps) {
 
     if (viewerHref) {
       refs.sourceFrameShellEl.hidden = false;
-      refs.sourceEmptyEl.hidden = true;
       refs.sourceViewerFrameEl.hidden = false;
       callbacks.setSourceFrameLoading(true);
       refs.sourceViewerFrameEl.src = viewerHref;
     } else {
-      setSourceEmptyState(
-        "뷰어를 열 수 없습니다",
-        "이 항목은 원문 링크만 제공합니다.",
-      );
+      refs.sourcePathEl.textContent = "뷰어를 바로 열 수 없습니다.";
+      refs.sourceNoteEl.textContent = "이 항목은 원문 링크만 제공합니다.";
+      refs.sourceOutlineEl.innerHTML = '<div class="trace-empty">문서 뷰어가 없는 항목이라 원문 링크로만 확인할 수 있습니다.</div>';
+      setSourceEmptyState();
     }
 
     if (!viewerPath) return;
@@ -237,11 +230,10 @@ window.createPanelController = function createPanelController(deps) {
       applySourcePanelState(citation, meta);
       if (helpers.isReviewNeeded(meta)) {
         setSourceLink(refs.sourceOpenDocEl, "");
-        setSourceEmptyState(
-          "정규화 검토 필요",
-          helpers.qualitySummaryText(meta) || "이 자료는 아직 원문 기준으로 먼저 확인해야 합니다.",
-        );
+        refs.sourcePathEl.textContent = "정규화 검토 필요";
+        refs.sourceNoteEl.textContent = helpers.qualitySummaryText(meta) || "이 자료는 아직 원문 기준으로 먼저 확인해야 합니다.";
         refs.sourceOutlineEl.innerHTML = '<div class="trace-empty">검토가 끝나면 핵심 구간이 열립니다.</div>';
+        setSourceEmptyState();
         return;
       }
     } catch (error) {

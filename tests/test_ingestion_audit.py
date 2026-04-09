@@ -17,6 +17,7 @@ from play_book_studio.ingestion.audit import (
     build_corpus_gap_report,
     build_data_quality_report,
     build_source_approval_report,
+    build_translation_lane_report,
     looks_like_mojibake_title,
     write_approved_manifest,
 )
@@ -373,6 +374,7 @@ class Part1AuditTests(unittest.TestCase):
                 normalized_docs_path=part1 / "normalized_docs.jsonl",
                 chunks_path=part1 / "chunks.jsonl",
                 raw_html_dir=raw_html,
+                corpus_dir=part1,
             )
 
             report = build_source_approval_report(settings)
@@ -386,6 +388,96 @@ class Part1AuditTests(unittest.TestCase):
             report["books"][0]["citation_block_reason"],
         )
         self.assertEqual("translation_first", report["books"][0]["gap_lane"])
+        self.assertEqual(
+            "translated_ko_draft",
+            report["books"][0]["translation_lane"]["stage"],
+        )
+        self.assertTrue(
+            report["books"][0]["translation_lane"]["artifact_targets"]["playbook_book_path"].endswith(
+                "machine_configuration.json"
+            )
+        )
+
+    def test_translation_lane_report_tracks_required_and_draft_states(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            manifests = root / "manifests"
+            part1 = root / "part1"
+            raw_html = part1 / "raw_html"
+            manifests.mkdir(parents=True)
+            raw_html.mkdir(parents=True)
+
+            source_manifest_path = manifests / "ocp_ko_4_20_html_single.json"
+            source_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "source": "test",
+                        "count": 2,
+                        "entries": [
+                            {
+                                "book_slug": "monitoring",
+                                "title": "모니터링",
+                                "source_url": "https://example.com/monitoring",
+                                "resolved_source_url": "https://example.com/en/monitoring",
+                                "resolved_language": "en",
+                                "viewer_path": "/docs/ocp/4.20/ko/monitoring/index.html",
+                                "high_value": True,
+                                "content_status": "en_only",
+                                "source_fingerprint": "fp-monitoring",
+                            },
+                            {
+                                "book_slug": "machine_configuration",
+                                "title": "머신 구성",
+                                "source_url": "https://example.com/machine_configuration",
+                                "resolved_source_url": "https://example.com/en/machine_configuration",
+                                "resolved_language": "en",
+                                "viewer_path": "/docs/ocp/4.20/ko/machine_configuration/index.html",
+                                "high_value": True,
+                                "content_status": "translated_ko_draft",
+                                "source_fingerprint": "fp-machine-config",
+                            },
+                        ],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            (part1 / "normalized_docs.jsonl").write_text("", encoding="utf-8")
+            (part1 / "chunks.jsonl").write_text("", encoding="utf-8")
+            (raw_html / "monitoring.html").write_text(
+                "This content is not available in the selected language",
+                encoding="utf-8",
+            )
+            (raw_html / "machine_configuration.html").write_text(
+                "This content is not available in the selected language",
+                encoding="utf-8",
+            )
+
+            settings = SimpleNamespace(
+                source_catalog_path=source_manifest_path,
+                normalized_docs_path=part1 / "normalized_docs.jsonl",
+                chunks_path=part1 / "chunks.jsonl",
+                raw_html_dir=raw_html,
+                corpus_dir=part1,
+                docs_language="ko",
+            )
+
+            report = build_translation_lane_report(settings)
+
+        self.assertEqual(2, report["summary"]["active_queue_count"])
+        self.assertEqual(1, report["summary"]["translation_required_count"])
+        self.assertEqual(1, report["summary"]["translated_ko_draft_count"])
+        books_by_slug = {item["book_slug"]: item for item in report["books"]}
+        self.assertEqual(
+            "translated_ko_draft",
+            books_by_slug["monitoring"]["translation_lane"]["next_status"],
+        )
+        self.assertEqual(
+            "approved_ko",
+            books_by_slug["machine_configuration"]["translation_lane"]["next_status"],
+        )
 
     def test_corpus_gap_report_groups_translation_and_manual_review_priorities(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -635,6 +727,137 @@ class Part1AuditTests(unittest.TestCase):
         self.assertEqual(["architecture"], [entry.book_slug for entry in written_entries])
         self.assertEqual("approved_ko", written_entries[0].content_status)
         self.assertEqual("internal_text", written_entries[0].viewer_strategy)
+
+    def test_source_approval_report_overlays_translation_draft_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            manifests = root / "manifests"
+            corpus = root / "corpus"
+            raw_html = corpus / "raw_html"
+            manifests.mkdir(parents=True)
+            raw_html.mkdir(parents=True)
+
+            source_catalog_path = manifests / "ocp_multiversion_html_single_catalog.json"
+            source_catalog_path.write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "source": "test",
+                        "count": 1,
+                        "entries": [
+                            {
+                                "product_slug": "openshift_container_platform",
+                                "ocp_version": "4.20",
+                                "docs_language": "ko",
+                                "source_kind": "html-single",
+                                "book_slug": "machine_configuration",
+                                "title": "Machine configuration",
+                                "source_url": "https://example.com/machine_configuration",
+                                "resolved_source_url": "https://example.com/en/machine_configuration",
+                                "resolved_language": "en",
+                                "viewer_path": "/docs/ocp/4.20/ko/machine_configuration/index.html",
+                                "high_value": True,
+                                "source_fingerprint": "fp-machine-configuration",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            translated_manifest_path = manifests / "ocp_ko_4_20_translated_ko_draft.json"
+            translated_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "source": "test",
+                        "count": 1,
+                        "entries": [
+                            {
+                                "product_slug": "openshift_container_platform",
+                                "ocp_version": "4.20",
+                                "docs_language": "ko",
+                                "source_kind": "html-single",
+                                "book_slug": "machine_configuration",
+                                "title": "머신 구성",
+                                "source_url": "https://example.com/machine_configuration",
+                                "resolved_source_url": "https://example.com/en/machine_configuration",
+                                "resolved_language": "en",
+                                "viewer_path": "/docs/ocp/4.20/ko/machine_configuration/index.html",
+                                "high_value": True,
+                                "content_status": "translated_ko_draft",
+                                "translation_source_language": "en",
+                                "translation_source_url": "https://example.com/en/machine_configuration",
+                                "translation_source_fingerprint": "fp-machine-configuration",
+                                "source_fingerprint": "fp-machine-configuration",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            (corpus / "normalized_docs.jsonl").write_text(
+                json.dumps(
+                    {
+                        "book_slug": "machine_configuration",
+                        "book_title": "머신 구성",
+                        "heading": "개요",
+                        "section_level": 1,
+                        "section_path": ["개요"],
+                        "anchor": "overview",
+                        "source_url": "https://example.com/machine_configuration",
+                        "viewer_path": "/docs/ocp/4.20/ko/machine_configuration/index.html#overview",
+                        "text": "머신 구성 초안 문서입니다.",
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (corpus / "chunks.jsonl").write_text(
+                json.dumps(
+                    {
+                        "chunk_id": "chunk-1",
+                        "book_slug": "machine_configuration",
+                        "book_title": "머신 구성",
+                        "chapter": "머신 구성",
+                        "section": "개요",
+                        "anchor": "overview",
+                        "source_url": "https://example.com/machine_configuration",
+                        "viewer_path": "/docs/ocp/4.20/ko/machine_configuration/index.html#overview",
+                        "text": "머신 구성 초안 문서입니다.",
+                        "token_count": 6,
+                        "ordinal": 0,
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (raw_html / "machine_configuration.html").write_text(
+                "<html><body><article><h1>Machine configuration</h1></article></body></html>",
+                encoding="utf-8",
+            )
+
+            settings = SimpleNamespace(
+                source_catalog_path=source_catalog_path,
+                translation_draft_manifest_path=translated_manifest_path,
+                normalized_docs_path=corpus / "normalized_docs.jsonl",
+                chunks_path=corpus / "chunks.jsonl",
+                raw_html_dir=raw_html,
+                corpus_dir=corpus,
+                ocp_version="4.20",
+                docs_language="ko",
+            )
+
+            report = build_source_approval_report(settings)
+
+        self.assertEqual("translated_ko_draft", report["books"][0]["content_status"])
+        self.assertEqual("머신 구성", report["books"][0]["title"])
+        self.assertEqual("en", report["books"][0]["translation_lane"]["source_language"])
 
 
 if __name__ == "__main__":

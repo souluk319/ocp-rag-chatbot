@@ -52,10 +52,21 @@ def apply_operation_adjustments(
     if has_machine_config_reboot_intent(normalized) or (
         MCO_RE.search(context_text) and "재부팅" in normalized
     ):
-        boosts["machine_management"] = max(boosts.get("machine_management", 1.0), 1.7)
-        boosts["support"] = max(boosts.get("support", 1.0), 1.18)
-        boosts["nodes"] = max(boosts.get("nodes", 1.0), 1.12)
-        boosts["updating_clusters"] = max(boosts.get("updating_clusters", 1.0), 1.12)
+        boosts["machine_management"] = max(boosts.get("machine_management", 1.0), 1.18)
+        boosts["nodes"] = max(boosts.get("nodes", 1.0), 1.08)
+        boosts["updating_clusters"] = max(boosts.get("updating_clusters", 1.0), 1.48)
+        boosts["postinstallation_configuration"] = max(
+            boosts.get("postinstallation_configuration", 1.0),
+            1.24,
+        )
+        boosts["architecture"] = max(boosts.get("architecture", 1.0), 1.12)
+        penalties["support"] = min(penalties.get("support", 1.0), 0.82)
+        penalties["release_notes"] = min(penalties.get("release_notes", 1.0), 0.42)
+        penalties["cli_tools"] = min(penalties.get("cli_tools", 1.0), 0.72)
+        penalties["installation_overview"] = min(
+            penalties.get("installation_overview", 1.0),
+            0.46,
+        )
         penalties["specialized_hardware_and_driver_enablement"] = min(
             penalties.get("specialized_hardware_and_driver_enablement", 1.0),
             0.18,

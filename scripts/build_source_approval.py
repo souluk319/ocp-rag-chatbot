@@ -16,6 +16,7 @@ from play_book_studio.ingestion.audit import (
     build_approved_manifest,
     build_corpus_gap_report,
     build_source_approval_report,
+    build_translation_lane_report,
     write_approved_manifest,
 )
 from play_book_studio.config.settings import load_settings
@@ -41,6 +42,10 @@ def _parse_args() -> argparse.Namespace:
         help="Optional output path for the corpus gap report JSON.",
     )
     parser.add_argument(
+        "--translation-lane-report-path",
+        help="Optional output path for the translation lane report JSON.",
+    )
+    parser.add_argument(
         "--output-manifest-path",
         help="Optional output path for the approved manifest JSON.",
     )
@@ -54,6 +59,7 @@ def main() -> int:
 
     report = build_source_approval_report(settings)
     gap_report = build_corpus_gap_report(settings)
+    translation_lane_report = build_translation_lane_report(settings)
     entries = build_approved_manifest(settings, allowed_statuses=allow_statuses)
 
     report_path = Path(args.report_path).expanduser() if args.report_path else settings.source_approval_report_path
@@ -68,6 +74,19 @@ def main() -> int:
     gap_report_path.parent.mkdir(parents=True, exist_ok=True)
     gap_report_path.write_text(json.dumps(gap_report, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    translation_lane_report_path = (
+        Path(args.translation_lane_report_path).expanduser()
+        if args.translation_lane_report_path
+        else settings.translation_lane_report_path
+    )
+    if not translation_lane_report_path.is_absolute():
+        translation_lane_report_path = (ROOT / translation_lane_report_path).resolve()
+    translation_lane_report_path.parent.mkdir(parents=True, exist_ok=True)
+    translation_lane_report_path.write_text(
+        json.dumps(translation_lane_report, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
     output_manifest_path = (
         Path(args.output_manifest_path).expanduser()
         if args.output_manifest_path
@@ -80,6 +99,7 @@ def main() -> int:
 
     print(f"wrote source approval report: {report_path}")
     print(f"wrote corpus gap report: {gap_report_path}")
+    print(f"wrote translation lane report: {translation_lane_report_path}")
     print(f"wrote approved manifest ({len(entries)} books): {output_manifest_path}")
     print(json.dumps(report["summary"], ensure_ascii=False, indent=2))
     return 0

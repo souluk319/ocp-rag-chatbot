@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,6 +23,9 @@ from play_book_studio.retrieval.models import SessionContext
 
 DEFAULT_OPENAI_JUDGE_MODEL = "gpt-4.1"
 DEFAULT_OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
+ANSWER_PREFIX_RE = re.compile(r"^\s*답변:\s*")
+INLINE_CITATION_RE = re.compile(r"\[(\d+)\]")
+FENCED_CODE_BLOCK_RE = re.compile(r"```[a-zA-Z0-9_-]*\n(.*?)```", re.DOTALL)
 
 
 @dataclass(slots=True)
@@ -58,6 +62,34 @@ def _coerce_str_list(value: Any) -> list[str]:
         if stripped:
             items.append(stripped)
     return items
+
+
+def normalize_ragas_response_text(value: Any) -> str:
+    text = _clean_text(value)
+    if not text:
+        return ""
+
+    text = ANSWER_PREFIX_RE.sub("", text, count=1)
+
+    def _replace_code_block(match: re.Match[str]) -> str:
+        body = _clean_text(match.group(1))
+        if not body:
+            return ""
+        lines = [line.strip() for line in body.splitlines() if line.strip()]
+        if len(lines) == 1:
+            return f"`{lines[0]}`"
+        return " ".join(lines)
+
+    text = FENCED_CODE_BLOCK_RE.sub(_replace_code_block, text)
+    text = INLINE_CITATION_RE.sub("", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    text = re.sub(r"\s+([.,!?])", r"\1", text)
+    inline_codes = re.findall(r"`([^`]+)`", text)
+    if inline_codes:
+        trailing = f"`{inline_codes[-1]}`"
+        if text.endswith(trailing) and text.count(trailing) > 1:
+            text = text[: -len(trailing)].rstrip(" .")
+    return text
 
 
 def _citation_context_text(citation: dict[str, Any] | Any) -> str:
@@ -157,6 +189,7 @@ def build_ragas_case_row(
         response = _clean_text(generated_result.answer)
     if not response:
         raise ValueError("case is missing response/answer and no generated result was provided")
+    normalized_response = normalize_ragas_response_text(response)
 
     retrieved_contexts = _coerce_str_list(case.get("retrieved_contexts") or case.get("contexts"))
     if not retrieved_contexts and generated_result is not None:
@@ -164,7 +197,7 @@ def build_ragas_case_row(
 
     row = {
         "user_input": user_input,
-        "response": response,
+        "response": normalized_response,
         "retrieved_contexts": retrieved_contexts,
         "reference": _resolve_reference(case),
     }
@@ -178,6 +211,8 @@ def build_ragas_case_row(
         "mode": case.get("mode", "ops"),
         "query_type": case.get("query_type", "unknown"),
         "response_source": "generated" if generated_result is not None else "precomputed",
+        "response_raw": response,
+        "response_normalized": normalized_response,
         "retrieved_context_count": len(retrieved_contexts),
     }
     if generated_result is not None:

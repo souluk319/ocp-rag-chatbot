@@ -66,6 +66,11 @@ class SourceManifestEntry:
     source_fingerprint: str = ""
     approval_status: str = "unreviewed"
     approval_notes: str = ""
+    translation_source_language: str = ""
+    translation_target_language: str = "ko"
+    translation_source_url: str = ""
+    translation_source_fingerprint: str = ""
+    translation_stage: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -82,9 +87,39 @@ class NormalizedSection:
     source_url: str
     viewer_path: str
     text: str
+    section_id: str = ""
+    semantic_role: str = "unknown"
+    block_kinds: tuple[str, ...] = field(default_factory=tuple)
+    source_language: str = "ko"
+    display_language: str = "ko"
+    translation_status: str = "approved_ko"
+    translation_stage: str = "approved_ko"
+    translation_source_language: str = ""
+    translation_source_url: str = ""
+    translation_source_fingerprint: str = ""
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return {
+            "book_slug": self.book_slug,
+            "book_title": self.book_title,
+            "heading": self.heading,
+            "section_level": self.section_level,
+            "section_path": list(self.section_path),
+            "anchor": self.anchor,
+            "source_url": self.source_url,
+            "viewer_path": self.viewer_path,
+            "text": self.text,
+            "section_id": self.section_id,
+            "semantic_role": self.semantic_role,
+            "block_kinds": list(self.block_kinds),
+            "source_language": self.source_language,
+            "display_language": self.display_language,
+            "translation_status": self.translation_status,
+            "translation_stage": self.translation_stage,
+            "translation_source_language": self.translation_source_language,
+            "translation_source_url": self.translation_source_url,
+            "translation_source_fingerprint": self.translation_source_fingerprint,
+        }
 
 
 @dataclass(slots=True)

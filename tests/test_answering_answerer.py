@@ -816,7 +816,7 @@ class Part3AnswererTests(unittest.TestCase):
 
         self.assertIn("oc debug --as-root node/<node_name>", result.answer)
         self.assertIn("chroot /host", result.answer)
-        self.assertIn("cluster-backup.sh", result.answer)
+        self.assertIn("/usr/local/bin/cluster-backup.sh /home/core/assets/backup", result.answer)
         self.assertNotIn("HTTPS_PROXY", result.answer)
         self.assertNotIn("NO_PROXY", result.answer)
 
@@ -830,7 +830,10 @@ class Part3AnswererTests(unittest.TestCase):
 
         result = answerer.answer("ocp api 서버 인증서 만료 임박했는지 어떻게 확인해?", mode="ops")
 
-        self.assertIn("oc adm ocp-certificates monitor-certificates", result.answer)
+        self.assertIn(
+            "`oc adm ocp-certificates monitor-certificates` 명령으로 모니터링해 확인합니다",
+            result.answer,
+        )
         self.assertNotIn("실시간으로 감시", result.answer)
         self.assertNotIn("경고를 제공", result.answer)
 
@@ -1072,7 +1075,7 @@ class Part3AnswererTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            "답변: 클러스터 전체 노드의 CPU와 메모리 사용량은 아래 명령으로 확인합니다 [1].\n\n```bash\noc adm top nodes\n```",
+            "답변: 클러스터 전체 노드의 CPU와 메모리 사용량은 `oc adm top nodes` 명령으로 한 번에 확인합니다 [1].\n\n```bash\noc adm top nodes\n```",
             result.answer,
         )
         self.assertEqual([1], result.cited_indices)

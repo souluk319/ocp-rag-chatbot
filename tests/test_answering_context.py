@@ -196,6 +196,40 @@ class ContextAssemblyTests(unittest.TestCase):
         self.assertNotEqual([], bundle.citations)
         self.assertEqual("support", bundle.citations[0].book_slug)
 
+    def test_route_ingress_follow_up_compare_keeps_context_even_when_books_compete(self) -> None:
+        hits = [
+            _hit(
+                "chunk-1",
+                "networking_overview",
+                "1.3.1. Ingress 및 Route 오브젝트를 사용하여 애플리케이션 노출",
+                "Route와 Ingress를 사용해 애플리케이션을 노출하는 방법을 설명합니다.",
+                score=0.0182,
+            ),
+            _hit(
+                "chunk-2",
+                "overview",
+                "4.3. Kubernetes 개념 가이드라인",
+                "Kubernetes 개념과 비교 기준을 설명합니다.",
+                score=0.0179,
+            ),
+            _hit(
+                "chunk-3",
+                "architecture",
+                "1장. 아키텍처 개요",
+                "OpenShift 플랫폼 개요입니다.",
+                score=0.0176,
+            ),
+        ]
+
+        bundle = assemble_context(
+            hits,
+            query="쿠버네티스와 차이도 설명해줘",
+            max_chunks=4,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertIn(bundle.citations[0].book_slug, {"networking_overview", "overview"})
+
     def test_operator_concept_prefers_expected_concept_books(self) -> None:
         hits = [
             _hit("chunk-1", "architecture", "1.1. 일반 용어집", "Operator 정의", score=0.041),

@@ -30,6 +30,7 @@ from play_book_studio.retrieval.query import (
     has_project_scoped_rbac_intent,
     has_rbac_assignment_intent,
     has_rbac_intent,
+    has_route_ingress_compare_intent,
     has_security_doc_locator_ambiguity,
     has_update_doc_locator_ambiguity,
     normalize_query,
@@ -424,6 +425,20 @@ class RetrievalTests(unittest.TestCase):
 
         self.assertEqual("오픈시프트에 대해 새줄약해봐", rewritten)
 
+    def test_rewrite_query_uses_route_ingress_context_for_compare_follow_up(self) -> None:
+        context = SessionContext(
+            user_goal="OpenShift에서 Route와 Ingress 차이를 운영 관점에서 설명해줘",
+            current_topic="Route와 Ingress 비교",
+            open_entities=["OpenShift", "Route", "Ingress"],
+            ocp_version="4.20",
+        )
+
+        rewritten = rewrite_query("쿠버네티스와 차이도 설명해줘", context)
+
+        self.assertIn("Route와 Ingress 비교", rewritten)
+        self.assertIn("OpenShift에서 Route와 Ingress 차이를 운영 관점에서 설명해줘", rewritten)
+        self.assertIn("쿠버네티스와 차이도 설명해줘", rewritten)
+
     def test_normalize_query_expands_pod_pending_troubleshooting_terms(self) -> None:
         normalized = normalize_query("Pod가 Pending 상태에서 오래 멈춰 있을 때 어떤 순서로 점검해야 해?")
 
@@ -455,6 +470,25 @@ class RetrievalTests(unittest.TestCase):
         self.assertIn("Running", normalized)
         self.assertIn("glossary", normalized)
         self.assertIn("status", normalized)
+
+    def test_normalize_query_expands_route_ingress_compare_terms(self) -> None:
+        normalized = normalize_query("OpenShift에서 Route와 Ingress 차이를 운영 관점에서 설명해줘")
+
+        self.assertIn("networking", normalized)
+        self.assertIn("router", normalized)
+        self.assertIn("ingresscontroller", normalized)
+        self.assertIn("애플리케이션 노출", normalized)
+
+    def test_query_book_adjustments_bias_route_ingress_compare_toward_networking_family(self) -> None:
+        boosts, penalties = query_book_adjustments(
+            "OpenShift에서 Route와 Ingress 차이를 운영 관점에서 설명해줘"
+        )
+
+        self.assertGreater(boosts["networking_overview"], 1.0)
+        self.assertGreater(boosts["ingress_and_load_balancing"], 1.0)
+        self.assertLess(penalties["architecture"], 1.0)
+        self.assertLess(penalties["overview"], 1.0)
+        self.assertLess(penalties["security_and_compliance"], 1.0)
 
     def test_query_book_adjustments_bias_lifecycle_explainer_toward_architecture(self) -> None:
         boosts, penalties = query_book_adjustments(
@@ -850,6 +884,13 @@ class RetrievalTests(unittest.TestCase):
         self.assertTrue(has_follow_up_reference("찾았는데도 안 지워지면 finalizers는 어떻게 봐?"))
         self.assertTrue(has_follow_up_reference("그 Operator는 뭘 관리해?"))
         self.assertTrue(has_follow_up_reference("그 복원 순서는?"))
+        self.assertTrue(has_follow_up_reference("쿠버네티스와 차이도 설명해줘"))
+
+    def test_has_route_ingress_compare_intent_detects_networking_compare_query(self) -> None:
+        self.assertTrue(
+            has_route_ingress_compare_intent("OpenShift에서 Route와 Ingress 차이를 운영 관점에서 설명해줘")
+        )
+        self.assertFalse(has_route_ingress_compare_intent("OpenShift 아키텍처를 설명해줘"))
 
     def test_has_machine_config_reboot_intent_detects_reboot_reason_question(self) -> None:
         self.assertTrue(has_machine_config_reboot_intent("머신 설정 변경이 적용될 때 노드 재부팅은 왜 일어나?"))
@@ -872,6 +913,143 @@ class RetrievalTests(unittest.TestCase):
         self.assertGreater(boosts["updating_clusters"], 1.0)
         self.assertLess(penalties["specialized_hardware_and_driver_enablement"], 1.0)
         self.assertLess(penalties["network_security"], 1.0)
+
+    def test_query_book_adjustments_penalizes_support_for_mco_reboot_follow_up_context(self) -> None:
+        boosts, penalties = query_book_adjustments(
+            "그거 재부팅은 왜 일어나?",
+            context=SessionContext(
+                current_topic="Machine Config Operator",
+                open_entities=["Machine Config Operator", "MCO"],
+                unresolved_question="자동 재부팅 이유와 spec.paused",
+            ),
+        )
+
+        self.assertGreater(boosts["machine_management"], 1.0)
+        self.assertGreater(boosts["postinstallation_configuration"], 1.0)
+        self.assertGreater(boosts["nodes"], 1.0)
+        self.assertLess(penalties["support"], 1.0)
+        self.assertLess(penalties["cli_tools"], 1.0)
+
+    def test_query_book_adjustments_penalizes_hosted_control_planes_for_mco_operator_follow_up(self) -> None:
+        boosts, penalties = query_book_adjustments(
+            "그 Operator는 뭘 관리해?",
+            context=SessionContext(
+                current_topic="Machine Config Operator",
+                open_entities=["Machine Config Operator"],
+            ),
+        )
+
+        self.assertGreater(boosts["machine_management"], 1.0)
+        self.assertLess(penalties["hosted_control_planes"], 1.0)
+
+    def test_fusion_prefers_approved_mco_concept_books_over_hosted_control_planes(self) -> None:
+        hosted_hit = RetrievalHit(
+            chunk_id="hcp-hit",
+            book_slug="hosted_control_planes",
+            chapter="hcp",
+            section="Hosted control plane operator 개요",
+            anchor="hcp-operators",
+            source_url="https://example.com/hcp",
+            viewer_path="/docs/hcp.html#hcp-operators",
+            text="Hosted control plane operator가 컨트롤 플레인을 관리합니다.",
+            source="bm25",
+            raw_score=1.0,
+            fused_score=1.0,
+        )
+        machine_hit = RetrievalHit(
+            chunk_id="machine-hit",
+            book_slug="machine_management",
+            chapter="machine",
+            section="Machine API와 Machine Config Operator",
+            anchor="machine-operator",
+            source_url="https://example.com/machine",
+            viewer_path="/docs/machine.html#machine-operator",
+            text="Machine Config Operator는 머신 구성과 노드 설정을 관리합니다.",
+            source="vector",
+            raw_score=0.98,
+            fused_score=0.98,
+        )
+        architecture_hit = RetrievalHit(
+            chunk_id="arch-hit",
+            book_slug="architecture",
+            chapter="architecture",
+            section="주요 기능",
+            anchor="key-features",
+            source_url="https://example.com/arch",
+            viewer_path="/docs/arch.html#key-features",
+            text="Cluster Version Operator 및 Machine Config Operator는 플랫폼 핵심 구성 요소입니다.",
+            source="vector",
+            raw_score=0.97,
+            fused_score=0.97,
+        )
+
+        hits = fuse_ranked_hits(
+            "그 Operator는 뭘 관리해?",
+            {"bm25": [hosted_hit], "vector": [machine_hit, architecture_hit]},
+            context=SessionContext(
+                current_topic="Machine Config Operator",
+                open_entities=["Machine Config Operator"],
+            ),
+            top_k=3,
+        )
+
+        self.assertIn(hits[0].book_slug, {"machine_management", "architecture"})
+        self.assertNotEqual("hosted_control_planes", hits[0].book_slug)
+
+    def test_fusion_prefers_update_family_over_support_for_mco_reboot_reason_follow_up(self) -> None:
+        support_hit = RetrievalHit(
+            chunk_id="support-mco",
+            book_slug="support",
+            chapter="support",
+            section="MCO 자동 재부팅 비활성화",
+            anchor="disable-autoreboot",
+            source_url="https://example.com/support",
+            viewer_path="/docs/support.html#disable-autoreboot",
+            text="MCO 변경으로 인한 원치 않는 중단을 방지하려면 MCP를 수정하여 자동 재부팅을 막을 수 있습니다.",
+            source="bm25",
+            raw_score=1.0,
+            fused_score=1.0,
+        )
+        update_hit = RetrievalHit(
+            chunk_id="update-mco",
+            book_slug="updating_clusters",
+            chapter="updates",
+            section="Machine Config Operator의 노드 업데이트",
+            anchor="mco-node-updates",
+            source_url="https://example.com/update",
+            viewer_path="/docs/update.html#mco-node-updates",
+            text="MCO는 각 노드에서 드레이닝, 운영 체제 업데이트, 노드 재부팅을 순차적으로 수행합니다.",
+            source="vector",
+            raw_score=0.99,
+            fused_score=0.99,
+        )
+        postinstall_hit = RetrievalHit(
+            chunk_id="postinstall-mco",
+            book_slug="postinstallation_configuration",
+            chapter="postinstall",
+            section="설치 후 작업",
+            anchor="post-install-tasks",
+            source_url="https://example.com/postinstall",
+            viewer_path="/docs/postinstall.html#post-install-tasks",
+            text="MCO는 MachineConfig 오브젝트를 관리하고 노드 구성을 적용합니다.",
+            source="vector",
+            raw_score=0.98,
+            fused_score=0.98,
+        )
+
+        hits = fuse_ranked_hits(
+            "그거 재부팅은 왜 일어나?",
+            {"bm25": [support_hit], "vector": [update_hit, postinstall_hit]},
+            context=SessionContext(
+                current_topic="Machine Config Operator",
+                open_entities=["Machine Config Operator", "MCO"],
+                unresolved_question="노드 재부팅 이유",
+            ),
+            top_k=3,
+        )
+
+        self.assertIn(hits[0].book_slug, {"updating_clusters", "postinstallation_configuration"})
+        self.assertNotEqual("support", hits[0].book_slug)
 
     def test_has_follow_up_entity_ambiguity_requires_multiple_open_entities(self) -> None:
         context = SessionContext(

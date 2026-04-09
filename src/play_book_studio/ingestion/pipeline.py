@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from play_book_studio.canonical import project_playbook_document, write_playbook_documents
 from .chunking import chunk_sections
 from .collector import collect_entry, raw_html_path
 from .embedding import EmbeddingClient
@@ -20,7 +21,7 @@ from .manifest import (
     write_manifest,
 )
 from .models import ChunkRecord, NormalizedSection, PipelineLog, SourceManifestEntry
-from .normalize import extract_sections
+from .normalize import extract_document_ast, project_normalized_sections
 from .qdrant_store import ensure_collection, upsert_chunks
 from play_book_studio.config.settings import HIGH_VALUE_SLUGS, Settings
 
@@ -119,6 +120,7 @@ def run_ingestion_pipeline(
 
     process_entries = _select_entries(entries, process_subset, process_limit)
     all_sections: list[NormalizedSection] = []
+    playbook_documents = []
     _progress(f"[normalize] target_books={len(process_entries)} subset={process_subset}")
     # 3단계: raw HTML을 canonical section으로 바꾼다.
     log.stage = "normalize"
@@ -130,7 +132,9 @@ def run_ingestion_pipeline(
                 log.collected_count += 1
                 log.collected_sources.append(entry.book_slug)
             html = html_path.read_text(encoding="utf-8")
-            sections = extract_sections(html, entry)
+            document = extract_document_ast(html, entry, settings=settings)
+            sections = project_normalized_sections(document)
+            playbook_documents.append(project_playbook_document(document))
             all_sections.extend(sections)
             log.processed_sources.append(entry.book_slug)
             log.upsert_book_stat(
@@ -153,6 +157,11 @@ def run_ingestion_pipeline(
     log.normalized_count = len(all_sections)
     _progress(f"[normalize] total_sections={len(all_sections)}")
     _write_jsonl(settings.normalized_docs_path, [section.to_dict() for section in all_sections])
+    write_playbook_documents(
+        settings.playbook_documents_path,
+        settings.playbook_books_dir,
+        playbook_documents,
+    )
     _save_log(settings, log)
 
     log.stage = "chunk"

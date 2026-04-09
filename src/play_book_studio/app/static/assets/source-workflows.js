@@ -32,10 +32,12 @@ window.createSourceWorkflows = function createSourceWorkflows(deps) {
         refs.sourceOpenOriginEl,
         `/api/doc-to-book/captured?draft_id=${encodeURIComponent(payload.draft_id)}`,
       );
-      callbacks.setSourceEmptyState(
-        "정규화 검토 필요",
-        helpers.qualitySummaryText(payload) || "이 자료는 아직 바로 열기용 자산으로 쓰기엔 구조가 불안정합니다. 처리 과정과 원문을 먼저 확인해 주세요.",
-      );
+      refs.sourceTitleEl.textContent = payload.plan && payload.plan.title
+        ? payload.plan.title
+        : "정규화 검토 필요";
+      refs.sourcePathEl.textContent = "정규화 검토 필요";
+      refs.sourceNoteEl.textContent = helpers.qualitySummaryText(payload) || "이 자료는 아직 바로 열기용 자산으로 쓰기엔 구조가 불안정합니다. 처리 과정과 원문을 먼저 확인해 주세요.";
+      callbacks.setSourceEmptyState();
       refs.sourceSummaryStripEl.innerHTML = "";
       [
         helpers.humanizeSourceCollection(payload.source_collection),
@@ -115,7 +117,6 @@ window.createSourceWorkflows = function createSourceWorkflows(deps) {
 
     if (!normalizedReady) {
       refs.sourceFrameShellEl.hidden = false;
-      refs.sourceEmptyEl.hidden = true;
       refs.sourceViewerFrameEl.hidden = false;
       callbacks.setSourceFrameLoading(true);
       refs.sourceViewerFrameEl.src = href;
@@ -124,16 +125,14 @@ window.createSourceWorkflows = function createSourceWorkflows(deps) {
     }
 
     if (reviewNeeded) {
-      callbacks.setSourceEmptyState(
-        "정규화 검토 필요",
-        helpers.qualitySummaryText(normalizedBook) || "이 자료는 아직 바로 열지 않습니다. 원문과 처리 과정을 먼저 확인해 주세요.",
-      );
+      refs.sourcePathEl.textContent = "정규화 검토 필요";
+      refs.sourceNoteEl.textContent = helpers.qualitySummaryText(normalizedBook) || "이 자료는 아직 바로 열지 않습니다. 원문과 처리 과정을 먼저 확인해 주세요.";
       refs.sourceOutlineEl.innerHTML = '<div class="trace-empty">검토가 끝난 뒤 section outline이 열립니다.</div>';
+      callbacks.setSourceEmptyState();
       return;
     }
 
     refs.sourceFrameShellEl.hidden = false;
-    refs.sourceEmptyEl.hidden = true;
     refs.sourceViewerFrameEl.hidden = false;
     callbacks.setSourceFrameLoading(true);
     refs.sourceViewerFrameEl.src = href;

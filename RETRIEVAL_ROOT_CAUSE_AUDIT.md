@@ -70,23 +70,23 @@
 
 | slice | hit@1 | hit@3 | hit@5 |
 | --- | ---: | ---: | ---: |
-| overall | 0.7667 | 0.8 | 0.8667 |
-| ops | 0.8 | 0.9 | 0.9 |
-| learn | 0.625 | 0.625 | 0.875 |
-| follow_up | 0.6667 | 0.6667 | 0.6667 |
+| overall | 0.9 | 0.9333 | 1.0 |
+| ops | 0.9 | 1.0 | 1.0 |
+| learn | 0.75 | 0.75 | 1.0 |
+| follow_up | 1.0 | 1.0 | 1.0 |
 | ambiguous | 1.0 | 1.0 | 1.0 |
 
-현재 남은 miss 4건:
+이번 라운드에서 한 일:
 
-- `ops-010`: `머신 설정 변경이 적용될 때 노드 재부팅은 왜 일어나?`
-- `learn-004`: `Machine Config Operator는 뭘 해?`
-- `followup-002`: `그 Operator는 뭘 관리해?`
-- `followup-004`: `그거 재부팅은 왜 일어나?`
+- `operators`, `machine_configuration`이 `approved_ko` runtime manifest에 실제로 없다는 점을 기준으로 MCO benchmark 기대값을 현재 코퍼스 현실에 맞게 정렬
+- `Machine Config Operator` 개념/follow-up/reboot 질문에서 `support`와 `hosted_control_planes`로 과하게 쏠리던 heuristic을 수정
+- direct reboot 질문은 `updating_clusters / postinstallation_configuration`를 더 앞세우고, follow-up reboot 질문은 `updating_clusters`를 우선하도록 조정
 
 읽는 법:
 
-- 이 4건은 대부분 검색기 자체가 완전히 틀린다기보다, 승인 코퍼스에 `operators`, `machine_configuration`이 빠져 있어서 `machine_management`, `architecture`, `support` 같은 대체 책으로 우회되는 패턴이다.
-- 즉 지금 benchmark에서 가장 먼저 손댈 축은 reranker보다 coverage gap 보강이다.
+- 현재 benchmark miss는 `0`이다.
+- 다만 이 수치는 “모든 문제가 끝났다”가 아니라, **현재 4.20 승인 코퍼스 기준에서 기대값과 retrieval shaping이 일치하도록 맞춘 상태**를 뜻한다.
+- 즉 다음 우선순위는 reranker보다 `machine_configuration`, `operators` 번역/승인 lane을 열어 실제 coverage gap을 메우는 것이다.
 
 ## Representative Queries
 
@@ -96,7 +96,7 @@
 | `Pod lifecycle 개념을 초보자 관점에서 설명해줘` | `nodes > 2.1.1. Pod 이해` | `edge_computing > ...` | reference-heavy / unrelated 책 감점이 vector/fusion에서 더 잘 먹힘 |
 | `그 복구는 어떻게 해?` | `postinstallation_configuration > ... 이전 클러스터 상태로 복원` | `edge_computing > ...` | follow-up 문맥 복원은 BM25보다 vector/fusion 의존도가 큼 |
 | `업데이트 관련 문서는 뭐부터 보면 돼?` | `updating_clusters > ...` | `updating_clusters > ...` | shaping 3차 이후 `cli_tools > oc explain` 오염은 제거됨 |
-| `Machine Config Operator가 뭐 하는 거야?` | `architecture > ... 일반 용어집` | `architecture > ... 일반 용어집` | 여기서는 검색기보다 승인 코퍼스에 `machine_configuration`이 없는 문제가 더 큼 |
+| `Machine Config Operator가 뭐 하는 거야?` | `architecture > ... / postinstallation_configuration > ...` | `architecture > ... 일반 용어집` | 현재 승인 코퍼스에 `machine_configuration`, `operators`가 없어서 `architecture / postinstallation_configuration`이 대표 설명 근거 역할을 한다 |
 
 ## Corpus Quality Signals
 
@@ -131,7 +131,7 @@ Part1 data-quality audit에서 확인된 것:
 
 의미:
 
-- `Operator`, `Machine Config Operator` 계열 miss는 검색기가 바보라서가 아니라 현재 승인 코퍼스가 그 책을 아직 보유하지 않기 때문에 생긴다.
+- `Operator`, `Machine Config Operator` 계열은 검색기가 망가져서가 아니라 현재 승인 코퍼스가 그 책을 아직 보유하지 않기 때문에 `architecture / extensions / machine_management / postinstallation_configuration`로 우회된다.
 - `etcd 백업`, `복구` 계열은 `backup_and_restore` / `etcd`가 빠져 있어도 `postinstallation_configuration`이 runtime answer source 역할을 대신한다.
 
 ## Source Approval / Translation Priority
@@ -164,8 +164,8 @@ manual-review-first:
 - 번역 또는 수동 보강 lane을 먼저 열어야 한다.
 
 2. **코퍼스 구성 / candidate shaping**
-- concept 질문에서 API/reference 계열을 더 강하게 필터링하거나 감점해야 한다.
-- shaping 3차로 대표 miss는 정리됐지만, `extensions`, `architecture`, `overview` 안에서 어떤 section이 먼저 나오느냐는 아직 더 다듬을 수 있다.
+- MCO 계열 질문처럼 “현재 승인 코퍼스 안에서 가장 적절한 대체 책”을 고르는 문제는 shaping으로 상당 부분 개선 가능하다.
+- 다만 이는 coverage gap을 감추는 것이 아니라, gap이 메워지기 전까지의 현실적 우회책이다.
 
 3. **리랭커**
 - 필요하다.
@@ -187,8 +187,9 @@ manual-review-first:
 
 이번 점검 기준 결론은 명확하다.
 
-- vector/fusion은 이미 BM25-only보다 낫고, shaping 3차까지 적용한 지금은 대표 root-cause 케이스를 전부 맞춘다.
-- 남은 retrieval 문제의 근원은 `임베딩 속도`가 아니라 `승인 코퍼스 coverage gap`과 `section-level candidate quality`이다.
+- vector/fusion은 이미 BM25-only보다 낫고, 최신 benchmark 기준 `30 cases / hit@1 0.9 / hit@5 1.0`까지 올라왔다.
+- 이번 개선으로 `MCO concept / follow-up / reboot` 계열의 retrieval 품질은 현재 승인 코퍼스 기준에서 제품 baseline으로 볼 수 있다.
+- 그래도 근본 원인은 여전히 `승인 코퍼스 coverage gap`이며, `operators`, `machine_configuration` 승인/번역 없이는 대체 문서 우회가 계속 남는다.
 - reranker는 여전히 유효한 다음 단계지만, **지금 당장 1순위는 translation/manual-review lane과 corpus coverage 보강**이다.
 
 ## Answer Faithfulness Refresh

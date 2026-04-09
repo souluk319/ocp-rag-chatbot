@@ -18,6 +18,7 @@ from play_book_studio.evals.ragas_eval import (
     build_ragas_dataset,
     build_retrieved_contexts,
     load_openai_judge_config_from_env,
+    normalize_ragas_response_text,
 )
 
 
@@ -62,10 +63,12 @@ class RagasEvalTests(unittest.TestCase):
         )
 
         self.assertEqual("ETCD 백업 방법은?", row["user_input"])
-        self.assertEqual("답변: 테스트", row["response"])
+        self.assertEqual("테스트", row["response"])
         self.assertEqual(["ctx1", "ctx2"], row["retrieved_contexts"])
         self.assertEqual("cluster-backup.sh 사용", row["reference"])
         self.assertEqual("precomputed", metadata["response_source"])
+        self.assertEqual("답변: 테스트", metadata["response_raw"])
+        self.assertEqual("테스트", metadata["response_normalized"])
 
     def test_build_ragas_case_row_uses_generated_result_when_needed(self) -> None:
         generated = AnswerResult(
@@ -102,6 +105,18 @@ class RagasEvalTests(unittest.TestCase):
         self.assertEqual("generated", metadata["response_source"])
         self.assertIn("support | 7.2.1.", row["retrieved_contexts"][0])
         self.assertEqual(["support"], metadata["cited_books"])
+        self.assertEqual("`oc adm top nodes` 를 사용합니다.", row["response"])
+
+    def test_normalize_ragas_response_text_strips_prefix_citations_and_fences(self) -> None:
+        normalized = normalize_ragas_response_text(
+            "답변: 플랫폼 인증서 만료 상태는 `oc adm ocp-certificates monitor-certificates` 명령으로 확인합니다 [1].\n\n"
+            "```bash\noc adm ocp-certificates monitor-certificates\n```"
+        )
+
+        self.assertEqual(
+            "플랫폼 인증서 만료 상태는 `oc adm ocp-certificates monitor-certificates` 명령으로 확인합니다",
+            normalized,
+        )
 
     def test_build_ragas_dataset_accepts_normalized_rows(self) -> None:
         dataset = build_ragas_dataset(
