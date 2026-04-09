@@ -19,45 +19,10 @@ window.createChatSession = function createChatSession(deps) {
     renderPendingStage,
   } = messageShells;
 
-  function shuffledComposerSamples(limit = 4) {
-    const items = Array.isArray(constants.emptyStateSamples) ? [...constants.emptyStateSamples] : [];
-    for (let index = items.length - 1; index > 0; index -= 1) {
-      const swapIndex = Math.floor(Math.random() * (index + 1));
-      [items[index], items[swapIndex]] = [items[swapIndex], items[index]];
-    }
-    return items.slice(0, limit);
-  }
-
-  function escapeComposerSample(value) {
-    return String(value || "")
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  }
-
   function renderComposerSamples() {
     if (!refs.composerSamplesEl) return;
-    const sampleMarkup = shuffledComposerSamples()
-      .map(
-        (sample) => `
-            <button type="button" class="sample-chip" data-sample-query="${escapeComposerSample(sample.query)}">${escapeComposerSample(sample.label)}</button>
-          `,
-      )
-      .join("");
-    refs.composerSamplesEl.innerHTML = `
-        <div class="composer-samples-title">예시 질문</div>
-        <div class="composer-samples-list">
-          ${sampleMarkup}
-        </div>
-      `;
-    refs.composerSamplesEl.querySelectorAll(".sample-chip").forEach((button) => {
-      button.addEventListener("click", () => {
-        refs.composerEl.value = button.dataset.sampleQuery || "";
-        helpers.resizeComposer();
-        refs.composerEl.focus();
-      });
-    });
+    refs.composerSamplesEl.hidden = true;
+    refs.composerSamplesEl.innerHTML = "";
   }
 
   async function typeText(element, text, role = "assistant") {
@@ -208,9 +173,13 @@ window.createChatSession = function createChatSession(deps) {
     refs.messagesEl.innerHTML = "";
     renderEmptyState();
     renderComposerSamples();
-    refs.rewrittenQueryEl.textContent = "-";
+    if (refs.rewrittenQueryEl) {
+      refs.rewrittenQueryEl.textContent = "-";
+    }
     helpers.updateSessionContextDisplay(payload.context || {});
-    refs.warningsEl.textContent = "없음";
+    if (refs.warningsEl) {
+      refs.warningsEl.textContent = "없음";
+    }
     helpers.resetPipelineTrace();
     state.lastQuery = "";
     helpers.resetSourcePanel();
@@ -229,9 +198,13 @@ window.createChatSession = function createChatSession(deps) {
     refs.messagesEl.innerHTML = "";
     renderEmptyState();
     renderComposerSamples();
-    refs.rewrittenQueryEl.textContent = "-";
+    if (refs.rewrittenQueryEl) {
+      refs.rewrittenQueryEl.textContent = "-";
+    }
     helpers.updateSessionContextDisplay(payload.context || {});
-    refs.warningsEl.textContent = "없음";
+    if (refs.warningsEl) {
+      refs.warningsEl.textContent = "없음";
+    }
     helpers.resetPipelineTrace();
     state.lastQuery = "";
     helpers.resetSourcePanel();

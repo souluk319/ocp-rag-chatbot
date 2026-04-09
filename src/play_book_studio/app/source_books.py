@@ -3,20 +3,17 @@
 from __future__ import annotations
 
 import json
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
 from play_book_studio.config.settings import load_settings
-from play_book_studio.intake import DocSourceRequest, DocToBookDraftStore, DocToBookPlanner
+from play_book_studio.intake import DocToBookDraftStore
 from play_book_studio.intake.service import evaluate_canonical_book_quality
 
 from .presenters import (
     _core_pack_payload,
     _default_doc_to_book_summary,
-    _load_normalized_sections,
-    _manifest_entry_for_book,
 )
 from .viewers import (
     _build_study_section_cards,
@@ -37,41 +34,25 @@ def _load_playbook_book(root_dir: Path, book_slug: str) -> dict[str, Any] | None
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-@lru_cache(maxsize=8)
 def internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
     parsed = _parse_viewer_path(viewer_path)
     if parsed is None:
         return None
 
+    request = urlparse((viewer_path or "").strip())
+    embedded = "embed=1" in request.query
     book_slug, target_anchor = parsed
     playbook_book = _load_playbook_book(root_dir, book_slug)
-    if playbook_book is not None:
-        sections = [dict(section) for section in (playbook_book.get("sections") or []) if isinstance(section, dict)]
-        if not sections:
-            return None
-        book_title = str(playbook_book.get("title") or book_slug)
-        source_url = str(playbook_book.get("source_uri") or "")
-        summary = "정리된 AST 기준으로 관련 구간을 보여줍니다."
-    else:
-        settings = load_settings(root_dir)
-        normalized_docs_path = settings.normalized_docs_path
-        if not normalized_docs_path.exists():
-            return None
+    if playbook_book is None:
+        return None
+    sections = [dict(section) for section in (playbook_book.get("sections") or []) if isinstance(section, dict)]
+    if not sections:
+        return None
+    book_title = str(playbook_book.get("title") or book_slug)
+    source_url = str(playbook_book.get("source_uri") or "")
+    summary = "정리된 AST 기준의 유저용 매뉴얼북을 보여줍니다."
 
-        sections_by_book = _load_normalized_sections(
-            str(normalized_docs_path),
-            normalized_docs_path.stat().st_mtime_ns,
-        )
-        sections = sections_by_book.get(book_slug) or []
-        if not sections:
-            return None
-
-        first_row = sections[0]
-        book_title = str(first_row.get("book_title") or book_slug)
-        source_url = str(first_row.get("source_url") or "")
-        summary = "정리된 본문 기준으로 관련 구간을 보여줍니다."
-
-    cards = _build_study_section_cards(sections, target_anchor=target_anchor)
+    cards = _build_study_section_cards(sections, target_anchor=target_anchor, embedded=embedded)
     return _render_study_viewer_html(
         title=book_title,
         source_url=source_url,
@@ -79,6 +60,7 @@ def internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
         section_count=len(sections),
         eyebrow="Reference Viewer",
         summary=summary,
+        embedded=embedded,
     )
 
 
@@ -121,6 +103,8 @@ def internal_doc_to_book_viewer_html(root_dir: Path, viewer_path: str) -> str | 
     if parsed is None:
         return None
 
+    request = urlparse((viewer_path or "").strip())
+    embedded = "embed=1" in request.query
     draft_id, target_anchor = parsed
     canonical_book = load_doc_to_book_book(root_dir, draft_id)
     if canonical_book is None:
@@ -129,7 +113,7 @@ def internal_doc_to_book_viewer_html(root_dir: Path, viewer_path: str) -> str | 
     sections = list(canonical_book.get("sections") or [])
     if not sections:
         return None
-    cards = _build_study_section_cards(sections, target_anchor=target_anchor)
+    cards = _build_study_section_cards(sections, target_anchor=target_anchor, embedded=embedded)
     base_summary = _default_doc_to_book_summary(canonical_book)
     quality_summary = str(canonical_book.get("quality_summary") or "").strip()
     summary = f"{base_summary} {quality_summary}".strip() if quality_summary else base_summary
@@ -142,6 +126,7 @@ def internal_doc_to_book_viewer_html(root_dir: Path, viewer_path: str) -> str | 
         section_count=len(sections),
         eyebrow="Doc-to-Book Study Viewer",
         summary=summary,
+        embedded=embedded,
     )
 
 
@@ -152,38 +137,12 @@ def canonical_source_book(root_dir: Path, viewer_path: str) -> dict[str, Any] | 
 
     book_slug, target_anchor = parsed
     playbook_book = _load_playbook_book(root_dir, book_slug)
-    if playbook_book is not None:
-        settings = load_settings(root_dir)
-        playbook_book["target_anchor"] = target_anchor
-        playbook_book.update(_core_pack_payload(version=settings.ocp_version, language=settings.docs_language))
-        return playbook_book
-
+    if playbook_book is None:
+        return None
     settings = load_settings(root_dir)
-    normalized_docs_path = settings.normalized_docs_path
-    if not normalized_docs_path.exists():
-        return None
-
-    sections_by_book = _load_normalized_sections(
-        str(normalized_docs_path),
-        normalized_docs_path.stat().st_mtime_ns,
-    )
-    rows = sections_by_book.get(book_slug) or []
-    if not rows:
-        return None
-
-    first_row = rows[0]
-    manifest_entry = _manifest_entry_for_book(root_dir, book_slug)
-    request = DocSourceRequest(
-        source_type="web",
-        uri=str(first_row.get("source_url") or manifest_entry.get("source_url") or ""),
-        title=str(first_row.get("book_title") or manifest_entry.get("title") or book_slug),
-        language_hint="ko",
-    )
-    canonical_book = DocToBookPlanner().build_canonical_book(rows, request=request)
-    payload = canonical_book.to_dict()
-    payload["target_anchor"] = target_anchor
-    payload.update(_core_pack_payload(version=settings.ocp_version, language=settings.docs_language))
-    return payload
+    playbook_book["target_anchor"] = target_anchor
+    playbook_book.update(_core_pack_payload(version=settings.ocp_version, language=settings.docs_language))
+    return playbook_book
 
 
 def list_doc_to_book_drafts(root_dir: Path) -> dict[str, Any]:

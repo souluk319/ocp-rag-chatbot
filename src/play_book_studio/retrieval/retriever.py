@@ -125,38 +125,40 @@ class Part2Retriever:
             source_name="bm25",
             top_k=effective_candidate_k,
         )
-        intake_bm25_hits: list[RetrievalHit] = []
-        overlay_index = self._doc_to_book_overlay_index()
-        if overlay_index is not None:
-            intake_hit_sets = [
-                overlay_index.search(subquery, top_k=effective_candidate_k)
-                for subquery in rewritten_queries
-            ]
-            intake_bm25_hits = _rrf_merge_hit_lists(
-                intake_hit_sets,
-                source_name="doc_to_book_bm25",
-                top_k=effective_candidate_k,
-            )
-            intake_bm25_hits = filter_doc_to_book_hits_by_selection(
-                intake_bm25_hits,
-                context=context,
-            )
+        custom_bm25_hits: list[RetrievalHit] = []
+        # 사용자 추가 문서 overlay는 현재 품질이 안정화되지 않아 기본 retrieval 경로에서 비활성화한다.
+        # 필요 시 custom_bm25 전용 opt-in 경로로 다시 연결한다.
+        # overlay_index = self._doc_to_book_overlay_index()
+        # if overlay_index is not None:
+        #     intake_hit_sets = [
+        #         overlay_index.search(subquery, top_k=effective_candidate_k)
+        #         for subquery in rewritten_queries
+        #     ]
+        #     custom_bm25_hits = _rrf_merge_hit_lists(
+        #         intake_hit_sets,
+        #         source_name="custom_bm25",
+        #         top_k=effective_candidate_k,
+        #     )
+        #     custom_bm25_hits = filter_doc_to_book_hits_by_selection(
+        #         custom_bm25_hits,
+        #         context=context,
+        #     )
         timings_ms["bm25_search"] = _duration_ms(bm25_started_at)
         _emit_trace_event(
             trace_callback,
             step="bm25_search",
             label="키워드 검색 완료",
             status="done",
-            detail=f"코어 {len(bm25_hits)}개 · intake {len(intake_bm25_hits)}개",
+            detail=f"코어 {len(bm25_hits)}개 · custom {len(custom_bm25_hits)}개",
             duration_ms=timings_ms["bm25_search"],
             meta={
                 "candidate_k": effective_candidate_k,
                 "core_hits": len(bm25_hits),
-                "intake_hits": len(intake_bm25_hits),
+                "custom_hits": len(custom_bm25_hits),
                 "summary": _summarize_hit_list(bm25_hits),
             },
         )
-        return bm25_hits, intake_bm25_hits
+        return bm25_hits, custom_bm25_hits
 
     def _search_vector_candidates(
         self,
@@ -373,9 +375,9 @@ class Part2Retriever:
         ]
 
         bm25_hits = []
-        intake_bm25_hits: list[RetrievalHit] = []
+        custom_bm25_hits: list[RetrievalHit] = []
         if use_bm25:
-            bm25_hits, intake_bm25_hits = self._search_bm25_candidates(
+            bm25_hits, custom_bm25_hits = self._search_bm25_candidates(
                 rewritten_queries=rewritten_queries,
                 effective_candidate_k=effective_candidate_k,
                 context=context,
@@ -409,7 +411,7 @@ class Part2Retriever:
             rewritten_query,
             {
                 "bm25": bm25_hits,
-                "doc_to_book_bm25": intake_bm25_hits,
+                "custom_bm25": custom_bm25_hits,
                 "vector": vector_hits,
             },
             context=context,
@@ -442,7 +444,7 @@ class Part2Retriever:
         trace = build_retrieval_trace(
             warnings=warnings,
             bm25_hits=bm25_hits,
-            intake_bm25_hits=intake_bm25_hits,
+            custom_bm25_hits=custom_bm25_hits,
             vector_hits=vector_hits,
             hybrid_hits=hybrid_hits,
             reranked_hits=hits,

@@ -44,7 +44,7 @@ def build_retrieval_trace(
     *,
     warnings: list[str],
     bm25_hits: list[RetrievalHit],
-    intake_bm25_hits: list[RetrievalHit],
+    custom_bm25_hits: list[RetrievalHit],
     vector_hits: list[RetrievalHit],
     hybrid_hits: list[RetrievalHit],
     reranked_hits: list[RetrievalHit],
@@ -63,8 +63,8 @@ def build_retrieval_trace(
     return {
         "warnings": warnings,
         "bm25": [hit.to_dict() for hit in bm25_hits[: min(candidate_k, 10)]],
-        "doc_to_book_bm25": [
-            hit.to_dict() for hit in intake_bm25_hits[: min(candidate_k, 10)]
+        "custom_bm25": [
+            hit.to_dict() for hit in custom_bm25_hits[: min(candidate_k, 10)]
         ],
         "vector": [hit.to_dict() for hit in vector_hits[: min(candidate_k, 10)]],
         "hybrid": [hit.to_dict() for hit in hybrid_hits[: min(fusion_output_k, 5)]],
@@ -72,7 +72,7 @@ def build_retrieval_trace(
         "reranker": reranker_trace,
         "metrics": {
             "bm25": bm25_summary,
-            "doc_to_book_bm25": summarize_hit_list(intake_bm25_hits),
+            "custom_bm25": summarize_hit_list(custom_bm25_hits),
             "vector": vector_summary,
             "hybrid": hybrid_summary,
             "reranked": reranked_summary,

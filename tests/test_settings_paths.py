@@ -31,6 +31,15 @@ class SettingsPathTests(unittest.TestCase):
                 self.assertEqual(root / "artifacts" / "corpus" / "playbooks", settings.playbook_books_dir)
                 self.assertEqual(root / "artifacts" / "corpus" / "translation_lane_report.json", settings.translation_lane_report_path)
                 self.assertEqual(root / "artifacts" / "runtime" / "recent_chat_session.json", settings.recent_chat_session_path)
+                self.assertEqual(root / "artifacts" / "runtime" / "sessions", settings.runtime_sessions_dir)
+                self.assertEqual(
+                    root / "artifacts" / "runtime" / "sessions" / "session-123.json",
+                    settings.session_snapshot_path("session-123"),
+                )
+                self.assertEqual(
+                    root / "artifacts" / "runtime" / "sessions" / "27120e43.json",
+                    settings.session_snapshot_path("27120e43-9f7c-4f7d-8d12-123456789abc"),
+                )
                 self.assertEqual(root / "artifacts" / "doc_to_book", settings.doc_to_book_dir)
                 self.assertEqual(root / "artifacts" / "doc_to_book" / "drafts", settings.doc_to_book_drafts_dir)
                 self.assertEqual(root / "artifacts" / "doc_to_book" / "captures", settings.doc_to_book_capture_dir)
@@ -304,6 +313,11 @@ class SettingsPathTests(unittest.TestCase):
                 self.assertEqual((external / "runtime").resolve(), settings.runtime_dir)
                 self.assertEqual((external / "corpus" / "raw_html").resolve(), settings.raw_html_dir)
                 self.assertEqual((external / "runtime" / "recent_chat_session.json").resolve(), settings.recent_chat_session_path)
+                self.assertEqual((external / "runtime" / "sessions").resolve(), settings.runtime_sessions_dir)
+                self.assertEqual(
+                    (external / "runtime" / "sessions" / "session-456.json").resolve(),
+                    settings.session_snapshot_path("session-456"),
+                )
             finally:
                 if old_env is None:
                     os.environ.pop("ARTIFACTS_DIR", None)

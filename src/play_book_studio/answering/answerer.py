@@ -18,28 +18,18 @@ from play_book_studio.retrieval.query import (
 )
 
 from .answer_text import (
-    align_answer_to_grounded_commands,
     build_deployment_scaling_answer,
-    citation_marker,
     ensure_korean_product_terms,
-    has_grounded_deployment_scale_citation,
     normalize_answer_markup_blocks,
     normalize_answer_text,
     reshape_ops_answer_text,
-    shape_certificate_monitor_answer,
-    shape_etcd_backup_answer,
-    shape_pod_lifecycle_explainer,
-    shape_pod_pending_troubleshooting,
     strip_intro_offtopic_noise,
     strip_structured_key_extra_guidance,
     strip_weak_additional_guidance,
     summarize_session_context,
-    trim_productization_noise,
 )
 from .citations import (
-    CITATION_RE,
     finalize_citations,
-    inject_single_citation,
     maybe_autorepair_inline_citations,
     select_fallback_citations,
     summarize_selected_citations,
@@ -47,27 +37,20 @@ from .citations import (
 from .context import assemble_context
 from .llm import LLMClient
 from .models import AnswerResult
+from .pipeline_helpers import (
+    build_answer_result,
+    build_follow_up_clarification_answer,
+    finalize_deployment_scaling_answer,
+    generate_grounded_answer_text,
+)
 from .prompt import build_messages
 from .router import route_non_rag
 
-
 _normalize_answer_markup_blocks = normalize_answer_markup_blocks
 _ensure_korean_product_terms = ensure_korean_product_terms
-_align_answer_to_grounded_commands = align_answer_to_grounded_commands
-_shape_etcd_backup_answer = shape_etcd_backup_answer
-_shape_certificate_monitor_answer = shape_certificate_monitor_answer
-_strip_weak_additional_guidance = strip_weak_additional_guidance
 _strip_intro_offtopic_noise = strip_intro_offtopic_noise
 _strip_structured_key_extra_guidance = strip_structured_key_extra_guidance
-_trim_productization_noise = trim_productization_noise
-_citation_marker = citation_marker
-_shape_pod_lifecycle_explainer = shape_pod_lifecycle_explainer
-_shape_pod_pending_troubleshooting = shape_pod_pending_troubleshooting
-_has_grounded_deployment_scale_citation = has_grounded_deployment_scale_citation
-_build_deployment_scaling_answer = build_deployment_scaling_answer
-_inject_single_citation = inject_single_citation
-_summarize_selected_citations = summarize_selected_citations
-_CITATION_RE = CITATION_RE
+_strip_weak_additional_guidance = strip_weak_additional_guidance
 
 
 class Part3Answerer:
@@ -173,7 +156,7 @@ class Part3Answerer:
                     "duration_ms": pipeline_timings_ms["total"],
                 }
             )
-            return AnswerResult(
+            return build_answer_result(
                 query=query,
                 mode=mode,
                 answer=routed_response.answer.strip(),
@@ -183,19 +166,12 @@ class Part3Answerer:
                 cited_indices=[],
                 warnings=[],
                 retrieval_trace={"route": routed_response.route, "warnings": []},
-                pipeline_trace={"events": pipeline_events, "timings_ms": pipeline_timings_ms},
+                pipeline_events=pipeline_events,
+                pipeline_timings_ms=pipeline_timings_ms,
             )
 
         if is_follow_up and has_follow_up_entity_ambiguity(query, context):
-            leading_entities = [entity for entity in context.open_entities if str(entity).strip()][:2]
-            if len(leading_entities) == 2:
-                scope_hint = f"{leading_entities[0]} 쪽인지, {leading_entities[1]} 쪽인지"
-            else:
-                scope_hint = "어느 항목을 가리키는지"
-            answer_text = (
-                "답변: 지금은 열린 주제가 둘 이상이라 어느 설정을 말씀하시는지 먼저 정해야 합니다. "
-                f"{scope_hint} 먼저 확인해 주시겠어요?"
-            )
+            answer_text = build_follow_up_clarification_answer(context)
             pipeline_timings_ms["total"] = round(
                 (time.perf_counter() - answer_started_at) * 1000,
                 1,
@@ -218,7 +194,7 @@ class Part3Answerer:
                     "duration_ms": pipeline_timings_ms["total"],
                 }
             )
-            return AnswerResult(
+            return build_answer_result(
                 query=query,
                 mode=mode,
                 answer=answer_text,
@@ -228,7 +204,8 @@ class Part3Answerer:
                 cited_indices=[],
                 warnings=[],
                 retrieval_trace={"route": "follow_up_clarification", "warnings": []},
-                pipeline_trace={"events": pipeline_events, "timings_ms": pipeline_timings_ms},
+                pipeline_events=pipeline_events,
+                pipeline_timings_ms=pipeline_timings_ms,
             )
 
         emit(
@@ -296,7 +273,7 @@ class Part3Answerer:
                 "duration_ms": pipeline_timings_ms["context_assembly"],
                 "meta": {
                     "selected": len(context_bundle.citations),
-                    "selected_hits": _summarize_selected_citations(
+                    "selected_hits": summarize_selected_citations(
                         context_bundle.citations,
                         retrieval.hits,
                     ),
@@ -306,25 +283,22 @@ class Part3Answerer:
         warnings: list[str] = []
         if not context_bundle.citations:
             warnings.append("no context citations assembled")
+        selected_hits = summarize_selected_citations(
+            context_bundle.citations,
+            retrieval.hits,
+        )
 
-        deployment_scaling_answer = _build_deployment_scaling_answer(
+        deployment_scaling_answer = build_deployment_scaling_answer(
             query=query,
             context=context,
             citations=context_bundle.citations,
         )
         if deployment_scaling_answer is not None:
             answer_text = deployment_scaling_answer
-            final_citations = select_fallback_citations(context_bundle.citations, limit=1)
-            answer_text, final_citations, cited_indices = finalize_citations(
+            answer_text, final_citations, cited_indices = finalize_deployment_scaling_answer(
                 answer_text,
-                final_citations,
+                context_bundle.citations,
             )
-            if not cited_indices and final_citations:
-                answer_text = _inject_single_citation(answer_text, citation_index=1)
-                answer_text, final_citations, cited_indices = finalize_citations(
-                    answer_text,
-                    final_citations,
-                )
             pipeline_timings_ms["total"] = round(
                 (time.perf_counter() - answer_started_at) * 1000,
                 1,
@@ -346,7 +320,7 @@ class Part3Answerer:
                     "duration_ms": pipeline_timings_ms["total"],
                 }
             )
-            return AnswerResult(
+            return build_answer_result(
                 query=query,
                 mode=mode,
                 answer=answer_text,
@@ -354,21 +328,11 @@ class Part3Answerer:
                 response_kind="clarification" if "숫자가 현재 질문에 없습니다" in answer_text else "rag",
                 citations=final_citations,
                 cited_indices=cited_indices,
-                warnings=warnings + list(retrieval.trace.get("warnings", [])),
+                warnings=warnings,
                 retrieval_trace=retrieval.trace,
-                pipeline_trace={
-                    "events": pipeline_events,
-                    "timings_ms": {
-                        **retrieval.trace.get("timings_ms", {}),
-                        **pipeline_timings_ms,
-                    },
-                    "selection": {
-                        "selected_hits": _summarize_selected_citations(
-                            context_bundle.citations,
-                            retrieval.hits,
-                        )
-                    },
-                },
+                pipeline_events=pipeline_events,
+                pipeline_timings_ms=pipeline_timings_ms,
+                selected_hits=selected_hits,
             )
 
         prompt_started_at = time.perf_counter()
@@ -400,70 +364,17 @@ class Part3Answerer:
         )
 
         llm_started_at = time.perf_counter()
-        answer_text = reshape_ops_answer_text(
-            normalize_answer_text(
-                _normalize_answer_markup_blocks(
-                    self.llm_client.generate(messages, trace_callback=emit)
-                )
-            ),
-            mode=mode,
-        )
-        answer_text = _ensure_korean_product_terms(answer_text, query=query)
-        answer_text = _align_answer_to_grounded_commands(
-            answer_text,
-            query=query,
-            citations=context_bundle.citations,
-        )
-        answer_text = _shape_etcd_backup_answer(
-            answer_text,
-            query=query,
-            citations=context_bundle.citations,
-        )
-        answer_text = _shape_certificate_monitor_answer(
-            answer_text,
-            query=query,
-            citations=context_bundle.citations,
-        )
-        answer_text = _shape_pod_lifecycle_explainer(
-            answer_text,
+        answer_text, llm_runtime_meta = generate_grounded_answer_text(
+            self.llm_client,
+            messages,
             query=query,
             mode=mode,
             citations=context_bundle.citations,
+            trace_callback=emit,
         )
-        answer_text = _shape_pod_pending_troubleshooting(
-            answer_text,
-            query=query,
-            mode=mode,
-            citations=context_bundle.citations,
-        )
-        answer_text = _strip_weak_additional_guidance(
-            answer_text,
-            mode=mode,
-            citations=context_bundle.citations,
-        )
-        answer_text = _strip_structured_key_extra_guidance(
-            answer_text,
-            query=query,
-            mode=mode,
-        )
-        answer_text = _trim_productization_noise(answer_text)
-        answer_text = _strip_intro_offtopic_noise(answer_text, query=query)
-        if context_bundle.citations and not _CITATION_RE.search(answer_text):
-            answer_text = _inject_single_citation(answer_text, citation_index=1)
         pipeline_timings_ms["llm_generate_total"] = round(
             (time.perf_counter() - llm_started_at) * 1000,
             1,
-        )
-        llm_runtime_meta = (
-            self.llm_client.runtime_metadata()
-            if hasattr(self.llm_client, "runtime_metadata")
-            else {
-                "preferred_provider": "unknown",
-                "fallback_enabled": False,
-                "last_provider": None,
-                "last_fallback_used": False,
-                "last_attempted_providers": [],
-            }
         )
         emit(
             {
@@ -533,7 +444,7 @@ class Part3Answerer:
             }
         )
 
-        result = AnswerResult(
+        result = build_answer_result(
             query=query,
             mode=mode,
             answer=answer_text,
@@ -541,21 +452,11 @@ class Part3Answerer:
             response_kind="rag",
             citations=final_citations,
             cited_indices=cited_indices,
-            warnings=warnings + list(retrieval.trace.get("warnings", [])),
+            warnings=warnings,
             retrieval_trace=retrieval.trace,
-            pipeline_trace={
-                "events": pipeline_events,
-                "timings_ms": {
-                    **retrieval.trace.get("timings_ms", {}),
-                    **pipeline_timings_ms,
-                },
-                "selection": {
-                    "selected_hits": _summarize_selected_citations(
-                        context_bundle.citations,
-                        retrieval.hits,
-                    )
-                },
-                "llm": llm_runtime_meta,
-            },
+            pipeline_events=pipeline_events,
+            pipeline_timings_ms=pipeline_timings_ms,
+            selected_hits=selected_hits,
+            llm_runtime_meta=llm_runtime_meta,
         )
         return result

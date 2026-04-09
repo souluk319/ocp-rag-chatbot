@@ -262,10 +262,13 @@ def write_recent_chat_session_snapshot(
             for index, turn in enumerate(recent_history)
         ],
     }
-    target.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    serialized = json.dumps(payload, ensure_ascii=False, indent=2)
+    target.write_text(serialized, encoding="utf-8")
+    snapshot_path = settings.session_snapshot_path(session.session_id)
+    snapshot_stem = settings.session_snapshot_stem(session.session_id)
+    for legacy_path in settings.runtime_sessions_dir.glob(f"{snapshot_stem}-*.json"):
+        legacy_path.unlink(missing_ok=True)
+    snapshot_path.write_text(serialized, encoding="utf-8")
     return target
 
 

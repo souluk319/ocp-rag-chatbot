@@ -1,0 +1,344 @@
+    }
+
+    .assistant-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .assistant-label {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: rgba(21, 21, 21, 0.05);
+      color: var(--ink);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .assistant-copy {
+      display: grid;
+      gap: 14px;
+      max-width: none;
+    }
+
+    .pending-panel {
+      display: grid;
+      gap: 14px;
+      padding: 2px 2px 0;
+    }
+
+    .pending-kicker {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .pending-stage {
+      font-family: "Red Hat Display", "Red Hat Text", sans-serif;
+      font-size: 22px;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .pending-stage.live::after {
+      content: "";
+      display: inline-block;
+      width: 0.85em;
+      margin-left: 4px;
+      border-bottom: 2px solid currentColor;
+      animation: live-ellipsis 0.9s ease-in-out infinite;
+      vertical-align: middle;
+    }
+
+    .pending-stage.live,
+    .stage-chip.running,
+    .message.assistant.streaming .assistant-label {
+      animation: soft-blink 1.05s ease-in-out infinite;
+    }
+
+    .pending-detail {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      max-width: 78ch;
+    }
+
+    .progress-rail {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(21, 21, 21, 0.08);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-warm));
+      transition: width 180ms ease;
+      min-width: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-fill.live::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+      animation: progress-shimmer 1.05s linear infinite;
+    }
+
+    .stage-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .stage-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(21, 21, 21, 0.03);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+    }
+
+    .stage-chip.done {
+      background: rgba(61, 115, 23, 0.1);
+      border-color: rgba(61, 115, 23, 0.2);
+      color: #264b10;
+    }
+
+    .stage-chip.warning {
+      background: rgba(173, 110, 0, 0.1);
+      border-color: rgba(173, 110, 0, 0.18);
+      color: #8c5b00;
+    }
+
+    .stage-chip.running {
+      background: rgba(238, 0, 0, 0.08);
+      border-color: rgba(238, 0, 0, 0.18);
+      color: var(--accent-dark);
+      box-shadow: 0 0 0 1px rgba(238, 0, 0, 0.04);
+    }
+
+    .stage-chip.pending {
+      opacity: 0.72;
+    }
+
+    .pending-metrics,
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric-card {
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 12px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .metric-card.metric-hybrid {
+      border-color: rgba(238, 0, 0, 0.18);
+      background: rgba(238, 0, 0, 0.04);
+    }
+
+    .metric-card.metric-selected {
+      border-color: rgba(21, 21, 21, 0.12);
+      background: rgba(21, 21, 21, 0.025);
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      color: var(--ink);
+      font-size: 23px;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+    }
+
+    .metric-detail {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .assistant-copy h2,
+    .assistant-copy h3,
+    .assistant-copy p,
+    .assistant-copy ul,
+    .assistant-copy ol {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.78;
+    }
+
+    .assistant-copy h2,
+    .assistant-copy h3 {
+      font-family: "Red Hat Display", "Red Hat Text", sans-serif;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      color: #101418;
+    }
+
+    .assistant-copy h2 {
+      font-size: 24px;
+      margin-top: 8px;
+    }
+
+    .assistant-copy h3 {
+      font-size: 19px;
+      margin-top: 4px;
+    }
+
+    .assistant-copy p.assistant-lead {
+      font-size: 18px;
+      line-height: 1.72;
+      letter-spacing: -0.015em;
+      font-weight: 500;
+      color: #101418;
+    }
+
+    .assistant-copy ul,
+    .assistant-copy ol {
+      padding-left: 20px;
+    }
+
+    .assistant-copy li+li {
+      margin-top: 6px;
+    }
+
+    .inline-code {
+      display: inline-block;
+      padding: 0.08rem 0.45rem;
+      border-radius: 6px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(21, 21, 21, 0.04);
+      color: var(--ink);
+      font-family: "SF Mono", "Cascadia Code", monospace;
+      font-size: 0.92em;
+    }
+
+    .code-block {
+      border: 1px solid rgba(21, 21, 21, 0.12);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: #151515;
+    }
+
+    .code-block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      background: #232323;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .code-lang {
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .code-copy {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 999px;
+      padding: 7px 12px;
+      background: transparent;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .code-copy.copied {
+      background: rgba(238, 0, 0, 0.18);
+      border-color: rgba(238, 0, 0, 0.3);
+      color: #ffffff;
+    }
+
+    .code-block pre {
+      margin: 0;
+      padding: 14px 16px 16px;
+      overflow-x: auto;
+      background: #151515;
+      color: #f5f5f5;
+      font-family: "SF Mono", "Cascadia Code", monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      white-space: pre;
+    }
+
+    .assistant-footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 14px;
+    }
+
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 26px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(21, 21, 21, 0.03);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .citation-list-title {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .source-caption {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+

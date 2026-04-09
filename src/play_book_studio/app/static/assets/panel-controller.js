@@ -83,24 +83,47 @@ window.createPanelController = function createPanelController(deps) {
   }
 
   function setSourceLink(anchor, href) {
+    if (!anchor) {
+      return;
+    }
+    const row = anchor.closest(".source-link-row");
     if (!href) {
       anchor.hidden = true;
       anchor.removeAttribute("href");
+      if (row) {
+        row.hidden = true;
+      }
       return;
     }
     anchor.hidden = false;
     anchor.href = href;
+    if (row) {
+      row.hidden = false;
+    }
+  }
+
+  function buildEmbeddedViewerHref(viewerPath) {
+    if (!viewerPath) {
+      return "";
+    }
+    const basePath = viewerPath.startsWith("/docs/") ? viewerPath : `/docs/${viewerPath}`;
+    const hashIndex = basePath.indexOf("#");
+    const pathWithoutHash = hashIndex >= 0 ? basePath.slice(0, hashIndex) : basePath;
+    const hash = hashIndex >= 0 ? basePath.slice(hashIndex) : "";
+    const separator = pathWithoutHash.includes("?") ? "&" : "?";
+    return `${pathWithoutHash}${separator}embed=1&_ts=${Date.now()}${hash}`;
   }
 
   function resetSourcePanel() {
     state.activeSourceKey = "";
-    refs.sourceTitleEl.textContent = "근거 문서를 선택하세요";
-    refs.sourcePathEl.textContent = "답변 속 번호를 누르면 여기서 바로 확인합니다.";
-    refs.sourceNoteEl.textContent = "핵심 구간과 원문 링크를 함께 보여줍니다.";
-    refs.sourceSummaryStripEl.innerHTML = "";
-    refs.sourceOutlineEl.innerHTML = '<div class="trace-empty">문서를 열면 핵심 구간이 여기에 표시됩니다.</div>';
+    if (refs.sourceSummaryStripEl) {
+      refs.sourceSummaryStripEl.innerHTML = "";
+    }
+    if (refs.sourceOutlineEl) {
+      refs.sourceOutlineEl.innerHTML = "";
+      refs.sourceOutlineEl.hidden = true;
+    }
     setSourceLink(refs.sourceOpenDocEl, "");
-    setSourceLink(refs.sourceOpenOriginEl, "");
     setSourceEmptyState();
     syncActiveSourceTags();
   }
@@ -124,8 +147,13 @@ window.createPanelController = function createPanelController(deps) {
   }
 
   function renderSourceBook(book, targetAnchor = "") {
+    if (!refs.sourceSummaryStripEl && !refs.sourceOutlineEl) {
+      return;
+    }
     const sections = Array.isArray(book && book.sections) ? book.sections : [];
-    refs.sourceSummaryStripEl.innerHTML = "";
+    if (refs.sourceSummaryStripEl) {
+      refs.sourceSummaryStripEl.innerHTML = "";
+    }
 
     [
       book && book.source_collection ? helpers.humanizeSourceCollection(book.source_collection) : "자료군 미확인",
@@ -135,9 +163,15 @@ window.createPanelController = function createPanelController(deps) {
       book && book.canonical_model ? helpers.humanizeDraftValue(book.canonical_model) : "정리본",
       book && book.source_view_strategy ? helpers.humanizeDraftValue(book.source_view_strategy) : "정리 보기",
     ].forEach((label) => {
-      refs.sourceSummaryStripEl.appendChild(helpers.createSummaryChip(label));
+      if (refs.sourceSummaryStripEl) {
+        refs.sourceSummaryStripEl.appendChild(helpers.createSummaryChip(label));
+      }
     });
 
+    if (!refs.sourceOutlineEl) {
+      return;
+    }
+    refs.sourceOutlineEl.hidden = false;
     if (!sections.length) {
       refs.sourceOutlineEl.innerHTML = '<div class="trace-empty">핵심 구간을 아직 만들지 못했습니다.</div>';
       return;
@@ -163,12 +197,6 @@ window.createPanelController = function createPanelController(deps) {
   }
 
   function applySourcePanelState(citation, meta = null) {
-    const bookTitle = meta && meta.book_title
-      ? meta.book_title
-      : citation.book_title || citation.book_slug || "근거 문서";
-    const sectionLabel = meta && meta.section_path_label
-      ? meta.section_path_label
-      : citation.section_path_label || citation.section || citation.anchor || "문서 전체";
     const excerpt = (citation.excerpt || "").trim();
     const packLine = [
       meta && meta.source_collection ? helpers.humanizeSourceCollection(meta.source_collection) : "",
@@ -182,16 +210,10 @@ window.createPanelController = function createPanelController(deps) {
       ? "정확한 섹션 anchor를 찾지 못해 문서 첫 section 기준으로 열었습니다."
       : "";
 
-    refs.sourceTitleEl.textContent = bookTitle;
-    refs.sourcePathEl.textContent = sectionLabel;
-    refs.sourceNoteEl.textContent = excerpt
-      ? ([packLine, qualityLine, sectionMatchLine, excerpt].filter(Boolean).join("\n"))
-      : ([packLine, qualityLine, sectionMatchLine].filter(Boolean).join("\n") || "선택한 참조의 관련 구간을 이 패널에서 확인할 수 있습니다.");
     setSourceLink(
       refs.sourceOpenDocEl,
       (meta && meta.viewer_path) || citation.viewer_path || citation.href || "",
     );
-    setSourceLink(refs.sourceOpenOriginEl, (meta && meta.source_url) || citation.source_url || "");
   }
 
   async function openSourcePanel(citation) {
@@ -206,19 +228,19 @@ window.createPanelController = function createPanelController(deps) {
     const href = citation.href || "";
     const viewerPath = citation.viewer_path
       || ((href.startsWith("/docs/") || (!href.startsWith("http") && href.length > 0)) ? href : "");
-    const viewerHref = viewerPath
-      ? (viewerPath.startsWith("/docs/") ? viewerPath : `/docs/${viewerPath}`)
-      : "";
+    const viewerHref = buildEmbeddedViewerHref(viewerPath);
 
     if (viewerHref) {
       refs.sourceFrameShellEl.hidden = false;
       refs.sourceViewerFrameEl.hidden = false;
       callbacks.setSourceFrameLoading(true);
+      refs.sourceViewerFrameEl.removeAttribute("src");
       refs.sourceViewerFrameEl.src = viewerHref;
     } else {
-      refs.sourcePathEl.textContent = "뷰어를 바로 열 수 없습니다.";
-      refs.sourceNoteEl.textContent = "이 항목은 원문 링크만 제공합니다.";
-      refs.sourceOutlineEl.innerHTML = '<div class="trace-empty">문서 뷰어가 없는 항목이라 원문 링크로만 확인할 수 있습니다.</div>';
+      if (refs.sourceOutlineEl) {
+        refs.sourceOutlineEl.hidden = false;
+        refs.sourceOutlineEl.innerHTML = '<div class="trace-empty">정리된 매뉴얼북이 준비된 항목만 이 패널에서 열립니다.</div>';
+      }
       setSourceEmptyState();
     }
 
@@ -230,24 +252,15 @@ window.createPanelController = function createPanelController(deps) {
       applySourcePanelState(citation, meta);
       if (helpers.isReviewNeeded(meta)) {
         setSourceLink(refs.sourceOpenDocEl, "");
-        refs.sourcePathEl.textContent = "정규화 검토 필요";
-        refs.sourceNoteEl.textContent = helpers.qualitySummaryText(meta) || "이 자료는 아직 원문 기준으로 먼저 확인해야 합니다.";
-        refs.sourceOutlineEl.innerHTML = '<div class="trace-empty">검토가 끝나면 핵심 구간이 열립니다.</div>';
+        if (refs.sourceOutlineEl) {
+          refs.sourceOutlineEl.hidden = false;
+          refs.sourceOutlineEl.innerHTML = '<div class="trace-empty">검토가 끝난 뒤에만 매뉴얼북이 열립니다.</div>';
+        }
         setSourceEmptyState();
         return;
       }
     } catch (error) {
       if (state.activeSourceKey !== sourceKeyFor(citation)) return;
-      refs.sourceNoteEl.textContent = citation.excerpt || (error.message || "source metadata를 불러오지 못했습니다.");
-    }
-
-    try {
-      const book = await fetchSourceBook(viewerPath);
-      if (state.activeSourceKey !== sourceKeyFor(citation)) return;
-      renderSourceBook(book, book.target_anchor || citation.anchor || "");
-    } catch (error) {
-      if (state.activeSourceKey !== sourceKeyFor(citation)) return;
-      refs.sourceOutlineEl.innerHTML = '<div class="trace-empty">핵심 구간을 불러오지 못했습니다.</div>';
     }
   }
 

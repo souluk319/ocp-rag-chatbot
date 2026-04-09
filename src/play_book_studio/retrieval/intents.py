@@ -38,14 +38,14 @@ RBAC_RE = re.compile(
     r"(\brbac\b|역할 기반 액세스 제어|rolebinding|clusterrolebinding|clusterrole|역할 바인딩|role binding)",
     re.IGNORECASE,
 )
-PROJECT_SCOPE_RE = re.compile(r"(프로젝트|project|네임스페이스|namespace)", re.IGNORECASE)
+PROJECT_SCOPE_RE = re.compile(r"(프로젝트|project|네임스페이스|namespace|이름공간)", re.IGNORECASE)
 ROLE_ASSIGN_RE = re.compile(
     r"(주고 싶|주려|부여|할당|추가|설정|바인딩|묶|grant|assign|bind)",
     re.IGNORECASE,
 )
 ROLE_API_STYLE_RE = re.compile(r"(api|yaml|manifest|json|spec|필드|curl)", re.IGNORECASE)
 USER_SUBJECT_RE = re.compile(r"(사용자|유저|작업자|계정|그룹|serviceaccount|서비스 계정)", re.IGNORECASE)
-ADMIN_ROLE_RE = re.compile(r"(관리자|\badmin\b)", re.IGNORECASE)
+ADMIN_ROLE_RE = re.compile(r"(관리자|어드민|\badmin\b)", re.IGNORECASE)
 EDIT_ROLE_RE = re.compile(r"(편집|\bedit\b)", re.IGNORECASE)
 VIEW_ROLE_RE = re.compile(r"(읽기 전용|보기|\bview\b)", re.IGNORECASE)
 CLUSTER_ADMIN_RE = re.compile(r"\bcluster-admin\b", re.IGNORECASE)

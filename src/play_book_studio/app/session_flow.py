@@ -1,6 +1,7 @@
 # 채팅 세션 문맥, follow-up, 추천 질문 규칙을 담당한다.
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from play_book_studio.answering.models import AnswerResult
@@ -179,6 +180,61 @@ def dedupe_suggestions(candidates: list[str], *, query: str, limit: int = 3) -> 
     return unique
 
 
+def _strip_topic_prefix(value: str) -> str:
+    text = (value or "").strip()
+    if not text:
+        return ""
+    last_segment = text.split(">")[-1].strip()
+    cleaned = re.sub(r"^\d+(?:\.\d+)*\.?\s*", "", last_segment).strip()
+    return cleaned or last_segment
+
+
+def _suggestion_subject(
+    *,
+    query: str,
+    topic: str,
+    primary: Any | None,
+) -> str:
+    normalized = (query or "").strip()
+    lowered = normalized.lower()
+    if has_route_ingress_compare_intent(normalized):
+        return "Route와 Ingress"
+    if ETCD_RE.search(normalized):
+        return "etcd"
+    if MCO_RE.search(normalized):
+        return "Machine Config Operator"
+    if "operator" in lowered:
+        return "Operator"
+    if topic:
+        stripped_topic = _strip_topic_prefix(topic)
+        if stripped_topic:
+            return stripped_topic
+    if primary is not None:
+        section = _strip_topic_prefix(getattr(primary, "section", ""))
+        if section:
+            return section
+    explicit = infer_explicit_topic(normalized)
+    if explicit:
+        return explicit
+    return ""
+
+
+def _contextualize_follow_up(candidate: str, *, subject: str) -> str:
+    cleaned = (candidate or "").strip()
+    if not cleaned or not subject:
+        return cleaned
+    replacements = {
+        "실행 예시도 같이 보여줘": f"{subject} 관련 실행 예시도 같이 보여줘",
+        "주의사항도 함께 정리해줘": f"{subject} 관련 주의사항도 함께 정리해줘",
+        "운영 중 주의사항도 함께 정리해줘": f"{subject} 운영 시 주의사항도 함께 정리해줘",
+        "상태 확인 방법도 같이 알려줘": f"{subject} 상태 확인 방법도 같이 알려줘",
+        "실무에서 언제 쓰는지 알려줘": f"{subject}를 실무에서 언제 쓰는지 알려줘",
+        "초보자 기준으로 단계별로 설명해줘": f"{subject}를 초보자 기준으로 단계별로 설명해줘",
+        "실무에서 왜 중요한지도 설명해줘": f"{subject}가 실무에서 왜 중요한지도 설명해줘",
+    }
+    return replacements.get(cleaned, cleaned)
+
+
 def fallback_follow_up_questions(*, query: str) -> list[str]:
     if (
         is_generic_intro_query(query)
@@ -188,13 +244,13 @@ def fallback_follow_up_questions(*, query: str) -> list[str]:
     ):
         return [
             "초보자 기준으로 단계별로 설명해줘",
-            "관련 문서 위치도 같이 알려줘",
+            "실무에서 언제 쓰는지 알려줘",
             "실무에서 왜 중요한지도 설명해줘",
         ]
     return [
         "실행 예시도 같이 보여줘",
         "주의사항도 함께 정리해줘",
-        "관련 문서 위치도 같이 알려줘",
+        "상태 확인 방법도 같이 알려줘",
     ]
 
 
@@ -206,26 +262,19 @@ def suggest_follow_up_questions(*, session: ChatSession, result: AnswerResult) -
     book_slug = (primary.book_slug if primary else "").lower()
     section = (primary.section if primary else "").lower()
 
-    if result.response_kind in {"smalltalk", "meta"}:
+    if result.response_kind == "smalltalk":
         return [
             "오픈시프트가 뭐야?",
             "특정 namespace에 admin 권한 주는 법 알려줘",
             "프로젝트가 Terminating에서 안 지워질 때 어떻게 해?",
         ]
-    if result.response_kind == "clarification":
-        if has_logging_ambiguity(query):
-            return [
-                "애플리케이션 로그를 보고 싶어",
-                "인프라 로그를 보고 싶어",
-                "감사 로그 위치 알려줘",
-            ]
-        if has_update_doc_locator_ambiguity(query):
-            return [
-                "4.20에서 4.21로 업그레이드할 때 문서 뭐부터 봐?",
-                "단일 클러스터 업데이트 문서부터 알려줘",
-                "업데이트 전 체크리스트 문서도 같이 알려줘",
-            ]
-        return fallback_follow_up_questions(query=query)
+    if (
+        result.response_kind != "rag"
+        or not result.citations
+        or not result.cited_indices
+        or result.warnings
+    ):
+        return []
 
     candidates: list[str] = []
 
@@ -285,12 +334,12 @@ def suggest_follow_up_questions(*, session: ChatSession, result: AnswerResult) -
         candidates = [
             "쿠버네티스와 차이도 설명해줘",
             "Operator가 뭐야?",
-            "아키텍처를 한 장으로 요약해줘",
+            "OpenShift 아키텍처를 처음 설명해줘",
             "실무에서 주로 어떤 기능을 쓰는지도 알려줘",
         ]
     elif has_doc_locator_intent(query):
         candidates = [
-            "관련 문서 위치를 바로 알려줘",
+            "핵심만 먼저 요약해줘",
             "실행 예시도 같이 보여줘",
             "주의사항도 함께 정리해줘",
         ]
@@ -309,7 +358,13 @@ def suggest_follow_up_questions(*, session: ChatSession, result: AnswerResult) -
             "운영 중 주의사항도 정리해줘",
         ]
 
-    merged = dedupe_suggestions(candidates + fallback_follow_up_questions(query=query), query=query)
+    subject = _suggestion_subject(query=query, topic=topic, primary=primary)
+    source_candidates = candidates if candidates else fallback_follow_up_questions(query=query)
+    contextualized = [
+        _contextualize_follow_up(candidate, subject=subject)
+        for candidate in source_candidates
+    ]
+    merged = dedupe_suggestions(contextualized, query=query)
     return merged[:3]
 
 

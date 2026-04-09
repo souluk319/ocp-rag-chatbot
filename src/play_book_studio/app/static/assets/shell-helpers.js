@@ -33,11 +33,28 @@ window.createShellHelpers = function createShellHelpers(deps) {
   }
 
   function setButtonBusy(button, busy) {
-    if (!button) return;
-    button.classList.add("button-busy");
-    button.classList.toggle("is-busy", Boolean(busy));
-    button.setAttribute("aria-busy", busy ? "true" : "false");
-  }
+      if (!button) return;
+      button.classList.add("button-busy");
+      button.classList.toggle("is-busy", Boolean(busy));
+      button.setAttribute("aria-busy", busy ? "true" : "false");
+    }
+
+    function renderSendButtonState(generating) {
+      if (!refs.sendBtn) return;
+      refs.sendBtn.classList.toggle("is-stop", generating);
+      refs.sendBtn.classList.toggle("is-stop-icon", generating);
+      refs.sendBtn.classList.remove("button-busy", "is-busy");
+      refs.sendBtn.setAttribute("aria-busy", "false");
+      if (generating) {
+        refs.sendBtn.innerHTML = '<span class="send-btn-stop-icon" aria-hidden="true"></span>';
+        refs.sendBtn.setAttribute("aria-label", "생성 중지");
+        refs.sendBtn.setAttribute("title", "생성 중지");
+        return;
+      }
+      refs.sendBtn.textContent = "전송";
+      refs.sendBtn.setAttribute("aria-label", "전송");
+      refs.sendBtn.setAttribute("title", "전송");
+    }
 
   function setIngestBusy(busy, message = "", activeButton = null) {
     refs.ingestStatusEl.dataset.busy = busy ? "true" : "false";
@@ -86,14 +103,12 @@ window.createShellHelpers = function createShellHelpers(deps) {
   }
 
   function setGenerating(next) {
-    state.generating = next;
-    refs.sendBtn.disabled = false;
-    refs.sendBtn.textContent = next ? "중지" : "전송";
-    refs.sendBtn.classList.toggle("is-stop", next);
-    refs.resetBtn.disabled = next;
-    refs.newSessionBtn.disabled = next;
-    setButtonBusy(refs.sendBtn, next);
-  }
+      state.generating = next;
+      refs.sendBtn.disabled = false;
+      renderSendButtonState(next);
+      refs.resetBtn.disabled = next;
+      refs.newSessionBtn.disabled = next;
+    }
 
   function humanizeDraftValue(value) {
     const token = String(value || "").trim();

@@ -321,11 +321,12 @@ window.createWorkspaceState = function createWorkspaceState(deps) {
   }
 
   function setStudyTab(tab) {
+    const effectiveTab = "source";
     refs.studyTabButtons.forEach((button) => {
-      button.classList.toggle("active", button.dataset.studyTab === tab);
+      button.classList.toggle("active", button.dataset.studyTab === effectiveTab);
     });
     refs.studyPages.forEach((page) => {
-      page.classList.toggle("active", page.dataset.studyPage === tab);
+      page.classList.toggle("active", page.dataset.studyPage === effectiveTab);
     });
   }
 

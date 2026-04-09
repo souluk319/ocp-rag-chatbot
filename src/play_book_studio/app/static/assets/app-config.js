@@ -6,36 +6,32 @@ window.OCP_PLAY_STUDIO_CONFIG = {
   ],
   emptyStateSamples: [
     {
-      label: "Pod Pending 점검 순서",
-      query: "Pod가 Pending 상태에서 오래 멈춰 있을 때 어떤 순서로 점검해야 해?",
+      label: "etcd 백업 절차",
+      query: "etcd 백업은 어떻게 하나?",
     },
     {
-      label: "CrashLoopBackOff 원인 추적",
-      query: "CrashLoopBackOff가 반복될 때 원인 추적 순서를 알려줘",
-    },
-    {
-      label: "oc login / CLI 사용법",
-      query: "oc login 기본 사용법과 토큰 로그인 예시를 알려줘",
-    },
-    {
-      label: "Pod lifecycle 개념",
-      query: "Pod lifecycle 개념을 초보자 관점에서 설명해줘",
-    },
-    {
-      label: "Deployment 복제본 조정",
-      query: "실행 중인 Deployment의 복제본 개수를 3개에서 5개로 변경하려면 어떻게 해야 해?",
+      label: "노드 사용량 확인",
+      query: "oc adm top nodes는 언제 써?",
     },
     {
       label: "Route / Ingress 차이",
-      query: "OpenShift에서 Route와 Ingress 차이를 운영 관점에서 설명해줘",
+      query: "Route와 Ingress 차이가 뭐야?",
     },
     {
-      label: "ImagePullBackOff 대응",
-      query: "ImagePullBackOff가 발생하면 어떤 순서로 원인을 확인해야 해?",
+      label: "namespace admin 권한",
+      query: "특정 namespace에 admin 권한 주는 법 알려줘",
     },
     {
-      label: "ConfigMap / Secret 사용",
-      query: "ConfigMap과 Secret을 언제 어떻게 나눠 써야 하는지 알려줘",
+      label: "Terminating 프로젝트 정리",
+      query: "프로젝트가 Terminating에서 안 지워질 때 어떻게 해?",
+    },
+    {
+      label: "아키텍처 소개",
+      query: "OpenShift 아키텍처를 처음 설명해줘",
+    },
+    {
+      label: "Operator 기본 개념",
+      query: "Operator가 뭐고 왜 필요한가?",
     },
   ],
 };

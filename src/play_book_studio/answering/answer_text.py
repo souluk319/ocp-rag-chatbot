@@ -14,6 +14,9 @@ from play_book_studio.retrieval.query import (
     has_deployment_scaling_intent,
     has_node_drain_intent,
     has_openshift_kubernetes_compare_intent,
+    has_project_finalizer_intent,
+    has_project_terminating_intent,
+    has_rbac_intent,
     has_pod_pending_troubleshooting_intent,
     has_pod_lifecycle_concept_intent,
     is_generic_intro_query,
@@ -52,7 +55,22 @@ BARE_COMMAND_ANSWER_RE = re.compile(
 )
 STRUCTURED_QUERY_RE = re.compile(r"[a-z0-9_.-]+/[a-z0-9_.-]+(?:=[a-z0-9_.-]+)?", re.IGNORECASE)
 REPLICA_COUNT_RE = re.compile(r"(?<!\d)(\d+)\s*개")
-NAMESPACE_ADMIN_QUERY_RE = re.compile(r"(namespace|프로젝트|네임스페이스).*(admin|관리자)|(?:admin|관리자).*(namespace|프로젝트|네임스페이스)", re.IGNORECASE)
+INLINE_COMMAND_RE = re.compile(r"`([^`\n]+)`")
+NAMESPACE_ADMIN_QUERY_RE = re.compile(
+    r"(namespace|프로젝트|네임스페이스|이름공간).*(admin|관리자|어드민)|"
+    r"(?:admin|관리자|어드민).*(namespace|프로젝트|네임스페이스|이름공간)",
+    re.IGNORECASE,
+)
+RBAC_YAML_QUERY_RE = re.compile(r"(yaml|manifest|예시|rolebinding|clusterrolebinding)", re.IGNORECASE)
+RBAC_VERIFY_QUERY_RE = re.compile(
+    r"(확인|검증|잘 들어갔|반영|적용|명령|can-i|describe|accessreview|subjectaccessreview)",
+    re.IGNORECASE,
+)
+RBAC_REVOKE_QUERY_RE = re.compile(r"(회수|제거|삭제|해제|remove|revoke|unbind)", re.IGNORECASE)
+RBAC_CLUSTER_ADMIN_DIFF_RE = re.compile(
+    r"(cluster-admin).*(차이|다르|비교)|(?:차이|다르|비교).*(cluster-admin)",
+    re.IGNORECASE,
+)
 
 
 def normalize_answer_text(answer_text: str) -> str:
@@ -144,7 +162,9 @@ def align_answer_to_grounded_commands(answer_text: str, *, query: str, citations
 
     if has_cluster_node_usage_intent(query) and "oc adm top nodes" in excerpt_text:
         return (
-            "답변: 클러스터 전체 노드의 CPU와 메모리 사용량은 `oc adm top nodes` 명령으로 한 번에 확인합니다 [1].\n\n"
+            "답변: `oc adm top nodes`는 클러스터 전체 노드의 CPU와 메모리 사용량을 빠르게 훑어볼 때 먼저 쓰는 명령입니다 [1].\n\n"
+            "노드 과부하, 리소스 불균형, 드레인이나 점검 전에 현재 사용량을 확인해야 할 때 유용합니다 [1]. "
+            "특정 노드만 보고 싶으면 `oc adm top node <node-name>` 형태로 좁혀서 확인하면 됩니다 [1].\n\n"
             "```bash\noc adm top nodes\n```"
         )
 
@@ -177,24 +197,261 @@ def align_answer_to_grounded_commands(answer_text: str, *, query: str, citations
     return updated
 
 
+def _looks_like_shell_command(value: str) -> bool:
+    normalized = (value or "").strip().lstrip("$").strip().lower()
+    if not normalized:
+        return False
+    return normalized.startswith(
+        (
+            "oc ",
+            "kubectl ",
+            "tkn ",
+            "etcdctl ",
+            "helm ",
+            "curl ",
+            "openssl ",
+            "journalctl ",
+            "systemctl ",
+            "chroot ",
+            "/usr/local/bin/",
+            "cluster-backup.sh",
+            "cluster-restore.sh",
+        )
+    )
+
+
+def _extract_grounded_commands(*texts: str, limit: int = 3) -> list[str]:
+    commands: list[str] = []
+    seen: set[str] = set()
+
+    def add(candidate: str) -> None:
+        normalized = (candidate or "").strip().lstrip("$").strip()
+        if not _looks_like_shell_command(normalized):
+            return
+        if normalized in seen:
+            return
+        seen.add(normalized)
+        commands.append(normalized)
+
+    for text in texts:
+        for match in INLINE_COMMAND_RE.finditer(text or ""):
+            add(match.group(1))
+        for raw_line in (text or "").splitlines():
+            line = raw_line.strip().lstrip("-*").strip()
+            add(line)
+        if len(commands) >= limit:
+            break
+
+    return commands[:limit]
+
+
+def _actionable_intro(query: str) -> str:
+    if has_backup_restore_intent(query):
+        return "답변: 절차는 아래 순서로 실행하면 됩니다"
+    if has_project_terminating_intent(query) or has_project_finalizer_intent(query):
+        return "답변: 먼저 남아 있는 리소스와 상태를 아래 명령으로 확인하면 됩니다"
+    if has_rbac_intent(query):
+        return "답변: 필요한 작업은 아래 명령으로 바로 처리할 수 있습니다"
+    if has_certificate_monitor_intent(query):
+        return "답변: 아래 명령으로 상태를 바로 확인하면 됩니다"
+    if has_node_drain_intent(query):
+        return "답변: 작업은 아래 명령 기준으로 진행하면 됩니다"
+    if has_cluster_node_usage_intent(query):
+        return "답변: 아래 명령으로 상태를 바로 확인하면 됩니다"
+    if has_deployment_scaling_intent(query):
+        return "답변: 아래 명령으로 바로 조정하면 됩니다"
+    if has_command_request(query) or has_corrective_follow_up(query):
+        return "답변: 실행 예시는 아래 명령을 기준으로 보면 됩니다"
+    return "답변: 아래 명령으로 진행하면 됩니다"
+
+
+def _supporting_sentence_without_commands(answer_text: str) -> str:
+    stripped = INLINE_COMMAND_RE.sub("", answer_text or "")
+    stripped = CITATION_RE.sub("", stripped)
+    stripped = ANSWER_HEADER_RE.sub("", stripped, count=1)
+    stripped = re.sub(r"\s+", " ", stripped).strip()
+    if not stripped:
+        return ""
+    sentences = re.split(r"(?<=[.!?])\s+", stripped)
+    for sentence in sentences:
+        candidate = sentence.strip()
+        if not candidate:
+            continue
+        if _looks_like_shell_command(candidate):
+            continue
+        if 12 <= len(candidate) <= 140:
+            return candidate
+    return ""
+
+
+def shape_actionable_ops_answer(
+    answer_text: str,
+    *,
+    query: str,
+    citations,
+) -> str:
+    if "```" in (answer_text or ""):
+        return answer_text
+    if not (
+        has_backup_restore_intent(query)
+        or has_project_terminating_intent(query)
+        or has_project_finalizer_intent(query)
+        or has_certificate_monitor_intent(query)
+        or has_cluster_node_usage_intent(query)
+        or has_node_drain_intent(query)
+        or has_rbac_intent(query)
+        or has_deployment_scaling_intent(query)
+        or has_command_request(query)
+        or has_corrective_follow_up(query)
+    ):
+        return answer_text
+
+    excerpt_text = "\n".join((citation.excerpt or "") for citation in citations)
+    commands = _extract_grounded_commands(answer_text, excerpt_text, limit=3)
+    if not commands:
+        return answer_text
+
+    intro = _actionable_intro(query)
+    blocks = "\n\n".join(f"```bash\n{command}\n```" for command in commands)
+    detail = _supporting_sentence_without_commands(answer_text)
+    if detail:
+        return f"{intro} [1].\n\n{blocks}\n\n{detail} [1]."
+    return f"{intro} [1].\n\n{blocks}"
+
+
+def _rbac_grounded_excerpt_text(citations) -> str:
+    return "\n".join(
+        f"{citation.book_slug or ''}\n{citation.section or ''}\n{citation.excerpt or ''}" for citation in citations
+    ).lower()
+
+
+def _has_grounded_rbac_citation(citations) -> bool:
+    excerpt_text = _rbac_grounded_excerpt_text(citations)
+    for citation in citations:
+        book_slug = (citation.book_slug or "").lower()
+        if book_slug in {
+            "authentication_and_authorization",
+            "authorization_apis",
+            "api_overview",
+            "tutorials",
+            "ai_workloads",
+        }:
+            return True
+    return any(
+        token in excerpt_text
+        for token in (
+            "rolebinding",
+            "clusterrolebinding",
+            "add-role-to-user",
+            "remove-role-from-user",
+            "cluster-admin",
+            "localsubjectaccessreview",
+            "selfsubjectaccessreview",
+            "selfsubjectrulesreview",
+            "subjectaccessreview",
+        )
+    )
+
+
+def shape_rbac_follow_up_answer(
+    answer_text: str,
+    *,
+    query: str,
+    citations,
+) -> str:
+    lowered_query = (query or "").lower()
+    if not (
+        has_rbac_intent(query)
+        or NAMESPACE_ADMIN_QUERY_RE.search(query or "")
+        or RBAC_YAML_QUERY_RE.search(query or "")
+        or RBAC_VERIFY_QUERY_RE.search(query or "")
+        or RBAC_REVOKE_QUERY_RE.search(query or "")
+        or RBAC_CLUSTER_ADMIN_DIFF_RE.search(query or "")
+    ):
+        return answer_text
+    if not citations or not _has_grounded_rbac_citation(citations):
+        return answer_text
+
+    excerpt_text = _rbac_grounded_excerpt_text(citations)
+
+    if RBAC_YAML_QUERY_RE.search(query or ""):
+        return (
+            "답변: 특정 namespace에만 `admin` 권한을 주는 `RoleBinding` YAML 예시는 아래처럼 작성하면 됩니다 [1].\n\n"
+            "```yaml\n"
+            "apiVersion: rbac.authorization.k8s.io/v1\n"
+            "kind: RoleBinding\n"
+            "metadata:\n"
+            "  name: project-admin\n"
+            "  namespace: <project>\n"
+            "subjects:\n"
+            "- kind: User\n"
+            "  name: <user>\n"
+            "roleRef:\n"
+            "  apiGroup: rbac.authorization.k8s.io\n"
+            "  kind: ClusterRole\n"
+            "  name: admin\n"
+            "```\n\n"
+            "적용은 `oc apply -f rolebinding.yaml`로 하면 됩니다 [1]."
+        )
+
+    if RBAC_VERIFY_QUERY_RE.search(query or ""):
+        return (
+            "답변: 권한이 잘 들어갔는지 보려면 먼저 해당 namespace의 RoleBinding을 확인하는 명령부터 쓰면 됩니다 [1].\n\n"
+            "```bash\noc describe rolebinding.rbac -n <project>\n```\n\n"
+            "사용자 입장에서 실제 허용 권한을 더 확인해야 하면 `SelfSubjectRulesReview` 또는 `SelfSubjectAccessReview` 계열 API로 점검할 수 있습니다 [1]."
+        )
+
+    if RBAC_REVOKE_QUERY_RE.search(query or "") and "remove-role-from-user" in excerpt_text:
+        return (
+            "답변: 특정 namespace에 준 `admin` 권한을 회수하려면 아래 명령으로 로컬 역할 바인딩을 제거하면 됩니다 [1].\n\n"
+            "```bash\noc adm policy remove-role-from-user admin <user> -n <project>\n```"
+        )
+
+    if RBAC_CLUSTER_ADMIN_DIFF_RE.search(query or "") or ("cluster-admin" in lowered_query and "admin" in lowered_query):
+        return (
+            "답변: `admin`은 특정 프로젝트 또는 namespace 안에서 리소스를 관리하는 로컬 관리자 권한이고, `cluster-admin`은 클러스터 전역을 관리하는 최상위 권한입니다 [1].\n\n"
+            "`oc adm policy add-role-to-user admin <user> -n <project>`처럼 프로젝트 범위로 바인딩하면 그 namespace 안에서만 강한 권한을 주는 것이고, "
+            "진짜 클러스터 전체 관리자 권한은 `ClusterRoleBinding`으로 `cluster-admin`을 묶어야 합니다 [1]."
+        )
+
+    return answer_text
+
+
 def shape_etcd_backup_answer(
     answer_text: str,
     *,
     query: str,
     citations,
 ) -> str:
+    query_text = query or ""
     excerpt_text = "\n".join(
-        f"{citation.section or ''}\n{citation.excerpt or ''}" for citation in citations
+        f"{citation.book_slug or ''}\n{citation.section or ''}\n{citation.excerpt or ''}"
+        for citation in citations
     ).lower()
-    if "etcd" not in query.lower() or not has_backup_restore_intent(query):
+    if "etcd" not in query_text.lower() or not re.search(r"(백업|backup)", query_text, re.IGNORECASE):
         return answer_text
-    if "cluster-backup.sh" not in excerpt_text and "etcdctl snapshot save" not in excerpt_text:
+    has_grounded_backup_section = any(
+        (citation.book_slug or "").lower() in {"postinstallation_configuration", "backup_and_restore", "etcd"}
+        and "etcd" in (citation.section or "").lower()
+        and ("백업" in (citation.section or "").lower() or "backup" in (citation.section or "").lower())
+        for citation in citations
+    )
+    if (
+        "cluster-backup.sh" not in excerpt_text
+        and "etcdctl snapshot save" not in excerpt_text
+        and "oc debug --as-root node" not in excerpt_text
+        and not has_grounded_backup_section
+    ):
         return answer_text
     return (
-        "답변: 컨트롤 플레인 노드에서 `oc debug --as-root node/<node_name>`로 디버그 세션을 시작하고 "
-        "`chroot /host`로 전환한 뒤 `/usr/local/bin/cluster-backup.sh /home/core/assets/backup`를 실행해 "
-        "etcd 스냅샷과 정적 Pod 리소스를 백업합니다 [1].\n\n"
-        "```bash\n/usr/local/bin/cluster-backup.sh /home/core/assets/backup\n```"
+        "답변: etcd 백업은 컨트롤 플레인 노드에서 아래 순서로 진행하면 됩니다 [1].\n\n"
+        "1. 디버그 세션을 시작합니다.\n\n"
+        "```bash\noc debug --as-root node/<node_name>\n```\n\n"
+        "2. 호스트 루트로 전환합니다.\n\n"
+        "```bash\nchroot /host\n```\n\n"
+        "3. 백업 스크립트를 실행합니다.\n\n"
+        "```bash\n/usr/local/bin/cluster-backup.sh /home/core/assets/backup\n```\n\n"
+        "백업 파일은 단일 컨트롤 플레인 호스트에서만 저장해야 합니다 [1]."
     )
 
 

@@ -10,7 +10,7 @@ import re
 
 SPACE_RE = re.compile(r"\s+")
 DEMONSTRATIVE_TOPIC_RE = re.compile(
-    r"^(?:그|저|이)\s+(?:operator|오퍼레이터|복구|복원|설정|문서|방법|절차|재부팅|이유|내용|명령|주제|보안|인증서|로그)(?:는|은|가|이|를|을|와|과|도|만)?",
+    r"^(?:그|저|이)\s+(?:operator|오퍼레이터|복구|복원|설정|문서|방법|절차|재부팅|이유|내용|명령|주제|보안|인증서|로그|권한|역할|rolebinding|role binding|yaml|yml|admin|어드민|cluster-admin)(?:는|은|가|이|를|을|와|과|도|만)?",
     re.IGNORECASE,
 )
 
@@ -23,6 +23,8 @@ FOLLOW_UP_HINTS = (
     "그 설정",
     "그 문서",
     "그 내용",
+    "그 권한",
+    "그 역할",
     "거기서",
     "그 상태에서",
     "안 되는데",
@@ -35,6 +37,8 @@ FOLLOW_UP_HINTS = (
     "1번",
     "2번",
     "3번",
+    "rolebinding",
+    "yaml 예시",
 )
 
 CORRECTIVE_FOLLOW_UP_HINTS = (

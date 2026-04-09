@@ -37,6 +37,43 @@ CAPABILITY_RE = re.compile(
     r"(뭐 할 수 있어|무엇을 할 수 있어|사용법이 뭐야|어떤 질문을 할 수 있어)",
     re.IGNORECASE,
 )
+OCP_GENERAL_ROLE_RE = re.compile(
+    r"(오픈시프트|openshift|(?<![a-z0-9])ocp(?![a-z0-9])).*(실무|현업|현실|주로|보통|어디에|무슨 기능|어떤 기능|어떻게 쓰|어떻게 사용)",
+    re.IGNORECASE,
+)
+OCP_BASIC_INTRO_RE = re.compile(
+    r"^\s*((오픈시프트|openshift|(?<![a-z0-9])ocp(?![a-z0-9]))\s*(가|는|란|이란)?\s*(뭐야|뭔데|무엇|뭐지|소개해|개요를 알려|개요 알려|쉽게 설명해))[\?!.~\s]*$",
+    re.IGNORECASE,
+)
+OCP_LEARNING_ADVICE_RE = re.compile(
+    r"(오픈시프트|openshift|(?<![a-z0-9])ocp(?![a-z0-9])).*(잘하려면|잘 하려면|공부|배우|익히|입문|처음 시작|배경지식|기본기|마인드|어려워|어떻게 해야)",
+    re.IGNORECASE,
+)
+
+
+def _friendly_intro_answer() -> str:
+    return (
+        "답변: 안녕하세요. 저는 OCP PlayBook 챗봇입니다. "
+        "OpenShift 개념 설명, 운영 절차, 트러블슈팅을 문서 근거와 함께 가이드 형태로 안내합니다. "
+        "편하게 질문해 주세요."
+    )
+
+
+def _ocp_general_intro_answer() -> str:
+    return (
+        "답변: 오픈시프트(OpenShift Container Platform)는 쿠버네티스(Kubernetes)를 기반으로 애플리케이션 배포와 운영을 "
+        "관리하기 쉽게 만든 엔터프라이즈 컨테이너 플랫폼입니다. "
+        "실무에서는 애플리케이션 배포와 확장, CI/CD 연계, 권한·보안 정책 적용, 모니터링과 로그 수집, 클러스터 운영 자동화에 주로 사용합니다. "
+        "원하면 아키텍처, 쿠버네티스와 차이, 운영자가 자주 쓰는 기능 순서로 이어서 설명하겠습니다."
+    )
+
+
+def _ocp_learning_advice_answer() -> str:
+    return (
+        "답변: 오픈시프트를 잘하려면 먼저 리눅스 기본기, 컨테이너와 이미지, 쿠버네티스 핵심 리소스(Pod, Deployment, Service, Ingress)부터 익히는 편이 좋습니다. "
+        "그다음에는 oc CLI, 로그와 이벤트 확인, 배포·롤백·스케일링, 프로젝트와 RBAC, 업데이트와 백업 같은 운영 절차를 손으로 반복해 보는 것이 가장 효과적입니다. "
+        "원하면 입문 순서를 학습 로드맵처럼 나눠서 안내하겠습니다."
+    )
 
 
 @dataclass(slots=True)
@@ -56,18 +93,37 @@ def route_non_rag(
         return None
 
     if GREETING_RE.match(normalized):
-        return RoutedResponse(route="smalltalk", answer="답변: OCP 질문을 입력해 주세요.")
+        return RoutedResponse(route="smalltalk", answer=_friendly_intro_answer())
     if THANKS_RE.match(normalized):
-        return RoutedResponse(route="smalltalk", answer="답변: 필요하면 이어서 질문해 주세요.")
+        return RoutedResponse(
+            route="smalltalk",
+            answer="답변: 필요하면 이어서 질문해 주세요. 지금 주제에서 실행 예시나 주의사항까지 같이 정리해 드릴 수 있습니다.",
+        )
     if FAREWELL_RE.match(normalized):
-        return RoutedResponse(route="smalltalk", answer="답변: 필요하면 다시 불러 주세요.")
+        return RoutedResponse(
+            route="smalltalk",
+            answer="답변: 여기까지 보시죠. 필요하면 다시 들어와서 이어서 질문하시면 됩니다.",
+        )
     if IDENTITY_RE.match(normalized):
-        return RoutedResponse(route="meta", answer="답변: 저는 OCP 질문에 답하는 챗봇입니다.")
+        return RoutedResponse(
+            route="meta",
+            answer=(
+                "답변: 저는 OCP PlayBook 챗봇입니다. "
+                "OpenShift 문서를 바탕으로 개념 설명, 운영 절차, 트러블슈팅을 실행 가이드 형태로 안내합니다."
+            ),
+        )
     if CAPABILITY_RE.search(normalized):
         return RoutedResponse(
             route="meta",
-            answer="답변: OCP 개념, 운영 절차, 트러블슈팅 질문에 답할 수 있습니다.",
+            answer=(
+                "답변: 저는 OpenShift 개념 설명, 운영 절차, 트러블슈팅, 관련 명령 예시를 안내할 수 있습니다. "
+                "가벼운 인사나 입문 질문도 받을 수 있고, 근거가 필요한 실무 질문은 문서를 찾아 가이드 형태로 답합니다."
+            ),
         )
+    if OCP_LEARNING_ADVICE_RE.search(normalized):
+        return RoutedResponse(route="guide", answer=_ocp_learning_advice_answer())
+    if OCP_GENERAL_ROLE_RE.search(normalized) or OCP_BASIC_INTRO_RE.match(normalized):
+        return RoutedResponse(route="guide", answer=_ocp_general_intro_answer())
     if has_logging_ambiguity(normalized):
         return RoutedResponse(
             route="clarification",

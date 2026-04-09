@@ -51,6 +51,10 @@ def _anchor_root(anchor: str) -> str:
 
 
 def _hit_score(hit: RetrievalHit) -> float:
+    if hit.source == "hybrid_reranked":
+        pre_rerank_fused = hit.component_scores.get("pre_rerank_fused_score")
+        if pre_rerank_fused is not None:
+            return float(pre_rerank_fused)
     if hit.fused_score > 0:
         return float(hit.fused_score)
     return float(hit.raw_score)
@@ -287,6 +291,24 @@ def _select_hits(
         support_window = ranked_hits[: max(max_chunks * 2, 6)]
         top_score = _hit_score(support_window[0])
         top_book = support_window[0].book_slug
+    elif has_rbac_intent(normalized):
+        preferred_order = {
+            "authentication_and_authorization": 0,
+            "cli_tools": 1,
+            "postinstallation_configuration": 2,
+        }
+        ranked_hits = sorted(
+            ranked_hits,
+            key=lambda hit: (
+                preferred_order.get(hit.book_slug, 9),
+                -_hit_score(hit),
+                hit.book_slug,
+                hit.chunk_id,
+            ),
+        )
+        support_window = ranked_hits[: max(max_chunks * 2, 8)]
+        top_score = _hit_score(support_window[0])
+        top_book = support_window[0].book_slug
     elif has_deployment_scaling_intent(normalized):
         preferred_order = {
             "cli_tools": 0,
@@ -329,6 +351,10 @@ def _select_hits(
     if has_mco_concept_intent(normalized):
         for book_slug in ("architecture", "overview", "machine_management", "images"):
             if best_book_scores.get(book_slug, 0.0) >= top_score * 0.62:
+                allowed_books.add(book_slug)
+    if has_rbac_intent(normalized):
+        for book_slug in ("authentication_and_authorization", "cli_tools", "postinstallation_configuration"):
+            if best_book_scores.get(book_slug, 0.0) >= top_score * 0.58:
                 allowed_books.add(book_slug)
     if has_deployment_scaling_intent(normalized):
         for book_slug in ("cli_tools", "building_applications"):

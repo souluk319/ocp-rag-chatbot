@@ -5,25 +5,35 @@ window.createChatRenderer = function createChatRenderer(deps) {
 
   function appendInlineMarkup(target, text, citationsByIndex = null) {
     const tokens = (text || "").split(/(`[^`]+`|\*\*[^*]+\*\*|\[\d+\])/g);
-    tokens.forEach((token) => {
-      if (!token) return;
+    for (let index = 0; index < tokens.length; index += 1) {
+      let token = tokens[index];
+      if (!token) continue;
       if (token.startsWith("`") && token.endsWith("`") && token.length >= 2) {
         const code = document.createElement("code");
         code.className = "inline-code";
         code.textContent = token.slice(1, -1);
         target.appendChild(code);
-        return;
+        continue;
       }
       if (token.startsWith("**") && token.endsWith("**") && token.length >= 4) {
         const strong = document.createElement("strong");
         strong.textContent = token.slice(2, -2);
         target.appendChild(strong);
-        return;
+        continue;
       }
       if (/^\[\d+\]$/.test(token)) {
         const index = token.slice(1, -1);
         const citation = citationsByIndex ? citationsByIndex.get(index) : null;
         if (citation) {
+          const nextToken = String(tokens[index + 1] || "");
+          const leadingPunctuation = nextToken.match(/^(\s*)([.,!?;:]+)/);
+          if (leadingPunctuation) {
+            if (target.lastChild?.nodeType === Node.TEXT_NODE) {
+              target.lastChild.textContent = target.lastChild.textContent.replace(/\s+$/u, "");
+            }
+            target.appendChild(document.createTextNode(leadingPunctuation[2]));
+            tokens[index + 1] = nextToken.slice(leadingPunctuation[0].length);
+          }
           const chip = document.createElement("button");
           chip.type = "button";
           chip.className = "inline-citation";
@@ -34,11 +44,11 @@ window.createChatRenderer = function createChatRenderer(deps) {
             void helpers.openSourcePanel(citation);
           });
           target.appendChild(chip);
-          return;
+          continue;
         }
       }
       target.appendChild(document.createTextNode(token));
-    });
+    }
   }
 
   function createParagraph(text, citationsByIndex = null) {
@@ -147,6 +157,11 @@ window.createChatRenderer = function createChatRenderer(deps) {
       codeLanguage = "";
     }
 
+    function looksLikeShellCommand(line) {
+      const trimmed = String(line || "").trim();
+      return /^(?:\$\s+)?(?:oc|kubectl|helm|docker|podman|etcdctl|systemctl|journalctl|curl|grep|awk|sed|cat|ls|rm|mv|cp|chmod|chown)\b/.test(trimmed);
+    }
+
     lines.forEach((line) => {
       const fence = line.match(/^```([\w.+-]*)\s*$/);
       if (fence) {
@@ -194,6 +209,13 @@ window.createChatRenderer = function createChatRenderer(deps) {
         }
         listType = nextListType;
         listItems.push((unorderedItem || orderedItem)[1]);
+        return;
+      }
+
+      if (looksLikeShellCommand(trimmed)) {
+        flushParagraph();
+        flushList();
+        fragment.appendChild(createCodeBlock(trimmed, "bash"));
         return;
       }
 

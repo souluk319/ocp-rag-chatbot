@@ -136,7 +136,7 @@ def _build_health_payload(answerer: Part3Answerer) -> dict[str, Any]:
             "llm_endpoint": settings.llm_endpoint,
             "llm_model": settings.llm_model,
             "llm_provider_hint": llm_runtime.get("preferred_provider", "unknown"),
-            "llm_fallback_enabled": bool(llm_runtime.get("fallback_enabled", True)),
+            "llm_fallback_enabled": bool(llm_runtime.get("fallback_enabled", False)),
             "llm_last_provider": llm_runtime.get("last_provider"),
             "llm_last_fallback_used": bool(llm_runtime.get("last_fallback_used", False)),
             "llm_attempted_providers": list(llm_runtime.get("last_attempted_providers", [])),

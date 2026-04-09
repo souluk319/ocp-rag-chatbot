@@ -1,0 +1,294 @@
+    .ingest-field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .ingest-field label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .ingest-input,
+    .ingest-select {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid rgba(21, 21, 21, 0.12);
+      border-radius: 12px;
+      background: #ffffff;
+      color: var(--ink);
+      font: inherit;
+      font-size: 14px;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    .ingest-input:focus,
+    .ingest-select:focus {
+      border-color: rgba(238, 0, 0, 0.36);
+      box-shadow: 0 0 0 4px rgba(238, 0, 0, 0.08);
+    }
+
+    .ingest-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .ingest-actions button {
+      border: 1px solid rgba(21, 21, 21, 0.1);
+      border-radius: 999px;
+      min-height: 38px;
+      padding: 0 14px;
+      background: rgba(21, 21, 21, 0.03);
+      color: var(--ink);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .ingest-actions button.primary {
+      background: linear-gradient(90deg, var(--accent), #c9190b);
+      border-color: #c9190b;
+      color: #ffffff;
+    }
+
+    .ingest-status {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 0 16px 16px;
+      transition: color 160ms ease, opacity 160ms ease;
+    }
+
+    .ingest-status[data-busy="true"]::after {
+      content: "";
+      display: inline-block;
+      width: 0.9em;
+      margin-left: 6px;
+      border-bottom: 2px solid currentColor;
+      animation: live-ellipsis 0.9s ease-in-out infinite;
+      vertical-align: middle;
+    }
+
+    .ingest-status[data-tone="success"] {
+      color: var(--success);
+    }
+
+    .ingest-status[data-tone="error"] {
+      color: var(--accent-dark);
+    }
+
+    .draft-list {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .draft-card {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(255, 255, 255, 0.94);
+    }
+
+    .draft-card.active {
+      border-color: rgba(238, 0, 0, 0.22);
+      background: rgba(238, 0, 0, 0.04);
+    }
+
+    .draft-card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .draft-card-title {
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.4;
+      letter-spacing: -0.02em;
+    }
+
+    .draft-card-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .draft-card button {
+      justify-self: start;
+    }
+
+    .draft-card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .asset-trace {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .asset-trace-empty {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .asset-trace-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .asset-trace-card {
+      display: grid;
+      gap: 6px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(255, 255, 255, 0.94);
+    }
+
+    .asset-trace-card strong {
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.45;
+      letter-spacing: -0.01em;
+    }
+
+    .asset-trace-card span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .asset-trace-steps {
+      display: grid;
+      gap: 8px;
+    }
+
+    .asset-trace-step {
+      display: grid;
+      gap: 5px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      background: rgba(255, 255, 255, 0.94);
+    }
+
+    .asset-trace-step-kicker {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .asset-trace-step-body {
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.65;
+      word-break: break-word;
+    }
+
+    .asset-trace-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .draft-preview {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .draft-preview-empty {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .draft-preview-steps,
+    .draft-preview-notes {
+      display: grid;
+      gap: 8px;
+    }
+
+    .draft-preview-step,
+    .draft-preview-note {
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.94);
+      padding: 12px;
+      display: grid;
+      gap: 5px;
+    }
+
+    .draft-preview-step-title,
+    .draft-preview-note-title {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .draft-preview-step-body,
+    .draft-preview-note-body {
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .summary-card {
+      border: 1px solid rgba(21, 21, 21, 0.08);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 12px;
+      display: grid;
+      gap: 5px;
+    }
+
+    .summary-card.bottleneck {
+      border-color: rgba(238, 0, 0, 0.16);
+      background: rgba(238, 0, 0, 0.04);
+    }
+
+    .summary-kicker {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .summary-value {
+      color: var(--ink);
+      font-size: 24px;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+    }

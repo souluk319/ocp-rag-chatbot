@@ -21,6 +21,8 @@ def _hit(
     *,
     anchor: str | None = None,
     score: float = 1.0,
+    source: str = "hybrid",
+    component_scores: dict[str, float] | None = None,
 ) -> RetrievalHit:
     return RetrievalHit(
         chunk_id=chunk_id,
@@ -31,9 +33,10 @@ def _hit(
         source_url=f"https://example.com/{book_slug}",
         viewer_path=f"/docs/{book_slug}.html#{section.lower().replace(' ', '-')}",
         text=text,
-        source="hybrid",
+        source=source,
         raw_score=score,
         fused_score=score,
+        component_scores=component_scores or {},
     )
 
 
@@ -375,3 +378,70 @@ class ContextAssemblyTests(unittest.TestCase):
             ["postinstallation_configuration"] * len(bundle.citations),
             [citation.book_slug for citation in bundle.citations],
         )
+
+    def test_reranked_hits_use_pre_rerank_score_for_context_cutoff(self) -> None:
+        hits = [
+            _hit(
+                "chunk-1",
+                "authentication_and_authorization",
+                "9.6. 사용자 역할 추가",
+                "oc adm policy add-role-to-user admin <user> -n <project>",
+                score=-1.72,
+                source="hybrid_reranked",
+                component_scores={
+                    "pre_rerank_fused_score": 0.046,
+                    "reranker_score": -1.72,
+                },
+            ),
+            _hit(
+                "chunk-2",
+                "postinstallation_configuration",
+                "9.2.6. 사용자 역할 추가",
+                "oc adm policy add-role-to-user admin <user> -n <project>",
+                score=-1.81,
+                source="hybrid_reranked",
+                component_scores={
+                    "pre_rerank_fused_score": 0.042,
+                    "reranker_score": -1.81,
+                },
+            ),
+        ]
+
+        bundle = assemble_context(
+            hits,
+            query="특정 이름공간에 어드민 권한 주는법은?",
+            max_chunks=4,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertEqual(
+            "authentication_and_authorization",
+            bundle.citations[0].book_slug,
+        )
+
+    def test_rbac_context_prefers_authorization_book_over_postinstall_mirror(self) -> None:
+        hits = [
+            _hit(
+                "chunk-1",
+                "postinstallation_configuration",
+                "9.2.7. 로컬 역할 바인딩 예",
+                "RoleBinding YAML 예시입니다.",
+                score=0.044,
+            ),
+            _hit(
+                "chunk-2",
+                "authentication_and_authorization",
+                "9.7. 로컬 역할 바인딩 예",
+                "RoleBinding YAML 예시입니다.",
+                score=0.042,
+            ),
+        ]
+
+        bundle = assemble_context(
+            hits,
+            query="그 RoleBinding YAML 예시도 보여줘",
+            max_chunks=4,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertEqual("authentication_and_authorization", bundle.citations[0].book_slug)

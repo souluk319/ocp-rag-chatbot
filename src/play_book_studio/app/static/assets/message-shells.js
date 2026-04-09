@@ -76,23 +76,56 @@ window.createMessageShells = function createMessageShells(deps) {
     return { wrapper, body };
   }
 
+  function stripTopicPrefix(value) {
+    const text = String(value || "").trim();
+    if (!text) return "";
+    const lastSegment = text.split(">").pop().trim();
+    const cleaned = lastSegment.replace(/^\d+(?:\.\d+)*\.?\s*/, "").trim();
+    return cleaned || lastSegment;
+  }
+
+  function inferSuggestionSubject(payload) {
+    const rewritten = String(payload?.rewritten_query || "").trim();
+    const answer = String(payload?.answer || "").trim();
+    const topic = String(payload?.context?.current_topic || "").trim();
+    const citations = Array.isArray(payload?.citations) ? payload.citations : [];
+    const primary = citations[0] || null;
+    const primarySection = stripTopicPrefix(primary?.section || "");
+
+    if (/route/i.test(rewritten) && /ingress/i.test(rewritten)) return "Route와 Ingress";
+    if (/etcd/i.test(rewritten) || /etcd/i.test(answer)) return "etcd";
+    if (/machine config operator|mco/i.test(rewritten) || /machine config operator|mco/i.test(answer)) {
+      return "Machine Config Operator";
+    }
+    if (/operator/i.test(rewritten) || /operator/i.test(answer) || /operator/i.test(primarySection)) {
+      return "Operator";
+    }
+    if (topic) return stripTopicPrefix(topic);
+    if (primarySection) return primarySection;
+    return "";
+  }
+
+  function contextualizeSuggestedQuery(suggestedQuery, payload) {
+    const cleaned = String(suggestedQuery || "").trim();
+    if (!cleaned) return cleaned;
+    const subject = inferSuggestionSubject(payload);
+    if (!subject) return cleaned;
+
+    const replacements = {
+      "실행 예시도 같이 보여줘": `${subject} 관련 실행 예시도 같이 보여줘`,
+      "주의사항도 함께 정리해줘": `${subject} 관련 주의사항도 함께 정리해줘`,
+      "운영 중 주의사항도 함께 정리해줘": `${subject} 운영 시 주의사항도 함께 정리해줘`,
+      "상태 확인 방법도 같이 알려줘": `${subject} 상태 확인 방법도 같이 알려줘`,
+      "실무에서 언제 쓰는지 알려줘": `${subject}를 실무에서 언제 쓰는지 알려줘`,
+      "초보자 기준으로 단계별로 설명해줘": `${subject}를 초보자 기준으로 단계별로 설명해줘`,
+      "실무에서 왜 중요한지도 설명해줘": `${subject}가 실무에서 왜 중요한지도 설명해줘`,
+    };
+    return replacements[cleaned] || cleaned;
+  }
+
   function renderAssistantMeta(wrapper, payload) {
     const meta = document.createElement("div");
     meta.className = "assistant-footer";
-
-    if (payload.citations.length) {
-      const citationChip = document.createElement("span");
-      citationChip.className = "meta-chip";
-      citationChip.textContent = `참조 ${payload.citations.length}`;
-      meta.append(citationChip);
-    }
-
-    if (payload.warnings && payload.warnings.length) {
-      const warningChip = document.createElement("span");
-      warningChip.className = "meta-chip";
-      warningChip.textContent = `경고 ${payload.warnings.length}개`;
-      meta.appendChild(warningChip);
-    }
 
     if (meta.children.length) {
       wrapper.appendChild(meta);
@@ -101,7 +134,15 @@ window.createMessageShells = function createMessageShells(deps) {
     const suggestedQueries = Array.isArray(payload.suggested_queries)
       ? payload.suggested_queries.filter(Boolean)
       : [];
-    if (suggestedQueries.length) {
+    const canRenderSuggestedQueries = (
+      payload.response_kind === "rag"
+      && Array.isArray(payload.citations)
+      && payload.citations.length > 0
+      && Array.isArray(payload.cited_indices)
+      && payload.cited_indices.length > 0
+      && (!Array.isArray(payload.warnings) || payload.warnings.length === 0)
+    );
+    if (suggestedQueries.length && canRenderSuggestedQueries) {
       const title = document.createElement("div");
       title.className = "suggestion-list-title";
       title.textContent = "추천 질문";
@@ -110,13 +151,14 @@ window.createMessageShells = function createMessageShells(deps) {
       followupGrid.className = "followup-grid";
 
       suggestedQueries.forEach((suggestedQuery) => {
+        const effectiveQuery = contextualizeSuggestedQuery(suggestedQuery, payload);
         const button = document.createElement("button");
         button.type = "button";
         button.className = "followup-chip";
-        button.textContent = suggestedQuery;
+        button.textContent = effectiveQuery;
         button.addEventListener("click", () => {
           if (state.currentController) return;
-          void deps.sendMessage({ query: suggestedQuery });
+          void deps.sendMessage({ query: effectiveQuery });
         });
         followupGrid.appendChild(button);
       });

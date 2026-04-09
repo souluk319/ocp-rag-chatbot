@@ -1,4 +1,4 @@
-// index.html ???앹꽦?섎뜕 DOM ref ?섎읆怨?媛蹂 ?곹깭 珥덇린媛믪쓣 紐⑤듃???붾━?섎뒗 shell state 紐⑤뱢??
+// index.html DOM ref와 초기 shell 상태를 모으는 state 모듈이다.
 window.createAppShellState = function createAppShellState(deps) {
   const corePacks = Array.isArray(deps && deps.corePacks) ? deps.corePacks : [];
   const defaultPack = corePacks.find((pack) => pack.default) || corePacks[0] || { version: "4.20" };
@@ -22,13 +22,6 @@ window.createAppShellState = function createAppShellState(deps) {
     statusDotEl: document.getElementById("status-dot"),
     statusTextEl: document.getElementById("status-text"),
     sessionIdEl: document.getElementById("session-id"),
-    rewrittenQueryEl: document.getElementById("rewritten-query"),
-    sessionContextEl: document.getElementById("session-context"),
-    warningsEl: document.getElementById("warnings"),
-    pipelineSummaryEl: document.getElementById("pipeline-summary"),
-    pipelineTraceEl: document.getElementById("pipeline-trace"),
-    pipelineLiveEl: document.getElementById("pipeline-live"),
-    searchMetricsEl: document.getElementById("search-metrics"),
     leftRailToggleBtn: document.getElementById("left-rail-toggle-btn"),
     leftPanelToggleBtn: document.getElementById("left-panel-toggle-btn"),
     sourcePanelToggleBtn: document.getElementById("source-panel-toggle-btn"),
@@ -38,15 +31,8 @@ window.createAppShellState = function createAppShellState(deps) {
     railLibraryListEl: document.getElementById("rail-library-list"),
     railOpenIntakeBtn: document.getElementById("rail-open-intake-btn"),
     railUploadStatusEl: document.getElementById("rail-upload-status"),
-    sourceTitleEl: document.getElementById("source-title"),
-    sourcePathEl: document.getElementById("source-path"),
-    sourceNoteEl: document.getElementById("source-note"),
     sourceFrameShellEl: document.querySelector(".source-frame-shell"),
     sourceViewerFrameEl: document.getElementById("source-viewer-frame"),
-    sourceOpenDocEl: document.getElementById("source-open-doc"),
-    sourceOpenOriginEl: document.getElementById("source-open-origin"),
-    sourceSummaryStripEl: document.getElementById("source-summary-strip"),
-    sourceOutlineEl: document.getElementById("source-outline"),
     librarySummaryEl: document.getElementById("library-summary"),
     libraryListEl: document.getElementById("library-list"),
     libraryDetailEl: document.getElementById("library-detail"),
@@ -76,6 +62,7 @@ window.createAppShellState = function createAppShellState(deps) {
     currentTyper: null,
     layoutMotionTimer: null,
     traceEvents: [],
+    latestRetrievalTrace: {},
     generating: false,
     lastQuery: "",
     isComposing: false,
