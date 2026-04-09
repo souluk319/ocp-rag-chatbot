@@ -4,17 +4,14 @@ from __future__ import annotations
 import json
 import mimetypes
 import threading
+import uuid
 import webbrowser
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, urlparse
-
-from play_book_studio.config.settings import Settings, load_settings
-from play_book_studio.config.validation import read_jsonl
-from play_book_studio.retrieval.models import SessionContext
-from play_book_studio.answering.answerer import Part3Answerer
+from urllib.parse import urlparse
+from play_book_studio.answering.answerer import ChatAnswerer
 from play_book_studio.answering.models import AnswerResult
 from play_book_studio.app.server_chat import (
     handle_chat as _handle_chat_request,
@@ -31,7 +28,6 @@ from play_book_studio.app.server_routes import (
     handle_doc_to_book_normalize as _handle_doc_to_book_normalize_request,
     handle_doc_to_book_plan as _handle_doc_to_book_plan_request,
     handle_doc_to_book_upload_draft as _handle_doc_to_book_upload_draft_request,
-    handle_source_book as _handle_source_book_request,
     handle_source_meta as _handle_source_meta_request,
 )
 from play_book_studio.app.chat_debug import (
@@ -41,51 +37,23 @@ from play_book_studio.app.chat_debug import (
     build_turn_stages as _build_turn_stages,
     write_recent_chat_session_snapshot as _write_recent_chat_session_snapshot,
 )
-from play_book_studio.app.intake_api import (
-    build_doc_to_book_plan as _build_doc_to_book_plan,
-    capture_doc_to_book_draft as _capture_doc_to_book_draft,
-    create_doc_to_book_draft as _create_doc_to_book_draft,
-    load_doc_to_book_capture as _load_doc_to_book_capture,
-    load_doc_to_book_draft as _load_doc_to_book_draft,
-    normalize_doc_to_book_draft as _normalize_doc_to_book_draft,
-    upload_doc_to_book_draft as _upload_doc_to_book_draft,
-)
 from play_book_studio.app.presenters import (
     _build_health_payload,
-    _citation_href,
-    _core_pack_payload,
-    _doc_to_book_book_for_viewer_path,
-    _doc_to_book_meta_for_viewer_path,
-    _humanize_book_slug,
     _llm_runtime_signature,
-    _manifest_entry_for_book,
     _refresh_answerer_llm_settings,
-    _resolve_normalized_row_for_viewer_path,
     _serialize_citation,
 )
 from play_book_studio.app.source_books import (
-    canonical_source_book as _canonical_source_book,
     internal_doc_to_book_viewer_html as _internal_doc_to_book_viewer_html,
     internal_viewer_html as _internal_viewer_html,
-    list_doc_to_book_drafts as _list_doc_to_book_drafts,
-    load_doc_to_book_book as _load_doc_to_book_book,
 )
 from play_book_studio.app.session_flow import (
     context_with_request_overrides as _context_with_request_overrides,
     derive_next_context as _derive_next_context,
     suggest_follow_up_questions as _suggest_follow_up_questions,
 )
-from play_book_studio.app.sessions import (
-    RUNTIME_CHAT_MODE,
-    ChatSession,
-    SessionStore,
-    Turn,
-)
-from play_book_studio.app.viewers import (
-    _parse_viewer_path,
-    _render_normalized_section_html,
-    _viewer_path_to_local_html,
-)
+from play_book_studio.app.sessions import ChatSession, SessionStore
+from play_book_studio.app.viewers import _viewer_path_to_local_html
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -93,46 +61,10 @@ INDEX_HTML_PATH = STATIC_DIR / "index.html"
 DEFAULT_RUNTIME_TOP_K = 8
 DEFAULT_RUNTIME_CANDIDATE_K = 20
 DEFAULT_RUNTIME_MAX_CONTEXT_CHUNKS = 6
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def _build_chat_payload(
     *,
     root_dir: Path,
-    answerer: Part3Answerer | None = None,
+    answerer: ChatAnswerer | None = None,
     session: ChatSession,
     result: AnswerResult,
 ) -> dict[str, Any]:
@@ -162,7 +94,7 @@ def _build_chat_payload(
 
 def _build_handler(
     *,
-    answerer: Part3Answerer,
+    answerer: ChatAnswerer,
     store: SessionStore,
     root_dir: Path,
 ) -> type[BaseHTTPRequestHandler]:
@@ -171,7 +103,7 @@ def _build_handler(
     answerer_lock = threading.Lock()
     current_llm_signature = _llm_runtime_signature(answerer.settings)
 
-    def current_answerer() -> Part3Answerer:
+    def current_answerer() -> ChatAnswerer:
         nonlocal answerer, current_llm_signature
         with answerer_lock:
             answerer, current_llm_signature = _refresh_answerer_llm_settings(
@@ -182,7 +114,7 @@ def _build_handler(
             return answerer
 
     class ChatHandler(BaseHTTPRequestHandler):
-        server_version = "OCPRAGPart4/0.1"
+        server_version = "PlayBookStudio/0.1"
 
         def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
             return None
@@ -266,9 +198,6 @@ def _build_handler(
             if request_path == "/api/source-meta":
                 self._handle_source_meta(parsed_request.query)
                 return
-            if request_path == "/api/source-book":
-                self._handle_source_book(parsed_request.query)
-                return
             if request_path == "/api/doc-to-book/drafts":
                 self._handle_doc_to_book_drafts(parsed_request.query)
                 return
@@ -344,13 +273,6 @@ def _build_handler(
 
         def _handle_debug_chat_log(self, query: str) -> None:
             _handle_debug_chat_log_request(
-                self,
-                query,
-                root_dir=root_dir,
-            )
-
-        def _handle_source_book(self, query: str) -> None:
-            _handle_source_book_request(
                 self,
                 query,
                 root_dir=root_dir,
@@ -456,7 +378,7 @@ def _build_handler(
 
 def serve(
     *,
-    answerer: Part3Answerer,
+    answerer: ChatAnswerer,
     root_dir: Path,
     host: str = "127.0.0.1",
     port: int = 8765,
@@ -467,7 +389,7 @@ def serve(
     handler = _build_handler(answerer=answerer, store=store, root_dir=root_dir)
     server = ThreadingHTTPServer((host, port), handler)
     url = f"http://{host}:{port}"
-    print(f"Part 4 QA UI running at {url}")
+    print(f"Play Book Studio UI running at {url}")
     if open_browser:
         webbrowser.open(url)
     try:
@@ -481,19 +403,5 @@ def serve(
 __all__ = [
     "ChatSession",
     "SessionStore",
-    "_build_doc_to_book_plan",
-    "_capture_doc_to_book_draft",
-    "_create_doc_to_book_draft",
-    "_load_doc_to_book_book",
-    "_load_doc_to_book_capture",
-    "_load_doc_to_book_draft",
-    "_list_doc_to_book_drafts",
-    "_normalize_doc_to_book_draft",
-    "_canonical_source_book",
-    "_citation_href",
-    "_serialize_citation",
-    "_internal_viewer_html",
-    "_viewer_path_to_local_html",
-    "_derive_next_context",
     "serve",
 ]

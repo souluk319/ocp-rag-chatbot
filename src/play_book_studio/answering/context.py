@@ -309,6 +309,44 @@ def _select_hits(
         support_window = ranked_hits[: max(max_chunks * 2, 8)]
         top_score = _hit_score(support_window[0])
         top_book = support_window[0].book_slug
+    elif has_project_terminating_intent(normalized):
+        preferred_order = {
+            "support": 0,
+            "building_applications": 1,
+            "project_apis": 2,
+            "config_apis": 3,
+        }
+        ranked_hits = sorted(
+            ranked_hits,
+            key=lambda hit: (
+                preferred_order.get(hit.book_slug, 9),
+                -_hit_score(hit),
+                hit.book_slug,
+                hit.chunk_id,
+            ),
+        )
+        support_window = ranked_hits[: max(max_chunks * 2, 8)]
+        top_score = _hit_score(support_window[0])
+        top_book = support_window[0].book_slug
+    elif has_project_finalizer_intent(normalized):
+        preferred_order = {
+            "support": 0,
+            "project_apis": 1,
+            "config_apis": 2,
+            "building_applications": 3,
+        }
+        ranked_hits = sorted(
+            ranked_hits,
+            key=lambda hit: (
+                preferred_order.get(hit.book_slug, 9),
+                -_hit_score(hit),
+                hit.book_slug,
+                hit.chunk_id,
+            ),
+        )
+        support_window = ranked_hits[: max(max_chunks * 2, 8)]
+        top_score = _hit_score(support_window[0])
+        top_book = support_window[0].book_slug
     elif has_deployment_scaling_intent(normalized):
         preferred_order = {
             "cli_tools": 0,
@@ -356,6 +394,14 @@ def _select_hits(
         for book_slug in ("authentication_and_authorization", "cli_tools", "postinstallation_configuration"):
             if best_book_scores.get(book_slug, 0.0) >= top_score * 0.58:
                 allowed_books.add(book_slug)
+    if has_project_terminating_intent(normalized):
+        for book_slug in ("support", "building_applications", "project_apis", "config_apis"):
+            if best_book_scores.get(book_slug, 0.0) >= top_score * 0.46:
+                allowed_books.add(book_slug)
+    if has_project_finalizer_intent(normalized):
+        for book_slug in ("support", "project_apis", "config_apis", "building_applications"):
+            if best_book_scores.get(book_slug, 0.0) >= top_score * 0.44:
+                allowed_books.add(book_slug)
     if has_deployment_scaling_intent(normalized):
         for book_slug in ("cli_tools", "building_applications"):
             if best_book_scores.get(book_slug, 0.0) >= top_score * 0.52:
@@ -368,6 +414,8 @@ def _select_hits(
             threshold = 0.72
         elif is_procedure_query:
             threshold = 0.84
+        if has_project_terminating_intent(normalized) or has_project_finalizer_intent(normalized):
+            threshold = 0.52
         if has_deployment_scaling_intent(normalized):
             threshold = 0.58
         if count >= 2 and best_book_scores[book_slug] >= top_score * threshold:
@@ -377,6 +425,8 @@ def _select_hits(
         score_cutoff = top_score * (0.68 if is_concept_query else 0.74 if is_procedure_query else 0.82)
     else:
         score_cutoff = 0.0
+    if (has_project_terminating_intent(normalized) or has_project_finalizer_intent(normalized)) and top_score > 0:
+        score_cutoff = top_score * 0.44
     if has_deployment_scaling_intent(normalized) and top_score > 0:
         score_cutoff = top_score * 0.5
     selected: list[RetrievalHit] = []
@@ -404,6 +454,29 @@ def _select_hits(
         selected.append(hit)
         per_book_counts[hit.book_slug] += 1
         seen_sections.add(section_signature)
+
+    if (
+        has_project_terminating_intent(normalized) or has_project_finalizer_intent(normalized)
+    ) and len(selected) < min(2, max_chunks):
+        preferred_books = (
+            ("support", "building_applications", "project_apis", "config_apis")
+            if has_project_terminating_intent(normalized)
+            else ("support", "project_apis", "config_apis", "building_applications")
+        )
+        for book_slug in preferred_books:
+            for hit in ranked_hits:
+                if len(selected) >= min(2, max_chunks):
+                    break
+                if hit in selected:
+                    continue
+                if hit.book_slug != book_slug:
+                    continue
+                section_signature = (hit.book_slug, _section_core(hit.section))
+                if section_signature in seen_sections:
+                    continue
+                selected.append(hit)
+                per_book_counts[hit.book_slug] += 1
+                seen_sections.add(section_signature)
 
     return selected[:max_chunks]
 

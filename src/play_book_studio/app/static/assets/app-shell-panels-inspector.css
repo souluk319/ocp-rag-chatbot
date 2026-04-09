@@ -512,20 +512,72 @@
 }
 .friendly-stepper-container .metric-grid {
   grid-template-columns: 1fr;
-  gap: 8px;
+  gap: 6px;
 }
 .friendly-stepper-container .metric-card.metric-card-compact {
-  padding: 10px;
-  border-radius: 12px;
-  gap: 3px;
+  width: 100%;
+  max-width: 100%;
+  padding: 8px 9px;
+  border-radius: 11px;
+  gap: 2px;
 }
 .friendly-stepper-container .metric-card.metric-card-compact .metric-value {
-  font-size: 20px;
+  font-size: 18px;
 }
 .friendly-stepper-container .metric-card.metric-card-compact .metric-detail {
-  font-size: 11px;
-  line-height: 1.35;
+  font-size: 10px;
+  line-height: 1.25;
+  white-space: normal;
 }
+.friendly-stepper-container .metric-card.metric-card-compact .metric-label {
+  font-size: 10px;
+}
+
+@media (max-width: 520px) {
+  .friendly-stepper-container {
+    gap: 8px;
+  }
+
+  .trace-runtime-status {
+    padding: 6px 8px;
+    gap: 3px 5px;
+    font-size: 10px;
+    line-height: 1.3;
+  }
+
+  .friendly-stepper-container .metric-grid {
+    gap: 4px;
+  }
+
+  .friendly-stepper-container .metric-card.metric-card-compact {
+    padding: 6px 8px;
+    border-radius: 10px;
+  }
+
+  .friendly-stepper-container .metric-card.metric-card-compact .metric-label {
+    font-size: 9px;
+  }
+
+  .friendly-stepper-container .metric-card.metric-card-compact .metric-value {
+    font-size: 16px;
+    line-height: 1.05;
+  }
+
+  .friendly-stepper-container .metric-card.metric-card-compact .metric-detail {
+    font-size: 9px;
+    line-height: 1.18;
+  }
+
+  .stepper-title {
+    font-size: 12px;
+  }
+
+  .stepper-detail {
+    font-size: 11px;
+    padding: 6px 8px;
+  }
+}
+
 .friendly-stepper::before {
   content: '';
   position: absolute;

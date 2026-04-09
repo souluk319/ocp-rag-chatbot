@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
 import sys
+import tempfile
+import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,7 +11,23 @@ TESTS = ROOT / "tests"
 if str(TESTS) not in sys.path:
     sys.path.insert(0, str(TESTS))
 
-from _support_retrieval import *  # noqa: F401,F403
+from _support_retrieval import (
+    BM25Index,
+    ChatRetriever,
+    RetrievalHit,
+    SessionContext,
+    Settings,
+    _filter_doc_to_book_hits_by_selection,
+    decompose_retrieval_queries,
+    fuse_ranked_hits,
+    has_command_request,
+    has_corrective_follow_up,
+    has_deployment_scaling_intent,
+    has_follow_up_reference,
+    normalize_query,
+    query_book_adjustments,
+    rewrite_query,
+)
 
 class TestRetrievalQueryCore(unittest.TestCase):
     def test_decompose_retrieval_queries_splits_compare_question(self) -> None:
@@ -90,7 +109,7 @@ class TestRetrievalQueryCore(unittest.TestCase):
 
         self.assertEqual("chunk-etcd", hits[0].chunk_id)
 
-    def test_fuse_ranked_hits_prefers_custom_overlay_over_vector_for_exact_match(self) -> None:
+    def test_fuse_ranked_hits_prefers_overlay_bm25_over_vector_for_exact_match(self) -> None:
         intake_hit = RetrievalHit(
             chunk_id="dtb-demo:events",
             book_slug="demo-guide",
@@ -100,7 +119,7 @@ class TestRetrievalQueryCore(unittest.TestCase):
             source_url="https://example.com/demo",
             viewer_path="/docs/intake/dtb-demo/index.html#safety-switch",
             text="maintenance token 77A 와 nebula-drain 플래그를 먼저 확인합니다.",
-            source="custom_bm25",
+            source="overlay_bm25",
             raw_score=1.0,
         )
         vector_hit = RetrievalHit(
@@ -118,9 +137,9 @@ class TestRetrievalQueryCore(unittest.TestCase):
 
         fused = fuse_ranked_hits(
             "maintenance token 77A랑 nebula-drain 플래그는 어디서 확인해?",
-            {"custom_bm25": [intake_hit], "vector": [vector_hit]},
+            {"overlay_bm25": [intake_hit], "vector": [vector_hit]},
             top_k=2,
-            weights={"bm25": 1.0, "custom_bm25": 1.35, "vector": 1.0},
+            weights={"bm25": 1.0, "overlay_bm25": 1.35, "vector": 1.0},
         )
 
         self.assertEqual("demo-guide", fused[0].book_slug)
@@ -136,7 +155,7 @@ class TestRetrievalQueryCore(unittest.TestCase):
             source_url="/tmp/a.pdf",
             viewer_path="/docs/intake/draft-a/index.html#overview",
             text="선택된 업로드 문서",
-            source="custom_bm25",
+            source="overlay_bm25",
             raw_score=1.0,
         )
         unselected_hit = RetrievalHit(
@@ -148,7 +167,7 @@ class TestRetrievalQueryCore(unittest.TestCase):
             source_url="/tmp/b.pdf",
             viewer_path="/docs/intake/draft-b/index.html#overview",
             text="선택되지 않은 업로드 문서",
-            source="custom_bm25",
+            source="overlay_bm25",
             raw_score=0.9,
         )
 
@@ -172,7 +191,7 @@ class TestRetrievalQueryCore(unittest.TestCase):
             source_url="/tmp/a.pdf",
             viewer_path="/docs/intake/draft-a/index.html#overview",
             text="선택된 업로드 문서",
-            source="custom_bm25",
+            source="overlay_bm25",
             raw_score=1.0,
         )
 
@@ -186,7 +205,7 @@ class TestRetrievalQueryCore(unittest.TestCase):
 
         self.assertEqual([], filtered)
 
-    def test_retriever_disables_custom_overlay_sections_in_default_bm25_path(self) -> None:
+    def test_retriever_disables_overlay_sections_in_default_bm25_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             settings = Settings(root_dir=root)
@@ -223,7 +242,7 @@ class TestRetrievalQueryCore(unittest.TestCase):
                 + "\n",
                 encoding="utf-8",
             )
-            retriever = Part2Retriever(settings, BM25Index.from_rows([]), vector_retriever=None)
+            retriever = ChatRetriever(settings, BM25Index.from_rows([]), vector_retriever=None)
 
             result = retriever.retrieve(
                 "Pod Pending 이벤트 먼저 확인해야 해?",
@@ -234,8 +253,8 @@ class TestRetrievalQueryCore(unittest.TestCase):
             )
 
         self.assertEqual([], result.hits)
-        self.assertEqual([], result.trace["custom_bm25"])
-        self.assertEqual(0, result.trace["metrics"]["custom_bm25"]["count"])
+        self.assertNotIn("overlay_bm25", result.trace)
+        self.assertNotIn("overlay_bm25", result.trace["metrics"])
 
     def test_has_deployment_scaling_intent_detects_replica_change_question(self) -> None:
         self.assertTrue(
@@ -299,7 +318,7 @@ class TestRetrievalQueryCore(unittest.TestCase):
             source_url="/tmp/orion.pdf",
             viewer_path="/docs/intake/dtb-demo/index.html#unique-switch",
             text="orion.unique/flag=starfall-88 값을 migration 전에 설정합니다.",
-            source="custom_bm25",
+            source="overlay_bm25",
             raw_score=1.0,
         )
         generic_intro_hit = RetrievalHit(
@@ -317,9 +336,9 @@ class TestRetrievalQueryCore(unittest.TestCase):
 
         fused = fuse_ranked_hits(
             "orion.unique/flag 값이 뭐야?",
-            {"custom_bm25": [intake_hit], "bm25": [generic_intro_hit]},
+            {"overlay_bm25": [intake_hit], "bm25": [generic_intro_hit]},
             top_k=2,
-            weights={"bm25": 1.0, "custom_bm25": 1.35, "vector": 1.0},
+            weights={"bm25": 1.0, "overlay_bm25": 1.35, "vector": 1.0},
         )
 
         self.assertEqual("orion-pdf-guide", fused[0].book_slug)
@@ -411,8 +430,9 @@ class TestRetrievalQueryCore(unittest.TestCase):
         self.assertIn("Pending", normalized)
         self.assertIn("FailedScheduling", normalized)
         self.assertIn("describe", normalized)
-        self.assertIn("events", normalized)
-        self.assertIn("troubleshooting", normalized)
+        self.assertIn("oc", normalized)
+        self.assertNotIn("events", normalized)
+        self.assertNotIn("troubleshooting", normalized)
 
     def test_query_book_adjustments_penalize_api_books_for_pod_troubleshooting(self) -> None:
         boosts, penalties = query_book_adjustments(
@@ -434,15 +454,15 @@ class TestRetrievalQueryCore(unittest.TestCase):
         self.assertIn("lifecycle", normalized)
         self.assertIn("Pending", normalized)
         self.assertIn("Running", normalized)
-        self.assertIn("glossary", normalized)
-        self.assertIn("status", normalized)
+        self.assertIn("용어집", normalized)
+        self.assertNotIn("status", normalized)
 
     def test_normalize_query_expands_route_ingress_compare_terms(self) -> None:
         normalized = normalize_query("OpenShift에서 Route와 Ingress 차이를 운영 관점에서 설명해줘")
 
         self.assertIn("networking", normalized)
-        self.assertIn("router", normalized)
-        self.assertIn("ingresscontroller", normalized)
+        self.assertNotIn("router", normalized)
+        self.assertNotIn("ingresscontroller", normalized)
         self.assertIn("애플리케이션 노출", normalized)
 
     def test_query_book_adjustments_bias_route_ingress_compare_toward_networking_family(self) -> None:

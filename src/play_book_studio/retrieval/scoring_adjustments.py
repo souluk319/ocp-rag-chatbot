@@ -27,7 +27,7 @@ def apply_hit_adjustments(
     ):
         hit.fused_score *= 0.95
 
-    # custom intake overlay는 현재 기본 retrieval 경로에서 비활성화했다.
+    # intake overlay는 현재 기본 retrieval 경로에서 비활성화했다.
     # overlay 점수 우대는 opt-in 경로가 다시 살아날 때만 되돌린다.
 
     if contains_hangul(signals.query):

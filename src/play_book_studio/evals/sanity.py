@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from play_book_studio.retrieval.models import SessionContext
-from play_book_studio.retrieval.retriever import Part2Retriever
+from play_book_studio.retrieval.retriever import ChatRetriever
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -35,7 +35,7 @@ def _forbidden_at_k(top_book_slugs: list[str], forbidden_book_slugs: list[str], 
 
 
 def evaluate_case(
-    retriever: Part2Retriever,
+    retriever: ChatRetriever,
     case: dict[str, Any],
     *,
     top_k: int,

@@ -293,14 +293,14 @@ class SettingsPathTests(unittest.TestCase):
                 else:
                     os.environ["EMBEDDING_TIMEOUT_SECONDS"] = old_timeout
 
-    def test_legacy_part_directories_are_ignored_when_semantic_dirs_are_expected(self) -> None:
+    def test_legacy_artifact_directories_are_ignored_when_semantic_dirs_are_expected(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             external = root.parent / "shared-artifacts"
-            (external / "part1").mkdir(parents=True, exist_ok=True)
-            (external / "part2").mkdir(parents=True, exist_ok=True)
-            (external / "part3").mkdir(parents=True, exist_ok=True)
-            (external / "part4").mkdir(parents=True, exist_ok=True)
+            (external / "legacy-corpus").mkdir(parents=True, exist_ok=True)
+            (external / "legacy-retrieval").mkdir(parents=True, exist_ok=True)
+            (external / "legacy-answering").mkdir(parents=True, exist_ok=True)
+            (external / "legacy-runtime").mkdir(parents=True, exist_ok=True)
             old_env = os.environ.get("ARTIFACTS_DIR")
             old_raw_env = os.environ.get("RAW_HTML_DIR")
             try:

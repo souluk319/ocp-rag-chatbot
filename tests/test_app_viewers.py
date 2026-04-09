@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import json
+import os
+import tempfile
 import sys
+import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,7 +12,13 @@ TESTS = ROOT / "tests"
 if str(TESTS) not in sys.path:
     sys.path.insert(0, str(TESTS))
 
-from _support_app_ui import *  # noqa: F401,F403
+from _support_app_ui import (
+    Citation,
+    _citation,
+    _internal_viewer_html,
+    _serialize_citation,
+    _viewer_path_to_local_html,
+)
 
 class TestAppViewers(unittest.TestCase):
     def test_viewer_path_local_raw_html_fallback_is_disabled(self) -> None:
@@ -505,108 +515,3 @@ class TestAppViewers(unittest.TestCase):
         self.assertIn('class="code-block preserve-layout"', html)
         self.assertNotIn('class="code-block preserve-layout is-wrapped"', html)
 
-    def test_canonical_source_book_requires_playbook_artifact(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            normalized_docs_path = root / "artifacts" / "corpus" / "normalized_docs.jsonl"
-            normalized_docs_path.parent.mkdir(parents=True)
-            normalized_docs_path.write_text(
-                "\n".join(
-                    [
-                        json.dumps(
-                            {
-                                "book_slug": "architecture",
-                                "book_title": "아키텍처",
-                                "heading": "개요",
-                                "section_level": 1,
-                                "section_path": ["개요"],
-                                "anchor": "overview",
-                                "source_url": "https://example.com/architecture",
-                                "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html#overview",
-                                "text": "설명 본문\n\n[CODE]\noc get nodes\n[/CODE]",
-                            },
-                            ensure_ascii=False,
-                        ),
-                        json.dumps(
-                            {
-                                "book_slug": "architecture",
-                                "book_title": "아키텍처",
-                                "heading": "컨트롤 플레인",
-                                "section_level": 2,
-                                "section_path": ["개요", "컨트롤 플레인"],
-                                "anchor": "control-plane",
-                                "source_url": "https://example.com/architecture",
-                                "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html#control-plane",
-                                "text": "구성 요소 설명",
-                            },
-                            ensure_ascii=False,
-                        ),
-                    ]
-                )
-                + "\n",
-                encoding="utf-8",
-            )
-
-            payload = _canonical_source_book(
-                root,
-                "/docs/ocp/4.20/ko/architecture/index.html#control-plane",
-            )
-
-        self.assertIsNone(payload)
-
-    def test_canonical_source_book_prefers_playbook_artifact_when_available(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            playbook_dir = root / "artifacts" / "corpus" / "playbooks"
-            playbook_dir.mkdir(parents=True)
-            (playbook_dir / "architecture.json").write_text(
-                json.dumps(
-                    {
-                        "canonical_model": "playbook_document_v1",
-                        "source_view_strategy": "playbook_ast_v1",
-                        "book_slug": "architecture",
-                        "title": "아키텍처",
-                        "source_uri": "https://example.com/architecture",
-                        "language_hint": "ko",
-                        "pack_id": "openshift-4-20-core",
-                        "inferred_version": "4.20",
-                        "sections": [
-                            {
-                                "section_id": "architecture:overview",
-                                "section_key": "architecture:overview",
-                                "ordinal": 1,
-                                "heading": "개요",
-                                "level": 1,
-                                "path": ["개요"],
-                                "section_path": ["개요"],
-                                "section_path_label": "개요",
-                                "anchor": "overview",
-                                "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html#overview",
-                                "semantic_role": "overview",
-                                "block_kinds": ["paragraph", "code"],
-                                "blocks": [
-                                    {"kind": "paragraph", "text": "설명 본문"},
-                                    {"kind": "code", "language": "shell", "code": "oc get nodes"},
-                                ],
-                            }
-                        ],
-                        "quality_status": "draft",
-                        "quality_score": 0.0,
-                        "quality_flags": [],
-                    },
-                    ensure_ascii=False,
-                ) + "\n",
-                encoding="utf-8",
-            )
-
-            payload = _canonical_source_book(
-                root,
-                "/docs/ocp/4.20/ko/architecture/index.html#overview",
-            )
-
-        self.assertIsNotNone(payload)
-        assert payload is not None
-        self.assertEqual("playbook_document_v1", payload["canonical_model"])
-        self.assertEqual("playbook_ast_v1", payload["source_view_strategy"])
-        self.assertEqual("overview", payload["target_anchor"])
-        self.assertEqual("openshift-4-20-core", payload["pack_id"])

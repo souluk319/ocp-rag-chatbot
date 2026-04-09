@@ -7,7 +7,6 @@ health snapshot 생성도 담당한다.
 import html
 import hashlib
 import json
-import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -17,14 +16,10 @@ from play_book_studio.intake.service import evaluate_canonical_book_quality
 from play_book_studio.config.packs import default_core_pack, resolve_ocp_core_pack
 from play_book_studio.config.settings import Settings, load_settings
 from play_book_studio.config.validation import read_jsonl
-from play_book_studio.answering.answerer import Part3Answerer
+from play_book_studio.answering.answerer import ChatAnswerer
 from play_book_studio.answering.models import Citation
 from play_book_studio.app.viewers import _parse_viewer_path
-
-SOURCE_VIEW_LEADING_NOISE_RE = re.compile(
-    r"^\s*Red Hat OpenShift Documentation Team(?:\s+법적 공지)?(?:\s+초록)?\s*",
-)
-SOURCE_VIEW_TOC_RE = re.compile(r"^\s*목차\s*(?:\n\n|\n)?")
+from .viewer_blocks import _clean_source_view_text
 
 
 
@@ -91,11 +86,11 @@ def _runtime_fingerprint(settings: Settings) -> str:
 
 
 def _refresh_answerer_llm_settings(
-    answerer: Part3Answerer,
+    answerer: ChatAnswerer,
     *,
     root_dir: Path,
     current_signature: tuple[Any, ...] | None,
-) -> tuple[Part3Answerer, tuple[Any, ...]]:
+) -> tuple[ChatAnswerer, tuple[Any, ...]]:
     # runtime signature가 바뀌면 answerer 전체를 다시 만들어 LLM, embedding,
     # retriever, pack 상태가 서로 어긋나지 않게 한다.
     settings = load_settings(root_dir)
@@ -111,7 +106,7 @@ def _refresh_answerer_llm_settings(
     return answerer, signature
 
 
-def _build_health_payload(answerer: Part3Answerer) -> dict[str, Any]:
+def _build_health_payload(answerer: ChatAnswerer) -> dict[str, Any]:
     settings = answerer.settings
     pack = settings.active_pack
     embedding_mode = "remote" if settings.embedding_base_url else "local"
@@ -296,15 +291,6 @@ def _default_doc_to_book_summary(payload: dict[str, Any]) -> str:
         "capture된 웹 문서를 canonical section으로 정리한 내부 study view입니다. "
         "이후 retrieval chunk는 이 section들을 부모로 파생됩니다."
     )
-
-
-def _clean_source_view_text(text: str) -> str:
-    cleaned = (text or "").replace("\r\n", "\n").replace("\r", "\n").strip()
-    cleaned = SOURCE_VIEW_LEADING_NOISE_RE.sub("", cleaned, count=1).lstrip()
-    cleaned = SOURCE_VIEW_TOC_RE.sub("", cleaned, count=1).lstrip()
-    return cleaned
-
-
 def _normalized_row_for_viewer_path(root_dir: Path, viewer_path: str) -> dict[str, Any] | None:
     row, _matched_exact = _resolve_normalized_row_for_viewer_path(root_dir, viewer_path)
     return row

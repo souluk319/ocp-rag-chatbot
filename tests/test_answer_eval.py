@@ -12,7 +12,7 @@ if str(SRC) not in sys.path:
 from play_book_studio.evals.answer_eval import summarize_case_results
 
 
-class Part3EvalTests(unittest.TestCase):
+class AnswerEvalTests(unittest.TestCase):
     def test_summarize_case_results_tracks_guardrail_rates(self) -> None:
         details = [
             {

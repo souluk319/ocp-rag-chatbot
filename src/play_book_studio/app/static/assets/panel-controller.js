@@ -82,26 +82,6 @@ window.createPanelController = function createPanelController(deps) {
     refs.sourceViewerFrameEl.removeAttribute("src");
   }
 
-  function setSourceLink(anchor, href) {
-    if (!anchor) {
-      return;
-    }
-    const row = anchor.closest(".source-link-row");
-    if (!href) {
-      anchor.hidden = true;
-      anchor.removeAttribute("href");
-      if (row) {
-        row.hidden = true;
-      }
-      return;
-    }
-    anchor.hidden = false;
-    anchor.href = href;
-    if (row) {
-      row.hidden = false;
-    }
-  }
-
   function buildEmbeddedViewerHref(viewerPath) {
     if (!viewerPath) {
       return "";
@@ -116,14 +96,6 @@ window.createPanelController = function createPanelController(deps) {
 
   function resetSourcePanel() {
     state.activeSourceKey = "";
-    if (refs.sourceSummaryStripEl) {
-      refs.sourceSummaryStripEl.innerHTML = "";
-    }
-    if (refs.sourceOutlineEl) {
-      refs.sourceOutlineEl.innerHTML = "";
-      refs.sourceOutlineEl.hidden = true;
-    }
-    setSourceLink(refs.sourceOpenDocEl, "");
     setSourceEmptyState();
     syncActiveSourceTags();
   }
@@ -137,93 +109,12 @@ window.createPanelController = function createPanelController(deps) {
     return response.json();
   }
 
-  async function fetchSourceBook(viewerPath) {
-    const response = await fetch(`/api/source-book?viewer_path=${encodeURIComponent(viewerPath)}`);
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({}));
-      throw new Error(payload.error || "source book을 불러오지 못했습니다.");
-    }
-    return response.json();
-  }
-
-  function renderSourceBook(book, targetAnchor = "") {
-    if (!refs.sourceSummaryStripEl && !refs.sourceOutlineEl) {
-      return;
-    }
-    const sections = Array.isArray(book && book.sections) ? book.sections : [];
-    if (refs.sourceSummaryStripEl) {
-      refs.sourceSummaryStripEl.innerHTML = "";
-    }
-
-    [
-      book && book.source_collection ? helpers.humanizeSourceCollection(book.source_collection) : "자료군 미확인",
-      book && book.pack_label ? book.pack_label : "묶음 미확인",
-      helpers.formatInferredScope(book),
-      `${sections.length}개 섹션`,
-      book && book.canonical_model ? helpers.humanizeDraftValue(book.canonical_model) : "정리본",
-      book && book.source_view_strategy ? helpers.humanizeDraftValue(book.source_view_strategy) : "정리 보기",
-    ].forEach((label) => {
-      if (refs.sourceSummaryStripEl) {
-        refs.sourceSummaryStripEl.appendChild(helpers.createSummaryChip(label));
-      }
-    });
-
-    if (!refs.sourceOutlineEl) {
-      return;
-    }
-    refs.sourceOutlineEl.hidden = false;
-    if (!sections.length) {
-      refs.sourceOutlineEl.innerHTML = '<div class="trace-empty">핵심 구간을 아직 만들지 못했습니다.</div>';
-      return;
-    }
-
-    const outline = sections.slice(0, 5);
-    refs.sourceOutlineEl.innerHTML = "";
-    outline.forEach((section, index) => {
-      const item = document.createElement("section");
-      item.className = `source-outline-item ${section.anchor === targetAnchor ? "active" : ""}`.trim();
-
-      const kicker = document.createElement("div");
-      kicker.className = "source-outline-kicker";
-      kicker.textContent = `섹션 ${index + 1}`;
-
-      const label = document.createElement("div");
-      label.className = "source-outline-label";
-      label.textContent = section.section_path_label || section.heading || section.section_key || "이름 없는 섹션";
-
-      item.append(kicker, label);
-      refs.sourceOutlineEl.appendChild(item);
-    });
-  }
-
-  function applySourcePanelState(citation, meta = null) {
-    const excerpt = (citation.excerpt || "").trim();
-    const packLine = [
-      meta && meta.source_collection ? helpers.humanizeSourceCollection(meta.source_collection) : "",
-      meta && meta.pack_label ? meta.pack_label : "",
-      helpers.formatInferredScope(meta || citation),
-    ].filter(Boolean).join(" · ");
-    const qualityLine = meta && helpers.qualityStatusLabel(meta)
-      ? `${helpers.qualityStatusLabel(meta)}${helpers.qualitySummaryText(meta) ? ` · ${helpers.qualitySummaryText(meta)}` : ""}`
-      : "";
-    const sectionMatchLine = meta && meta.section_match_exact === false
-      ? "정확한 섹션 anchor를 찾지 못해 문서 첫 section 기준으로 열었습니다."
-      : "";
-
-    setSourceLink(
-      refs.sourceOpenDocEl,
-      (meta && meta.viewer_path) || citation.viewer_path || citation.href || "",
-    );
-  }
-
   async function openSourcePanel(citation) {
     if (!citation) return;
 
     state.activeSourceKey = sourceKeyFor(citation);
     syncActiveSourceTags();
     setSourcePanelVisible(true);
-    callbacks.setStudyTab("source");
-    applySourcePanelState(citation);
 
     const href = citation.href || "";
     const viewerPath = citation.viewer_path
@@ -237,10 +128,6 @@ window.createPanelController = function createPanelController(deps) {
       refs.sourceViewerFrameEl.removeAttribute("src");
       refs.sourceViewerFrameEl.src = viewerHref;
     } else {
-      if (refs.sourceOutlineEl) {
-        refs.sourceOutlineEl.hidden = false;
-        refs.sourceOutlineEl.innerHTML = '<div class="trace-empty">정리된 매뉴얼북이 준비된 항목만 이 패널에서 열립니다.</div>';
-      }
       setSourceEmptyState();
     }
 
@@ -249,13 +136,7 @@ window.createPanelController = function createPanelController(deps) {
     try {
       const meta = await fetchSourceMeta(viewerPath);
       if (state.activeSourceKey !== sourceKeyFor(citation)) return;
-      applySourcePanelState(citation, meta);
       if (helpers.isReviewNeeded(meta)) {
-        setSourceLink(refs.sourceOpenDocEl, "");
-        if (refs.sourceOutlineEl) {
-          refs.sourceOutlineEl.hidden = false;
-          refs.sourceOutlineEl.innerHTML = '<div class="trace-empty">검토가 끝난 뒤에만 매뉴얼북이 열립니다.</div>';
-        }
         setSourceEmptyState();
         return;
       }
@@ -266,15 +147,12 @@ window.createPanelController = function createPanelController(deps) {
 
   return {
     citationMapByIndex,
-    fetchSourceBook,
     fetchSourceMeta,
     inlineCitationLabel,
     openSourcePanel,
-    renderSourceBook,
     resetSourcePanel,
     setLeftPanelVisible,
     setSourceEmptyState,
-    setSourceLink,
     setSourcePanelVisible,
     sourceKeyFor,
     syncActiveSourceTags,

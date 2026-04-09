@@ -99,8 +99,6 @@ window.createChatSession = function createChatSession(deps) {
           query: trimmed,
           mode: state.currentMode,
           ocp_version: state.currentOcpVersion,
-          selected_draft_ids: helpers.selectedDraftIdList(),
-          restrict_uploaded_sources: true,
           regenerate,
         }),
         signal: state.currentController.signal,
@@ -173,13 +171,7 @@ window.createChatSession = function createChatSession(deps) {
     refs.messagesEl.innerHTML = "";
     renderEmptyState();
     renderComposerSamples();
-    if (refs.rewrittenQueryEl) {
-      refs.rewrittenQueryEl.textContent = "-";
-    }
     helpers.updateSessionContextDisplay(payload.context || {});
-    if (refs.warningsEl) {
-      refs.warningsEl.textContent = "없음";
-    }
     helpers.resetPipelineTrace();
     state.lastQuery = "";
     helpers.resetSourcePanel();
@@ -198,13 +190,7 @@ window.createChatSession = function createChatSession(deps) {
     refs.messagesEl.innerHTML = "";
     renderEmptyState();
     renderComposerSamples();
-    if (refs.rewrittenQueryEl) {
-      refs.rewrittenQueryEl.textContent = "-";
-    }
     helpers.updateSessionContextDisplay(payload.context || {});
-    if (refs.warningsEl) {
-      refs.warningsEl.textContent = "없음";
-    }
     helpers.resetPipelineTrace();
     state.lastQuery = "";
     helpers.resetSourcePanel();

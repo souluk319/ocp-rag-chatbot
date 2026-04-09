@@ -16,7 +16,7 @@ from ragas.dataset_schema import EvaluationDataset
 from ragas.llms import llm_factory
 from ragas.metrics import answer_relevancy, context_precision, context_recall, faithfulness
 
-from play_book_studio.answering.answerer import Part3Answerer
+from play_book_studio.answering.answerer import ChatAnswerer
 from play_book_studio.answering.models import AnswerResult
 from play_book_studio.retrieval.models import SessionContext
 
@@ -229,7 +229,7 @@ def build_ragas_dataset(rows: list[dict[str, Any]], *, name: str = "ocp-rag-eval
 
 
 def generate_answers_for_cases(
-    answerer: Part3Answerer,
+    answerer: ChatAnswerer,
     cases: list[dict[str, Any]],
     *,
     top_k: int,
@@ -256,7 +256,7 @@ def generate_answers_for_cases(
 
 
 def evaluate_cases_with_ragas(
-    answerer: Part3Answerer,
+    answerer: ChatAnswerer,
     cases: list[dict[str, Any]],
     *,
     judge_config: OpenAIJudgeConfig,
@@ -264,7 +264,7 @@ def evaluate_cases_with_ragas(
     candidate_k: int,
     max_context_chunks: int,
     batch_size: int | None = None,
-    experiment_name: str = "ocp-rag-part3-ragas",
+    experiment_name: str = "ocp-book-studio-ragas",
 ) -> dict[str, Any]:
     generated_results = generate_answers_for_cases(
         answerer,

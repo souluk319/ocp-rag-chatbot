@@ -15,7 +15,7 @@ if str(SRC) not in sys.path:
 
 from play_book_studio.config.settings import load_settings
 from play_book_studio.retrieval.models import SessionContext
-from play_book_studio.retrieval.retriever import Part2Retriever
+from play_book_studio.retrieval.retriever import ChatRetriever
 
 
 def read_jsonl(path: Path) -> list[dict]:
@@ -73,7 +73,7 @@ def main() -> int:
         enable_reranker = True
     elif args.disable_reranker:
         enable_reranker = False
-    retriever = Part2Retriever.from_settings(
+    retriever = ChatRetriever.from_settings(
         settings,
         enable_vector=not args.skip_vector,
         enable_reranker=enable_reranker,

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
+import tempfile
 import sys
+import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,7 +11,17 @@ TESTS = ROOT / "tests"
 if str(TESTS) not in sys.path:
     sys.path.insert(0, str(TESTS))
 
-from _support_app_ui import *  # noqa: F401,F403
+from _support_app_ui import (
+    AnswerResult,
+    ChatSession,
+    SessionContext,
+    Turn,
+    _citation,
+    _build_turn_diagnosis,
+    _derive_next_context,
+    _suggest_follow_up_questions,
+    _write_recent_chat_session_snapshot,
+)
 
 class TestAppSessionFlow(unittest.TestCase):
     def test_derive_next_context_updates_topic_when_grounded(self) -> None:

@@ -5,7 +5,7 @@ import re
 from collections import defaultdict
 from typing import Any
 
-from play_book_studio.answering.answerer import Part3Answerer
+from play_book_studio.answering.answerer import ChatAnswerer
 from play_book_studio.retrieval.models import SessionContext
 
 
@@ -36,7 +36,7 @@ def _ordered_unique_books(rows: list[dict[str, Any]]) -> list[str]:
 
 
 def evaluate_case(
-    answerer: Part3Answerer,
+    answerer: ChatAnswerer,
     case: dict[str, Any],
     *,
     top_k: int,

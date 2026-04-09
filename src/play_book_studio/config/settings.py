@@ -110,7 +110,7 @@ class Settings(SettingsPathMixin):
     viewer_path_template_str: str = field(
         default_factory=lambda: os.getenv("VIEWER_PATH_TEMPLATE", DEFAULT_VIEWER_PATH_TEMPLATE)
     )
-    user_agent: str = "Mozilla/5.0 (compatible; OCPRAGPart1/1.0)"
+    user_agent: str = "Mozilla/5.0 (compatible; OCPBookStudio/1.0)"
     request_timeout_seconds: int = 30
     request_retries: int = 3
     request_backoff_seconds: int = 2

@@ -49,6 +49,11 @@ OCP_LEARNING_ADVICE_RE = re.compile(
     r"(오픈시프트|openshift|(?<![a-z0-9])ocp(?![a-z0-9])).*(잘하려면|잘 하려면|공부|배우|익히|입문|처음 시작|배경지식|기본기|마인드|어려워|어떻게 해야)",
     re.IGNORECASE,
 )
+TECHNICAL_HINT_RE = re.compile(
+    r"(오픈시프트|openshift|(?<![a-z0-9])ocp(?![a-z0-9])|kubernetes|쿠버네티스|oc\s|pod|deployment|route|ingress|operator|etcd|rbac|namespace|네임스페이스|이름공간|yaml|pipeline|tekton|prometheus|alertmanager|node|노드|cluster|클러스터)",
+    re.IGNORECASE,
+)
+STRUCTURED_QUERY_RE = re.compile(r"[/<>=:\d]")
 
 
 def _friendly_intro_answer() -> str:
@@ -74,6 +79,30 @@ def _ocp_learning_advice_answer() -> str:
         "그다음에는 oc CLI, 로그와 이벤트 확인, 배포·롤백·스케일링, 프로젝트와 RBAC, 업데이트와 백업 같은 운영 절차를 손으로 반복해 보는 것이 가장 효과적입니다. "
         "원하면 입문 순서를 학습 로드맵처럼 나눠서 안내하겠습니다."
     )
+
+
+def _generic_smalltalk_answer() -> str:
+    return (
+        "답변: 반갑습니다. 저는 OCP PlayBook 챗봇입니다. "
+        "OpenShift 질문을 중심으로 돕지만, 가볍게 말을 붙여도 괜찮습니다. "
+        "지금 궁금한 상황이나 작업을 편하게 말해 주세요."
+    )
+
+
+def _looks_like_light_smalltalk(query: str) -> bool:
+    normalized = (query or "").strip()
+    if not normalized:
+        return False
+    if TECHNICAL_HINT_RE.search(normalized):
+        return False
+    if STRUCTURED_QUERY_RE.search(normalized):
+        return False
+    if len(normalized) > 24:
+        return False
+    token_count = len(re.findall(r"[\w가-힣]+", normalized, re.UNICODE))
+    if token_count == 0:
+        return False
+    return token_count <= 5
 
 
 @dataclass(slots=True)
@@ -168,4 +197,6 @@ def route_non_rag(
                 f"답변: 현재 코퍼스에는 {unsupported_product} 관련 설치나 비교 절차를 답할 근거가 없습니다."
             ),
         )
+    if _looks_like_light_smalltalk(normalized):
+        return RoutedResponse(route="smalltalk", answer=_generic_smalltalk_answer())
     return None

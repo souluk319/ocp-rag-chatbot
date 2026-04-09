@@ -56,6 +56,11 @@ FOLLOW_UP_COMPARE_RE = re.compile(
     r"(차이도|비교도).*(설명|말해|정리|알려|보여)",
     re.IGNORECASE,
 )
+CONTEXTUAL_FOLLOW_UP_ACTION_RE = re.compile(
+    r"((관련\s+)?(실행\s*예시|주의사항|상태\s*확인\s*방법).*(같이|함께|알려|보여|정리))|"
+    r"((복원\s*절차|백업\s*파일이\s*정상인지\s*확인하는\s*방법|권한이\s*잘\s*들어갔는지\s*확인하는\s*명령|권한을\s*회수).*(알려|보여|정리|확인))",
+    re.IGNORECASE,
+)
 
 
 def _collapse_spaces(text: str) -> str:
@@ -74,6 +79,8 @@ def has_follow_up_reference(query: str) -> bool:
     normalized = _collapse_spaces(query)
     lowered = normalized.lower()
     if has_corrective_follow_up(normalized):
+        return True
+    if CONTEXTUAL_FOLLOW_UP_ACTION_RE.search(normalized):
         return True
     if FOLLOW_UP_COMPARE_RE.search(normalized):
         return True

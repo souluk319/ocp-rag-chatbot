@@ -19,14 +19,12 @@ from play_book_studio.app.intake_api import (
 )
 from play_book_studio.app.presenters import (
     _core_pack_payload,
-    _doc_to_book_book_for_viewer_path,
     _doc_to_book_meta_for_viewer_path,
     _humanize_book_slug,
     _manifest_entry_for_book,
     _resolve_normalized_row_for_viewer_path,
 )
 from play_book_studio.app.source_books import (
-    canonical_source_book as _canonical_source_book,
     load_doc_to_book_book as _load_doc_to_book_book,
     list_doc_to_book_drafts as _list_doc_to_book_drafts,
 )
@@ -111,26 +109,6 @@ def handle_debug_chat_log(handler: Any, query: str, *, root_dir: Path) -> None:
     lines = log_path.read_text(encoding="utf-8").splitlines()
     entries = [json.loads(line) for line in lines[-limit:] if line.strip()]
     handler._send_json({"entries": entries, "count": len(entries), "path": str(log_path)})
-
-
-def handle_source_book(handler: Any, query: str, *, root_dir: Path) -> None:
-    params = parse_qs(query, keep_blank_values=False)
-    viewer_path = str((params.get("viewer_path") or [""])[0]).strip()
-    if not viewer_path:
-        handler._send_json({"error": "viewer_path가 필요합니다."}, HTTPStatus.BAD_REQUEST)
-        return
-
-    canonical_book = _canonical_source_book(root_dir, viewer_path)
-    if canonical_book is None:
-        canonical_book = _doc_to_book_book_for_viewer_path(root_dir, viewer_path)
-    if canonical_book is None:
-        handler._send_json(
-            {"error": "canonical source book을 만들 수 없습니다."},
-            HTTPStatus.NOT_FOUND,
-        )
-        return
-
-    handler._send_json(canonical_book)
 
 
 def handle_doc_to_book_plan(handler: Any, payload: dict[str, Any]) -> None:

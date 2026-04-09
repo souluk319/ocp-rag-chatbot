@@ -11,23 +11,17 @@ import time
 from pathlib import Path
 
 from play_book_studio.config.settings import Settings
-from play_book_studio.retrieval import Part2Retriever, SessionContext
+from play_book_studio.retrieval import ChatRetriever, SessionContext
 from play_book_studio.retrieval.query import (
     has_follow_up_entity_ambiguity,
     has_follow_up_reference,
 )
 
-from .answer_text import (
+from .answer_text_commands import (
     build_deployment_scaling_answer,
-    ensure_korean_product_terms,
-    normalize_answer_markup_blocks,
-    normalize_answer_text,
-    reshape_ops_answer_text,
-    strip_intro_offtopic_noise,
-    strip_structured_key_extra_guidance,
-    strip_weak_additional_guidance,
-    summarize_session_context,
+    build_grounded_command_guide_answer,
 )
+from .answer_text_formatting import summarize_session_context
 from .citations import (
     finalize_citations,
     maybe_autorepair_inline_citations,
@@ -46,20 +40,13 @@ from .pipeline_helpers import (
 from .prompt import build_messages
 from .router import route_non_rag
 
-_normalize_answer_markup_blocks = normalize_answer_markup_blocks
-_ensure_korean_product_terms = ensure_korean_product_terms
-_strip_intro_offtopic_noise = strip_intro_offtopic_noise
-_strip_structured_key_extra_guidance = strip_structured_key_extra_guidance
-_strip_weak_additional_guidance = strip_weak_additional_guidance
-
-
-class Part3Answerer:
+class ChatAnswerer:
     """CLI, UI, eval 파이프라인이 공통으로 쓰는 최상위 answer 서비스."""
 
     def __init__(
         self,
         settings: Settings,
-        retriever: Part2Retriever,
+        retriever: ChatRetriever,
         llm_client: LLMClient,
     ) -> None:
         self.settings = settings
@@ -67,10 +54,10 @@ class Part3Answerer:
         self.llm_client = llm_client
 
     @classmethod
-    def from_settings(cls, settings: Settings) -> "Part3Answerer":
+    def from_settings(cls, settings: Settings) -> "ChatAnswerer":
         return cls(
             settings=settings,
-            retriever=Part2Retriever.from_settings(settings, enable_vector=True),
+            retriever=ChatRetriever.from_settings(settings, enable_vector=True),
             llm_client=LLMClient(settings),
         )
 
@@ -326,6 +313,51 @@ class Part3Answerer:
                 answer=answer_text,
                 rewritten_query=retrieval.rewritten_query,
                 response_kind="clarification" if "숫자가 현재 질문에 없습니다" in answer_text else "rag",
+                citations=final_citations,
+                cited_indices=cited_indices,
+                warnings=warnings,
+                retrieval_trace=retrieval.trace,
+                pipeline_events=pipeline_events,
+                pipeline_timings_ms=pipeline_timings_ms,
+                selected_hits=selected_hits,
+            )
+
+        grounded_command_answer = build_grounded_command_guide_answer(
+            query=query,
+            citations=context_bundle.citations,
+        )
+        if grounded_command_answer is not None:
+            answer_text, final_citations, cited_indices = finalize_deployment_scaling_answer(
+                grounded_command_answer,
+                context_bundle.citations,
+            )
+            pipeline_timings_ms["total"] = round(
+                (time.perf_counter() - answer_started_at) * 1000,
+                1,
+            )
+            emit(
+                {
+                    "step": "deterministic_answer",
+                    "label": "명령 우선 답변 생성 완료",
+                    "status": "done",
+                    "detail": "grounded command guide",
+                }
+            )
+            emit(
+                {
+                    "step": "pipeline_complete",
+                    "label": "답변 생성 완료",
+                    "status": "done",
+                    "detail": f"총 {pipeline_timings_ms['total']}ms",
+                    "duration_ms": pipeline_timings_ms["total"],
+                }
+            )
+            return build_answer_result(
+                query=query,
+                mode=mode,
+                answer=answer_text,
+                rewritten_query=retrieval.rewritten_query,
+                response_kind="rag",
                 citations=final_citations,
                 cited_indices=cited_indices,
                 warnings=warnings,

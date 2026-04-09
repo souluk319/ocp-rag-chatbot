@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,7 +9,36 @@ TESTS = ROOT / "tests"
 if str(TESTS) not in sys.path:
     sys.path.insert(0, str(TESTS))
 
-from _support_answering import *  # noqa: F401,F403
+from _support_answering import (
+    ChatAnswerer,
+    Citation,
+    RetrievalHit,
+    RetrievalResult,
+    SessionContext,
+    Settings,
+    _BareCommandLLMClient,
+    _DuplicateCitationLLMClient,
+    _DuplicateCitationRetriever,
+    _FakeRetriever,
+    _MultiCitationRetriever,
+    _NarrativeNoCitationLLMClient,
+    _NoCitationLLMClient,
+    _PodLifecycleRetriever,
+    _PodPendingRetriever,
+    _SinglePodLifecycleRetriever,
+    _SinglePodPendingRetriever,
+    ensure_korean_product_terms,
+    finalize_citations,
+    normalize_answer_text,
+    normalize_answer_markup_blocks,
+    reshape_ops_answer_text,
+    select_fallback_citations,
+    shape_actionable_ops_answer,
+    strip_intro_offtopic_noise,
+    strip_structured_key_extra_guidance,
+    strip_weak_additional_guidance,
+    summarize_session_context,
+)
 
 class TestAnsweringOutput(unittest.TestCase):
     def test_normalize_answer_text_enforces_single_answer_prefix(self) -> None:
@@ -17,7 +47,7 @@ class TestAnsweringOutput(unittest.TestCase):
         self.assertEqual("답변: OpenShift 설명입니다. [1]", normalized)
 
     def test_normalize_answer_markup_blocks_converts_internal_code_tags(self) -> None:
-        normalized = _normalize_answer_markup_blocks(
+        normalized = normalize_answer_markup_blocks(
             "답변: 확인 순서는 다음과 같습니다.\n[CODE]\noc describe pod/<pod>\n[/CODE]"
         )
 
@@ -26,7 +56,7 @@ class TestAnsweringOutput(unittest.TestCase):
         self.assertIn("oc describe pod/<pod>", normalized)
 
     def test_normalize_answer_markup_blocks_converts_internal_table_tags(self) -> None:
-        normalized = _normalize_answer_markup_blocks(
+        normalized = normalize_answer_markup_blocks(
             "답변: 표는 아래와 같습니다.\n[TABLE]\n이름 | 상태\npod-a | Pending\n[/TABLE]"
         )
 
@@ -45,7 +75,7 @@ class TestAnsweringOutput(unittest.TestCase):
         self.assertIn("oc adm policy add-role-to-user admin <사용자명> -n <namespace>", reshaped)
 
     def test_strip_weak_additional_guidance_removes_empty_disclaimer_tail(self) -> None:
-        stripped = _strip_weak_additional_guidance(
+        stripped = strip_weak_additional_guidance(
             "답변: 표준 절차는 다음과 같습니다 [1].\n\n추가 가이드: 현재 제공된 근거에 명시되어 있지 않습니다.",
             mode="ops",
             citations=[Citation(
@@ -63,7 +93,7 @@ class TestAnsweringOutput(unittest.TestCase):
         self.assertEqual("답변: 표준 절차는 다음과 같습니다 [1].", stripped)
 
     def test_strip_structured_key_extra_guidance_removes_speculative_tail(self) -> None:
-        stripped = _strip_structured_key_extra_guidance(
+        stripped = strip_structured_key_extra_guidance(
             "답변: 값은 `starfall-88` 입니다 [1].\n\n추가 가이드: 예: orion status check 등으로 확인하세요.",
             query="orion.unique/flag 값이 뭐야?",
             mode="ops",
@@ -72,15 +102,31 @@ class TestAnsweringOutput(unittest.TestCase):
         self.assertEqual("답변: 값은 `starfall-88` 입니다 [1].", stripped)
 
     def test_ensure_korean_product_terms_keeps_both_names_for_compare_answer(self) -> None:
-        updated = _ensure_korean_product_terms(
+        updated = ensure_korean_product_terms(
             "답변: 오픈시프트는 쿠버네티스 기반 플랫폼입니다.",
             query="오픈시프트랑 쿠버네티스 차이를 설명해줘 OpenShift",
         )
 
         self.assertIn("오픈시프트(OpenShift)", updated)
 
+    def test_ensure_korean_product_terms_adds_practical_tail_for_intro_query(self) -> None:
+        updated = ensure_korean_product_terms(
+            "답변: 오픈시프트는 쿠버네티스 기반 플랫폼입니다.",
+            query="OCP가 뭐야?",
+        )
+
+        self.assertIn("실무에서는 이 플랫폼이 무엇을 관리하고 어떤 운영 작업을 대신해 주는지", updated)
+
+    def test_ensure_korean_product_terms_adds_practical_tail_for_compare_query(self) -> None:
+        updated = ensure_korean_product_terms(
+            "답변: OpenShift는 쿠버네티스 기반 플랫폼입니다.",
+            query="오픈시프트와 쿠버네티스 차이를 설명해줘",
+        )
+
+        self.assertIn("실무에서는 공통점보다 운영 기능의 차이와 사용 위치부터 보면 선택이 쉬워집니다.", updated)
+
     def test_strip_intro_offtopic_noise_removes_etcd_backup_sentence(self) -> None:
-        updated = _strip_intro_offtopic_noise(
+        updated = strip_intro_offtopic_noise(
             "답변: 오픈시프트는 플랫폼입니다. 클러스터 업데이트 전에는 반드시 etcd 백업을 수행해야 합니다.",
             query="오픈시프트가 뭐야?",
         )
@@ -163,7 +209,7 @@ class TestAnsweringOutput(unittest.TestCase):
 
     def test_answerer_deduplicates_same_section_citations(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_DuplicateCitationRetriever(),
             llm_client=_DuplicateCitationLLMClient(),
@@ -190,7 +236,7 @@ class TestAnsweringOutput(unittest.TestCase):
 
     def test_answerer_autorepairs_single_missing_inline_citation(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_FakeRetriever(),
             llm_client=_NoCitationLLMClient(),
@@ -251,7 +297,7 @@ class TestAnsweringOutput(unittest.TestCase):
 
     def test_answerer_preserves_source_tags_when_learn_answer_has_no_inline_citations(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_MultiCitationRetriever(),
             llm_client=_NarrativeNoCitationLLMClient(),
@@ -294,7 +340,7 @@ class TestAnsweringOutput(unittest.TestCase):
                 return "답변: etcd 데이터 백업은 클러스터 전체 프록시가 활성화된 상태에서 수행합니다."
 
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_EtcdBackupSectionOnlyRetriever(),
             llm_client=_EtcdBackupNarrativeLLMClient(),
@@ -308,6 +354,52 @@ class TestAnsweringOutput(unittest.TestCase):
         self.assertIn("```bash", result.answer)
         self.assertIn("[1]", result.answer)
         self.assertNotIn("inline citations auto-repaired", result.warnings)
+
+    def test_answerer_shapes_project_terminating_into_command_first_guide(self) -> None:
+        class _ProjectTerminatingRetriever:
+            def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
+                hit = RetrievalHit(
+                    chunk_id="project-terminating",
+                    book_slug="building_applications",
+                    chapter="building_applications",
+                    section="2.1.7. 프로젝트 삭제",
+                    anchor="project-delete",
+                    source_url="https://example.com/postinstall",
+                    viewer_path="/docs/postinstall.html#project-delete",
+                    text="oc get projects\noc get all -n <project>",
+                    source="hybrid",
+                    raw_score=1.0,
+                    fused_score=1.0,
+                )
+                return RetrievalResult(
+                    query=query,
+                    normalized_query=query,
+                    rewritten_query=query,
+                    top_k=top_k,
+                    candidate_k=candidate_k,
+                    context=(context or SessionContext()).to_dict(),
+                    hits=[hit],
+                    trace={"warnings": [], "timings_ms": {"bm25_search": 1.0}},
+                )
+
+        class _NarrativeTerminatingLLMClient:
+            def generate(self, messages, trace_callback=None):  # noqa: ANN001
+                return "답변: 프로젝트 삭제가 멈춘 상태를 요약해서 설명합니다."
+
+        settings = Settings(root_dir=ROOT)
+        answerer = ChatAnswerer(
+            settings=settings,
+            retriever=_ProjectTerminatingRetriever(),
+            llm_client=_NarrativeTerminatingLLMClient(),
+        )
+
+        result = answerer.answer("프로젝트가 Terminating에서 안 지워질 때 어떻게 해?", mode="ops")
+
+        self.assertIn("```bash", result.answer)
+        self.assertIn("oc get projects", result.answer)
+        self.assertIn("oc get all -n <project>", result.answer)
+        self.assertIn("먼저 종료 중인 네임스페이스와 관련 리소스 상태를 확인", result.answer)
+        self.assertNotIn("요약해서 설명합니다", result.answer)
 
     def test_shape_actionable_ops_answer_moves_inline_command_into_code_block(self) -> None:
         citations = [
@@ -364,7 +456,7 @@ class TestAnsweringOutput(unittest.TestCase):
                 return "답변: 제공된 문서에는 RoleBinding 예시가 있습니다."
 
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_RbacYamlRetriever(),
             llm_client=_NarrativeNoCitationLLMClient(),
@@ -409,7 +501,7 @@ class TestAnsweringOutput(unittest.TestCase):
                 return "답변: 권한 검증은 관련 API를 확인해 보세요."
 
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_RbacVerifyRetriever(),
             llm_client=_NarrativeVerifyLLMClient(),
@@ -453,7 +545,7 @@ class TestAnsweringOutput(unittest.TestCase):
                 return "답변: 권한은 제거할 수 있습니다."
 
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_RbacRevokeRetriever(),
             llm_client=_NarrativeRevokeLLMClient(),
@@ -512,7 +604,7 @@ class TestAnsweringOutput(unittest.TestCase):
                 return "답변: 둘은 다릅니다."
 
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_RbacDiffRetriever(),
             llm_client=_NarrativeDiffLLMClient(),
@@ -526,7 +618,7 @@ class TestAnsweringOutput(unittest.TestCase):
 
     def test_answerer_shapes_pod_lifecycle_learn_response_from_grounded_citations(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_PodLifecycleRetriever(),
             llm_client=_NarrativeNoCitationLLMClient(),
@@ -546,7 +638,7 @@ class TestAnsweringOutput(unittest.TestCase):
 
     def test_answerer_shapes_pod_lifecycle_without_leaking_missing_second_citation(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_SinglePodLifecycleRetriever(),
             llm_client=_NarrativeNoCitationLLMClient(),
@@ -561,7 +653,7 @@ class TestAnsweringOutput(unittest.TestCase):
 
     def test_answerer_shapes_pod_pending_learn_response_from_grounded_citations(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_PodPendingRetriever(),
             llm_client=_NarrativeNoCitationLLMClient(),
@@ -581,7 +673,7 @@ class TestAnsweringOutput(unittest.TestCase):
 
     def test_answerer_shapes_pod_pending_without_leaking_missing_second_citation(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_SinglePodPendingRetriever(),
             llm_client=_NarrativeNoCitationLLMClient(),
@@ -596,7 +688,7 @@ class TestAnsweringOutput(unittest.TestCase):
 
     def test_answerer_reshapes_bare_ops_command_response(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_FakeRetriever(),
             llm_client=_BareCommandLLMClient(),

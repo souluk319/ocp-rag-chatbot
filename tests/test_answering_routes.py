@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,12 +9,27 @@ TESTS = ROOT / "tests"
 if str(TESTS) not in sys.path:
     sys.path.insert(0, str(TESTS))
 
-from _support_answering import *  # noqa: F401,F403
+from _support_answering import (
+    ChatAnswerer,
+    RetrievalHit,
+    RetrievalResult,
+    SessionContext,
+    Settings,
+    _CertificateMonitorRetriever,
+    _CertificateOverclaimLLMClient,
+    _DeploymentScaleRetriever,
+    _EtcdBackupOverclaimLLMClient,
+    _EtcdBackupRetriever,
+    _ExplodingRetriever,
+    _FakeLLMClient,
+    _FakeRetriever,
+    _WrongDrainCommandLLMClient,
+)
 
 class TestAnsweringRoutes(unittest.TestCase):
     def test_answerer_returns_citations_and_used_indices(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_FakeRetriever(),
             llm_client=_FakeLLMClient(),
@@ -34,7 +50,7 @@ class TestAnsweringRoutes(unittest.TestCase):
 
     def test_answerer_routes_greeting_without_retrieval(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_ExplodingRetriever(),
             llm_client=_FakeLLMClient(),
@@ -53,9 +69,24 @@ class TestAnsweringRoutes(unittest.TestCase):
         )
         self.assertEqual("smalltalk", result.retrieval_trace["route"])
 
+    def test_answerer_routes_short_nontechnical_smalltalk_without_retrieval(self) -> None:
+        settings = Settings(root_dir=ROOT)
+        answerer = ChatAnswerer(
+            settings=settings,
+            retriever=_ExplodingRetriever(),
+            llm_client=_FakeLLMClient(),
+        )
+
+        result = answerer.answer("어드레감수광", mode="ops")
+
+        self.assertEqual("smalltalk", result.response_kind)
+        self.assertIn("OCP PlayBook 챗봇", result.answer)
+        self.assertIn("가볍게 말을 붙여도 괜찮습니다", result.answer)
+        self.assertEqual([], result.citations)
+
     def test_answerer_routes_meta_question_without_retrieval(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_ExplodingRetriever(),
             llm_client=_FakeLLMClient(),
@@ -71,7 +102,7 @@ class TestAnsweringRoutes(unittest.TestCase):
 
     def test_answerer_routes_generic_ocp_intro_without_retrieval(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_ExplodingRetriever(),
             llm_client=_FakeLLMClient(),
@@ -87,7 +118,7 @@ class TestAnsweringRoutes(unittest.TestCase):
 
     def test_answerer_routes_ocp_learning_advice_without_retrieval(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_ExplodingRetriever(),
             llm_client=_FakeLLMClient(),
@@ -103,7 +134,7 @@ class TestAnsweringRoutes(unittest.TestCase):
 
     def test_answerer_routes_ambiguous_log_question_to_clarification(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_ExplodingRetriever(),
             llm_client=_FakeLLMClient(),
@@ -143,7 +174,7 @@ class TestAnsweringRoutes(unittest.TestCase):
                 )
 
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_DrainRetriever(),
             llm_client=_WrongDrainCommandLLMClient(),
@@ -156,7 +187,7 @@ class TestAnsweringRoutes(unittest.TestCase):
 
     def test_answerer_shapes_etcd_backup_answer_without_proxy_overclaim(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_EtcdBackupRetriever(),
             llm_client=_EtcdBackupOverclaimLLMClient(),
@@ -172,7 +203,7 @@ class TestAnsweringRoutes(unittest.TestCase):
 
     def test_answerer_shapes_certificate_monitor_answer_without_overclaim(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_CertificateMonitorRetriever(),
             llm_client=_CertificateOverclaimLLMClient(),
@@ -189,7 +220,7 @@ class TestAnsweringRoutes(unittest.TestCase):
 
     def test_answerer_returns_deterministic_deployment_scale_command_when_grounded(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_DeploymentScaleRetriever(),
             llm_client=_FakeLLMClient(),
@@ -213,7 +244,7 @@ class TestAnsweringRoutes(unittest.TestCase):
 
     def test_answerer_asks_for_target_when_corrective_command_request_lacks_numbers(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_DeploymentScaleRetriever(),
             llm_client=_FakeLLMClient(),
@@ -235,7 +266,7 @@ class TestAnsweringRoutes(unittest.TestCase):
 
     def test_answerer_routes_out_of_corpus_version_question_without_retrieval(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_ExplodingRetriever(),
             llm_client=_FakeLLMClient(),
@@ -249,7 +280,7 @@ class TestAnsweringRoutes(unittest.TestCase):
 
     def test_answerer_routes_external_product_install_question_without_retrieval(self) -> None:
         settings = Settings(root_dir=ROOT)
-        answerer = Part3Answerer(
+        answerer = ChatAnswerer(
             settings=settings,
             retriever=_ExplodingRetriever(),
             llm_client=_FakeLLMClient(),

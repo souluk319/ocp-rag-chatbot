@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,7 +9,7 @@ TESTS = ROOT / "tests"
 if str(TESTS) not in sys.path:
     sys.path.insert(0, str(TESTS))
 
-from _support_answering import *  # noqa: F401,F403
+from _support_answering import LLMClient, Settings, _FakeResponse
 
 class TestAnsweringLlm(unittest.TestCase):
     def test_llm_client_parses_chat_completions_response(self) -> None:

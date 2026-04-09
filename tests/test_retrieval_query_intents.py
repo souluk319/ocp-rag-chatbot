@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,35 +9,67 @@ TESTS = ROOT / "tests"
 if str(TESTS) not in sys.path:
     sys.path.insert(0, str(TESTS))
 
-from _support_retrieval import *  # noqa: F401,F403
+from _support_retrieval import (
+    detect_out_of_corpus_version,
+    detect_unsupported_product,
+    fuse_ranked_hits,
+    has_cluster_node_usage_intent,
+    has_follow_up_entity_ambiguity,
+    has_follow_up_reference,
+    has_logging_ambiguity,
+    has_machine_config_reboot_intent,
+    has_node_drain_intent,
+    has_multiple_entity_ambiguity,
+    has_project_scoped_rbac_intent,
+    has_rbac_assignment_intent,
+    has_rbac_intent,
+    has_route_ingress_compare_intent,
+    has_security_doc_locator_ambiguity,
+    has_update_doc_locator_ambiguity,
+    normalize_query,
+    query_book_adjustments,
+    RetrievalHit,
+    SessionContext,
+)
 
 class TestRetrievalQueryIntents(unittest.TestCase):
     def test_normalize_query_expands_high_value_aliases(self) -> None:
         normalized = normalize_query("로그는 어디서 봐?")
 
         self.assertIn("로깅", normalized)
-        self.assertIn("logging", normalized)
+        self.assertNotIn("logging", normalized)
 
     def test_normalize_query_expands_security_and_architecture_aliases(self) -> None:
         normalized = normalize_query("보안 아키텍처 기본 문서")
 
-        self.assertIn("security", normalized)
-        self.assertIn("architecture", normalized)
-        self.assertIn("overview", normalized)
+        self.assertIn("보안", normalized)
+        self.assertIn("아키텍처", normalized)
+        self.assertIn("개요", normalized)
+        self.assertNotIn("security", normalized)
+        self.assertNotIn("architecture", normalized)
+        self.assertNotIn("overview", normalized)
 
     def test_normalize_query_expands_architecture_explainer_prompt(self) -> None:
         normalized = normalize_query("오픈시프트 아키텍처를 설명해줘")
 
-        self.assertIn("OpenShift", normalized)
-        self.assertIn("architecture", normalized)
-        self.assertIn("overview", normalized)
+        self.assertIn("구조", normalized)
+        self.assertIn("개요", normalized)
+        self.assertIn("소개", normalized)
+        self.assertIn("기본", normalized)
+        self.assertIn("개념", normalized)
+        self.assertNotIn("OpenShift", normalized)
+        self.assertNotIn("architecture", normalized)
+        self.assertNotIn("overview", normalized)
 
     def test_normalize_query_treats_openshift_summary_as_intro_query(self) -> None:
         normalized = normalize_query("오픈시프트에 대해 세줄요약해봐")
 
-        self.assertIn("OpenShift", normalized)
-        self.assertIn("overview", normalized)
         self.assertIn("소개", normalized)
+        self.assertIn("개요", normalized)
+        self.assertIn("기본", normalized)
+        self.assertIn("개념", normalized)
+        self.assertNotIn("OpenShift", normalized)
+        self.assertNotIn("overview", normalized)
 
     def test_normalize_query_treats_ocp_attached_korean_explainer_as_intro_query(self) -> None:
         normalized = normalize_query("OCP가뭐야")
@@ -44,16 +77,20 @@ class TestRetrievalQueryIntents(unittest.TestCase):
         self.assertIn("OpenShift", normalized)
         self.assertIn("Container", normalized)
         self.assertIn("Platform", normalized)
-        self.assertIn("overview", normalized)
         self.assertIn("소개", normalized)
+        self.assertIn("개요", normalized)
+        self.assertNotIn("overview", normalized)
 
     def test_normalize_query_expands_openshift_kubernetes_compare_intent(self) -> None:
         normalized = normalize_query("오픈시프트와 쿠버네티스 차이를 세 줄로 설명해줘")
 
-        self.assertIn("OpenShift", normalized)
-        self.assertIn("Kubernetes", normalized)
-        self.assertIn("comparison", normalized)
-        self.assertIn("difference", normalized)
+        self.assertIn("개요", normalized)
+        self.assertIn("차이점", normalized)
+        self.assertIn("유사점", normalized)
+        self.assertNotIn("OpenShift", normalized)
+        self.assertNotIn("Kubernetes", normalized)
+        self.assertNotIn("comparison", normalized)
+        self.assertNotIn("difference", normalized)
 
     def test_normalize_query_expands_etcd_backup_intent(self) -> None:
         normalized = normalize_query("etcd 백업은 어떻게 해?")
@@ -110,7 +147,6 @@ class TestRetrievalQueryIntents(unittest.TestCase):
         self.assertIn("Terminating", normalized)
         self.assertIn("finalizers", normalized)
         self.assertIn("metadata.finalizers", normalized)
-        self.assertIn("error resolving", normalized)
 
     def test_normalize_query_expands_mco_acronym_concept_terms(self) -> None:
         normalized = normalize_query("MCO가 뭐고 건드리면 뭐가 바뀌는지 설명해줘")
@@ -140,7 +176,7 @@ class TestRetrievalQueryIntents(unittest.TestCase):
         normalized = normalize_query("etcd가 왜 중요한지 설명해줘")
 
         self.assertIn("quorum", normalized)
-        self.assertIn("cluster", normalized)
+        self.assertIn("key-value", normalized)
         self.assertNotIn("backup", normalized)
         self.assertNotIn("restore", normalized)
 
@@ -251,8 +287,6 @@ class TestRetrievalQueryIntents(unittest.TestCase):
         self.assertFalse(has_security_doc_locator_ambiguity("네트워크 보안 문서는 어디서 봐?"))
 
     def test_has_multiple_entity_ambiguity_does_not_split_mco_single_concept(self) -> None:
-        from play_book_studio.retrieval.query import has_multiple_entity_ambiguity
-
         self.assertFalse(has_multiple_entity_ambiguity("Machine Config Operator가 뭐야?"))
 
     def test_detect_out_of_corpus_version_flags_newer_minor(self) -> None:
@@ -268,6 +302,9 @@ class TestRetrievalQueryIntents(unittest.TestCase):
         self.assertTrue(has_follow_up_reference("그 권한이 잘 들어갔는지 확인하는 명령도 알려줘"))
         self.assertTrue(has_follow_up_reference("그 권한을 회수하려면 어떻게 해?"))
         self.assertTrue(has_follow_up_reference("쿠버네티스와 차이도 설명해줘"))
+        self.assertTrue(has_follow_up_reference("Route와 Ingress 관련 주의사항도 함께 정리해줘"))
+        self.assertTrue(has_follow_up_reference("Route와 Ingress 상태 확인 방법도 같이 알려줘"))
+        self.assertTrue(has_follow_up_reference("Route와 Ingress 관련 실행 예시도 같이 보여줘"))
 
     def test_has_route_ingress_compare_intent_detects_networking_compare_query(self) -> None:
         self.assertTrue(

@@ -1,4 +1,4 @@
-"""source viewer / canonical source book / intake book helper."""
+"""source viewer / intake book helper."""
 
 from __future__ import annotations
 
@@ -11,10 +11,7 @@ from play_book_studio.config.settings import load_settings
 from play_book_studio.intake import DocToBookDraftStore
 from play_book_studio.intake.service import evaluate_canonical_book_quality
 
-from .presenters import (
-    _core_pack_payload,
-    _default_doc_to_book_summary,
-)
+from .presenters import _default_doc_to_book_summary
 from .viewers import (
     _build_study_section_cards,
     _parse_viewer_path,
@@ -130,21 +127,6 @@ def internal_doc_to_book_viewer_html(root_dir: Path, viewer_path: str) -> str | 
     )
 
 
-def canonical_source_book(root_dir: Path, viewer_path: str) -> dict[str, Any] | None:
-    parsed = _parse_viewer_path(viewer_path)
-    if parsed is None:
-        return None
-
-    book_slug, target_anchor = parsed
-    playbook_book = _load_playbook_book(root_dir, book_slug)
-    if playbook_book is None:
-        return None
-    settings = load_settings(root_dir)
-    playbook_book["target_anchor"] = target_anchor
-    playbook_book.update(_core_pack_payload(version=settings.ocp_version, language=settings.docs_language))
-    return playbook_book
-
-
 def list_doc_to_book_drafts(root_dir: Path) -> dict[str, Any]:
     drafts: list[dict[str, Any]] = []
     store = DocToBookDraftStore(root_dir)
@@ -162,7 +144,6 @@ def list_doc_to_book_drafts(root_dir: Path) -> dict[str, Any]:
 
 
 __all__ = [
-    "canonical_source_book",
     "internal_doc_to_book_viewer_html",
     "internal_viewer_html",
     "list_doc_to_book_drafts",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,12 +9,11 @@ TESTS = ROOT / "tests"
 if str(TESTS) not in sys.path:
     sys.path.insert(0, str(TESTS))
 
-from _support_answering import *  # noqa: F401,F403
+from _support_answering import RetrievalHit, build_messages
+from play_book_studio.answering.context import assemble_context
 
 class TestAnsweringPrompt(unittest.TestCase):
     def test_build_messages_includes_grounding_context(self) -> None:
-        from play_book_studio.answering.context import assemble_context
-
         hit = RetrievalHit(
             chunk_id="chunk-1",
             book_slug="architecture",
@@ -41,8 +41,6 @@ class TestAnsweringPrompt(unittest.TestCase):
         self.assertIn("세션 맥락:", messages[1]["content"])
 
     def test_build_messages_hardens_follow_up_constraints(self) -> None:
-        from play_book_studio.answering.context import assemble_context
-
         hit = RetrievalHit(
             chunk_id="chunk-1",
             book_slug="etcd",
@@ -76,8 +74,8 @@ class TestAnsweringPrompt(unittest.TestCase):
             session_summary="",
         )
 
-        self.assertIn("지금은 <불명확한 점>이 불명확합니다. <짧은 확인 질문>?", messages[0]["content"])
-        self.assertIn("질문이 애매한 경우 '근거가 없습니다'로만 끝내지 말 것", messages[1]["content"])
+        self.assertIn("질문이 애매하면 무엇이 불명확한지 한 줄로 말하고", messages[0]["content"])
+        self.assertIn("질문이 애매한 경우 '근거가 없습니다'로만 끝내지 말 것", messages[0]["content"])
 
     def test_build_messages_enforces_ops_command_answer_shape(self) -> None:
         messages = build_messages(
@@ -88,7 +86,9 @@ class TestAnsweringPrompt(unittest.TestCase):
         )
 
         self.assertIn("bare command만 던지지 말고", messages[0]["content"])
-        self.assertIn("한 줄 설명 -> 코드 블록 -> 짧은 범위/예시", messages[1]["content"])
+        self.assertIn("코드 블록 또는 단계", messages[1]["content"])
+        self.assertIn("범위나 확인 방법 1문장", messages[1]["content"])
+        self.assertIn("참조문서 요약본처럼 쓰지 말고", messages[1]["content"])
 
     def test_build_messages_adds_compare_shape_hint(self) -> None:
         messages = build_messages(
@@ -99,6 +99,7 @@ class TestAnsweringPrompt(unittest.TestCase):
         )
 
         self.assertIn("공통 기반 1문장 -> 핵심 차이 2~3개", messages[1]["content"])
+        self.assertIn("실무에서 무엇이 달라지는지 1문장", messages[1]["content"])
 
     def test_build_messages_adds_intro_shape_hint(self) -> None:
         messages = build_messages(
@@ -109,6 +110,7 @@ class TestAnsweringPrompt(unittest.TestCase):
         )
 
         self.assertIn("정의 1문장 -> 핵심 역할/구성 2~3개", messages[1]["content"])
+        self.assertIn("실무에서 어떻게 쓰는지 1문장", messages[1]["content"])
 
     def test_build_messages_adds_project_finalizer_shape_hint(self) -> None:
         messages = build_messages(
@@ -128,8 +130,8 @@ class TestAnsweringPrompt(unittest.TestCase):
             session_summary="",
         )
 
-        self.assertIn("정의 1문장", messages[1]["content"])
-        self.assertIn("예시를 짧게", messages[1]["content"])
+        self.assertIn("개념 질문이면 정의 뒤에", messages[1]["content"])
+        self.assertIn("무엇을 관리하거나 자동화하는지", messages[1]["content"])
 
     def test_build_messages_expands_learn_mode_explanations(self) -> None:
         messages = build_messages(
@@ -140,11 +142,9 @@ class TestAnsweringPrompt(unittest.TestCase):
         )
 
         self.assertIn("필요한 흐름과 이유와 확인 포인트를 충분히 설명하라", messages[0]["content"])
-        self.assertIn("단계마다 왜 필요한지와 무엇을 확인해야 하는지 1~2문장씩 덧붙일 것", messages[1]["content"])
-        self.assertIn("단계마다 왜 필요한지와 무엇을 확인해야 하는지 1~2문장씩 덧붙일 것", messages[1]["content"])
-        self.assertIn("[CODE], [/CODE], [TABLE], [/TABLE] 같은 내부 태그를 답변에 그대로 노출하지 말고", messages[0]["content"])
-        self.assertIn("[CODE], [/CODE], [TABLE], [/TABLE] 같은 내부 태그를 답변에 그대로 쓰지 말 것", messages[1]["content"])
-        self.assertIn("OOM은 가능한 원인 중 하나", messages[1]["content"])
+        self.assertIn("현재 상태와 이벤트 확인", messages[1]["content"])
+        self.assertIn("OOM을 첫 문장에서 단정하지 말 것", messages[1]["content"])
+        self.assertIn("[CODE], [/CODE], [TABLE], [/TABLE] 같은 내부 태그는 그대로 노출하지 말고", messages[0]["content"])
 
     def test_build_messages_adds_pod_pending_shape_hint(self) -> None:
         messages = build_messages(

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 # etcd처럼 질문 의도에 따라 설명/절차 용어가 크게 달라지는 특수 규칙을 따로 모은 helper다.
 
-from .intents import *  # noqa: F403
+from .intents import ETCD_RE, has_backup_restore_intent, is_explainer_query
 
 
 def append_etcd_query_terms(normalized: str, terms: list[str]) -> None:

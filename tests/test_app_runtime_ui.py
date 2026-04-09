@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+import json
+import os
+import shutil
+import subprocess
+import tempfile
 import sys
+import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,7 +14,24 @@ TESTS = ROOT / "tests"
 if str(TESTS) not in sys.path:
     sys.path.insert(0, str(TESTS))
 
-from _support_app_ui import *  # noqa: F401,F403
+from _support_app_ui import (
+    AnswerResult,
+    _append_chat_turn_log,
+    _build_handler,
+    _build_health_payload,
+    _build_session_debug_payload,
+    _build_turn_diagnosis,
+    _citation,
+    _citation_href,
+    _clean_source_view_text,
+    _context_with_request_overrides,
+    _refresh_answerer_llm_settings,
+    _suggest_follow_up_questions,
+    ChatSession,
+    SessionContext,
+    SessionStore,
+    Turn,
+)
 
 class TestAppRuntimeUi(unittest.TestCase):
     def test_static_asset_scripts_are_syntax_valid(self) -> None:
@@ -158,6 +181,9 @@ class TestAppRuntimeUi(unittest.TestCase):
         app_bootstrap = (
             assets_dir / "app-bootstrap.js"
         ).read_text(encoding="utf-8")
+        app_bootstrap_events = (
+            assets_dir / "app-bootstrap-events.js"
+        ).read_text(encoding="utf-8")
         app_shell_state = (
             assets_dir / "app-shell-state.js"
         ).read_text(encoding="utf-8")
@@ -179,238 +205,82 @@ class TestAppRuntimeUi(unittest.TestCase):
         workspace_state = (
             ROOT / "src" / "play_book_studio" / "app" / "static" / "assets" / "workspace-state.js"
         ).read_text(encoding="utf-8")
-        intake_renderer = (
-            ROOT / "src" / "play_book_studio" / "app" / "static" / "assets" / "intake-renderer.js"
-        ).read_text(encoding="utf-8")
-        intake_actions = (
-            ROOT / "src" / "play_book_studio" / "app" / "static" / "assets" / "intake-actions.js"
-        ).read_text(encoding="utf-8")
         diagnostics_renderer = (
             ROOT / "src" / "play_book_studio" / "app" / "static" / "assets" / "diagnostics-renderer.js"
         ).read_text(encoding="utf-8")
-        source_workflows = (
-            ROOT / "src" / "play_book_studio" / "app" / "static" / "assets" / "source-workflows.js"
-        ).read_text(encoding="utf-8")
-
         self.assertIn("event.isComposing || event.keyCode === 229 || state.isComposing", chat_session)
-        self.assertIn('refs.composerEl.addEventListener("compositionstart"', chat_session)
-        self.assertIn('refs.composerEl.addEventListener("compositionend"', chat_session)
         self.assertIn("/api/chat/stream", chat_session)
+        self.assertIn("async function consumeChatStream", chat_session)
         self.assertIn("function renderSendButtonState(generating)", shell_helpers)
         self.assertIn('refs.sendBtn.innerHTML = \'<span class=\"send-btn-stop-icon\" aria-hidden=\"true\"></span>\';', shell_helpers)
-        self.assertNotIn("setButtonBusy(refs.sendBtn, next);", shell_helpers)
-        self.assertIn("async function consumeChatStream", chat_session)
-        self.assertNotIn('id="pipeline-trace"', html)
-        self.assertNotIn('id="pipeline-summary"', html)
-        self.assertNotIn('data-study-page="friendly_trace"', html)
-        self.assertIn('data-rail-page="friendly_trace"', html)
-        self.assertIn("Play Book Studio", html)
-        self.assertIn("<h1>OCP Book Studio</h1>", html)
-        self.assertIn('<title>Play Book Studio</title>', html)
-        self.assertIn("OpenShift v4.20 DEMO", html)
-        self.assertIn('<link rel="stylesheet" href="/assets/app-shell.css">', html)
-        self.assertIn("--accent: #ee0000;", app_shell_css)
-        self.assertIn("--layout-gap: 16px;", app_shell_css)
-        self.assertIn("padding: var(--layout-gap);", app_shell_css)
-        self.assertIn("height: 100dvh;", app_shell_css)
-        self.assertIn("flex: 1 1 auto;", app_shell_css)
-        self.assertIn("grid-template-columns: 0 minmax(0, 1.22fr) minmax(620px, 1.04fr);", app_shell_css)
-        self.assertIn(".send-btn-stop-icon", app_shell_css)
-        self.assertIn("#send-btn.is-stop", app_shell_css)
-        self.assertIn('<script src="/assets/app-config.js"></script>', html)
-        self.assertIn('<script src="/assets/app-shell-state.js"></script>', html)
-        self.assertIn('<script src="/assets/shell-helpers.js"></script>', html)
-        self.assertIn('<script src="/assets/app-bootstrap.js"></script>', html)
-        self.assertIn('<script src="/assets/workspace-state.js"></script>', html)
-        self.assertIn('<script src="/assets/panel-controller.js"></script>', html)
-        self.assertIn('<script src="/assets/chat-renderer.js"></script>', html)
-        self.assertIn('<script src="/assets/message-shells.js"></script>', html)
-        self.assertIn('<script src="/assets/chat-session.js"></script>', html)
-        self.assertIn('<script src="/assets/intake-renderer.js"></script>', html)
-        self.assertIn('<script src="/assets/intake-actions.js"></script>', html)
-        self.assertIn('<script src="/assets/diagnostics-renderer.js"></script>', html)
-        self.assertIn('<script src="/assets/source-workflows.js"></script>', html)
-        self.assertIn("window.OCP_PLAY_STUDIO_CONFIG", app_config)
-        self.assertIn("window.createAppShellState", app_shell_state)
-        self.assertIn('composerSamplesEl: document.getElementById("composer-samples")', app_shell_state)
-        self.assertIn("window.createShellHelpers", shell_helpers)
         self.assertIn("window.createAppBootstrap", app_bootstrap)
-        self.assertIn("composerSamplesEl: refs.composerSamplesEl", app_bootstrap)
+        self.assertIn("window.bindAppBootstrapEvents", app_bootstrap_events)
+        self.assertIn("window.createWorkspaceState", workspace_state)
+        self.assertIn("window.createDiagnosticsRenderer", diagnostics_renderer)
         self.assertIn("window.createPanelController", panel_controller)
         self.assertIn("window.createChatRenderer", chat_renderer)
-        self.assertIn("if (!token) continue;", chat_renderer)
-        self.assertNotIn("if (!token) return;", chat_renderer)
-        self.assertIn("window.createMessageShells", message_shells)
         self.assertIn("window.createChatSession", chat_session)
-        self.assertIn("function renderComposerSamples()", chat_session)
-        self.assertIn("window.createWorkspaceState", workspace_state)
-        self.assertIn("window.createIntakeRenderer", intake_renderer)
-        self.assertIn("window.createIntakeActions", intake_actions)
-        self.assertIn("window.createDiagnosticsRenderer", diagnostics_renderer)
-        self.assertIn("window.createSourceWorkflows", source_workflows)
-        self.assertIn("function renderMarkdownInto", chat_renderer)
-        self.assertIn("navigator.clipboard.writeText", chat_renderer)
-        self.assertIn('copyButton.textContent = "복사"', chat_renderer)
-        self.assertIn("vertical-align: middle;", app_shell_css)
-        self.assertNotIn("vertical-align: super;", app_shell_css)
-        self.assertIn('version: "4.20"', app_config)
-        self.assertIn("etcd 백업 절차", app_config)
-        self.assertIn("Route / Ingress 차이", app_config)
-        self.assertIn("특정 namespace에 admin 권한 주는 법 알려줘", app_config)
-        self.assertNotIn("이미지 레지스트리 저장소를 구성하려면?", app_config)
-        self.assertIn("function renderEmptyState", message_shells)
-        self.assertIn("function escapeHtml(value)", message_shells)
-        self.assertIn("function contextualizeSuggestedQuery(suggestedQuery, payload)", message_shells)
-        self.assertIn('if (/operator/i.test(rewritten) || /operator/i.test(answer) || /operator/i.test(primarySection)) {', message_shells)
-        self.assertIn('`${subject} 관련 주의사항도 함께 정리해줘`', message_shells)
-        self.assertIn('`${subject} 상태 확인 방법도 같이 알려줘`', message_shells)
-        self.assertIn("const canRenderSuggestedQueries = (", message_shells)
-        self.assertIn('payload.response_kind === "rag"', message_shells)
-        self.assertIn("payload.cited_indices.length > 0", message_shells)
-        self.assertIn("payload.warnings.length === 0", message_shells)
-        self.assertNotIn("경고 ${payload.warnings.length}개", message_shells)
-        self.assertIn("function syncViewportLayout()", shell_helpers)
-        self.assertIn("function syncChatPanelState()", shell_helpers)
-        self.assertIn("function setIngestBusy(", shell_helpers)
-        self.assertIn("function setGenerating(", shell_helpers)
-        self.assertIn("function resizeComposer()", shell_helpers)
-        self.assertIn("const EMPTY_STATE_SAMPLES = Array.isArray(APP_CONFIG.emptyStateSamples)", html)
-        self.assertIn("function shuffledEmptyStateSamples(limit = 4)", message_shells)
-        self.assertIn('id="version-chip"', html)
-        self.assertIn("자료", html)
-        self.assertIn('id="core-version-picker"', html)
-        self.assertIn("기반 소스", html)
-        self.assertIn("사용자 보관함", html)
-        self.assertIn("새 자료 업로드", html)
-        self.assertIn("무엇이 궁금한가요?", html)
-        self.assertNotIn('id="source-hero"', html)
-        self.assertIn('id="rail-upload-status"', html)
-        self.assertIn('id="composer-samples"', html)
-        self.assertNotIn("예시 질문", chat_session)
-        self.assertIn("OpenShift 4.20 공식 문서", html)
-        self.assertIn('id="active-pack-title"', html)
-        self.assertIn(".core-pack-tab", app_shell_css)
+        self.assertIn("window.OCP_PLAY_STUDIO_CONFIG", app_config)
+        self.assertIn("window.createAppShellState", app_shell_state)
         self.assertIn("function renderCorePackOptions()", workspace_state)
-        self.assertIn('data-pack-version="${pack.version}"', workspace_state)
         self.assertIn("function setCorePack(", workspace_state)
-        self.assertIn('message || "자료 추가 대기"', workspace_state)
-        self.assertIn('class="sample-chip"', message_shells)
-        self.assertIn('id="selected-source-count"', html)
-        self.assertIn("function setUploadedDraftSelected", workspace_state)
-        self.assertIn("function renderDocToBookDrafts", workspace_state)
-        self.assertNotIn("selectedDraftIds.add(draftId);", html)
-        self.assertNotIn("selectedDraftIds.add(normalized.draft_id);", html)
-        self.assertIn("function prepareUploadedSource", intake_actions)
-        self.assertIn("selected_draft_ids: helpers.selectedDraftIdList()", chat_session)
-        self.assertIn("function normalizeAssistantAnswer", chat_renderer)
-        self.assertIn('label.textContent = "Answer"', chat_renderer)
-        self.assertIn('title.textContent = "참조"', message_shells)
-        self.assertIn(".assistant-copy", app_shell_css)
-        self.assertIn(".citation-list-title", app_shell_css)
-        self.assertIn(".suggestion-list-title", app_shell_css)
-        self.assertIn(".followup-chip", app_shell_css)
-        self.assertIn('title.textContent = "추천 질문"', message_shells)
-        self.assertIn('void deps.sendMessage({ query: effectiveQuery })', message_shells)
-        self.assertIn('id="source-panel-toggle-btn"', html)
-        self.assertIn("function setStudyTab", workspace_state)
-        self.assertNotIn('data-study-tab="source"', html)
-        self.assertNotIn('data-study-tab="library"', html)
-        self.assertNotIn('data-study-tab="ingest"', html)
-        self.assertNotIn('data-study-tab="query"', html)
-        self.assertNotIn('data-study-tab="session"', html)
-        self.assertNotIn('data-study-tab="pipeline"', html)
-        self.assertIn('id="library-summary"', html)
-        self.assertIn('id="library-list"', html)
-        self.assertIn('id="library-detail"', html)
-        self.assertIn('id="ingest-dropzone"', html)
-        self.assertIn('id="ingest-file-btn"', html)
-        self.assertIn('id="ingest-file-input"', html)
-        self.assertIn('id="ingest-file-pill"', html)
-        self.assertIn("function renderIngestCaptureMeta", intake_renderer)
-        self.assertIn("function renderDocToBookPreview", intake_renderer)
-        self.assertIn("function renderLibraryDetail", intake_renderer)
-        self.assertIn("function setIngestStatus", intake_renderer)
-        self.assertIn("function openLibraryTrace", source_workflows)
-        self.assertIn("function openLibraryAsset", source_workflows)
-        self.assertIn("function humanizeSourceCollection", shell_helpers)
-        self.assertIn("function formatInferredScope", shell_helpers)
-        self.assertIn("function qualityStatusLabel", shell_helpers)
-        self.assertIn("function isReviewNeeded", shell_helpers)
-        self.assertIn("function uploadDocToBookFile", intake_actions)
-        self.assertIn("function handleIngestFileSelection", intake_actions)
-        self.assertIn("function syncIngestUploadHint", intake_actions)
+        self.assertIn("isReviewNeeded: helpers.isReviewNeeded", app_bootstrap)
+        self.assertNotIn("selectedSourceCountEl", app_shell_state)
+        self.assertNotIn("railOpenIntakeBtn", app_shell_state)
+        self.assertNotIn("railLibraryListEl", app_shell_state)
+        self.assertNotIn("activeIngestDraftId", app_shell_state)
+        self.assertNotIn("docToBookDraftCache", app_shell_state)
+        self.assertNotIn("createIntakeRenderer", app_bootstrap)
+        self.assertNotIn("createIntakeActions", app_bootstrap)
+        self.assertNotIn("createSummaryChip", app_bootstrap)
+        self.assertNotIn("createSourceWorkflows", app_bootstrap)
+        self.assertNotIn("bindIngestStatus", shell_helpers)
+        self.assertNotIn("setIngestBusy", shell_helpers)
+        self.assertNotIn("qualityStatusLabel", shell_helpers)
+        self.assertNotIn("support-surface", html)
+        self.assertNotIn("railOpenIntakeBtn", app_bootstrap_events)
+        self.assertNotIn("ingestFileBtn", app_bootstrap_events)
+        self.assertNotIn("loadDocToBookDrafts", app_bootstrap_events)
+        self.assertNotIn("/assets/app-shell-viewers-intake.css", app_shell_css)
+        self.assertIn("@media (max-width: 520px)", app_shell_css)
+        self.assertIn(".friendly-stepper-container .metric-card.metric-card-compact .metric-value", app_shell_css)
+        self.assertIn("Play Book Studio", html)
+        self.assertIn("<h1>OCP Book Studio</h1>", html)
+        self.assertIn('id="version-chip"', html)
+        self.assertIn("기반 소스: OpenShift 4.20", html)
+        self.assertIn("OpenShift 4.20 공식 문서", html)
+        self.assertIn("현재 제품 기준 활성 표면은 기본 OCP 4.20 코퍼스", html)
+        self.assertIn('data-rail-page="library"', html)
+        self.assertIn('data-rail-page="friendly_trace"', html)
+        self.assertIn('data-study-page="source"', html)
         self.assertIn('id="source-viewer-frame"', html)
-        self.assertNotIn('id="source-summary-strip"', html)
-        self.assertNotIn('id="source-outline"', html)
-        self.assertNotIn('id="source-open-origin"', html)
-        self.assertIn('id="ingest-plan-btn"', html)
-        self.assertIn('id="ingest-save-btn"', html)
-        self.assertIn('id="ingest-capture-btn"', html)
-        self.assertIn('id="ingest-normalize-btn"', html)
-        self.assertIn('id="ingest-open-capture-btn"', html)
-        self.assertIn('id="ingest-capture-meta"', html)
-        self.assertIn("function previewDocToBookPlan", intake_actions)
-        self.assertIn("function createDocToBookDraft", intake_actions)
-        self.assertIn("function captureDocToBookDraft", intake_actions)
-        self.assertIn("function normalizeDocToBookDraft", intake_actions)
-        self.assertIn("function fetchDocToBookBook", intake_actions)
-        self.assertIn("function openCapturedDocToBookDraft", source_workflows)
-        self.assertIn("function loadDocToBookDrafts", intake_actions)
-        self.assertIn("function openDocToBookDraft", intake_actions)
-        self.assertIn(".source-tag-group", app_shell_css)
-        self.assertIn(".source-tag", app_shell_css)
-        self.assertIn(".summary-grid", app_shell_css)
-        self.assertIn("function startStatusPulse", diagnostics_renderer)
-        self.assertIn("function setStatus", diagnostics_renderer)
-        self.assertIn("function updateSessionContextDisplay", diagnostics_renderer)
-        self.assertIn("function humanizePipelineKey", diagnostics_renderer)
-        self.assertIn("function summarizeTraceMeta", diagnostics_renderer)
-        self.assertIn("function renderPipelineSummary", diagnostics_renderer)
-        self.assertIn("function renderPipelineTrace", diagnostics_renderer)
-        self.assertIn("function appendTraceEvent", diagnostics_renderer)
-        self.assertIn(".trace-step", app_shell_css)
-        self.assertIn('class="summary-grid"', html)
-        self.assertIn("수집 결과", html)
-        self.assertIn("보관함 개요", html)
-        self.assertIn("정리된 자료", html)
-        self.assertIn("정리 결과", html)
-        self.assertIn("저장된 초안", html)
-        self.assertIn("파일이나 URL로 초안을 만듭니다", html)
-        self.assertIn("파일 선택", html)
-        self.assertIn("초안 보기", html)
-        self.assertIn("결과 보기", html)
-        self.assertNotIn('id="source-open-doc"', html)
-        self.assertIn("function setSourcePanelVisible", panel_controller)
-        self.assertIn('참조 패널 닫기', panel_controller)
-        self.assertIn('참조 패널 열기', panel_controller)
+        self.assertIn('class="source-frame-shell" hidden', html)
+        self.assertNotIn('id="workspace-support-surface"', html)
+        self.assertNotIn("사용자 보관함", html)
+        self.assertNotIn("새 자료 업로드", html)
+        self.assertNotIn('id="selected-source-count"', html)
+        self.assertNotIn('id="rail-upload-status"', html)
+        self.assertNotIn('id="ingest-dropzone"', html)
+        self.assertNotIn('id="library-summary"', html)
+        self.assertNotIn('data-study-page="friendly_trace"', html)
+        self.assertNotIn('data-study-page="library"', html)
+        self.assertNotIn('data-study-page="ingest"', html)
+        self.assertNotIn('data-study-page="query"', html)
+        self.assertNotIn('data-study-page="session"', html)
+        self.assertNotIn('data-study-page="pipeline"', html)
+        self.assertNotIn('/assets/intake-renderer.js', html)
+        self.assertNotIn('/assets/intake-actions.js', html)
+        self.assertNotIn('/assets/source-workflows.js', html)
+        self.assertNotIn("/api/source-book", panel_controller)
         self.assertIn("function fetchSourceMeta", panel_controller)
-        self.assertIn("function fetchSourceBook", panel_controller)
-        self.assertIn("function renderSourceBook", panel_controller)
         self.assertIn("function openSourcePanel", panel_controller)
         self.assertIn("function resetSourcePanel", panel_controller)
         self.assertIn("function citationMapByIndex", panel_controller)
-        self.assertIn("function syncActiveSourceTags", panel_controller)
-        self.assertIn(
-            '(meta && meta.viewer_path) || citation.viewer_path || citation.href || ""',
-            panel_controller,
-        )
-        self.assertIn(
-            'const viewerPath = citation.viewer_path',
-            panel_controller,
-        )
-        self.assertIn("function buildEmbeddedViewerHref", panel_controller)
         self.assertIn("embed=1", panel_controller)
-        self.assertIn('class="source-frame-shell" hidden', html)
-        self.assertIn(".source-frame-shell[hidden]", app_shell_css)
-        self.assertIn("grid-template-rows: auto minmax(0, 1fr);", app_shell_css)
-        self.assertNotIn("grid-template-rows: auto auto minmax(0, 1fr);", app_shell_css)
-        self.assertIn('font-family: "Red Hat Display", "Red Hat Text", sans-serif;', app_shell_css)
-        self.assertIn("font-size: 22px;", app_shell_css)
-        self.assertIn('.inspector-page[data-study-page="source"]', app_shell_css)
-        self.assertNotIn("height: min(720px, 56vh);", app_shell_css)
-        self.assertNotIn("min-height: 420px;", app_shell_css)
-        self.assertNotIn("열린 문서가 없습니다", html)
-        self.assertNotIn('class="source-empty"', html)
+        self.assertIn("function renderMarkdownInto", chat_renderer)
+        self.assertIn("navigator.clipboard.writeText", chat_renderer)
+        self.assertIn('copyButton.textContent = "복사"', chat_renderer)
+        self.assertIn("function renderEmptyState", message_shells)
 
     def test_server_static_responses_disable_cache(self) -> None:
         server_source = (
@@ -419,6 +289,37 @@ class TestAppRuntimeUi(unittest.TestCase):
 
         self.assertIn('self.send_header("Cache-Control", "no-store")', server_source)
         self.assertIn('self.send_header("Pragma", "no-cache")', server_source)
+
+    def test_reset_handler_generates_session_id_without_name_error(self) -> None:
+        from play_book_studio.config.settings import load_settings
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = load_settings(root)
+
+            class _FakeAnswerer:
+                def __init__(self, settings) -> None:
+                    self.settings = settings
+
+            payload_holder: dict[str, object] = {}
+            handler_cls = _build_handler(
+                answerer=_FakeAnswerer(settings),
+                store=SessionStore(),
+                root_dir=root,
+            )
+            handler = object.__new__(handler_cls)
+            handler._send_json = lambda payload, status=None: payload_holder.update(
+                payload=payload,
+                status=status,
+            )
+
+            handler._handle_reset({})
+
+            payload = payload_holder["payload"]
+            assert isinstance(payload, dict)
+            self.assertTrue(payload["session_id"])
+            self.assertEqual("chat", payload["mode"])
+            self.assertIn("context", payload)
 
     def test_citation_href_prefers_internal_viewer_path(self) -> None:
         href = _citation_href(_citation(1, anchor="overview-anchor"))

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,7 +9,7 @@ TESTS = ROOT / "tests"
 if str(TESTS) not in sys.path:
     sys.path.insert(0, str(TESTS))
 
-from _support_retrieval import *  # noqa: F401,F403
+from _support_retrieval import RetrievalHit, fuse_ranked_hits
 
 class TestRetrievalScoring(unittest.TestCase):
     def test_fusion_penalizes_reference_books_for_concept_query(self) -> None:
@@ -329,7 +330,7 @@ class TestRetrievalScoring(unittest.TestCase):
             source_url="https://example.com/intake-a",
             viewer_path="/docs/intake/dtb-a/index.html#oc-get-pods",
             text="출력 예와 함께 oc get pods 결과를 보여 줍니다. [CODE] $ oc get pods [/CODE]",
-            source="custom_bm25",
+            source="overlay_bm25",
             raw_score=1.0,
             fused_score=1.0,
         )
@@ -342,7 +343,7 @@ class TestRetrievalScoring(unittest.TestCase):
             source_url="https://example.com/intake-b",
             viewer_path="/docs/intake/dtb-b/index.html#oc-get-pods",
             text="출력 예와 함께 oc get pods 결과를 보여 줍니다. [CODE] $ oc get pods [/CODE]",
-            source="custom_bm25",
+            source="overlay_bm25",
             raw_score=0.99,
             fused_score=0.99,
         )
@@ -376,11 +377,11 @@ class TestRetrievalScoring(unittest.TestCase):
         hits = fuse_ranked_hits(
             "Pod lifecycle 개념을 초보자 기준으로 설명해줘",
             {
-                "custom_bm25": [intake_command_a, intake_command_b],
+                "overlay_bm25": [intake_command_a, intake_command_b],
                 "vector": [concept_hit, example_hit],
             },
             top_k=4,
-            weights={"bm25": 1.0, "custom_bm25": 1.35, "vector": 1.0},
+            weights={"bm25": 1.0, "overlay_bm25": 1.35, "vector": 1.0},
         )
 
         self.assertEqual("pod-understanding-hit", hits[0].chunk_id)

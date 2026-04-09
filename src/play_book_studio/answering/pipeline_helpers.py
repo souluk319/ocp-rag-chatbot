@@ -16,6 +16,7 @@ from .answer_text import (
     shape_rbac_follow_up_answer,
     shape_certificate_monitor_answer,
     shape_etcd_backup_answer,
+    shape_project_termination_answer,
     shape_pod_lifecycle_explainer,
     shape_pod_pending_troubleshooting,
     strip_intro_offtopic_noise,
@@ -71,6 +72,11 @@ def generate_grounded_answer_text(
         citations=citations,
     )
     answer_text = shape_etcd_backup_answer(
+        answer_text,
+        query=query,
+        citations=citations,
+    )
+    answer_text = shape_project_termination_answer(
         answer_text,
         query=query,
         citations=citations,

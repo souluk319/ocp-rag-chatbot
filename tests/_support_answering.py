@@ -12,20 +12,19 @@ if str(SRC) not in sys.path:
 
 from play_book_studio.config.settings import Settings
 from play_book_studio.retrieval.models import RetrievalHit, RetrievalResult, SessionContext
-from play_book_studio.answering.answer_text import shape_actionable_ops_answer
-from play_book_studio.answering.answerer import (
-    _normalize_answer_markup_blocks,
-    _ensure_korean_product_terms,
-    _strip_intro_offtopic_noise,
-    _strip_structured_key_extra_guidance,
-    Part3Answerer,
-    finalize_citations,
+from play_book_studio.answering.answer_text_commands import shape_actionable_ops_answer
+from play_book_studio.answering.answer_text_formatting import (
+    ensure_korean_product_terms,
+    normalize_answer_markup_blocks,
     normalize_answer_text,
     reshape_ops_answer_text,
-    select_fallback_citations,
-    _strip_weak_additional_guidance,
+    strip_intro_offtopic_noise,
+    strip_structured_key_extra_guidance,
+    strip_weak_additional_guidance,
     summarize_session_context,
 )
+from play_book_studio.answering.answerer import ChatAnswerer
+from play_book_studio.answering.citations import finalize_citations, select_fallback_citations
 from play_book_studio.answering.models import Citation
 from play_book_studio.answering.llm import LLMClient
 from play_book_studio.answering.prompt import build_messages
@@ -548,4 +547,44 @@ class _FakeResponse:
     def json(self):
         return self.payload
 
-__all__ = [name for name in globals() if not name.startswith('__')]
+__all__ = [
+    "Settings",
+    "RetrievalHit",
+    "RetrievalResult",
+    "SessionContext",
+    "shape_actionable_ops_answer",
+    "normalize_answer_markup_blocks",
+    "ensure_korean_product_terms",
+    "strip_intro_offtopic_noise",
+    "strip_structured_key_extra_guidance",
+    "ChatAnswerer",
+    "finalize_citations",
+    "normalize_answer_text",
+    "reshape_ops_answer_text",
+    "select_fallback_citations",
+    "strip_weak_additional_guidance",
+    "summarize_session_context",
+    "Citation",
+    "LLMClient",
+    "build_messages",
+    "_FakeRetriever",
+    "_DuplicateCitationRetriever",
+    "_MultiCitationRetriever",
+    "_PodLifecycleRetriever",
+    "_PodPendingRetriever",
+    "_SinglePodLifecycleRetriever",
+    "_SinglePodPendingRetriever",
+    "_DuplicateCitationLLMClient",
+    "_FakeLLMClient",
+    "_NoCitationLLMClient",
+    "_BareCommandLLMClient",
+    "_NarrativeNoCitationLLMClient",
+    "_WrongDrainCommandLLMClient",
+    "_EtcdBackupRetriever",
+    "_EtcdBackupOverclaimLLMClient",
+    "_CertificateMonitorRetriever",
+    "_CertificateOverclaimLLMClient",
+    "_DeploymentScaleRetriever",
+    "_ExplodingRetriever",
+    "_FakeResponse",
+]

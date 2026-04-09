@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from play_book_studio.answering.answerer import Part3Answerer
+from play_book_studio.answering.answerer import ChatAnswerer
 from play_book_studio.answering.models import AnswerResult
 from play_book_studio.config.settings import load_settings
 from play_book_studio.retrieval.models import SessionContext
@@ -194,7 +194,7 @@ def build_turn_diagnosis(result: AnswerResult) -> dict[str, Any]:
 def append_chat_turn_log(
     root_dir: Path,
     *,
-    answerer: Part3Answerer | None = None,
+    answerer: ChatAnswerer | None = None,
     session: ChatSession,
     query: str,
     result: AnswerResult,

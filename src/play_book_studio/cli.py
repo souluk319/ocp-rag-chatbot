@@ -10,10 +10,10 @@ import argparse
 import json
 from pathlib import Path
 
-from play_book_studio.answering.answerer import Part3Answerer
+from play_book_studio.answering.answerer import ChatAnswerer
 from play_book_studio.app.runtime_report import write_runtime_report
 from play_book_studio.app.server import serve
-from play_book_studio.config.settings import load_settings
+from play_book_studio.config.settings import load_effective_env, load_settings
 from play_book_studio.evals.answer_eval import evaluate_case, summarize_case_results
 from play_book_studio.evals.ragas_eval import (
     build_ragas_case_row,
@@ -51,8 +51,9 @@ def build_parser() -> argparse.ArgumentParser:
     ask_parser.add_argument("--context-json")
     ask_parser.add_argument(
         "--mode",
+        choices=("chat", "ops", "learn"),
         default="chat",
-        help="Legacy compatibility flag. Ignored internally; kept only to avoid breaking old commands.",
+        help="Answer mode for the query.",
     )
     ask_parser.add_argument("--skip-log", action="store_true")
     _add_runtime_args(ask_parser)
@@ -86,9 +87,9 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _build_answerer() -> Part3Answerer:
+def _build_answerer() -> ChatAnswerer:
     settings = load_settings(ROOT)
-    return Part3Answerer.from_settings(settings)
+    return ChatAnswerer.from_settings(settings)
 
 
 def _run_ui(args: argparse.Namespace) -> int:
@@ -110,7 +111,7 @@ def _run_ask(args: argparse.Namespace) -> int:
     )
     result = answerer.answer(
         args.query,
-        mode="chat",
+        mode=args.mode,
         context=context,
         top_k=args.top_k,
         candidate_k=args.candidate_k,
@@ -158,6 +159,7 @@ def _run_ragas(args: argparse.Namespace) -> int:
     answerer = _build_answerer()
     cases = read_jsonl(args.cases)
     settings = answerer.settings
+    effective_env = load_effective_env(ROOT)
 
     if args.dry_run:
         generated_results = generate_answers_for_cases(
@@ -184,7 +186,7 @@ def _run_ragas(args: argparse.Namespace) -> int:
         return 0
 
     try:
-        judge_config = load_openai_judge_config_from_env()
+        judge_config = load_openai_judge_config_from_env(effective_env)
     except ValueError as exc:
         print(f"ragas judge configuration error: {exc}")
         print("hint: add OPENAI_API_KEY to .env or run with --dry-run first")

@@ -1,14 +1,32 @@
 from __future__ import annotations
 
+import json
+import tempfile
 import sys
+import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = ROOT / "tests"
 if str(TESTS) not in sys.path:
     sys.path.insert(0, str(TESTS))
 
-from _support_app_ui import *  # noqa: F401,F403
+from _support_app_ui import (
+    Citation,
+    _build_doc_to_book_plan,
+    _capture_doc_to_book_draft,
+    _create_doc_to_book_draft,
+    _doc_to_book_meta_for_viewer_path,
+    _internal_doc_to_book_viewer_html,
+    _list_doc_to_book_drafts,
+    _load_doc_to_book_book,
+    _load_doc_to_book_capture,
+    _load_doc_to_book_draft,
+    _normalize_doc_to_book_draft,
+    _upload_doc_to_book_draft,
+    _serialize_citation,
+)
 
 class TestAppIntakeUi(unittest.TestCase):
     def test_build_doc_to_book_plan_returns_resolved_web_capture(self) -> None:

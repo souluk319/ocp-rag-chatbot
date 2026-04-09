@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,7 +9,7 @@ TESTS = ROOT / "tests"
 if str(TESTS) not in sys.path:
     sys.path.insert(0, str(TESTS))
 
-from _support_retrieval import *  # noqa: F401,F403
+from _support_retrieval import BM25Index, ChatRetriever, RetrievalHit, Settings, fuse_ranked_hits
 
 class TestRetrievalRuntime(unittest.TestCase):
     def test_fusion_boosts_backup_book_for_backup_doc_locator_query(self) -> None:
@@ -61,7 +62,7 @@ class TestRetrievalRuntime(unittest.TestCase):
 
         settings = Settings(root_dir=ROOT)
         bm25 = StubBm25()
-        retriever = Part2Retriever(settings, bm25, vector_retriever=None)
+        retriever = ChatRetriever(settings, bm25, vector_retriever=None)
 
         result = retriever.retrieve(
             "오픈시프트와 쿠버네티스 차이를 세 줄로 설명해줘",
@@ -279,7 +280,7 @@ class TestRetrievalRuntime(unittest.TestCase):
 
     def test_retriever_short_circuits_unsupported_external_query(self) -> None:
         settings = Settings(ROOT)
-        retriever = Part2Retriever(settings, BM25Index.from_rows([]), vector_retriever=None)
+        retriever = ChatRetriever(settings, BM25Index.from_rows([]), vector_retriever=None)
 
         result = retriever.retrieve("Harbor 설치 방법 알려줘", use_bm25=False, use_vector=False)
 
@@ -336,7 +337,7 @@ class TestRetrievalRuntime(unittest.TestCase):
                 return reordered
 
         settings = Settings(ROOT)
-        retriever = Part2Retriever(
+        retriever = ChatRetriever(
             settings,
             StubBm25(),
             vector_retriever=None,
