@@ -1,0 +1,146 @@
+{
+  "slug": "backup_and_restore",
+  "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore",
+  "dossier_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\dossier.json",
+  "official_docs": {
+    "ko": {
+      "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/backup_and_restore/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": true,
+      "title_hint": "Backup and restore | OpenShift Container Platform | 4.20 | Red Hat Documentation",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\official_docs\\ko\\source.html",
+      "content_length": 10812458
+    },
+    "en": {
+      "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/backup_and_restore/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "Backup and restore | OpenShift Container Platform | 4.20 | Red Hat Documentation",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\official_docs\\en\\source.html",
+      "content_length": 8546079
+    }
+  },
+  "repo_artifacts": [
+    {
+      "repo_path": "backup_and_restore/application_backup_and_restore/troubleshooting/backup-and-restore-cr-issues.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/application_backup_and_restore/troubleshooting/backup-and-restore-cr-issues.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\application_backup_and_restore\\troubleshooting\\backup-and-restore-cr-issues.adoc",
+      "content_length": 869
+    },
+    {
+      "repo_path": "backup_and_restore/index.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/index.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\index.adoc",
+      "content_length": 6134
+    },
+    {
+      "repo_path": "backup_and_restore/hibernating-cluster.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/hibernating-cluster.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\hibernating-cluster.adoc",
+      "content_length": 1552
+    },
+    {
+      "repo_path": "backup_and_restore/graceful-cluster-shutdown.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/graceful-cluster-shutdown.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\graceful-cluster-shutdown.adoc",
+      "content_length": 1507
+    },
+    {
+      "repo_path": "backup_and_restore/graceful-cluster-restart.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/graceful-cluster-restart.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\graceful-cluster-restart.adoc",
+      "content_length": 1335
+    },
+    {
+      "repo_path": "backup_and_restore/control_plane_backup_and_restore/replacing-unhealthy-etcd-member.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/control_plane_backup_and_restore/replacing-unhealthy-etcd-member.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\control_plane_backup_and_restore\\replacing-unhealthy-etcd-member.adoc",
+      "content_length": 4502
+    },
+    {
+      "repo_path": "backup_and_restore/control_plane_backup_and_restore/backing-up-etcd.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/control_plane_backup_and_restore/backing-up-etcd.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\control_plane_backup_and_restore\\backing-up-etcd.adoc",
+      "content_length": 2206
+    },
+    {
+      "repo_path": "backup_and_restore/application_backup_and_restore/oadp-intro.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/application_backup_and_restore/oadp-intro.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\application_backup_and_restore\\oadp-intro.adoc",
+      "content_length": 2532
+    },
+    {
+      "repo_path": "backup_and_restore/application_backup_and_restore/oadp-features-plugins.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/application_backup_and_restore/oadp-features-plugins.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\application_backup_and_restore\\oadp-features-plugins.adoc",
+      "content_length": 2427
+    },
+    {
+      "repo_path": "backup_and_restore/application_backup_and_restore/oadp-api.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/application_backup_and_restore/oadp-api.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\application_backup_and_restore\\oadp-api.adoc",
+      "content_length": 1783
+    },
+    {
+      "repo_path": "backup_and_restore/control_plane_backup_and_restore/disaster_recovery/scenario-3-expired-certs.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/control_plane_backup_and_restore/disaster_recovery/scenario-3-expired-certs.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\control_plane_backup_and_restore\\disaster_recovery\\scenario-3-expired-certs.adoc",
+      "content_length": 571
+    },
+    {
+      "repo_path": "backup_and_restore/control_plane_backup_and_restore/disaster_recovery/scenario-2-restoring-cluster-state.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/control_plane_backup_and_restore/disaster_recovery/scenario-2-restoring-cluster-state.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\control_plane_backup_and_restore\\disaster_recovery\\scenario-2-restoring-cluster-state.adoc",
+      "content_length": 1309
+    },
+    {
+      "repo_path": "backup_and_restore/control_plane_backup_and_restore/disaster_recovery/quorum-restoration.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/control_plane_backup_and_restore/disaster_recovery/quorum-restoration.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\control_plane_backup_and_restore\\disaster_recovery\\quorum-restoration.adoc",
+      "content_length": 1230
+    },
+    {
+      "repo_path": "backup_and_restore/control_plane_backup_and_restore/disaster_recovery/about-disaster-recovery.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/control_plane_backup_and_restore/disaster_recovery/about-disaster-recovery.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\control_plane_backup_and_restore\\disaster_recovery\\about-disaster-recovery.adoc",
+      "content_length": 3480
+    },
+    {
+      "repo_path": "backup_and_restore/application_backup_and_restore/troubleshooting/velero-cli-tool.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/application_backup_and_restore/troubleshooting/velero-cli-tool.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\application_backup_and_restore\\troubleshooting\\velero-cli-tool.adoc",
+      "content_length": 858
+    },
+    {
+      "repo_path": "backup_and_restore/application_backup_and_restore/troubleshooting/using-the-must-gather-tool.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/application_backup_and_restore/troubleshooting/using-the-must-gather-tool.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\application_backup_and_restore\\troubleshooting\\using-the-must-gather-tool.adoc",
+      "content_length": 820
+    },
+    {
+      "repo_path": "backup_and_restore/application_backup_and_restore/troubleshooting/troubleshooting.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/application_backup_and_restore/troubleshooting/troubleshooting.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\application_backup_and_restore\\troubleshooting\\troubleshooting.adoc",
+      "content_length": 3445
+    },
+    {
+      "repo_path": "backup_and_restore/application_backup_and_restore/troubleshooting/restoring-workarounds-for-velero-backups-that-use-admission-webhooks.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/application_backup_and_restore/troubleshooting/restoring-workarounds-for-velero-backups-that-use-admission-webhooks.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\application_backup_and_restore\\troubleshooting\\restoring-workarounds-for-velero-backups-that-use-admission-webhooks.adoc",
+      "content_length": 2577
+    },
+    {
+      "repo_path": "backup_and_restore/application_backup_and_restore/troubleshooting/restic-issues.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/application_backup_and_restore/troubleshooting/restic-issues.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\application_backup_and_restore\\troubleshooting\\restic-issues.adoc",
+      "content_length": 841
+    },
+    {
+      "repo_path": "backup_and_restore/application_backup_and_restore/troubleshooting/pods-crash-or-restart-due-to-lack-of-memory-or-cpu.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/backup_and_restore/application_backup_and_restore/troubleshooting/pods-crash-or-restart-due-to-lack-of-memory-or-cpu.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\openshift_docs_repo\\backup_and_restore\\application_backup_and_restore\\troubleshooting\\pods-crash-or-restart-due-to-lack-of-memory-or-cpu.adoc",
+      "content_length": 1752
+    }
+  ],
+  "issue_pr_candidates_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\issue_pr_candidates.json"
+}

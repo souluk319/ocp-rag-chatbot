@@ -1,0 +1,138 @@
+[
+  {
+    "book_slug": "backup_and_restore",
+    "priority_lane": "translation_first",
+    "current_status": "translated_ko_draft",
+    "target_action": "official EN source harvest + reviewed KO draft promotion",
+    "source_candidates": [
+      {
+        "kind": "official_en_html_single",
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/backup_and_restore/index"
+      },
+      {
+        "kind": "official_ko_html_single",
+        "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/backup_and_restore/index"
+      },
+      {
+        "kind": "openshift_docs_source_search",
+        "repo": "openshift/openshift-docs",
+        "slug_hint": "backup_and_restore"
+      }
+    ]
+  },
+  {
+    "book_slug": "installing_on_any_platform",
+    "priority_lane": "translation_first",
+    "current_status": "translated_ko_draft",
+    "target_action": "official EN source harvest + reviewed KO draft promotion",
+    "source_candidates": [
+      {
+        "kind": "official_en_html_single",
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/installing_on_any_platform/index"
+      },
+      {
+        "kind": "official_ko_html_single",
+        "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/installing_on_any_platform/index"
+      },
+      {
+        "kind": "openshift_docs_source_search",
+        "repo": "openshift/openshift-docs",
+        "slug_hint": "installing_on_any_platform"
+      }
+    ]
+  },
+  {
+    "book_slug": "machine_configuration",
+    "priority_lane": "translation_first",
+    "current_status": "translated_ko_draft",
+    "target_action": "official EN source harvest + reviewed KO draft promotion",
+    "source_candidates": [
+      {
+        "kind": "official_en_html_single",
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/machine_configuration/index"
+      },
+      {
+        "kind": "official_ko_html_single",
+        "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/machine_configuration/index"
+      },
+      {
+        "kind": "openshift_docs_source_search",
+        "repo": "openshift/openshift-docs",
+        "slug_hint": "machine_configuration"
+      }
+    ]
+  },
+  {
+    "book_slug": "monitoring",
+    "priority_lane": "translation_first",
+    "current_status": "translated_ko_draft",
+    "target_action": "official EN source harvest + reviewed KO draft promotion",
+    "source_candidates": [
+      {
+        "kind": "official_en_html_single",
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/monitoring/index"
+      },
+      {
+        "kind": "official_ko_html_single",
+        "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/monitoring/index"
+      },
+      {
+        "kind": "openshift_docs_source_search",
+        "repo": "openshift/openshift-docs",
+        "slug_hint": "monitoring"
+      }
+    ]
+  },
+  {
+    "book_slug": "etcd",
+    "priority_lane": "manual_review_first",
+    "current_status": "blocked",
+    "target_action": "manual source review + curated synthesis + evidence promotion",
+    "source_candidates": [
+      {
+        "kind": "official_ko_html_single",
+        "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/etcd/index"
+      },
+      {
+        "kind": "official_en_html_single",
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/etcd/index"
+      },
+      {
+        "kind": "openshift_docs_source_search",
+        "repo": "openshift/openshift-docs",
+        "slug_hint": "etcd"
+      },
+      {
+        "kind": "official_issue_pr_search",
+        "repo": "openshift/openshift-docs",
+        "slug_hint": "etcd"
+      }
+    ]
+  },
+  {
+    "book_slug": "operators",
+    "priority_lane": "manual_review_first",
+    "current_status": "blocked",
+    "target_action": "manual source review + curated synthesis + evidence promotion",
+    "source_candidates": [
+      {
+        "kind": "official_ko_html_single",
+        "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/operators/index"
+      },
+      {
+        "kind": "official_en_html_single",
+        "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/operators/index"
+      },
+      {
+        "kind": "openshift_docs_source_search",
+        "repo": "openshift/openshift-docs",
+        "slug_hint": "operators"
+      },
+      {
+        "kind": "official_issue_pr_search",
+        "repo": "openshift/openshift-docs",
+        "slug_hint": "operators"
+      }
+    ]
+  }
+]

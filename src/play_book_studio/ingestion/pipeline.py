@@ -10,8 +10,16 @@ import json
 from pathlib import Path
 
 from play_book_studio.canonical import project_playbook_document, write_playbook_documents
+from .audit_rules import (
+    LANGUAGE_FALLBACK_RE,
+    body_language_guess,
+    classify_content_status,
+    hangul_ratio,
+    is_english_like_title,
+    resolve_final_content_status,
+)
 from .chunking import chunk_sections
-from .collector import collect_entry, raw_html_path
+from .collector import collect_entry, raw_html_metadata_path, raw_html_path
 from .embedding import EmbeddingClient
 from .manifest import (
     build_source_catalog_entries,
@@ -20,7 +28,16 @@ from .manifest import (
     runtime_catalog_entries,
     write_manifest,
 )
-from .models import ChunkRecord, NormalizedSection, PipelineLog, SourceManifestEntry
+from .models import (
+    CONTENT_STATUS_APPROVED_KO,
+    CONTENT_STATUS_EN_ONLY,
+    CONTENT_STATUS_MIXED,
+    CONTENT_STATUS_TRANSLATED_KO_DRAFT,
+    ChunkRecord,
+    NormalizedSection,
+    PipelineLog,
+    SourceManifestEntry,
+)
 from .normalize import extract_document_ast, project_normalized_sections
 from .qdrant_store import ensure_collection, upsert_chunks
 from play_book_studio.config.settings import HIGH_VALUE_SLUGS, Settings
@@ -31,6 +48,102 @@ def _write_jsonl(path: Path, rows: list[dict]) -> None:
     with path.open("w", encoding="utf-8") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
+def _write_jsonl_targets(paths: tuple[Path, ...], rows: list[dict]) -> None:
+    for path in paths:
+        _write_jsonl(path, rows)
+
+
+def _entry_with_collected_metadata(settings: Settings, entry: SourceManifestEntry) -> SourceManifestEntry:
+    metadata_path = raw_html_metadata_path(settings, entry.book_slug)
+    if not metadata_path.exists():
+        return entry
+    try:
+        payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return entry
+    return SourceManifestEntry(
+        **{
+            **entry.to_dict(),
+            "resolved_source_url": str(payload.get("resolved_source_url") or entry.resolved_source_url),
+            "resolved_language": str(payload.get("resolved_language") or entry.resolved_language),
+            "fallback_detected": bool(payload.get("fallback_detected", entry.fallback_detected)),
+        }
+    )
+
+
+def _runtime_source_lane(entry: SourceManifestEntry, content_status: str) -> str:
+    explicit = (entry.source_lane or "").strip()
+    if explicit:
+        return explicit
+    if entry.source_type in {
+        "official_issue",
+        "official_pr",
+        "community_issue",
+        "community_blog",
+        "internal_runbook",
+        "manual_synthesis",
+    }:
+        return "applied_playbook"
+    if content_status in {CONTENT_STATUS_EN_ONLY, CONTENT_STATUS_MIXED, CONTENT_STATUS_TRANSLATED_KO_DRAFT}:
+        return "official_en_fallback"
+    return "official_ko"
+
+
+def _runtime_review_status(entry: SourceManifestEntry, approval_status: str) -> str:
+    current = (entry.review_status or "").strip()
+    if current == "rejected":
+        return current
+    if approval_status == "needs_review":
+        return "needs_review"
+    if current in {"", "unreviewed"}:
+        return approval_status
+    return current
+
+
+def _entry_with_inferred_runtime_status(
+    entry: SourceManifestEntry,
+    *,
+    html: str,
+    sections: list[NormalizedSection],
+) -> SourceManifestEntry:
+    fallback_detected = entry.fallback_detected or bool(LANGUAGE_FALLBACK_RE.search(html))
+    hangul_section_ratio = hangul_ratio([section.text for section in sections])
+    hangul_chunk_ratio = hangul_section_ratio
+    auto_status, auto_reason = classify_content_status(
+        section_count=len(sections),
+        chunk_count=len(sections),
+        hangul_section_ratio=hangul_section_ratio,
+        hangul_chunk_ratio=hangul_chunk_ratio,
+        title_english_like=is_english_like_title(entry.title),
+        fallback_detected=fallback_detected,
+    )
+    content_status, citation_eligible, citation_block_reason, approval_status = (
+        resolve_final_content_status(
+            entry,
+            auto_status=auto_status,
+            auto_reason=auto_reason,
+        )
+    )
+    return SourceManifestEntry(
+        **{
+            **entry.to_dict(),
+            "content_status": content_status,
+            "citation_eligible": citation_eligible,
+            "citation_block_reason": citation_block_reason,
+            "review_status": _runtime_review_status(entry, approval_status),
+            "approval_status": approval_status,
+            "body_language_guess": body_language_guess(
+                hangul_chunk_ratio=hangul_chunk_ratio,
+                fallback_detected=fallback_detected,
+            ),
+            "hangul_section_ratio": hangul_section_ratio,
+            "hangul_chunk_ratio": hangul_chunk_ratio,
+            "fallback_detected": fallback_detected,
+            "source_lane": _runtime_source_lane(entry, content_status),
+        }
+    )
 
 
 def _save_log(settings: Settings, log: PipelineLog) -> None:
@@ -132,8 +245,17 @@ def run_ingestion_pipeline(
                 log.collected_count += 1
                 log.collected_sources.append(entry.book_slug)
             html = html_path.read_text(encoding="utf-8")
-            document = extract_document_ast(html, entry, settings=settings)
+            runtime_entry = _entry_with_collected_metadata(settings, entry)
+            document = extract_document_ast(html, runtime_entry, settings=settings)
             sections = project_normalized_sections(document)
+            inferred_entry = _entry_with_inferred_runtime_status(
+                runtime_entry,
+                html=html,
+                sections=sections,
+            )
+            if inferred_entry.to_dict() != runtime_entry.to_dict():
+                document = extract_document_ast(html, inferred_entry, settings=settings)
+                sections = project_normalized_sections(document)
             playbook_documents.append(project_playbook_document(document))
             all_sections.extend(sections)
             log.processed_sources.append(entry.book_slug)
@@ -143,6 +265,9 @@ def run_ingestion_pipeline(
                 section_count=len(sections),
                 title=entry.title,
                 high_value=entry.high_value,
+                content_status=inferred_entry.content_status,
+                source_lane=inferred_entry.source_lane,
+                review_status=inferred_entry.review_status,
             )
             _progress(
                 f"[normalize {index}/{len(process_entries)}] "
@@ -156,10 +281,19 @@ def run_ingestion_pipeline(
     log.stage = "write_normalized"
     log.normalized_count = len(all_sections)
     _progress(f"[normalize] total_sections={len(all_sections)}")
-    _write_jsonl(settings.normalized_docs_path, [section.to_dict() for section in all_sections])
+    normalized_rows = [section.to_dict() for section in all_sections]
+    _write_jsonl_targets(
+        settings.normalized_docs_candidates,
+        normalized_rows,
+    )
     write_playbook_documents(
         settings.playbook_documents_path,
         settings.playbook_books_dir,
+        playbook_documents,
+    )
+    write_playbook_documents(
+        settings.legacy_playbook_documents_path,
+        settings.legacy_playbook_books_dir,
         playbook_documents,
     )
     _save_log(settings, log)
@@ -174,22 +308,42 @@ def run_ingestion_pipeline(
     for book_slug, count in chunk_counts.items():
         log.upsert_book_stat(book_slug, chunk_count=count)
     _progress(f"[chunk] total_chunks={len(chunks)}")
-    _write_jsonl(settings.chunks_path, [chunk.to_dict() for chunk in chunks])
-    _write_jsonl(
-        settings.bm25_corpus_path,
-        [
-            {
-                "chunk_id": chunk.chunk_id,
-                "book_slug": chunk.book_slug,
-                "chapter": chunk.chapter,
-                "section": chunk.section,
-                "anchor": chunk.anchor,
-                "source_url": chunk.source_url,
-                "viewer_path": chunk.viewer_path,
-                "text": chunk.text,
-            }
-            for chunk in chunks
-        ],
+    chunk_rows = [chunk.to_dict() for chunk in chunks]
+    _write_jsonl_targets(
+        settings._unique_paths(settings.chunks_path, settings.legacy_chunks_path),
+        chunk_rows,
+    )
+    bm25_rows = [
+        {
+            "chunk_id": chunk.chunk_id,
+            "book_slug": chunk.book_slug,
+            "chapter": chunk.chapter,
+            "section": chunk.section,
+            "anchor": chunk.anchor,
+            "source_url": chunk.source_url,
+            "viewer_path": chunk.viewer_path,
+            "text": chunk.text,
+            "source_id": chunk.source_id,
+            "source_lane": chunk.source_lane,
+            "source_type": chunk.source_type,
+            "source_collection": chunk.source_collection,
+            "product": chunk.product,
+            "version": chunk.version,
+            "locale": chunk.locale,
+            "translation_status": chunk.translation_status,
+            "review_status": chunk.review_status,
+            "trust_score": chunk.trust_score,
+            "cli_commands": list(chunk.cli_commands),
+            "error_strings": list(chunk.error_strings),
+            "k8s_objects": list(chunk.k8s_objects),
+            "operator_names": list(chunk.operator_names),
+            "verification_hints": list(chunk.verification_hints),
+        }
+        for chunk in chunks
+    ]
+    _write_jsonl_targets(
+        settings._unique_paths(settings.bm25_corpus_path, settings.legacy_bm25_corpus_path),
+        bm25_rows,
     )
     _save_log(settings, log)
 

@@ -96,6 +96,24 @@ def _section_prefix(section: NormalizedSection) -> str:
     return f"{section.book_title}\n\n"
 
 
+def _chunk_type_for_section(section: NormalizedSection) -> str:
+    if section.error_strings:
+        return "troubleshooting"
+    if section.cli_commands and section.semantic_role == "procedure":
+        return "command"
+    if section.semantic_role == "procedure":
+        return "procedure"
+    if section.semantic_role in {"concept", "overview"}:
+        return "concept"
+    if section.semantic_role in {"reference", "appendix"}:
+        return "reference"
+    if "note" in section.block_kinds:
+        return "warning"
+    if section.cli_commands:
+        return "command"
+    return "reference"
+
+
 def _split_blocks(text: str) -> list[str]:
     blocks: list[str] = []
     current: list[str] = []
@@ -111,10 +129,10 @@ def _split_blocks(text: str) -> list[str]:
 
     for line in text.splitlines():
         stripped = line.strip()
-        if stripped in {"[CODE]", "[TABLE]"}:
+        if stripped.startswith("[CODE") or stripped.startswith("[TABLE"):
             flush()
             in_block = True
-            end_tag = "[/CODE]" if stripped == "[CODE]" else "[/TABLE]"
+            end_tag = "[/CODE]" if stripped.startswith("[CODE") else "[/TABLE]"
             current.append(stripped)
             continue
         if in_block:
@@ -185,6 +203,34 @@ def chunk_sections(sections: list[NormalizedSection], settings: Settings) -> lis
                     text=final_text,
                     token_count=token_count,
                     ordinal=ordinal,
+                    section_path=tuple(section.section_path),
+                    chunk_type=_chunk_type_for_section(section),
+                    source_id=section.source_id,
+                    source_lane=section.source_lane,
+                    source_type=section.source_type,
+                    source_collection=section.source_collection,
+                    product=section.product,
+                    version=section.version,
+                    locale=section.locale,
+                    source_language=section.source_language,
+                    display_language=section.display_language,
+                    translation_status=section.translation_status,
+                    translation_stage=section.translation_stage,
+                    translation_source_language=section.translation_source_language,
+                    translation_source_url=section.translation_source_url,
+                    translation_source_fingerprint=section.translation_source_fingerprint,
+                    original_title=section.original_title or section.book_title,
+                    legal_notice_url=section.legal_notice_url,
+                    license_or_terms=section.license_or_terms,
+                    review_status=section.review_status,
+                    trust_score=section.trust_score,
+                    verifiability=section.verifiability,
+                    updated_at=section.updated_at,
+                    cli_commands=section.cli_commands,
+                    error_strings=section.error_strings,
+                    k8s_objects=section.k8s_objects,
+                    operator_names=section.operator_names,
+                    verification_hints=section.verification_hints,
                 )
             )
             ordinal += 1

@@ -36,6 +36,10 @@ NOTE_PREFIX_RE = re.compile(r"^(주의|경고|중요|참고|팁|Warning|Caution|
 PROCEDURE_LINE_RE = re.compile(r"^\s*(\d+)\.\s+(.+)$")
 SUBSTEP_LINE_RE = re.compile(r"^\s*[-*]\s+(.+)$")
 NUMERIC_CALLOUT_RE = re.compile(r"^\d+$")
+VERIFICATION_PREFIX_RE = re.compile(
+    r"^(확인|검증|점검|verify|validation|check)(?=[:\s]|$)",
+    re.IGNORECASE,
+)
 PREREQUISITE_PREFIXES = ("사전 요구 사항", "사전 요구사항", "Prerequisites")
 CODE_BLOCK_RE = re.compile(r"^\[CODE(?P<attrs>[^\]]*)\]\s*(?P<body>.*?)\s*\[/CODE\]$", re.DOTALL)
 TABLE_BLOCK_RE = re.compile(r"^\[TABLE(?P<attrs>[^\]]*)\]\s*(?P<body>.*?)\s*\[/TABLE\]$", re.DOTALL)
@@ -53,6 +57,24 @@ def _translation_status(entry: SourceManifestEntry) -> str:
     if entry.content_status == CONTENT_STATUS_TRANSLATED_KO_DRAFT:
         return "translated_ko_draft"
     return "original"
+
+
+def _resolved_source_lane(entry: SourceManifestEntry) -> str:
+    explicit = (entry.source_lane or "").strip()
+    if explicit:
+        return explicit
+    if entry.source_type in {"official_issue", "official_pr", "community_issue", "community_blog", "internal_runbook", "manual_synthesis"}:
+        return explicit or "applied_playbook"
+    if entry.content_status in {CONTENT_STATUS_TRANSLATED_KO_DRAFT} or entry.fallback_detected:
+        return "official_en_fallback"
+    return "official_ko"
+
+
+def _resolved_source_id(entry: SourceManifestEntry) -> str:
+    explicit = (entry.source_id or "").strip()
+    if explicit:
+        return explicit
+    return f"{entry.product_slug}:{entry.ocp_version}:{entry.docs_language}:{entry.book_slug}"
 
 
 def _split_prerequisite_items(text: str) -> tuple[str, ...]:
@@ -234,6 +256,8 @@ def _looks_like_block_caption(block: object) -> bool:
     text = block.text.strip()
     if not text or len(text) > 80:
         return False
+    if VERIFICATION_PREFIX_RE.match(text):
+        return False
     if NUMERIC_CALLOUT_RE.fullmatch(text):
         return False
     if re.search(r"[.!?]$", text):
@@ -373,6 +397,15 @@ def build_web_document_ast(
     if entry.source_state_reason.strip():
         provenance_notes.append(entry.source_state_reason.strip())
     translation = build_translation_metadata(entry, content_status=entry.content_status)
+    source_lane = _resolved_source_lane(entry)
+    source_type = (entry.source_type or "").strip() or "official_doc"
+    review_status = (entry.review_status or entry.approval_status or "unreviewed").strip()
+    original_title = (
+        entry.original_title
+        or entry.vendor_title
+        or entry.title
+        or book_title
+    )
 
     return CanonicalDocumentAst(
         doc_id=f"{entry.book_slug}:{entry.ocp_version}:{entry.docs_language}",
@@ -390,6 +423,20 @@ def build_web_document_ast(
         inferred_version=pack.version,
         sections=tuple(sections),
         provenance=AstProvenance(
+            source_id=_resolved_source_id(entry),
+            source_lane=source_lane,
+            source_type=source_type,
+            source_collection=(entry.source_collection or "core").strip() or "core",
+            product=pack.product_key,
+            version=pack.version,
+            locale=entry.docs_language or "ko",
+            original_title=original_title,
+            legal_notice_url=entry.legal_notice_url,
+            license_or_terms=entry.license_or_terms,
+            review_status=review_status,
+            trust_score=float(entry.trust_score),
+            verifiability=entry.verifiability or "anchor_backed",
+            updated_at=entry.updated_at,
             source_fingerprint=entry.source_fingerprint,
             parser_name="canonical_html_v1",
             parser_version="1.0",

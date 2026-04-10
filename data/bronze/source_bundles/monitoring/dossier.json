@@ -1,0 +1,92 @@
+{
+  "slug": "monitoring",
+  "current_status": {
+    "content_status": "blocked",
+    "gap_lane": "translation_first",
+    "gap_action": "preferred next step is Korean translation or source substitution",
+    "fallback_detected": false,
+    "hangul_chunk_ratio": 0.0,
+    "title": "Monitoring"
+  },
+  "official_docs": {
+    "ko": {
+      "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/monitoring/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": true,
+      "title_hint": "Monitoring | OpenShift Container Platform | 4.20 | Red Hat Documentation"
+    },
+    "en": {
+      "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/monitoring/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "Monitoring | OpenShift Container Platform | 4.20 | Red Hat Documentation"
+    }
+  },
+  "openshift_docs_repo_candidates": [
+    "virt/monitoring/virt-storage-checkups.adoc",
+    "virt/monitoring/virt-running-cluster-checkups.adoc",
+    "virt/monitoring/virt-runbooks.adoc",
+    "virt/monitoring/virt-prometheus-queries.adoc",
+    "virt/monitoring/virt-monitoring-vm-health.adoc",
+    "virt/monitoring/virt-monitoring-overview.adoc",
+    "virt/monitoring/virt-exposing-downward-metrics.adoc",
+    "virt/monitoring/virt-exposing-custom-metrics-for-vms.adoc",
+    "observability/monitoring/troubleshooting-monitoring-issues.adoc",
+    "observability/monitoring/shiftstack-prometheus-configuration.adoc",
+    "observability/monitoring/config-map-reference-for-the-cluster-monitoring-operator.adoc",
+    "observability/monitoring/about-ocp-monitoring.adoc",
+    "observability/monitoring/managing-alerts/managing-alerts-as-an-administrator.adoc",
+    "observability/monitoring/managing-alerts/managing-alerts-as-a-developer.adoc",
+    "observability/monitoring/getting-started/user-workload-monitoring-first-steps.adoc",
+    "observability/monitoring/getting-started/sd-disabling-monitoring-for-user-defined-projects.adoc",
+    "observability/monitoring/getting-started/sd-accessing-monitoring-for-user-defined-projects.adoc",
+    "observability/monitoring/getting-started/maintenance-and-support-for-monitoring.adoc",
+    "observability/monitoring/getting-started/developer-and-non-administrator-steps.adoc",
+    "observability/monitoring/getting-started/core-platform-monitoring-first-steps.adoc",
+    "observability/monitoring/configuring-user-workload-monitoring/storing-and-recording-data-uwm.adoc",
+    "observability/monitoring/configuring-user-workload-monitoring/preparing-to-configure-the-monitoring-stack-uwm.adoc",
+    "observability/monitoring/configuring-user-workload-monitoring/configuring-performance-and-scalability-uwm.adoc",
+    "observability/monitoring/configuring-user-workload-monitoring/configuring-metrics-uwm.adoc",
+    "observability/monitoring/configuring-user-workload-monitoring/configuring-alerts-and-notifications-uwm.adoc",
+    "observability/monitoring/configuring-core-platform-monitoring/storing-and-recording-data.adoc",
+    "observability/monitoring/configuring-core-platform-monitoring/preparing-to-configure-the-monitoring-stack.adoc",
+    "observability/monitoring/configuring-core-platform-monitoring/configuring-performance-and-scalability.adoc",
+    "observability/monitoring/configuring-core-platform-monitoring/configuring-metrics.adoc",
+    "observability/monitoring/configuring-core-platform-monitoring/configuring-alerts-and-notifications.adoc",
+    "observability/monitoring/accessing-metrics/accessing-monitoring-apis-by-using-the-cli.adoc",
+    "observability/monitoring/accessing-metrics/accessing-metrics-as-an-administrator.adoc",
+    "observability/monitoring/accessing-metrics/accessing-metrics-as-a-developer.adoc",
+    "observability/monitoring/about-ocp-monitoring/monitoring-stack-architecture.adoc",
+    "observability/monitoring/about-ocp-monitoring/key-concepts.adoc",
+    "observability/monitoring/about-ocp-monitoring/about-ocp-monitoring.adoc",
+    "virt/monitoring/_attributes",
+    "observability/monitoring/_attributes",
+    "observability/monitoring/managing-alerts/_attributes",
+    "observability/monitoring/getting-started/_attributes",
+    "observability/monitoring/configuring-user-workload-monitoring/_attributes",
+    "observability/monitoring/configuring-core-platform-monitoring/_attributes",
+    "observability/monitoring/accessing-metrics/_attributes",
+    "observability/monitoring/about-ocp-monitoring/_attributes",
+    "snippets/monitoring-custom-prometheus-note.adoc",
+    "modules/ztp-sno-du-reducing-resource-usage-with-cluster-monitoring.adoc",
+    "modules/ztp-monitoring-policy-deployment-progress.adoc",
+    "modules/ztp-monitoring-installation-progress.adoc",
+    "modules/zero-trust-manager-enable-monitoring.adoc",
+    "modules/virt-monitoring-upgrade-status.adoc"
+  ],
+  "issue_pr_candidates_exact_slug": [],
+  "issue_pr_candidates_related_terms": [],
+  "repo_search_terms": {
+    "slug": "monitoring",
+    "title": "Monitoring",
+    "aliases": [
+      "monitoring"
+    ],
+    "path_hint": "virt/monitoring",
+    "exact_queries": [
+      "repo:openshift/openshift-docs path:virt/monitoring \"Monitoring\"",
+      "repo:openshift/openshift-docs path:virt/monitoring monitoring"
+    ],
+    "related_queries": []
+  }
+}

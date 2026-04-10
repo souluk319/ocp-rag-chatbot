@@ -1,0 +1,146 @@
+{
+  "slug": "installing_on_any_platform",
+  "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform",
+  "dossier_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\dossier.json",
+  "official_docs": {
+    "ko": {
+      "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/installing_on_any_platform/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": true,
+      "title_hint": "Installing on any platform | OpenShift Container Platform | 4.20 | Red Hat Documentation",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\official_docs\\ko\\source.html",
+      "content_length": 5418791
+    },
+    "en": {
+      "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/installing_on_any_platform/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "Installing on any platform | OpenShift Container Platform | 4.20 | Red Hat Documentation",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\official_docs\\en\\source.html",
+      "content_length": 3130369
+    }
+  },
+  "repo_artifacts": [
+    {
+      "repo_path": "installing/installing_platform_agnostic/installing-platform-agnostic.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/installing_platform_agnostic/installing-platform-agnostic.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\installing_platform_agnostic\\installing-platform-agnostic.adoc",
+      "content_length": 6287
+    },
+    {
+      "repo_path": "installing/installing_platform_agnostic/_attributes",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/installing_platform_agnostic/_attributes",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\installing_platform_agnostic\\_attributes",
+      "content_length": 18
+    },
+    {
+      "repo_path": "installing/validation_and_troubleshooting/validating-an-installation.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/validation_and_troubleshooting/validating-an-installation.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\validation_and_troubleshooting\\validating-an-installation.adoc",
+      "content_length": 4269
+    },
+    {
+      "repo_path": "installing/validation_and_troubleshooting/installing-troubleshooting.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/validation_and_troubleshooting/installing-troubleshooting.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\validation_and_troubleshooting\\installing-troubleshooting.adoc",
+      "content_length": 1713
+    },
+    {
+      "repo_path": "installing/overview/installing-preparing.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/overview/installing-preparing.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\overview\\installing-preparing.adoc",
+      "content_length": 42775
+    },
+    {
+      "repo_path": "installing/overview/installing-fips.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/overview/installing-fips.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\overview\\installing-fips.adoc",
+      "content_length": 8387
+    },
+    {
+      "repo_path": "installing/overview/index.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/overview/index.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\overview\\index.adoc",
+      "content_length": 3573
+    },
+    {
+      "repo_path": "installing/overview/cluster-capabilities.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/overview/cluster-capabilities.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\overview\\cluster-capabilities.adoc",
+      "content_length": 6016
+    },
+    {
+      "repo_path": "installing/installing_with_agent_based_installer/understanding-disconnected-installation-mirroring.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/installing_with_agent_based_installer/understanding-disconnected-installation-mirroring.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\installing_with_agent_based_installer\\understanding-disconnected-installation-mirroring.adoc",
+      "content_length": 1853
+    },
+    {
+      "repo_path": "installing/installing_with_agent_based_installer/preparing-to-install-with-agent-based-installer.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/installing_with_agent_based_installer/preparing-to-install-with-agent-based-installer.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\installing_with_agent_based_installer\\preparing-to-install-with-agent-based-installer.adoc",
+      "content_length": 4904
+    },
+    {
+      "repo_path": "installing/installing_with_agent_based_installer/preparing-an-agent-based-installed-cluster-for-mce.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/installing_with_agent_based_installer/preparing-an-agent-based-installed-cluster-for-mce.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\installing_with_agent_based_installer\\preparing-an-agent-based-installed-cluster-for-mce.adoc",
+      "content_length": 2331
+    },
+    {
+      "repo_path": "installing/installing_with_agent_based_installer/prepare-pxe-assets-agent.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/installing_with_agent_based_installer/prepare-pxe-assets-agent.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\installing_with_agent_based_installer\\prepare-pxe-assets-agent.adoc",
+      "content_length": 3832
+    },
+    {
+      "repo_path": "installing/installing_with_agent_based_installer/installing-with-agent-basic.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/installing_with_agent_based_installer/installing-with-agent-basic.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\installing_with_agent_based_installer\\installing-with-agent-basic.adoc",
+      "content_length": 2133
+    },
+    {
+      "repo_path": "installing/installing_with_agent_based_installer/installing-with-agent-based-installer.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/installing_with_agent_based_installer/installing-with-agent-based-installer.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\installing_with_agent_based_installer\\installing-with-agent-based-installer.adoc",
+      "content_length": 6209
+    },
+    {
+      "repo_path": "installing/installing_with_agent_based_installer/installing-using-iscsi.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/installing_with_agent_based_installer/installing-using-iscsi.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\installing_with_agent_based_installer\\installing-using-iscsi.adoc",
+      "content_length": 3606
+    },
+    {
+      "repo_path": "installing/installing_with_agent_based_installer/installing-ove.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/installing_with_agent_based_installer/installing-ove.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\installing_with_agent_based_installer\\installing-ove.adoc",
+      "content_length": 2539
+    },
+    {
+      "repo_path": "installing/installing_with_agent_based_installer/installation-config-parameters-agent.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/installing_with_agent_based_installer/installation-config-parameters-agent.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\installing_with_agent_based_installer\\installation-config-parameters-agent.adoc",
+      "content_length": 1795
+    },
+    {
+      "repo_path": "installing/installing_vsphere/vsphere-post-installation-encryption.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/installing_vsphere/vsphere-post-installation-encryption.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\installing_vsphere\\vsphere-post-installation-encryption.adoc",
+      "content_length": 1096
+    },
+    {
+      "repo_path": "installing/installing_vsphere/using-vsphere-problem-detector-operator.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/installing_vsphere/using-vsphere-problem-detector-operator.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\installing_vsphere\\using-vsphere-problem-detector-operator.adoc",
+      "content_length": 1405
+    },
+    {
+      "repo_path": "installing/installing_vsphere/uninstalling-cluster-vsphere-installer-provisioned.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/installing/installing_vsphere/uninstalling-cluster-vsphere-installer-provisioned.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\openshift_docs_repo\\installing\\installing_vsphere\\uninstalling-cluster-vsphere-installer-provisioned.adoc",
+      "content_length": 483
+    }
+  ],
+  "issue_pr_candidates_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\issue_pr_candidates.json"
+}

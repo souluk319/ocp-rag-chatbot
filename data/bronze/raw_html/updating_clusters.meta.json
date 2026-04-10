@@ -1,0 +1,17 @@
+{
+  "product_slug": "openshift_container_platform",
+  "ocp_version": "4.20",
+  "docs_language": "ko",
+  "source_kind": "html-single",
+  "book_slug": "updating_clusters",
+  "index_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/",
+  "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/updating_clusters/index",
+  "resolved_source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/updating_clusters/index",
+  "resolved_language": "ko",
+  "source_state": "published_native",
+  "source_state_reason": "discovered_in_requested_language_index",
+  "source_fingerprint": "9a130dc5fe00c330406abe2bd6747bf9bdec339bfb266b3f473208a2f2fc5a34",
+  "raw_html_sha256": "903aa5df76d48c73ffa70e1c509f1aeda64ac1be5e2a206dec47c7743567e2bf",
+  "fallback_detected": false,
+  "content_length": 5847107
+}

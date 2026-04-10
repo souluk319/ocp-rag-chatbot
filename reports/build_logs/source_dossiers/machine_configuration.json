@@ -1,0 +1,205 @@
+{
+  "slug": "machine_configuration",
+  "current_status": {
+    "content_status": "translated_ko_draft",
+    "gap_lane": "translation_first",
+    "gap_action": "preferred next step is Korean translation or source substitution",
+    "fallback_detected": true,
+    "hangul_chunk_ratio": 0.0,
+    "title": "Machine configuration"
+  },
+  "official_docs": {
+    "ko": {
+      "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/machine_configuration/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": true,
+      "title_hint": "Machine configuration | OpenShift Container Platform | 4.20 | Red Hat Documentation"
+    },
+    "en": {
+      "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/machine_configuration/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "Machine configuration | OpenShift Container Platform | 4.20 | Red Hat Documentation"
+    }
+  },
+  "openshift_docs_repo_candidates": [
+    "machine_configuration/_attributes",
+    "machine_configuration/images",
+    "machine_configuration/index.adoc",
+    "machine_configuration/machine-config-daemon-metrics.adoc",
+    "machine_configuration/machine-config-node-disruption.adoc",
+    "machine_configuration/machine-config-pin-preload-images-about.adoc",
+    "machine_configuration/machine-configs-configure.adoc",
+    "machine_configuration/machine-configs-custom.adoc",
+    "machine_configuration/machine-configs-garbage-collection.adoc",
+    "machine_configuration/mco-coreos-layering.adoc",
+    "machine_configuration/mco-update-boot-images-manual.adoc",
+    "machine_configuration/mco-update-boot-images.adoc",
+    "machine_configuration/modules",
+    "machine_configuration/snippets"
+  ],
+  "issue_pr_candidates_exact_slug": [
+    {
+      "number": 109084,
+      "title": "OSDOCS Document how to perform boot image updates on vSphere clusters",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109084",
+      "pull_request": true,
+      "updated_at": "2026-04-09T17:35:52Z"
+    },
+    {
+      "number": 109248,
+      "title": "OSDOCS Document how to perform boot image updates on none/external clusters",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109248",
+      "pull_request": true,
+      "updated_at": "2026-04-09T17:29:38Z"
+    },
+    {
+      "number": 108103,
+      "title": "OSDOCS 18143 Document how the boot image skew enforcement feature works",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/108103",
+      "pull_request": true,
+      "updated_at": "2026-04-06T19:34:55Z"
+    },
+    {
+      "number": 109199,
+      "title": "OSDOCS 18820 Managing boot images for ControlPlaneMachineSets (GA)",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109199",
+      "pull_request": true,
+      "updated_at": "2026-04-06T18:32:41Z"
+    },
+    {
+      "number": 109617,
+      "title": "[Dual stream/Image Stream] Support two major versions of RHEL CoreOS in a single OCP release & cluster",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109617",
+      "pull_request": true,
+      "updated_at": "2026-04-06T15:27:33Z"
+    },
+    {
+      "number": 109551,
+      "title": "OSDOCS 8353 Boot new workers directly into custom pool configuration",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109551",
+      "pull_request": true,
+      "updated_at": "2026-04-06T12:10:24Z"
+    },
+    {
+      "number": 109469,
+      "title": "OSDOCS 17238 Update MCO to reflect API changes made for Status Reporting",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109469",
+      "pull_request": true,
+      "updated_at": "2026-04-06T06:42:27Z"
+    },
+    {
+      "number": 108868,
+      "title": "OSDOCS Document how to perform boot image updates on marketplace clusters GCP",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/108868",
+      "pull_request": true,
+      "updated_at": "2026-03-31T20:57:35Z"
+    },
+    {
+      "number": 109158,
+      "title": "OSDOCS Document how to perform boot image updates on bare metal clusters",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109158",
+      "pull_request": true,
+      "updated_at": "2026-03-31T20:56:20Z"
+    },
+    {
+      "number": 109021,
+      "title": "OSDOCS Document how to perform boot image updates on marketplace clusters Azure",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109021",
+      "pull_request": true,
+      "updated_at": "2026-03-31T20:49:36Z"
+    }
+  ],
+  "issue_pr_candidates_related_terms": [
+    {
+      "number": 109278,
+      "title": "OSDOCS Specify that user-created machinesets should use the latest bootimages",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109278",
+      "pull_request": true,
+      "updated_at": "2026-04-09T17:37:25Z"
+    },
+    {
+      "number": 109084,
+      "title": "OSDOCS Document how to perform boot image updates on vSphere clusters",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109084",
+      "pull_request": true,
+      "updated_at": "2026-04-09T17:35:52Z"
+    },
+    {
+      "number": 109248,
+      "title": "OSDOCS Document how to perform boot image updates on none/external clusters",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109248",
+      "pull_request": true,
+      "updated_at": "2026-04-09T17:29:38Z"
+    },
+    {
+      "number": 109791,
+      "title": "OCPBUGS-45054: Updated worker/master reference with control-plane/com…",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109791",
+      "pull_request": true,
+      "updated_at": "2026-04-09T16:15:50Z"
+    },
+    {
+      "number": 103102,
+      "title": " OSDOCS-17043_4#applying CQAs for bare metal_1",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/103102",
+      "pull_request": true,
+      "updated_at": "2026-04-09T15:20:24Z"
+    },
+    {
+      "number": 109673,
+      "title": "OSDOCS-18955 created zstream RNs for 4-18-37",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109673",
+      "pull_request": true,
+      "updated_at": "2026-04-09T15:12:51Z"
+    },
+    {
+      "number": 109087,
+      "title": "MULTIARCH-5383 adding fallbackArchitecture",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109087",
+      "pull_request": true,
+      "updated_at": "2026-04-09T11:30:49Z"
+    },
+    {
+      "number": 103152,
+      "title": "OSDOCS-17043_9#applying CQAs for OpenStack",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/103152",
+      "pull_request": true,
+      "updated_at": "2026-04-09T09:12:20Z"
+    },
+    {
+      "number": 85667,
+      "title": "OSDOCS-12631#adding connectivity requirements",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/85667",
+      "pull_request": true,
+      "updated_at": "2026-04-09T08:30:58Z"
+    },
+    {
+      "number": 109797,
+      "title": "[enterprise-4.22] OSDOCS-18988: Updating the machine management index.adoc navigation file",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109797",
+      "pull_request": true,
+      "updated_at": "2026-04-08T18:43:53Z"
+    }
+  ]
+}

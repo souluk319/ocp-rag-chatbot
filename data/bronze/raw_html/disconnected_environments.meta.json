@@ -1,0 +1,17 @@
+{
+  "product_slug": "openshift_container_platform",
+  "ocp_version": "4.20",
+  "docs_language": "ko",
+  "source_kind": "html-single",
+  "book_slug": "disconnected_environments",
+  "index_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/",
+  "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/disconnected_environments/index",
+  "resolved_source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/disconnected_environments/index",
+  "resolved_language": "ko",
+  "source_state": "published_native",
+  "source_state_reason": "discovered_in_requested_language_index",
+  "source_fingerprint": "8c30b636a83ac3f804541da790a02b15430b7245f14c4415a5b5f4699e78f7e0",
+  "raw_html_sha256": "0cfce2afe4d7f97959b7e09fb81b8e7e64fa67a811173f2a6cd2f67b63c0e790",
+  "fallback_detected": false,
+  "content_length": 6836646
+}

@@ -1,0 +1,17 @@
+{
+  "product_slug": "openshift_container_platform",
+  "ocp_version": "4.20",
+  "docs_language": "ko",
+  "source_kind": "html-single",
+  "book_slug": "security_and_compliance",
+  "index_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/",
+  "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/security_and_compliance/index",
+  "resolved_source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/security_and_compliance/index",
+  "resolved_language": "ko",
+  "source_state": "published_native",
+  "source_state_reason": "discovered_in_requested_language_index",
+  "source_fingerprint": "01b72ddf08c584d737b9db1e510260ad062fbf717b88d42b990645fd2f0f2582",
+  "raw_html_sha256": "048e6f1665ef243bafc764a8fcaded5b67d2904c236875f035647b108baaafe5",
+  "fallback_detected": false,
+  "content_length": 11494777
+}

@@ -1,0 +1,241 @@
+{
+  "slug": "backup_and_restore",
+  "current_status": {
+    "content_status": "blocked",
+    "gap_lane": "translation_first",
+    "gap_action": "preferred next step is Korean translation or source substitution",
+    "fallback_detected": false,
+    "hangul_chunk_ratio": 0.0,
+    "title": "Backup and restore"
+  },
+  "official_docs": {
+    "ko": {
+      "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/backup_and_restore/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": true,
+      "title_hint": "Backup and restore | OpenShift Container Platform | 4.20 | Red Hat Documentation"
+    },
+    "en": {
+      "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/backup_and_restore/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "Backup and restore | OpenShift Container Platform | 4.20 | Red Hat Documentation"
+    }
+  },
+  "openshift_docs_repo_candidates": [
+    "backup_and_restore/_attributes",
+    "backup_and_restore/application_backup_and_restore/_attributes",
+    "backup_and_restore/application_backup_and_restore/aws-sts/_attributes",
+    "backup_and_restore/application_backup_and_restore/aws-sts/images",
+    "backup_and_restore/application_backup_and_restore/aws-sts/modules",
+    "backup_and_restore/application_backup_and_restore/aws-sts/oadp-aws-sts.adoc",
+    "backup_and_restore/application_backup_and_restore/aws-sts/snippets",
+    "backup_and_restore/application_backup_and_restore/backing_up_and_restoring/_attributes",
+    "backup_and_restore/application_backup_and_restore/backing_up_and_restoring/backing-up-applications.adoc",
+    "backup_and_restore/application_backup_and_restore/backing_up_and_restoring/images",
+    "backup_and_restore/application_backup_and_restore/backing_up_and_restoring/modules",
+    "backup_and_restore/application_backup_and_restore/backing_up_and_restoring/oadp-about-kopia.adoc",
+    "backup_and_restore/application_backup_and_restore/backing_up_and_restoring/oadp-backing-up-applications-restic-doc.adoc",
+    "backup_and_restore/application_backup_and_restore/backing_up_and_restoring/oadp-backing-up-pvs-csi-doc.adoc",
+    "backup_and_restore/application_backup_and_restore/backing_up_and_restoring/oadp-creating-backup-cr.adoc",
+    "backup_and_restore/application_backup_and_restore/backing_up_and_restoring/oadp-creating-backup-hooks-doc.adoc",
+    "backup_and_restore/application_backup_and_restore/backing_up_and_restoring/oadp-deleting-backups.adoc",
+    "backup_and_restore/application_backup_and_restore/backing_up_and_restoring/oadp-scheduling-backups-doc.adoc",
+    "backup_and_restore/application_backup_and_restore/backing_up_and_restoring/restoring-applications.adoc",
+    "backup_and_restore/application_backup_and_restore/backing_up_and_restoring/snippets",
+    "backup_and_restore/application_backup_and_restore/images",
+    "backup_and_restore/application_backup_and_restore/installing/_attributes",
+    "backup_and_restore/application_backup_and_restore/installing/about-installing-oadp.adoc",
+    "backup_and_restore/application_backup_and_restore/installing/about-oadp-data-mover.adoc",
+    "backup_and_restore/application_backup_and_restore/installing/configuring-backup-restore-pvc-datamover.adoc",
+    "backup_and_restore/application_backup_and_restore/installing/configuring-oadp-multiple-bsl.adoc",
+    "backup_and_restore/application_backup_and_restore/installing/configuring-oadp-multiple-vsl.adoc",
+    "backup_and_restore/application_backup_and_restore/installing/images",
+    "backup_and_restore/application_backup_and_restore/installing/installing-oadp-aws.adoc",
+    "backup_and_restore/application_backup_and_restore/installing/installing-oadp-azure.adoc",
+    "backup_and_restore/application_backup_and_restore/installing/installing-oadp-gcp.adoc",
+    "backup_and_restore/application_backup_and_restore/installing/installing-oadp-ibm-cloud.adoc",
+    "backup_and_restore/application_backup_and_restore/installing/installing-oadp-kubevirt.adoc",
+    "backup_and_restore/application_backup_and_restore/installing/installing-oadp-mcg.adoc",
+    "backup_and_restore/application_backup_and_restore/installing/installing-oadp-ocs.adoc",
+    "backup_and_restore/application_backup_and_restore/installing/modules",
+    "backup_and_restore/application_backup_and_restore/installing/oadp-backup-restore-csi-snapshots.adoc",
+    "backup_and_restore/application_backup_and_restore/installing/oadp-installing-operator.adoc",
+    "backup_and_restore/application_backup_and_restore/installing/overriding-kopia-algorithms.adoc",
+    "backup_and_restore/application_backup_and_restore/installing/snippets",
+    "backup_and_restore/application_backup_and_restore/installing/uninstalling-oadp.adoc",
+    "backup_and_restore/application_backup_and_restore/modules",
+    "backup_and_restore/application_backup_and_restore/oadp-3scale/_attributes",
+    "backup_and_restore/application_backup_and_restore/oadp-3scale/backing-up-3scale-api-management-by-using-oadp.adoc",
+    "backup_and_restore/application_backup_and_restore/oadp-3scale/backing-up-and-restoring-3scale-api-management-by-using-oadp.adoc",
+    "backup_and_restore/application_backup_and_restore/oadp-3scale/images",
+    "backup_and_restore/application_backup_and_restore/oadp-3scale/modules",
+    "backup_and_restore/application_backup_and_restore/oadp-3scale/restoring-3scale-api-management-by-using-oadp.adoc",
+    "backup_and_restore/application_backup_and_restore/oadp-3scale/snippets",
+    "backup_and_restore/application_backup_and_restore/oadp-advanced-topics/_attributes"
+  ],
+  "issue_pr_candidates_exact_slug": [
+    {
+      "number": 109410,
+      "title": "[OSDOCS#18862]: Added conditions for TNF in backup and restore",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109410",
+      "pull_request": true,
+      "updated_at": "2026-04-09T15:41:04Z"
+    },
+    {
+      "number": 109121,
+      "title": "CQA fixes for 3scale",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109121",
+      "pull_request": true,
+      "updated_at": "2026-04-09T12:06:45Z"
+    },
+    {
+      "number": 109671,
+      "title": "CQA fixes for oadp features and plugins",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109671",
+      "pull_request": true,
+      "updated_at": "2026-04-09T06:16:43Z"
+    },
+    {
+      "number": 109402,
+      "title": "OADP-7340: CQA Advanced topics",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109402",
+      "pull_request": true,
+      "updated_at": "2026-04-08T12:39:45Z"
+    },
+    {
+      "number": 109295,
+      "title": "OADP-7340: CQA Advanced topics",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109295",
+      "pull_request": true,
+      "updated_at": "2026-04-08T12:36:49Z"
+    },
+    {
+      "number": 109754,
+      "title": "[enterprise-4.16] OADP-7040: Prepare OADP 1.4 RNs for DITA",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109754",
+      "pull_request": true,
+      "updated_at": "2026-04-08T12:17:04Z"
+    },
+    {
+      "number": 109445,
+      "title": "OADP-7040: Prepare OADP 1.4 RNs for DITA",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109445",
+      "pull_request": true,
+      "updated_at": "2026-04-08T09:48:50Z"
+    },
+    {
+      "number": 109414,
+      "title": "OADP-7028: Fix ConceptLink in OADP 1.5 RNs",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109414",
+      "pull_request": true,
+      "updated_at": "2026-04-08T06:29:38Z"
+    },
+    {
+      "number": 109413,
+      "title": "CQA for OADP intro",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109413",
+      "pull_request": true,
+      "updated_at": "2026-04-07T08:37:34Z"
+    },
+    {
+      "number": 109651,
+      "title": "CQA for oadp intro",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109651",
+      "pull_request": true,
+      "updated_at": "2026-04-07T08:36:55Z"
+    }
+  ],
+  "issue_pr_candidates_related_terms": [
+    {
+      "number": 109410,
+      "title": "[OSDOCS#18862]: Added conditions for TNF in backup and restore",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109410",
+      "pull_request": true,
+      "updated_at": "2026-04-09T15:41:04Z"
+    },
+    {
+      "number": 109121,
+      "title": "CQA fixes for 3scale",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109121",
+      "pull_request": true,
+      "updated_at": "2026-04-09T12:06:45Z"
+    },
+    {
+      "number": 109671,
+      "title": "CQA fixes for oadp features and plugins",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109671",
+      "pull_request": true,
+      "updated_at": "2026-04-09T06:16:43Z"
+    },
+    {
+      "number": 107635,
+      "title": "TELCODOCS#2671: Vale check for cnf-understanding-image-based-upgrade",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/107635",
+      "pull_request": true,
+      "updated_at": "2026-04-08T14:15:05Z"
+    },
+    {
+      "number": 109402,
+      "title": "OADP-7340: CQA Advanced topics",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109402",
+      "pull_request": true,
+      "updated_at": "2026-04-08T12:39:45Z"
+    },
+    {
+      "number": 109295,
+      "title": "OADP-7340: CQA Advanced topics",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109295",
+      "pull_request": true,
+      "updated_at": "2026-04-08T12:36:49Z"
+    },
+    {
+      "number": 109754,
+      "title": "[enterprise-4.16] OADP-7040: Prepare OADP 1.4 RNs for DITA",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109754",
+      "pull_request": true,
+      "updated_at": "2026-04-08T12:17:04Z"
+    },
+    {
+      "number": 104553,
+      "title": "TELCODOCS-2496 Enable new cri-o ExecCPUAffinity feature to avoid interrupting low latency processes in guaranteed QoS class pods",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/104553",
+      "pull_request": true,
+      "updated_at": "2026-04-08T10:59:33Z"
+    },
+    {
+      "number": 109712,
+      "title": "OSDOCS#18995: Microshift Add text",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109712",
+      "pull_request": true,
+      "updated_at": "2026-04-08T10:31:12Z"
+    },
+    {
+      "number": 109445,
+      "title": "OADP-7040: Prepare OADP 1.4 RNs for DITA",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109445",
+      "pull_request": true,
+      "updated_at": "2026-04-08T09:48:50Z"
+    }
+  ]
+}

@@ -305,23 +305,24 @@ def _resolve_normalized_row_for_viewer_path(
         return None, False
     book_slug, anchor = parsed
     settings = load_settings(root_dir)
-    normalized_docs_path = settings.normalized_docs_path
-    if not normalized_docs_path.exists():
-        return None, False
-    sections_by_book = _load_normalized_sections(
-        str(normalized_docs_path),
-        normalized_docs_path.stat().st_mtime_ns,
-    )
-    sections = sections_by_book.get(book_slug, [])
-    if not sections:
-        return None, False
-    if not anchor:
-        return sections[0], True
+    for normalized_docs_path in settings.normalized_docs_candidates:
+        if not normalized_docs_path.exists():
+            continue
+        sections_by_book = _load_normalized_sections(
+            str(normalized_docs_path),
+            normalized_docs_path.stat().st_mtime_ns,
+        )
+        sections = sections_by_book.get(book_slug, [])
+        if not sections:
+            continue
+        if not anchor:
+            return sections[0], True
 
-    for row in sections:
-        if str(row.get("anchor") or "").strip() == anchor:
-            return row, True
-    return sections[0], False
+        for row in sections:
+            if str(row.get("anchor") or "").strip() == anchor:
+                return row, True
+        return sections[0], False
+    return None, False
 
 
 def _serialize_citation(root_dir: Path, citation: Citation) -> dict[str, Any]:

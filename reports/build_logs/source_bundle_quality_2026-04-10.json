@@ -1,0 +1,52 @@
+{
+  "bundles": [
+    {
+      "book_slug": "machine_configuration",
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "ko_fallback_banner": true,
+      "status": "ok"
+    },
+    {
+      "book_slug": "backup_and_restore",
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "ko_fallback_banner": true,
+      "status": "ok"
+    },
+    {
+      "book_slug": "etcd",
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "ko_fallback_banner": false,
+      "status": "ok"
+    },
+    {
+      "book_slug": "installing_on_any_platform",
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "ko_fallback_banner": true,
+      "status": "ok"
+    },
+    {
+      "book_slug": "monitoring",
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "ko_fallback_banner": true,
+      "status": "ok"
+    },
+    {
+      "book_slug": "operators",
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "ko_fallback_banner": false,
+      "status": "ok"
+    }
+  ]
+}

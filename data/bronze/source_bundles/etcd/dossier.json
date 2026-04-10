@@ -1,0 +1,92 @@
+{
+  "slug": "etcd",
+  "current_status": {
+    "content_status": "blocked",
+    "gap_lane": "manual_review_first",
+    "gap_action": "preferred next step is manual source review or curated internal summary",
+    "fallback_detected": false,
+    "hangul_chunk_ratio": 0.0,
+    "title": "etcd"
+  },
+  "official_docs": {
+    "ko": {
+      "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/etcd/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "etcd | OpenShift Container Platform | 4.20 | Red Hat Documentation"
+    },
+    "en": {
+      "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/etcd/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "etcd | OpenShift Container Platform | 4.20 | Red Hat Documentation"
+    }
+  },
+  "openshift_docs_repo_candidates": [
+    "etcd/etcd-practices.adoc",
+    "etcd/etcd-performance.adoc",
+    "etcd/etcd-overview.adoc",
+    "etcd/etcd-guidance-span.adoc",
+    "etcd/etcd-encrypt.adoc",
+    "etcd/etcd-backup-restore/replace-unhealthy-etcd-member.adoc",
+    "etcd/etcd-backup-restore/etcd-disaster-recovery.adoc",
+    "etcd/etcd-backup-restore/etcd-backup.adoc",
+    "etcd/_attributes",
+    "etcd/etcd-backup-restore/_attributes",
+    "modules/update-etcd-backup.adoc",
+    "modules/understand-etcd-performance.adoc",
+    "modules/troubleshooting-certs-auto-etcd.adoc",
+    "modules/restoring-etcd-snapshot-hosted-cluster.adoc",
+    "modules/restore-replace-stopped-etcd-member.adoc",
+    "modules/restore-replace-stopped-baremetal-etcd-member.adoc",
+    "modules/restore-replace-crashlooping-etcd-member.adoc",
+    "modules/restore-identify-unhealthy-etcd-member.adoc",
+    "modules/restore-determine-state-etcd-member.adoc",
+    "modules/recommended-etcd-practices.adoc",
+    "modules/recommended-cluster-latency-etcd.adoc",
+    "modules/olm-creating-etcd-cluster-from-operator.adoc",
+    "modules/nodes-remove-unhealthy-etcd-member.adoc",
+    "modules/nodes-delete-machine-unhealthy-etcd.adoc",
+    "modules/nodes-add-new-etcd-member.adoc",
+    "modules/move-etcd-different-disk.adoc",
+    "modules/microshift-troubleshooting-etcd.adoc",
+    "modules/microshift-observe-debug-etcd-server.adoc",
+    "modules/microshift-etcd-version.adoc",
+    "modules/microshift-encrypt-etcd-data.adoc",
+    "modules/microshift-config-etcd.adoc",
+    "modules/manually-restoring-cluster-etcd-backup.adoc",
+    "modules/machine-lifecycle-hook-deletion-etcd.adoc",
+    "modules/investigating-etcd-installation-issues.adoc",
+    "modules/installation-verifying-etcd-health.adoc",
+    "modules/how-etcd-works.adoc",
+    "modules/hosted-clusters-openstack-prepare-etcd.adoc",
+    "modules/hosted-cluster-etcd-status.adoc",
+    "modules/hosted-cluster-etcd-backup-restore-on-premise.adoc",
+    "modules/hcp-virt-etcd-storage.adoc",
+    "modules/hcp-recover-failing-etcd-pods.adoc",
+    "modules/etcd-workload-placement-considerations-span.adoc",
+    "modules/etcd-verify-hardware.adoc",
+    "modules/etcd-tuning-parameters.adoc",
+    "modules/etcd-timer-tunables.adoc",
+    "modules/etcd-site-recommendations-span.adoc",
+    "modules/etcd-requirements-etcd-hardware-span.adoc",
+    "modules/etcd-peer-round-trip.adoc",
+    "modules/etcd-overview.adoc",
+    "modules/etcd-operator.adoc"
+  ],
+  "issue_pr_candidates_exact_slug": [],
+  "issue_pr_candidates_related_terms": [],
+  "repo_search_terms": {
+    "slug": "etcd",
+    "title": "etcd",
+    "aliases": [
+      "etcd"
+    ],
+    "path_hint": "etcd",
+    "exact_queries": [
+      "repo:openshift/openshift-docs path:etcd \"etcd\"",
+      "repo:openshift/openshift-docs path:etcd etcd"
+    ],
+    "related_queries": []
+  }
+}

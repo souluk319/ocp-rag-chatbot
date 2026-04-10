@@ -1,0 +1,17 @@
+{
+  "product_slug": "openshift_container_platform",
+  "ocp_version": "4.20",
+  "docs_language": "ko",
+  "source_kind": "html-single",
+  "book_slug": "backup_and_restore",
+  "index_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/",
+  "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/backup_and_restore/index",
+  "resolved_source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/backup_and_restore/index",
+  "resolved_language": "ko",
+  "source_state": "published_native",
+  "source_state_reason": "discovered_in_requested_language_index",
+  "source_fingerprint": "cdb7591f71598014ed474c00f0803035ed2059f713658f17b83e112c2b60f8f9",
+  "raw_html_sha256": "b6f3db250c1bf5c2befce079c6526bcf0dfe256ebc998ace6a5928954112bc69",
+  "fallback_detected": false,
+  "content_length": 10812458
+}

@@ -1,0 +1,71 @@
+{
+  "disconnected_environments": {
+    "sections": 209,
+    "chunks": 994,
+    "translation_statuses": {
+      "original": 209
+    },
+    "source_lanes": {
+      "official_ko": 209
+    },
+    "review_statuses": {
+      "unreviewed": 209
+    },
+    "sections_with_cli_commands": 48,
+    "sections_with_error_strings": 1,
+    "sections_with_verification_hints": 42,
+    "sections_with_operator_names": 29,
+    "manualbook_quality_status": [
+      "translation_required"
+    ],
+    "manualbook_review_status": [
+      "unreviewed"
+    ]
+  },
+  "machine_configuration": {
+    "sections": 57,
+    "chunks": 720,
+    "translation_statuses": {
+      "original": 57
+    },
+    "source_lanes": {
+      "official_ko": 57
+    },
+    "review_statuses": {
+      "unreviewed": 57
+    },
+    "sections_with_cli_commands": 31,
+    "sections_with_error_strings": 3,
+    "sections_with_verification_hints": 28,
+    "sections_with_operator_names": 28,
+    "manualbook_quality_status": [
+      "translation_required"
+    ],
+    "manualbook_review_status": [
+      "unreviewed"
+    ]
+  },
+  "validation_and_troubleshooting": {
+    "sections": 20,
+    "chunks": 74,
+    "translation_statuses": {
+      "original": 20
+    },
+    "source_lanes": {
+      "official_ko": 20
+    },
+    "review_statuses": {
+      "unreviewed": 20
+    },
+    "sections_with_cli_commands": 5,
+    "sections_with_error_strings": 0,
+    "sections_with_verification_hints": 6,
+    "sections_with_operator_names": 1,
+    "manualbook_quality_status": [
+      "translation_required"
+    ],
+    "manualbook_review_status": [
+      "unreviewed"
+    ]
+  }
+}

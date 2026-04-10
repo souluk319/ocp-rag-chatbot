@@ -79,6 +79,78 @@ class ChunkingTests(unittest.TestCase):
 
         self.assertLess(len(reference_chunks), len(normal_chunks))
 
+    def test_split_blocks_preserves_attributed_code_markers(self) -> None:
+        text = """
+        소개 문단입니다.
+
+        [CODE language="yaml" wrap_hint="true"]
+        kind: Pod
+        metadata:
+          name: demo
+        [/CODE]
+
+        다음 설명입니다.
+        """.strip()
+
+        blocks = chunking._split_blocks(text)
+
+        self.assertEqual(3, len(blocks))
+        self.assertEqual("소개 문단입니다.", blocks[0])
+        self.assertTrue(blocks[1].startswith('[CODE language="yaml" wrap_hint="true"]'))
+        self.assertTrue(blocks[1].endswith("[/CODE]"))
+        self.assertEqual("다음 설명입니다.", blocks[2])
+
+    def test_chunk_sections_preserve_operational_metadata(self) -> None:
+        fake_model = _FakeSentenceModel()
+        section = NormalizedSection(
+            book_slug="ingress",
+            book_title="Ingress troubleshooting",
+            heading="Router check",
+            section_level=2,
+            section_path=["Ingress troubleshooting", "Router check"],
+            anchor="router-check",
+            source_url="https://example.com/ingress",
+            viewer_path="/docs/ocp/4.20/ko/ingress/index.html#router-check",
+            text="확인: Route 상태를 점검합니다.\n\n[CODE]\noc get pods -n openshift-ingress\n[/CODE]",
+            source_id="src-1",
+            source_lane="official_ko",
+            source_type="official_doc",
+            source_collection="core",
+            product="openshift",
+            version="4.20",
+            locale="ko",
+            cli_commands=("oc get pods -n openshift-ingress",),
+            error_strings=("ImagePullBackOff",),
+            k8s_objects=("Route", "Deployment"),
+            operator_names=("Ingress Operator",),
+            verification_hints=("확인: Route 상태를 점검합니다.", "oc get pods -n openshift-ingress"),
+        )
+        settings = Settings(root_dir=ROOT)
+
+        with patch.object(chunking, "load_sentence_model", return_value=fake_model):
+            chunks = chunking.chunk_sections([section], settings)
+
+        self.assertEqual(1, len(chunks))
+        chunk = chunks[0]
+        self.assertEqual(("oc get pods -n openshift-ingress",), chunk.cli_commands)
+        self.assertEqual(("ImagePullBackOff",), chunk.error_strings)
+        self.assertEqual(("Route", "Deployment"), chunk.k8s_objects)
+        self.assertEqual(("Ingress Operator",), chunk.operator_names)
+        self.assertEqual(
+            ("확인: Route 상태를 점검합니다.", "oc get pods -n openshift-ingress"),
+            chunk.verification_hints,
+        )
+        self.assertEqual("src-1", chunk.source_id)
+        self.assertEqual("official_doc", chunk.source_type)
+        self.assertEqual(["oc get pods -n openshift-ingress"], chunk.to_dict()["cli_commands"])
+        self.assertEqual(["ImagePullBackOff"], chunk.to_dict()["error_strings"])
+        self.assertEqual(["Route", "Deployment"], chunk.to_dict()["k8s_objects"])
+        self.assertEqual(["Ingress Operator"], chunk.to_dict()["operator_names"])
+        self.assertEqual(
+            ["확인: Route 상태를 점검합니다.", "oc get pods -n openshift-ingress"],
+            chunk.to_dict()["verification_hints"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,10 @@
+[
+  {
+    "slug": "installing_on_any_platform",
+    "content_status": "blocked",
+    "gap_lane": "translation_first",
+    "official_ko_fallback_banner": true,
+    "repo_candidate_count": 50,
+    "issue_pr_candidate_count": 0
+  }
+]

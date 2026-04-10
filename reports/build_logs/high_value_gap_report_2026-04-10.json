@@ -1,0 +1,72 @@
+{
+  "built_at": "2026-04-10",
+  "runtime_high_value_count": 29,
+  "missing_high_value_slugs": [],
+  "approval_summary": {
+    "book_count": 113,
+    "approved_ko_count": 23,
+    "translated_ko_draft_count": 4,
+    "mixed_count": 0,
+    "en_only_count": 0,
+    "blocked_count": 86,
+    "high_value_issue_count": 6
+  },
+  "gap_summary": {
+    "high_value_issue_count": 6,
+    "translation_first_count": 4,
+    "manual_review_first_count": 2,
+    "remaining_gap_count": 0
+  },
+  "translation_first_top10": [
+    {
+      "book_slug": "backup_and_restore",
+      "title": "Backup and restore",
+      "content_status": "translated_ko_draft",
+      "gap_action": "preferred next step is Korean translation or source substitution",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0
+    },
+    {
+      "book_slug": "installing_on_any_platform",
+      "title": "Installing on any platform",
+      "content_status": "translated_ko_draft",
+      "gap_action": "preferred next step is Korean translation or source substitution",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0
+    },
+    {
+      "book_slug": "machine_configuration",
+      "title": "Machine configuration",
+      "content_status": "translated_ko_draft",
+      "gap_action": "preferred next step is Korean translation or source substitution",
+      "fallback_detected": true,
+      "hangul_chunk_ratio": 0.0
+    },
+    {
+      "book_slug": "monitoring",
+      "title": "Monitoring",
+      "content_status": "translated_ko_draft",
+      "gap_action": "preferred next step is Korean translation or source substitution",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0
+    }
+  ],
+  "manual_review_first_top10": [
+    {
+      "book_slug": "etcd",
+      "title": "etcd",
+      "content_status": "blocked",
+      "gap_action": "preferred next step is manual source review or curated internal summary",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0
+    },
+    {
+      "book_slug": "operators",
+      "title": "Operator",
+      "content_status": "blocked",
+      "gap_action": "preferred next step is manual source review or curated internal summary",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0
+    }
+  ]
+}

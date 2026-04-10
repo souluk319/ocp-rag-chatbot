@@ -24,11 +24,16 @@ def _playbook_book_path(root_dir: Path, book_slug: str) -> Path:
     return settings.playbook_books_dir / f"{book_slug}.json"
 
 
+def _playbook_book_candidates(root_dir: Path, book_slug: str) -> tuple[Path, ...]:
+    settings = load_settings(root_dir)
+    return tuple(directory / f"{book_slug}.json" for directory in settings.playbook_book_dirs)
+
+
 def _load_playbook_book(root_dir: Path, book_slug: str) -> dict[str, Any] | None:
-    path = _playbook_book_path(root_dir, book_slug)
-    if not path.exists():
-        return None
-    return json.loads(path.read_text(encoding="utf-8"))
+    for path in _playbook_book_candidates(root_dir, book_slug):
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+    return None
 
 
 def internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:

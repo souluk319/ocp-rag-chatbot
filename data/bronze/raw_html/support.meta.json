@@ -1,0 +1,17 @@
+{
+  "product_slug": "openshift_container_platform",
+  "ocp_version": "4.20",
+  "docs_language": "ko",
+  "source_kind": "html-single",
+  "book_slug": "support",
+  "index_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/",
+  "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/support/index",
+  "resolved_source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/support/index",
+  "resolved_language": "ko",
+  "source_state": "published_native",
+  "source_state_reason": "discovered_in_requested_language_index",
+  "source_fingerprint": "f5a13dd13c1ff5af850c5e18b90ca4cb966626c13b614d6ac22b1cb6987b3c9c",
+  "raw_html_sha256": "c6b3089a9b2d3a42ef74c614675525a155536bfdb3e2d6c3ad1db196f51576f3",
+  "fallback_detected": false,
+  "content_length": 6854470
+}

@@ -1,0 +1,289 @@
+board_version: 1
+product: play-book-studio
+product_mode: knowledge_foundry
+shipping_baseline:
+  product: openshift_container_platform
+  version: "4.20"
+  locale: ko
+principles:
+  - corpus_and_manualbook_first
+  - version_is_mandatory
+  - source_and_legal_provenance_must_survive
+  - no_gold_without_reviewable_anchors
+  - eval_gate_before_runtime_promotion
+owners:
+  architect:
+    role: product_contract_and_pack_boundaries
+  data_engineer:
+    role: collection_normalization_translation
+  retrieval_engineer:
+    role: indexing_retrieval_grounding
+  judge:
+    role: eval_gate_and_release_blocking
+phases:
+  - id: F0
+    name: foundry_contract
+    goal: Freeze the product contract, metadata contract, and shipping gate for OCP 4.20.
+    epics:
+      - id: F0-E1
+        name: contract_and_schema_freeze
+        tasks:
+          - id: F0-E1-T1
+            title: Freeze product and system contracts
+            owner: architect
+            status: done
+            inputs:
+              - PROJECT.md
+              - SYSTEM_RULES.md
+            outputs:
+              - PROJECT.md
+              - SYSTEM_RULES.md
+            tests:
+              - contracts_exist_and_match_foundry_direction
+            acceptance:
+              - repo defines corpus_and_manualbook_as_primary_products
+              - answer_surface_is_explicitly_secondary_to_gold_assets
+            blockers: []
+          - id: F0-E1-T2
+            title: Freeze document, chunk, and manualbook schemas
+            owner: architect
+            status: in_progress
+            inputs:
+              - schemas/document.schema.json
+              - schemas/chunk.schema.json
+              - schemas/manualbook.schema.json
+            outputs:
+              - schemas/document.schema.json
+              - schemas/chunk.schema.json
+              - schemas/manualbook.schema.json
+            tests:
+              - schema_fields_cover_version_translation_trust_anchor_legal_metadata
+            acceptance:
+              - document_schema_supports_bronze_to_gold_metadata_lineage
+              - chunk_schema_supports_retrieval_grounding_and_keyword_sidecars
+              - manualbook_schema_supports_reader_facing_anchor_navigation
+            blockers: []
+      - id: F0-E2
+        name: repo_structure_baseline
+        tasks:
+          - id: F0-E2-T1
+            title: Create foundry directories for data, pipelines, eval, reports, and apps
+            owner: architect
+            status: in_progress
+            inputs:
+              - repo_root
+            outputs:
+              - data/bronze/.gitkeep
+              - data/silver/.gitkeep
+              - data/silver_ko/.gitkeep
+              - data/gold_corpus_ko/.gitkeep
+              - data/gold_manualbook_ko/.gitkeep
+              - pipelines/collectors/.gitkeep
+              - pipelines/normalize/.gitkeep
+              - pipelines/translate/.gitkeep
+              - pipelines/chunk/.gitkeep
+              - pipelines/index/.gitkeep
+              - eval/goldens/.gitkeep
+              - eval/retrieval/.gitkeep
+              - eval/answer/.gitkeep
+              - eval/translation/.gitkeep
+              - reports/build_logs/.gitkeep
+              - reports/eval_reports/.gitkeep
+              - apps/studio-ui/.gitkeep
+              - apps/api/.gitkeep
+              - apps/manualbook-viewer/.gitkeep
+            tests:
+              - repo_tree_exists_without_breaking_current_runtime
+            acceptance:
+              - new_foundry_tree_is_present_and_names_are_stable
+            blockers: []
+  - id: F1
+    name: ocp420_gold_factory
+    goal: Produce shippable Gold-Corpus and Gold-Manualbook assets for OCP 4.20.
+    epics:
+      - id: F1-E1
+        name: source_lane_baseline
+        tasks:
+          - id: F1-E1-T1
+            title: Rebuild Official KO approved manifest
+            owner: data_engineer
+            status: planned
+            inputs:
+              - manifests/ocp_multiversion_html_single_catalog.json
+            outputs:
+              - manifests/ocp_ko_4_20_approved_ko.json
+              - artifacts/corpus/source_approval_report.json
+            tests:
+              - python scripts/build_source_approval.py
+            acceptance:
+              - approved_manifest_contains_only_reviewable_ko_assets
+              - approval_report_marks_translation_gaps
+            blockers: []
+          - id: F1-E1-T2
+            title: Promote EN fallback candidates into reviewed translation lane
+            owner: data_engineer
+            status: planned
+            inputs:
+              - manifests/ocp_ko_4_20_approved_ko.json
+              - manifests/ocp_multiversion_html_single_catalog.json
+            outputs:
+              - manifests/ocp_ko_4_20_translated_ko_draft.json
+              - artifacts/corpus/translation_lane_report.json
+            tests:
+              - python scripts/build_translation_draft_manifest.py
+            acceptance:
+              - each_fallback_doc_has_translation_stage_and_source_provenance
+            blockers:
+              - F0-E1-T2
+      - id: F1-E2
+        name: normalization_and_gold_projection
+        tasks:
+          - id: F1-E2-T1
+            title: Extend canonical metadata for trust, legal, and verification fields
+            owner: data_engineer
+            status: planned
+            inputs:
+              - src/play_book_studio/ingestion/models.py
+              - src/play_book_studio/canonical/models.py
+            outputs:
+              - extended_document_graph_metadata
+            tests:
+              - targeted_unit_tests_for_model_roundtrip
+            acceptance:
+              - all_gold_candidates_preserve_trust_legal_and_verification_fields
+            blockers:
+              - F0-E1-T2
+          - id: F1-E2-T2
+            title: Emit first reviewed Gold-Corpus and Gold-Manualbook pack
+            owner: data_engineer
+            status: planned
+            inputs:
+              - manifests/ocp_ko_4_20_corpus_working_set.json
+              - schemas/document.schema.json
+              - schemas/chunk.schema.json
+              - schemas/manualbook.schema.json
+            outputs:
+              - artifacts/corpus/normalized_docs.jsonl
+              - artifacts/corpus/chunks.jsonl
+              - artifacts/corpus/bm25_corpus.jsonl
+              - artifacts/corpus/playbook_documents.jsonl
+              - artifacts/corpus/playbooks/
+            tests:
+              - python scripts/run_ingestion.py --process-subset all
+            acceptance:
+              - runtime_artifacts_exist_for_corpus_and_manualbook
+              - promoted_assets_have_anchor_and_provenance_fields
+            blockers:
+              - F1-E2-T1
+  - id: F2
+    name: answer_surface_realignment
+    goal: Make the answer layer render playbook state transitions instead of plain summaries.
+    epics:
+      - id: F2-E1
+        name: answer_contract_upgrade
+        tasks:
+          - id: F2-E1-T1
+            title: Enforce six-part playbook answer structure
+            owner: retrieval_engineer
+            status: planned
+            inputs:
+              - src/play_book_studio/answering/prompt.py
+              - src/play_book_studio/answering/answerer.py
+            outputs:
+              - structured_answer_contract
+            tests:
+              - pytest tests/test_answering_output.py tests/test_answering_routes.py
+            acceptance:
+              - answers_render_situation_judgment_actions_verification_next_branch_evidence
+            blockers:
+              - F1-E2-T2
+          - id: F2-E1-T2
+            title: Bind answer citations to manualbook anchors
+            owner: retrieval_engineer
+            status: planned
+            inputs:
+              - src/play_book_studio/app/source_books.py
+              - src/play_book_studio/answering/citations.py
+            outputs:
+              - anchor_stable_runtime_navigation
+            tests:
+              - pytest tests/test_app_viewers.py tests/test_app_runtime_ui.py
+            acceptance:
+              - every_runtime_citation_opens_manualbook_and_original_source_path
+            blockers:
+              - F1-E2-T2
+  - id: F3
+    name: github_troubleshooting_lane
+    goal: Admit GitHub-native troubleshooting evidence without polluting official guidance.
+    epics:
+      - id: F3-E1
+        name: github_evidence_ingestion
+        tasks:
+          - id: F3-E1-T1
+            title: Define GitHub evidence document shape and trust rules
+            owner: data_engineer
+            status: planned
+            inputs:
+              - schemas/document.schema.json
+              - SYSTEM_RULES.md
+            outputs:
+              - github_lane_mapping_rules
+            tests:
+              - schema_review_and_sample_rows
+            acceptance:
+              - github_raw_evidence_cannot_ship_without_upstream_anchors
+            blockers:
+              - F0-E1-T2
+          - id: F3-E1-T2
+            title: Promote verified GitHub evidence into applied playbooks
+            owner: judge
+            status: planned
+            inputs:
+              - curated_github_case_set
+            outputs:
+              - applied_playbook_rows
+            tests:
+              - retrieval_eval_on_root_cause_cases
+              - answer_eval_on_troubleshooting_cases
+            acceptance:
+              - applied_playbooks_trace_back_to_original_issue_or_pr_context
+            blockers:
+              - F3-E1-T1
+              - F2-E1-T1
+  - id: F4
+    name: multiversion_expansion
+    goal: Expand to 4.18 through 4.21 without collapsing pack identity.
+    epics:
+      - id: F4-E1
+        name: version_pack_expansion
+        tasks:
+          - id: F4-E1-T1
+            title: Add explicit pack contracts for 4.18, 4.19, and 4.21
+            owner: architect
+            status: planned
+            inputs:
+              - src/play_book_studio/config/packs.py
+            outputs:
+              - version_specific_pack_definitions
+            tests:
+              - pack_resolution_tests
+            acceptance:
+              - no_cross_version_index_is_shipped_by_default
+            blockers:
+              - F1-E2-T2
+          - id: F4-E1-T2
+            title: Add version-aware eval packs
+            owner: judge
+            status: planned
+            inputs:
+              - manifests/retrieval_eval_cases.jsonl
+              - manifests/answer_eval_cases.jsonl
+            outputs:
+              - version_partitioned_eval_sets
+            tests:
+              - retrieval_eval_per_version
+              - answer_eval_per_version
+            acceptance:
+              - every_supported_version_has_independent_eval_report
+            blockers:
+              - F4-E1-T1

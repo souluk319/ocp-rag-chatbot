@@ -1,0 +1,17 @@
+{
+  "product_slug": "openshift_container_platform",
+  "ocp_version": "4.20",
+  "docs_language": "ko",
+  "source_kind": "html-single",
+  "book_slug": "authentication_and_authorization",
+  "index_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/",
+  "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/authentication_and_authorization/index",
+  "resolved_source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/authentication_and_authorization/index",
+  "resolved_language": "ko",
+  "source_state": "published_native",
+  "source_state_reason": "discovered_in_requested_language_index",
+  "source_fingerprint": "304fe78bf804fb15b047620b2ed1d82f681caf8cbfce34ac9dcd3abdea44df37",
+  "raw_html_sha256": "53a65af2459c160e4bb275c971492ac7519a19ff0b8eca030b958bf576318512",
+  "fallback_detected": false,
+  "content_length": 7304197
+}

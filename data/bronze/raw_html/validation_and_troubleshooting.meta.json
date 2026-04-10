@@ -1,0 +1,17 @@
+{
+  "product_slug": "openshift_container_platform",
+  "ocp_version": "4.20",
+  "docs_language": "ko",
+  "source_kind": "html-single",
+  "book_slug": "validation_and_troubleshooting",
+  "index_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/",
+  "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/validation_and_troubleshooting/index",
+  "resolved_source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/validation_and_troubleshooting/index",
+  "resolved_language": "ko",
+  "source_state": "published_native",
+  "source_state_reason": "discovered_in_requested_language_index",
+  "source_fingerprint": "cf76190c285ddc8a47145c13ff34cae4478b6a75ef840bee356dd01be2f6e058",
+  "raw_html_sha256": "a0ba7755e80faf27388c96e02b15724f7d393baf2fefa43f3ae9a76110b8767f",
+  "fallback_detected": false,
+  "content_length": 4810788
+}

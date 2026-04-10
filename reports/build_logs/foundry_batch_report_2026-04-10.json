@@ -1,0 +1,47 @@
+{
+  "target_slugs": [
+    "disconnected_environments",
+    "machine_configuration",
+    "validation_and_troubleshooting"
+  ],
+  "processed_sources": [
+    "disconnected_environments",
+    "machine_configuration",
+    "validation_and_troubleshooting"
+  ],
+  "normalized_count": 286,
+  "chunk_count": 1788,
+  "errors": [],
+  "per_book_stats": [
+    {
+      "book_slug": "disconnected_environments",
+      "collected": true,
+      "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/disconnected_environments/index",
+      "processed": true,
+      "section_count": 209,
+      "title": "연결이 끊긴 환경",
+      "high_value": true,
+      "chunk_count": 994
+    },
+    {
+      "book_slug": "machine_configuration",
+      "collected": true,
+      "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/machine_configuration/index",
+      "processed": true,
+      "section_count": 57,
+      "title": "Machine configuration",
+      "high_value": true,
+      "chunk_count": 720
+    },
+    {
+      "book_slug": "validation_and_troubleshooting",
+      "collected": true,
+      "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/validation_and_troubleshooting/index",
+      "processed": true,
+      "section_count": 20,
+      "title": "검증 및 문제 해결",
+      "high_value": true,
+      "chunk_count": 74
+    }
+  ]
+}

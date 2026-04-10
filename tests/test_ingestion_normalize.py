@@ -15,6 +15,53 @@ from play_book_studio.ingestion.models import SourceManifestEntry
 from play_book_studio.ingestion.normalize import extract_document_ast, extract_sections
 
 class NormalizeTests(unittest.TestCase):
+    def test_extract_sections_populates_operational_metadata(self) -> None:
+        html = """
+        <html>
+          <body>
+            <main id="main-content">
+              <article>
+                <h1>머신 구성</h1>
+                <h2 id="recover">장애 복구</h2>
+                <p>Machine Config Operator 가 NotReady Pod 와 ImagePullBackOff 증상을 진단합니다.</p>
+                <p>검증: oc get pods -n openshift-machine-config-operator</p>
+                <pre><code>oc get pods -n openshift-machine-config-operator</code></pre>
+                <p>Deployment 와 MachineConfigPool 상태를 점검합니다.</p>
+              </article>
+            </main>
+          </body>
+        </html>
+        """
+        entry = SourceManifestEntry(
+            book_slug="machine_configuration",
+            title="머신 구성",
+            source_url="https://example.com/machine_configuration",
+            viewer_path="/docs/machine_configuration/index.html",
+            high_value=True,
+        )
+
+        sections = extract_sections(html, entry)
+
+        self.assertEqual(1, len(sections))
+        section = sections[0]
+        self.assertEqual(
+            ("oc get pods -n openshift-machine-config-operator",),
+            section.cli_commands,
+        )
+        self.assertEqual(("NotReady", "ImagePullBackOff"), section.error_strings)
+        self.assertEqual(
+            ("Pod", "Deployment", "MachineConfigPool"),
+            section.k8s_objects,
+        )
+        self.assertEqual(("Machine Config Operator",), section.operator_names)
+        self.assertEqual(
+            (
+                "검증: oc get pods -n openshift-machine-config-operator",
+                "oc get pods -n openshift-machine-config-operator",
+            ),
+            section.verification_hints,
+        )
+
     def test_extract_sections_skips_noise_headings(self) -> None:
         html = """
         <html>
@@ -106,6 +153,46 @@ class NormalizeTests(unittest.TestCase):
         self.assertIn("[CODE]\n$ oc adm cordon <node1>\n[/CODE]", sections[0].text)
         self.assertEqual("nodes:drain", sections[0].section_id)
         self.assertIn("code", sections[0].block_kinds)
+
+    def test_extract_sections_extracts_operational_metadata(self) -> None:
+        html = """
+        <html>
+          <body>
+            <main id="main-content">
+              <article>
+                <h1>Ingress troubleshooting</h1>
+                <h2 id="router-check">Router check</h2>
+                <p>확인: Route 상태를 점검합니다.</p>
+                <p>ImagePullBackOff 가 발생하면 Deployment 상태도 함께 확인합니다.</p>
+                <p>Machine Config Operator 와 Ingress Operator 로그를 검토합니다.</p>
+                <pre><code>$ oc get pods -n openshift-ingress
+kubectl describe deployment router-default -n openshift-ingress</code></pre>
+              </article>
+            </main>
+          </body>
+        </html>
+        """
+        entry = SourceManifestEntry(
+            book_slug="ingress",
+            title="Ingress troubleshooting",
+            source_url="https://example.com/ingress",
+            viewer_path="/docs/ingress/index.html",
+            high_value=True,
+        )
+
+        sections = extract_sections(html, entry)
+
+        self.assertEqual(1, len(sections))
+        self.assertEqual(
+            ("oc get pods -n openshift-ingress", "kubectl describe deployment router-default -n openshift-ingress"),
+            sections[0].cli_commands,
+        )
+        self.assertIn("ImagePullBackOff", sections[0].error_strings)
+        self.assertIn("Route", sections[0].k8s_objects)
+        self.assertIn("Deployment", sections[0].k8s_objects)
+        self.assertIn("Machine Config Operator", sections[0].operator_names)
+        self.assertIn("확인: Route 상태를 점검합니다.", sections[0].verification_hints)
+        self.assertIn("oc get pods -n openshift-ingress", sections[0].verification_hints)
 
     def test_extract_document_ast_builds_typed_blocks(self) -> None:
         html = """

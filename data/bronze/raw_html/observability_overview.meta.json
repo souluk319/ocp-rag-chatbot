@@ -1,0 +1,17 @@
+{
+  "product_slug": "openshift_container_platform",
+  "ocp_version": "4.20",
+  "docs_language": "ko",
+  "source_kind": "html-single",
+  "book_slug": "observability_overview",
+  "index_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/",
+  "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/observability_overview/index",
+  "resolved_source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/observability_overview/index",
+  "resolved_language": "ko",
+  "source_state": "published_native",
+  "source_state_reason": "discovered_in_requested_language_index",
+  "source_fingerprint": "6f3337e2cb4eb3bd27b5ccdb2b2d151ddd64a9c4405e2cf2d7cbe222ae7aa76f",
+  "raw_html_sha256": "4ff1ed334b01f1e139f3e8d3ff418066dc35287fd611413d25332f13089bc71b",
+  "fallback_detected": false,
+  "content_length": 4665399
+}

@@ -1,0 +1,250 @@
+[
+  {
+    "book_slug": "machine_configuration",
+    "classification": "번역 우선",
+    "content_status": "translated_ko_draft",
+    "high_value": true,
+    "priority": 1,
+    "recommended_action": "official EN harvest -> reviewed KO draft -> approval gate",
+    "official_ko_fallback_banner": true,
+    "official_en_url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/machine_configuration/index",
+    "repo_candidate_count": 14,
+    "issue_pr_candidate_count": 10,
+    "top_repo_candidates": [
+      "machine_configuration/_attributes",
+      "machine_configuration/images",
+      "machine_configuration/index.adoc",
+      "machine_configuration/machine-config-daemon-metrics.adoc",
+      "machine_configuration/machine-config-node-disruption.adoc"
+    ],
+    "top_issue_pr_candidates": [
+      {
+        "number": 109084,
+        "title": "OSDOCS Document how to perform boot image updates on vSphere clusters",
+        "state": "open",
+        "html_url": "https://github.com/openshift/openshift-docs/pull/109084",
+        "pull_request": true,
+        "updated_at": "2026-04-09T17:35:52Z"
+      },
+      {
+        "number": 109248,
+        "title": "OSDOCS Document how to perform boot image updates on none/external clusters",
+        "state": "open",
+        "html_url": "https://github.com/openshift/openshift-docs/pull/109248",
+        "pull_request": true,
+        "updated_at": "2026-04-09T17:29:38Z"
+      },
+      {
+        "number": 108103,
+        "title": "OSDOCS 18143 Document how the boot image skew enforcement feature works",
+        "state": "open",
+        "html_url": "https://github.com/openshift/openshift-docs/pull/108103",
+        "pull_request": true,
+        "updated_at": "2026-04-06T19:34:55Z"
+      }
+    ]
+  },
+  {
+    "book_slug": "backup_and_restore",
+    "classification": "대체 소스 필요",
+    "content_status": "blocked",
+    "high_value": true,
+    "priority": 2,
+    "recommended_action": "source substitution from official EN + openshift-docs + issue/PR evidence",
+    "official_ko_fallback_banner": true,
+    "official_en_url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/backup_and_restore/index",
+    "repo_candidate_count": 50,
+    "issue_pr_candidate_count": 10,
+    "top_repo_candidates": [
+      "backup_and_restore/_attributes",
+      "backup_and_restore/application_backup_and_restore/_attributes",
+      "backup_and_restore/application_backup_and_restore/aws-sts/_attributes",
+      "backup_and_restore/application_backup_and_restore/aws-sts/images",
+      "backup_and_restore/application_backup_and_restore/aws-sts/modules"
+    ],
+    "top_issue_pr_candidates": [
+      {
+        "number": 109410,
+        "title": "[OSDOCS#18862]: Added conditions for TNF in backup and restore",
+        "state": "open",
+        "html_url": "https://github.com/openshift/openshift-docs/pull/109410",
+        "pull_request": true,
+        "updated_at": "2026-04-09T15:41:04Z"
+      },
+      {
+        "number": 109121,
+        "title": "CQA fixes for 3scale",
+        "state": "closed",
+        "html_url": "https://github.com/openshift/openshift-docs/pull/109121",
+        "pull_request": true,
+        "updated_at": "2026-04-09T12:06:45Z"
+      },
+      {
+        "number": 109671,
+        "title": "CQA fixes for oadp features and plugins",
+        "state": "open",
+        "html_url": "https://github.com/openshift/openshift-docs/pull/109671",
+        "pull_request": true,
+        "updated_at": "2026-04-09T06:16:43Z"
+      }
+    ]
+  },
+  {
+    "book_slug": "etcd",
+    "classification": "대체 소스 필요",
+    "content_status": "blocked",
+    "high_value": true,
+    "priority": 2,
+    "recommended_action": "source substitution from official EN + openshift-docs + issue/PR evidence",
+    "official_ko_fallback_banner": false,
+    "official_en_url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/etcd/index",
+    "repo_candidate_count": 50,
+    "issue_pr_candidate_count": 10,
+    "top_repo_candidates": [
+      "backup_and_restore/control_plane_backup_and_restore/backing-up-etcd.adoc",
+      "backup_and_restore/control_plane_backup_and_restore/replacing-unhealthy-etcd-member.adoc",
+      "etcd/_attributes",
+      "etcd/etcd-backup-restore/_attributes",
+      "etcd/etcd-backup-restore/etcd-backup.adoc"
+    ],
+    "top_issue_pr_candidates": [
+      {
+        "number": 109410,
+        "title": "[OSDOCS#18862]: Added conditions for TNF in backup and restore",
+        "state": "open",
+        "html_url": "https://github.com/openshift/openshift-docs/pull/109410",
+        "pull_request": true,
+        "updated_at": "2026-04-09T15:41:04Z"
+      },
+      {
+        "number": 85667,
+        "title": "OSDOCS-12631#adding connectivity requirements",
+        "state": "open",
+        "html_url": "https://github.com/openshift/openshift-docs/pull/85667",
+        "pull_request": true,
+        "updated_at": "2026-04-09T08:30:58Z"
+      },
+      {
+        "number": 109686,
+        "title": "[OCPBUGS-80926]: Minor formatting fix",
+        "state": "closed",
+        "html_url": "https://github.com/openshift/openshift-docs/pull/109686",
+        "pull_request": true,
+        "updated_at": "2026-04-07T15:03:01Z"
+      }
+    ]
+  },
+  {
+    "book_slug": "installing_on_any_platform",
+    "classification": "대체 소스 필요",
+    "content_status": "blocked",
+    "high_value": true,
+    "priority": 2,
+    "recommended_action": "source substitution from official EN + openshift-docs + issue/PR evidence",
+    "official_ko_fallback_banner": true,
+    "official_en_url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/installing_on_any_platform/index",
+    "repo_candidate_count": 0,
+    "issue_pr_candidate_count": 1,
+    "top_repo_candidates": [],
+    "top_issue_pr_candidates": [
+      {
+        "number": 93977,
+        "title": "TELCODOCS-2186: Updating link variables for 4.19",
+        "state": "closed",
+        "html_url": "https://github.com/openshift/openshift-docs/pull/93977",
+        "pull_request": true,
+        "updated_at": "2025-06-11T20:53:32Z"
+      }
+    ]
+  },
+  {
+    "book_slug": "monitoring",
+    "classification": "대체 소스 필요",
+    "content_status": "blocked",
+    "high_value": true,
+    "priority": 2,
+    "recommended_action": "source substitution from official EN + openshift-docs + issue/PR evidence",
+    "official_ko_fallback_banner": true,
+    "official_en_url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/monitoring/index",
+    "repo_candidate_count": 50,
+    "issue_pr_candidate_count": 10,
+    "top_repo_candidates": [
+      "ai_workloads/kueue/monitoring-pending-workloads.adoc",
+      "applications/odc-monitoring-project-and-application-metrics-using-developer-perspective.adoc",
+      "backup_and_restore/application_backup_and_restore/troubleshooting/oadp-monitoring.adoc",
+      "cicd/gitops/monitoring-argo-cd-custom-resource-workloads.adoc",
+      "cicd/gitops/monitoring-argo-cd-instances.adoc"
+    ],
+    "top_issue_pr_candidates": [
+      {
+        "number": 109889,
+        "title": "[enterprise-4.18] OSDOCS-19033: kueue.x-k8s.io/queue-name referring to non-existent queue",
+        "state": "open",
+        "html_url": "https://github.com/openshift/openshift-docs/pull/109889",
+        "pull_request": true,
+        "updated_at": "2026-04-09T16:35:58Z"
+      },
+      {
+        "number": 108841,
+        "title": "[RHACS] [Docs] [rhacs-docs-main] ROX-33164: Fixing DITA errors in installing_ocp/install-central-ocp.adoc",
+        "state": "open",
+        "html_url": "https://github.com/openshift/openshift-docs/pull/108841",
+        "pull_request": true,
+        "updated_at": "2026-04-09T14:25:50Z"
+      },
+      {
+        "number": 109700,
+        "title": "OSDOCS-19012: Add cluster-monitoring namespace label to Kueue install docs",
+        "state": "closed",
+        "html_url": "https://github.com/openshift/openshift-docs/pull/109700",
+        "pull_request": true,
+        "updated_at": "2026-04-08T21:29:41Z"
+      }
+    ]
+  },
+  {
+    "book_slug": "operators",
+    "classification": "대체 소스 필요",
+    "content_status": "blocked",
+    "high_value": true,
+    "priority": 2,
+    "recommended_action": "source substitution from official EN + openshift-docs + issue/PR evidence",
+    "official_ko_fallback_banner": false,
+    "official_en_url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/operators/index",
+    "repo_candidate_count": 50,
+    "issue_pr_candidate_count": 10,
+    "top_repo_candidates": [
+      "applications/creating_applications/creating-apps-from-installed-operators.adoc",
+      "edge_computing/image_based_upgrade/preparing_for_image_based_upgrade/cnf-image-based-upgrade-install-operators.adoc",
+      "microshift_running_apps/microshift_operators/_attributes",
+      "microshift_running_apps/microshift_operators/images",
+      "microshift_running_apps/microshift_operators/microshift-operators-oc-mirror-disconnected.adoc"
+    ],
+    "top_issue_pr_candidates": [
+      {
+        "number": 109794,
+        "title": "OSDOCS-17719: adds authorization to MCP gateway docs",
+        "state": "open",
+        "html_url": "https://github.com/openshift/openshift-docs/pull/109794",
+        "pull_request": true,
+        "updated_at": "2026-04-09T17:16:55Z"
+      },
+      {
+        "number": 109889,
+        "title": "[enterprise-4.18] OSDOCS-19033: kueue.x-k8s.io/queue-name referring to non-existent queue",
+        "state": "open",
+        "html_url": "https://github.com/openshift/openshift-docs/pull/109889",
+        "pull_request": true,
+        "updated_at": "2026-04-09T16:35:58Z"
+      },
+      {
+        "number": 109873,
+        "title": "OSDOCS-18925:Docs updates for [OSD-GCP] allowing for edit of ingress controller to use namespaceSelector.",
+        "state": "open",
+        "html_url": "https://github.com/openshift/openshift-docs/pull/109873",
+        "pull_request": true,
+        "updated_at": "2026-04-09T12:34:01Z"
+      }
+    ]
+  }
+]

@@ -31,6 +31,21 @@ def project_playbook_document(document: CanonicalDocumentAst) -> PlaybookDocumen
     quality_flags = list(document.notes)
     if document.translation_status != "approved_ko":
         quality_flags.append(document.translation_status)
+    anchor_map = {
+        section.anchor: section.viewer_path
+        for section in document.sections
+        if section.anchor.strip()
+    }
+    source_metadata = {
+        "source_type": document.provenance.source_type or document.source_type,
+        "source_lane": document.provenance.source_lane,
+        "product": document.provenance.product or document.inferred_product,
+        "version": document.provenance.version or document.inferred_version,
+        "trust_score": document.provenance.trust_score,
+        "original_url": document.source_url,
+        "original_title": document.provenance.original_title or document.title,
+        "translation_source_language": document.provenance.translation_source_language,
+    }
     return PlaybookDocumentArtifact(
         book_slug=document.book_slug,
         title=document.title,
@@ -44,9 +59,13 @@ def project_playbook_document(document: CanonicalDocumentAst) -> PlaybookDocumen
         translation_source_fingerprint=document.provenance.translation_source_fingerprint,
         pack_id=document.pack_id,
         inferred_version=document.inferred_version,
+        legal_notice_url=document.provenance.legal_notice_url,
+        review_status=document.provenance.review_status,
         sections=sections,
         quality_status=quality_status,
         quality_flags=tuple(quality_flags),
+        source_metadata=source_metadata,
+        anchor_map=anchor_map,
     )
 
 

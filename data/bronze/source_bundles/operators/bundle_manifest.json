@@ -1,0 +1,146 @@
+{
+  "slug": "operators",
+  "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators",
+  "dossier_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\dossier.json",
+  "official_docs": {
+    "ko": {
+      "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/operators/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "Operator | OpenShift Container Platform | 4.20 | Red Hat Documentation",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\official_docs\\ko\\source.html",
+      "content_length": 7283744
+    },
+    "en": {
+      "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/operators/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "Operators | OpenShift Container Platform | 4.20 | Red Hat Documentation",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\official_docs\\en\\source.html",
+      "content_length": 5214816
+    }
+  },
+  "repo_artifacts": [
+    {
+      "repo_path": "operators/operator-reference.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/operator-reference.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\operator-reference.adoc",
+      "content_length": 8417
+    },
+    {
+      "repo_path": "operators/index.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/index.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\index.adoc",
+      "content_length": 4093
+    },
+    {
+      "repo_path": "operators/user/olm-installing-operators-in-namespace.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/user/olm-installing-operators-in-namespace.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\user\\olm-installing-operators-in-namespace.adoc",
+      "content_length": 2167
+    },
+    {
+      "repo_path": "operators/user/olm-creating-apps-from-installed-operators.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/user/olm-creating-apps-from-installed-operators.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\user\\olm-creating-apps-from-installed-operators.adoc",
+      "content_length": 459
+    },
+    {
+      "repo_path": "operators/understanding/olm-what-operators-are.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/understanding/olm-what-operators-are.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\understanding\\olm-what-operators-are.adoc",
+      "content_length": 1449
+    },
+    {
+      "repo_path": "operators/understanding/olm-understanding-software-catalog.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/understanding/olm-understanding-software-catalog.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\understanding\\olm-understanding-software-catalog.adoc",
+      "content_length": 845
+    },
+    {
+      "repo_path": "operators/understanding/olm-rh-catalogs.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/understanding/olm-rh-catalogs.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\understanding\\olm-rh-catalogs.adoc",
+      "content_length": 2720
+    },
+    {
+      "repo_path": "operators/understanding/olm-packaging-format.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/understanding/olm-packaging-format.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\understanding\\olm-packaging-format.adoc",
+      "content_length": 4309
+    },
+    {
+      "repo_path": "operators/understanding/olm-multitenancy.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/understanding/olm-multitenancy.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\understanding\\olm-multitenancy.adoc",
+      "content_length": 3221
+    },
+    {
+      "repo_path": "operators/understanding/olm-common-terms.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/understanding/olm-common-terms.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\understanding\\olm-common-terms.adoc",
+      "content_length": 370
+    },
+    {
+      "repo_path": "operators/olm_v1/index.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/olm_v1/index.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\olm_v1\\index.adoc",
+      "content_length": 719
+    },
+    {
+      "repo_path": "operators/admin/olm-upgrading-operators.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/admin/olm-upgrading-operators.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\admin\\olm-upgrading-operators.adoc",
+      "content_length": 1433
+    },
+    {
+      "repo_path": "operators/admin/olm-troubleshooting-operator-issues.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/admin/olm-troubleshooting-operator-issues.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\admin\\olm-troubleshooting-operator-issues.adoc",
+      "content_length": 3646
+    },
+    {
+      "repo_path": "operators/admin/olm-status.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/admin/olm-status.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\admin\\olm-status.adoc",
+      "content_length": 1570
+    },
+    {
+      "repo_path": "operators/admin/olm-restricted-networks.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/admin/olm-restricted-networks.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\admin\\olm-restricted-networks.adoc",
+      "content_length": 1942
+    },
+    {
+      "repo_path": "operators/admin/olm-managing-operatorconditions.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/admin/olm-managing-operatorconditions.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\admin\\olm-managing-operatorconditions.adoc",
+      "content_length": 1065
+    },
+    {
+      "repo_path": "operators/admin/olm-managing-custom-catalogs.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/admin/olm-managing-custom-catalogs.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\admin\\olm-managing-custom-catalogs.adoc",
+      "content_length": 8078
+    },
+    {
+      "repo_path": "operators/admin/olm-deleting-operators-from-cluster.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/admin/olm-deleting-operators-from-cluster.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\admin\\olm-deleting-operators-from-cluster.adoc",
+      "content_length": 1315
+    },
+    {
+      "repo_path": "operators/admin/olm-cs-podsched.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/admin/olm-cs-podsched.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\admin\\olm-cs-podsched.adoc",
+      "content_length": 3125
+    },
+    {
+      "repo_path": "operators/admin/olm-creating-policy.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/operators/admin/olm-creating-policy.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\openshift_docs_repo\\operators\\admin\\olm-creating-policy.adoc",
+      "content_length": 1344
+    }
+  ],
+  "issue_pr_candidates_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\issue_pr_candidates.json"
+}

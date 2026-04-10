@@ -1,0 +1,96 @@
+{
+  "slug": "machine_configuration",
+  "current_status": {
+    "content_status": "translated_ko_draft",
+    "gap_lane": "translation_first",
+    "gap_action": "preferred next step is Korean translation or source substitution",
+    "fallback_detected": true,
+    "hangul_chunk_ratio": 0.0,
+    "title": "Machine configuration"
+  },
+  "official_docs": {
+    "ko": {
+      "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/machine_configuration/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": true,
+      "title_hint": "Machine configuration | OpenShift Container Platform | 4.20 | Red Hat Documentation"
+    },
+    "en": {
+      "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/machine_configuration/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "Machine configuration | OpenShift Container Platform | 4.20 | Red Hat Documentation"
+    }
+  },
+  "openshift_docs_repo_candidates": [
+    "machine_configuration/mco-update-boot-images.adoc",
+    "machine_configuration/mco-update-boot-images-manual.adoc",
+    "machine_configuration/mco-coreos-layering.adoc",
+    "machine_configuration/machine-configs-garbage-collection.adoc",
+    "machine_configuration/machine-configs-custom.adoc",
+    "machine_configuration/machine-configs-configure.adoc",
+    "machine_configuration/machine-config-pin-preload-images-about.adoc",
+    "machine_configuration/machine-config-node-disruption.adoc",
+    "machine_configuration/machine-config-daemon-metrics.adoc",
+    "machine_configuration/index.adoc",
+    "machine_configuration/_attributes",
+    "snippets/apply-machine-configuration-method.adoc",
+    "modules/telco-ran-machine-configuration.adoc",
+    "modules/telco-ran-crs-machine-configuration.adoc",
+    "modules/rdma-creating-the-machine-configuration.adoc",
+    "modules/performance-challenges-in-machine-configurations-and-argo-cd.adoc",
+    "modules/con_auto-reboot-during-argo-cd-sync-with-machine-configurations.adoc",
+    "modules/installation-user-infra-machines-advanced-console-configuration.adoc",
+    "rest_api/operator_apis/machineconfiguration-operator-openshift-io-v1.adoc",
+    "rest_api/machine_apis/pinnedimageset-machineconfiguration-openshift-io-v1.adoc",
+    "rest_api/machine_apis/osimagestream-machineconfiguration-openshift-io-v1alpha1.adoc",
+    "rest_api/machine_apis/machineosconfig-machineconfiguration-openshift-io-v1.adoc",
+    "rest_api/machine_apis/machineosbuild-machineconfiguration-openshift-io-v1.adoc",
+    "rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.adoc",
+    "rest_api/machine_apis/machineconfignode-machineconfiguration-openshift-io-v1.adoc",
+    "rest_api/machine_apis/machineconfig-machineconfiguration-openshift-io-v1.adoc",
+    "rest_api/machine_apis/kubeletconfig-machineconfiguration-openshift-io-v1.adoc",
+    "rest_api/machine_apis/internalreleaseimage-machineconfiguration-openshift-io-v1alpha1.adoc",
+    "rest_api/machine_apis/controllerconfig-machineconfiguration-openshift-io-v1.adoc",
+    "rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.adoc",
+    "post_installation_configuration/configuring-multi-arch-compute-machines/multiarch-tuning-operator.adoc",
+    "post_installation_configuration/configuring-multi-arch-compute-machines/multi-architecture-configuration.adoc",
+    "post_installation_configuration/configuring-multi-arch-compute-machines/multi-architecture-compute-managing.adoc",
+    "post_installation_configuration/configuring-multi-arch-compute-machines/multi-arch-tuning-operator-release-notes.adoc",
+    "post_installation_configuration/configuring-multi-arch-compute-machines/creating-multi-arch-compute-nodes-ibm-z.adoc",
+    "post_installation_configuration/configuring-multi-arch-compute-machines/creating-multi-arch-compute-nodes-ibm-z-lpar.adoc",
+    "post_installation_configuration/configuring-multi-arch-compute-machines/creating-multi-arch-compute-nodes-ibm-z-kvm.adoc",
+    "post_installation_configuration/configuring-multi-arch-compute-machines/creating-multi-arch-compute-nodes-ibm-power.adoc",
+    "post_installation_configuration/configuring-multi-arch-compute-machines/creating-multi-arch-compute-nodes-google-cloud.adoc",
+    "post_installation_configuration/configuring-multi-arch-compute-machines/creating-multi-arch-compute-nodes-bare-metal.adoc",
+    "post_installation_configuration/configuring-multi-arch-compute-machines/creating-multi-arch-compute-nodes-azure.adoc",
+    "post_installation_configuration/configuring-multi-arch-compute-machines/creating-multi-arch-compute-nodes-aws.adoc",
+    "machine_management/control_plane_machine_management/cpmso-configuration.adoc",
+    "machine_management/control_plane_machine_management/cpmso_provider_configurations/cpmso-supported-features-vsphere.adoc",
+    "machine_management/control_plane_machine_management/cpmso_provider_configurations/cpmso-supported-features-openstack.adoc",
+    "machine_management/control_plane_machine_management/cpmso_provider_configurations/cpmso-supported-features-gcp.adoc",
+    "machine_management/control_plane_machine_management/cpmso_provider_configurations/cpmso-supported-features-azure.adoc",
+    "machine_management/control_plane_machine_management/cpmso_provider_configurations/cpmso-supported-features-aws.adoc",
+    "machine_management/control_plane_machine_management/cpmso_provider_configurations/cpmso-config-options-vsphere.adoc",
+    "machine_management/control_plane_machine_management/cpmso_provider_configurations/cpmso-config-options-openstack.adoc"
+  ],
+  "issue_pr_candidates_exact_slug": [],
+  "issue_pr_candidates_related_terms": [],
+  "repo_search_terms": {
+    "slug": "machine_configuration",
+    "title": "Machine configuration",
+    "aliases": [
+      "machine_configuration",
+      "machine-configuration",
+      "machine configuration"
+    ],
+    "path_hint": "machine_configuration",
+    "exact_queries": [
+      "repo:openshift/openshift-docs path:machine_configuration \"Machine configuration\"",
+      "repo:openshift/openshift-docs path:machine_configuration machine_configuration"
+    ],
+    "related_queries": [
+      "repo:openshift/openshift-docs path:machine_configuration machine-configuration"
+    ]
+  }
+}

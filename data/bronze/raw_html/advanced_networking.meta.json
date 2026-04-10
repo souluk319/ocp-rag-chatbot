@@ -1,0 +1,17 @@
+{
+  "product_slug": "openshift_container_platform",
+  "ocp_version": "4.20",
+  "docs_language": "ko",
+  "source_kind": "html-single",
+  "book_slug": "advanced_networking",
+  "index_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/",
+  "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/advanced_networking/index",
+  "resolved_source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/advanced_networking/index",
+  "resolved_language": "ko",
+  "source_state": "published_native",
+  "source_state_reason": "discovered_in_requested_language_index",
+  "source_fingerprint": "c2222f7250aff2d90d60e702ea7f9ca3ddd6b82fecb2d48d44d905a5fed9fb7b",
+  "raw_html_sha256": "f67365b472b8711a4e862bd1949c592d37ebf267779fe218cfb8313ef3796ea7",
+  "fallback_detected": false,
+  "content_length": 6440907
+}

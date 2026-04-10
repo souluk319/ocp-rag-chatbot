@@ -1,0 +1,17 @@
+{
+  "product_slug": "openshift_container_platform",
+  "ocp_version": "4.20",
+  "docs_language": "ko",
+  "source_kind": "html-single",
+  "book_slug": "networking_overview",
+  "index_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/",
+  "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/networking_overview/index",
+  "resolved_source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/networking_overview/index",
+  "resolved_language": "ko",
+  "source_state": "published_native",
+  "source_state_reason": "discovered_in_requested_language_index",
+  "source_fingerprint": "8020dfa0b2dd54617e2d5602a5aa6f796e7369d7fc06cbdce24fbd98310185f7",
+  "raw_html_sha256": "5f222a84975077f07c93df8217ec4eacce13dc6e81e30295055d7d00506a6cc6",
+  "fallback_detected": false,
+  "content_length": 4738774
+}

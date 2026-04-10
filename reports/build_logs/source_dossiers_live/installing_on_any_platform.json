@@ -1,0 +1,102 @@
+{
+  "slug": "installing_on_any_platform",
+  "current_status": {
+    "content_status": "blocked",
+    "gap_lane": "translation_first",
+    "gap_action": "preferred next step is Korean translation or source substitution",
+    "fallback_detected": false,
+    "hangul_chunk_ratio": 0.0,
+    "title": "Installing on any platform"
+  },
+  "official_docs": {
+    "ko": {
+      "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/installing_on_any_platform/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": true,
+      "title_hint": "Installing on any platform | OpenShift Container Platform | 4.20 | Red Hat Documentation"
+    },
+    "en": {
+      "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/installing_on_any_platform/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "Installing on any platform | OpenShift Container Platform | 4.20 | Red Hat Documentation"
+    }
+  },
+  "openshift_docs_repo_candidates": [
+    "installing/installing_platform_agnostic/installing-platform-agnostic.adoc",
+    "installing/installing_platform_agnostic/_attributes",
+    "installing/validation_and_troubleshooting/validating-an-installation.adoc",
+    "installing/validation_and_troubleshooting/installing-troubleshooting.adoc",
+    "installing/overview/installing-preparing.adoc",
+    "installing/overview/installing-fips.adoc",
+    "installing/overview/index.adoc",
+    "installing/overview/cluster-capabilities.adoc",
+    "installing/installing_with_agent_based_installer/understanding-disconnected-installation-mirroring.adoc",
+    "installing/installing_with_agent_based_installer/preparing-to-install-with-agent-based-installer.adoc",
+    "installing/installing_with_agent_based_installer/preparing-an-agent-based-installed-cluster-for-mce.adoc",
+    "installing/installing_with_agent_based_installer/prepare-pxe-assets-agent.adoc",
+    "installing/installing_with_agent_based_installer/installing-with-agent-basic.adoc",
+    "installing/installing_with_agent_based_installer/installing-with-agent-based-installer.adoc",
+    "installing/installing_with_agent_based_installer/installing-using-iscsi.adoc",
+    "installing/installing_with_agent_based_installer/installing-ove.adoc",
+    "installing/installing_with_agent_based_installer/installation-config-parameters-agent.adoc",
+    "installing/installing_vsphere/vsphere-post-installation-encryption.adoc",
+    "installing/installing_vsphere/using-vsphere-problem-detector-operator.adoc",
+    "installing/installing_vsphere/uninstalling-cluster-vsphere-installer-provisioned.adoc",
+    "installing/installing_vsphere/preparing-to-install-on-vsphere.adoc",
+    "installing/installing_vsphere/post-install-vsphere-zones-regions-configuration.adoc",
+    "installing/installing_vsphere/installing-vsphere-three-node.adoc",
+    "installing/installing_vsphere/installing-vsphere-post-installation-configuration.adoc",
+    "installing/installing_vsphere/installing-vsphere-assisted-installer.adoc",
+    "installing/installing_vsphere/installing-vsphere-agent-based-installer.adoc",
+    "installing/installing_vsphere/installation-config-parameters-vsphere.adoc",
+    "installing/installing_two_node_cluster/about-two-node-arbiter-installation.adoc",
+    "installing/installing_sno/install-sno-preparing-to-install-sno.adoc",
+    "installing/installing_sno/install-sno-installing-sno.adoc",
+    "installing/installing_openstack/uninstalling-openstack-user.adoc",
+    "installing/installing_openstack/uninstalling-cluster-openstack.adoc",
+    "installing/installing_openstack/preparing-to-install-on-openstack.adoc",
+    "installing/installing_openstack/installing-openstack-user.adoc",
+    "installing/installing_openstack/installing-openstack-three-node.adoc",
+    "installing/installing_openstack/installing-openstack-nfv-preparing.adoc",
+    "installing/installing_openstack/installing-openstack-network-config.adoc",
+    "installing/installing_openstack/installing-openstack-installer-restricted.adoc",
+    "installing/installing_openstack/installing-openstack-installer-custom.adoc",
+    "installing/installing_openstack/installing-openstack-cloud-config-reference.adoc",
+    "installing/installing_openstack/installation-config-parameters-openstack.adoc",
+    "installing/installing_openstack/deploying-openstack-with-rootVolume-etcd-on-local-disk.adoc",
+    "installing/installing_on_prem_assisted/installing-on-prem-assisted.adoc",
+    "installing/installing_oda/installing-oda-assisted.adoc",
+    "installing/installing_oci_edge/installing-c3-assisted-installer.adoc",
+    "installing/installing_oci_edge/installing-c3-agent-based-installer.adoc",
+    "installing/installing_oci/installing-oci-assisted-installer.adoc",
+    "installing/installing_oci/installing-oci-agent-based-installer.adoc",
+    "installing/installing_nutanix/uninstalling-cluster-nutanix.adoc",
+    "installing/installing_nutanix/preparing-to-install-on-nutanix.adoc"
+  ],
+  "issue_pr_candidates_exact_slug": [],
+  "issue_pr_candidates_related_terms": [],
+  "repo_search_terms": {
+    "slug": "installing_on_any_platform",
+    "title": "Installing on any platform",
+    "aliases": [
+      "installing_on_any_platform",
+      "installing-on-any-platform",
+      "installing on any platform",
+      "installing_platform_agnostic",
+      "installing-platform-agnostic",
+      "installing/installing_platform_agnostic"
+    ],
+    "path_hint": "installing",
+    "exact_queries": [
+      "repo:openshift/openshift-docs path:installing \"Installing on any platform\"",
+      "repo:openshift/openshift-docs path:installing installing_on_any_platform"
+    ],
+    "related_queries": [
+      "repo:openshift/openshift-docs path:installing installing-on-any-platform",
+      "repo:openshift/openshift-docs path:installing installing_platform_agnostic",
+      "repo:openshift/openshift-docs path:installing installing-platform-agnostic",
+      "repo:openshift/openshift-docs path:installing installing/installing_platform_agnostic"
+    ]
+  }
+}

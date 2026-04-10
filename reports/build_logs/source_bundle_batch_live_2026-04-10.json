@@ -1,0 +1,54 @@
+{
+  "queue_report": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\reports\\build_logs\\gold_expansion_queue_2026-04-10.json",
+  "selected_count": 6,
+  "results": [
+    {
+      "book_slug": "machine_configuration",
+      "classification": "번역 우선",
+      "priority": 1,
+      "repo_artifact_count": 20,
+      "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration",
+      "issue_pr_candidates_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\issue_pr_candidates.json"
+    },
+    {
+      "book_slug": "backup_and_restore",
+      "classification": "대체 소스 필요",
+      "priority": 2,
+      "repo_artifact_count": 20,
+      "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore",
+      "issue_pr_candidates_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore\\issue_pr_candidates.json"
+    },
+    {
+      "book_slug": "etcd",
+      "classification": "대체 소스 필요",
+      "priority": 2,
+      "repo_artifact_count": 20,
+      "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd",
+      "issue_pr_candidates_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\issue_pr_candidates.json"
+    },
+    {
+      "book_slug": "installing_on_any_platform",
+      "classification": "대체 소스 필요",
+      "priority": 2,
+      "repo_artifact_count": 20,
+      "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform",
+      "issue_pr_candidates_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform\\issue_pr_candidates.json"
+    },
+    {
+      "book_slug": "monitoring",
+      "classification": "대체 소스 필요",
+      "priority": 2,
+      "repo_artifact_count": 20,
+      "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring",
+      "issue_pr_candidates_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\issue_pr_candidates.json"
+    },
+    {
+      "book_slug": "operators",
+      "classification": "대체 소스 필요",
+      "priority": 2,
+      "repo_artifact_count": 20,
+      "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators",
+      "issue_pr_candidates_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators\\issue_pr_candidates.json"
+    }
+  ]
+}

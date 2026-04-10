@@ -1,0 +1,146 @@
+{
+  "slug": "monitoring",
+  "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring",
+  "dossier_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\dossier.json",
+  "official_docs": {
+    "ko": {
+      "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/monitoring/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": true,
+      "title_hint": "Monitoring | OpenShift Container Platform | 4.20 | Red Hat Documentation",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\official_docs\\ko\\source.html",
+      "content_length": 4649350
+    },
+    "en": {
+      "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/monitoring/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "Monitoring | OpenShift Container Platform | 4.20 | Red Hat Documentation",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\official_docs\\en\\source.html",
+      "content_length": 2358229
+    }
+  },
+  "repo_artifacts": [
+    {
+      "repo_path": "virt/monitoring/virt-storage-checkups.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/virt/monitoring/virt-storage-checkups.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\virt\\monitoring\\virt-storage-checkups.adoc",
+      "content_length": 1079
+    },
+    {
+      "repo_path": "virt/monitoring/virt-running-cluster-checkups.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/virt/monitoring/virt-running-cluster-checkups.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\virt\\monitoring\\virt-running-cluster-checkups.adoc",
+      "content_length": 1563
+    },
+    {
+      "repo_path": "virt/monitoring/virt-runbooks.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/virt/monitoring/virt-runbooks.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\virt\\monitoring\\virt-runbooks.adoc",
+      "content_length": 22727
+    },
+    {
+      "repo_path": "virt/monitoring/virt-prometheus-queries.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/virt/monitoring/virt-prometheus-queries.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\virt\\monitoring\\virt-prometheus-queries.adoc",
+      "content_length": 2330
+    },
+    {
+      "repo_path": "virt/monitoring/virt-monitoring-vm-health.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/virt/monitoring/virt-monitoring-vm-health.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\virt\\monitoring\\virt-monitoring-vm-health.adoc",
+      "content_length": 1626
+    },
+    {
+      "repo_path": "virt/monitoring/virt-monitoring-overview.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/virt/monitoring/virt-monitoring-overview.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\virt\\monitoring\\virt-monitoring-overview.adoc",
+      "content_length": 2320
+    },
+    {
+      "repo_path": "virt/monitoring/virt-exposing-downward-metrics.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/virt/monitoring/virt-exposing-downward-metrics.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\virt\\monitoring\\virt-exposing-downward-metrics.adoc",
+      "content_length": 1307
+    },
+    {
+      "repo_path": "virt/monitoring/virt-exposing-custom-metrics-for-vms.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/virt/monitoring/virt-exposing-custom-metrics-for-vms.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\virt\\monitoring\\virt-exposing-custom-metrics-for-vms.adoc",
+      "content_length": 2729
+    },
+    {
+      "repo_path": "observability/monitoring/troubleshooting-monitoring-issues.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/observability/monitoring/troubleshooting-monitoring-issues.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\observability\\monitoring\\troubleshooting-monitoring-issues.adoc",
+      "content_length": 3752
+    },
+    {
+      "repo_path": "observability/monitoring/shiftstack-prometheus-configuration.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/observability/monitoring/shiftstack-prometheus-configuration.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\observability\\monitoring\\shiftstack-prometheus-configuration.adoc",
+      "content_length": 2166
+    },
+    {
+      "repo_path": "observability/monitoring/config-map-reference-for-the-cluster-monitoring-operator.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/observability/monitoring/config-map-reference-for-the-cluster-monitoring-operator.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\observability\\monitoring\\config-map-reference-for-the-cluster-monitoring-operator.adoc",
+      "content_length": 44507
+    },
+    {
+      "repo_path": "observability/monitoring/about-ocp-monitoring.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/observability/monitoring/about-ocp-monitoring.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\observability\\monitoring\\about-ocp-monitoring.adoc",
+      "content_length": 848
+    },
+    {
+      "repo_path": "observability/monitoring/managing-alerts/managing-alerts-as-an-administrator.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/observability/monitoring/managing-alerts/managing-alerts-as-an-administrator.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\observability\\monitoring\\managing-alerts\\managing-alerts-as-an-administrator.adoc",
+      "content_length": 6793
+    },
+    {
+      "repo_path": "observability/monitoring/managing-alerts/managing-alerts-as-a-developer.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/observability/monitoring/managing-alerts/managing-alerts-as-a-developer.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\observability\\monitoring\\managing-alerts\\managing-alerts-as-a-developer.adoc",
+      "content_length": 4554
+    },
+    {
+      "repo_path": "observability/monitoring/getting-started/user-workload-monitoring-first-steps.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/observability/monitoring/getting-started/user-workload-monitoring-first-steps.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\observability\\monitoring\\getting-started\\user-workload-monitoring-first-steps.adoc",
+      "content_length": 3203
+    },
+    {
+      "repo_path": "observability/monitoring/getting-started/sd-disabling-monitoring-for-user-defined-projects.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/observability/monitoring/getting-started/sd-disabling-monitoring-for-user-defined-projects.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\observability\\monitoring\\getting-started\\sd-disabling-monitoring-for-user-defined-projects.adoc",
+      "content_length": 709
+    },
+    {
+      "repo_path": "observability/monitoring/getting-started/sd-accessing-monitoring-for-user-defined-projects.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/observability/monitoring/getting-started/sd-accessing-monitoring-for-user-defined-projects.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\observability\\monitoring\\getting-started\\sd-accessing-monitoring-for-user-defined-projects.adoc",
+      "content_length": 994
+    },
+    {
+      "repo_path": "observability/monitoring/getting-started/maintenance-and-support-for-monitoring.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/observability/monitoring/getting-started/maintenance-and-support-for-monitoring.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\observability\\monitoring\\getting-started\\maintenance-and-support-for-monitoring.adoc",
+      "content_length": 1897
+    },
+    {
+      "repo_path": "observability/monitoring/getting-started/developer-and-non-administrator-steps.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/observability/monitoring/getting-started/developer-and-non-administrator-steps.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\observability\\monitoring\\getting-started\\developer-and-non-administrator-steps.adoc",
+      "content_length": 1835
+    },
+    {
+      "repo_path": "observability/monitoring/getting-started/core-platform-monitoring-first-steps.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/observability/monitoring/getting-started/core-platform-monitoring-first-steps.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\openshift_docs_repo\\observability\\monitoring\\getting-started\\core-platform-monitoring-first-steps.adoc",
+      "content_length": 6174
+    }
+  ],
+  "issue_pr_candidates_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring\\issue_pr_candidates.json"
+}

@@ -1,0 +1,146 @@
+{
+  "slug": "etcd",
+  "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd",
+  "dossier_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\dossier.json",
+  "official_docs": {
+    "ko": {
+      "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/etcd/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "etcd | OpenShift Container Platform | 4.20 | Red Hat Documentation",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\official_docs\\ko\\source.html",
+      "content_length": 5742251
+    },
+    "en": {
+      "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/etcd/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "etcd | OpenShift Container Platform | 4.20 | Red Hat Documentation",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\official_docs\\en\\source.html",
+      "content_length": 3581101
+    }
+  },
+  "repo_artifacts": [
+    {
+      "repo_path": "etcd/etcd-practices.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/etcd/etcd-practices.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\etcd\\etcd-practices.adoc",
+      "content_length": 1036
+    },
+    {
+      "repo_path": "etcd/etcd-performance.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/etcd/etcd-performance.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\etcd\\etcd-performance.adoc",
+      "content_length": 3988
+    },
+    {
+      "repo_path": "etcd/etcd-overview.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/etcd/etcd-overview.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\etcd\\etcd-overview.adoc",
+      "content_length": 1472
+    },
+    {
+      "repo_path": "etcd/etcd-guidance-span.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/etcd/etcd-guidance-span.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\etcd\\etcd-guidance-span.adoc",
+      "content_length": 4038
+    },
+    {
+      "repo_path": "etcd/etcd-encrypt.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/etcd/etcd-encrypt.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\etcd\\etcd-encrypt.adoc",
+      "content_length": 523
+    },
+    {
+      "repo_path": "etcd/etcd-backup-restore/replace-unhealthy-etcd-member.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/etcd/etcd-backup-restore/replace-unhealthy-etcd-member.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\etcd\\etcd-backup-restore\\replace-unhealthy-etcd-member.adoc",
+      "content_length": 3395
+    },
+    {
+      "repo_path": "etcd/etcd-backup-restore/etcd-disaster-recovery.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/etcd/etcd-backup-restore/etcd-disaster-recovery.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\etcd\\etcd-backup-restore\\etcd-disaster-recovery.adoc",
+      "content_length": 3893
+    },
+    {
+      "repo_path": "etcd/etcd-backup-restore/etcd-backup.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/etcd/etcd-backup-restore/etcd-backup.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\etcd\\etcd-backup-restore\\etcd-backup.adoc",
+      "content_length": 2191
+    },
+    {
+      "repo_path": "etcd/_attributes",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/etcd/_attributes",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\etcd\\_attributes",
+      "content_length": 15
+    },
+    {
+      "repo_path": "etcd/etcd-backup-restore/_attributes",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/etcd/etcd-backup-restore/_attributes",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\etcd\\etcd-backup-restore\\_attributes",
+      "content_length": 15
+    },
+    {
+      "repo_path": "modules/update-etcd-backup.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/modules/update-etcd-backup.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\modules\\update-etcd-backup.adoc",
+      "content_length": 1204
+    },
+    {
+      "repo_path": "modules/understand-etcd-performance.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/modules/understand-etcd-performance.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\modules\\understand-etcd-performance.adoc",
+      "content_length": 11072
+    },
+    {
+      "repo_path": "modules/troubleshooting-certs-auto-etcd.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/modules/troubleshooting-certs-auto-etcd.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\modules\\troubleshooting-certs-auto-etcd.adoc",
+      "content_length": 1467
+    },
+    {
+      "repo_path": "modules/restoring-etcd-snapshot-hosted-cluster.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/modules/restoring-etcd-snapshot-hosted-cluster.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\modules\\restoring-etcd-snapshot-hosted-cluster.adoc",
+      "content_length": 1697
+    },
+    {
+      "repo_path": "modules/restore-replace-stopped-etcd-member.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/modules/restore-replace-stopped-etcd-member.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\modules\\restore-replace-stopped-etcd-member.adoc",
+      "content_length": 22389
+    },
+    {
+      "repo_path": "modules/restore-replace-stopped-baremetal-etcd-member.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/modules/restore-replace-stopped-baremetal-etcd-member.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\modules\\restore-replace-stopped-baremetal-etcd-member.adoc",
+      "content_length": 21917
+    },
+    {
+      "repo_path": "modules/restore-replace-crashlooping-etcd-member.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/modules/restore-replace-crashlooping-etcd-member.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\modules\\restore-replace-crashlooping-etcd-member.adoc",
+      "content_length": 8714
+    },
+    {
+      "repo_path": "modules/restore-identify-unhealthy-etcd-member.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/modules/restore-identify-unhealthy-etcd-member.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\modules\\restore-identify-unhealthy-etcd-member.adoc",
+      "content_length": 1022
+    },
+    {
+      "repo_path": "modules/restore-determine-state-etcd-member.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/modules/restore-determine-state-etcd-member.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\modules\\restore-determine-state-etcd-member.adoc",
+      "content_length": 4213
+    },
+    {
+      "repo_path": "modules/recommended-etcd-practices.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/modules/recommended-etcd-practices.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\openshift_docs_repo\\modules\\recommended-etcd-practices.adoc",
+      "content_length": 3602
+    }
+  ],
+  "issue_pr_candidates_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd\\issue_pr_candidates.json"
+}

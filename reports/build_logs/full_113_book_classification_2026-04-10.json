@@ -1,0 +1,1149 @@
+{
+  "built_at": "2026-04-10",
+  "runtime_book_count": 113,
+  "class_counts": {
+    "승인 가능": 23,
+    "번역 우선": 1,
+    "대체 소스 필요": 5,
+    "제외 가능": 84
+  },
+  "high_value_total": 29,
+  "high_value_by_class": {
+    "승인 가능": 23,
+    "번역 우선": 1,
+    "대체 소스 필요": 5,
+    "제외 가능": 0
+  },
+  "books": [
+    {
+      "book_slug": "advanced_networking",
+      "title": "고급 네트워킹",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "architecture",
+      "title": "아키텍처",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "authentication_and_authorization",
+      "title": "인증 및 권한 부여",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "cli_tools",
+      "title": "CLI 툴",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "disconnected_environments",
+      "title": "연결이 끊긴 환경",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "images",
+      "title": "이미지",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "ingress_and_load_balancing",
+      "title": "Ingress 및 로드 밸런싱",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "installation_overview",
+      "title": "설치 개요",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "logging",
+      "title": "로깅",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "machine_management",
+      "title": "머신 관리",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "networking_overview",
+      "title": "네트워킹 개요",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "nodes",
+      "title": "노드",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "observability_overview",
+      "title": "관찰 기능 개요",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "overview",
+      "title": "개요",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "postinstallation_configuration",
+      "title": "설치 후 구성",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "registry",
+      "title": "레지스트리",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "release_notes",
+      "title": "릴리스 노트",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "security_and_compliance",
+      "title": "보안 및 컴플라이언스",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "storage",
+      "title": "스토리지",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "support",
+      "title": "지원",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "updating_clusters",
+      "title": "클러스터 업데이트",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "validation_and_troubleshooting",
+      "title": "검증 및 문제 해결",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "web_console",
+      "title": "웹 콘솔",
+      "high_value": true,
+      "content_status": "approved_ko",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 1.0,
+      "gap_lane": "approved",
+      "classification": "승인 가능"
+    },
+    {
+      "book_slug": "machine_configuration",
+      "title": "Machine configuration",
+      "high_value": true,
+      "content_status": "translated_ko_draft",
+      "fallback_detected": true,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "translation_first",
+      "classification": "번역 우선"
+    },
+    {
+      "book_slug": "backup_and_restore",
+      "title": "Backup and restore",
+      "high_value": true,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "translation_first",
+      "classification": "대체 소스 필요"
+    },
+    {
+      "book_slug": "etcd",
+      "title": "etcd",
+      "high_value": true,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "manual_review_first",
+      "classification": "대체 소스 필요"
+    },
+    {
+      "book_slug": "installing_on_any_platform",
+      "title": "Installing on any platform",
+      "high_value": true,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "translation_first",
+      "classification": "대체 소스 필요"
+    },
+    {
+      "book_slug": "monitoring",
+      "title": "Monitoring",
+      "high_value": true,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "translation_first",
+      "classification": "대체 소스 필요"
+    },
+    {
+      "book_slug": "operators",
+      "title": "Operator",
+      "high_value": true,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "manual_review_first",
+      "classification": "대체 소스 필요"
+    },
+    {
+      "book_slug": "ai_workloads",
+      "title": "AI 워크로드",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "api_overview",
+      "title": "API 개요",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "authorization_apis",
+      "title": "권한 부여 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "autoscale_apis",
+      "title": "autoscale API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "building_applications",
+      "title": "애플리케이션 빌드",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "builds_using_buildconfig",
+      "title": "Builds using BuildConfig",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "builds_using_shipwright",
+      "title": "shipwright를 사용하는 빌드",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "cicd_overview",
+      "title": "CI/CD 개요",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "cluster_apis",
+      "title": "클러스터 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "cluster_observability_operator",
+      "title": "Cluster Observability Operator",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "common_object_reference",
+      "title": "공통 오브젝트 참조",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "config_apis",
+      "title": "구성 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "configuring_network_settings",
+      "title": "네트워크 설정 구성",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "console_apis",
+      "title": "콘솔 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "distributed_tracing",
+      "title": "Distributed Tracing",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "edge_computing",
+      "title": "엣지 컴퓨팅",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "extension_apis",
+      "title": "Extension APIs",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "extensions",
+      "title": "확장",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "gitops",
+      "title": "GitOps",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "hardware_accelerators",
+      "title": "하드웨어 가속기",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "hardware_networks",
+      "title": "하드웨어 네트워크",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "hosted_control_planes",
+      "title": "호스팅된 컨트롤 플레인",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "image_apis",
+      "title": "이미지 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installation_configuration",
+      "title": "설치 구성",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_a_two_node_openshift_cluster",
+      "title": "두 개의 노드 OpenShift 클러스터 설치",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_an_on-premise_cluster_with_the_agent-based_installer",
+      "title": "에이전트 기반 설치 관리자를 사용하여 온프레미스 클러스터 설치",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_ibm_cloud_bare_metal_classic",
+      "title": "IBM Cloud Bare Metal (Classic) 설치",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on-premise_with_assisted_installer",
+      "title": "지원 설치 관리자를 사용하여 온프레미스 설치",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on_a_single_node",
+      "title": "단일 노드에 설치",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on_alibaba_cloud",
+      "title": "Alibaba Cloud에 설치",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on_aws",
+      "title": "Installing on AWS",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on_azure",
+      "title": "Installing on Azure",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on_azure_stack_hub",
+      "title": "Installing on Azure Stack Hub",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on_bare_metal",
+      "title": "Installing on bare metal",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on_google_cloud",
+      "title": "Installing on Google Cloud",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on_ibm_cloud",
+      "title": "Installing on IBM Cloud",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on_ibm_power",
+      "title": "Installing on IBM Power",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on_ibm_power_virtual_server",
+      "title": "Installing on IBM Power Virtual Server",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on_ibm_z_and_ibm_linuxone",
+      "title": "Installing on IBM Z and IBM LinuxONE",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on_nutanix",
+      "title": "Installing on Nutanix",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on_openstack",
+      "title": "Installing on OpenStack",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on_oracle_distributed_cloud",
+      "title": "OCI에 설치",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on_oracle_edge_cloud",
+      "title": "Oracle Edge Cloud에 설치",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "installing_on_vmware_vsphere",
+      "title": "Installing on VMware vSphere",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "jenkins",
+      "title": "Jenkins",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "kubernetes_nmstate",
+      "title": "Kubernetes NMState",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "machine_apis",
+      "title": "머신 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "metadata_apis",
+      "title": "메타데이터 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "migrating_from_version_3_to_4",
+      "title": "버전 3에서 4로 마이그레이션",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "migration_toolkit_for_containers",
+      "title": "Migration Toolkit for Containers",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "monitoring_apis",
+      "title": "모니터링 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "multiple_networks",
+      "title": "다중 네트워크",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "network_apis",
+      "title": "네트워크 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "network_observability",
+      "title": "Network Observability",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "network_security",
+      "title": "네트워크 보안",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "networking_operators",
+      "title": "Networking Operator",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "node_apis",
+      "title": "노드 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "oauth_apis",
+      "title": "OAuth API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "openshift_lightspeed",
+      "title": "Lightspeed",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "openshift_sandboxed_containers",
+      "title": "OpenShift 샌드박스 컨테이너",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "operator_apis",
+      "title": "Operator API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "operatorhub_apis",
+      "title": "OperatorHub API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "ovn-kubernetes_network_plugin",
+      "title": "OVN-Kubernetes 네트워크 플러그인",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "pipelines",
+      "title": "파이프라인",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "policy_apis",
+      "title": "정책 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "power_monitoring",
+      "title": "전원 모니터링",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "project_apis",
+      "title": "프로젝트 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "provisioning_apis",
+      "title": "프로비저닝 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "rbac_apis",
+      "title": "RBAC API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "red_hat_build_of_opentelemetry",
+      "title": "Red Hat build of OpenTelemetry",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "role_apis",
+      "title": "역할 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "scalability_and_performance",
+      "title": "Scalability and performance",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "schedule_and_quota_apis",
+      "title": "일정 및 할당량 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "security_apis",
+      "title": "보안 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "serverless",
+      "title": "서버리스",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "service_mesh",
+      "title": "Service Mesh",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "specialized_hardware_and_driver_enablement",
+      "title": "특화된 하드웨어 및 드라이버 활성화",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "storage_apis",
+      "title": "스토리지 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "template_apis",
+      "title": "템플릿 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "tutorials",
+      "title": "튜토리얼",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "user_and_group_apis",
+      "title": "사용자 및 그룹 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "virtualization",
+      "title": "Virtualization",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "windows_container_support_for_openshift",
+      "title": "OpenShift용 Windows 컨테이너 지원",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    },
+    {
+      "book_slug": "workloads_apis",
+      "title": "워크로드 API",
+      "high_value": false,
+      "content_status": "blocked",
+      "fallback_detected": false,
+      "hangul_chunk_ratio": 0.0,
+      "gap_lane": "watch",
+      "classification": "제외 가능"
+    }
+  ]
+}

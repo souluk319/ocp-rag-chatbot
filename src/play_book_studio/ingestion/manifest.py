@@ -323,6 +323,22 @@ def _entry_from_item(item: dict[str, object]) -> SourceManifestEntry:
         "source_fingerprint": str(item.get("source_fingerprint", "")),
         "approval_status": str(item.get("approval_status", "unreviewed")),
         "approval_notes": str(item.get("approval_notes", "")),
+        "source_id": str(item.get("source_id", "")),
+        "source_lane": str(item.get("source_lane", "")),
+        "source_type": str(item.get("source_type", "official_doc")),
+        "source_collection": str(item.get("source_collection", "core")),
+        "legal_notice_url": str(item.get("legal_notice_url", "")),
+        "original_title": str(item.get("original_title", "")),
+        "license_or_terms": str(item.get("license_or_terms", "")),
+        "review_status": str(item.get("review_status", "unreviewed")),
+        "trust_score": float(item.get("trust_score", 1.0)),
+        "verifiability": str(item.get("verifiability", "anchor_backed")),
+        "updated_at": str(item.get("updated_at", "")),
+        "translation_source_language": str(item.get("translation_source_language", "")),
+        "translation_target_language": str(item.get("translation_target_language", "ko")),
+        "translation_source_url": str(item.get("translation_source_url", "")),
+        "translation_source_fingerprint": str(item.get("translation_source_fingerprint", "")),
+        "translation_stage": str(item.get("translation_stage", "")),
     }
     if not entry_kwargs["source_fingerprint"]:
         entry_kwargs["source_fingerprint"] = _source_fingerprint(

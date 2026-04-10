@@ -36,6 +36,20 @@ class CorpusSectionProjection:
     translation_source_language: str
     translation_source_url: str
     translation_source_fingerprint: str
+    source_id: str
+    source_lane: str
+    source_type: str
+    source_collection: str
+    product: str
+    version: str
+    locale: str
+    original_title: str
+    legal_notice_url: str
+    license_or_terms: str
+    review_status: str
+    trust_score: float
+    verifiability: str
+    updated_at: str
     text: str
 
     def to_dict(self) -> dict[str, object]:
@@ -47,6 +61,7 @@ class CorpusSectionProjection:
             "section_level": self.section_level,
             "section_path": list(self.section_path),
             "anchor": self.anchor,
+            "anchor_id": self.anchor,
             "source_url": self.source_url,
             "viewer_path": self.viewer_path,
             "semantic_role": self.semantic_role,
@@ -58,6 +73,20 @@ class CorpusSectionProjection:
             "translation_source_language": self.translation_source_language,
             "translation_source_url": self.translation_source_url,
             "translation_source_fingerprint": self.translation_source_fingerprint,
+            "source_id": self.source_id,
+            "source_lane": self.source_lane,
+            "source_type": self.source_type,
+            "source_collection": self.source_collection,
+            "product": self.product,
+            "version": self.version,
+            "locale": self.locale,
+            "original_title": self.original_title,
+            "legal_notice_url": self.legal_notice_url,
+            "license_or_terms": self.license_or_terms,
+            "review_status": self.review_status,
+            "trust_score": self.trust_score,
+            "verifiability": self.verifiability,
+            "updated_at": self.updated_at,
             "text": self.text,
         }
 
@@ -122,6 +151,20 @@ def project_corpus_sections(document: CanonicalDocumentAst) -> list[CorpusSectio
                 translation_source_language=document.provenance.translation_source_language,
                 translation_source_url=document.provenance.translation_source_url,
                 translation_source_fingerprint=document.provenance.translation_source_fingerprint,
+                source_id=document.provenance.source_id,
+                source_lane=document.provenance.source_lane,
+                source_type=document.provenance.source_type,
+                source_collection=document.provenance.source_collection,
+                product=document.provenance.product or document.inferred_product,
+                version=document.provenance.version or document.inferred_version,
+                locale=document.provenance.locale or document.display_language,
+                original_title=document.provenance.original_title or document.title,
+                legal_notice_url=document.provenance.legal_notice_url,
+                license_or_terms=document.provenance.license_or_terms,
+                review_status=document.provenance.review_status,
+                trust_score=document.provenance.trust_score,
+                verifiability=document.provenance.verifiability,
+                updated_at=document.provenance.updated_at,
                 text=text,
             )
         )

@@ -135,9 +135,11 @@ window.createDiagnosticsRenderer = function createDiagnosticsRenderer(deps) {
       }
       cards.push(`
         <div class="metric-card ${klass} metric-card-compact">
-          <div class="metric-label">${label}</div>
-          <div class="metric-value">${formatMetricScore(summary ? summary.top_score : null)}</div>
-          <div class="metric-detail">${detailParts.join("<br>")}</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.04); padding-bottom: 4px; margin-bottom: 2px;">
+            <div class="metric-label" style="font-size: 10px;">${label}</div>
+            <div class="metric-value" style="font-size: 13px;">${formatMetricScore(summary ? summary.top_score : null)}</div>
+          </div>
+          <div class="metric-detail" style="font-size: 9px; line-height: 1.35;">${detailParts.join(" <span style='opacity:0.4'>|</span> ")}</div>
         </div>
       `);
     });

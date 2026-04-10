@@ -2,6 +2,32 @@
 
 자주 헷갈리는 폴더만 적는다.
 
+## root contracts
+
+- `PROJECT.md`
+  - 제품 정의와 phase/acceptance 기준
+- `SYSTEM_RULES.md`
+  - source trust, translation gate, merge/eval gate
+- `TASK_BOARD.yaml`
+  - phase/epic/task 단위 실행 계약
+- `schemas/`
+  - document/chunk/manualbook 산출물 스키마
+
+## data
+
+`data/`는 foundry lane 기준 디렉터리다.
+
+- `bronze/`
+  - 원문 수집 보관
+- `silver/`
+  - canonical 정규화 중간층
+- `silver_ko/`
+  - 영어 fallback의 한국어화 중간층
+- `gold_corpus_ko/`
+  - retrieval용 최종 한국어 코퍼스
+- `gold_manualbook_ko/`
+  - 읽기용 최종 한국어 매뉴얼북
+
 ## manifests
 
 `manifests/`는 실행 결과물이 아니라 입력 선언 파일이다.
@@ -45,6 +71,22 @@
   - judge 평가
 - `check_runtime_endpoints.py`
   - 시연 전 런타임 점검
+
+## pipelines
+
+`pipelines/`는 앞으로 collector/normalize/translate/chunk/index 실행 계약을 분리할 자리다.
+
+## eval
+
+`eval/`은 goldens/retrieval/answer/translation 기준선을 쌓는 자리다.
+
+## reports
+
+`reports/`는 build log와 eval report를 버전/phase 기준으로 남길 자리다.
+
+## apps
+
+`apps/`는 studio-ui/api/manualbook-viewer처럼 제품 표면을 분리하는 자리다.
 
 ## src/play_book_studio
 

@@ -1,0 +1,17 @@
+{
+  "product_slug": "openshift_container_platform",
+  "ocp_version": "4.20",
+  "docs_language": "ko",
+  "source_kind": "html-single",
+  "book_slug": "ingress_and_load_balancing",
+  "index_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/",
+  "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/ingress_and_load_balancing/index",
+  "resolved_source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/ingress_and_load_balancing/index",
+  "resolved_language": "ko",
+  "source_state": "published_native",
+  "source_state_reason": "discovered_in_requested_language_index",
+  "source_fingerprint": "a197bd1703fcb65a2db0aea2d61a5028208a3e5114918deba8ec8440ceb71345",
+  "raw_html_sha256": "5fd7ff511d91820f22d28584b1b2fccb5553b9f54d4a76f5f73ed55edac583ee",
+  "fallback_detected": false,
+  "content_length": 7058232
+}

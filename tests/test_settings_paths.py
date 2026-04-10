@@ -27,8 +27,14 @@ class SettingsPathTests(unittest.TestCase):
                 self.assertEqual(root / "artifacts", settings.artifacts_dir)
                 self.assertEqual(root / "artifacts" / "corpus", settings.corpus_dir)
                 self.assertEqual(root / "artifacts" / "retrieval", settings.retrieval_dir)
-                self.assertEqual(root / "artifacts" / "corpus" / "playbook_documents.jsonl", settings.playbook_documents_path)
-                self.assertEqual(root / "artifacts" / "corpus" / "playbooks", settings.playbook_books_dir)
+                self.assertEqual(root / "data", settings.data_dir)
+                self.assertEqual(root / "data" / "silver" / "normalized_docs.jsonl", settings.normalized_docs_path)
+                self.assertEqual(root / "data" / "gold_corpus_ko" / "chunks.jsonl", settings.chunks_path)
+                self.assertEqual(root / "data" / "gold_corpus_ko" / "bm25_corpus.jsonl", settings.bm25_corpus_path)
+                self.assertEqual(root / "data" / "gold_manualbook_ko" / "playbook_documents.jsonl", settings.playbook_documents_path)
+                self.assertEqual(root / "data" / "gold_manualbook_ko" / "playbooks", settings.playbook_books_dir)
+                self.assertEqual(root / "artifacts" / "corpus" / "playbook_documents.jsonl", settings.legacy_playbook_documents_path)
+                self.assertEqual(root / "artifacts" / "corpus" / "playbooks", settings.legacy_playbook_books_dir)
                 self.assertEqual(root / "artifacts" / "corpus" / "translation_lane_report.json", settings.translation_lane_report_path)
                 self.assertEqual(root / "artifacts" / "runtime" / "recent_chat_session.json", settings.recent_chat_session_path)
                 self.assertEqual(root / "artifacts" / "runtime" / "sessions", settings.runtime_sessions_dir)
@@ -44,7 +50,8 @@ class SettingsPathTests(unittest.TestCase):
                 self.assertEqual(root / "artifacts" / "doc_to_book" / "drafts", settings.doc_to_book_drafts_dir)
                 self.assertEqual(root / "artifacts" / "doc_to_book" / "captures", settings.doc_to_book_capture_dir)
                 self.assertEqual(root / "artifacts" / "doc_to_book" / "books", settings.doc_to_book_books_dir)
-                self.assertEqual(root / "artifacts" / "corpus" / "raw_html", settings.raw_html_dir)
+                self.assertEqual(root / "data" / "bronze" / "raw_html", settings.raw_html_dir)
+                self.assertEqual(root / "artifacts" / "corpus" / "raw_html", settings.legacy_raw_html_dir)
             finally:
                 if old_env is None:
                     os.environ.pop("ARTIFACTS_DIR", None)
@@ -68,14 +75,20 @@ class SettingsPathTests(unittest.TestCase):
                 self.assertEqual(external.resolve(), settings.artifacts_dir)
                 self.assertEqual((external / "corpus").resolve(), settings.corpus_dir)
                 self.assertEqual((external / "retrieval").resolve(), settings.retrieval_dir)
-                self.assertEqual((external / "corpus" / "playbook_documents.jsonl").resolve(), settings.playbook_documents_path)
-                self.assertEqual((external / "corpus" / "playbooks").resolve(), settings.playbook_books_dir)
+                self.assertEqual((root / "data" / "silver" / "normalized_docs.jsonl").resolve(), settings.normalized_docs_path)
+                self.assertEqual((root / "data" / "gold_corpus_ko" / "chunks.jsonl").resolve(), settings.chunks_path)
+                self.assertEqual((root / "data" / "gold_corpus_ko" / "bm25_corpus.jsonl").resolve(), settings.bm25_corpus_path)
+                self.assertEqual((root / "data" / "gold_manualbook_ko" / "playbook_documents.jsonl").resolve(), settings.playbook_documents_path)
+                self.assertEqual((root / "data" / "gold_manualbook_ko" / "playbooks").resolve(), settings.playbook_books_dir)
+                self.assertEqual((external / "corpus" / "playbook_documents.jsonl").resolve(), settings.legacy_playbook_documents_path)
+                self.assertEqual((external / "corpus" / "playbooks").resolve(), settings.legacy_playbook_books_dir)
                 self.assertEqual((external / "corpus" / "translation_lane_report.json").resolve(), settings.translation_lane_report_path)
                 self.assertEqual((external / "doc_to_book").resolve(), settings.doc_to_book_dir)
                 self.assertEqual((external / "doc_to_book" / "drafts").resolve(), settings.doc_to_book_drafts_dir)
                 self.assertEqual((external / "doc_to_book" / "captures").resolve(), settings.doc_to_book_capture_dir)
                 self.assertEqual((external / "doc_to_book" / "books").resolve(), settings.doc_to_book_books_dir)
-                self.assertEqual((external / "corpus" / "raw_html").resolve(), settings.raw_html_dir)
+                self.assertEqual((root / "data" / "bronze" / "raw_html").resolve(), settings.raw_html_dir)
+                self.assertEqual((external / "corpus" / "raw_html").resolve(), settings.legacy_raw_html_dir)
             finally:
                 if old_env is None:
                     os.environ.pop("ARTIFACTS_DIR", None)
@@ -129,7 +142,7 @@ class SettingsPathTests(unittest.TestCase):
                     settings.artifacts_dir,
                 )
                 self.assertEqual(
-                    (root / "shared-artifacts" / "corpus" / "raw_html").resolve(),
+                    (root / "data" / "bronze" / "raw_html").resolve(),
                     settings.raw_html_dir,
                 )
             finally:
@@ -311,7 +324,8 @@ class SettingsPathTests(unittest.TestCase):
                 self.assertEqual((external / "retrieval").resolve(), settings.retrieval_dir)
                 self.assertEqual((external / "answering").resolve(), settings.answering_dir)
                 self.assertEqual((external / "runtime").resolve(), settings.runtime_dir)
-                self.assertEqual((external / "corpus" / "raw_html").resolve(), settings.raw_html_dir)
+                self.assertEqual((root / "data" / "bronze" / "raw_html").resolve(), settings.raw_html_dir)
+                self.assertEqual((external / "corpus" / "raw_html").resolve(), settings.legacy_raw_html_dir)
                 self.assertEqual((external / "runtime" / "recent_chat_session.json").resolve(), settings.recent_chat_session_path)
                 self.assertEqual((external / "runtime" / "sessions").resolve(), settings.runtime_sessions_dir)
                 self.assertEqual(

@@ -21,6 +21,11 @@ from play_book_studio.ingestion.audit import (
     looks_like_mojibake_title,
     write_approved_manifest,
 )
+from play_book_studio.ingestion.audit_rules import (
+    body_language_guess,
+    classify_content_status,
+    is_english_like_title,
+)
 from play_book_studio.ingestion.manifest import read_manifest
 
 
@@ -32,6 +37,51 @@ class Part1AuditTests(unittest.TestCase):
     def test_looks_like_mojibake_title_accepts_clean_titles(self) -> None:
         self.assertFalse(looks_like_mojibake_title("고급 네트워킹"))
         self.assertFalse(looks_like_mojibake_title("Backup and restore"))
+
+    def test_classify_content_status_marks_blocked_when_sections_or_chunks_missing(self) -> None:
+        status, reason = classify_content_status(
+            section_count=0,
+            chunk_count=0,
+            hangul_section_ratio=0.0,
+            hangul_chunk_ratio=0.0,
+            title_english_like=True,
+            fallback_detected=False,
+        )
+        self.assertEqual("blocked", status)
+        self.assertEqual("missing normalized sections or chunks", reason)
+
+    def test_classify_content_status_marks_mixed_for_english_like_title_with_korean_body(self) -> None:
+        self.assertTrue(is_english_like_title("Backup and restore"))
+        status, reason = classify_content_status(
+            section_count=3,
+            chunk_count=3,
+            hangul_section_ratio=1.0,
+            hangul_chunk_ratio=1.0,
+            title_english_like=True,
+            fallback_detected=False,
+        )
+        self.assertEqual("mixed", status)
+        self.assertEqual(
+            "book title is English-like even though body is mostly Korean",
+            reason,
+        )
+
+    def test_classify_content_status_marks_mixed_when_body_is_partially_korean(self) -> None:
+        status, reason = classify_content_status(
+            section_count=4,
+            chunk_count=4,
+            hangul_section_ratio=0.75,
+            hangul_chunk_ratio=0.75,
+            title_english_like=False,
+            fallback_detected=False,
+        )
+        self.assertEqual("mixed", status)
+        self.assertEqual("book mixes Korean and non-Korean body text", reason)
+
+    def test_body_language_guess_prefers_fallback_over_ratio(self) -> None:
+        self.assertEqual("en_only", body_language_guess(hangul_chunk_ratio=0.9, fallback_detected=True))
+        self.assertEqual("mixed", body_language_guess(hangul_chunk_ratio=0.5, fallback_detected=False))
+        self.assertEqual("ko", body_language_guess(hangul_chunk_ratio=0.95, fallback_detected=False))
 
     def test_build_data_quality_report_separates_manifest_and_chunk_title_quality(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

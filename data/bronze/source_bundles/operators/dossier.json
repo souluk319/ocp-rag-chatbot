@@ -1,0 +1,93 @@
+{
+  "slug": "operators",
+  "current_status": {
+    "content_status": "blocked",
+    "gap_lane": "manual_review_first",
+    "gap_action": "preferred next step is manual source review or curated internal summary",
+    "fallback_detected": false,
+    "hangul_chunk_ratio": 0.0,
+    "title": "Operator"
+  },
+  "official_docs": {
+    "ko": {
+      "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/operators/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "Operator | OpenShift Container Platform | 4.20 | Red Hat Documentation"
+    },
+    "en": {
+      "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/operators/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "Operators | OpenShift Container Platform | 4.20 | Red Hat Documentation"
+    }
+  },
+  "openshift_docs_repo_candidates": [
+    "operators/operator-reference.adoc",
+    "operators/index.adoc",
+    "operators/user/olm-installing-operators-in-namespace.adoc",
+    "operators/user/olm-creating-apps-from-installed-operators.adoc",
+    "operators/understanding/olm-what-operators-are.adoc",
+    "operators/understanding/olm-understanding-software-catalog.adoc",
+    "operators/understanding/olm-rh-catalogs.adoc",
+    "operators/understanding/olm-packaging-format.adoc",
+    "operators/understanding/olm-multitenancy.adoc",
+    "operators/understanding/olm-common-terms.adoc",
+    "operators/olm_v1/index.adoc",
+    "operators/admin/olm-upgrading-operators.adoc",
+    "operators/admin/olm-troubleshooting-operator-issues.adoc",
+    "operators/admin/olm-status.adoc",
+    "operators/admin/olm-restricted-networks.adoc",
+    "operators/admin/olm-managing-operatorconditions.adoc",
+    "operators/admin/olm-managing-custom-catalogs.adoc",
+    "operators/admin/olm-deleting-operators-from-cluster.adoc",
+    "operators/admin/olm-cs-podsched.adoc",
+    "operators/admin/olm-creating-policy.adoc",
+    "operators/admin/olm-configuring-proxy-support.adoc",
+    "operators/admin/olm-config.adoc",
+    "operators/admin/olm-adding-operators-to-cluster.adoc",
+    "operators/understanding/olm/olm-workflow.adoc",
+    "operators/understanding/olm/olm-webhooks.adoc",
+    "operators/understanding/olm/olm-understanding-operatorgroups.adoc",
+    "operators/understanding/olm/olm-understanding-olm.adoc",
+    "operators/understanding/olm/olm-understanding-metrics.adoc",
+    "operators/understanding/olm/olm-understanding-dependency-resolution.adoc",
+    "operators/understanding/olm/olm-operatorconditions.adoc",
+    "operators/understanding/olm/olm-colocation.adoc",
+    "operators/understanding/olm/olm-arch.adoc",
+    "operators/understanding/crds/crd-managing-resources-from-crds.adoc",
+    "operators/understanding/crds/crd-extending-api-with-crds.adoc",
+    "operators/operator_sdk/token_auth/osdk-token-auth.adoc",
+    "operators/operator_sdk/token_auth/osdk-cco-gcp.adoc",
+    "operators/operator_sdk/token_auth/osdk-cco-azure.adoc",
+    "operators/operator_sdk/token_auth/osdk-cco-aws-sts.adoc",
+    "operators/_attributes",
+    "operators/user/_attributes",
+    "operators/understanding/_attributes",
+    "operators/operator_sdk/_attributes",
+    "operators/olm_v1/_attributes",
+    "operators/admin/_attributes",
+    "operators/understanding/olm/_attributes",
+    "operators/understanding/crds/_attributes",
+    "operators/operator_sdk/token_auth/_attributes",
+    "modules/ztp-sno-du-subscribing-to-the-operators-needed-for-platform-configuration.adoc",
+    "modules/ztp-sno-du-configuring-the-operators.adoc",
+    "modules/ztp-recommended-cluster-operators.adoc"
+  ],
+  "issue_pr_candidates_exact_slug": [],
+  "issue_pr_candidates_related_terms": [],
+  "repo_search_terms": {
+    "slug": "operators",
+    "title": "Operator",
+    "aliases": [
+      "operators",
+      "operator"
+    ],
+    "path_hint": "operators",
+    "exact_queries": [
+      "repo:openshift/openshift-docs path:operators \"Operator\"",
+      "repo:openshift/openshift-docs path:operators operators"
+    ],
+    "related_queries": []
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "summary": {
+    "approved_runtime_count": 23,
+    "translation_ready_count": 4,
+    "manual_review_ready_count": 2,
+    "corpus_working_count": 27
+  },
+  "translation_ready": [
+    {
+      "book_slug": "backup_and_restore",
+      "content_status": "blocked",
+      "gap_lane": "translation_first",
+      "ko_fallback_banner": true,
+      "has_en_html": true,
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "readiness": "translation_ready",
+      "recommended_action": "translate from official EN with repo sidecars and review gate",
+      "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\backup_and_restore",
+      "translation_source_url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/backup_and_restore/index",
+      "translation_source_language": "en"
+    },
+    {
+      "book_slug": "installing_on_any_platform",
+      "content_status": "blocked",
+      "gap_lane": "translation_first",
+      "ko_fallback_banner": true,
+      "has_en_html": true,
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "readiness": "translation_ready",
+      "recommended_action": "translate from official EN with repo sidecars and review gate",
+      "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\installing_on_any_platform",
+      "translation_source_url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/installing_on_any_platform/index",
+      "translation_source_language": "en"
+    },
+    {
+      "book_slug": "machine_configuration",
+      "content_status": "translated_ko_draft",
+      "gap_lane": "translation_first",
+      "ko_fallback_banner": true,
+      "has_en_html": true,
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "readiness": "translation_ready",
+      "recommended_action": "translate from official EN with repo sidecars and review gate",
+      "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration",
+      "translation_source_url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/machine_configuration/index",
+      "translation_source_language": "en"
+    },
+    {
+      "book_slug": "monitoring",
+      "content_status": "blocked",
+      "gap_lane": "translation_first",
+      "ko_fallback_banner": true,
+      "has_en_html": true,
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "readiness": "translation_ready",
+      "recommended_action": "translate from official EN with repo sidecars and review gate",
+      "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\monitoring",
+      "translation_source_url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/monitoring/index",
+      "translation_source_language": "en"
+    }
+  ],
+  "manual_review_ready": [
+    {
+      "book_slug": "etcd",
+      "content_status": "blocked",
+      "gap_lane": "manual_review_first",
+      "ko_fallback_banner": false,
+      "has_en_html": true,
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "readiness": "manual_review_ready",
+      "recommended_action": "compose reviewed KO/manualbook from harvested evidence",
+      "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\etcd"
+    },
+    {
+      "book_slug": "operators",
+      "content_status": "blocked",
+      "gap_lane": "manual_review_first",
+      "ko_fallback_banner": false,
+      "has_en_html": true,
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "readiness": "manual_review_ready",
+      "recommended_action": "compose reviewed KO/manualbook from harvested evidence",
+      "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\operators"
+    }
+  ],
+  "output_targets": {
+    "translation_draft_manifest_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\manifests\\ocp_ko_4_20_translated_ko_draft.json",
+    "corpus_working_manifest_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\manifests\\ocp_ko_4_20_corpus_working_set.json"
+  }
+}

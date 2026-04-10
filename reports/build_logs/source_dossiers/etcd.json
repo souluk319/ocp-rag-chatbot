@@ -1,0 +1,241 @@
+{
+  "slug": "etcd",
+  "current_status": {
+    "content_status": "blocked",
+    "gap_lane": "manual_review_first",
+    "gap_action": "preferred next step is manual source review or curated internal summary",
+    "fallback_detected": false,
+    "hangul_chunk_ratio": 0.0,
+    "title": "etcd"
+  },
+  "official_docs": {
+    "ko": {
+      "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/etcd/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "etcd | OpenShift Container Platform | 4.20 | Red Hat Documentation"
+    },
+    "en": {
+      "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/etcd/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "etcd | OpenShift Container Platform | 4.20 | Red Hat Documentation"
+    }
+  },
+  "openshift_docs_repo_candidates": [
+    "backup_and_restore/control_plane_backup_and_restore/backing-up-etcd.adoc",
+    "backup_and_restore/control_plane_backup_and_restore/replacing-unhealthy-etcd-member.adoc",
+    "etcd/_attributes",
+    "etcd/etcd-backup-restore/_attributes",
+    "etcd/etcd-backup-restore/etcd-backup.adoc",
+    "etcd/etcd-backup-restore/etcd-disaster-recovery.adoc",
+    "etcd/etcd-backup-restore/images",
+    "etcd/etcd-backup-restore/modules",
+    "etcd/etcd-backup-restore/replace-unhealthy-etcd-member.adoc",
+    "etcd/etcd-backup-restore/snippets",
+    "etcd/etcd-encrypt.adoc",
+    "etcd/etcd-guidance-span.adoc",
+    "etcd/etcd-overview.adoc",
+    "etcd/etcd-performance.adoc",
+    "etcd/etcd-practices.adoc",
+    "etcd/images",
+    "etcd/modules",
+    "etcd/snippets",
+    "hosted_control_planes/hcp_high_availability/hcp-recovering-etcd-cluster.adoc",
+    "images/etcd-monitoring-working.png",
+    "images/etcd-no-certificate.png",
+    "images/etcd-operator-overview.png",
+    "images/etcd-operator-resources.png",
+    "installing/installing_openstack/deploying-openstack-with-rootVolume-etcd-on-local-disk.adoc",
+    "microshift_support/microshift-etcd.adoc",
+    "microshift_troubleshooting/microshift-etcd-troubleshoot.adoc",
+    "modules/about-etcd-encryption.adoc",
+    "modules/backup-etcd-hosted-cluster.adoc",
+    "modules/backup-etcd.adoc",
+    "modules/cpmso-ts-mhc-etcd-degraded.adoc",
+    "modules/creating-recurring-etcd-backups.adoc",
+    "modules/creating-single-etcd-backup.adoc",
+    "modules/disabling-etcd-encryption.adoc",
+    "modules/dr-restoring-etcd-quorum-ha.adoc",
+    "modules/enabling-etcd-encryption.adoc",
+    "modules/etcd-cert-alerts-metrics-signer.adoc",
+    "modules/etcd-consensus-latency.adoc",
+    "modules/etcd-creating-automated-backups.adoc",
+    "modules/etcd-customize-ttl.adoc",
+    "modules/etcd-database-size.adoc",
+    "modules/etcd-defrag.adoc",
+    "modules/etcd-deployment-caveats-span.adoc",
+    "modules/etcd-determine-kube-api-transaction-rate.adoc",
+    "modules/etcd-disk-latency.adoc",
+    "modules/etcd-encryption-types.adoc",
+    "modules/etcd-iaas-cloud-provider-considerations-span.adoc",
+    "modules/etcd-increase-db.adoc",
+    "modules/etcd-leader-election-log-replication.adoc",
+    "modules/etcd-network-latency-jitter.adoc",
+    "modules/etcd-node-scaling.adoc"
+  ],
+  "issue_pr_candidates_exact_slug": [
+    {
+      "number": 109410,
+      "title": "[OSDOCS#18862]: Added conditions for TNF in backup and restore",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109410",
+      "pull_request": true,
+      "updated_at": "2026-04-09T15:41:04Z"
+    },
+    {
+      "number": 85667,
+      "title": "OSDOCS-12631#adding connectivity requirements",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/85667",
+      "pull_request": true,
+      "updated_at": "2026-04-09T08:30:58Z"
+    },
+    {
+      "number": 109686,
+      "title": "[OCPBUGS-80926]: Minor formatting fix",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109686",
+      "pull_request": true,
+      "updated_at": "2026-04-07T15:03:01Z"
+    },
+    {
+      "number": 109614,
+      "title": "[OCPBUGS-80926]: Correcting text in on-premise backup procedure for HCP",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109614",
+      "pull_request": true,
+      "updated_at": "2026-04-07T13:23:22Z"
+    },
+    {
+      "number": 78769,
+      "title": "Control Plane latency recommendations for reliable clusters",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/78769",
+      "pull_request": true,
+      "updated_at": "2026-04-07T12:56:22Z"
+    },
+    {
+      "number": 106129,
+      "title": "OSDOCS#17761: node replacement procedure updates",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/106129",
+      "pull_request": true,
+      "updated_at": "2026-04-07T09:16:40Z"
+    },
+    {
+      "number": 109054,
+      "title": "[OCPBUGS-80926]: Adding prereqs to HCP backup/restore docs",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109054",
+      "pull_request": true,
+      "updated_at": "2026-04-06T14:03:02Z"
+    },
+    {
+      "number": 109329,
+      "title": "[OSDOCS-18929]: Removing AWS-specific language from the HCP backup and restore procedure",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109329",
+      "pull_request": true,
+      "updated_at": "2026-04-01T16:46:55Z"
+    },
+    {
+      "number": 109018,
+      "title": "OSDOCS-18122 [ROSA] CQA: Vale Checks",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109018",
+      "pull_request": true,
+      "updated_at": "2026-03-27T19:23:29Z"
+    },
+    {
+      "number": 108271,
+      "title": "[WIP] Merge rights exercise 2: Prow build failures",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/108271",
+      "pull_request": true,
+      "updated_at": "2026-03-26T17:24:41Z"
+    }
+  ],
+  "issue_pr_candidates_related_terms": [
+    {
+      "number": 109410,
+      "title": "[OSDOCS#18862]: Added conditions for TNF in backup and restore",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109410",
+      "pull_request": true,
+      "updated_at": "2026-04-09T15:41:04Z"
+    },
+    {
+      "number": 85667,
+      "title": "OSDOCS-12631#adding connectivity requirements",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/85667",
+      "pull_request": true,
+      "updated_at": "2026-04-09T08:30:58Z"
+    },
+    {
+      "number": 109686,
+      "title": "[OCPBUGS-80926]: Minor formatting fix",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109686",
+      "pull_request": true,
+      "updated_at": "2026-04-07T15:03:01Z"
+    },
+    {
+      "number": 109614,
+      "title": "[OCPBUGS-80926]: Correcting text in on-premise backup procedure for HCP",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109614",
+      "pull_request": true,
+      "updated_at": "2026-04-07T13:23:22Z"
+    },
+    {
+      "number": 78769,
+      "title": "Control Plane latency recommendations for reliable clusters",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/78769",
+      "pull_request": true,
+      "updated_at": "2026-04-07T12:56:22Z"
+    },
+    {
+      "number": 106129,
+      "title": "OSDOCS#17761: node replacement procedure updates",
+      "state": "open",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/106129",
+      "pull_request": true,
+      "updated_at": "2026-04-07T09:16:40Z"
+    },
+    {
+      "number": 109054,
+      "title": "[OCPBUGS-80926]: Adding prereqs to HCP backup/restore docs",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109054",
+      "pull_request": true,
+      "updated_at": "2026-04-06T14:03:02Z"
+    },
+    {
+      "number": 109329,
+      "title": "[OSDOCS-18929]: Removing AWS-specific language from the HCP backup and restore procedure",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109329",
+      "pull_request": true,
+      "updated_at": "2026-04-01T16:46:55Z"
+    },
+    {
+      "number": 109018,
+      "title": "OSDOCS-18122 [ROSA] CQA: Vale Checks",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/109018",
+      "pull_request": true,
+      "updated_at": "2026-03-27T19:23:29Z"
+    },
+    {
+      "number": 108271,
+      "title": "[WIP] Merge rights exercise 2: Prow build failures",
+      "state": "closed",
+      "html_url": "https://github.com/openshift/openshift-docs/pull/108271",
+      "pull_request": true,
+      "updated_at": "2026-03-26T17:24:41Z"
+    }
+  ]
+}

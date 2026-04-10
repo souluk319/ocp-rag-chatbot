@@ -14,6 +14,20 @@ NoteVariant = Literal["note", "warning", "caution", "important", "tip"]
 
 @dataclass(slots=True)
 class AstProvenance:
+    source_id: str = ""
+    source_lane: str = ""
+    source_type: str = ""
+    source_collection: str = ""
+    product: str = ""
+    version: str = ""
+    locale: str = ""
+    original_title: str = ""
+    legal_notice_url: str = ""
+    license_or_terms: str = ""
+    review_status: str = "unreviewed"
+    trust_score: float = 1.0
+    verifiability: str = ""
+    updated_at: str = ""
     capture_uri: str = ""
     source_fingerprint: str = ""
     raw_content_sha256: str = ""
@@ -30,6 +44,20 @@ class AstProvenance:
 
     def to_dict(self) -> dict[str, object]:
         return {
+            "source_id": self.source_id,
+            "source_lane": self.source_lane,
+            "source_type": self.source_type,
+            "source_collection": self.source_collection,
+            "product": self.product,
+            "version": self.version,
+            "locale": self.locale,
+            "original_title": self.original_title,
+            "legal_notice_url": self.legal_notice_url,
+            "license_or_terms": self.license_or_terms,
+            "review_status": self.review_status,
+            "trust_score": self.trust_score,
+            "verifiability": self.verifiability,
+            "updated_at": self.updated_at,
             "capture_uri": self.capture_uri,
             "source_fingerprint": self.source_fingerprint,
             "raw_content_sha256": self.raw_content_sha256,
@@ -270,6 +298,7 @@ class PlaybookSectionArtifact:
             "section_path": list(self.path),
             "section_path_label": " > ".join(self.path) if self.path else self.heading,
             "anchor": self.anchor,
+            "anchor_id": self.anchor,
             "viewer_path": self.viewer_path,
             "semantic_role": self.semantic_role,
             "block_kinds": list(getattr(block, "kind", "unknown") for block in self.blocks),
@@ -291,10 +320,14 @@ class PlaybookDocumentArtifact:
     translation_source_fingerprint: str
     pack_id: str
     inferred_version: str
+    legal_notice_url: str = ""
+    review_status: str = "unreviewed"
     sections: tuple[PlaybookSectionArtifact, ...] = field(default_factory=tuple)
     quality_status: str = "draft"
     quality_score: float = 0.0
     quality_flags: tuple[str, ...] = field(default_factory=tuple)
+    source_metadata: dict[str, object] = field(default_factory=dict)
+    anchor_map: dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -302,6 +335,8 @@ class PlaybookDocumentArtifact:
             "source_view_strategy": "playbook_ast_v1",
             "book_slug": self.book_slug,
             "title": self.title,
+            "version": self.inferred_version,
+            "locale": self.language_hint,
             "source_uri": self.source_uri,
             "source_language": self.source_language,
             "language_hint": self.language_hint,
@@ -310,9 +345,13 @@ class PlaybookDocumentArtifact:
             "translation_source_uri": self.translation_source_uri,
             "translation_source_language": self.translation_source_language,
             "translation_source_fingerprint": self.translation_source_fingerprint,
+            "legal_notice_url": self.legal_notice_url,
+            "review_status": self.review_status,
             "pack_id": self.pack_id,
             "inferred_version": self.inferred_version,
             "section_count": len(self.sections),
+            "source_metadata": dict(self.source_metadata),
+            "anchor_map": dict(self.anchor_map),
             "sections": [section.to_dict() for section in self.sections],
             "quality_status": self.quality_status,
             "quality_score": self.quality_score,

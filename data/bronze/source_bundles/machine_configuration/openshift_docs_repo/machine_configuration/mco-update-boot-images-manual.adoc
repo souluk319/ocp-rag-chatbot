@@ -1,0 +1,30 @@
+:_mod-docs-content-type: ASSEMBLY
+:context: mco-update-boot-images-manual
+include::_attributes/common-attributes.adoc[]
+[id="mco-update-boot-images-manual"]
+= Manually updating the boot image
+
+toc::[]
+
+[role="_abstract"]
+For {product-title} platforms that do not support automatic boot image updating or for clusters configured with the boot image management feature disabled, you can manually update the boot image used by the compute nodes in your cluster. By updating the boot image, you can ensure that newly scaled up nodes are able to successfully use the latest {op-system-first} version and join the cluster.
+
+[NOTE]
+====
+Red{nbsp}Hat does not support manually updating the boot image in control plane nodes.
+====
+
+include::modules/mco-update-boot-images-ibm-cloud.adoc[leveloffset=+1]
+
+include::modules/mco-update-boot-images-nutanix.adoc[leveloffset=+1]
+
+include::modules/mco-update-boot-images-openstack.adoc[leveloffset=+1]
+
+[role="_additional-resources"]
+[id="additional-resources_{context}"]
+== Additional resources
+* xref:../machine_configuration/mco-update-boot-images.adoc#mco-update-boot-images[Boot image management]
+* xref:../installing/installing_aws/ipi/ipi-aws-preparing-to-install.adoc#installation-obtaining-installer_ipi-aws-preparing-to-install[Obtaining the installation program]
+* xref:../machine_management/user_infra/adding-bare-metal-compute-user-infra.adoc#adding-bare-metal-compute-user-infra[Adding compute machines to bare metal]
+
+

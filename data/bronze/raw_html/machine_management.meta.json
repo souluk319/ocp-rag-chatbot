@@ -1,0 +1,17 @@
+{
+  "product_slug": "openshift_container_platform",
+  "ocp_version": "4.20",
+  "docs_language": "ko",
+  "source_kind": "html-single",
+  "book_slug": "machine_management",
+  "index_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/",
+  "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/machine_management/index",
+  "resolved_source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/machine_management/index",
+  "resolved_language": "ko",
+  "source_state": "published_native",
+  "source_state_reason": "discovered_in_requested_language_index",
+  "source_fingerprint": "adb7e77ebd60bd74d58ad53599dbab7b60cbf586e4758d974ffe78b0e5dabb90",
+  "raw_html_sha256": "a2320c613d2f300179f4016fae1a45bd0f58487e098b70845e8cd09881baaa2a",
+  "fallback_detected": false,
+  "content_length": 9175672
+}

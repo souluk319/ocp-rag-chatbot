@@ -1,0 +1,17 @@
+{
+  "product_slug": "openshift_container_platform",
+  "ocp_version": "4.20",
+  "docs_language": "ko",
+  "source_kind": "html-single",
+  "book_slug": "logging",
+  "index_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/",
+  "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/logging/index",
+  "resolved_source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/logging/index",
+  "resolved_language": "ko",
+  "source_state": "published_native",
+  "source_state_reason": "discovered_in_requested_language_index",
+  "source_fingerprint": "3a71e42c3a48a6339564428ca918d955583c75ea05016ca5b0b0cad9c0fc9ba3",
+  "raw_html_sha256": "0dc4ee9a96f2362a9800eeeb5f2ec06f5f89a80891073267a35ecd06b61e916f",
+  "fallback_detected": false,
+  "content_length": 4648474
+}

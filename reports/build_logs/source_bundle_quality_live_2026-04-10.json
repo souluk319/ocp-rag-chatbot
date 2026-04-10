@@ -1,0 +1,82 @@
+{
+  "bundle_count": 6,
+  "counts": {
+    "translation_ready": 4,
+    "manual_review_ready": 2,
+    "source_expansion_needed": 0
+  },
+  "bundles": [
+    {
+      "book_slug": "backup_and_restore",
+      "content_status": "blocked",
+      "gap_lane": "translation_first",
+      "ko_fallback_banner": true,
+      "has_en_html": true,
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "readiness": "translation_ready",
+      "recommended_action": "translate from official EN with repo sidecars and review gate"
+    },
+    {
+      "book_slug": "etcd",
+      "content_status": "blocked",
+      "gap_lane": "manual_review_first",
+      "ko_fallback_banner": false,
+      "has_en_html": true,
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "readiness": "manual_review_ready",
+      "recommended_action": "compose reviewed KO/manualbook from harvested evidence"
+    },
+    {
+      "book_slug": "installing_on_any_platform",
+      "content_status": "blocked",
+      "gap_lane": "translation_first",
+      "ko_fallback_banner": true,
+      "has_en_html": true,
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "readiness": "translation_ready",
+      "recommended_action": "translate from official EN with repo sidecars and review gate"
+    },
+    {
+      "book_slug": "machine_configuration",
+      "content_status": "translated_ko_draft",
+      "gap_lane": "translation_first",
+      "ko_fallback_banner": true,
+      "has_en_html": true,
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "readiness": "translation_ready",
+      "recommended_action": "translate from official EN with repo sidecars and review gate"
+    },
+    {
+      "book_slug": "monitoring",
+      "content_status": "blocked",
+      "gap_lane": "translation_first",
+      "ko_fallback_banner": true,
+      "has_en_html": true,
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "readiness": "translation_ready",
+      "recommended_action": "translate from official EN with repo sidecars and review gate"
+    },
+    {
+      "book_slug": "operators",
+      "content_status": "blocked",
+      "gap_lane": "manual_review_first",
+      "ko_fallback_banner": false,
+      "has_en_html": true,
+      "repo_artifact_count": 20,
+      "exact_issue_pr_count": 0,
+      "related_issue_pr_count": 0,
+      "readiness": "manual_review_ready",
+      "recommended_action": "compose reviewed KO/manualbook from harvested evidence"
+    }
+  ]
+}

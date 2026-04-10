@@ -1,0 +1,146 @@
+{
+  "slug": "machine_configuration",
+  "bundle_root": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration",
+  "dossier_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\dossier.json",
+  "official_docs": {
+    "ko": {
+      "url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/machine_configuration/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": true,
+      "title_hint": "Machine configuration | OpenShift Container Platform | 4.20 | Red Hat Documentation",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\official_docs\\ko\\source.html",
+      "content_length": 5969758
+    },
+    "en": {
+      "url": "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/machine_configuration/index",
+      "status_code": 200,
+      "contains_language_fallback_banner": false,
+      "title_hint": "Machine configuration | OpenShift Container Platform | 4.20 | Red Hat Documentation",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\official_docs\\en\\source.html",
+      "content_length": 3681392
+    }
+  },
+  "repo_artifacts": [
+    {
+      "repo_path": "machine_configuration/mco-update-boot-images.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/machine_configuration/mco-update-boot-images.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\machine_configuration\\mco-update-boot-images.adoc",
+      "content_length": 861
+    },
+    {
+      "repo_path": "machine_configuration/mco-update-boot-images-manual.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/machine_configuration/mco-update-boot-images-manual.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\machine_configuration\\mco-update-boot-images-manual.adoc",
+      "content_length": 1468
+    },
+    {
+      "repo_path": "machine_configuration/mco-coreos-layering.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/machine_configuration/mco-coreos-layering.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\machine_configuration\\mco-coreos-layering.adoc",
+      "content_length": 14577
+    },
+    {
+      "repo_path": "machine_configuration/machine-configs-garbage-collection.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/machine_configuration/machine-configs-garbage-collection.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\machine_configuration\\machine-configs-garbage-collection.adoc",
+      "content_length": 1947
+    },
+    {
+      "repo_path": "machine_configuration/machine-configs-custom.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/machine_configuration/machine-configs-custom.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\machine_configuration\\machine-configs-custom.adoc",
+      "content_length": 1086
+    },
+    {
+      "repo_path": "machine_configuration/machine-configs-configure.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/machine_configuration/machine-configs-configure.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\machine_configuration\\machine-configs-configure.adoc",
+      "content_length": 3633
+    },
+    {
+      "repo_path": "machine_configuration/machine-config-pin-preload-images-about.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/machine_configuration/machine-config-pin-preload-images-about.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\machine_configuration\\machine-config-pin-preload-images-about.adoc",
+      "content_length": 2645
+    },
+    {
+      "repo_path": "machine_configuration/machine-config-node-disruption.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/machine_configuration/machine-config-node-disruption.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\machine_configuration\\machine-config-node-disruption.adoc",
+      "content_length": 3869
+    },
+    {
+      "repo_path": "machine_configuration/machine-config-daemon-metrics.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/machine_configuration/machine-config-daemon-metrics.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\machine_configuration\\machine-config-daemon-metrics.adoc",
+      "content_length": 935
+    },
+    {
+      "repo_path": "machine_configuration/index.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/machine_configuration/index.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\machine_configuration\\index.adoc",
+      "content_length": 3732
+    },
+    {
+      "repo_path": "machine_configuration/_attributes",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/machine_configuration/_attributes",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\machine_configuration\\_attributes",
+      "content_length": 15
+    },
+    {
+      "repo_path": "snippets/apply-machine-configuration-method.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/snippets/apply-machine-configuration-method.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\snippets\\apply-machine-configuration-method.adoc",
+      "content_length": 2012
+    },
+    {
+      "repo_path": "modules/telco-ran-machine-configuration.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/modules/telco-ran-machine-configuration.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\modules\\telco-ran-machine-configuration.adoc",
+      "content_length": 1820
+    },
+    {
+      "repo_path": "modules/telco-ran-crs-machine-configuration.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/modules/telco-ran-crs-machine-configuration.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\modules\\telco-ran-crs-machine-configuration.adoc",
+      "content_length": 2320
+    },
+    {
+      "repo_path": "modules/rdma-creating-the-machine-configuration.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/modules/rdma-creating-the-machine-configuration.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\modules\\rdma-creating-the-machine-configuration.adoc",
+      "content_length": 1003
+    },
+    {
+      "repo_path": "modules/performance-challenges-in-machine-configurations-and-argo-cd.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/modules/performance-challenges-in-machine-configurations-and-argo-cd.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\modules\\performance-challenges-in-machine-configurations-and-argo-cd.adoc",
+      "content_length": 1084
+    },
+    {
+      "repo_path": "modules/con_auto-reboot-during-argo-cd-sync-with-machine-configurations.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/modules/con_auto-reboot-during-argo-cd-sync-with-machine-configurations.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\modules\\con_auto-reboot-during-argo-cd-sync-with-machine-configurations.adoc",
+      "content_length": 951
+    },
+    {
+      "repo_path": "modules/installation-user-infra-machines-advanced-console-configuration.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/modules/installation-user-infra-machines-advanced-console-configuration.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\modules\\installation-user-infra-machines-advanced-console-configuration.adoc",
+      "content_length": 1976
+    },
+    {
+      "repo_path": "rest_api/operator_apis/machineconfiguration-operator-openshift-io-v1.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/rest_api/operator_apis/machineconfiguration-operator-openshift-io-v1.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\rest_api\\operator_apis\\machineconfiguration-operator-openshift-io-v1.adoc",
+      "content_length": 72771
+    },
+    {
+      "repo_path": "rest_api/machine_apis/pinnedimageset-machineconfiguration-openshift-io-v1.adoc",
+      "raw_url": "https://raw.githubusercontent.com/openshift/openshift-docs/main/rest_api/machine_apis/pinnedimageset-machineconfiguration-openshift-io-v1.adoc",
+      "artifact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\openshift_docs_repo\\rest_api\\machine_apis\\pinnedimageset-machineconfiguration-openshift-io-v1.adoc",
+      "content_length": 12412
+    }
+  ],
+  "issue_pr_candidates_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\source_bundles\\machine_configuration\\issue_pr_candidates.json"
+}

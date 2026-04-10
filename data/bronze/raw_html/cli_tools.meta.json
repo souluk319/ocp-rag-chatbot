@@ -1,0 +1,17 @@
+{
+  "product_slug": "openshift_container_platform",
+  "ocp_version": "4.20",
+  "docs_language": "ko",
+  "source_kind": "html-single",
+  "book_slug": "cli_tools",
+  "index_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/",
+  "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/cli_tools/index",
+  "resolved_source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/cli_tools/index",
+  "resolved_language": "ko",
+  "source_state": "published_native",
+  "source_state_reason": "discovered_in_requested_language_index",
+  "source_fingerprint": "949594758f2d51134a7e6b6bc6eb280c677473ef77e24de1ae9f7ac3273db75c",
+  "raw_html_sha256": "b42decff717ef534c4a858b69b44e6988344d0ea67e24e15ffc619a734d1ea61",
+  "fallback_detected": false,
+  "content_length": 6619674
+}

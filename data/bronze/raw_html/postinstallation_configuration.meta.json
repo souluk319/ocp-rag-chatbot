@@ -1,0 +1,17 @@
+{
+  "product_slug": "openshift_container_platform",
+  "ocp_version": "4.20",
+  "docs_language": "ko",
+  "source_kind": "html-single",
+  "book_slug": "postinstallation_configuration",
+  "index_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/",
+  "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/postinstallation_configuration/index",
+  "resolved_source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/postinstallation_configuration/index",
+  "resolved_language": "ko",
+  "source_state": "published_native",
+  "source_state_reason": "discovered_in_requested_language_index",
+  "source_fingerprint": "87628132220d2338558249b8f99ea28ceb453cec6c062fc9ec1ee59aed1d56f2",
+  "raw_html_sha256": "73ed37bb4adeacd300d37fe28cb113bf48645d1ace89ed812e0918220d009bf7",
+  "fallback_detected": false,
+  "content_length": 8687734
+}

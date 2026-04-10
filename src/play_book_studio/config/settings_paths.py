@@ -11,6 +11,12 @@ from .packs import GLOBAL_SOURCE_CATALOG_NAME
 class SettingsPathMixin:
     def __post_init__(self) -> None:
         self.manifest_dir.mkdir(parents=True, exist_ok=True)
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+        self.bronze_dir.mkdir(parents=True, exist_ok=True)
+        self.silver_dir.mkdir(parents=True, exist_ok=True)
+        self.silver_ko_dir.mkdir(parents=True, exist_ok=True)
+        self.gold_corpus_ko_dir.mkdir(parents=True, exist_ok=True)
+        self.gold_manualbook_ko_dir.mkdir(parents=True, exist_ok=True)
         self.corpus_dir.mkdir(parents=True, exist_ok=True)
         self.retrieval_dir.mkdir(parents=True, exist_ok=True)
         self.answering_dir.mkdir(parents=True, exist_ok=True)
@@ -20,7 +26,9 @@ class SettingsPathMixin:
         self.doc_to_book_capture_dir.mkdir(parents=True, exist_ok=True)
         self.doc_to_book_books_dir.mkdir(parents=True, exist_ok=True)
         self.playbook_books_dir.mkdir(parents=True, exist_ok=True)
+        self.legacy_playbook_books_dir.mkdir(parents=True, exist_ok=True)
         self.raw_html_dir.mkdir(parents=True, exist_ok=True)
+        self.legacy_raw_html_dir.mkdir(parents=True, exist_ok=True)
 
     def _resolve_optional_dir(self, value: str, default: Path) -> Path:
         if not value:
@@ -43,9 +51,44 @@ class SettingsPathMixin:
     def _artifact_scope_dir(self, preferred_name: str) -> Path:
         return self.artifacts_dir / preferred_name
 
+    def _unique_paths(self, *paths: Path) -> tuple[Path, ...]:
+        unique: list[Path] = []
+        seen: set[Path] = set()
+        for path in paths:
+            resolved = path.resolve()
+            if resolved in seen:
+                continue
+            seen.add(resolved)
+            unique.append(resolved)
+        return tuple(unique)
+
     @property
     def manifest_dir(self) -> Path:
         return self.root_dir / "manifests"
+
+    @property
+    def data_dir(self) -> Path:
+        return self.root_dir / "data"
+
+    @property
+    def bronze_dir(self) -> Path:
+        return self.data_dir / "bronze"
+
+    @property
+    def silver_dir(self) -> Path:
+        return self.data_dir / "silver"
+
+    @property
+    def silver_ko_dir(self) -> Path:
+        return self.data_dir / "silver_ko"
+
+    @property
+    def gold_corpus_ko_dir(self) -> Path:
+        return self.data_dir / "gold_corpus_ko"
+
+    @property
+    def gold_manualbook_ko_dir(self) -> Path:
+        return self.data_dir / "gold_manualbook_ko"
 
     @property
     def source_manifest_path(self) -> Path:
@@ -81,6 +124,10 @@ class SettingsPathMixin:
         return self._artifact_scope_dir("corpus")
 
     @property
+    def legacy_corpus_dir(self) -> Path:
+        return self.corpus_dir
+
+    @property
     def retrieval_dir(self) -> Path:
         return self._artifact_scope_dir("retrieval")
 
@@ -88,8 +135,12 @@ class SettingsPathMixin:
     def raw_html_dir(self) -> Path:
         return self._resolve_optional_dir(
             self.raw_html_dir_override,
-            self.corpus_dir / "raw_html",
+            self.bronze_dir / "raw_html",
         )
+
+    @property
+    def legacy_raw_html_dir(self) -> Path:
+        return self.legacy_corpus_dir / "raw_html"
 
     @property
     def answering_dir(self) -> Path:
@@ -117,23 +168,51 @@ class SettingsPathMixin:
 
     @property
     def normalized_docs_path(self) -> Path:
-        return self.corpus_dir / "normalized_docs.jsonl"
+        return self.silver_dir / "normalized_docs.jsonl"
+
+    @property
+    def legacy_normalized_docs_path(self) -> Path:
+        return self.legacy_corpus_dir / "normalized_docs.jsonl"
+
+    @property
+    def normalized_docs_candidates(self) -> tuple[Path, ...]:
+        return self._unique_paths(self.normalized_docs_path, self.legacy_normalized_docs_path)
 
     @property
     def chunks_path(self) -> Path:
-        return self.corpus_dir / "chunks.jsonl"
+        return self.gold_corpus_ko_dir / "chunks.jsonl"
+
+    @property
+    def legacy_chunks_path(self) -> Path:
+        return self.legacy_corpus_dir / "chunks.jsonl"
 
     @property
     def bm25_corpus_path(self) -> Path:
-        return self.corpus_dir / "bm25_corpus.jsonl"
+        return self.gold_corpus_ko_dir / "bm25_corpus.jsonl"
+
+    @property
+    def legacy_bm25_corpus_path(self) -> Path:
+        return self.legacy_corpus_dir / "bm25_corpus.jsonl"
 
     @property
     def playbook_documents_path(self) -> Path:
-        return self.corpus_dir / "playbook_documents.jsonl"
+        return self.gold_manualbook_ko_dir / "playbook_documents.jsonl"
+
+    @property
+    def legacy_playbook_documents_path(self) -> Path:
+        return self.legacy_corpus_dir / "playbook_documents.jsonl"
 
     @property
     def playbook_books_dir(self) -> Path:
-        return self.corpus_dir / "playbooks"
+        return self.gold_manualbook_ko_dir / "playbooks"
+
+    @property
+    def legacy_playbook_books_dir(self) -> Path:
+        return self.legacy_corpus_dir / "playbooks"
+
+    @property
+    def playbook_book_dirs(self) -> tuple[Path, ...]:
+        return self._unique_paths(self.playbook_books_dir, self.legacy_playbook_books_dir)
 
     @property
     def preprocessing_log_path(self) -> Path:

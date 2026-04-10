@@ -1,6 +1,5 @@
 # ingestion 단계에서 쓰는 manifest/source entry 데이터 모델 모음.
 from __future__ import annotations
-
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
@@ -37,6 +36,22 @@ KNOWN_CONTENT_STATUSES = (
 CITATION_ELIGIBLE_STATUSES = (CONTENT_STATUS_APPROVED_KO,)
 
 
+def _contract_translation_status(status: str) -> str:
+    if status in {"approved_ko", "translated_ko_draft", "review_required", "original", "blocked"}:
+        return status
+    if status in {CONTENT_STATUS_EN_ONLY, CONTENT_STATUS_MIXED, CONTENT_STATUS_UNKNOWN}:
+        return "original" if status == CONTENT_STATUS_EN_ONLY else "review_required"
+    return "review_required"
+
+
+def _contract_review_status(status: str) -> str:
+    if status in {"unreviewed", "needs_review", "approved", "rejected"}:
+        return status
+    if not status.strip():
+        return "unreviewed"
+    return "needs_review"
+
+
 @dataclass(slots=True)
 class SourceManifestEntry:
     product_slug: str = "openshift_container_platform"
@@ -66,6 +81,17 @@ class SourceManifestEntry:
     source_fingerprint: str = ""
     approval_status: str = "unreviewed"
     approval_notes: str = ""
+    source_id: str = ""
+    source_lane: str = ""
+    source_type: str = "official_doc"
+    source_collection: str = "core"
+    legal_notice_url: str = ""
+    original_title: str = ""
+    license_or_terms: str = ""
+    review_status: str = "unreviewed"
+    trust_score: float = 1.0
+    verifiability: str = "anchor_backed"
+    updated_at: str = ""
     translation_source_language: str = ""
     translation_target_language: str = "ko"
     translation_source_url: str = ""
@@ -97,6 +123,25 @@ class NormalizedSection:
     translation_source_language: str = ""
     translation_source_url: str = ""
     translation_source_fingerprint: str = ""
+    source_id: str = ""
+    source_lane: str = "official_ko"
+    source_type: str = "official_doc"
+    source_collection: str = "core"
+    product: str = "openshift"
+    version: str = "4.20"
+    locale: str = "ko"
+    original_title: str = ""
+    legal_notice_url: str = ""
+    license_or_terms: str = ""
+    review_status: str = "unreviewed"
+    trust_score: float = 1.0
+    verifiability: str = "anchor_backed"
+    updated_at: str = ""
+    cli_commands: tuple[str, ...] = field(default_factory=tuple)
+    error_strings: tuple[str, ...] = field(default_factory=tuple)
+    k8s_objects: tuple[str, ...] = field(default_factory=tuple)
+    operator_names: tuple[str, ...] = field(default_factory=tuple)
+    verification_hints: tuple[str, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -106,6 +151,7 @@ class NormalizedSection:
             "section_level": self.section_level,
             "section_path": list(self.section_path),
             "anchor": self.anchor,
+            "anchor_id": self.anchor,
             "source_url": self.source_url,
             "viewer_path": self.viewer_path,
             "text": self.text,
@@ -119,7 +165,33 @@ class NormalizedSection:
             "translation_source_language": self.translation_source_language,
             "translation_source_url": self.translation_source_url,
             "translation_source_fingerprint": self.translation_source_fingerprint,
+            "source_id": self.source_id,
+            "source_lane": self.source_lane,
+            "source_type": self.source_type,
+            "source_collection": self.source_collection,
+            "product": self.product,
+            "version": self.version,
+            "locale": self.locale,
+            "original_title": self.original_title,
+            "legal_notice_url": self.legal_notice_url,
+            "license_or_terms": self.license_or_terms,
+            "review_status": self.review_status,
+            "trust_score": self.trust_score,
+            "verifiability": self.verifiability,
+            "updated_at": self.updated_at,
+            "cli_commands": list(self.cli_commands),
+            "error_strings": list(self.error_strings),
+            "k8s_objects": list(self.k8s_objects),
+            "operator_names": list(self.operator_names),
+            "verification_hints": list(self.verification_hints),
         }
+
+    def to_contract_dict(self) -> dict[str, Any]:
+        payload = self.to_dict()
+        payload["translation_status"] = _contract_translation_status(self.translation_status)
+        payload["review_status"] = _contract_review_status(self.review_status)
+        payload["original_title"] = self.original_title or self.book_title
+        return payload
 
 
 @dataclass(slots=True)
@@ -135,9 +207,45 @@ class ChunkRecord:
     text: str
     token_count: int
     ordinal: int
+    section_path: tuple[str, ...] = field(default_factory=tuple)
+    chunk_type: str = "reference"
+    source_id: str = ""
+    source_lane: str = "official_ko"
+    source_type: str = "official_doc"
+    source_collection: str = "core"
+    product: str = "openshift"
+    version: str = "4.20"
+    locale: str = "ko"
+    source_language: str = "ko"
+    display_language: str = "ko"
+    translation_status: str = "approved_ko"
+    translation_stage: str = "approved_ko"
+    translation_source_language: str = ""
+    translation_source_url: str = ""
+    translation_source_fingerprint: str = ""
+    original_title: str = ""
+    legal_notice_url: str = ""
+    license_or_terms: str = ""
+    review_status: str = "unreviewed"
+    trust_score: float = 1.0
+    verifiability: str = "anchor_backed"
+    updated_at: str = ""
+    cli_commands: tuple[str, ...] = field(default_factory=tuple)
+    error_strings: tuple[str, ...] = field(default_factory=tuple)
+    k8s_objects: tuple[str, ...] = field(default_factory=tuple)
+    operator_names: tuple[str, ...] = field(default_factory=tuple)
+    verification_hints: tuple[str, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        payload = asdict(self)
+        payload["anchor_id"] = self.anchor
+        payload["section_path"] = list(self.section_path)
+        payload["cli_commands"] = list(self.cli_commands)
+        payload["error_strings"] = list(self.error_strings)
+        payload["k8s_objects"] = list(self.k8s_objects)
+        payload["operator_names"] = list(self.operator_names)
+        payload["verification_hints"] = list(self.verification_hints)
+        return payload
 
 
 @dataclass(slots=True)
