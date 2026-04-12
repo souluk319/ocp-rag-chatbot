@@ -1,0 +1,460 @@
+board_version: 2
+product: play-book-studio
+product_mode: enterprise_playbook_platform
+north_star: enterprise_owner_wants_to_buy
+validated_pack:
+  product: openshift_container_platform
+  version: "4.20"
+  locale: ko
+principles:
+  - owner_value_first
+  - proof_before_polish
+  - governance_is_product
+  - poc_must_leave_reusable_assets
+  - pack_strategy_over_single_demo
+  - playable_pack_over_raw_doc_mirroring
+owners:
+  product_architect:
+    role: owner_narrative_pack_strategy_governance
+  platform_engineer:
+    role: runtime_demo_deployment_controls
+  knowledge_engineer:
+    role: intake_normalization_playbook_projection
+  retrieval_engineer:
+    role: grounded_runtime_search_session_quality
+  judge:
+    role: evaluation_release_and_poc_gate
+phases:
+  - id: P0
+    name: owner_narrative_reset
+    goal: Rewrite the product so an enterprise owner immediately understands why to buy.
+    epics:
+      - id: P0-E1
+        name: contract_rewrite
+        tasks:
+          - id: P0-E1-T1
+            title: Rewrite root guidance around buyer value and PoC conversion
+            owner: product_architect
+            status: done
+            inputs:
+              - AGENTS.md
+              - README.md
+              - PROJECT.md
+              - TASK_BOARD.yaml
+              - FILE_ROLE_GUIDE.md
+            outputs:
+              - AGENTS.md
+              - README.md
+              - PROJECT.md
+              - TASK_BOARD.yaml
+              - FILE_ROLE_GUIDE.md
+            tests:
+              - docs_state_owner_value_and_pack_strategy
+            acceptance:
+              - customer_facing_language_avoids_foundry_jargon
+              - repo_contracts_describe_buying_reason_poc_and_governance
+            blockers: []
+      - id: P0-E2
+        name: buyer_definition_packet
+        tasks:
+          - id: P0-E2-T1
+            title: Define owner value case and truthful sales stage
+            owner: product_architect
+            status: done
+            inputs:
+              - README.md
+              - PROJECT.md
+              - AGENTS.md
+              - ../ocp-rag-chatbot-data/answering/answer_eval_report.json
+            outputs:
+              - OWNER_VALUE_CASE.md
+            tests:
+              - owner_value_case_exists_and_states_paid_poc_truth
+            acceptance:
+              - owner_value_is_not_generic_ai_pitch
+              - full_sale_claim_is_blocked_until_proof_exists
+            blockers:
+              - P0-E1-T1
+          - id: P0-E2-T2
+            title: Narrow the first ideal customer and trigger events
+            owner: product_architect
+            status: done
+            inputs:
+              - PROJECT.md
+              - README.md
+              - src/play_book_studio/app/static/index.html
+            outputs:
+              - BEACHHEAD_ICP_AND_TRIGGER.md
+            tests:
+              - beachhead_icp_is_explicit
+            acceptance:
+              - first_buyer_is_specific
+              - non_targets_are_written_down
+            blockers:
+              - P0-E1-T1
+          - id: P0-E2-T3
+            title: Define why an owner says no before adding more features
+            owner: judge
+            status: done
+            inputs:
+              - ../ocp-rag-chatbot-data/answering/answer_eval_report.json
+              - reports/build_logs/foundry_runs/runtime_report/latest.json
+              - src/play_book_studio/app/server.py
+              - src/play_book_studio/app/sessions.py
+            outputs:
+              - archive/legacy_reference_docs/2026-04-11__retired__BUYER_REJECTION_CRITERIA.md
+            tests:
+              - rejection_reasons_are_ordered_and_actionable
+            acceptance:
+              - every_rejection_reason_has_a_stop_condition
+              - forbidden_excuses_are_documented
+            blockers:
+              - P0-E1-T1
+          - id: P0-E2-T4
+            title: Lock the owner-demo scorecard and hard blockers
+            owner: judge
+            status: done
+            inputs:
+              - AGENTS.md
+              - README.md
+              - ../ocp-rag-chatbot-data/answering/answer_eval_report.json
+            outputs:
+              - OWNER_SCENARIO_SCORECARD.yaml
+            tests:
+              - scorecard_lists_full_sale_gate_and_hard_blockers
+            acceptance:
+              - demo_questions_are_explicit
+              - clarification_miss_and_hard_miss_block_release
+            blockers:
+              - P0-E1-T1
+          - id: P0-E2-T5
+            title: Define the customer-document PoC as a contractable buyer packet
+            owner: product_architect
+            status: done
+            inputs:
+              - README.md
+              - PROJECT.md
+              - OWNER_SCENARIO_SCORECARD.yaml
+            outputs:
+              - CUSTOMER_POC_BUYER_PACKET.md
+            tests:
+              - poc_packet_declares_inputs_deliverables_and_stop_conditions
+            acceptance:
+              - truthful_sales_posture_is_paid_poc
+              - buyer_can_read_scope_and_non_promises
+            blockers:
+              - P0-E2-T4
+          - id: P0-E2-T6
+            title: Lock the Q1-8 buyer questions into a single product contract table
+            owner: judge
+            status: done
+            inputs:
+              - OWNER_SCENARIO_SCORECARD.yaml
+              - OWNER_VALUE_CASE.md
+              - CUSTOMER_POC_BUYER_PACKET.md
+              - ../ocp-rag-chatbot-data/answering/answer_eval_report.json
+              - reports/build_logs/foundry_runs/runtime_report/latest.json
+            outputs:
+              - Q1_8_PRODUCT_CONTRACT.md
+              - README.md
+              - PROJECT.md
+              - FILE_ROLE_GUIDE.md
+              - TASK_BOARD.yaml
+            tests:
+              - q1_8_contract_maps_every_buyer_question_to_evidence_and_blockers
+            acceptance:
+              - every_buyer_question_has_current_truth_pass_condition_and_non_promise
+              - root_docs_point_to_single_contract_source
+            blockers:
+              - P0-E2-T5
+          - id: P0-E2-T7
+            title: Freeze the enterprise architecture addendum from the external review pack
+            owner: product_architect
+            status: done
+            inputs:
+              - Q1_8_PRODUCT_CONTRACT.md
+              - OWNER_SCENARIO_SCORECARD.yaml
+              - CUSTOMER_POC_BUYER_PACKET.md
+              - ../play-book-studio-enterprise-review-pack/play-book-studio-enterprise-gap-report.md
+              - ../play-book-studio-enterprise-review-pack/play-book-studio-enterprise-plan-v2.md
+            outputs:
+              - P0_ARCHITECTURE_FREEZE_ADDENDUM.md
+              - README.md
+              - PROJECT.md
+              - FILE_ROLE_GUIDE.md
+              - TASK_BOARD.yaml
+            tests:
+              - addendum_freezes_parsed_security_surface_and_gold_v2
+            acceptance:
+              - bronze_parsed_security_boundary_and_3_surface_structure_are_written_into_p0_charter
+              - graph_sidecar_is_recorded_as_conditional_adoption_not_day1_commitment
+              - official_private_mixed_bundle_truth_does_not_conflict_with_buyer_facing_docs
+            blockers:
+              - P0-E2-T6
+  - id: P1
+    name: enterprise_demo_surface
+    goal: Make the main experience sell the product in the first minute.
+    epics:
+      - id: P1-E1
+        name: landing_and_demo_flow
+        tasks:
+          - id: P1-E1-T1
+            title: Rebuild the main page as a sales-grade landing plus live demo
+            owner: platform_engineer
+            status: done
+            inputs:
+              - src/play_book_studio/app/static/index.html
+              - src/play_book_studio/app/static/assets/app-shell.css
+              - src/play_book_studio/app/static/assets/app-shell-sales-landing.css
+            outputs:
+              - sales_landing_above_live_demo
+              - proof_sections_and_cta_flow
+            tests:
+              - python -m unittest tests.test_app_runtime_ui
+            acceptance:
+              - first_screen_explains_problem_value_and_proof
+              - live_demo_is_still_operable
+              - customer_document_poc_cta_is_visible
+            blockers:
+              - P0-E1-T1
+          - id: P1-E1-T2
+            title: Lock the playbook workspace viewer as a manual-book plus topic-playbook executable surface
+            owner: platform_engineer
+            status: planned
+            inputs:
+              - src/play_book_studio/app/source_books.py
+              - src/play_book_studio/app/viewer_page.py
+              - src/play_book_studio/app/viewer_blocks.py
+              - Q1_8_PRODUCT_CONTRACT.md
+            outputs:
+              - executable_playbook_viewer
+            tests:
+              - pytest tests/test_app_runtime_ui.py
+            acceptance:
+              - manual_book_and_topic_playbook_are_visibly_distinct
+              - executable_steps_and_code_actions_are_first_class
+              - source_trace_and_version_meta_stay_clickable
+            blockers:
+              - P2-E1-T1
+  - id: P2
+    name: governance_and_pack_control
+    goal: Turn the platform story into something an enterprise can trust and deploy.
+    epics:
+      - id: P2-E1
+        name: provenance_review_and_release_gate
+        tasks:
+          - id: P2-E1-T1
+            title: Enforce source version anchor and review metadata through manual-book and derived-playbook flow
+            owner: knowledge_engineer
+            status: done
+            inputs:
+              - schemas/document.schema.json
+              - schemas/chunk.schema.json
+              - schemas/manualbook.schema.json
+            outputs:
+              - pack_governance_contract
+            tests:
+              - pytest tests/test_foundry_contracts.py
+            acceptance:
+              - customer_facing_manual_and_topic_playbooks_never_lose_source_or_version
+              - review_state_is_explicit_at_runtime
+            blockers:
+              - P0-E1-T1
+          - id: P2-E1-T2
+            title: Expose runtime health source-of-truth drift and promotion readiness in control room
+            owner: judge
+            status: done
+            inputs:
+              - src/play_book_studio/app/data_control_room.py
+              - src/play_book_studio/app/runtime_report.py
+            outputs:
+              - operator_grade_visibility
+            tests:
+              - pytest tests/test_app_data_control_room.py tests/test_runtime_report.py
+            acceptance:
+              - operator_can_see_what_is_safe_to_promote
+              - owner_can_read_platform_readiness_without_source_code
+            blockers:
+              - P2-E1-T1
+          - id: P2-E1-T3
+            title: Extend pack governance with parsed-artifact lineage and private-doc security boundary
+            owner: knowledge_engineer
+            status: done
+            inputs:
+              - schemas/document.schema.json
+              - schemas/chunk.schema.json
+              - schemas/manualbook.schema.json
+              - src/play_book_studio/ingestion/models.py
+              - P0_ARCHITECTURE_FREEZE_ADDENDUM.md
+              - ../play-book-studio-enterprise-review-pack/play-book-studio-enterprise-plan-v2.md
+            outputs:
+              - PARSED_ARTIFACT_CONTRACT.md
+              - SECURITY_BOUNDARY_CONTRACT.md
+              - pack_governance_contract_v2
+            tests:
+              - parsed_artifact_and_security_contracts_are_documented
+            acceptance:
+              - bronze_raw_to_bronze_parsed_to_silver_structured_to_gold_lineage_is_explicit
+              - parser_version_page_refs_extraction_confidence_and_security_fields_are_contractual
+              - default_deny_unreviewed_asset_ban_and_citation_boundary_are_written
+            blockers:
+              - P0-E2-T7
+  - id: P3
+    name: ocp_pack_hardening
+    goal: Make the first validated pack strong enough to justify a paid PoC.
+    epics:
+      - id: P3-E1
+        name: runtime_answer_and_playbook_quality
+        tasks:
+          - id: P3-E1-T1
+            title: Reduce topic drift and prove whether the current retrieval stack is sufficient in real-world runtime answers
+            owner: retrieval_engineer
+            status: done
+            write_scope:
+              - src/play_book_studio/retrieval/
+              - src/play_book_studio/answering/
+              - artifacts/answering/answer_eval_report.json
+            inputs:
+              - src/play_book_studio/retrieval/
+              - src/play_book_studio/answering/
+              - manifests/answer_eval_realworld_cases.jsonl
+            outputs:
+              - improved_realworld_answer_quality
+            verify_cmd:
+              - ./.venv/Scripts/python.exe -m pytest tests/test_answering_routes.py tests/test_retrieval_runtime.py -q
+              - play_book.cmd eval --cases manifests/answer_eval_realworld_cases.jsonl
+            tests:
+              - pytest tests/test_answering_routes.py tests/test_retrieval_runtime.py
+              - play_book.cmd eval --cases manifests/answer_eval_realworld_cases.jsonl
+            acceptance:
+              - clarification_required_cases_stop_overanswering
+              - topic_switch_cases_do_not_fall_back_to_irrelevant_ops_answers
+              - realworld_misses_are_tagged_as_retrieval_generation_or_provenance_root_cause
+              - similar_procedure_cases_choose_the_correct_playbook_family
+            blockers:
+              - P2-E1-T1
+          - id: P3-E1-T2
+            title: Keep the OCP pack buyer-ready with reviewed manual-book and topic-playbook coverage and visible limits
+            owner: knowledge_engineer
+            status: done
+            write_scope:
+              - manifests/ocp_ko_4_20_approved_ko.json
+              - manifests/ocp_ko_4_20_translated_ko_draft.json
+              - reports/build_logs/source_bundle_quality_report.json
+              - reports/build_logs/synthesis_lane_report.json
+            inputs:
+              - manifests/ocp_ko_4_20_approved_ko.json
+              - manifests/ocp_ko_4_20_translated_ko_draft.json
+            outputs:
+              - buyer_readable_pack_scope
+            verify_cmd:
+              - ./.venv/Scripts/python.exe -m pytest tests/test_source_bundle_quality.py tests/test_synthesis_lane.py -q
+            tests:
+              - pytest tests/test_source_bundle_quality.py tests/test_synthesis_lane.py
+            acceptance:
+              - pack_scope_is_honest
+              - promotion_queue_is_visible
+              - raw_manual_count_and_playable_book_count_are_both_visible
+            blockers:
+              - P2-E1-T1
+          - id: P3-E1-T3
+            title: Produce a Graph sidecar decision packet from similar-document validation evidence
+            owner: retrieval_engineer
+            status: done
+            write_scope:
+              - src/play_book_studio/retrieval/
+              - artifacts/retrieval/retrieval_eval_report.json
+              - artifacts/answering/answer_eval_report.json
+            inputs:
+              - src/play_book_studio/retrieval/
+              - manifests/answer_eval_realworld_cases.jsonl
+              - Q1_8_PRODUCT_CONTRACT.md
+              - P0_ARCHITECTURE_FREEZE_ADDENDUM.md
+            outputs:
+              - graph_sidecar_evidence_packet
+            verify_cmd:
+              - ./.venv/Scripts/python.exe -m pytest tests/test_retrieval_runtime.py -q
+              - scripts/codex_python.ps1 -ScriptPath scripts/run_retrieval_eval.py -WriteScope reports/build_logs/retrieval_eval_report.json -VerifyCmd ./.venv/Scripts/python.exe -m pytest tests/test_retrieval_runtime.py -q
+              - play_book.cmd eval --cases manifests/answer_eval_realworld_cases.jsonl
+            tests:
+              - play_book.cmd eval --cases manifests/answer_eval_realworld_cases.jsonl
+            acceptance:
+              - similar_document_and_policy_overlay_misses_are_tagged
+              - graph_adoption_is_decided_from_evidence_not_habit
+            blockers:
+              - P3-E1-T1
+  - id: P4
+    name: customer_document_poc
+    goal: Prove that customer-owned documents can become a reusable pack not a one-off demo.
+    epics:
+      - id: P4-E1
+        name: intake_to_pack
+        tasks:
+          - id: P4-E1-T1
+            title: Turn uploaded web or PDF documents into a customer-specific manual-book and topic-playbook path
+            owner: knowledge_engineer
+            status: done
+            inputs:
+              - src/play_book_studio/intake/
+              - src/play_book_studio/app/intake_api.py
+            outputs:
+              - customer_pack_intake_flow
+            tests:
+              - pytest tests/test_intake_scaffold.py tests/test_app_intake_ui.py
+            acceptance:
+              - customer_doc_intake_is_visible_and_repeatable
+              - uploaded_docs_can_become_reviewable_playbooks
+              - uploaded_docs_can_spawn_reviewable_topic_playbooks
+            blockers:
+              - P1-E1-T1
+              - P1-E1-T2
+          - id: P4-E1-T2
+            title: Lock the customer-document format support matrix and OCR routing contract
+            owner: knowledge_engineer
+            status: done
+            inputs:
+              - src/play_book_studio/app/intake_api.py
+              - src/play_book_studio/intake/normalization/pdf.py
+              - CUSTOMER_POC_BUYER_PACKET.md
+              - Q1_8_PRODUCT_CONTRACT.md
+              - P0_ARCHITECTURE_FREEZE_ADDENDUM.md
+            outputs:
+              - FORMAT_SUPPORT_MATRIX.md
+              - PARSER_ROUTING_POLICY.md
+              - updated_customer_poc_support_scope
+            tests:
+              - supported_staged_and_rejected_formats_are_documented
+            acceptance:
+              - web_html_text_pdf_scan_pdf_and_md_asciidoc_routes_are_written
+              - ocr_fallback_and_review_rules_are_explicit
+              - docx_pptx_xlsx_are_truthfully_staged_or_rejected
+              - customer_self_service_rebuild_scope_matches_format_support
+            blockers:
+              - P0-E2-T7
+              - P2-E1-T3
+              - P4-E1-T1
+  - id: P5
+    name: expansion_and_conversion
+    goal: Make paid rollout believable beyond the first pack.
+    epics:
+      - id: P5-E1
+        name: multi_pack_strategy
+        tasks:
+          - id: P5-E1-T1
+            title: Define expansion packs and buyer-facing conversion metrics
+            owner: product_architect
+            status: planned
+            inputs:
+              - PROJECT.md
+              - TASK_BOARD.yaml
+              - reports/
+            outputs:
+              - multi_pack_growth_plan
+              - poc_to_rollout_metrics
+            tests:
+              - expansion_plan_is_documented
+            acceptance:
+              - product_is_not_read_as_ocp_only
+              - owner_can_see_path_from_poc_to_enterprise_rollout
+            blockers:
+              - P4-E1-T1

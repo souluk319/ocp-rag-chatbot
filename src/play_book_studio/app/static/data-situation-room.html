@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>데이터상황실 · Play Book Studio</title>
+  <link rel="stylesheet" href="/assets/app-shell.css">
+  <style>
+    :root {
+      --room-bg: #f5f7fb;
+      --room-surface: rgba(255, 255, 255, 0.92);
+      --room-surface-strong: rgba(255, 255, 255, 0.98);
+      --room-ink: #142033;
+      --room-muted: #627084;
+      --room-line: rgba(20, 32, 51, 0.1);
+      --room-accent: #d6336c;
+      --room-accent-soft: rgba(214, 51, 108, 0.08);
+      --room-good: #1f7a3b;
+      --room-warn: #ad6800;
+      --room-danger: #b42318;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(214, 51, 108, 0.14), transparent 28%),
+        radial-gradient(circle at top right, rgba(19, 116, 220, 0.11), transparent 32%),
+        linear-gradient(180deg, #f9fbff 0%, var(--room-bg) 100%);
+      color: var(--room-ink);
+    }
+
+    .data-situation-room-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    .data-situation-room-topbar {
+      padding: 10px 20px;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--room-surface-strong);
+      border: 1px solid rgba(20, 32, 51, 0.08);
+      box-shadow: 0 18px 50px rgba(20, 32, 51, 0.08);
+      backdrop-filter: blur(14px);
+    }
+
+    .data-situation-room-topbar .brand-lockup {
+      margin: 0;
+    }
+
+    .data-situation-room-topbar .headline-row h1 {
+      font-size: 20px;
+      margin: 0;
+    }
+
+    .data-situation-room-topbar .eyebrow {
+      margin-bottom: 2px;
+      font-size: 10px;
+    }
+
+    .data-situation-room-topbar-side {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .room-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(20, 32, 51, 0.1);
+      background: rgba(255, 255, 255, 0.82);
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--room-muted);
+    }
+
+    .room-pill strong {
+      color: var(--room-ink);
+    }
+
+    .room-pill .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #14ae5c;
+      box-shadow: 0 0 0 4px rgba(20, 174, 92, 0.12);
+    }
+
+    .room-button,
+    .room-link {
+      appearance: none;
+      border: 1px solid rgba(20, 32, 51, 0.12);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--room-ink);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 12px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .room-button:hover,
+    .room-link:hover {
+      background: #fff;
+      box-shadow: 0 10px 22px rgba(20, 32, 51, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .room-button.primary {
+      background: linear-gradient(135deg, rgba(214, 51, 108, 0.12), rgba(214, 51, 108, 0.04));
+      border-color: rgba(214, 51, 108, 0.18);
+    }
+
+    .data-situation-room-main {
+      flex: 1;
+      display: grid;
+      gap: 18px;
+      min-height: 0;
+    }
+
+    .room-hero,
+    .room-card {
+      border: 1px solid rgba(20, 32, 51, 0.08);
+      background: var(--room-surface);
+      box-shadow: 0 16px 40px rgba(20, 32, 51, 0.06);
+      backdrop-filter: blur(12px);
+    }
+
+    .room-hero {
+      padding: 20px 22px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .room-hero h2 {
+      margin: 0 0 8px;
+      font-size: clamp(26px, 3vw, 36px);
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+    }
+
+    .room-hero p {
+      margin: 0;
+      max-width: 74ch;
+      color: var(--room-muted);
+      line-height: 1.65;
+      font-size: 13px;
+    }
+
+    .room-hero-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      min-width: min(760px, 100%);
+    }
+
+    .room-stat {
+      border-radius: 16px;
+      padding: 14px 14px 12px;
+      background: linear-gradient(180deg, rgba(214, 51, 108, 0.07), rgba(255, 255, 255, 0.95));
+      border: 1px solid rgba(214, 51, 108, 0.12);
+    }
+
+    .room-stat span {
+      display: block;
+      font-size: 12px;
+      color: var(--room-muted);
+      margin-bottom: 6px;
+    }
+
+    .room-stat strong {
+      display: block;
+      font-size: 24px;
+      letter-spacing: -0.03em;
+    }
+
+    .room-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr);
+      gap: 18px;
+      min-height: 0;
+    }
+
+    .room-column {
+      display: grid;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .room-card {
+      border-radius: 20px;
+      padding: 18px;
+    }
+
+    .room-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .room-card-header h3 {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: -0.01em;
+    }
+
+    .room-card-header .hint {
+      color: var(--room-muted);
+      font-size: 12px;
+    }
+
+    .room-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .room-row {
+      border-radius: 14px;
+      border: 1px solid rgba(20, 32, 51, 0.08);
+      background: rgba(255, 255, 255, 0.94);
+      padding: 14px 14px 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .room-row-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .room-row-title {
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .room-row-copy {
+      margin: 0;
+      color: var(--room-muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .status-chip.gold {
+      background: rgba(255, 196, 61, 0.18);
+      color: #8c5a00;
+    }
+
+    .status-chip.approved {
+      background: rgba(35, 122, 59, 0.14);
+      color: var(--room-good);
+    }
+
+    .status-chip.review {
+      background: rgba(255, 170, 0, 0.16);
+      color: var(--room-warn);
+    }
+
+    .status-chip.blocked {
+      background: rgba(180, 35, 24, 0.14);
+      color: var(--room-danger);
+    }
+
+    .status-chip.neutral {
+      background: rgba(20, 32, 51, 0.08);
+      color: #415064;
+    }
+
+    .split-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .mini-panel {
+      border-radius: 16px;
+      border: 1px solid rgba(20, 32, 51, 0.08);
+      background: rgba(247, 249, 252, 0.95);
+      padding: 14px;
+    }
+
+    .mini-panel h4 {
+      margin: 0 0 8px;
+      font-size: 13px;
+    }
+
+    .mini-panel p {
+      margin: 0;
+      color: var(--room-muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .feed {
+      display: grid;
+      gap: 8px;
+    }
+
+    .feed-item {
+      border-left: 3px solid rgba(214, 51, 108, 0.35);
+      background: rgba(255, 255, 255, 0.8);
+      padding: 10px 12px;
+      border-radius: 0 12px 12px 0;
+      color: var(--room-muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .footnote {
+      color: var(--room-muted);
+      font-size: 12px;
+      line-height: 1.6;
+      padding: 0 4px 4px;
+    }
+
+    .room-table-shell {
+      overflow: auto;
+      border-radius: 16px;
+      border: 1px solid rgba(20, 32, 51, 0.08);
+      background: rgba(255, 255, 255, 0.96);
+    }
+
+    .room-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 920px;
+    }
+
+    .room-table th,
+    .room-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(20, 32, 51, 0.08);
+      text-align: left;
+      font-size: 12px;
+      vertical-align: top;
+    }
+
+    .room-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #f8fafc;
+      color: #415064;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+
+    .room-table tbody tr:nth-child(even) {
+      background: rgba(20, 32, 51, 0.02);
+    }
+
+    @media (max-width: 1200px) {
+      .room-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .room-hero {
+        flex-direction: column;
+      }
+
+      .room-hero-stats {
+        min-width: 0;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .data-situation-room-shell {
+        padding: 10px;
+      }
+
+      .room-hero-stats,
+      .split-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="data-situation-room-shell">
+    <header class="topbar card data-situation-room-topbar">
+      <div class="topbar-main">
+        <div class="brand-lockup">
+          <img class="brand-mark" src="/assets/red-hat-hat.png" alt="Red Hat style hat mark">
+          <span class="brand-divider" aria-hidden="true"></span>
+          <div class="brand-copy">
+            <div class="eyebrow">Play Book Studio</div>
+            <div class="headline-row">
+              <h1>데이터상황실</h1>
+              <span class="version-chip" id="data-situation-room-version-chip">OCP 4.20 Control Room</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="data-situation-room-topbar-side">
+        <div class="room-pill"><span class="dot" aria-hidden="true"></span><strong id="data-situation-room-live-status">Live</strong><span>운영 패널</span></div>
+        <div class="room-pill">골드 <strong id="data-situation-room-gold-count-pill">-</strong></div>
+        <div class="room-pill">큐 <strong id="data-situation-room-queue-count-pill">-</strong></div>
+        <div class="room-pill">청크 <strong id="data-situation-room-chunk-count-pill">-</strong></div>
+        <button type="button" class="room-button primary" id="data-situation-room-refresh-btn">새로고침</button>
+        <a class="room-link" href="/" title="Playbook Studio로 돌아가기">메인으로</a>
+      </div>
+    </header>
+
+    <main class="data-situation-room-main" id="data-situation-room-main">
+      <section class="room-hero" id="data-situation-room-hero">
+        <div>
+          <div class="eyebrow">Backend monitor</div>
+          <h2>등급 기준, 승격 대기, 물리 산출물 정합성을 한 화면에서 본다.</h2>
+          <p>
+            이 페이지는 챗봇 UI가 아니라 데이터 공장 운영면이다.
+            Gold 판정은 source approval report 기준으로, 대기열은 translation/review lane 기준으로,
+            물리 산출물 정합성은 corpus/manual book materialization 기준으로 분리해서 본다.
+          </p>
+        </div>
+        <div class="room-hero-stats" id="data-situation-room-summary">
+          <div class="room-stat">
+            <span>Gold books</span>
+            <strong id="data-situation-room-summary-gold-books">-</strong>
+          </div>
+          <div class="room-stat">
+            <span>Known books</span>
+            <strong id="data-situation-room-summary-known-books">-</strong>
+          </div>
+          <div class="room-stat">
+            <span>Active queue</span>
+            <strong id="data-situation-room-summary-active-queue">-</strong>
+          </div>
+          <div class="room-stat">
+            <span>Gate status</span>
+            <strong id="data-situation-room-summary-gate">-</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="room-grid" aria-label="데이터상황실 운영 테이블">
+        <div class="room-column">
+          <article class="room-card" aria-labelledby="data-situation-room-gold-title">
+            <div class="room-card-header">
+              <h3 id="data-situation-room-gold-title">골드 데이터 분류</h3>
+              <span class="hint">현재 Gold runtime pack</span>
+            </div>
+            <div class="room-list" id="data-situation-room-gold-books-list">
+              <div class="room-row">
+                <div class="room-row-top">
+                  <div class="room-row-title">데이터 로딩 중</div>
+                  <span class="status-chip neutral">pending</span>
+                </div>
+                <p class="room-row-copy">실제 Gold 책 목록을 source approval report 기준으로 불러온다.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="room-card" aria-labelledby="data-situation-room-corpus-title">
+            <div class="room-card-header">
+              <h3 id="data-situation-room-corpus-title">코퍼스 청크 상태</h3>
+              <span class="hint">검색용 산출물 · 청크/명령/에러/앵커 기준</span>
+            </div>
+            <div class="room-list" id="data-situation-room-corpus-chunks-list">
+              <div class="room-row">
+                <div class="room-row-top">
+                  <div class="room-row-title">데이터 로딩 중</div>
+                  <span class="status-chip neutral">pending</span>
+                </div>
+                <p class="room-row-copy">책 단위 코퍼스 materialization과 chunk 상태를 집계한다.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="room-card" aria-labelledby="data-situation-room-known-books-title">
+            <div class="room-card-header">
+              <h3 id="data-situation-room-known-books-title">전체 등급 현황</h3>
+              <span class="hint">전체 known books 기준</span>
+            </div>
+            <div class="room-table-shell">
+              <table class="room-table" id="data-situation-room-known-books-table">
+                <thead>
+                  <tr>
+                    <th>Book</th>
+                    <th>Grade</th>
+                    <th>Status</th>
+                    <th>Source</th>
+                    <th>Chunk</th>
+                    <th>Section</th>
+                    <th>High</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="7">실데이터 로딩 전</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+
+        <aside class="room-column">
+          <article class="room-card" aria-labelledby="data-situation-room-queue-title">
+            <div class="room-card-header">
+              <h3 id="data-situation-room-queue-title">승격 대기 / 비활성 큐</h3>
+              <span class="hint">translation lane / review lane / promotion backlog</span>
+            </div>
+            <div class="room-list" id="data-situation-room-active-queue-list">
+              <div class="room-row">
+                <div class="room-row-top">
+                  <div class="room-row-title">데이터 로딩 중</div>
+                  <span class="status-chip neutral">pending</span>
+                </div>
+                <p class="room-row-copy">승격 전 단계의 실제 큐를 이 영역에 표시한다.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="room-card" aria-labelledby="data-situation-room-manualbook-title">
+            <div class="room-card-header">
+              <h3 id="data-situation-room-manualbook-title">매뉴얼 북 상태</h3>
+              <span class="hint">읽기용 산출물 · 섹션/코드블록/문단 기준</span>
+            </div>
+            <div class="room-list" id="data-situation-room-manualbooks-list">
+              <div class="room-row">
+                <div class="room-row-top">
+                  <div class="room-row-title">데이터 로딩 중</div>
+                  <span class="status-chip neutral">pending</span>
+                </div>
+                <p class="room-row-copy">책 구조, 코드블록, 헤딩, 번역 상태를 책 관점에서 점검한다.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="room-card" aria-labelledby="data-situation-room-high-value-title">
+            <div class="room-card-header">
+              <h3 id="data-situation-room-high-value-title">High-Value Focus</h3>
+              <span class="hint">우선 감시 번들</span>
+            </div>
+            <div class="room-list" id="data-situation-room-high-value-list">
+              <div class="room-row">
+                <div class="room-row-top">
+                  <div class="room-row-title">데이터 로딩 중</div>
+                  <span class="status-chip neutral">pending</span>
+                </div>
+                <p class="room-row-copy">운영상 중요한 번들을 여기서 별도로 추적한다.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="room-card" aria-labelledby="data-situation-room-drift-title">
+            <div class="room-card-header">
+              <h3 id="data-situation-room-drift-title">Source-of-Truth / Drift</h3>
+              <span class="hint">repo vs external artifacts</span>
+            </div>
+            <div class="room-list" id="data-situation-room-drift-list">
+              <div class="room-row">
+                <div class="room-row-top">
+                  <div class="room-row-title">데이터 로딩 중</div>
+                  <span class="status-chip neutral">pending</span>
+                </div>
+                <p class="room-row-copy">정합성 비교 결과를 이 영역에 표시한다.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="room-card" aria-labelledby="data-situation-room-audit-title">
+            <div class="room-card-header">
+              <h3 id="data-situation-room-audit-title">운영 감사 로그</h3>
+              <span class="hint">마지막 12건</span>
+            </div>
+            <div class="feed" id="data-situation-room-audit-log">
+              <div class="feed-item">실데이터 로딩 전. morning gate와 source approval report를 기다린다.</div>
+            </div>
+          </article>
+
+          <article class="room-card" aria-labelledby="data-situation-room-matrix-title">
+            <div class="room-card-header">
+              <h3 id="data-situation-room-matrix-title">평가 / 런타임</h3>
+              <span class="hint">데이터 상태와 분리된 보조 지표</span>
+            </div>
+            <div class="split-grid">
+              <div class="mini-panel">
+                <h4>평가 상태</h4>
+                <p id="data-situation-room-eval-note">리포트 로딩 중</p>
+              </div>
+              <div class="mini-panel">
+                <h4>런타임 건강도</h4>
+                <p id="data-situation-room-runtime-note">프로브 로딩 중</p>
+              </div>
+            </div>
+          </article>
+        </aside>
+      </section>
+
+      <div class="footnote" id="data-situation-room-footnote">
+        이 페이지는 데이터 공장 상태를 보는 운영면이다. 실데이터가 붙으면 각 카드와 리스트는 백엔드 응답으로 갱신된다.
+      </div>
+    </main>
+  </div>
+  <script src="/assets/data-situation-room.js"></script>
+</body>
+
+</html>

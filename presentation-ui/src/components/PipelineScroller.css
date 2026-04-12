@@ -1,0 +1,119 @@
+.pipeline-wrapper {
+  overflow: hidden;
+  height: 100vh;
+  position: relative;
+  background: var(--bg-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.pipeline-header {
+  padding: 8rem 10vw 2rem 10vw;
+  z-index: 10;
+}
+
+.pipeline-header h2 {
+  margin-bottom: 1rem;
+}
+
+.pipeline-track-container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.nerve-path {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: rgba(255,255,255,0.05); /* very faint base line */
+  z-index: 1;
+}
+
+.nerve-progress {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+  box-shadow: 0 0 20px var(--accent-cyan), 0 0 40px var(--accent-purple);
+}
+
+.pipeline-track {
+  display: flex;
+  width: 400vw;
+  height: 60vh;
+  padding: 0 10vw;
+  z-index: 2; /* above nerve path */
+}
+
+.pipeline-step {
+  width: 100vw;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-shrink: 0;
+  padding-right: 10vw;
+  position: relative;
+}
+
+.step-node {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 4px solid var(--text-dim);
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translate(0, -50%); /* slightly offset */
+  z-index: 3;
+  transition: all 0.5s;
+}
+
+.node-active {
+  background: var(--text-main);
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 20px var(--accent-purple);
+}
+
+.step-card {
+  width: 100%;
+  max-width: 800px;
+  padding: 4rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  margin-left: 2rem; /* offset from node */
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.step-number {
+  font-size: 3rem;
+  font-weight: 800;
+  font-family: monospace;
+  margin-bottom: 2rem;
+}
+
+.step-title {
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-main);
+}
+
+.step-desc {
+  font-size: 1.3rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.highlight-card {
+  border: 1px solid rgba(140, 82, 255, 0.3);
+  box-shadow: 0 0 40px rgba(140, 82, 255, 0.1) inset;
+}

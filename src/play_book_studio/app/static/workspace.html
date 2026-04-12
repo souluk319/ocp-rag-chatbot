@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Play Book Studio Workspace</title>
+  <link rel="stylesheet" href="/assets/app-shell.css">
+</head>
+
+<body>
+  <div class="shell workspace-shell">
+    <header class="topbar card">
+      <div class="topbar-main">
+        <div class="brand-lockup">
+          <img class="brand-mark" src="/assets/red-hat-hat.png" alt="Play Book Studio brand mark">
+          <div class="brand-copy">
+            <div class="eyebrow">Playbook Workspace</div>
+            <strong class="brand-title">Play Book Studio</strong>
+          </div>
+        </div>
+        <span class="version-chip" id="version-chip">Pack · OpenShift 4.20</span>
+      </div>
+      <div class="topbar-side">
+        <div class="pill status-pill">
+          <span class="dot" id="status-dot"></span>
+          <span id="status-text">준비됨</span>
+        </div>
+        <div class="pill session-pill">세션 <span id="session-id">-</span></div>
+        <button type="button" id="reset-btn">초기화</button>
+        <button type="button" id="new-session-btn">새 대화</button>
+        <a class="data-control-room-launch-btn" href="/data-situation-room" title="데이터상황실 열기">데이터상황실</a>
+      </div>
+    </header>
+
+    <section class="workspace">
+      <aside class="card left-rail">
+        <div class="left-rail-header">
+          <div class="left-rail-title">
+            <strong>Playbooks</strong>
+            <span>Active Pack / Manual Book / Topic Playbook</span>
+          </div>
+          <button type="button" class="panel-icon-btn" id="left-rail-toggle-btn" aria-label="왼쪽 패널 닫기" title="왼쪽 패널 닫기">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M10 3.5 5.5 8 10 12.5"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="trace-tabs left-trace-tabs">
+          <button type="button" class="trace-tab-left active" data-target="library">Playbooks</button>
+          <button type="button" class="trace-tab-left" data-target="friendly_trace">Situation Room</button>
+        </div>
+
+        <div class="rail-stage">
+          <div class="left-rail-page active" data-rail-page="library">
+            <section class="rail-block rail-block-highlight">
+              <div class="rail-kicker">Active Pack</div>
+              <strong id="active-pack-title">OpenShift 4.20</strong>
+              <p id="core-source-summary">4.20 · 기본 포함</p>
+            </section>
+
+            <details class="version-picker" id="core-version-picker" open>
+              <summary class="version-picker-summary">
+                <div class="version-picker-copy">
+                  <strong>Manual Books</strong>
+                  <span>검증된 코어 팩</span>
+                </div>
+                <span class="version-picker-icon" aria-hidden="true">+</span>
+              </summary>
+              <div class="core-pack-selector" id="pack-stack"></div>
+            </details>
+
+            <section class="rail-block">
+              <div class="rail-kicker">Topic Playbooks</div>
+              <div class="rail-topic-summary" id="topic-playbook-summary">라이브 토픽 플레이북을 불러오는 중</div>
+              <div class="rail-metric-grid" id="topic-playbook-list">
+                <div class="trace-empty rail-inline-empty">라이브 토픽 플레이북을 불러오는 중</div>
+              </div>
+            </section>
+          </div>
+
+          <div class="left-rail-page" data-rail-page="friendly_trace">
+            <div class="friendly-stepper-container" id="friendly-stepper-container">
+              <div class="trace-empty">질문을 보내거나 말풍선을 클릭하면<br>상황실 모니터가 켜집니다.</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="card chat-panel">
+        <div class="chat-header">
+          <div class="chat-heading">
+            <button type="button" class="header-toggle-btn toggle-left-hidden" id="left-panel-toggle-btn" aria-label="왼쪽 패널 열기" title="왼쪽 패널 열기">
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M6 3.5 10.5 8 6 12.5"></path>
+              </svg>
+            </button>
+            <div>
+              <div class="section-kicker">Chat</div>
+              <h2>실행형 질의응답</h2>
+            </div>
+          </div>
+          <button type="button" class="header-toggle-btn toggle-right-hidden" id="source-panel-edge-btn" aria-label="참조 패널 열기" title="참조 패널 열기">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M10 3.5 5.5 8 10 12.5"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="messages" id="messages"></div>
+        <div class="composer-shell">
+          <div class="composer-samples" id="composer-samples"></div>
+          <div class="composer">
+            <textarea id="composer" rows="1" placeholder="예: etcd 백업은 어떻게 하나?"></textarea>
+            <div class="composer-footer">
+              <button type="button" class="primary" id="send-btn">전송</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="card side-panel">
+        <div class="inspector-header">
+          <div class="inspector-title">
+            <strong>Source Viewer</strong>
+            <span>답변 근거와 원문 확인</span>
+          </div>
+          <button type="button" class="panel-icon-btn" id="source-panel-toggle-btn" aria-label="참조 패널 닫기" title="참조 패널 닫기">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M6 3.5 10.5 8 6 12.5"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="inspector-page active" data-study-page="source">
+          <section class="source-panel-note">
+            <div class="section-kicker">Evidence</div>
+            <h3>참조 원문</h3>
+            <p>답변의 참조를 누르면 여기서 원문을 바로 검증한다.</p>
+          </section>
+          <section class="source-frame-shell" hidden>
+            <iframe class="source-viewer-frame" id="source-viewer-frame" title="선택한 참조" loading="lazy" hidden></iframe>
+          </section>
+        </div>
+      </aside>
+    </section>
+  </div>
+
+  <script src="/assets/app-config.js"></script>
+  <script src="/assets/app-shell-state.js"></script>
+  <script src="/assets/shell-helpers.js"></script>
+  <script src="/assets/app-bootstrap-events.js"></script>
+  <script src="/assets/app-bootstrap.js"></script>
+  <script src="/assets/workspace-state.js"></script>
+  <script src="/assets/panel-controller.js"></script>
+  <script src="/assets/chat-renderer.js"></script>
+  <script src="/assets/message-shells.js"></script>
+  <script src="/assets/chat-session.js"></script>
+  <script src="/assets/diagnostics-renderer.js"></script>
+  <script>
+    const APP_CONFIG = window.OCP_PLAY_STUDIO_CONFIG || {};
+    const DEFAULT_CORE_PACKS = [
+      { version: "4.20", label: "4.20", activeState: "사용 중", inactiveState: "선택", default: true }
+    ];
+    const DEFAULT_EMPTY_STATE_SAMPLES = [
+      { label: "etcd 백업 절차", query: "etcd 백업은 어떻게 하나?" },
+      { label: "노드 사용량 확인", query: "oc adm top nodes는 언제 써?" },
+      { label: "Route / Ingress 차이", query: "Route와 Ingress 차이가 뭐야?" },
+      { label: "namespace admin 권한", query: "특정 namespace에 admin 권한 주는 법 알려줘" },
+      { label: "Terminating 프로젝트 정리", query: "프로젝트가 Terminating에서 안 지워질 때 어떻게 해?" },
+      { label: "아키텍처 소개", query: "OpenShift 아키텍처를 처음 설명해줘" },
+      { label: "Operator 기본 개념", query: "Operator가 뭐고 왜 필요한가?" }
+    ];
+    const CORE_PACKS = Array.isArray(APP_CONFIG.corePacks) && APP_CONFIG.corePacks.length ? APP_CONFIG.corePacks : DEFAULT_CORE_PACKS;
+    const EMPTY_STATE_SAMPLES = Array.isArray(APP_CONFIG.emptyStateSamples) && APP_CONFIG.emptyStateSamples.length ? APP_CONFIG.emptyStateSamples : DEFAULT_EMPTY_STATE_SAMPLES;
+
+    const appShellState = window.createAppShellState({ corePacks: CORE_PACKS });
+    const refs = appShellState.refs;
+    const state = appShellState.state;
+    const shellHelpers = window.createShellHelpers({ state, refs });
+    const appBootstrap = window.createAppBootstrap({
+      state,
+      refs,
+      constants: {
+        corePacks: CORE_PACKS,
+        emptyStateSamples: EMPTY_STATE_SAMPLES,
+        pipelineLabels: appShellState.constants.pipelineLabels,
+        pipelineStageOrder: appShellState.constants.pipelineStageOrder,
+      },
+      helpers: shellHelpers,
+    });
+    appBootstrap.initialize();
+  </script>
+</body>
+
+</html>
