@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
+import { Link } from 'react-router-dom';
+import { Sparkles, ArrowRight } from 'lucide-react';
 import './Hero.css';
 
 export default function Hero() {
@@ -15,7 +17,6 @@ export default function Hero() {
         { autoAlpha: 1, scale: 1, translateY: 0, duration: 2.2, ease: "power4.out", delay: 0.1 }
       );
 
-      // Removed scrubbing intro text fade out at user request
       // Background mask reveal effect on scroll
       gsap.to(maskRef.current, {
         scrollTrigger: {
@@ -40,6 +41,10 @@ export default function Hero() {
       <div className="hero-bg-mask" ref={maskRef}></div>
 
       <div className="hero-content" ref={textGroupRef}>
+        <div className="hero-badge">
+          <Sparkles size={14} />
+          <span>OCP RAG Foundational Studio</span>
+        </div>
         <h1 className="text-giant hero-title">
           Play Book<br/>
           <span className="gradient-text">Studio.</span>
@@ -48,6 +53,14 @@ export default function Hero() {
           공식 문서를 실행형 플레이북으로.<br/>
           근거와 챗봇을 연결하는 지능형 데이터 제련소.
         </p>
+        
+        <div className="hero-actions">
+          <Link to="/workspace" className="primary-cta">
+            <span>Launch Studio</span>
+            <ArrowRight size={18} />
+          </Link>
+          <button className="secondary-cta">Watch Demo</button>
+        </div>
       </div>
 
       <div className="hero-scroll-indicator">

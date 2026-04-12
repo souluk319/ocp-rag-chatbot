@@ -10,10 +10,10 @@ export default function MetricsFooter() {
     const ctx = gsap.context(() => {
       // Counter animation logic
       const counters = gsap.utils.toArray('.metric-number');
-      
+
       counters.forEach((counter: any) => {
         const targetValue = parseInt(counter.getAttribute('data-target') || '0', 10);
-        
+
         gsap.to(counter, {
           scrollTrigger: {
             trigger: containerRef.current,
@@ -24,7 +24,7 @@ export default function MetricsFooter() {
           duration: 2,
           ease: "power2.out",
           snap: { innerHTML: 1 },
-          onUpdate: function() {
+          onUpdate: function () {
             counter.innerHTML = Math.round(this.targets()[0].innerHTML);
           }
         });
@@ -37,7 +37,7 @@ export default function MetricsFooter() {
     <footer className="metrics-footer" ref={containerRef}>
       <div className="metrics-content">
         <h2>지금 바로 플랫폼에 검증된 지식</h2>
-        
+
         <div className="metrics-grid">
           <div className="metric-item">
             <span className="metric-number gradient-text" data-target="23">0</span>
@@ -54,7 +54,7 @@ export default function MetricsFooter() {
         </div>
 
         <div className="footer-cta">
-          <a href="http://127.0.0.1:8765/workspace" className="btn-primary" target="_blank" rel="noreferrer">
+          <a href="http://localhost:5173/workspace" className="btn-primary" target="_blank" rel="noreferrer">
             Workspace 시작하기
           </a>
           <Link to="/details" className="btn-secondary">
@@ -62,7 +62,7 @@ export default function MetricsFooter() {
           </Link>
         </div>
       </div>
-      
+
       <div className="footer-bottom">
         <p>Play Book Studio Enterprise — Red Hat OpenShift 4.20 / Designed by Cywell</p>
       </div>

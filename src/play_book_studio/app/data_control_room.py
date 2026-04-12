@@ -32,6 +32,13 @@ DATA_CONTROL_ROOM_DERIVED_PLAYBOOK_SOURCE_TYPE_SET = frozenset(
         SYNTHESIZED_PLAYBOOK_SOURCE_TYPE,
     }
 )
+PLAYBOOK_LIBRARY_FAMILY_LABELS = {
+    TOPIC_PLAYBOOK_SOURCE_TYPE: "토픽 플레이북",
+    OPERATION_PLAYBOOK_SOURCE_TYPE: "운용 플레이북",
+    TROUBLESHOOTING_PLAYBOOK_SOURCE_TYPE: "트러블슈팅 플레이북",
+    POLICY_OVERLAY_BOOK_SOURCE_TYPE: "정책 오버레이",
+    SYNTHESIZED_PLAYBOOK_SOURCE_TYPE: "종합 플레이북",
+}
 
 
 def _iso_now() -> str:
@@ -591,6 +598,75 @@ def _derived_family_status(
     }
 
 
+def _library_breakdown(counter: Counter[str]) -> list[dict[str, Any]]:
+    return [
+        {"key": key, "count": count}
+        for key, count in sorted(counter.items(), key=lambda item: (-item[1], item[0]))
+    ]
+
+
+def _build_manual_book_library(
+    core_manualbooks: list[dict[str, Any]],
+    extra_manualbooks: list[dict[str, Any]],
+) -> dict[str, Any]:
+    books: list[dict[str, Any]] = []
+    source_type_counter: Counter[str] = Counter()
+    for group_key, group_label, group_books in (
+        ("runtime_core", "런타임 팩", core_manualbooks),
+        ("extra", "확장 북", extra_manualbooks),
+    ):
+        for book in group_books:
+            item = dict(book)
+            item["library_group"] = group_key
+            item["library_group_label"] = group_label
+            books.append(item)
+            source_type_counter[str(item.get("source_type") or "unknown").strip() or "unknown"] += 1
+    return {
+        "total_count": len(books),
+        "core_count": len(core_manualbooks),
+        "extra_count": len(extra_manualbooks),
+        "books": books,
+        "group_breakdown": [
+            {"key": "runtime_core", "label": "런타임 팩", "count": len(core_manualbooks)},
+            {"key": "extra", "label": "확장 북", "count": len(extra_manualbooks)},
+        ],
+        "source_type_breakdown": _library_breakdown(source_type_counter),
+    }
+
+
+def _build_playbook_library(
+    derived_playbook_family_statuses: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    families: list[dict[str, Any]] = []
+    books: list[dict[str, Any]] = []
+    for family in DATA_CONTROL_ROOM_DERIVED_PLAYBOOK_SOURCE_TYPES:
+        status = derived_playbook_family_statuses.get(family, {})
+        family_books = []
+        for book in status.get("books") or []:
+            if not isinstance(book, dict):
+                continue
+            item = dict(book)
+            item["family"] = family
+            item["family_label"] = PLAYBOOK_LIBRARY_FAMILY_LABELS.get(family, family)
+            family_books.append(item)
+        families.append(
+            {
+                "family": family,
+                "family_label": PLAYBOOK_LIBRARY_FAMILY_LABELS.get(family, family),
+                "count": len(family_books),
+                "status": str(status.get("status") or "not_emitted"),
+                "books": family_books,
+            }
+        )
+        books.extend(family_books)
+    return {
+        "total_count": len(books),
+        "family_count": sum(1 for family in families if int(family.get("count") or 0) > 0),
+        "families": families,
+        "books": books,
+    }
+
+
 def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
     root = Path(root_dir).resolve()
     settings = load_settings(root)
@@ -781,6 +857,8 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
             else 0.0
         ),
     }
+    manual_book_library = _build_manual_book_library(core_manualbooks, extra_manualbooks)
+    playbook_library = _build_playbook_library(derived_playbook_family_statuses)
 
     chunk_candidate_counts = {
         candidate["row_count"]
@@ -860,6 +938,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
             "active_queue_count": len(active_queue_rows),
             "high_value_focus_count": int(high_value_focus.get("count") or 0),
             "blocked_count": int(source_approval_report.get("summary", {}).get("blocked_count") or 0),
+            "raw_manual_count": raw_manual_count,
             "chunk_count": len(chunk_rows),
             "corpus_book_count": len(materialized_core_corpus_slugs),
             "core_corpus_book_count": len(materialized_core_corpus_slugs),
@@ -950,6 +1029,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
             "selected_dir": str(selected_playbook_dir) if selected_playbook_dir else "",
             "books": core_manualbooks,
         },
+        "manual_book_library": manual_book_library,
         "topic_playbooks": {
             "selected_dir": str(selected_playbook_dir) if selected_playbook_dir else "",
             "books": topic_playbooks,
@@ -971,6 +1051,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
             "books": synthesized_playbooks,
         },
         "derived_playbook_families": derived_playbook_family_statuses,
+        "playbook_library": playbook_library,
         "materialization": {
             "manifest_book_count": len(manifest_by_slug),
             "gold_book_count": len(gold_books),

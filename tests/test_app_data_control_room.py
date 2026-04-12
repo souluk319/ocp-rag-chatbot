@@ -243,6 +243,7 @@ class TestAppDataControlRoom(unittest.TestCase):
             self.assertEqual(2, payload["summary"]["known_book_count"])
             self.assertEqual(2, payload["summary"]["known_books_count"])
             self.assertEqual(1, payload["summary"]["gold_book_count"])
+            self.assertEqual(2, payload["summary"]["raw_manual_count"])
             self.assertEqual(1, payload["summary"]["queue_count"])
             self.assertEqual(1, payload["summary"]["active_queue_count"])
             self.assertEqual(2, payload["summary"]["chunk_count"])
@@ -283,6 +284,15 @@ class TestAppDataControlRoom(unittest.TestCase):
             self.assertEqual(0, payload["manualbook_status"][1]["section_count"])
             self.assertEqual("https://example.com/operators", payload["manualbook_status"][1]["source_url"])
             self.assertFalse(payload["manualbook_status"][1]["materialized"])
+            self.assertEqual(2, payload["manual_book_library"]["total_count"])
+            self.assertEqual(2, payload["manual_book_library"]["core_count"])
+            self.assertEqual(0, payload["manual_book_library"]["extra_count"])
+            self.assertEqual(
+                ["architecture", "operators"],
+                [book["book_slug"] for book in payload["manual_book_library"]["books"]],
+            )
+            self.assertEqual(0, payload["playbook_library"]["total_count"])
+            self.assertEqual(0, payload["playbook_library"]["family_count"])
             self.assertFalse(payload["source_of_truth"]["chunks"]["drift_detected"])
             self.assertTrue(payload["materialization"]["logical_counts_match"])
             self.assertFalse(payload["materialization"]["counts_match"])
@@ -517,6 +527,25 @@ class TestAppDataControlRoom(unittest.TestCase):
                 "materialized",
                 payload["derived_playbook_families"]["synthesized_playbook"]["status"],
             )
+            self.assertEqual(2, payload["manual_book_library"]["total_count"])
+            self.assertEqual(1, payload["manual_book_library"]["core_count"])
+            self.assertEqual(1, payload["manual_book_library"]["extra_count"])
+            self.assertEqual(
+                ["architecture", "backup_and_restore"],
+                [book["book_slug"] for book in payload["manual_book_library"]["books"]],
+            )
+            self.assertEqual(5, payload["playbook_library"]["total_count"])
+            self.assertEqual(5, payload["playbook_library"]["family_count"])
+            self.assertEqual(
+                {
+                    "topic_playbook",
+                    "operation_playbook",
+                    "troubleshooting_playbook",
+                    "policy_overlay_book",
+                    "synthesized_playbook",
+                },
+                {family["family"] for family in payload["playbook_library"]["families"]},
+            )
 
     def test_handler_exposes_data_control_room_payload(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -552,6 +581,8 @@ class TestAppDataControlRoom(unittest.TestCase):
             self.assertIn("gold_books", payload)
             self.assertIn("corpus_book_status", payload)
             self.assertIn("manualbook_status", payload)
+            self.assertIn("manual_book_library", payload)
+            self.assertIn("playbook_library", payload)
             self.assertIn("policy_overlay_book_status", payload)
             self.assertIn("synthesized_playbook_status", payload)
             self.assertEqual("blocked", payload["summary"]["gate_status"])

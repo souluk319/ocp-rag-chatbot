@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
+import { Link } from 'react-router-dom';
 import { MessageSquare, BookOpen, MonitorPlay } from 'lucide-react';
 import './ProductSurfaces.css';
 
@@ -87,11 +88,9 @@ export default function ProductSurfaces() {
 
       <div className="surfaces-grid">
         
-        <a 
-          href="http://127.0.0.1:8765/workspace" 
+        <Link 
+          to="/workspace" 
           className="surface-card glass-panel" 
-          target="_blank" 
-          rel="noreferrer"
           ref={el => { cardsRef.current[0] = el; }}
         >
           <div className="glow-orb"></div>
@@ -102,13 +101,12 @@ export default function ProductSurfaces() {
             <h3>Chat UI</h3>
             <p>어디서 답을 찾았는지 추적 가능한 질의응답 창구</p>
           </div>
-        </a>
+        </Link>
 
-        <a 
-          href="http://127.0.0.1:8765/workspace" 
+        {/* Using standard anchor for external/manual pages if needed, but here we point to the same workspace demo */}
+        <Link 
+          to="/workspace" 
           className="surface-card glass-panel" 
-          target="_blank" 
-          rel="noreferrer"
           ref={el => { cardsRef.current[1] = el; }}
         >
           <div className="glow-orb"></div>
@@ -119,7 +117,7 @@ export default function ProductSurfaces() {
             <h3>Manualbook Viewer</h3>
             <p>Citation을 클릭하면 펼쳐지는 정확한 섹션 이동</p>
           </div>
-        </a>
+        </Link>
 
         <a 
           href="http://127.0.0.1:8765/data-situation-room" 
