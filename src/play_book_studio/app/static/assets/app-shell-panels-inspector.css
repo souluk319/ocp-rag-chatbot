@@ -438,7 +438,8 @@
       min-height: 0;
       overflow: hidden;
       align-content: stretch;
-      grid-template-rows: minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr);
+      grid-auto-rows: minmax(0, auto);
     }
 
     .source-hero {

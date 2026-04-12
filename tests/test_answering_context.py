@@ -206,6 +206,90 @@ class ContextAssemblyTests(unittest.TestCase):
         self.assertNotEqual([], bundle.citations)
         self.assertIn(bundle.citations[0].book_slug, {"overview", "architecture"})
 
+    def test_generic_intro_prefers_intro_over_glossary_and_deep_architecture(self) -> None:
+        bundle = assemble_context(
+            [
+                _hit(
+                    "chunk-1",
+                    "security_and_compliance",
+                    "2.1.2. OpenShift Container Platform 용어집",
+                    "OpenShift 관련 용어를 설명합니다.",
+                    anchor="glossary",
+                    score=0.039,
+                ),
+                _hit(
+                    "chunk-2",
+                    "architecture",
+                    "2.1.3.1. 사용자 정의 운영 체제",
+                    "RHCOS와 CRI-O를 설명합니다.",
+                    anchor="custom-os",
+                    score=0.038,
+                ),
+                _hit(
+                    "chunk-3",
+                    "architecture",
+                    "2.1.3. OpenShift Container Platform 개요",
+                    "OpenShift Container Platform 개요를 설명합니다.",
+                    anchor="architecture-overview",
+                    score=0.036,
+                    semantic_role="overview",
+                ),
+                _hit(
+                    "chunk-4",
+                    "overview",
+                    "OpenShift Container Platform 소개",
+                    "OpenShift Platform 기능을 처음 설명합니다.",
+                    anchor="ocp-overview",
+                    score=0.035,
+                    semantic_role="overview",
+                ),
+            ],
+            query="오픈시프트가 뭐야?",
+            max_chunks=4,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertEqual("overview", bundle.citations[0].book_slug)
+        self.assertEqual("OpenShift Container Platform 소개", bundle.citations[0].section)
+
+    def test_kubernetes_intro_prefers_intro_context_over_irrelevant_book(self) -> None:
+        bundle = assemble_context(
+            [
+                _hit(
+                    "chunk-1",
+                    "release_notes",
+                    "확인된 문제",
+                    "이번 릴리스에서 확인된 문제를 설명합니다.",
+                    anchor="known-issues",
+                    score=0.041,
+                ),
+                _hit(
+                    "chunk-2",
+                    "architecture",
+                    "2.1.3. OpenShift Container Platform 개요",
+                    "OpenShift는 Kubernetes 기반 플랫폼입니다.",
+                    anchor="architecture-overview",
+                    score=0.037,
+                    semantic_role="overview",
+                ),
+                _hit(
+                    "chunk-3",
+                    "overview",
+                    "OpenShift Container Platform 소개",
+                    "OpenShift와 Kubernetes 관계를 처음 설명합니다.",
+                    anchor="ocp-overview",
+                    score=0.036,
+                    semantic_role="overview",
+                ),
+            ],
+            query="쿠버네티스는뭔데",
+            max_chunks=4,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertIn(bundle.citations[0].book_slug, {"overview", "architecture"})
+        self.assertNotEqual("release_notes", bundle.citations[0].book_slug)
+
     def test_follow_up_query_keeps_context_even_when_scores_are_close(self) -> None:
         hits = [
             _hit(

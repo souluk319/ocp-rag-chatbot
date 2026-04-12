@@ -11,7 +11,7 @@ TESTS = ROOT / "tests"
 if str(TESTS) not in sys.path:
     sys.path.insert(0, str(TESTS))
 
-from _support_app_ui import SessionStore, _build_handler
+from _support_app_ui import SessionStore, _build_handler, _ingest_customer_pack
 from play_book_studio.app.data_control_room import build_data_control_room_payload
 from play_book_studio.config.settings import load_settings
 
@@ -311,6 +311,182 @@ class TestAppDataControlRoom(unittest.TestCase):
             self.assertIn("reports", payload)
             self.assertIn("recent_report_paths", payload)
 
+    def test_build_data_control_room_payload_prefers_current_corpus_report_when_gate_snapshot_is_stale(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / ".env").write_text("ARTIFACTS_DIR=artifacts\n", encoding="utf-8")
+            settings = load_settings(root)
+
+            entries = [
+                {
+                    "book_slug": "architecture",
+                    "title": "아키텍처",
+                    "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html",
+                    "content_status": "approved_ko",
+                    "review_status": "approved",
+                    "source_type": "official_doc",
+                    "source_lane": "official_ko",
+                    "updated_at": "2026-04-11T09:00:00+09:00",
+                },
+                {
+                    "book_slug": "operators",
+                    "title": "오퍼레이터",
+                    "viewer_path": "/docs/ocp/4.20/ko/operators/index.html",
+                    "content_status": "approved_ko",
+                    "review_status": "approved",
+                    "source_type": "manual_synthesis",
+                    "source_lane": "applied_playbook",
+                    "updated_at": "2026-04-11T09:05:00+09:00",
+                },
+            ]
+            self._write_json(
+                settings.source_manifest_path,
+                {"version": 2, "count": 2, "entries": entries},
+            )
+
+            gate_approval_path = root / "reports" / "approval_stale.json"
+            gate_translation_path = root / "reports" / "translation_stale.json"
+            self._write_json(
+                root / "reports" / "build_logs" / "foundry_runs" / "profiles" / "morning_gate" / "latest.json",
+                {
+                    "run_at": "2026-04-11T09:30:00+09:00",
+                    "job_results": [
+                        {
+                            "job_id": "source_approval",
+                            "payload": {
+                                "output_targets": {
+                                    "approval_report_path": str(gate_approval_path),
+                                    "translation_lane_report_path": str(gate_translation_path),
+                                }
+                            },
+                        }
+                    ],
+                    "verdict": {
+                        "status": "release_ready",
+                        "release_blocking": False,
+                        "summary": {"approved_runtime_count": 1},
+                    },
+                },
+            )
+            self._write_json(
+                gate_approval_path,
+                {
+                    "summary": {"book_count": 3, "approved_ko_count": 1, "blocked_count": 2},
+                    "books": [
+                        {
+                            "book_slug": "architecture",
+                            "title": "아키텍처",
+                            "content_status": "approved_ko",
+                            "approval_status": "approved",
+                            "review_status": "approved",
+                            "source_type": "official_doc",
+                            "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html",
+                        },
+                        {
+                            "book_slug": "operators",
+                            "title": "오퍼레이터",
+                            "content_status": "blocked",
+                            "approval_status": "needs_review",
+                            "review_status": "needs_review",
+                            "source_type": "manual_synthesis",
+                            "viewer_path": "/docs/ocp/4.20/ko/operators/index.html",
+                        },
+                        {
+                            "book_slug": "storage",
+                            "title": "스토리지",
+                            "content_status": "blocked",
+                            "approval_status": "needs_review",
+                            "review_status": "needs_review",
+                            "source_type": "official_doc",
+                            "viewer_path": "/docs/ocp/4.20/ko/storage/index.html",
+                        },
+                    ],
+                },
+            )
+            self._write_json(gate_translation_path, {"active_queue": [{"book_slug": "operators"}]})
+
+            self._write_json(
+                settings.source_approval_report_path,
+                {
+                    "summary": {"book_count": 3, "approved_ko_count": 2, "blocked_count": 1},
+                    "books": [
+                        {
+                            "book_slug": "architecture",
+                            "title": "아키텍처",
+                            "content_status": "approved_ko",
+                            "approval_status": "approved",
+                            "review_status": "approved",
+                            "source_type": "official_doc",
+                            "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html",
+                        },
+                        {
+                            "book_slug": "operators",
+                            "title": "오퍼레이터",
+                            "content_status": "approved_ko",
+                            "approval_status": "approved",
+                            "review_status": "approved",
+                            "source_type": "manual_synthesis",
+                            "viewer_path": "/docs/ocp/4.20/ko/operators/index.html",
+                        },
+                        {
+                            "book_slug": "storage",
+                            "title": "스토리지",
+                            "content_status": "blocked",
+                            "approval_status": "needs_review",
+                            "review_status": "needs_review",
+                            "source_type": "official_doc",
+                            "viewer_path": "/docs/ocp/4.20/ko/storage/index.html",
+                        },
+                    ],
+                },
+            )
+            self._write_json(
+                settings.translation_lane_report_path,
+                {"summary": {"active_queue_count": 1}, "active_queue": [{"book_slug": "storage"}]},
+            )
+
+            self._write_jsonl(
+                settings.chunks_path,
+                [
+                    {"book_slug": "architecture", "book_title": "아키텍처", "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html#overview"},
+                    {"book_slug": "operators", "book_title": "오퍼레이터", "viewer_path": "/docs/ocp/4.20/ko/operators/index.html#overview"},
+                ],
+            )
+            self._write_json(
+                settings.playbook_books_dir / "architecture.json",
+                {
+                    "book_slug": "architecture",
+                    "title": "아키텍처",
+                    "translation_status": "approved_ko",
+                    "review_status": "approved",
+                    "source_metadata": {"source_type": "official_doc", "source_lane": "official_ko"},
+                    "sections": [{"blocks": [{"kind": "paragraph", "text": "개요"}]}],
+                },
+            )
+            self._write_json(
+                settings.playbook_books_dir / "operators.json",
+                {
+                    "book_slug": "operators",
+                    "title": "오퍼레이터",
+                    "translation_status": "approved_ko",
+                    "review_status": "approved",
+                    "source_metadata": {"source_type": "manual_synthesis", "source_lane": "applied_playbook"},
+                    "sections": [{"blocks": [{"kind": "paragraph", "text": "절차"}]}],
+                },
+            )
+
+            payload = build_data_control_room_payload(root)
+
+            self.assertEqual(str(settings.source_approval_report_path), payload["canonical_grade_source"]["path"])
+            self.assertEqual(2, payload["summary"]["approved_runtime_count"])
+            self.assertEqual(2, payload["summary"]["gold_book_count"])
+            self.assertEqual(2, len(payload["gold_books"]))
+            self.assertEqual(3, payload["summary"]["known_book_count"])
+            self.assertEqual(
+                ["gate_approved_runtime_count_vs_source_approval_approved_ko_count"],
+                payload["source_of_truth_drift"]["status_alignment"]["mismatches"],
+            )
+
     def test_build_data_control_room_payload_separates_extra_playable_books_from_runtime_counts(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -533,6 +709,51 @@ class TestAppDataControlRoom(unittest.TestCase):
             self.assertEqual(
                 ["architecture", "backup_and_restore"],
                 [book["book_slug"] for book in payload["manual_book_library"]["books"]],
+            )
+            self.assertEqual(5, payload["playbook_library"]["total_count"])
+            self.assertEqual(5, payload["playbook_library"]["family_count"])
+            self.assertEqual(
+                {
+                    "topic_playbook",
+                    "operation_playbook",
+                    "troubleshooting_playbook",
+                    "policy_overlay_book",
+                    "synthesized_playbook",
+                },
+                {family["family"] for family in payload["playbook_library"]["families"]},
+            )
+
+    def test_build_data_control_room_payload_includes_customer_pack_books_in_library(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / ".env").write_text("ARTIFACTS_DIR=artifacts\n", encoding="utf-8")
+            source_md = root / "customer-runbook.md"
+            source_md.write_text(
+                "# 운영 런북\n\n## etcd 백업\n\n```bash\ncluster-backup.sh /backup\n```\n\n## 검증\n\n백업 파일을 점검합니다.\n",
+                encoding="utf-8",
+            )
+
+            normalized = _ingest_customer_pack(
+                root,
+                {
+                    "source_type": "md",
+                    "uri": str(source_md),
+                    "title": "운영 런북",
+                },
+            )
+            payload = build_data_control_room_payload(root)
+
+            self.assertEqual("normalized", normalized["status"])
+            self.assertEqual(1, payload["manual_book_library"]["total_count"])
+            self.assertEqual(0, payload["manual_book_library"]["core_count"])
+            self.assertEqual(1, payload["manual_book_library"]["extra_count"])
+            self.assertEqual(1, payload["summary"]["extra_manualbook_count"])
+            self.assertEqual(5, payload["summary"]["derived_playbook_count"])
+            self.assertEqual(6, payload["summary"]["playable_asset_count"])
+            self.assertEqual([str(normalized["draft_id"])], [book["book_slug"] for book in payload["extra_manualbook_status"]])
+            self.assertEqual(
+                f"/playbooks/customer-packs/{normalized['draft_id']}/index.html",
+                payload["manual_book_library"]["books"][0]["viewer_path"],
             )
             self.assertEqual(5, payload["playbook_library"]["total_count"])
             self.assertEqual(5, payload["playbook_library"]["family_count"])

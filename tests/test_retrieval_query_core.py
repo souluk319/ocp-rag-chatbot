@@ -508,6 +508,19 @@ class TestRetrievalQueryCore(unittest.TestCase):
 
         self.assertEqual("오픈시프트에 대해 새줄약해봐", rewritten)
 
+    def test_rewrite_query_skips_generic_openshift_usage_prompt_even_with_context(self) -> None:
+        context = SessionContext(
+            current_topic="OpenShift",
+            open_entities=["OpenShift"],
+            user_goal="노드 삭제 전에 확인할 항목",
+            unresolved_question="노드 drain 이후 복구 절차",
+            ocp_version="4.20",
+        )
+
+        rewritten = rewrite_query("오픈시프트는 어떤 곳에 쓰여?", context)
+
+        self.assertEqual("오픈시프트는 어떤 곳에 쓰여?", rewritten)
+
     def test_rewrite_query_uses_route_ingress_context_for_compare_follow_up(self) -> None:
         context = SessionContext(
             user_goal="OpenShift에서 Route와 Ingress 차이를 운영 관점에서 설명해줘",
@@ -594,4 +607,3 @@ class TestRetrievalQueryCore(unittest.TestCase):
         self.assertGreater(boosts["overview"], 1.0)
         self.assertLess(penalties["cli_tools"], 1.0)
         self.assertLess(penalties["config_apis"], 1.0)
-

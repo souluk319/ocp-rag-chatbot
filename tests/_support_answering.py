@@ -17,6 +17,7 @@ from play_book_studio.answering.answer_text_formatting import (
     ensure_korean_product_terms,
     normalize_answer_markup_blocks,
     normalize_answer_text,
+    restore_readable_paragraphs,
     reshape_ops_answer_text,
     strip_intro_offtopic_noise,
     strip_structured_key_extra_guidance,

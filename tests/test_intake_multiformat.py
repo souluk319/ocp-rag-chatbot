@@ -295,7 +295,7 @@ class IntakeMultiformatTests(unittest.TestCase):
             root = Path(tmpdir)
             source_md = root / "runbook.md"
             source_md.write_text(
-                "# 운영 런북\n\n## etcd 백업\n\n```bash\noc debug node/node-0\n```\n\n## 검증\n\n완료 여부 확인",
+                "# 운영 런북\n\n## etcd 백업\n\n```bash\noc debug node/node-0\n```\n\n| 절차 | 명령어 |\n| --- | --- |\n| 백업 | cluster-backup.sh |\n\n## 검증\n\n완료 여부 확인",
                 encoding="utf-8",
             )
 
@@ -310,12 +310,14 @@ class IntakeMultiformatTests(unittest.TestCase):
             self.assertTrue(operation_book_path.exists())
 
         self.assertEqual("normalized", normalized.status)
-        self.assertGreaterEqual(normalized.normalized_section_count, 2)
+        self.assertEqual(2, normalized.normalized_section_count)
         self.assertEqual("md", payload["source_type"])
         self.assertEqual(6, payload["playable_asset_count"])
         self.assertEqual(5, payload["derived_asset_count"])
         self.assertEqual(5, len(payload["derived_assets"]))
-        self.assertTrue(any("[CODE]" in section["text"] for section in payload["sections"]))
+        self.assertTrue(any("[CODE" in section["text"] for section in payload["sections"]))
+        self.assertTrue(any("[TABLE]" in section["text"] for section in payload["sections"]))
+        self.assertEqual(["etcd 백업", "검증"], [section["heading"] for section in payload["sections"]])
 
     def test_normalize_service_builds_sections_from_asciidoc(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -338,6 +340,44 @@ class IntakeMultiformatTests(unittest.TestCase):
         self.assertTrue(
             any("oc debug node/node-0" in section["text"] for section in payload["sections"])
         )
+
+    def test_normalize_service_keeps_more_sections_for_long_derived_playbooks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source_md = root / "long-runbook.md"
+            lines = ["# 운영 런북", ""]
+            for index in range(1, 21):
+                lines.extend(
+                    [
+                        f"## 단계 {index}",
+                        "",
+                        f"운영 절차 {index} 확인",
+                        "",
+                        "```bash",
+                        f"oc get pods -n ns-{index}",
+                        "```",
+                        "",
+                    ]
+                )
+            source_md.write_text("\n".join(lines), encoding="utf-8")
+
+            captured = CustomerPackCaptureService(root).capture(
+                request=DocSourceRequest(source_type="md", uri=str(source_md), title="운영 런북")
+            )
+            normalized = CustomerPackNormalizeService(root).normalize(draft_id=captured.draft_id)
+            payload = json.loads(Path(normalized.canonical_book_path).read_text(encoding="utf-8"))
+
+        derived_counts = {
+            asset["playbook_family"]: int(asset["section_count"])
+            for asset in payload["derived_assets"]
+        }
+        self.assertEqual("normalized", normalized.status)
+        self.assertEqual(20, len(payload["sections"]))
+        self.assertGreaterEqual(derived_counts["topic_playbook"], 12)
+        self.assertGreaterEqual(derived_counts["operation_playbook"], 12)
+        self.assertGreaterEqual(derived_counts["troubleshooting_playbook"], 10)
+        self.assertGreaterEqual(derived_counts["policy_overlay_book"], 10)
+        self.assertGreaterEqual(derived_counts["synthesized_playbook"], 14)
 
     def test_normalize_service_builds_sections_from_plain_text_numeric_headings(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -386,6 +426,42 @@ class IntakeMultiformatTests(unittest.TestCase):
         self.assertEqual("normalized", normalized.status)
         self.assertEqual("복구 절차", payload["sections"][0]["heading"])
 
+    def test_normalize_service_cleans_pdf_markitdown_page_markers_and_tableish_headings(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source_pdf = root / "storage.pdf"
+            source_pdf.write_bytes(b"%PDF-1.4 sample")
+
+            captured = CustomerPackCaptureService(root).capture(
+                request=DocSourceRequest(source_type="pdf", uri=str(source_pdf), title="02. 스토리지(03.19)")
+            )
+
+            with patch(
+                "play_book_studio.intake.normalization.builders.convert_with_markitdown",
+                return_value=(
+                    "# 02. 스토리지(03.19)\n\n"
+                    "스토리지 10\n\n"
+                    "1 NFS ( | --- | --- | --- | )\n"
+                    "스토리지 공유 개요\n\n"
+                    "## PV 생성\n\n"
+                    "apiVersion: v1\n"
+                    "kind: PersistentVolume\n\n"
+                    "스토리지 11\n\n"
+                    "## PVC 확인\n\n"
+                    "PVC\x00정상 확인"
+                ),
+            ):
+                normalized = CustomerPackNormalizeService(root).normalize(draft_id=captured.draft_id)
+                payload = json.loads(Path(normalized.canonical_book_path).read_text(encoding="utf-8"))
+
+        texts = [section["text"] for section in payload["sections"]]
+        headings = [section["heading"] for section in payload["sections"]]
+        self.assertEqual("normalized", normalized.status)
+        self.assertEqual(["02. 스토리지(03.19)", "PV 생성", "PVC 확인"], headings)
+        self.assertFalse(any("|" in heading for heading in headings))
+        self.assertFalse(any("\x00" in text for text in texts))
+        self.assertFalse(any("스토리지 10" in text or "스토리지 11" in text for text in texts))
+
     def test_docx_source_is_honestly_rejected(self) -> None:
         payload = _build_customer_pack_plan({"source_type": "docx", "uri": "/tmp/demo.docx"})
         self.assertEqual("docx", payload["source_type"])
@@ -416,6 +492,7 @@ class IntakeMultiformatTests(unittest.TestCase):
         self.assertEqual("docx", payload["source_type"])
         self.assertTrue(any("etcd 백업" in section["heading"] for section in payload["sections"]))
         self.assertTrue(any("[TABLE]" in section["text"] for section in payload["sections"]))
+        self.assertTrue(any("MarkItDown" in note for note in payload.get("normalization_notes", [])))
 
     def test_normalize_service_builds_sections_from_pptx(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -437,6 +514,7 @@ class IntakeMultiformatTests(unittest.TestCase):
         self.assertEqual("pptx", payload["source_type"])
         self.assertTrue(any("etcd 백업" in section["heading"] for section in payload["sections"]))
         self.assertTrue(any("cluster-backup.sh" in section["text"] for section in payload["sections"]))
+        self.assertTrue(any("MarkItDown" in note for note in payload.get("normalization_notes", [])))
 
     def test_normalize_service_builds_sections_from_xlsx(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -459,6 +537,7 @@ class IntakeMultiformatTests(unittest.TestCase):
         self.assertEqual("xlsx", payload["source_type"])
         self.assertTrue(any("backup" in section["heading"].lower() for section in payload["sections"]))
         self.assertTrue(any("[TABLE]" in section["text"] for section in payload["sections"]))
+        self.assertTrue(any("MarkItDown" in note for note in payload.get("normalization_notes", [])))
 
     def test_normalize_service_builds_sections_from_image_ocr(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

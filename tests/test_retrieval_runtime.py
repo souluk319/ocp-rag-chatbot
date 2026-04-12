@@ -12,6 +12,7 @@ if str(TESTS) not in sys.path:
     sys.path.insert(0, str(TESTS))
 
 from _support_retrieval import BM25Index, ChatRetriever, RetrievalHit, SessionContext, Settings, fuse_ranked_hits
+from play_book_studio.retrieval.trace import build_retrieval_trace
 from play_book_studio.retrieval.retriever_rerank import maybe_rerank_hits
 
 class TestRetrievalRuntime(unittest.TestCase):
@@ -301,6 +302,109 @@ class TestRetrievalRuntime(unittest.TestCase):
         self.assertTrue(trace["applied"])
         self.assertEqual("support", hits[0].book_slug)
 
+    def test_reranker_rebalances_generic_intro_back_to_intro_overview(self) -> None:
+        class _FakeReranker:
+            def __init__(self, hits: list[RetrievalHit]) -> None:
+                self.hits = hits
+                self.model_name = "fake-reranker"
+                self.top_n = 8
+
+            def rerank(self, query: str, hits: list[RetrievalHit], *, top_k: int) -> list[RetrievalHit]:
+                return list(self.hits)
+
+        class _FakeRetrieverWithReranker:
+            def __init__(self, hits: list[RetrievalHit]) -> None:
+                self.reranker = _FakeReranker(hits)
+
+        hybrid_hits = [
+            RetrievalHit(
+                chunk_id="overview-intro",
+                book_slug="overview",
+                chapter="개요",
+                section="OpenShift Container Platform 소개",
+                anchor="ocp-overview",
+                source_url="https://example.com/overview",
+                viewer_path="/docs/overview.html#ocp-overview",
+                text="OpenShift Container Platform 기능에 대한 개요를 설명합니다.",
+                source="hybrid",
+                raw_score=0.92,
+                fused_score=0.92,
+                component_scores={"pre_rerank_fused_score": 0.92},
+            ),
+            RetrievalHit(
+                chunk_id="architecture-intro",
+                book_slug="architecture",
+                chapter="아키텍처",
+                section="2.1.3. OpenShift Container Platform 개요",
+                anchor="architecture-overview",
+                source_url="https://example.com/architecture",
+                viewer_path="/docs/architecture.html#architecture-overview",
+                text="OpenShift Container Platform 개요를 설명합니다.",
+                source="hybrid",
+                raw_score=0.89,
+                fused_score=0.89,
+                component_scores={"pre_rerank_fused_score": 0.89},
+            ),
+            RetrievalHit(
+                chunk_id="architecture-deep",
+                book_slug="architecture",
+                chapter="아키텍처",
+                section="2.1.3.1. 사용자 정의 운영 체제",
+                anchor="custom-os",
+                source_url="https://example.com/architecture",
+                viewer_path="/docs/architecture.html#custom-os",
+                text="CRI-O와 Kubelet을 설명합니다.",
+                source="hybrid",
+                raw_score=0.81,
+                fused_score=0.81,
+                component_scores={"pre_rerank_fused_score": 0.81},
+            ),
+        ]
+        reranked_hits = [
+            RetrievalHit(
+                chunk_id="architecture-deep",
+                book_slug="architecture",
+                chapter="아키텍처",
+                section="2.1.3.1. 사용자 정의 운영 체제",
+                anchor="custom-os",
+                source_url="https://example.com/architecture",
+                viewer_path="/docs/architecture.html#custom-os",
+                text="CRI-O와 Kubelet을 설명합니다.",
+                source="hybrid_reranked",
+                raw_score=4.9,
+                fused_score=4.9,
+                component_scores={"pre_rerank_fused_score": 0.81, "reranker_score": 4.9},
+            ),
+            RetrievalHit(
+                chunk_id="overview-intro",
+                book_slug="overview",
+                chapter="개요",
+                section="OpenShift Container Platform 소개",
+                anchor="ocp-overview",
+                source_url="https://example.com/overview",
+                viewer_path="/docs/overview.html#ocp-overview",
+                text="OpenShift Container Platform 기능에 대한 개요를 설명합니다.",
+                source="hybrid_reranked",
+                raw_score=2.2,
+                fused_score=2.2,
+                component_scores={"pre_rerank_fused_score": 0.92, "reranker_score": 2.2},
+            ),
+        ]
+
+        hits, trace = maybe_rerank_hits(
+            _FakeRetrieverWithReranker(reranked_hits),
+            query="오픈시프트가 뭐야",
+            hybrid_hits=hybrid_hits,
+            top_k=2,
+            trace_callback=None,
+            timings_ms={},
+        )
+
+        self.assertTrue(trace["applied"])
+        self.assertEqual("overview", hits[0].book_slug)
+        self.assertEqual("overview-intro", hits[0].chunk_id)
+        self.assertIn("generic_intro_intent", trace["rebalance_reasons"])
+
     def test_reranker_rebalances_etcd_backup_hits_toward_backup_procedure(self) -> None:
         class _FakeReranker:
             def __init__(self, hits: list[RetrievalHit]) -> None:
@@ -385,6 +489,190 @@ class TestRetrievalRuntime(unittest.TestCase):
 
         self.assertTrue(trace["applied"])
         self.assertEqual("postinstallation_configuration", hits[0].book_slug)
+
+    def test_build_retrieval_trace_exposes_ablation_stage_signals(self) -> None:
+        bm25_hits = [
+            RetrievalHit(
+                chunk_id="bm25-top",
+                book_slug="backup_and_restore",
+                chapter="backup",
+                section="etcd 백업과 복구",
+                anchor="backup",
+                source_url="https://example.com/backup",
+                viewer_path="/docs/backup.html#backup",
+                text="etcd 백업 절차",
+                source="bm25",
+                raw_score=0.91,
+                fused_score=0.91,
+                component_scores={"bm25_score": 0.91, "bm25_rank": 1.0},
+            ),
+            RetrievalHit(
+                chunk_id="bm25-secondary",
+                book_slug="etcd",
+                chapter="etcd",
+                section="etcd 재해 복구",
+                anchor="etcd-dr",
+                source_url="https://example.com/etcd",
+                viewer_path="/docs/etcd.html#etcd-dr",
+                text="etcd 재해 복구",
+                source="bm25",
+                raw_score=0.84,
+                fused_score=0.84,
+                component_scores={"bm25_score": 0.84, "bm25_rank": 2.0},
+            ),
+        ]
+        vector_hits = [
+            RetrievalHit(
+                chunk_id="vector-top",
+                book_slug="backup_and_restore",
+                chapter="backup",
+                section="etcd 백업과 복구",
+                anchor="backup",
+                source_url="https://example.com/backup",
+                viewer_path="/docs/backup.html#backup",
+                text="etcd 백업 절차",
+                source="vector",
+                raw_score=0.89,
+                fused_score=0.89,
+                component_scores={"vector_score": 0.89, "vector_rank": 1.0},
+            ),
+            RetrievalHit(
+                chunk_id="vector-secondary",
+                book_slug="etcd",
+                chapter="etcd",
+                section="etcd 재해 복구",
+                anchor="etcd-dr",
+                source_url="https://example.com/etcd",
+                viewer_path="/docs/etcd.html#etcd-dr",
+                text="etcd 재해 복구",
+                source="vector",
+                raw_score=0.8,
+                fused_score=0.8,
+                component_scores={"vector_score": 0.8, "vector_rank": 2.0},
+            ),
+        ]
+        hybrid_hits = [
+            RetrievalHit(
+                chunk_id="hybrid-top",
+                book_slug="backup_and_restore",
+                chapter="backup",
+                section="etcd 백업과 복구",
+                anchor="backup",
+                source_url="https://example.com/backup",
+                viewer_path="/docs/backup.html#backup",
+                text="etcd 백업 절차",
+                source="hybrid",
+                raw_score=0.95,
+                fused_score=0.95,
+                component_scores={
+                    "bm25_score": 0.91,
+                    "bm25_rank": 1.0,
+                    "vector_score": 0.89,
+                    "vector_rank": 1.0,
+                },
+            ),
+            RetrievalHit(
+                chunk_id="hybrid-secondary",
+                book_slug="etcd",
+                chapter="etcd",
+                section="etcd 재해 복구",
+                anchor="etcd-dr",
+                source_url="https://example.com/etcd",
+                viewer_path="/docs/etcd.html#etcd-dr",
+                text="etcd 재해 복구",
+                source="hybrid",
+                raw_score=0.82,
+                fused_score=0.82,
+                component_scores={
+                    "bm25_score": 0.84,
+                    "bm25_rank": 2.0,
+                    "vector_score": 0.8,
+                    "vector_rank": 2.0,
+                },
+            ),
+        ]
+        reranked_hits = [
+            RetrievalHit(
+                chunk_id="reranked-top",
+                book_slug="support",
+                chapter="support",
+                section="백업과 복구 참고",
+                anchor="support",
+                source_url="https://example.com/support",
+                viewer_path="/docs/support.html#support",
+                text="운영 지원 문서",
+                source="hybrid_reranked",
+                raw_score=1.5,
+                fused_score=1.5,
+                component_scores={
+                    "bm25_score": 0.91,
+                    "vector_score": 0.89,
+                    "pre_rerank_fused_score": 0.95,
+                    "reranker_score": 1.5,
+                },
+            ),
+            RetrievalHit(
+                chunk_id="reranked-second",
+                book_slug="backup_and_restore",
+                chapter="backup",
+                section="etcd 백업과 복구",
+                anchor="backup",
+                source_url="https://example.com/backup",
+                viewer_path="/docs/backup.html#backup",
+                text="etcd 백업 절차",
+                source="hybrid_reranked",
+                raw_score=1.2,
+                fused_score=1.2,
+                component_scores={
+                    "pre_rerank_fused_score": 0.91,
+                    "reranker_score": 1.2,
+                },
+            ),
+        ]
+
+        trace = build_retrieval_trace(
+            warnings=[],
+            bm25_hits=bm25_hits,
+            vector_hits=vector_hits,
+            hybrid_hits=hybrid_hits,
+            graph_trace={},
+            reranked_hits=reranked_hits,
+            reranker_trace={
+                "enabled": True,
+                "applied": True,
+                "model": "fake-reranker",
+                "top_n": 8,
+                "top1_changed": True,
+                "top1_before": "backup_and_restore",
+                "top1_after": "support",
+                "rebalance_reasons": ["support rescue"],
+            },
+            decomposed_queries=["etcd 백업은 어떻게 해?"],
+            effective_candidate_k=20,
+            fusion_output_k=2,
+            timings_ms={
+                "bm25_search": 1.0,
+                "vector_search": 2.0,
+                "fusion": 3.0,
+                "rerank": 4.0,
+                "total": 10.0,
+            },
+            candidate_k=20,
+            top_k=2,
+        )
+
+        self.assertIn("ablation", trace)
+        ablation = trace["ablation"]
+        self.assertEqual("backup_and_restore", ablation["bm25_top_book_slugs"][0])
+        self.assertEqual("backup_and_restore", ablation["vector_top_book_slugs"][0])
+        self.assertEqual("backup_and_restore", ablation["hybrid_top_book_slugs"][0])
+        self.assertEqual("support", ablation["reranked_top_book_slugs"][0])
+        self.assertEqual("both", ablation["hybrid_top_support"])
+        self.assertEqual("both", ablation["reranked_top_support"])
+        self.assertTrue(ablation["rerank_top1_changed"])
+        self.assertEqual("backup_and_restore", ablation["rerank_top1_from"])
+        self.assertEqual("support", ablation["rerank_top1_to"])
+        self.assertEqual(["support rescue"], ablation["rerank_reasons"])
 
     def test_reranker_rescues_uploaded_customer_pack_for_explicit_customer_doc_query(self) -> None:
         class _FakeReranker:

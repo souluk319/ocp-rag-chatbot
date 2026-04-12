@@ -2,6 +2,7 @@ from __future__ import annotations
 
 # intake 품질 판정과 공통 service helper를 모아둔 모듈.
 
+import math
 import re
 from typing import Any
 
@@ -46,11 +47,27 @@ CUSTOMER_PACK_FAMILY_KEYWORDS = {
 }
 
 CUSTOMER_PACK_FAMILY_MAX_SECTIONS = {
-    TOPIC_PLAYBOOK_SOURCE_TYPE: 10,
-    OPERATION_PLAYBOOK_SOURCE_TYPE: 10,
-    TROUBLESHOOTING_PLAYBOOK_SOURCE_TYPE: 8,
-    POLICY_OVERLAY_BOOK_SOURCE_TYPE: 8,
-    SYNTHESIZED_PLAYBOOK_SOURCE_TYPE: 12,
+    TOPIC_PLAYBOOK_SOURCE_TYPE: 24,
+    OPERATION_PLAYBOOK_SOURCE_TYPE: 24,
+    TROUBLESHOOTING_PLAYBOOK_SOURCE_TYPE: 18,
+    POLICY_OVERLAY_BOOK_SOURCE_TYPE: 18,
+    SYNTHESIZED_PLAYBOOK_SOURCE_TYPE: 28,
+}
+
+CUSTOMER_PACK_FAMILY_BASELINE_SECTIONS = {
+    TOPIC_PLAYBOOK_SOURCE_TYPE: 12,
+    OPERATION_PLAYBOOK_SOURCE_TYPE: 12,
+    TROUBLESHOOTING_PLAYBOOK_SOURCE_TYPE: 10,
+    POLICY_OVERLAY_BOOK_SOURCE_TYPE: 10,
+    SYNTHESIZED_PLAYBOOK_SOURCE_TYPE: 14,
+}
+
+CUSTOMER_PACK_FAMILY_SECTION_RATIOS = {
+    TOPIC_PLAYBOOK_SOURCE_TYPE: 0.6,
+    OPERATION_PLAYBOOK_SOURCE_TYPE: 0.6,
+    TROUBLESHOOTING_PLAYBOOK_SOURCE_TYPE: 0.5,
+    POLICY_OVERLAY_BOOK_SOURCE_TYPE: 0.5,
+    SYNTHESIZED_PLAYBOOK_SOURCE_TYPE: 0.7,
 }
 
 
@@ -127,7 +144,13 @@ def _select_family_sections(
             for section in sections
             if str(section.get("heading") or "").strip().lower() != "page summary"
         ]
-    limit = CUSTOMER_PACK_FAMILY_MAX_SECTIONS[family]
+    limit = min(
+        CUSTOMER_PACK_FAMILY_MAX_SECTIONS[family],
+        max(
+            CUSTOMER_PACK_FAMILY_BASELINE_SECTIONS[family],
+            math.ceil(len(chosen) * CUSTOMER_PACK_FAMILY_SECTION_RATIOS[family]),
+        ),
+    )
     selected_keys: set[str] = set()
     selected: list[dict[str, Any]] = []
     for section in chosen:
@@ -169,6 +192,15 @@ def build_customer_pack_playable_books(
     draft_id: str,
 ) -> tuple[dict[str, object], list[dict[str, object]]]:
     sections = _canonical_sections(payload)
+    normalization_notes = [
+        str(note).strip()
+        for note in (
+            payload.get("normalization_notes")
+            or payload.get("notes")
+            or []
+        )
+        if str(note).strip()
+    ]
     base_viewer_path = _customer_pack_asset_viewer_path(draft_id=draft_id)
     base_title = str(payload.get("title") or draft_id).strip() or draft_id
     base_source_type = str(payload.get("source_type") or "").strip()
@@ -216,6 +248,8 @@ def build_customer_pack_playable_books(
                 "normalized_section_count": len(derived_sections),
             }
         )
+        if normalization_notes:
+            derived_payload["normalization_notes"] = normalization_notes
         derived_payloads.append(derived_payload)
         derived_assets.append(
             {
@@ -243,6 +277,8 @@ def build_customer_pack_playable_books(
             "derived_assets": derived_assets,
         }
     )
+    if normalization_notes:
+        enriched_payload["normalization_notes"] = normalization_notes
     for derived_payload in derived_payloads:
         derived_payload["playable_asset_count"] = enriched_payload["playable_asset_count"]
         derived_payload["derived_asset_count"] = enriched_payload["derived_asset_count"]

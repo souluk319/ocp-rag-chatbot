@@ -199,11 +199,41 @@ def is_generic_intro_query(query: str) -> bool:
     if has_route_ingress_compare_intent(query):
         return False
     lowered = (query or "").lower()
+    has_intro_ask = bool(EXPLAINER_RE.search(query or "")) or any(
+        token in lowered for token in ("뭔데", "뭐지")
+    )
     if GENERIC_INTRO_RE.search(query or ""):
         return True
     has_ocp_topic = "openshift" in lowered or bool(OCP_RE.search(query or ""))
+    has_kubernetes_topic = bool(KUBERNETES_RE.search(query or ""))
+    if has_kubernetes_topic and has_intro_ask:
+        non_generic_kubernetes_tokens = (
+            "route",
+            "ingress",
+            "operator",
+            "deployment",
+            "service",
+            "pod",
+            "rbac",
+            "namespace",
+            "yaml",
+            "node",
+            "etcd",
+            "mco",
+            "monitoring",
+            "logging",
+            "인그레스",
+            "오퍼레이터",
+            "디플로이먼트",
+            "파드",
+            "네임스페이스",
+            "노드",
+            "프로젝트",
+        )
+        if not any(token in lowered for token in non_generic_kubernetes_tokens):
+            return True
     return has_ocp_topic and bool(
-        ARCHITECTURE_RE.search(query or "") or EXPLAINER_RE.search(query or "")
+        ARCHITECTURE_RE.search(query or "") or has_intro_ask
     )
 
 

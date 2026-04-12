@@ -92,6 +92,10 @@ def main() -> int:
             candidate_k=args.candidate_k,
             use_vector=not args.skip_vector,
         )
+        trace = result.trace or {}
+        plan_trace = trace.get("plan") or {}
+        ablation_trace = trace.get("ablation") or {}
+        vector_runtime = trace.get("vector_runtime") or {}
         top_books = [hit.book_slug for hit in result.hits]
         expected_books = set(case.get("expected_book_slugs", []))
         detail = {
@@ -103,11 +107,23 @@ def main() -> int:
             "expected_book_slugs": sorted(expected_books),
             "rewritten_query": result.rewritten_query,
             "top_book_slugs": top_books,
+            "bm25_top_book_slugs": [str(item) for item in ablation_trace.get("bm25_top_book_slugs", [])],
+            "vector_top_book_slugs": [str(item) for item in ablation_trace.get("vector_top_book_slugs", [])],
+            "hybrid_top_book_slugs": [str(item) for item in ablation_trace.get("hybrid_top_book_slugs", [])],
+            "reranked_top_book_slugs": [str(item) for item in ablation_trace.get("reranked_top_book_slugs", top_books)],
             "book_hit_at_1": _hit_at(top_books, expected_books, 1),
             "book_hit_at_3": _hit_at(top_books, expected_books, 3),
             "book_hit_at_5": _hit_at(top_books, expected_books, 5),
-            "warnings": result.trace.get("warnings", []),
-            "reranker_applied": bool(result.trace.get("reranker", {}).get("applied", False)),
+            "warnings": trace.get("warnings", []),
+            "reranker_applied": bool(trace.get("reranker", {}).get("applied", False)),
+            "rewrite_applied": bool(plan_trace.get("rewrite_applied", False)),
+            "rewrite_reason": str(plan_trace.get("rewrite_reason", "")),
+            "follow_up_detected": bool(plan_trace.get("follow_up_detected", False)),
+            "vector_endpoint_used": str(vector_runtime.get("endpoint_used", "")),
+            "vector_endpoints_used": [str(item) for item in vector_runtime.get("endpoints_used", [])],
+            "hybrid_top_support": str(ablation_trace.get("hybrid_top_support", "")),
+            "rerank_top1_changed": bool(ablation_trace.get("rerank_top1_changed", False)),
+            "rerank_reasons": [str(item) for item in ablation_trace.get("rerank_reasons", [])],
         }
         details.append(detail)
         by_category[case["category"]].append(detail)
@@ -133,6 +149,7 @@ def main() -> int:
             "policy_overlay_warning_rate": summary["overall"]["policy_overlay_warning_rate"],
             "relation_aware_miss_rate": summary["overall"]["relation_aware_miss_rate"],
         },
+        "stage_ablation": summary["stage_ablation"],
         "by_category": {
             category: {
                 "case_count": category_summary["case_count"],
@@ -143,6 +160,7 @@ def main() -> int:
                 "similar_document_risk_rate": category_summary["overall"]["similar_document_risk_rate"],
                 "policy_overlay_warning_rate": category_summary["overall"]["policy_overlay_warning_rate"],
                 "relation_aware_miss_rate": category_summary["overall"]["relation_aware_miss_rate"],
+                "stage_ablation": category_summary["stage_ablation"],
             }
             for category, category_details in sorted(by_category.items())
             for category_summary in (summarize_case_results(category_details, ks=(1, 3, 5)),)

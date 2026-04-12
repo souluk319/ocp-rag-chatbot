@@ -158,6 +158,25 @@ def load_customer_pack_draft(root_dir: Path, draft_id: str) -> dict[str, Any] | 
     return payload
 
 
+def delete_customer_pack_draft(root_dir: Path, draft_id: str) -> bool:
+    store = CustomerPackDraftStore(root_dir)
+    record = store.get(draft_id)
+    if record is None:
+        return False
+    settings = load_settings(root_dir)
+    # Clean up canonical book and derived playbook JSONs
+    books_dir = settings.customer_pack_books_dir
+    if books_dir.is_dir():
+        for path in books_dir.glob(f"{draft_id}*.json"):
+            path.unlink(missing_ok=True)
+    # Clean up capture artifacts
+    capture_dir = settings.customer_pack_capture_dir / draft_id
+    if capture_dir.is_dir():
+        import shutil
+        shutil.rmtree(capture_dir, ignore_errors=True)
+    return store.delete(draft_id)
+
+
 def capture_customer_pack_draft(root_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
     draft_id = str(payload.get("draft_id") or "").strip()
     request = None if draft_id else customer_pack_request_from_payload(payload)
@@ -179,6 +198,26 @@ def normalize_customer_pack_draft(root_dir: Path, payload: dict[str, Any]) -> di
     return result
 
 
+def ingest_customer_pack(root_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    draft_id = str(payload.get("draft_id") or "").strip()
+    if draft_id:
+        captured = capture_customer_pack_draft(root_dir, {"draft_id": draft_id})
+    elif str(payload.get("content_base64") or "").strip():
+        uploaded = upload_customer_pack_draft(root_dir, payload)
+        captured = capture_customer_pack_draft(root_dir, {"draft_id": str(uploaded["draft_id"])})
+    else:
+        captured = capture_customer_pack_draft(root_dir, payload)
+
+    normalized = normalize_customer_pack_draft(
+        root_dir,
+        {"draft_id": str(captured["draft_id"])},
+    )
+    canonical_payload = load_customer_pack_book(root_dir, str(captured["draft_id"]))
+    if canonical_payload is not None:
+        normalized["book"] = canonical_payload
+    return normalized
+
+
 def load_customer_pack_capture(
     root_dir: Path,
     draft_id: str,
@@ -198,9 +237,9 @@ __all__ = [
     "capture_customer_pack_draft",
     "create_customer_pack_draft",
     "customer_pack_request_from_payload",
+    "ingest_customer_pack",
     "load_customer_pack_capture",
     "load_customer_pack_draft",
     "normalize_customer_pack_draft",
     "upload_customer_pack_draft",
 ]
-

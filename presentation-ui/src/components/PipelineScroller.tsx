@@ -8,35 +8,65 @@ export default function PipelineScroller() {
   const lineRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // ULTIMATE RECOVERY: Force clear ANY scroll locks across the global document
+    const unlockBody = () => {
+      document.body.style.overflow = '';
+      document.body.style.height = '';
+      document.documentElement.style.overflow = '';
+    };
+
+    requestAnimationFrame(unlockBody);
+
     const ctx = gsap.context(() => {
       const sections = gsap.utils.toArray('.pipeline-step');
-      
-      gsap.to(sections, {
-        xPercent: -100 * (sections.length - 1),
+
+      const travelDistance = () => window.innerWidth * 2.1;
+
+      const scrollTween = gsap.to(trackRef.current, {
+        x: () => -travelDistance(),
         ease: "none",
         scrollTrigger: {
           trigger: containerRef.current,
           pin: true,
           scrub: 1,
-          end: () => "+=" + trackRef.current?.offsetWidth
+          start: "top top",
+          anticipatePin: 1, // Prevent wheel lag/jittering
+          end: () => "+=" + (travelDistance() + 600) // Clear, finite end point
         }
       });
 
-      // Animate the internal "nerve line" width syncing with scroll
-      gsap.fromTo(lineRef.current, 
+      // 2. Nerve Line Progress Flow (Synchronized with track move)
+      gsap.fromTo(lineRef.current,
         { width: "0%" },
-        { 
-          width: "100%", 
+        {
+          width: "100%",
           ease: "none",
           scrollTrigger: {
             trigger: containerRef.current,
             start: "top top",
-            end: () => "+=" + trackRef.current?.offsetWidth,
+            end: () => "+=" + travelDistance(),
             scrub: 1,
           }
         }
       );
-      
+
+      // 3. Sequential Ignition for Each Card
+      sections.forEach((section: any) => {
+        const card = section.querySelector('.step-card');
+        const node = section.querySelector('.step-node');
+
+        gsap.to(card, {
+          scrollTrigger: {
+            trigger: section,
+            containerAnimation: scrollTween,
+            start: "left center+=10%",
+            end: "right center-=10%",
+            toggleClass: { targets: [card, node], className: "active-glow node-active" },
+            scrub: false,
+          }
+        });
+      });
+
     }, containerRef);
     return () => ctx.revert();
   }, []);
@@ -45,23 +75,23 @@ export default function PipelineScroller() {
     <section className="pipeline-wrapper" ref={containerRef}>
       <div className="pipeline-header">
         <h2 className="text-hero">Data Foundry Pipeline</h2>
-        <p className="text-subtitle">챗봇의 한계를 넘는 고순도 데이터 제련소.</p>
+        <p className="text-subtitle">수집된 문서를 승인된 플레이북 자산으로 제련하는 제품 파이프라인.</p>
       </div>
 
       <div className="pipeline-track-container">
         {/* The glowing nerve flow line in the background */}
         <div className="nerve-path">
-            <div className="nerve-progress" ref={lineRef}></div>
+          <div className="nerve-progress" ref={lineRef}></div>
         </div>
 
         <div className="pipeline-track" ref={trackRef}>
-          
+
           <div className="pipeline-step">
             <div className="step-node"></div>
             <div className="step-card glass-panel">
               <span className="step-number text-dim">01.</span>
-              <h3 className="step-title">Bronze Ingestion</h3>
-              <p className="step-desc">공식 문서 HTML, 커뮤니티 이슈, 실제 운영 증거를 원본 그대로 수집합니다.</p>
+              <h3 className="step-title">Multi-Source Capture</h3>
+              <p className="step-desc">공식 문서, 업로드 파일, 선택한 레포지토리 문서를 수집하고 원본과 출처를 함께 고정합니다.</p>
             </div>
           </div>
 
@@ -69,8 +99,8 @@ export default function PipelineScroller() {
             <div className="step-node"></div>
             <div className="step-card glass-panel">
               <span className="step-number text-dim">02.</span>
-              <h3 className="step-title">Silver Normalization</h3>
-              <p className="step-desc">텍스트를 구조화된 그래프로 변환합니다. 명령어, 에러 로그, 쿠버네티스 객체를 추출합니다.</p>
+              <h3 className="step-title">Canonical Normalization</h3>
+              <p className="step-desc">HTML, PDF, DOCX, PPTX, XLSX를 정규 섹션으로 바꾸고 명령어, 표, 절차, 앵커와 lineage를 추출합니다.</p>
             </div>
           </div>
 
@@ -78,8 +108,8 @@ export default function PipelineScroller() {
             <div className="step-node"></div>
             <div className="step-card glass-panel">
               <span className="step-number text-dim">03.</span>
-              <h3 className="step-title">Silver-KO Fallback</h3>
-              <p className="step-desc">한국어 품질을 보장하기 위해, 누락된 번역은 영문을 바탕으로 Draft를 생성하여 대기열에 올립니다.</p>
+              <h3 className="step-title">Approval & Materialization</h3>
+              <p className="step-desc">품질 게이트를 통과한 문서만 Approved Runtime Book으로 승격하고 뷰어와 라이브러리 자산으로 반영합니다.</p>
             </div>
           </div>
 
@@ -87,8 +117,8 @@ export default function PipelineScroller() {
             <div className="step-node node-active"></div>
             <div className="step-card glass-panel highlight-card">
               <span className="step-number gradient-text">04.</span>
-              <h3 className="step-title">Gold Corpus & Manual</h3>
-              <p className="step-desc">모든 검수를 마친 데이터는 RAG 코퍼스와 사람이 읽는 매뉴얼북 양쪽으로 동시에 배포됩니다.</p>
+              <h3 className="step-title">Derived Playbook Foundry</h3>
+              <p className="step-desc">승격된 북을 Topic, Operation, Troubleshooting, Policy, Synthesized Playbook으로 파생해 실행형 지식 자산으로 배포합니다.</p>
             </div>
           </div>
 

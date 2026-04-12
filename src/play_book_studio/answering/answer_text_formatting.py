@@ -208,6 +208,34 @@ def ensure_korean_product_terms(answer_text: str, *, query: str) -> str:
     return updated
 
 
+def restore_readable_paragraphs(answer_text: str) -> str:
+    normalized = (answer_text or "").strip()
+    if not normalized:
+        return normalized
+    if "```" in normalized or "\n\n" in normalized:
+        return normalized
+    if re.search(r"(?m)^\s*(?:[-*]|\d+\.)\s+", normalized):
+        return normalized
+
+    has_prefix = normalized.startswith("답변:")
+    body = ANSWER_HEADER_RE.sub("", normalized, count=1).strip()
+    if len(body) < 120 and not any(marker in body for marker in ("실무에서는", "원하면")):
+        return normalized
+
+    restored = body
+    restored = re.sub(r"\s+(실무에서는)", r"\n\n\1", restored, count=1)
+    restored = re.sub(r"\s+(원하면)", r"\n\n\1", restored, count=1)
+    if "\n\n" not in restored:
+        sentences = [part.strip() for part in re.split(r"(?<=[.!?])\s+", restored) if part.strip()]
+        if len(sentences) >= 3:
+            restored = f"{sentences[0]}\n\n{' '.join(sentences[1:])}".strip()
+
+    restored = re.sub(r"\n{3,}", "\n\n", restored).strip()
+    if has_prefix:
+        return f"답변: {restored}"
+    return restored
+
+
 def strip_weak_additional_guidance(
     answer_text: str,
     *,
@@ -292,6 +320,7 @@ __all__ = [
     "ensure_korean_product_terms",
     "normalize_answer_markup_blocks",
     "normalize_answer_text",
+    "restore_readable_paragraphs",
     "reshape_ops_answer_text",
     "strip_intro_offtopic_noise",
     "strip_structured_key_extra_guidance",

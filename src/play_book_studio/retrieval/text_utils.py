@@ -7,6 +7,7 @@ import re
 
 HANGUL_RE = re.compile(r"[\uac00-\ud7a3]")
 SPACE_RE = re.compile(r"\s+")
+SECTION_PREFIX_RE = re.compile(r"^\s*\d+(?:\.\d+)*\.?\s*")
 
 
 def contains_hangul(text: str) -> bool:
@@ -15,6 +16,15 @@ def contains_hangul(text: str) -> bool:
 
 def collapse_spaces(text: str) -> str:
     return SPACE_RE.sub(" ", (text or "")).strip()
+
+
+def strip_section_prefix(text: str) -> str:
+    collapsed = collapse_spaces(text)
+    if not collapsed:
+        return ""
+    last_segment = collapsed.split(">")[-1].strip()
+    cleaned = SECTION_PREFIX_RE.sub("", last_segment).strip()
+    return cleaned or last_segment
 
 
 def append_terms(base_query: str, terms: list[str]) -> str:

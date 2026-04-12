@@ -11,6 +11,7 @@ from .answer_text import (
     ensure_korean_product_terms,
     normalize_answer_markup_blocks,
     normalize_answer_text,
+    restore_readable_paragraphs,
     reshape_ops_answer_text,
     shape_actionable_ops_answer,
     shape_rbac_follow_up_answer,
@@ -114,6 +115,7 @@ def generate_grounded_answer_text(
     )
     answer_text = trim_productization_noise(answer_text)
     answer_text = strip_intro_offtopic_noise(answer_text, query=query)
+    answer_text = restore_readable_paragraphs(answer_text)
     llm_runtime_meta = (
         llm_client.runtime_metadata()
         if hasattr(llm_client, "runtime_metadata")

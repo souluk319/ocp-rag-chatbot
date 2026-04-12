@@ -26,10 +26,20 @@ from play_book_studio.app.server_routes import (
     handle_customer_pack_captured as _handle_customer_pack_captured_request,
     handle_customer_pack_draft_create as _handle_customer_pack_draft_create_request,
     handle_customer_pack_drafts as _handle_customer_pack_drafts_request,
+    handle_customer_pack_ingest as _handle_customer_pack_ingest_request,
+    handle_customer_pack_delete_draft as _handle_customer_pack_delete_draft_request,
+    handle_sessions_list as _handle_sessions_list_request,
+    handle_session_load as _handle_session_load_request,
+    handle_session_delete as _handle_session_delete_request,
+    handle_sessions_delete_all as _handle_sessions_delete_all_request,
     handle_customer_pack_normalize as _handle_customer_pack_normalize_request,
     handle_customer_pack_plan as _handle_customer_pack_plan_request,
     handle_customer_pack_support_matrix as _handle_customer_pack_support_matrix_request,
     handle_customer_pack_upload_draft as _handle_customer_pack_upload_draft_request,
+    handle_repository_favorites as _handle_repository_favorites_request,
+    handle_repository_favorites_remove as _handle_repository_favorites_remove_request,
+    handle_repository_favorites_save as _handle_repository_favorites_save_request,
+    handle_repository_search as _handle_repository_search_request,
     handle_source_meta as _handle_source_meta_request,
 )
 from play_book_studio.app.chat_debug import (
@@ -205,6 +215,12 @@ def _build_handler(
             if request_path == "/api/customer-packs/support-matrix":
                 self._handle_customer_pack_support_matrix(parsed_request.query)
                 return
+            if request_path == "/api/sessions":
+                self._handle_sessions_list(parsed_request.query)
+                return
+            if request_path == "/api/sessions/load":
+                self._handle_session_load(parsed_request.query)
+                return
             if request_path == "/api/debug/session":
                 self._handle_debug_session(parsed_request.query)
                 return
@@ -213,6 +229,12 @@ def _build_handler(
                 return
             if request_path == "/api/source-meta":
                 self._handle_source_meta(parsed_request.query)
+                return
+            if request_path == "/api/repositories/search":
+                self._handle_repository_search(parsed_request.query)
+                return
+            if request_path == "/api/repositories/favorites":
+                self._handle_repository_favorites(parsed_request.query)
                 return
             if request_path == "/api/customer-packs/drafts":
                 self._handle_customer_pack_drafts(parsed_request.query)
@@ -252,6 +274,12 @@ def _build_handler(
             if self.path == "/api/chat/stream":
                 self._handle_chat_stream(payload)
                 return
+            if self.path == "/api/sessions/delete":
+                self._handle_session_delete(payload)
+                return
+            if self.path == "/api/sessions/delete-all":
+                self._handle_sessions_delete_all(payload)
+                return
             if self.path == "/api/customer-packs/plan":
                 self._handle_customer_pack_plan(payload)
                 return
@@ -261,11 +289,23 @@ def _build_handler(
             if self.path == "/api/customer-packs/upload-draft":
                 self._handle_customer_pack_upload_draft(payload)
                 return
+            if self.path == "/api/customer-packs/ingest":
+                self._handle_customer_pack_ingest(payload)
+                return
             if self.path == "/api/customer-packs/capture":
                 self._handle_customer_pack_capture(payload)
                 return
             if self.path == "/api/customer-packs/normalize":
                 self._handle_customer_pack_normalize(payload)
+                return
+            if self.path == "/api/customer-packs/delete-draft":
+                self._handle_customer_pack_delete_draft(payload)
+                return
+            if self.path == "/api/repositories/favorites":
+                self._handle_repository_favorites_save(payload)
+                return
+            if self.path == "/api/repositories/favorites/remove":
+                self._handle_repository_favorites_remove(payload)
                 return
             if self.path == "/api/reset":
                 self._handle_reset(payload)
@@ -279,12 +319,38 @@ def _build_handler(
                 root_dir=root_dir,
             )
 
+        def _handle_repository_search(self, query: str) -> None:
+            _handle_repository_search_request(
+                self,
+                query,
+                root_dir=root_dir,
+            )
+
+        def _handle_repository_favorites(self, query: str) -> None:
+            _handle_repository_favorites_request(
+                self,
+                query,
+                root_dir=root_dir,
+            )
+
         def _handle_data_control_room(self, query: str) -> None:
             _handle_data_control_room_request(
                 self,
                 query,
                 root_dir=root_dir,
             )
+
+        def _handle_sessions_list(self, query: str) -> None:
+            _handle_sessions_list_request(self, query, store=store)
+
+        def _handle_session_load(self, query: str) -> None:
+            _handle_session_load_request(self, query, store=store)
+
+        def _handle_session_delete(self, payload: dict[str, Any]) -> None:
+            _handle_session_delete_request(self, payload, store=store)
+
+        def _handle_sessions_delete_all(self, payload: dict[str, Any]) -> None:
+            _handle_sessions_delete_all_request(self, payload, store=store)
 
         def _handle_debug_session(self, query: str) -> None:
             _handle_debug_session_request(
@@ -346,6 +412,13 @@ def _build_handler(
                 root_dir=root_dir,
             )
 
+        def _handle_customer_pack_ingest(self, payload: dict[str, Any]) -> None:
+            _handle_customer_pack_ingest_request(
+                self,
+                payload,
+                root_dir=root_dir,
+            )
+
         def _handle_customer_pack_capture(self, payload: dict[str, Any]) -> None:
             _handle_customer_pack_capture_request(
                 self,
@@ -355,6 +428,27 @@ def _build_handler(
 
         def _handle_customer_pack_normalize(self, payload: dict[str, Any]) -> None:
             _handle_customer_pack_normalize_request(
+                self,
+                payload,
+                root_dir=root_dir,
+            )
+
+        def _handle_customer_pack_delete_draft(self, payload: dict[str, Any]) -> None:
+            _handle_customer_pack_delete_draft_request(
+                self,
+                payload,
+                root_dir=root_dir,
+            )
+
+        def _handle_repository_favorites_save(self, payload: dict[str, Any]) -> None:
+            _handle_repository_favorites_save_request(
+                self,
+                payload,
+                root_dir=root_dir,
+            )
+
+        def _handle_repository_favorites_remove(self, payload: dict[str, Any]) -> None:
+            _handle_repository_favorites_remove_request(
                 self,
                 payload,
                 root_dir=root_dir,
@@ -435,4 +529,3 @@ __all__ = [
     "SessionStore",
     "serve",
 ]
-

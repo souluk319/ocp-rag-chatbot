@@ -21,7 +21,9 @@ export interface LibraryBucket {
 }
 
 export interface DataControlRoomSummary {
+  known_book_count: number;
   approved_runtime_count: number;
+  gold_book_count: number;
   manualbook_count: number;
   topic_playbook_count: number;
   derived_playbook_count: number;
@@ -37,6 +39,7 @@ export interface DataControlRoomResponse {
     viewer_path_prefix: string;
   };
   summary: DataControlRoomSummary;
+  known_books: LibraryBook[];
   gold_books: LibraryBook[];
   manualbooks: LibraryBucket;
   topic_playbooks: LibraryBucket;
@@ -44,6 +47,11 @@ export interface DataControlRoomResponse {
   troubleshooting_playbooks: LibraryBucket;
   policy_overlay_books: LibraryBucket;
   synthesized_playbooks: LibraryBucket;
+  source_of_truth_drift?: {
+    status_alignment?: {
+      mismatches?: string[];
+    };
+  };
 }
 
 export interface ChatCitation {
@@ -135,6 +143,67 @@ export interface CustomerPackBook {
   source_type: string;
 }
 
+export type RepositoryCategory =
+  | 'Official Docs'
+  | 'Enterprise Knowledge'
+  | 'Operations Demo'
+  | 'Troubleshooting';
+
+export interface RepositoryDocsSignals {
+  score: number;
+  inspection_status: string;
+  has_readme: boolean;
+  has_docs_dir: boolean;
+  has_demo_assets: boolean;
+  doc_keyword_hits: number;
+  troubleshooting_hits: number;
+  demo_hits: number;
+  entry_names: string[];
+  summary: string;
+}
+
+export interface RepositorySearchResult {
+  id: number;
+  name: string;
+  full_name: string;
+  owner_login: string;
+  html_url: string;
+  description: string;
+  stargazers_count: number;
+  updated_at: string;
+  language: string;
+  default_branch: string;
+  topics: string[];
+  archived: boolean;
+  docs_signals: RepositoryDocsSignals;
+  suggested_category: RepositoryCategory;
+  is_favorite: boolean;
+  favorite_category: RepositoryCategory | '';
+  ranking_score: number;
+}
+
+export interface RepositorySearchResponse {
+  query: string;
+  rewritten_query: string;
+  count: number;
+  auth_mode: 'token' | 'public';
+  categories: RepositoryCategory[];
+  results: RepositorySearchResult[];
+}
+
+export interface RepositoryFavorite extends Omit<RepositorySearchResult, 'is_favorite' | 'favorite_category' | 'archived' | 'ranking_score'> {
+  favorite_category: RepositoryCategory;
+  saved_at: string;
+}
+
+export interface RepositoryFavoritesResponse {
+  count: number;
+  categories: RepositoryCategory[];
+  updated_at: string;
+  items: RepositoryFavorite[];
+  groups: Record<string, RepositoryFavorite[]>;
+}
+
 export interface SourceMetaResponse {
   book_slug: string;
   book_title: string;
@@ -147,6 +216,26 @@ export interface SourceMetaResponse {
   section_match_exact: boolean;
   source_collection?: string;
   pack_label?: string;
+}
+
+export interface SessionSummary {
+  session_id: string;
+  session_name: string;
+  turn_count: number;
+  updated_at: string;
+  first_query: string;
+}
+
+export interface SessionListResponse {
+  sessions: SessionSummary[];
+  count: number;
+}
+
+export interface SessionSnapshot {
+  session_id: string;
+  session_name: string;
+  turns: Array<{ query: string; answer: string; turn_id: string; created_at: string }>;
+  updated_at: string;
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
@@ -184,6 +273,35 @@ export function toRuntimeUrl(path: string): string {
 
 export async function loadDataControlRoom(): Promise<DataControlRoomResponse> {
   return requestJson<DataControlRoomResponse>('/api/data-control-room');
+}
+
+export async function searchRepositories(query: string, limit = 12): Promise<RepositorySearchResponse> {
+  const params = new URLSearchParams({
+    query,
+    limit: String(limit),
+  });
+  return requestJson<RepositorySearchResponse>(`/api/repositories/search?${params.toString()}`);
+}
+
+export async function loadRepositoryFavorites(): Promise<RepositoryFavoritesResponse> {
+  return requestJson<RepositoryFavoritesResponse>('/api/repositories/favorites');
+}
+
+export async function saveRepositoryFavorites(
+  category: RepositoryCategory,
+  repositories: RepositorySearchResult[],
+): Promise<RepositoryFavoritesResponse> {
+  return requestJson<RepositoryFavoritesResponse>('/api/repositories/favorites', {
+    method: 'POST',
+    body: JSON.stringify({ category, repositories }),
+  });
+}
+
+export async function removeRepositoryFavorite(fullName: string): Promise<RepositoryFavoritesResponse> {
+  return requestJson<RepositoryFavoritesResponse>('/api/repositories/favorites/remove', {
+    method: 'POST',
+    body: JSON.stringify({ full_name: fullName }),
+  });
 }
 
 export async function sendChat(payload: {
@@ -286,6 +404,36 @@ export async function captureCustomerPackDraft(draftId: string): Promise<Custome
 
 export async function normalizeCustomerPackDraft(draftId: string): Promise<CustomerPackDraft> {
   return requestJson<CustomerPackDraft>('/api/customer-packs/normalize', {
+    method: 'POST',
+    body: JSON.stringify({ draft_id: draftId }),
+  });
+}
+
+export async function listSessions(limit = 50): Promise<SessionListResponse> {
+  return requestJson<SessionListResponse>(`/api/sessions?limit=${limit}`);
+}
+
+export async function loadSession(sessionId: string): Promise<SessionSnapshot> {
+  return requestJson<SessionSnapshot>(`/api/sessions/load?session_id=${encodeURIComponent(sessionId)}`);
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  await requestJson<{ success: boolean; session_id: string }>('/api/sessions/delete', {
+    method: 'POST',
+    body: JSON.stringify({ session_id: sessionId }),
+  });
+}
+
+export async function deleteAllSessions(): Promise<number> {
+  const payload = await requestJson<{ success: boolean; deleted_count: number }>('/api/sessions/delete-all', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+  return Number(payload.deleted_count || 0);
+}
+
+export async function deleteCustomerPackDraft(draftId: string): Promise<void> {
+  await requestJson<{ success: boolean }>('/api/customer-packs/delete-draft', {
     method: 'POST',
     body: JSON.stringify({ draft_id: draftId }),
   });

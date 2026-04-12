@@ -41,6 +41,149 @@ def _score_group(case_results: list[dict], ks: Iterable[int]) -> dict[str, float
     return scores
 
 
+def _score_stage_group(
+    case_results: list[dict],
+    *,
+    stage_key: str,
+    ks: Iterable[int],
+) -> dict[str, float]:
+    total = len(case_results)
+    if total == 0:
+        return {f"hit@{k}": 0.0 for k in ks}
+    scores: dict[str, float] = {}
+    for k in ks:
+        hits = sum(
+            1
+            for case in case_results
+            if hit_at_k(
+                [str(item) for item in case.get(stage_key, [])],
+                case["expected_book_slugs"],
+                k,
+            )
+        )
+        scores[f"hit@{k}"] = round(hits / total, 4)
+    return scores
+
+
+def build_stage_ablation_summary(
+    case_results: list[dict],
+    *,
+    ks: tuple[int, ...],
+) -> dict[str, object]:
+    total = len(case_results)
+    rewrite_reason_counts: dict[str, int] = defaultdict(int)
+    vector_endpoint_counts: dict[str, int] = defaultdict(int)
+    hybrid_top_support_counts: dict[str, int] = defaultdict(int)
+    rerank_reason_counts: dict[str, int] = defaultdict(int)
+
+    for case in case_results:
+        rewrite_reason = str(case.get("rewrite_reason", "")).strip()
+        if rewrite_reason:
+            rewrite_reason_counts[rewrite_reason] += 1
+        vector_endpoint = str(case.get("vector_endpoint_used", "")).strip()
+        if vector_endpoint:
+            vector_endpoint_counts[vector_endpoint] += 1
+        hybrid_top_support = str(case.get("hybrid_top_support", "")).strip()
+        if hybrid_top_support:
+            hybrid_top_support_counts[hybrid_top_support] += 1
+        for reason in case.get("rerank_reasons", []):
+            rerank_reason = str(reason).strip()
+            if rerank_reason:
+                rerank_reason_counts[rerank_reason] += 1
+
+    stage_scores = {
+        "bm25": _score_stage_group(case_results, stage_key="bm25_top_book_slugs", ks=ks),
+        "vector": _score_stage_group(case_results, stage_key="vector_top_book_slugs", ks=ks),
+        "hybrid": _score_stage_group(case_results, stage_key="hybrid_top_book_slugs", ks=ks),
+        "reranked": _score_stage_group(case_results, stage_key="reranked_top_book_slugs", ks=ks),
+    }
+
+    hybrid_hit_at_1_cases = sum(
+        1
+        for case in case_results
+        if hit_at_k(
+            [str(item) for item in case.get("hybrid_top_book_slugs", [])],
+            case["expected_book_slugs"],
+            1,
+        )
+    )
+    rerank_regressions = sum(
+        1
+        for case in case_results
+        if hit_at_k(
+            [str(item) for item in case.get("hybrid_top_book_slugs", [])],
+            case["expected_book_slugs"],
+            1,
+        )
+        and not hit_at_k(
+            [str(item) for item in case.get("reranked_top_book_slugs", [])],
+            case["expected_book_slugs"],
+            1,
+        )
+    )
+
+    overall_metrics = {
+        f"{stage_name}_hit@{k}": stage_scores[stage_name][f"hit@{k}"]
+        for stage_name in ("bm25", "vector", "hybrid", "reranked")
+        for k in ks
+    }
+    overall_metrics.update(
+        {
+            "vector_empty_rate": round(
+                sum(int(not case.get("vector_top_book_slugs")) for case in case_results) / total,
+                4,
+            )
+            if total
+            else 0.0,
+            "hybrid_lift_over_bm25_at_5": round(
+                stage_scores["hybrid"].get("hit@5", 0.0) - stage_scores["bm25"].get("hit@5", 0.0),
+                4,
+            ),
+            "rerank_lift_over_hybrid_at_1": round(
+                stage_scores["reranked"].get("hit@1", 0.0) - stage_scores["hybrid"].get("hit@1", 0.0),
+                4,
+            ),
+            "rerank_regression_rate_at_1": round(rerank_regressions / total, 4) if total else 0.0,
+            "rewrite_applied_rate": round(
+                sum(int(bool(case.get("rewrite_applied", False))) for case in case_results) / total,
+                4,
+            )
+            if total
+            else 0.0,
+            "follow_up_detected_rate": round(
+                sum(int(bool(case.get("follow_up_detected", False))) for case in case_results) / total,
+                4,
+            )
+            if total
+            else 0.0,
+            "rerank_top1_changed_rate": round(
+                sum(int(bool(case.get("rerank_top1_changed", False))) for case in case_results) / total,
+                4,
+            )
+            if total
+            else 0.0,
+        }
+    )
+
+    return {
+        "case_count": total,
+        "overall": overall_metrics,
+        "stages": stage_scores,
+        "vector_empty_rate": overall_metrics["vector_empty_rate"],
+        "hybrid_lift_over_bm25_at_5": overall_metrics["hybrid_lift_over_bm25_at_5"],
+        "rerank_lift_over_hybrid_at_1": overall_metrics["rerank_lift_over_hybrid_at_1"],
+        "rerank_regression_rate_at_1": overall_metrics["rerank_regression_rate_at_1"],
+        "rewrite_applied_rate": overall_metrics["rewrite_applied_rate"],
+        "follow_up_detected_rate": overall_metrics["follow_up_detected_rate"],
+        "rerank_top1_changed_rate": overall_metrics["rerank_top1_changed_rate"],
+        "hybrid_hit_at_1_case_count": hybrid_hit_at_1_cases,
+        "rewrite_reason_counts": dict(sorted(rewrite_reason_counts.items())),
+        "vector_endpoint_counts": dict(sorted(vector_endpoint_counts.items())),
+        "hybrid_top_support_counts": dict(sorted(hybrid_top_support_counts.items())),
+        "rerank_reason_counts": dict(sorted(rerank_reason_counts.items())),
+    }
+
+
 def classify_graph_signal(case: dict, *, max_k: int) -> tuple[str, str]:
     warnings = [str(item) for item in case.get("warnings", [])]
     if any("outside OCP corpus" in warning for warning in warnings):
@@ -151,6 +294,7 @@ def summarize_case_results(
     return {
         "case_count": len(case_results),
         "overall": _score_group(case_results, ks),
+        "stage_ablation": build_stage_ablation_summary(case_results, ks=ks),
         "by_query_type": {
             query_type: _score_group(items, ks)
             for query_type, items in sorted(by_query_type.items())

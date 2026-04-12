@@ -12,6 +12,7 @@ if str(TESTS) not in sys.path:
 from _support_retrieval import (
     detect_out_of_corpus_version,
     detect_unsupported_product,
+    build_retrieval_plan,
     fuse_ranked_hits,
     has_cluster_node_usage_intent,
     has_follow_up_entity_ambiguity,
@@ -82,6 +83,21 @@ class TestRetrievalQueryIntents(unittest.TestCase):
         self.assertIn("개요", normalized)
         self.assertNotIn("overview", normalized)
 
+    def test_normalize_query_treats_spaced_openshift_intro_as_intro_query(self) -> None:
+        normalized = normalize_query("오픈 시프트가 뭐야?")
+
+        self.assertIn("소개", normalized)
+        self.assertIn("개요", normalized)
+        self.assertIn("기본", normalized)
+        self.assertIn("개념", normalized)
+
+    def test_normalize_query_treats_openshift_usage_question_as_intro_query(self) -> None:
+        normalized = normalize_query("오픈시프트는 어떤 곳에 쓰여?")
+
+        self.assertIn("소개", normalized)
+        self.assertIn("기본", normalized)
+        self.assertIn("개념", normalized)
+
     def test_normalize_query_expands_openshift_kubernetes_compare_intent(self) -> None:
         normalized = normalize_query("오픈시프트와 쿠버네티스 차이를 세 줄로 설명해줘")
 
@@ -150,6 +166,48 @@ class TestRetrievalQueryIntents(unittest.TestCase):
         self.assertIn("admin", normalized)
         self.assertIn("주제 RBAC 권한 부여", rewritten)
         self.assertIn("OCP 4.20", rewritten)
+
+    def test_build_retrieval_plan_exposes_follow_up_and_rewrite_diagnostics(self) -> None:
+        plan = build_retrieval_plan(
+            "그 복구는 어떻게 해?",
+            context=SessionContext(
+                current_topic="etcd 백업",
+                unresolved_question="etcd 백업 이후 복구 절차",
+                ocp_version="4.20",
+            ),
+            candidate_k=20,
+        )
+
+        self.assertTrue(plan.follow_up_detected)
+        self.assertTrue(plan.rewrite_applied)
+        self.assertTrue(plan.rewrite_reason)
+        self.assertIn("follow", plan.rewrite_reason)
+        self.assertNotEqual(plan.normalized_query, plan.rewritten_query)
+
+    def test_rewrite_query_strips_numeric_section_prefix_from_context_topic(self) -> None:
+        rewritten = rewrite_query(
+            "다시 보여줘",
+            SessionContext(
+                current_topic="7.2.1. 노드 상태, 리소스 사용량 및 구성 확인",
+                unresolved_question="클러스터 기본 상태 확인",
+                ocp_version="4.20",
+            ),
+        )
+
+        self.assertIn("주제 노드 상태, 리소스 사용량 및 구성 확인", rewritten)
+        self.assertNotIn("주제 7.2.1.", rewritten)
+
+    def test_build_retrieval_plan_marks_standalone_query_as_not_rewritten(self) -> None:
+        plan = build_retrieval_plan(
+            "오픈시프트 아키텍처를 설명해줘",
+            context=SessionContext(),
+            candidate_k=20,
+        )
+
+        self.assertFalse(plan.follow_up_detected)
+        self.assertFalse(plan.rewrite_applied)
+        self.assertIn(plan.rewrite_reason, {"no_context", "no_rewrite_needed"})
+        self.assertEqual(plan.normalized_query, plan.rewritten_query)
 
     def test_normalize_query_expands_rbac_verify_follow_up_terms(self) -> None:
         normalized = normalize_query("그 권한이 잘 들어갔는지 확인하는 명령도 알려줘")

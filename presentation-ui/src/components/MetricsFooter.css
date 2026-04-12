@@ -6,7 +6,7 @@
   align-items: center;
   background: var(--bg-color);
   position: relative;
-  border-top: 1px solid rgba(255,255,255,0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .metrics-content {
@@ -88,7 +88,7 @@
   font-size: 1.2rem;
   font-weight: 600;
   color: var(--text-main);
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--glass-border);
   border-radius: 50px;
   text-decoration: none;
@@ -98,7 +98,7 @@
 
 .btn-secondary:hover {
   transform: translateY(-5px);
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .footer-bottom {
@@ -107,5 +107,5 @@
   text-align: center;
   color: var(--text-dim);
   font-size: 0.9rem;
-  border-top: 1px solid rgba(255,255,255,0.02);
+  border-top: 1px solid rgba(255, 255, 255, 0.02);
 }

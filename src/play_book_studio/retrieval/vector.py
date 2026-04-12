@@ -55,6 +55,10 @@ class VectorRetriever:
         self.embedding_client = EmbeddingClient(settings)
 
     def search(self, query: str, top_k: int) -> list[RetrievalHit]:
+        hits, _runtime = self.search_with_trace(query, top_k)
+        return hits
+
+    def search_with_trace(self, query: str, top_k: int) -> tuple[list[RetrievalHit], dict[str, Any]]:
         vector = self.embedding_client.embed_texts([query])[0]
         payloads = [
             (
@@ -78,7 +82,11 @@ class VectorRetriever:
         ]
 
         last_error = "vector search failed"
+        attempted_endpoints: list[str] = []
+        errors: list[dict[str, str]] = []
         for url, payload in payloads:
+            endpoint_name = url.rsplit("/", maxsplit=1)[-1]
+            attempted_endpoints.append(endpoint_name)
             response = requests.post(
                 url,
                 json=payload,
@@ -86,6 +94,7 @@ class VectorRetriever:
             )
             if not response.ok:
                 last_error = response.text[:500]
+                errors.append({"endpoint": endpoint_name, "error": last_error})
                 continue
             result = response.json()["result"]
             points = result["points"] if isinstance(result, dict) and "points" in result else result
@@ -101,6 +110,15 @@ class VectorRetriever:
                         score=float(point.get("score", 0.0)),
                     )
                 )
-            return hits
+            return (
+                hits,
+                {
+                    "endpoint_used": endpoint_name,
+                    "attempted_endpoints": attempted_endpoints,
+                    "errors": errors,
+                    "hit_count": len(hits),
+                    "top_score": float(points[0].get("score", 0.0)) if points else None,
+                },
+            )
 
         raise ValueError(last_error)

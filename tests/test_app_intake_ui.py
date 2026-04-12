@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 import tempfile
 import sys
@@ -19,6 +20,7 @@ from _support_app_ui import (
     _capture_customer_pack_draft,
     _create_customer_pack_draft,
     _customer_pack_meta_for_viewer_path,
+    _ingest_customer_pack,
     _internal_customer_pack_viewer_html,
     _list_customer_pack_drafts,
     _load_customer_pack_book,
@@ -147,6 +149,73 @@ class TestAppIntakeUi(unittest.TestCase):
         self.assertEqual("guide.pdf", loaded["uploaded_file_name"])
         self.assertEqual(str(uploaded_path), loaded["uploaded_file_path"])
         self.assertEqual(b"%PDF-1.4 sample", uploaded_bytes)
+
+    def test_uploaded_binary_sources_normalize_via_stubbed_conversion(self) -> None:
+        cases = [
+            {
+                "source_type": "docx",
+                "file_name": "runbook.docx",
+                "content": b"fake-docx-bytes",
+                "patch_target": "play_book_studio.intake.normalization.builders.convert_with_markitdown",
+                "markdown": "# 운영 런북\n\n## 백업\n\ncluster-backup.sh",
+                "expected_heading": "백업",
+                "expected_text": "cluster-backup.sh",
+            },
+            {
+                "source_type": "pptx",
+                "file_name": "runbook.pptx",
+                "content": b"fake-pptx-bytes",
+                "patch_target": "play_book_studio.intake.normalization.builders.convert_with_markitdown",
+                "markdown": "# 운영 런북\n\n## 복구\n\noc delete pod -l app=example",
+                "expected_heading": "복구",
+                "expected_text": "oc delete pod -l app=example",
+            },
+            {
+                "source_type": "xlsx",
+                "file_name": "runbook.xlsx",
+                "content": b"fake-xlsx-bytes",
+                "patch_target": "play_book_studio.intake.normalization.builders.convert_with_markitdown",
+                "markdown": "# 운영 런북\n\n## 시트1\n\n[TABLE]\n절차 | 명령어\n백업 | cluster-backup.sh\n[/TABLE]",
+                "expected_heading": "시트1",
+                "expected_text": "[TABLE]",
+            },
+            {
+                "source_type": "pdf",
+                "file_name": "runbook.pdf",
+                "content": b"%PDF-1.4 sample",
+                "patch_target": "play_book_studio.intake.normalization.builders.convert_with_markitdown",
+                "markdown": "## 운영 런북\n\n## 백업 절차\n\ncluster-backup.sh",
+                "expected_heading": "백업 절차",
+                "expected_text": "cluster-backup.sh",
+            },
+        ]
+
+        for case in cases:
+            with self.subTest(source_type=case["source_type"]), tempfile.TemporaryDirectory() as tmpdir:
+                root = Path(tmpdir)
+                created = _upload_customer_pack_draft(
+                    root,
+                    {
+                        "source_type": case["source_type"],
+                        "uri": case["file_name"],
+                        "title": "업로드 런북",
+                        "file_name": case["file_name"],
+                        "content_base64": base64.b64encode(case["content"]).decode("ascii"),
+                    },
+                )
+                _capture_customer_pack_draft(root, {"draft_id": str(created["draft_id"])})
+
+                with patch(case["patch_target"], return_value=case["markdown"]):
+                    normalized = _normalize_customer_pack_draft(root, {"draft_id": str(created["draft_id"])})
+                    book = _load_customer_pack_book(root, str(created["draft_id"]))
+
+                self.assertEqual("normalized", normalized["status"])
+                self.assertIsNotNone(book)
+                assert book is not None
+                self.assertEqual(case["source_type"], book["source_type"])
+                self.assertEqual("업로드 런북", book["title"])
+                self.assertTrue(any(case["expected_heading"] in section["heading"] for section in book["sections"]))
+                self.assertTrue(any(case["expected_text"] in section["text"] for section in book["sections"]))
 
     def test_list_customer_pack_drafts_returns_saved_summary(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -284,6 +353,59 @@ class TestAppIntakeUi(unittest.TestCase):
         self.assertIsNotNone(derived_viewer_html)
         assert derived_viewer_html is not None
         self.assertIn("Topic Playbook", derived_viewer_html)
+
+    def test_ingest_customer_pack_runs_capture_and_normalize_in_one_call(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source_md = root / "runbook.md"
+            source_md.write_text(
+                "# 운영 런북\n\n## etcd 백업\n\n```bash\ncluster-backup.sh /backup\n```\n\n## 검증\n\n완료 여부를 점검합니다.\n",
+                encoding="utf-8",
+            )
+
+            normalized = _ingest_customer_pack(
+                root,
+                {
+                    "source_type": "md",
+                    "uri": str(source_md),
+                    "title": "운영 런북",
+                },
+            )
+
+        self.assertEqual("normalized", normalized["status"])
+        self.assertEqual(6, normalized["playable_asset_count"])
+        self.assertEqual(5, normalized["derived_asset_count"])
+        self.assertIn("book", normalized)
+        self.assertEqual(str(normalized["draft_id"]), normalized["book"]["draft_id"])
+        self.assertIn("/playbooks/customer-packs/", normalized["book"]["target_viewer_path"])
+
+    def test_internal_customer_pack_viewer_renders_markdown_code_and_table_blocks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source_md = root / "runbook.md"
+            source_md.write_text(
+                "# 운영 런북\n\n## etcd 백업\n\n```bash\ncluster-backup.sh /backup\n```\n\n| 절차 | 명령어 |\n| --- | --- |\n| 백업 | cluster-backup.sh |\n",
+                encoding="utf-8",
+            )
+
+            normalized = _ingest_customer_pack(
+                root,
+                {
+                    "source_type": "md",
+                    "uri": str(source_md),
+                    "title": "운영 런북",
+                },
+            )
+            viewer_html = _internal_customer_pack_viewer_html(
+                root,
+                f"/playbooks/customer-packs/{normalized['draft_id']}/index.html",
+            )
+
+        self.assertIsNotNone(viewer_html)
+        assert viewer_html is not None
+        self.assertIn('<pre><code>cluster-backup.sh /backup</code></pre>', viewer_html)
+        self.assertIn("<table>", viewer_html)
+        self.assertNotIn("<p>| 절차 | 명령어 |", viewer_html)
 
     def test_customer_pack_meta_prefers_captured_source_url_and_quality(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -800,4 +922,3 @@ class TestAppIntakeUi(unittest.TestCase):
         self.assertIsNotNone(viewer_html)
         assert viewer_html is not None
         self.assertIn("업로드 PDF를 canonical section으로 정리한 내부 review view입니다.", viewer_html)
-

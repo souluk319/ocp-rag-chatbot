@@ -82,6 +82,36 @@ window.createPanelController = function createPanelController(deps) {
     refs.sourceViewerFrameEl.removeAttribute("src");
   }
 
+  function captureScrollState() {
+    return {
+      windowX: window.scrollX,
+      windowY: window.scrollY,
+      messageScrollTop: refs.messagesEl ? refs.messagesEl.scrollTop : 0,
+    };
+  }
+
+  function restoreMessageScroll(scrollTop) {
+    if (!refs.messagesEl) {
+      return;
+    }
+    refs.messagesEl.scrollTop = scrollTop;
+  }
+
+  function preserveScrollState(snapshot) {
+    if (!snapshot) {
+      return;
+    }
+    const { windowX, windowY, messageScrollTop } = snapshot;
+    window.requestAnimationFrame(() => {
+      window.scrollTo(windowX, windowY);
+      restoreMessageScroll(messageScrollTop);
+      window.requestAnimationFrame(() => {
+        window.scrollTo(windowX, windowY);
+        restoreMessageScroll(messageScrollTop);
+      });
+    });
+  }
+
   function buildEmbeddedViewerHref(viewerPath) {
     if (!viewerPath) {
       return "";
@@ -111,10 +141,12 @@ window.createPanelController = function createPanelController(deps) {
 
   async function openSourcePanel(citation) {
     if (!citation) return;
+    const scrollState = captureScrollState();
 
     state.activeSourceKey = sourceKeyFor(citation);
     syncActiveSourceTags();
     setSourcePanelVisible(true);
+    preserveScrollState(scrollState);
 
     const href = citation.href || "";
     const viewerPath = citation.viewer_path
@@ -127,6 +159,7 @@ window.createPanelController = function createPanelController(deps) {
       callbacks.setSourceFrameLoading(true);
       refs.sourceViewerFrameEl.removeAttribute("src");
       refs.sourceViewerFrameEl.src = viewerHref;
+      preserveScrollState(scrollState);
     } else {
       setSourceEmptyState();
     }

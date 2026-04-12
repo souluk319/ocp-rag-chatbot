@@ -67,6 +67,7 @@ window.createAppBootstrap = function createAppBootstrap(deps) {
       refs: {
         leftPanelToggleBtn: refs.leftPanelToggleBtn,
         leftRailToggleBtn: refs.leftRailToggleBtn,
+        messagesEl: refs.messagesEl,
         shellEl: refs.shellEl,
         sourceFrameShellEl: refs.sourceFrameShellEl,
         sourcePanelEdgeBtn: refs.sourcePanelEdgeBtn,

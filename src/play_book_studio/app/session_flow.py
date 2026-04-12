@@ -1,7 +1,6 @@
 # 채팅 세션 문맥, follow-up, 추천 질문 규칙을 담당한다.
 from __future__ import annotations
 
-import re
 from typing import Any
 
 from play_book_studio.answering.models import AnswerResult
@@ -9,6 +8,7 @@ from play_book_studio.app.next_play_planner import build_next_play_plan
 from play_book_studio.app.sessions import ChatSession, RUNTIME_CHAT_MODE
 from play_book_studio.config.packs import default_core_pack
 from play_book_studio.retrieval.models import SessionContext
+from play_book_studio.retrieval.text_utils import strip_section_prefix
 from play_book_studio.retrieval.query import (
     ARCHITECTURE_RE,
     ETCD_RE,
@@ -70,7 +70,6 @@ def is_task_topic(topic: str) -> bool:
         "RBAC",
         "Machine Config Operator",
         "OpenShift 아키텍처",
-        "OpenShift",
         "Route와 Ingress 비교",
     }
 
@@ -94,7 +93,9 @@ def infer_explicit_topic(query: str) -> str | None:
     if OPENSHIFT_RE.search(normalized) or OCP_RE.search(normalized):
         if ARCHITECTURE_RE.search(normalized):
             return "OpenShift 아키텍처"
-        return "OpenShift"
+        if is_generic_intro_query(normalized):
+            return "OpenShift"
+        return None
     return None
 
 
@@ -133,7 +134,7 @@ def derive_next_context(
     prior_goal = (next_context.user_goal or "").strip()
     prior_unresolved = (next_context.unresolved_question or "").strip()
 
-    if result.response_kind in {"smalltalk", "meta"}:
+    if result.response_kind in {"smalltalk", "meta", "guide"}:
         return next_context
     if result.response_kind in {"clarification", "no_answer"}:
         if normalized_query and not follow_up_reference:
@@ -156,7 +157,9 @@ def derive_next_context(
     elif result.citations:
         primary = result.citations[0]
         if not (follow_up_reference and is_task_topic(next_context.current_topic or "")):
-            next_context.current_topic = primary.section or next_context.current_topic
+            primary_topic = strip_section_prefix(primary.section) or next_context.current_topic
+            next_context.current_topic = primary_topic
+            next_context.open_entities = infer_open_entities(primary_topic or "")
         next_context.unresolved_question = None
     else:
         next_context.unresolved_question = query
@@ -181,15 +184,6 @@ def dedupe_suggestions(candidates: list[str], *, query: str, limit: int = 3) -> 
     return unique
 
 
-def _strip_topic_prefix(value: str) -> str:
-    text = (value or "").strip()
-    if not text:
-        return ""
-    last_segment = text.split(">")[-1].strip()
-    cleaned = re.sub(r"^\d+(?:\.\d+)*\.?\s*", "", last_segment).strip()
-    return cleaned or last_segment
-
-
 def _suggestion_subject(
     *,
     query: str,
@@ -207,11 +201,11 @@ def _suggestion_subject(
     if "operator" in lowered:
         return "Operator"
     if topic:
-        stripped_topic = _strip_topic_prefix(topic)
+        stripped_topic = strip_section_prefix(topic)
         if stripped_topic:
             return stripped_topic
     if primary is not None:
-        section = _strip_topic_prefix(getattr(primary, "section", ""))
+        section = strip_section_prefix(getattr(primary, "section", ""))
         if section:
             return section
     explicit = infer_explicit_topic(normalized)

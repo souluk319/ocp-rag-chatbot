@@ -113,21 +113,52 @@ class TestAnsweringRoutes(unittest.TestCase):
         self.assertEqual([], result.citations)
         self.assertFalse(result.warnings)
 
-    def test_answerer_routes_generic_ocp_intro_without_retrieval(self) -> None:
+    def test_answerer_routes_generic_ocp_intro_through_grounded_retrieval(self) -> None:
         settings = Settings(root_dir=ROOT)
         answerer = ChatAnswerer(
             settings=settings,
-            retriever=_ExplodingRetriever(),
+            retriever=_FakeRetriever(),
             llm_client=_FakeLLMClient(),
         )
 
         result = answerer.answer("OCP가 뭐야?", mode="learn")
 
-        self.assertEqual("guide", result.response_kind)
-        self.assertIn("오픈시프트", result.answer)
-        self.assertIn("쿠버네티스", result.answer)
-        self.assertIn("엔터프라이즈 컨테이너 플랫폼", result.answer)
-        self.assertEqual([], result.citations)
+        self.assertEqual("rag", result.response_kind)
+        self.assertNotEqual([], result.citations)
+        self.assertEqual("architecture", result.citations[0].book_slug)
+        self.assertIn("[1]", result.answer)
+        self.assertIn("컨트롤 플레인", result.answer)
+
+    def test_answerer_routes_ocp_role_usage_intro_through_grounded_retrieval(self) -> None:
+        settings = Settings(root_dir=ROOT)
+        answerer = ChatAnswerer(
+            settings=settings,
+            retriever=_FakeRetriever(),
+            llm_client=_FakeLLMClient(),
+        )
+
+        result = answerer.answer("오픈시프트는 실무에서 어디에 써?", mode="learn")
+
+        self.assertEqual("rag", result.response_kind)
+        self.assertNotEqual([], result.citations)
+        self.assertEqual("architecture", result.citations[0].book_slug)
+        self.assertIn("[1]", result.answer)
+        self.assertIn("컨트롤 플레인", result.answer)
+
+    def test_answerer_routes_spaced_ocp_intro_through_grounded_retrieval(self) -> None:
+        settings = Settings(root_dir=ROOT)
+        answerer = ChatAnswerer(
+            settings=settings,
+            retriever=_FakeRetriever(),
+            llm_client=_FakeLLMClient(),
+        )
+
+        result = answerer.answer("오픈 시프트가 뭐야?", mode="learn")
+
+        self.assertEqual("rag", result.response_kind)
+        self.assertNotEqual([], result.citations)
+        self.assertEqual("architecture", result.citations[0].book_slug)
+        self.assertIn("[1]", result.answer)
 
     def test_answerer_routes_ocp_learning_advice_without_retrieval(self) -> None:
         settings = Settings(root_dir=ROOT)

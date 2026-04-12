@@ -110,6 +110,12 @@ def execute_retrieval_pipeline(
         status="done",
         detail=plan.rewritten_query[:180],
         duration_ms=timings_ms["rewrite_query"],
+        meta={
+            "rewrite_applied": plan.rewrite_applied,
+            "rewrite_reason": plan.rewrite_reason,
+            "follow_up_detected": plan.follow_up_detected,
+            "subquery_count": len(plan.rewritten_queries),
+        },
     )
     if len(plan.decomposed_queries) > 1:
         _emit_trace_event(
@@ -135,6 +141,32 @@ def execute_retrieval_pipeline(
                 "warnings": warnings,
                 "bm25": [],
                 "vector": [],
+                "plan": {
+                    "normalized_query": plan.normalized_query,
+                    "rewritten_query": plan.rewritten_query,
+                    "rewrite_applied": plan.rewrite_applied,
+                    "rewrite_reason": plan.rewrite_reason,
+                    "follow_up_detected": plan.follow_up_detected,
+                    "decomposed_query_count": len(plan.decomposed_queries),
+                },
+                "vector_runtime": {},
+                "ablation": {
+                    "bm25_requested": use_bm25,
+                    "vector_requested": use_vector,
+                    "bm25_top_book_slugs": [],
+                    "vector_top_book_slugs": [],
+                    "hybrid_top_book_slugs": [],
+                    "reranked_top_book_slugs": [],
+                    "bm25_vector_overlap_book_slugs": [],
+                    "bm25_vector_overlap_count": 0,
+                    "hybrid_top_support": "none",
+                    "top_support": "none",
+                    "reranked_top_support": "none",
+                    "rerank_top1_changed": False,
+                    "rerank_top1_from": "",
+                    "rerank_top1_to": "",
+                    "rerank_reasons": [],
+                },
                 "timings_ms": {
                     **timings_ms,
                     "total": _duration_ms(retrieve_started_at),
@@ -159,14 +191,17 @@ def execute_retrieval_pipeline(
         bm25_hits = bm25_search["hits"]
         overlay_bm25_hits = bm25_search["overlay_hits"]
     vector_hits: list[RetrievalHit] = []
+    vector_runtime: dict[str, object] = {}
     if use_vector:
-        vector_hits = search_vector_candidates(
+        vector_search = search_vector_candidates(
             retriever,
             rewritten_queries=plan.rewritten_queries,
             effective_candidate_k=effective_candidate_k,
             trace_callback=trace_callback,
             timings_ms=timings_ms,
         )
+        vector_hits = vector_search["hits"]
+        vector_runtime = vector_search["runtime"]
 
     _emit_trace_event(
         trace_callback,
@@ -202,6 +237,21 @@ def execute_retrieval_pipeline(
         if top_hit is not None
         else "상위 근거 없음"
     )
+    hybrid_top_support = "none"
+    if top_hit is not None:
+        has_bm25_support = any(
+            key in top_hit.component_scores
+            for key in ("bm25_score", "overlay_bm25_score")
+        )
+        has_vector_support = "vector_score" in top_hit.component_scores
+        if has_bm25_support and has_vector_support:
+            hybrid_top_support = "both"
+        elif has_bm25_support:
+            hybrid_top_support = "bm25"
+        elif has_vector_support:
+            hybrid_top_support = "vector"
+        else:
+            hybrid_top_support = "unknown"
     _emit_trace_event(
         trace_callback,
         step="fusion",
@@ -209,7 +259,20 @@ def execute_retrieval_pipeline(
         status="done",
         detail=top_detail,
         duration_ms=timings_ms["fusion"],
-        meta={"summary": _summarize_hit_list(hybrid_hits, score_key="fused_score")},
+        meta={
+            "summary": _summarize_hit_list(hybrid_hits, score_key="fused_score"),
+            "overlap_count": len(
+                {
+                    hit.book_slug
+                    for hit in bm25_hits[:5]
+                }
+                & {
+                    hit.book_slug
+                    for hit in vector_hits[:5]
+                }
+            ),
+            "top_support": hybrid_top_support,
+        },
     )
     graph_enriched_hits, graph_trace = retriever.graph_runtime.enrich_hits(
         query=plan.rewritten_query,
@@ -248,6 +311,14 @@ def execute_retrieval_pipeline(
         },
         candidate_k=candidate_k,
         top_k=top_k,
+        normalized_query=plan.normalized_query,
+        rewritten_query=plan.rewritten_query,
+        rewrite_applied=plan.rewrite_applied,
+        rewrite_reason=plan.rewrite_reason,
+        follow_up_detected=plan.follow_up_detected,
+        use_bm25=use_bm25,
+        use_vector=use_vector,
+        vector_runtime=vector_runtime,
     )
     return RetrievalResult(
         query=query,

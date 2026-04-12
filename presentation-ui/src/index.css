@@ -1,7 +1,8 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
 :root {
-  --bg-color: #0d0d0f; /* Deep Obsidian Black */
+  --bg-color: #0d0d0f;
+  /* Deep Obsidian Black */
   --bg-surface: #151518;
   --text-main: #ffffff;
   --text-muted: #888899;
@@ -19,7 +20,8 @@
   padding: 0;
 }
 
-html, body {
+html,
+body {
   width: 100%;
   min-height: 100vh;
   background-color: var(--bg-color);
@@ -29,22 +31,6 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Lenis smooth scroll adjustments for extreme smoothness */
-html.lenis, html.lenis body {
-  height: auto;
-}
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
-}
-.lenis.lenis-smooth [data-lenis-prevent] {
-  overscroll-behavior: contain;
-}
-.lenis.lenis-stopped {
-  overflow: hidden;
-}
-.lenis.lenis-scrolling iframe {
-  pointer-events: none;
-}
 
 /* Aesthetic Utility Classes */
 .text-giant {

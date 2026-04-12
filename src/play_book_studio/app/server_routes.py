@@ -8,12 +8,20 @@ from typing import Any
 from urllib.parse import parse_qs
 
 from play_book_studio.app.data_control_room import build_data_control_room_payload
+from play_book_studio.app.repository_registry import (
+    list_repository_favorites as _list_repository_favorites,
+    remove_repository_favorite as _remove_repository_favorite,
+    save_repository_favorites as _save_repository_favorites,
+    search_github_repositories as _search_github_repositories,
+)
 from play_book_studio.config.settings import load_settings
 from play_book_studio.app.intake_api import (
     build_customer_pack_plan as _build_customer_pack_plan,
     build_customer_pack_support_matrix as _build_customer_pack_support_matrix,
     capture_customer_pack_draft as _capture_customer_pack_draft,
     create_customer_pack_draft as _create_customer_pack_draft,
+    delete_customer_pack_draft as _delete_customer_pack_draft,
+    ingest_customer_pack as _ingest_customer_pack,
     load_customer_pack_capture as _load_customer_pack_capture,
     load_customer_pack_draft as _load_customer_pack_draft,
     normalize_customer_pack_draft as _normalize_customer_pack_draft,
@@ -84,6 +92,49 @@ def handle_source_meta(handler: Any, query: str, *, root_dir: Path) -> None:
     )
 
 
+def handle_sessions_list(handler: Any, query: str, *, store: Any) -> None:
+    params = parse_qs(query, keep_blank_values=False)
+    limit_raw = str((params.get("limit") or ["50"])[0]).strip()
+    try:
+        limit = max(1, min(200, int(limit_raw)))
+    except ValueError:
+        limit = 50
+    summaries = store.list_summaries(limit=limit)
+    handler._send_json({"sessions": summaries, "count": len(summaries)})
+
+
+def handle_session_load(handler: Any, query: str, *, store: Any) -> None:
+    params = parse_qs(query, keep_blank_values=False)
+    session_id = str((params.get("session_id") or [""])[0]).strip()
+    if not session_id:
+        handler._send_json({"error": "session_id is required"}, HTTPStatus.BAD_REQUEST)
+        return
+    session = store.peek(session_id)
+    if session is None:
+        handler._send_json({"error": "Session not found"}, HTTPStatus.NOT_FOUND)
+        return
+    from play_book_studio.app.sessions import serialize_session_snapshot
+    handler._send_json(serialize_session_snapshot(session))
+
+
+def handle_session_delete(handler: Any, payload: dict[str, Any], *, store: Any) -> None:
+    session_id = str(payload.get("session_id") or "").strip()
+    if not session_id:
+        handler._send_json({"error": "session_id is required"}, HTTPStatus.BAD_REQUEST)
+        return
+    deleted = bool(store.delete(session_id))
+    if not deleted:
+        handler._send_json({"error": "Session not found"}, HTTPStatus.NOT_FOUND)
+        return
+    handler._send_json({"success": True, "session_id": session_id})
+
+
+def handle_sessions_delete_all(handler: Any, payload: dict[str, Any], *, store: Any) -> None:
+    del payload
+    deleted_count = int(store.delete_all())
+    handler._send_json({"success": True, "deleted_count": deleted_count})
+
+
 def handle_debug_session(handler: Any, query: str, *, store: Any, build_session_debug_payload: Any) -> None:
     params = parse_qs(query, keep_blank_values=False)
     session_id = str((params.get("session_id") or [""])[0]).strip()
@@ -146,6 +197,52 @@ def handle_customer_pack_drafts(handler: Any, query: str, *, root_dir: Path) -> 
     handler._send_json(draft)
 
 
+def handle_repository_search(handler: Any, query: str, *, root_dir: Path) -> None:
+    params = parse_qs(query, keep_blank_values=False)
+    search_query = str((params.get("query") or [""])[0]).strip()
+    limit_raw = str((params.get("limit") or ["12"])[0]).strip()
+    try:
+        limit = int(limit_raw or "12")
+    except ValueError:
+        handler._send_json({"error": "limit는 정수여야 합니다."}, HTTPStatus.BAD_REQUEST)
+        return
+    try:
+        payload = _search_github_repositories(root_dir, query=search_query, limit=limit)
+    except ValueError as exc:
+        handler._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+        return
+    except Exception as exc:  # noqa: BLE001
+        handler._send_json(
+            {"error": f"repository search 중 오류가 발생했습니다: {exc}"},
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+        return
+    handler._send_json(payload)
+
+
+def handle_repository_favorites(handler: Any, query: str, *, root_dir: Path) -> None:
+    del query
+    handler._send_json(_list_repository_favorites(root_dir))
+
+
+def handle_repository_favorites_save(handler: Any, payload: dict[str, Any], *, root_dir: Path) -> None:
+    try:
+        saved = _save_repository_favorites(root_dir, payload)
+    except ValueError as exc:
+        handler._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+        return
+    handler._send_json(saved, HTTPStatus.CREATED)
+
+
+def handle_repository_favorites_remove(handler: Any, payload: dict[str, Any], *, root_dir: Path) -> None:
+    try:
+        saved = _remove_repository_favorite(root_dir, payload)
+    except ValueError as exc:
+        handler._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+        return
+    handler._send_json(saved)
+
+
 def handle_customer_pack_captured(handler: Any, query: str, *, root_dir: Path) -> None:
     params = parse_qs(query, keep_blank_values=False)
     draft_id = str((params.get("draft_id") or [""])[0]).strip()
@@ -203,6 +300,24 @@ def handle_customer_pack_upload_draft(handler: Any, payload: dict[str, Any], *, 
     handler._send_json(draft, HTTPStatus.CREATED)
 
 
+def handle_customer_pack_ingest(handler: Any, payload: dict[str, Any], *, root_dir: Path) -> None:
+    try:
+        draft = _ingest_customer_pack(root_dir, payload)
+    except ValueError as exc:
+        handler._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+        return
+    except FileNotFoundError as exc:
+        handler._send_json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+        return
+    except Exception as exc:  # noqa: BLE001
+        handler._send_json(
+            {"error": f"ingest 중 오류가 발생했습니다: {exc}"},
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+        return
+    handler._send_json(draft, HTTPStatus.CREATED)
+
+
 def handle_customer_pack_capture(handler: Any, payload: dict[str, Any], *, root_dir: Path) -> None:
     try:
         draft = _capture_customer_pack_draft(root_dir, payload)
@@ -219,6 +334,18 @@ def handle_customer_pack_capture(handler: Any, payload: dict[str, Any], *, root_
         )
         return
     handler._send_json(draft, HTTPStatus.CREATED)
+
+
+def handle_customer_pack_delete_draft(handler: Any, payload: dict[str, Any], *, root_dir: Path) -> None:
+    draft_id = str(payload.get("draft_id") or "").strip()
+    if not draft_id:
+        handler._send_json({"error": "draft_id is required"}, HTTPStatus.BAD_REQUEST)
+        return
+    success = _delete_customer_pack_draft(root_dir, draft_id)
+    if success:
+        handler._send_json({"success": True, "draft_id": draft_id})
+    else:
+        handler._send_json({"error": "Draft not found"}, HTTPStatus.NOT_FOUND)
 
 
 def handle_customer_pack_normalize(handler: Any, payload: dict[str, Any], *, root_dir: Path) -> None:

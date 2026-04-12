@@ -270,6 +270,35 @@ class TestAppSessionFlow(unittest.TestCase):
         self.assertEqual(["etcd"], updated.open_entities)
         self.assertEqual("복원은 어떻게 해?", updated.unresolved_question)
 
+    def test_derive_next_context_ignores_guide_route_for_follow_up_state(self) -> None:
+        result = AnswerResult(
+            query="오픈시프트 잘하려면 어떻게 해야 해?",
+            mode="learn",
+            answer="답변: 기본기부터 익히면 됩니다.",
+            rewritten_query="오픈시프트 잘하려면 어떻게 해야 해?",
+            response_kind="guide",
+            citations=[],
+        )
+
+        updated = _derive_next_context(
+            SessionContext(
+                mode="learn",
+                current_topic="OpenShift",
+                open_entities=["OpenShift"],
+                user_goal="이전 목표",
+                unresolved_question="복원은 어떻게 해?",
+                ocp_version="4.20",
+            ),
+            query="오픈시프트 잘하려면 어떻게 해야 해?",
+            mode="learn",
+            result=result,
+        )
+
+        self.assertEqual("OpenShift", updated.current_topic)
+        self.assertEqual(["OpenShift"], updated.open_entities)
+        self.assertEqual("이전 목표", updated.user_goal)
+        self.assertEqual("복원은 어떻게 해?", updated.unresolved_question)
+
     def test_derive_next_context_preserves_topic_for_clarification_route(self) -> None:
         result = AnswerResult(
             query="로그는 어디서 봐?",
@@ -298,10 +327,10 @@ class TestAppSessionFlow(unittest.TestCase):
 
     def test_derive_next_context_prefers_explicit_new_topic_over_prior_citation_section(self) -> None:
         result = AnswerResult(
-            query="오픈시프트에 대해 새줄약해봐",
+            query="오픈시프트가 뭐야?",
             mode="ops",
             answer="답변: OpenShift 설명 [1]",
-            rewritten_query="오픈시프트에 대해 새줄약해봐",
+            rewritten_query="오픈시프트가 뭐야?",
             citations=[
                 _citation(
                     1,
@@ -314,7 +343,7 @@ class TestAppSessionFlow(unittest.TestCase):
 
         updated = _derive_next_context(
             SessionContext(mode="ops", current_topic="etcd", ocp_version="4.20"),
-            query="오픈시프트에 대해 새줄약해봐",
+            query="오픈시프트가 뭐야?",
             mode="ops",
             result=result,
         )
@@ -322,6 +351,58 @@ class TestAppSessionFlow(unittest.TestCase):
         self.assertEqual("OpenShift", updated.current_topic)
         self.assertEqual(["OpenShift"], updated.open_entities)
         self.assertIsNone(updated.unresolved_question)
+
+    def test_derive_next_context_uses_citation_section_for_openshift_troubleshooting_question(self) -> None:
+        result = AnswerResult(
+            query="OpenShift 진행 중 문제가 나면 어떤 오류나 이벤트부터 봐야 해?",
+            mode="ops",
+            answer="답변: 우선 경고 이벤트와 operator 상태를 확인합니다. [1]",
+            rewritten_query="OpenShift 진행 중 문제가 나면 어떤 오류나 이벤트부터 봐야 해?",
+            citations=[
+                _citation(
+                    1,
+                    section="경고 및 이벤트 확인",
+                    book_slug="support",
+                )
+            ],
+            cited_indices=[1],
+        )
+
+        updated = _derive_next_context(
+            SessionContext(mode="ops", current_topic="OpenShift", open_entities=["OpenShift"], ocp_version="4.20"),
+            query="OpenShift 진행 중 문제가 나면 어떤 오류나 이벤트부터 봐야 해?",
+            mode="ops",
+            result=result,
+        )
+
+        self.assertEqual("경고 및 이벤트 확인", updated.current_topic)
+        self.assertEqual([], updated.open_entities)
+        self.assertIsNone(updated.unresolved_question)
+
+    def test_derive_next_context_strips_numeric_section_prefix_from_topic(self) -> None:
+        result = AnswerResult(
+            query="지금 클러스터 전체 노드 CPU랑 메모리 사용량 보려면 어떤 명령 써?",
+            mode="ops",
+            answer="답변: `oc adm top nodes`를 사용합니다. [1]",
+            rewritten_query="지금 클러스터 전체 노드 CPU랑 메모리 사용량 보려면 어떤 명령 써?",
+            citations=[
+                _citation(
+                    1,
+                    section="7.2.1. 노드 상태, 리소스 사용량 및 구성 확인",
+                    book_slug="support",
+                )
+            ],
+            cited_indices=[1],
+        )
+
+        updated = _derive_next_context(
+            SessionContext(mode="ops", ocp_version="4.20"),
+            query="지금 클러스터 전체 노드 CPU랑 메모리 사용량 보려면 어떤 명령 써?",
+            mode="ops",
+            result=result,
+        )
+
+        self.assertEqual("노드 상태, 리소스 사용량 및 구성 확인", updated.current_topic)
 
     def test_write_recent_chat_session_snapshot_keeps_latest_20_turns(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -355,7 +436,7 @@ class TestAppSessionFlow(unittest.TestCase):
                 (root / "artifacts" / "runtime" / "sessions" / "f4296055.json").read_text(encoding="utf-8")
             )
 
-        self.assertEqual("세션 f4296055", payload["session_name"])
+            self.assertEqual("질문 0", payload["session_name"])
         self.assertEqual("f4296055abcdef12", payload["session_id"])
         self.assertEqual(20, payload["turn_count"])
         self.assertEqual(20, len(payload["turns"]))
@@ -550,6 +631,43 @@ class TestAppSessionFlow(unittest.TestCase):
                 "이미지 레지스트리 실행 명령만 추려서 다시 보여줘",
                 "이미지 레지스트리 적용 후 검증 포인트를 기준으로 다시 정리해줘",
                 "이미지 레지스트리 진행 중 막히면 다음에는 어디부터 확인해야 해?",
+            ],
+            suggestions,
+        )
+
+    def test_suggest_follow_up_questions_strips_numeric_section_prefix_from_procedure_subject(self) -> None:
+        session = type(
+            "SessionStub",
+            (),
+            {
+                "mode": "ops",
+                "context": SessionContext(
+                    mode="ops",
+                    current_topic="7.2.1. 노드 상태, 리소스 사용량 및 구성 확인",
+                    ocp_version="4.20",
+                ),
+            },
+        )()
+        citation = _citation(1, book_slug="support", section="7.2.1. 노드 상태, 리소스 사용량 및 구성 확인")
+        citation.chunk_type = "procedure"
+        citation.cli_commands = ("oc adm top nodes",)
+        citation.verification_hints = ("노드 CPU/메모리 사용량 확인",)
+        result = AnswerResult(
+            query="클러스터 기본 상태를 확인하는 명령도 알려줘",
+            mode="ops",
+            answer="답변: `oc adm top nodes`를 사용합니다. [1]",
+            rewritten_query="클러스터 기본 상태를 확인하는 명령도 알려줘",
+            citations=[citation],
+            cited_indices=[1],
+        )
+
+        suggestions = _suggest_follow_up_questions(session=session, result=result)
+
+        self.assertEqual(
+            [
+                "노드 상태, 리소스 사용량 및 구성 확인 실행 명령만 추려서 다시 보여줘",
+                "노드 상태, 리소스 사용량 및 구성 확인 적용 후 검증 포인트를 기준으로 다시 정리해줘",
+                "노드 상태, 리소스 사용량 및 구성 확인 진행 중 막히면 다음에는 어디부터 확인해야 해?",
             ],
             suggestions,
         )

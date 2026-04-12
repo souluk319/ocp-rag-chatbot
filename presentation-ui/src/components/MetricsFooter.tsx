@@ -88,11 +88,8 @@ export default function MetricsFooter() {
         </div>
 
         <div className="footer-cta">
-          <Link to="/workspace" className="btn-primary">
-            Workspace 시작하기
-          </Link>
-          <Link to="/details" className="btn-secondary">
-            프로젝트 상세 보기
+          <Link to="/details" className="btn-primary">
+            제품 소개
           </Link>
         </div>
       </div>

@@ -38,19 +38,19 @@ CAPABILITY_RE = re.compile(
     re.IGNORECASE,
 )
 OCP_GENERAL_ROLE_RE = re.compile(
-    r"(오픈시프트|openshift|(?<![a-z0-9])ocp(?![a-z0-9])).*(실무|현업|현실|주로|보통|어디에|무슨 기능|어떤 기능|어떻게 쓰|어떻게 사용)",
+    r"(오픈\s*시프트|오픈시프트|openshift|(?<![a-z0-9])ocp(?![a-z0-9])).*(실무|현업|현실|주로|보통|어디에|무슨 기능|어떤 기능|어떻게 쓰|어떻게 사용)",
     re.IGNORECASE,
 )
 OCP_BASIC_INTRO_RE = re.compile(
-    r"^\s*((오픈시프트|openshift|(?<![a-z0-9])ocp(?![a-z0-9]))\s*(가|는|란|이란)?\s*(뭐야|뭔데|무엇|뭐지|소개해|개요를 알려|개요 알려|쉽게 설명해))[\?!.~\s]*$",
+    r"^\s*((오픈\s*시프트|오픈시프트|openshift|(?<![a-z0-9])ocp(?![a-z0-9]))\s*(가|는|란|이란)?\s*(뭐야|뭔데|무엇|뭐지|소개해|개요를 알려|개요 알려|쉽게 설명해))[\?!.~\s]*$",
     re.IGNORECASE,
 )
 OCP_LEARNING_ADVICE_RE = re.compile(
-    r"(오픈시프트|openshift|(?<![a-z0-9])ocp(?![a-z0-9])).*(잘하려면|잘 하려면|공부|배우|익히|입문|처음 시작|배경지식|기본기|마인드|어려워|어떻게 해야)",
+    r"(오픈\s*시프트|오픈시프트|openshift|(?<![a-z0-9])ocp(?![a-z0-9])).*(잘하려면|잘 하려면|공부|배우|익히|입문|처음 시작|배경지식|기본기|마인드|어려워|어떻게 해야)",
     re.IGNORECASE,
 )
 TECHNICAL_HINT_RE = re.compile(
-    r"(오픈시프트|openshift|(?<![a-z0-9])ocp(?![a-z0-9])|kubernetes|쿠버네티스|oc\s|pod|deployment|route|ingress|operator|etcd|rbac|namespace|네임스페이스|이름공간|yaml|pipeline|tekton|prometheus|alertmanager|node|노드|cluster|클러스터|image|images|registry|레지스트리|이미지|저장소)",
+    r"(오픈\s*시프트|오픈시프트|openshift|(?<![a-z0-9])ocp(?![a-z0-9])|kubernetes|쿠버네티스|oc\s|pod|deployment|route|ingress|operator|etcd|rbac|namespace|네임스페이스|이름공간|yaml|pipeline|tekton|prometheus|alertmanager|node|노드|cluster|클러스터|image|images|registry|레지스트리|이미지|저장소)",
     re.IGNORECASE,
 )
 STRUCTURED_QUERY_RE = re.compile(r"[/<>=:\d]")
@@ -61,15 +61,6 @@ def _friendly_intro_answer() -> str:
         "답변: 안녕하세요. 저는 OCP PlayBook 챗봇입니다. "
         "OpenShift 개념 설명, 운영 절차, 트러블슈팅을 문서 근거와 함께 가이드 형태로 안내합니다. "
         "편하게 질문해 주세요."
-    )
-
-
-def _ocp_general_intro_answer() -> str:
-    return (
-        "답변: 오픈시프트(OpenShift Container Platform)는 쿠버네티스(Kubernetes)를 기반으로 애플리케이션 배포와 운영을 "
-        "관리하기 쉽게 만든 엔터프라이즈 컨테이너 플랫폼입니다. "
-        "실무에서는 애플리케이션 배포와 확장, CI/CD 연계, 권한·보안 정책 적용, 모니터링과 로그 수집, 클러스터 운영 자동화에 주로 사용합니다. "
-        "원하면 아키텍처, 쿠버네티스와 차이, 운영자가 자주 쓰는 기능 순서로 이어서 설명하겠습니다."
     )
 
 
@@ -151,8 +142,14 @@ def route_non_rag(
         )
     if OCP_LEARNING_ADVICE_RE.search(normalized):
         return RoutedResponse(route="guide", answer=_ocp_learning_advice_answer())
-    if OCP_GENERAL_ROLE_RE.search(normalized) or OCP_BASIC_INTRO_RE.match(normalized):
-        return RoutedResponse(route="guide", answer=_ocp_general_intro_answer())
+    # broad intro는 official overview/architecture hit를 붙여 답해야 하므로
+    # 하드코딩 안내문으로 종료하지 않고 retrieval로 넘긴다.
+    if OCP_BASIC_INTRO_RE.match(normalized):
+        return None
+    # broad role/usage intro도 official docs hit를 붙여 answer해야 하므로
+    # 하드코딩 소개문으로 끊지 않고 retrieval로 넘긴다.
+    if OCP_GENERAL_ROLE_RE.search(normalized):
+        return None
     if has_logging_ambiguity(normalized):
         return RoutedResponse(
             route="clarification",

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from play_book_studio.answering.models import AnswerResult, Citation
+from play_book_studio.retrieval.text_utils import strip_section_prefix
 from play_book_studio.retrieval.query import (
     ETCD_RE,
     MCO_RE,
@@ -41,12 +42,12 @@ def _subject_from(result: AnswerResult, citation: Citation | None, topic: str) -
     if "operator" in lowered:
         return "Operator"
     if topic.strip():
-        return topic.strip()
+        return strip_section_prefix(topic.strip())
     if citation is not None:
         if citation.operator_names:
             return citation.operator_names[0]
         if citation.section:
-            return citation.section
+            return strip_section_prefix(citation.section)
     return "이 작업"
 
 

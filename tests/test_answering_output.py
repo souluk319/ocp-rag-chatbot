@@ -31,6 +31,7 @@ from _support_answering import (
     finalize_citations,
     normalize_answer_text,
     normalize_answer_markup_blocks,
+    restore_readable_paragraphs,
     reshape_ops_answer_text,
     select_fallback_citations,
     shape_actionable_ops_answer,
@@ -124,6 +125,16 @@ class TestAnsweringOutput(unittest.TestCase):
         )
 
         self.assertIn("실무에서는 공통점보다 운영 기능의 차이와 사용 위치부터 보면 선택이 쉬워집니다.", updated)
+
+    def test_restore_readable_paragraphs_splits_long_intro_answer(self) -> None:
+        updated = restore_readable_paragraphs(
+            "답변: 오픈시프트(OpenShift)는 쿠버네티스 기반 플랫폼입니다 [1]. "
+            "실무에서는 애플리케이션 배포와 운영 자동화에 사용합니다 [2]. "
+            "원하면 아키텍처와 운영 관점 차이도 이어서 설명하겠습니다 [3]."
+        )
+
+        self.assertIn("[1].\n\n실무에서는", updated)
+        self.assertIn("[2].\n\n원하면", updated)
 
     def test_strip_intro_offtopic_noise_removes_etcd_backup_sentence(self) -> None:
         updated = strip_intro_offtopic_noise(

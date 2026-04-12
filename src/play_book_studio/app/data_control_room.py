@@ -123,6 +123,63 @@ def _resolve_report_path(candidate: str) -> Path | None:
     return path if path.exists() else None
 
 
+def _safe_int(value: Any) -> int:
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _report_count(report: dict[str, Any], *, summary_key: str, rows_key: str) -> int:
+    summary = report.get("summary") if isinstance(report.get("summary"), dict) else {}
+    if isinstance(summary, dict) and summary_key in summary:
+        return _safe_int(summary.get(summary_key))
+    rows = report.get(rows_key)
+    if isinstance(rows, list):
+        return len(rows)
+    return 0
+
+
+def _select_report_candidate(
+    *paths: Path | None,
+    summary_key: str,
+    rows_key: str,
+    expected_count: int = 0,
+) -> tuple[Path | None, dict[str, Any]]:
+    candidates: list[tuple[tuple[int, int, int, float], Path, dict[str, Any]]] = []
+    seen: set[Path] = set()
+    for candidate_path in paths:
+        if candidate_path is None:
+            continue
+        resolved = candidate_path.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        payload = _safe_read_json(resolved)
+        if not payload:
+            continue
+        primary_count = _report_count(payload, summary_key=summary_key, rows_key=rows_key)
+        book_count = _report_count(payload, summary_key="book_count", rows_key="books")
+        try:
+            mtime = resolved.stat().st_mtime
+        except OSError:
+            mtime = 0.0
+        score = (
+            1 if expected_count > 0 and primary_count == expected_count else 0,
+            1 if primary_count > 0 else 0,
+            book_count,
+            mtime,
+        )
+        candidates.append((score, resolved, payload))
+
+    if not candidates:
+        return None, {}
+
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    _, best_path, best_payload = candidates[0]
+    return best_path, best_payload
+
+
 def _grade_label(book: dict[str, Any]) -> str:
     content_status = str(book.get("content_status") or "").strip()
     approval_status = str(book.get("approval_status") or "").strip()
@@ -508,7 +565,7 @@ def _aggregate_playbooks(
     grouped: dict[str, dict[str, Any]] = {}
     for path in files:
         payload = _safe_read_json(path)
-        slug = str(payload.get("book_slug") or path.stem).strip()
+        slug = str(payload.get("asset_slug") or payload.get("book_slug") or path.stem).strip()
         if not slug:
             continue
         sections = payload.get("sections")
@@ -527,16 +584,30 @@ def _aggregate_playbooks(
                 block_kind = str(block.get("kind") or "unknown").strip() or "unknown"
                 block_kinds[block_kind] += 1
         source_metadata = payload.get("source_metadata") if isinstance(payload.get("source_metadata"), dict) else {}
+        playbook_family = str(payload.get("playbook_family") or "").strip()
+        source_type = str(
+            (
+                playbook_family
+                if playbook_family in DATA_CONTROL_ROOM_DERIVED_PLAYBOOK_SOURCE_TYPE_SET
+                else (
+                    source_metadata.get("source_type")
+                    or payload.get("source_type")
+                    or ""
+                )
+            )
+            or ""
+        )
         known = known_books.get(slug, {})
         manifest = manifest_by_slug.get(slug, {})
         grouped[slug] = {
             "book_slug": slug,
-            "title": str(payload.get("title") or known.get("title") or manifest.get("title") or slug),
+            "title": str(payload.get("title") or payload.get("book_title") or slug),
             "grade": _grade_label(known) if known else "Gold" if manifest else "Unknown",
             "translation_status": str(payload.get("translation_status") or known.get("content_status") or ""),
             "review_status": str(payload.get("review_status") or known.get("review_status") or ""),
-            "source_type": str(source_metadata.get("source_type") or known.get("source_type") or manifest.get("source_type") or ""),
+            "source_type": source_type or str(known.get("source_type") or manifest.get("source_type") or ""),
             "source_lane": str(source_metadata.get("source_lane") or known.get("source_lane") or manifest.get("source_lane") or ""),
+            "source_collection": str(payload.get("source_collection") or source_metadata.get("source_collection") or ""),
             "section_count": len(sections),
             "anchor_count": len(payload.get("anchor_map") or {}),
             "code_block_count": int(block_kinds.get("code", 0)),
@@ -545,8 +616,19 @@ def _aggregate_playbooks(
             "semantic_role_breakdown": dict(sorted(section_roles.items())),
             "block_kind_breakdown": dict(sorted(block_kinds.items())),
             "legal_notice_url": str(payload.get("legal_notice_url") or source_metadata.get("legal_notice_url") or ""),
-            "viewer_path": str(manifest.get("viewer_path") or known.get("viewer_path") or ""),
-            "source_url": str(known.get("source_url") or manifest.get("source_url") or payload.get("source_uri") or ""),
+            "viewer_path": str(
+                payload.get("target_viewer_path")
+                or payload.get("viewer_path")
+                or manifest.get("viewer_path")
+                or known.get("viewer_path")
+                or ""
+            ),
+            "source_url": str(
+                payload.get("source_origin_url")
+                or payload.get("source_uri")
+                or payload.get("source_url")
+                or ""
+            ),
             "updated_at": str(source_metadata.get("updated_at") or known.get("updated_at") or manifest.get("updated_at") or ""),
             "materialized": True,
         }
@@ -676,30 +758,6 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
     verdict = gate_report.get("verdict") if isinstance(gate_report.get("verdict"), dict) else {}
     verdict_summary = verdict.get("summary") if isinstance(verdict.get("summary"), dict) else {}
 
-    source_approval_payload = _job_payload(gate_report, "source_approval")
-    source_approval_report_path = _resolve_report_path(
-        str(
-            ((source_approval_payload.get("output_targets") or {}).get("approval_report_path"))
-            or _job_report_path(gate_report, "source_approval")
-        )
-    )
-    source_approval_report = _safe_read_json(source_approval_report_path)
-
-    translation_lane_path = _resolve_report_path(
-        str(
-            ((source_approval_payload.get("output_targets") or {}).get("translation_lane_report_path"))
-            or _job_report_path(gate_report, "synthesis_lane")
-        )
-    )
-    translation_lane_report = _safe_read_json(translation_lane_path)
-    source_bundle_quality_payload = _job_payload(gate_report, "source_bundle_quality")
-
-    retrieval_report = _safe_read_json(settings.retrieval_eval_report_path)
-    answer_report = _safe_read_json(settings.answer_eval_report_path)
-    ragas_report = _safe_read_json(settings.ragas_eval_report_path)
-    runtime_report = _safe_read_json(settings.runtime_report_path)
-    runtime_smoke_payload = _job_payload(gate_report, "runtime_smoke")
-
     manifest = _safe_read_json(settings.source_manifest_path)
     manifest_entries = manifest.get("entries") if isinstance(manifest.get("entries"), list) else []
     manifest_by_slug = {
@@ -708,6 +766,55 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
         if isinstance(entry, dict) and str(entry.get("book_slug") or "").strip()
     }
     manifest_slugs = set(manifest_by_slug)
+    expected_approved_runtime_count = len(manifest_by_slug)
+
+    source_approval_payload = _job_payload(gate_report, "source_approval")
+    gate_source_approval_report_path = _resolve_report_path(
+        str(
+            ((source_approval_payload.get("output_targets") or {}).get("approval_report_path"))
+            or _job_report_path(gate_report, "source_approval")
+        )
+    )
+    source_approval_report_path, source_approval_report = _select_report_candidate(
+        gate_source_approval_report_path,
+        settings.source_approval_report_path,
+        summary_key="approved_ko_count",
+        rows_key="books",
+        expected_count=expected_approved_runtime_count,
+    )
+
+    source_summary = (
+        source_approval_report.get("summary")
+        if isinstance(source_approval_report.get("summary"), dict)
+        else {}
+    )
+    source_book_count = _safe_int(source_summary.get("book_count") or len(source_approval_report.get("books") or []))
+    selected_approved_runtime_count = _safe_int(
+        source_summary.get("approved_ko_count")
+        or verdict_summary.get("approved_runtime_count")
+        or expected_approved_runtime_count
+    )
+
+    gate_translation_lane_path = _resolve_report_path(
+        str(
+            ((source_approval_payload.get("output_targets") or {}).get("translation_lane_report_path"))
+            or _job_report_path(gate_report, "synthesis_lane")
+        )
+    )
+    translation_lane_path, translation_lane_report = _select_report_candidate(
+        gate_translation_lane_path,
+        settings.translation_lane_report_path,
+        summary_key="active_queue_count",
+        rows_key="active_queue",
+        expected_count=max(source_book_count - selected_approved_runtime_count, 0),
+    )
+    source_bundle_quality_payload = _job_payload(gate_report, "source_bundle_quality")
+
+    retrieval_report = _safe_read_json(settings.retrieval_eval_report_path)
+    answer_report = _safe_read_json(settings.answer_eval_report_path)
+    ragas_report = _safe_read_json(settings.ragas_eval_report_path)
+    runtime_report = _safe_read_json(settings.runtime_report_path)
+    runtime_smoke_payload = _job_payload(gate_report, "runtime_smoke")
 
     source_books = source_approval_report.get("books") if isinstance(source_approval_report.get("books"), list) else []
     known_books = {
@@ -732,6 +839,15 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
         *settings.playbook_book_dirs,
         expected_count=len(manifest_by_slug),
     )
+    customer_pack_files = sorted(settings.customer_pack_books_dir.glob("*.json"))
+    all_playbook_files: list[Path] = []
+    seen_playbook_paths: set[str] = set()
+    for path in [*playbook_files, *customer_pack_files]:
+        normalized_path = str(path)
+        if normalized_path in seen_playbook_paths:
+            continue
+        seen_playbook_paths.add(normalized_path)
+        all_playbook_files.append(path)
 
     corpus_books = _aggregate_corpus_books(
         chunk_rows,
@@ -739,7 +855,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
         known_books=known_books,
     )
     manualbooks = _aggregate_playbooks(
-        playbook_files,
+        all_playbook_files,
         manifest_by_slug=manifest_by_slug,
         known_books=known_books,
     )
@@ -831,7 +947,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
     )
     materialized_manualbook_slugs = {
         path.stem
-        for path in playbook_files
+        for path in all_playbook_files
         if path.stem not in materialized_derived_playbook_slugs
     }
     materialized_core_manualbook_slugs = materialized_manualbook_slugs & manifest_slugs
@@ -930,7 +1046,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
         "summary": {
             "gate_status": str(verdict.get("status") or "unknown"),
             "release_blocking": bool(verdict.get("release_blocking")),
-            "approved_runtime_count": int(verdict_summary.get("approved_runtime_count") or len(manifest_by_slug)),
+            "approved_runtime_count": selected_approved_runtime_count,
             "known_book_count": int(source_approval_report.get("summary", {}).get("book_count") or len(source_books)),
             "gold_book_count": len(gold_books),
             "known_books_count": len(known_book_rows),

@@ -4,6 +4,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
+from .text_utils import strip_section_prefix
+
 
 @dataclass(slots=True)
 class SessionContext:
@@ -29,7 +31,10 @@ class SessionContext:
         return cls(
             mode=payload.get("mode"),
             user_goal=payload.get("user_goal"),
-            current_topic=payload.get("current_topic"),
+            current_topic=(
+                strip_section_prefix(str(payload.get("current_topic") or ""))
+                or payload.get("current_topic")
+            ),
             open_entities=list(open_entities),
             ocp_version=payload.get("ocp_version"),
             selected_draft_ids=[

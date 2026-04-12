@@ -7,113 +7,172 @@
   flex-direction: column;
 }
 
-.pipeline-header {
+.pipeline-wrapper .pipeline-header {
   padding: 8rem 10vw 2rem 10vw;
   z-index: 10;
 }
 
-.pipeline-header h2 {
+.pipeline-wrapper .pipeline-header h2 {
   margin-bottom: 1rem;
 }
 
-.pipeline-track-container {
+.pipeline-wrapper .pipeline-track-container {
   width: 100%;
   height: 100%;
   overflow: hidden;
   display: flex;
   align-items: center;
   position: relative;
+  z-index: 1;
+  /* Base for layering */
 }
 
-.nerve-path {
+.pipeline-wrapper .nerve-path {
   position: absolute;
   top: 50%;
   left: 0;
   width: 100%;
   height: 2px;
-  background: rgba(255,255,255,0.05); /* very faint base line */
+  background: rgba(255, 255, 255, 0.05);
+  /* very faint base line */
   z-index: 1;
 }
 
-.nerve-progress {
+.pipeline-wrapper .nerve-progress {
   height: 100%;
   width: 0%;
   background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
   box-shadow: 0 0 20px var(--accent-cyan), 0 0 40px var(--accent-purple);
 }
 
-.pipeline-track {
+.pipeline-wrapper .pipeline-track {
   display: flex;
-  width: 400vw;
+  width: 280vw;
+  /* (70vw * 4 steps) Adjusted for tighter rhythm */
   height: 60vh;
-  padding: 0 10vw;
-  z-index: 2; /* above nerve path */
+  padding: 0 15vw;
+  /* Centering buffer */
+  z-index: 2;
+  flex-shrink: 0;
 }
 
-.pipeline-step {
-  width: 100vw;
+.pipeline-wrapper .pipeline-step {
+  flex: 0 0 70vw;
+  /* Tighter rhythm: 100vw -> 70vw */
   height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  flex-shrink: 0;
-  padding-right: 10vw;
+  align-items: center;
   position: relative;
 }
 
-.step-node {
-  width: 16px;
-  height: 16px;
+.pipeline-wrapper .step-node {
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--bg-surface);
   border: 4px solid var(--text-dim);
   position: absolute;
   top: 50%;
-  left: 0;
-  transform: translate(0, -50%); /* slightly offset */
+  left: 50%;
+  /* Center the node under the square card */
+  transform: translate(-50%, -50%);
   z-index: 3;
   transition: all 0.5s;
 }
 
-.node-active {
+.pipeline-wrapper .node-active {
   background: var(--text-main);
   border-color: var(--accent-purple);
   box-shadow: 0 0 20px var(--accent-purple);
 }
 
-.step-card {
-  width: 100%;
-  max-width: 800px;
-  padding: 4rem;
+.pipeline-wrapper .step-card {
+  width: 500px;
+  /* High-density square box width */
+  aspect-ratio: 1 / 1;
+  /* Beautiful square balance */
+  padding: 3.5rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: flex-start;
   position: relative;
   overflow: hidden;
-  margin-left: 2rem; /* offset from node */
-  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  margin: 0;
+  /* No offset, purely centered over node */
+  z-index: 5;
+  /* MUST be in front of nerve-path */
+
+  /* High-End Glass Physics */
+  background: rgba(21, 21, 24, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 32px;
+
+  transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
-.step-number {
-  font-size: 3rem;
-  font-weight: 800;
-  font-family: monospace;
-  margin-bottom: 2rem;
+/* Border Scan Beam Effect */
+.pipeline-wrapper .step-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(0, 209, 255, 0.2),
+      rgba(140, 82, 255, 0.2),
+      transparent);
+  transform: skewX(-20deg);
+  transition: none;
+  pointer-events: none;
+  z-index: 6;
 }
 
-.step-title {
+/* Ignition Glow State */
+.pipeline-wrapper .step-card.active-glow {
+  border-color: var(--accent-cyan);
+  background: rgba(0, 209, 255, 0.03);
+  box-shadow:
+    0 0 40px rgba(0, 209, 255, 0.15),
+    inset 0 0 20px rgba(0, 209, 255, 0.05);
+}
+
+.pipeline-wrapper .step-card.active-glow::after {
+  left: 200%;
+  transition: left 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pipeline-wrapper .step-number {
   font-size: 2.5rem;
+  font-weight: 800;
+  font-family: var(--font-mono, monospace);
   margin-bottom: 1.5rem;
-  color: var(--text-main);
+  opacity: 0.8;
 }
 
-.step-desc {
-  font-size: 1.3rem;
+.pipeline-wrapper .step-title {
+  font-size: 2rem;
+  margin-bottom: 1.2rem;
+  color: var(--text-main);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.pipeline-wrapper .step-desc {
+  font-size: 1.1rem;
   color: var(--text-muted);
   line-height: 1.6;
+  max-width: 100%;
 }
 
-.highlight-card {
+.pipeline-wrapper .highlight-card {
   border: 1px solid rgba(140, 82, 255, 0.3);
   box-shadow: 0 0 40px rgba(140, 82, 255, 0.1) inset;
 }

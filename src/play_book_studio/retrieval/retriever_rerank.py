@@ -6,7 +6,12 @@ from typing import Any
 
 from .followups import has_follow_up_reference
 from .models import RetrievalHit
-from .query import has_backup_restore_intent, has_cluster_node_usage_intent, has_mco_concept_intent
+from .query import (
+    has_backup_restore_intent,
+    has_cluster_node_usage_intent,
+    has_mco_concept_intent,
+    is_generic_intro_query,
+)
 from .ranking import summarize_hit_list as _summarize_hit_list
 from .trace import duration_ms as _duration_ms, emit_trace_event as _emit_trace_event
 
@@ -414,6 +419,136 @@ def _rebalance_etcd_backup_restore_hits(
     return reordered
 
 
+def _is_generic_intro_candidate(hit: RetrievalHit) -> bool:
+    book_slug = str(hit.book_slug or "").strip()
+    section = str(hit.section or "").strip()
+    lowered_section = section.lower()
+
+    if book_slug not in {"architecture", "overview"}:
+        return False
+    if any(
+        token in section
+        for token in (
+            "라이프사이클",
+            "사용자 정의 운영 체제",
+            "기타 주요 기능",
+            "용어집",
+        )
+    ):
+        return False
+    if any(
+        token in lowered_section
+        for token in (
+            "lifecycle",
+            "custom os",
+            "glossary",
+        )
+    ):
+        return False
+    return any(
+        token in section
+        for token in (
+            "개요",
+            "소개",
+            "정의",
+        )
+    ) or any(
+        token in lowered_section
+        for token in (
+            "overview",
+            "introduction",
+            "definition",
+        )
+    )
+
+
+def _rebalance_generic_intro_hits(
+    query: str,
+    *,
+    hybrid_hits: list[RetrievalHit],
+    reranked_hits: list[RetrievalHit],
+) -> list[RetrievalHit]:
+    if not is_generic_intro_query(query):
+        return reranked_hits
+    if not hybrid_hits or not reranked_hits:
+        return reranked_hits
+    if _is_generic_intro_candidate(reranked_hits[0]):
+        return reranked_hits
+
+    hybrid_rank = {hit.chunk_id: index for index, hit in enumerate(hybrid_hits)}
+    reordered = list(reranked_hits)
+    existing_ids = {hit.chunk_id for hit in reordered}
+    candidate_sources: list[tuple[str, int, RetrievalHit]] = [
+        ("reranked", index, hit)
+        for index, hit in enumerate(reordered)
+        if _is_generic_intro_candidate(hit)
+    ]
+    candidate_sources.extend(
+        ("hybrid", -1, hit)
+        for hit in hybrid_hits
+        if _is_generic_intro_candidate(hit) and hit.chunk_id not in existing_ids
+    )
+    if not candidate_sources:
+        return reranked_hits
+
+    def _candidate_sort_key(item: tuple[str, int, RetrievalHit]) -> tuple[int, int, float, float, str, str]:
+        hit = item[2]
+        book_priority = 0 if hit.book_slug == "overview" else 1
+        return (
+            book_priority,
+            hybrid_rank.get(hit.chunk_id, 999),
+            -hit.component_scores.get("pre_rerank_fused_score", hit.fused_score),
+            -hit.component_scores.get("reranker_score", hit.fused_score),
+            str(hit.book_slug or ""),
+            str(hit.chunk_id or ""),
+        )
+
+    candidate_sources.sort(key=_candidate_sort_key)
+    source_name, source_index, source_hit = candidate_sources[0]
+    if source_name == "reranked":
+        preferred_hit = reordered.pop(source_index)
+    else:
+        preferred_hit = copy.deepcopy(source_hit)
+        preferred_hit.source = "hybrid_intro_rescued"
+        preferred_hit.component_scores.setdefault(
+            "pre_rerank_fused_score",
+            float(preferred_hit.fused_score),
+        )
+        preferred_hit.component_scores.setdefault(
+            "reranker_score",
+            float(preferred_hit.component_scores["pre_rerank_fused_score"]),
+        )
+    reordered.insert(0, preferred_hit)
+    return reordered
+
+
+def _top_book_slug(hits: list[RetrievalHit]) -> str:
+    if not hits:
+        return ""
+    return str(hits[0].book_slug or "")
+
+
+def _apply_rebalance_rule(
+    *,
+    rule_name: str,
+    query: str,
+    hybrid_hits: list[RetrievalHit],
+    reranked_hits: list[RetrievalHit],
+    rule_fn,
+    rebalance_reasons: list[str],
+) -> list[RetrievalHit]:
+    before_ids = [hit.chunk_id for hit in reranked_hits]
+    rebalanced_hits = rule_fn(
+        query,
+        hybrid_hits=hybrid_hits,
+        reranked_hits=reranked_hits,
+    )
+    after_ids = [hit.chunk_id for hit in rebalanced_hits]
+    if after_ids != before_ids and rule_name not in rebalance_reasons:
+        rebalance_reasons.append(rule_name)
+    return rebalanced_hits
+
+
 def maybe_rerank_hits(
     retriever,
     *,
@@ -429,6 +564,11 @@ def maybe_rerank_hits(
         "applied": False,
         "model": getattr(retriever.reranker, "model_name", ""),
         "top_n": getattr(retriever.reranker, "top_n", 0),
+        "top1_before": _top_book_slug(hybrid_hits),
+        "top1_after_model": "",
+        "top1_after": _top_book_slug(hits),
+        "top1_changed": False,
+        "rebalance_reasons": [],
     }
     if retriever.reranker is None or not hybrid_hits:
         return hits, reranker_trace
@@ -445,43 +585,74 @@ def maybe_rerank_hits(
             hybrid_hits,
             top_k=top_k,
         )
-        reranked_hits = _rebalance_registry_storage_hits(
-            query,
+        reranker_trace["top1_after_model"] = _top_book_slug(reranked_hits)
+        rebalance_reasons: list[str] = []
+        reranked_hits = _apply_rebalance_rule(
+            rule_name="registry_storage_intent",
+            query=query,
             hybrid_hits=hybrid_hits,
             reranked_hits=reranked_hits,
+            rule_fn=_rebalance_registry_storage_hits,
+            rebalance_reasons=rebalance_reasons,
         )
-        reranked_hits = _rebalance_registry_follow_up_hits(
-            query,
+        reranked_hits = _apply_rebalance_rule(
+            rule_name="registry_follow_up_intent",
+            query=query,
             hybrid_hits=hybrid_hits,
             reranked_hits=reranked_hits,
+            rule_fn=_rebalance_registry_follow_up_hits,
+            rebalance_reasons=rebalance_reasons,
         )
-        reranked_hits = _rebalance_mco_concept_hits(
-            query,
+        reranked_hits = _apply_rebalance_rule(
+            rule_name="mco_concept_intent",
+            query=query,
             hybrid_hits=hybrid_hits,
             reranked_hits=reranked_hits,
+            rule_fn=_rebalance_mco_concept_hits,
+            rebalance_reasons=rebalance_reasons,
         )
-        reranked_hits = _rebalance_cluster_node_usage_hits(
-            query,
+        reranked_hits = _apply_rebalance_rule(
+            rule_name="cluster_node_usage_intent",
+            query=query,
             hybrid_hits=hybrid_hits,
             reranked_hits=reranked_hits,
+            rule_fn=_rebalance_cluster_node_usage_hits,
+            rebalance_reasons=rebalance_reasons,
         )
-        reranked_hits = _rebalance_uploaded_customer_pack_hits(
-            query,
+        reranked_hits = _apply_rebalance_rule(
+            rule_name="uploaded_customer_pack_priority",
+            query=query,
             hybrid_hits=hybrid_hits,
             reranked_hits=reranked_hits,
+            rule_fn=_rebalance_uploaded_customer_pack_hits,
+            rebalance_reasons=rebalance_reasons,
         )
-        reranked_hits = _rebalance_etcd_backup_restore_hits(
-            query,
+        reranked_hits = _apply_rebalance_rule(
+            rule_name="etcd_backup_restore_intent",
+            query=query,
             hybrid_hits=hybrid_hits,
             reranked_hits=reranked_hits,
+            rule_fn=_rebalance_etcd_backup_restore_hits,
+            rebalance_reasons=rebalance_reasons,
+        )
+        reranked_hits = _apply_rebalance_rule(
+            rule_name="generic_intro_intent",
+            query=query,
+            hybrid_hits=hybrid_hits,
+            reranked_hits=reranked_hits,
+            rule_fn=_rebalance_generic_intro_hits,
+            rebalance_reasons=rebalance_reasons,
         )
         timings_ms["rerank"] = _duration_ms(rerank_started_at)
         hits = reranked_hits[:top_k]
+        reranker_trace["top1_after"] = _top_book_slug(hits)
+        reranker_trace["top1_changed"] = reranker_trace["top1_before"] != reranker_trace["top1_after"]
         reranker_trace.update(
             {
                 "applied": True,
                 "candidate_count": len(hybrid_hits),
                 "reranked_count": min(len(hybrid_hits), max(top_k, retriever.reranker.top_n)),
+                "rebalance_reasons": rebalance_reasons,
             }
         )
         _emit_trace_event(
@@ -495,7 +666,13 @@ def maybe_rerank_hits(
                 else "상위 근거 없음"
             ),
             duration_ms=timings_ms["rerank"],
-            meta={"summary": _summarize_hit_list(hits, score_key="fused_score")},
+            meta={
+                "summary": _summarize_hit_list(hits, score_key="fused_score"),
+                "top1_before": reranker_trace["top1_before"],
+                "top1_after": reranker_trace["top1_after"],
+                "top1_changed": reranker_trace["top1_changed"],
+                "rebalance_reasons": reranker_trace["rebalance_reasons"],
+            },
         )
     except Exception as exc:  # noqa: BLE001
         reranker_trace["error"] = str(exc)

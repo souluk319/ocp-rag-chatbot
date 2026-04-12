@@ -12,6 +12,37 @@ from .ranking import (
 from .trace import duration_ms as _duration_ms, emit_trace_event as _emit_trace_event
 
 
+def _vector_subquery_runtime(
+    *,
+    query: str,
+    runtime: dict[str, object],
+) -> dict[str, object]:
+    return {
+        "query": query,
+        "endpoint_used": str(runtime.get("endpoint_used", "")),
+        "attempted_endpoints": [str(item) for item in (runtime.get("attempted_endpoints") or [])],
+        "hit_count": int(runtime.get("hit_count", 0) or 0),
+        "top_score": runtime.get("top_score"),
+    }
+
+
+def _aggregate_vector_runtime(subqueries: list[dict[str, object]]) -> dict[str, object]:
+    endpoints_used = sorted(
+        {
+            str(item.get("endpoint_used", "")).strip()
+            for item in subqueries
+            if str(item.get("endpoint_used", "")).strip()
+        }
+    )
+    return {
+        "subquery_count": len(subqueries),
+        "subqueries": subqueries,
+        "endpoints_used": endpoints_used,
+        "endpoint_used": endpoints_used[0] if len(endpoints_used) == 1 else "mixed" if endpoints_used else "",
+        "empty_subqueries": sum(int(item.get("hit_count", 0) == 0) for item in subqueries),
+    }
+
+
 def search_bm25_candidates(
     retriever,
     *,
@@ -94,7 +125,7 @@ def search_vector_candidates(
     effective_candidate_k: int,
     trace_callback,
     timings_ms: dict[str, float],
-) -> list[RetrievalHit]:
+) -> dict[str, object]:
     if retriever.vector_retriever is None:
         _emit_trace_event(
             trace_callback,
@@ -112,15 +143,30 @@ def search_vector_candidates(
             status="running",
         )
         vector_started_at = time.perf_counter()
-        vector_hit_sets = [
-            retriever.vector_retriever.search(subquery, top_k=effective_candidate_k)
-            for subquery in rewritten_queries
-        ]
+        vector_hit_sets: list[list[RetrievalHit]] = []
+        vector_subqueries: list[dict[str, object]] = []
+        for subquery in rewritten_queries:
+            if hasattr(retriever.vector_retriever, "search_with_trace"):
+                hits, runtime = retriever.vector_retriever.search_with_trace(
+                    subquery,
+                    top_k=effective_candidate_k,
+                )
+            else:
+                hits = retriever.vector_retriever.search(subquery, top_k=effective_candidate_k)
+                runtime = {
+                    "endpoint_used": "",
+                    "attempted_endpoints": [],
+                    "hit_count": len(hits),
+                    "top_score": float(hits[0].raw_score) if hits else None,
+                }
+            vector_hit_sets.append(hits)
+            vector_subqueries.append(_vector_subquery_runtime(query=subquery, runtime=runtime))
         vector_hits = _rrf_merge_hit_lists(
             vector_hit_sets,
             source_name="vector",
             top_k=effective_candidate_k,
         )
+        vector_runtime = _aggregate_vector_runtime(vector_subqueries)
         timings_ms["vector_search"] = _duration_ms(vector_started_at)
         _emit_trace_event(
             trace_callback,
@@ -131,10 +177,17 @@ def search_vector_candidates(
             duration_ms=timings_ms["vector_search"],
             meta={
                 "candidate_k": effective_candidate_k,
+                "count": len(vector_hits),
+                "endpoint_used": vector_runtime["endpoint_used"],
+                "endpoints_used": vector_runtime["endpoints_used"],
+                "empty_subqueries": vector_runtime["empty_subqueries"],
                 "summary": _summarize_hit_list(vector_hits),
             },
         )
-        return vector_hits
+        return {
+            "hits": vector_hits,
+            "runtime": vector_runtime,
+        }
     except Exception as exc:  # noqa: BLE001
         _emit_trace_event(
             trace_callback,

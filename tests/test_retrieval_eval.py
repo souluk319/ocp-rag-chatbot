@@ -104,6 +104,72 @@ class RetrievalEvalTests(unittest.TestCase):
         self.assertEqual("policy-overlay", summary["misses"][0]["graph_signal_tag"])
         self.assertEqual("relation-aware-retrieval", summary["misses"][1]["graph_signal_tag"])
 
+    def test_summarize_case_results_exposes_stage_ablation_metrics(self) -> None:
+        cases = [
+            {
+                "id": "case-1",
+                "mode": "ops",
+                "query_type": "ops",
+                "query": "etcd 백업은 어떻게 해?",
+                "expected_book_slugs": ["backup_and_restore"],
+                "top_book_slugs": ["backup_and_restore", "etcd"],
+                "bm25_top_book_slugs": ["backup_and_restore", "etcd"],
+                "vector_top_book_slugs": ["support", "etcd"],
+                "hybrid_top_book_slugs": ["backup_and_restore", "etcd"],
+                "reranked_top_book_slugs": ["backup_and_restore", "etcd"],
+                "rewrite_applied": True,
+                "follow_up_detected": True,
+                "rewrite_reason": "follow_up_reference",
+                "vector_endpoint_used": "points/search",
+                "hybrid_top_support": "both",
+                "rerank_top1_changed": True,
+                "rerank_reasons": ["support rescue"],
+                "warnings": [],
+            },
+            {
+                "id": "case-2",
+                "mode": "ops",
+                "query_type": "follow-up",
+                "query": "그 복구는?",
+                "expected_book_slugs": ["backup_and_restore"],
+                "top_book_slugs": ["backup_and_restore", "support"],
+                "bm25_top_book_slugs": ["support", "etcd"],
+                "vector_top_book_slugs": [],
+                "hybrid_top_book_slugs": ["support", "backup_and_restore"],
+                "reranked_top_book_slugs": ["backup_and_restore", "support"],
+                "rewrite_applied": False,
+                "follow_up_detected": False,
+                "rewrite_reason": "",
+                "vector_endpoint_used": "points/query",
+                "hybrid_top_support": "bm25",
+                "rerank_top1_changed": False,
+                "rerank_reasons": [],
+                "warnings": [],
+            },
+        ]
+
+        summary = summarize_case_results(cases)
+
+        self.assertIn("stage_ablation", summary)
+        stage_ablation = summary["stage_ablation"]
+        stages = stage_ablation["stages"]
+        self.assertEqual(0.5, stages["bm25"]["hit@1"])
+        self.assertEqual(0.0, stages["vector"]["hit@1"])
+        self.assertEqual(0.5, stages["hybrid"]["hit@1"])
+        self.assertEqual(1.0, stages["reranked"]["hit@1"])
+        self.assertEqual(0.5, stage_ablation["vector_empty_rate"])
+        self.assertEqual(0.5, stage_ablation["hybrid_lift_over_bm25_at_5"])
+        self.assertEqual(0.5, stage_ablation["rerank_lift_over_hybrid_at_1"])
+        self.assertEqual(0.0, stage_ablation["rerank_regression_rate_at_1"])
+        self.assertEqual(0.5, stage_ablation["rewrite_applied_rate"])
+        self.assertEqual(0.5, stage_ablation["follow_up_detected_rate"])
+        self.assertEqual(0.5, stage_ablation["rerank_top1_changed_rate"])
+        self.assertEqual(1, stage_ablation["hybrid_hit_at_1_case_count"])
+        self.assertEqual({"follow_up_reference": 1}, stage_ablation["rewrite_reason_counts"])
+        self.assertEqual({"points/query": 1, "points/search": 1}, stage_ablation["vector_endpoint_counts"])
+        self.assertEqual({"bm25": 1, "both": 1}, stage_ablation["hybrid_top_support_counts"])
+        self.assertEqual({"support rescue": 1}, stage_ablation["rerank_reason_counts"])
+
     def test_build_graph_sidecar_evidence_packet_defers_when_only_provenance_noise_remains(self) -> None:
         retrieval_summary = {
             "overall": {"hit@1": 1.0, "hit@5": 1.0},

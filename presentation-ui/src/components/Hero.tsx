@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { Link } from 'react-router-dom';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight, Languages } from 'lucide-react';
 import './Hero.css';
 
 export default function Hero() {
@@ -12,7 +12,7 @@ export default function Hero() {
   useEffect(() => {
     const ctx = gsap.context(() => {
       // Cinematic Entrance: Scale down from 1.1 + fade in
-      gsap.fromTo(textGroupRef.current, 
+      gsap.fromTo(textGroupRef.current,
         { autoAlpha: 0, scale: 1.1, translateY: 30 },
         { autoAlpha: 1, scale: 1, translateY: 0, duration: 2.2, ease: "power4.out", delay: 0.1 }
       );
@@ -27,33 +27,39 @@ export default function Hero() {
         },
         clipPath: "circle(100% at 50% 50%)"
       });
-      
+
     }, containerRef);
     return () => ctx.revert();
   }, []);
 
   return (
     <section className="hero-container" ref={containerRef}>
+      <div className="hero-nav">
+        <button className="lang-btn" type="button">
+          <Languages size={18} />
+          <span>KOR</span>
+        </button>
+      </div>
       <div className="hero-bokeh bokeh-cyan"></div>
       <div className="hero-bokeh bokeh-purple"></div>
-      
+
       {/* Background Masking Layer */}
       <div className="hero-bg-mask" ref={maskRef}></div>
 
       <div className="hero-content" ref={textGroupRef}>
         <div className="hero-badge">
           <Sparkles size={14} />
-          <span>OCP RAG Foundational Studio</span>
+          <span>Enterprise Playbook Platform</span>
         </div>
         <h1 className="text-giant hero-title">
-          Play Book<br/>
+          Play Book<br />
           <span className="gradient-text">Studio.</span>
         </h1>
         <p className="text-subtitle hero-subtitle">
-          공식 문서를 실행형 플레이북으로.<br/>
+          공식 문서를 실행형 플레이북으로.<br />
           근거와 챗봇을 연결하는 지능형 데이터 제련소.
         </p>
-        
+
         <div className="hero-actions">
           <Link to="/workspace" className="primary-cta">
             <span>Launch Studio</span>

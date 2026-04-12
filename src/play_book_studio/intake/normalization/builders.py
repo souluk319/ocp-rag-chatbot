@@ -18,6 +18,7 @@ from .pdf import (
     extract_pdf_outline,
     extract_pdf_pages,
 )
+from .markitdown_adapter import MARKITDOWN_SOURCE_TYPES, convert_with_markitdown
 from .pdf_rows import (
     _build_pdf_rows,
     _build_pdf_rows_from_docling_markdown,
@@ -63,6 +64,14 @@ def build_canonical_book(
     extract_pdf_outline_fn: Callable[[Path], list] = extract_pdf_outline,
     extract_pdf_pages_fn: Callable[[Path], list[str]] = extract_pdf_pages,
 ):
+    if record.request.source_type in MARKITDOWN_SOURCE_TYPES:
+        return _build_markitdown_first_canonical_book(
+            record,
+            extract_pdf_markdown_with_docling_fn=extract_pdf_markdown_with_docling_fn,
+            extract_pdf_markdown_with_docling_ocr_fn=extract_pdf_markdown_with_docling_ocr_fn,
+            extract_pdf_outline_fn=extract_pdf_outline_fn,
+            extract_pdf_pages_fn=extract_pdf_pages_fn,
+        )
     if record.request.source_type == "pdf":
         return _build_pdf_canonical_book(
             record,
@@ -84,6 +93,77 @@ def build_canonical_book(
     if record.request.source_type == "image":
         return _build_image_canonical_book(record)
     raise ValueError("지원하지 않는 source_type입니다.")
+
+
+def _append_normalization_note(book, note: str):
+    book.notes = tuple(book.notes) + (note,)
+    return book
+
+
+def _build_markitdown_first_canonical_book(
+    record: CustomerPackDraftRecord,
+    *,
+    extract_pdf_markdown_with_docling_fn: Callable[[Path], str],
+    extract_pdf_markdown_with_docling_ocr_fn: Callable[[Path], str],
+    extract_pdf_outline_fn: Callable[[Path], list],
+    extract_pdf_pages_fn: Callable[[Path], list[str]],
+):
+    try:
+        return _append_normalization_note(
+            _build_markitdown_canonical_book(record),
+            f"Normalization backend: MarkItDown ({record.request.source_type} -> markdown).",
+        )
+    except Exception as exc:
+        fallback_builder = {
+            "pdf": lambda: _build_pdf_canonical_book(
+                record,
+                extract_pdf_markdown_with_docling_fn=extract_pdf_markdown_with_docling_fn,
+                extract_pdf_markdown_with_docling_ocr_fn=extract_pdf_markdown_with_docling_ocr_fn,
+                extract_pdf_outline_fn=extract_pdf_outline_fn,
+                extract_pdf_pages_fn=extract_pdf_pages_fn,
+            ),
+            "docx": lambda: _build_docx_canonical_book(record),
+            "pptx": lambda: _build_pptx_canonical_book(record),
+            "xlsx": lambda: _build_xlsx_canonical_book(record),
+        }[record.request.source_type]
+        return _append_normalization_note(
+            fallback_builder(),
+            f"Normalization backend: legacy fallback after MarkItDown failure ({exc.__class__.__name__}).",
+        )
+
+
+def _build_markitdown_canonical_book(record: CustomerPackDraftRecord):
+    capture_path = Path(record.capture_artifact_path)
+    if not capture_path.exists():
+        raise FileNotFoundError(f"captured artifact를 찾을 수 없습니다: {capture_path}")
+    markdown = convert_with_markitdown(capture_path)
+    if _markitdown_output_is_low_confidence(record.request.source_type, markdown):
+        raise ValueError(f"MarkItDown produced low-confidence {record.request.source_type} output.")
+    normalized = _normalize_text_block(
+        "md",
+        markdown,
+        origin_source_type=record.request.source_type,
+        book_title=record.plan.title,
+    )
+    if not normalized:
+        raise ValueError(f"{record.request.source_type.upper()}에서 canonical section을 만들지 못했습니다.")
+    return _build_structured_text_canonical_book(
+        record,
+        source_type="md",
+        normalized=normalized,
+        origin_source_type=record.request.source_type,
+    )
+
+
+def _markitdown_output_is_low_confidence(source_type: str, markdown: str) -> bool:
+    stripped = str(markdown or "").strip()
+    if not stripped:
+        return True
+    if source_type == "pdf":
+        compact = stripped.replace("\ufeff", "").strip()
+        if compact.lower().startswith("%pdf-"):
+            return True
+    return False
 
 
 def _build_web_canonical_book(record: CustomerPackDraftRecord):
@@ -147,6 +227,9 @@ def _build_pdf_canonical_book(
 _MARKDOWN_HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
 _ASCIIDOC_HEADING_RE = re.compile(r"^(={1,6})\s+(.*?)\s*$")
 _NUMERIC_HEADING_RE = re.compile(r"^(\d+(?:\.\d+){0,5})\.?\s+(.*?)\s*$")
+_FENCED_CODE_START_RE = re.compile(r"^\s*(?P<fence>`{3,}|~{3,})(?P<language>[\w.+-]*)\s*$")
+_TABLE_SEPARATOR_CELL_RE = re.compile(r"^:?-{3,}:?$")
+_PDF_INLINE_PAGE_MARKER_RE = re.compile(r"^[가-힣A-Za-z][가-힣A-Za-z0-9\s()./_-]{1,24}\s+\d+$")
 
 
 def _slug_anchor(value: str, *, ordinal: int) -> str:
@@ -155,19 +238,163 @@ def _slug_anchor(value: str, *, ordinal: int) -> str:
     return cleaned or f"section-{ordinal}"
 
 
-def _normalize_text_block(source_type: str, text: str) -> str:
+def _is_fenced_code_closer(line: str, *, fence_char: str, minimum_width: int) -> bool:
+    stripped = (line or "").strip()
+    return bool(
+        stripped
+        and len(stripped) >= minimum_width
+        and set(stripped) == {fence_char}
+    )
+
+
+def _replace_fenced_code_blocks(text: str) -> str:
+    lines = text.split("\n")
+    normalized_lines: list[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        match = _FENCED_CODE_START_RE.match(line)
+        if match is None:
+            normalized_lines.append(line)
+            index += 1
+            continue
+        fence = match.group("fence")
+        language = str(match.group("language") or "").strip().lower()
+        body_lines: list[str] = []
+        index += 1
+        while index < len(lines):
+            candidate = lines[index]
+            if _is_fenced_code_closer(candidate, fence_char=fence[0], minimum_width=len(fence)):
+                index += 1
+                break
+            body_lines.append(candidate)
+            index += 1
+        attrs = f' language="{language}"' if language else ""
+        body = "\n".join(body_lines).strip("\n")
+        normalized_lines.append(f"[CODE{attrs}]\n{body}\n[/CODE]")
+    return "\n".join(normalized_lines)
+
+
+def _split_markdown_table_row(line: str) -> list[str] | None:
+    stripped = (line or "").strip()
+    if "|" not in stripped:
+        return None
+    inner = stripped[1:-1] if stripped.startswith("|") and stripped.endswith("|") else stripped
+    cells = [cell.strip() for cell in inner.split("|")]
+    if len(cells) < 2:
+        return None
+    return cells
+
+
+def _is_markdown_table_separator(row: list[str]) -> bool:
+    return bool(row) and all(_TABLE_SEPARATOR_CELL_RE.fullmatch(cell or "") for cell in row)
+
+
+def _replace_markdown_tables(text: str) -> str:
+    lines = text.split("\n")
+    normalized_lines: list[str] = []
+    index = 0
+    while index < len(lines):
+        stripped = lines[index].strip()
+        if stripped.startswith("[CODE"):
+            normalized_lines.append(lines[index])
+            index += 1
+            while index < len(lines):
+                normalized_lines.append(lines[index])
+                if lines[index].strip() == "[/CODE]":
+                    index += 1
+                    break
+                index += 1
+            continue
+        if stripped.startswith("[TABLE"):
+            normalized_lines.append(lines[index])
+            index += 1
+            while index < len(lines):
+                normalized_lines.append(lines[index])
+                if lines[index].strip() == "[/TABLE]":
+                    index += 1
+                    break
+                index += 1
+            continue
+        header = _split_markdown_table_row(lines[index])
+        separator = _split_markdown_table_row(lines[index + 1]) if index + 1 < len(lines) else None
+        if (
+            header
+            and separator
+            and len(header) == len(separator)
+            and _is_markdown_table_separator(separator)
+        ):
+            table_rows = [header]
+            index += 2
+            while index < len(lines):
+                row = _split_markdown_table_row(lines[index])
+                if row is None or len(row) != len(header):
+                    break
+                table_rows.append(row)
+                index += 1
+            normalized_lines.append(_table_to_tagged_text(table_rows))
+            continue
+        normalized_lines.append(lines[index])
+        index += 1
+    return "\n".join(normalized_lines)
+
+
+def _pdf_title_tokens(title: str) -> tuple[str, ...]:
+    compact = re.sub(r"\([^)]*\)", " ", str(title or ""))
+    compact = re.sub(r"^\d+(?:[.\-]\d+)*\s*", " ", compact).strip()
+    tokens = [
+        token
+        for token in re.findall(r"[A-Za-z가-힣]{2,}", compact)
+        if token.lower() not in {"openshift", "container", "platform"}
+    ]
+    return tuple(dict.fromkeys(tokens))
+
+
+def _should_drop_pdf_inline_page_marker(line: str, *, book_title: str) -> bool:
+    stripped = (line or "").strip()
+    if not stripped or not _PDF_INLINE_PAGE_MARKER_RE.fullmatch(stripped):
+        return False
+    lowered = stripped.lower()
+    return any(token.lower() in lowered for token in _pdf_title_tokens(book_title))
+
+
+def _clean_pdf_markitdown_text(text: str, *, book_title: str) -> str:
+    cleaned_lines: list[str] = []
+    for raw_line in str(text or "").replace("\x00", "").splitlines():
+        if _should_drop_pdf_inline_page_marker(raw_line, book_title=book_title):
+            continue
+        cleaned_lines.append(raw_line)
+    return "\n".join(cleaned_lines)
+
+
+def _looks_like_table_fragment(text: str) -> bool:
+    stripped = (text or "").strip()
+    return stripped.count("|") >= 2 or (stripped.startswith("|") and stripped.endswith("|"))
+
+
+def _normalize_text_block(
+    source_type: str,
+    text: str,
+    *,
+    origin_source_type: str = "",
+    book_title: str = "",
+) -> str:
     normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    if origin_source_type == "pdf":
+        normalized = _clean_pdf_markitdown_text(normalized, book_title=book_title)
     if source_type in {"md", "asciidoc"}:
-        normalized = re.sub(
-            r"```[\w-]*\n(.*?)```",
-            lambda match: f"[CODE]\n{match.group(1).strip()}\n[/CODE]",
-            normalized,
-            flags=re.DOTALL,
-        )
+        normalized = _replace_fenced_code_blocks(normalized)
+    if source_type == "md":
+        normalized = _replace_markdown_tables(normalized)
     return normalized.strip()
 
 
-def _text_heading_match(source_type: str, line: str) -> tuple[int, str] | None:
+def _text_heading_match(
+    source_type: str,
+    line: str,
+    *,
+    origin_source_type: str = "",
+) -> tuple[int, str] | None:
     stripped = line.strip()
     if not stripped:
         return None
@@ -181,6 +408,8 @@ def _text_heading_match(source_type: str, line: str) -> tuple[int, str] | None:
             return len(match.group(1)), match.group(2).strip()
     match = _NUMERIC_HEADING_RE.match(stripped)
     if match:
+        if origin_source_type == "pdf" and _looks_like_table_fragment(stripped):
+            return None
         return match.group(1).count(".") + 1, f"{match.group(1)} {match.group(2).strip()}".strip()
     return None
 
@@ -203,6 +432,7 @@ def _build_structured_text_canonical_book(
     *,
     source_type: str,
     normalized: str,
+    origin_source_type: str = "",
 ):
     if not normalized:
         raise ValueError("텍스트 소스에서 canonical section을 만들지 못했습니다.")
@@ -215,12 +445,12 @@ def _build_structured_text_canonical_book(
     rows: list[dict[str, object]] = []
 
     def flush() -> None:
-        if not current_body and rows:
-            return
         ordinal = len(rows) + 1
         heading = current_heading.strip() or f"Section {ordinal}"
         anchor = _slug_anchor(heading, ordinal=ordinal)
-        body = "\n".join(current_body).strip() or heading
+        body = "\n".join(current_body).strip()
+        if not body:
+            return
         section_path = tuple(path_stack[:current_level]) if path_stack else (heading,)
         rows.append(
             {
@@ -237,8 +467,18 @@ def _build_structured_text_canonical_book(
         )
 
     for line in normalized.splitlines():
-        heading = _text_heading_match(source_type, line)
+        heading = _text_heading_match(
+            source_type,
+            line,
+            origin_source_type=origin_source_type,
+        )
         if heading:
+            if not rows and not "\n".join(current_body).strip():
+                current_level, current_heading = heading
+                path_stack = path_stack[: max(current_level - 1, 0)]
+                path_stack.append(current_heading)
+                current_body = []
+                continue
             flush()
             current_level, current_heading = heading
             path_stack = path_stack[: max(current_level - 1, 0)]
@@ -397,4 +637,3 @@ def _build_image_canonical_book(record: CustomerPackDraftRecord):
     if not normalized:
         raise ValueError("이미지 OCR에서 canonical section을 만들지 못했습니다.")
     return _build_structured_text_canonical_book(record, source_type="md", normalized=normalized)
-

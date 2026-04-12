@@ -55,6 +55,13 @@ class CustomerPackDraftStore:
         records.sort(key=lambda record: (record.created_at, record.draft_id), reverse=True)
         return records
 
+    def delete(self, draft_id: str) -> bool:
+        path = self._draft_path(draft_id)
+        if not path.exists():
+            return False
+        path.unlink()
+        return True
+
     def save(self, record: CustomerPackDraftRecord) -> CustomerPackDraftRecord:
         self._write(record)
         return record

@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 
 OCP_RE = re.compile(r"(?<![a-z0-9])ocp(?![a-z0-9])", re.IGNORECASE)
-OPENSHIFT_RE = re.compile(r"(오픈시프트|openshift)", re.IGNORECASE)
+OPENSHIFT_RE = re.compile(r"(오픈\s*시프트|오픈시프트|openshift)", re.IGNORECASE)
 KUBERNETES_RE = re.compile(r"(쿠버네티스|kubernetes)", re.IGNORECASE)
 COMPARE_RE = re.compile(r"(차이|다른 점|비교|vs|versus|유사점)", re.IGNORECASE)
 ROUTE_RE = re.compile(r"(route|routes|루트)", re.IGNORECASE)
@@ -93,9 +93,9 @@ EXPLAINER_RE = re.compile(
     re.IGNORECASE,
 )
 GENERIC_INTRO_RE = re.compile(
-    r"(오픈시프트|openshift).*(뭐야|무엇|소개|개요|아키텍처|architecture)|"
-    r"(오픈시프트|openshift).*(요약|정리|세줄|3줄|한줄|짧게)|"
-    r"(쿠버네티스|kubernetes).*(오픈시프트|openshift).*(차이|다른 점)",
+    r"(오픈\s*시프트|오픈시프트|openshift|(?<![a-z0-9])ocp(?![a-z0-9])).*(뭐야|무엇|소개|개요|아키텍처|architecture|실무에서|어디에\s*쓰|어떤\s*곳에\s*쓰|무슨\s*용도|사용\s*예시|언제\s*쓰|왜\s*써)|"
+    r"(오픈\s*시프트|오픈시프트|openshift|(?<![a-z0-9])ocp(?![a-z0-9])).*(요약|정리|세줄|3줄|한줄|짧게)|"
+    r"(쿠버네티스|kubernetes).*(오픈\s*시프트|오픈시프트|openshift).*(차이|다른 점)",
     re.IGNORECASE,
 )
 COMPARE_DECOMPOSE_RE = re.compile(

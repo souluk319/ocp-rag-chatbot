@@ -15,6 +15,8 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+os.environ["ARTIFACTS_DIR"] = "artifacts"
+
 from play_book_studio.answering.models import AnswerResult, Citation
 from play_book_studio.app.chat_debug import (
     append_chat_turn_log as _append_chat_turn_log,
@@ -27,6 +29,7 @@ from play_book_studio.app.intake_api import (
     build_customer_pack_support_matrix as _build_customer_pack_support_matrix,
     capture_customer_pack_draft as _capture_customer_pack_draft,
     create_customer_pack_draft as _create_customer_pack_draft,
+    ingest_customer_pack as _ingest_customer_pack,
     load_customer_pack_capture as _load_customer_pack_capture,
     load_customer_pack_draft as _load_customer_pack_draft,
     normalize_customer_pack_draft as _normalize_customer_pack_draft,

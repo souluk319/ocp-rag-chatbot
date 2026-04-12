@@ -139,6 +139,53 @@ def _is_customer_pack_explicit_query(query: str) -> bool:
     )
 
 
+def _generic_intro_priority(hit: RetrievalHit) -> tuple[int, int, int, int]:
+    lowered_section = (hit.section or "").lower()
+    lowered_anchor = (hit.anchor or "").lower()
+    lowered_text = (hit.text or "").lower()
+    book_priority = {
+        "overview": 0,
+        "architecture": 1,
+        "extensions": 2,
+        "operators": 3,
+    }.get(hit.book_slug, 8)
+    positive_markers = (
+        "개요",
+        "소개",
+        "정의",
+        "overview",
+        "introduction",
+        "platform-definition",
+        "architecture-overview",
+        "ocp-overview",
+    )
+    negative_markers = (
+        "용어집",
+        "glossary",
+        "사용자 정의 운영 체제",
+        "custom-os",
+        "rhcos",
+        "cri-o",
+        "기타 주요 기능",
+        "라이프사이클",
+    )
+    positive_rank = 0 if any(
+        marker in lowered_section or marker in lowered_anchor or marker in lowered_text
+        for marker in positive_markers
+    ) else 1
+    negative_rank = 1 if any(
+        marker in lowered_section or marker in lowered_anchor or marker in lowered_text
+        for marker in negative_markers
+    ) else 0
+    section_depth = (hit.section or "").count(".")
+    return (
+        negative_rank,
+        book_priority,
+        positive_rank,
+        section_depth,
+    )
+
+
 def _hit_identity(hit: RetrievalHit) -> tuple[str, str, str]:
     return (
         hit.book_slug,
@@ -265,6 +312,19 @@ def _select_hits(
             ranked_hits,
             key=lambda hit: (
                 preferred_order.get(hit.book_slug, 9),
+                -_hit_score(hit),
+                hit.book_slug,
+                hit.chunk_id,
+            ),
+        )
+        support_window = ranked_hits[: max(max_chunks * 2, 6)]
+        top_score = _hit_score(support_window[0])
+        top_book = support_window[0].book_slug
+    elif is_generic_intro_query(normalized):
+        ranked_hits = sorted(
+            ranked_hits,
+            key=lambda hit: (
+                *_generic_intro_priority(hit),
                 -_hit_score(hit),
                 hit.book_slug,
                 hit.chunk_id,
@@ -500,6 +560,19 @@ def _select_hits(
         for book_slug in ("overview", "extensions", "operators", "architecture"):
             if best_book_scores.get(book_slug, 0.0) >= top_score * 0.62:
                 allowed_books.add(book_slug)
+    if is_generic_intro_query(normalized):
+        intro_books = tuple(
+            book_slug
+            for book_slug in ("overview", "architecture", "extensions", "operators")
+            if best_book_scores.get(book_slug, 0.0) > 0.0
+        )
+        if intro_books:
+            allowed_books = set(intro_books)
+            locked_allowed_books = True
+        else:
+            for book_slug in ("overview", "architecture", "extensions", "operators"):
+                if best_book_scores.get(book_slug, 0.0) >= top_score * 0.56:
+                    allowed_books.add(book_slug)
     if has_pod_lifecycle_concept_intent(normalized):
         for book_slug in ("nodes", "overview", "architecture", "building_applications"):
             if best_book_scores.get(book_slug, 0.0) >= top_score * 0.58:
