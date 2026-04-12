@@ -1,15 +1,20 @@
 # Play Book Studio
 
-Play Book Studio는 `기업 문서`, `운영 절차`, `벤더 문서`, `사내 runbook`을 `검증 가능한 플레이북 자산`으로 전환하는 플랫폼이다.
+> 테스트 서버: [http://localhost:5173/](http://localhost:5173/) | Runtime API: [http://127.0.0.1:8765/](http://127.0.0.1:8765/)
 
-## Current Truth
+Play Book Studio는 공식 문서, 운영 절차서, 벤더 가이드, 사내 runbook을 같은 구조로 정리해서 `읽는 문서`, `실행용 플레이북`, `근거 기반 답변`으로 이어 주는 플레이북 플랫폼이다.
 
-- 현재 정직한 판매 단계는 `paid_poc_candidate` 다.
-- 현재 정직한 상업 범위는 `OpenShift 4.20 validated pack + customer document PoC` 다.
-- 제품 본체는 `enterprise playbook platform` 이고, OCP는 첫 검증 pack 이다.
-- validated pack 출력은 `raw manual mirror` 가 아니라 `Manual Book + Derived Playbook Family` 여야 한다.
+수집된 문서는 정규화 과정을 거쳐 `Manual Book`으로 materialize되고, 여기서 `Topic`, `Operation`, `Troubleshooting`, `Policy`, `Synthesized` 계열의 `Derived Playbook`이 생성된다. 사용자는 `Workspace`에서 근거 기반 챗봇과 문서 뷰어로 이를 탐색하고, `Playbook Library`에서 런타임 북과 파생 자산을 확인할 수 있다.
 
-정확한 buyer promise 와 pass/fail 기준은 [Q1_8_PRODUCT_CONTRACT.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/Q1_8_PRODUCT_CONTRACT.md:1), [OWNER_SCENARIO_SCORECARD.yaml](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/OWNER_SCENARIO_SCORECARD.yaml:1)을 본다.
+## Current Scope
+
+- 현재 기본 validated pack은 `OpenShift 4.20` 이다.
+- customer document intake 경로가 연결돼 있다.
+- repository source staging 경로가 연결돼 있다.
+- 주요 산출물은 `Manual Book`, `Derived Playbook Family`, `grounded answer surface` 다.
+- frontend는 `5173`, backend runtime은 `8765`에서 동작한다.
+
+현재 범위와 품질 기준은 [Q1_8_PRODUCT_CONTRACT.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/Q1_8_PRODUCT_CONTRACT.md:1), [OWNER_SCENARIO_SCORECARD.yaml](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/OWNER_SCENARIO_SCORECARD.yaml:1)을 본다.
 
 ## Product Surfaces
 
