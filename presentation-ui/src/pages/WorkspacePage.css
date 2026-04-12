@@ -9,6 +9,30 @@
   flex-direction: column;
 }
 
+/* Custom Scrollbar Aesthetics */
+.workspace-wrapper ::-webkit-scrollbar {
+  width: 6px;
+}
+
+.workspace-wrapper ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.workspace-wrapper ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.3s;
+}
+
+.workspace-wrapper :hover::-webkit-scrollbar-thumb {
+  background: rgba(0, 209, 255, 0.15);
+}
+
+.workspace-wrapper ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 209, 255, 0.3);
+}
+
 /* Bokeh Backgrounds */
 .bokeh-bg {
   position: absolute;
@@ -117,9 +141,10 @@
 /* Content Area */
 .workspace-content {
   flex: 1;
-  padding: 16px;
+  padding: 16px 16px 0; /* Remove bottom padding */
   position: relative;
   z-index: 1;
+  overflow: hidden;
 }
 
 .main-panel-group {
@@ -240,16 +265,67 @@
   font-weight: 500;
 }
 
+.file-input-hidden {
+  display: none;
+}
+
 .source-list {
   flex: 1;
   padding: 0 24px 24px;
   overflow-y: auto;
 }
 
-.list-title {
-  font-size: 0.8rem;
+.source-section + .source-section {
+  margin-top: 12px;
+}
+
+.section-header-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  border: none;
+  padding: 8px 0;
+  cursor: pointer;
   color: var(--text-muted);
-  margin-bottom: 12px;
+  transition: color 0.3s;
+  margin-bottom: 8px;
+}
+
+.section-header-btn:hover {
+  color: var(--text-main);
+}
+
+.header-label-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.list-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.item-count-badge {
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 8px;
+  border-radius: 10px;
+  color: var(--text-dim);
+}
+
+.section-items-container {
+  overflow: hidden;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .source-item {
@@ -299,7 +375,12 @@
 
 /* Middle Panel OK (Chat) */
 .chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: 0 16px;
+  height: 100%;
+  overflow: hidden; /* Prevent the whole area from scrolling */
 }
 
 .chat-messages {
@@ -406,15 +487,25 @@
   box-shadow: 0 0 15px var(--accent-cyan);
 }
 
+.send-btn:disabled {
+  cursor: default;
+  opacity: 0.65;
+  transform: none;
+  box-shadow: none;
+}
+
 /* Right Panel UI */
 .source-viewer-content {
   flex: 1;
   overflow-y: auto;
   position: relative;
+  scroll-behavior: smooth;
+  display: flex;
+  flex-direction: column;
 }
 
 .empty-state {
-  height: 100%;
+  margin: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -438,7 +529,10 @@
 }
 
 .document-page {
-  padding: 32px;
+  padding: 40px 32px 100px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .doc-header {
@@ -466,6 +560,31 @@
   margin-bottom: 32px;
   padding-bottom: 24px;
   border-bottom: 1px solid var(--glass-border);
+}
+
+.doc-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.doc-inline-link {
+  color: var(--accent-cyan);
+  text-decoration: none;
+}
+
+.doc-inline-link:hover {
+  text-decoration: underline;
+}
+
+.doc-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
 }
 
 .doc-section {
@@ -496,6 +615,14 @@
   color: #aaddff;
   border: 1px solid var(--glass-border);
   margin: 16px 0;
+}
+
+.source-preview-frame {
+  width: 100%;
+  min-height: 680px;
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.18);
 }
 
 .panel-footer {
@@ -541,6 +668,14 @@
 
 .outline-btn:hover {
   background: rgba(255, 255, 255, 0.08);
+}
+
+.outline-btn:disabled,
+.primary-btn:disabled {
+  cursor: default;
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Animations */

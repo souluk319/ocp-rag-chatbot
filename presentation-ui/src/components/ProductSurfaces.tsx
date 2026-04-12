@@ -3,6 +3,7 @@ import gsap from 'gsap';
 import { Link } from 'react-router-dom';
 import { MessageSquare, BookOpen, MonitorPlay } from 'lucide-react';
 import './ProductSurfaces.css';
+import { RUNTIME_EXTERNAL_ORIGIN } from '../lib/runtimeApi';
 
 export default function ProductSurfaces() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -120,7 +121,7 @@ export default function ProductSurfaces() {
         </Link>
 
         <a 
-          href="http://127.0.0.1:8765/data-situation-room" 
+          href={`${RUNTIME_EXTERNAL_ORIGIN}/data-situation-room`}
           className="surface-card glass-panel" 
           target="_blank" 
           rel="noreferrer"

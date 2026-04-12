@@ -1,10 +1,44 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import './MetricsFooter.css';
+import { loadDataControlRoom } from '../lib/runtimeApi';
 
 export default function MetricsFooter() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [metrics, setMetrics] = useState({
+    approvedRuntime: 0,
+    topicPlaybooks: 0,
+    playableAssets: 0,
+  });
+
+  useEffect(() => {
+    let mounted = true;
+    loadDataControlRoom()
+      .then((payload) => {
+        if (!mounted) {
+          return;
+        }
+        setMetrics({
+          approvedRuntime: Number(payload.summary.approved_runtime_count || 0),
+          topicPlaybooks: Number(payload.summary.topic_playbook_count || 0),
+          playableAssets: Number(payload.summary.playable_asset_count || 0),
+        });
+      })
+      .catch(() => {
+        if (!mounted) {
+          return;
+        }
+        setMetrics({
+          approvedRuntime: 0,
+          topicPlaybooks: 0,
+          playableAssets: 0,
+        });
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -31,7 +65,7 @@ export default function MetricsFooter() {
       });
     }, containerRef);
     return () => ctx.revert();
-  }, []);
+  }, [metrics]);
 
   return (
     <footer className="metrics-footer" ref={containerRef}>
@@ -40,23 +74,23 @@ export default function MetricsFooter() {
 
         <div className="metrics-grid">
           <div className="metric-item">
-            <span className="metric-number gradient-text" data-target="23">0</span>
+            <span className="metric-number gradient-text" data-target={metrics.approvedRuntime}>{metrics.approvedRuntime}</span>
             <span className="metric-label">Approved Runtime Books</span>
           </div>
           <div className="metric-item">
-            <span className="metric-number gradient-text" data-target="4">0</span>
-            <span className="metric-label">Review Pending Drafts</span>
+            <span className="metric-number gradient-text" data-target={metrics.topicPlaybooks}>{metrics.topicPlaybooks}</span>
+            <span className="metric-label">Topic Playbooks</span>
           </div>
           <div className="metric-item">
-            <span className="metric-number gradient-text" data-target="1500">0</span>
-            <span className="metric-label">Gold Corpus Chunks (est.)</span>
+            <span className="metric-number gradient-text" data-target={metrics.playableAssets}>{metrics.playableAssets}</span>
+            <span className="metric-label">Playable Assets</span>
           </div>
         </div>
 
         <div className="footer-cta">
-          <a href="http://localhost:5173/workspace" className="btn-primary" target="_blank" rel="noreferrer">
+          <Link to="/workspace" className="btn-primary">
             Workspace 시작하기
-          </a>
+          </Link>
           <Link to="/details" className="btn-secondary">
             프로젝트 상세 보기
           </Link>
