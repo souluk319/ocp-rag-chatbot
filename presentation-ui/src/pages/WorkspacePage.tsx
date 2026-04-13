@@ -11,6 +11,7 @@ import {
   BookOpen,
   Cpu,
   ArrowRight,
+  ArrowDown,
   Sparkles,
   Bot,
   Link as LinkIcon,
@@ -116,6 +117,30 @@ const PACK_OPTIONS = [
   'GitLab Self-Managed',
   'Harbor Registry',
 ] as const;
+
+const SUGGESTED_QUESTIONS = [
+  'OpenShift 클러스터 업그레이드 시 주의사항은?',
+  'etcd 백업 및 복구 절차를 알려주세요',
+  'Pod가 CrashLoopBackOff 상태일 때 해결 방법은?',
+  'OpenShift에서 네트워크 정책을 설정하는 방법은?',
+  '노드 리소스 부족 시 대처 방법은?',
+  'RBAC 권한 설정 베스트 프랙티스는?',
+  'Operator 업데이트 시 호환성 확인 방법은?',
+  'OpenShift 인그레스 컨트롤러 설정 방법은?',
+  '클러스터 인증서 갱신 절차는?',
+  '스토리지 클래스 설정과 PV/PVC 관리 방법은?',
+  'OpenShift 모니터링 스택 커스터마이징 방법은?',
+  '멀티 클러스터 환경에서 ACM을 활용하는 방법은?',
+];
+
+function pickRandom<T>(pool: T[], count: number): T[] {
+  const copy = [...pool];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, count);
+}
 
 type InlineToken =
   | { kind: 'text'; value: string }
@@ -447,17 +472,20 @@ function AssistantAnswer({
 }) {
   const [displayLength, setDisplayLength] = useState(0);
 
-  // Real-time scroll sync during streaming
+  // Real-time scroll sync during streaming — only if user hasn't scrolled up
   useEffect(() => {
     if (displayLength > 0) {
       const chatContainer = document.querySelector('.chat-messages');
       if (chatContainer) {
-        requestAnimationFrame(() => {
-          chatContainer.scrollTo({
-            top: chatContainer.scrollHeight,
-            behavior: 'auto'
+        const atBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 80;
+        if (atBottom) {
+          requestAnimationFrame(() => {
+            chatContainer.scrollTo({
+              top: chatContainer.scrollHeight,
+              behavior: 'auto'
+            });
           });
-        });
+        }
       }
     }
   }, [displayLength]);
@@ -577,6 +605,9 @@ export default function WorkspacePage() {
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [openSessionMenuId, setOpenSessionMenuId] = useState<string | null>(null);
 
+  // Scroll + welcome
+  const [userScrolledUp, setUserScrolledUp] = useState(false);
+
   // Collapsible panels
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
@@ -599,9 +630,27 @@ export default function WorkspacePage() {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const welcomeQuestions = useMemo(() => pickRandom(SUGGESTED_QUESTIONS, 4), [sessionId]);
+
+  function handleChatScroll(): void {
+    const el = chatMessagesRef.current;
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    setUserScrolledUp(!atBottom);
+  }
+
+  function scrollToBottom(): void {
+    const el = chatMessagesRef.current;
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }
+  }
+
   function resetSession() {
     setSessionId(makeId('ID'));
     setMessages([]);
+    setUserScrolledUp(false);
     void refreshSessionList();
   }
 
@@ -724,16 +773,19 @@ export default function WorkspacePage() {
   useEffect(() => {
     const container = chatMessagesRef.current;
     if (messages.length > 0 && container) {
-      requestAnimationFrame(() => {
-        try {
-          container.scrollTo({
-            top: container.scrollHeight,
-            behavior: 'smooth'
-          });
-        } catch {
-          // ignore
-        }
-      });
+      const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+      if (atBottom) {
+        requestAnimationFrame(() => {
+          try {
+            container.scrollTo({
+              top: container.scrollHeight,
+              behavior: 'smooth'
+            });
+          } catch {
+            // ignore
+          }
+        });
+      }
     }
   }, [messages]);
 
@@ -785,14 +837,6 @@ export default function WorkspacePage() {
         setPackLabel(room.active_pack.pack_label || 'OpenShift 4.20');
         setManualBooks(runtimeBooks);
         setDrafts(nextDrafts);
-
-        if (nextDrafts[0]) {
-          void openDraftPreview(nextDrafts[0].draft_id, nextDrafts);
-          return;
-        }
-        if (runtimeBooks[0]?.viewer_path) {
-          void openManualPreview(runtimeBooks[0]);
-        }
       } catch (error) {
         console.error(error);
       }
@@ -1266,7 +1310,29 @@ export default function WorkspacePage() {
           {/* ── Center Panel: Chat ── */}
           <Panel defaultSize={45} minSize={30} className="workspace-panel-item">
             <div className="panel-inner chat-area">
-              <div className="chat-messages" ref={chatMessagesRef}>
+              <div className="chat-messages" ref={chatMessagesRef} onScroll={handleChatScroll}>
+                {messages.length === 0 && (
+                  <div className="chat-welcome">
+                    <div className="welcome-icon">
+                      <Sparkles size={36} />
+                    </div>
+                    <h2 className="welcome-title">무엇이든 질문하세요</h2>
+                    <p className="welcome-subtitle">OpenShift 운영에 필요한 답변을 찾아드립니다</p>
+                    <div className="welcome-question-grid">
+                      {welcomeQuestions.map((q, i) => (
+                        <button
+                          key={`welcome-q-${i}`}
+                          type="button"
+                          className="welcome-question-card glass-panel"
+                          onClick={() => { void handleSend(q); }}
+                          disabled={isSending}
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {messages.map((message) => (
                   <div key={message.id} className={`message-row ${message.role}`}>
                     <div className="message-bubble glass-panel">
@@ -1324,6 +1390,16 @@ export default function WorkspacePage() {
 
                 <div ref={scrollAnchorRef} />
               </div>
+
+              {userScrolledUp && messages.length > 0 && (
+                <button
+                  className="scroll-to-bottom-btn"
+                  type="button"
+                  onClick={scrollToBottom}
+                >
+                  <ArrowDown size={18} />
+                </button>
+              )}
 
               <div className="chat-input-wrapper">
                 <div className="input-container glass-panel">

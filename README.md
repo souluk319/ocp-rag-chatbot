@@ -1,6 +1,6 @@
 # Play Book Studio
 
-> 테스트 서버: [http://localhost:5173/](http://localhost:5173/) | Runtime API: [http://127.0.0.1:8765/](http://127.0.0.1:8765/)
+> 테스트 서버: [http://192.168.119.16:5173/](http://192.168.119.16:5173/) | Runtime API: [http://192.168.119.16:8765/](http://192.168.119.16:8765/)
 
 Play Book Studio는 공식 문서, 운영 절차서, 벤더 가이드, 사내 runbook을 같은 구조로 정리해서 `읽는 문서`, `실행용 플레이북`, `근거 기반 답변`으로 이어 주는 플레이북 플랫폼이다.
 
@@ -27,12 +27,12 @@ Play Book Studio는 공식 문서, 운영 절차서, 벤더 가이드, 사내 ru
 - `Runtime Backend`
   ingestion, retrieval, session persistence, viewer serving, repository search API
 
-## Local URLs
+## Test Server URLs
 
-- Frontend dev server: [http://localhost:5173/](http://localhost:5173/)
-- Workspace: [http://localhost:5173/workspace](http://localhost:5173/workspace)
-- Playbook Library: [http://localhost:5173/playbook-library](http://localhost:5173/playbook-library)
-- Backend runtime: [http://127.0.0.1:8765/](http://127.0.0.1:8765/)
+- Frontend dev server: [http://192.168.119.16:5173/](http://192.168.119.16:5173/)
+- Workspace: [http://192.168.119.16:5173/workspace](http://192.168.119.16:5173/workspace)
+- Playbook Library: [http://192.168.119.16:5173/playbook-library](http://192.168.119.16:5173/playbook-library)
+- Backend runtime: [http://192.168.119.16:8765/](http://192.168.119.16:8765/)
 
 Vite dev server는 `5173`에서 떠 있고, 아래 경로를 `8765` runtime으로 프록시한다.
 
