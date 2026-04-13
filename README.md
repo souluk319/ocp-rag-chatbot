@@ -308,14 +308,11 @@ play_book.cmd runtime
 
 ## Reference Documents
 
-- [FILE_ROLE_GUIDE.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/FILE_ROLE_GUIDE.md:1)
-- [CODEX_OPERATING_CHARTER.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/CODEX_OPERATING_CHARTER.md:1)
-- [OWNER_VALUE_CASE.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/OWNER_VALUE_CASE.md:1)
-- [BEACHHEAD_ICP_AND_TRIGGER.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/BEACHHEAD_ICP_AND_TRIGGER.md:1)
-- [CUSTOMER_POC_BUYER_PACKET.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/CUSTOMER_POC_BUYER_PACKET.md:1)
+- [Archive Index](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/archive/INDEX.md:1)
+- [Legacy Reference Docs](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/archive/legacy_reference_docs/README.md:1)
 
 ## Repository Notes
 
 - 규칙 우선순위는 [PROJECT.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/PROJECT.md:1) 를 본다.
-- 저장소 맵은 [FILE_ROLE_GUIDE.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/FILE_ROLE_GUIDE.md:1) 를 본다.
+- 보조 문서 분류는 [Archive Index](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/archive/INDEX.md:1) 를 본다.
 - `archive/` 아래 문서는 현재 판단 기준이 아니다. 분류 기준은 [archive/INDEX.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/archive/INDEX.md:1)를 본다.
