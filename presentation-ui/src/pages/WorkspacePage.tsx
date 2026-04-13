@@ -6,7 +6,6 @@ import {
   FileText,
   ChevronDown,
   ChevronRight,
-  ChevronLeft,
   Send,
   BookOpen,
   Cpu,
@@ -20,8 +19,9 @@ import {
   Settings,
   Plus,
   MessageSquare,
-  MoreVertical,
   Trash2,
+  PanelLeftClose,
+  PanelRightClose,
 } from 'lucide-react';
 import gsap from 'gsap';
 import './WorkspacePage.css';
@@ -603,7 +603,6 @@ export default function WorkspacePage() {
   const [sessionList, setSessionList] = useState<SessionSummary[]>([]);
   const [isLoadingSession, setIsLoadingSession] = useState(false);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
-  const [openSessionMenuId, setOpenSessionMenuId] = useState<string | null>(null);
 
   // Scroll + welcome
   const [userScrolledUp, setUserScrolledUp] = useState(false);
@@ -684,7 +683,6 @@ export default function WorkspacePage() {
     setDeletingSessionId(targetSessionId);
     try {
       await deleteSession(targetSessionId);
-      setOpenSessionMenuId(null);
       setSessionList((current) => current.filter((session) => session.session_id !== targetSessionId));
       if (targetSessionId === sessionId) {
         setSessionId(makeId('ID'));
@@ -710,7 +708,6 @@ export default function WorkspacePage() {
     setDeletingSessionId('__all__');
     try {
       await deleteAllSessions();
-      setOpenSessionMenuId(null);
       setSessionList([]);
       setSessionId(makeId('ID'));
       setMessages([]);
@@ -748,19 +745,14 @@ export default function WorkspacePage() {
   }
 
   useEffect(() => {
-    if (!packDropdownOpen && !openSessionMenuId) {
+    if (!packDropdownOpen) {
       return undefined;
     }
 
     function handleWindowPointerDown(event: MouseEvent): void {
       const target = event.target as HTMLElement | null;
-      if (!containerRef.current?.contains(target as Node)) {
+      if (!target?.closest('.pack-selector-wrapper')) {
         setPackDropdownOpen(false);
-        setOpenSessionMenuId(null);
-        return;
-      }
-      if (openSessionMenuId && !target?.closest('.session-menu-shell')) {
-        setOpenSessionMenuId(null);
       }
     }
 
@@ -768,7 +760,7 @@ export default function WorkspacePage() {
     return () => {
       window.removeEventListener('mousedown', handleWindowPointerDown);
     };
-  }, [packDropdownOpen, openSessionMenuId]);
+  }, [packDropdownOpen]);
 
   useEffect(() => {
     const container = chatMessagesRef.current;
@@ -1201,17 +1193,20 @@ export default function WorkspacePage() {
                 <div className="header-icon"><MessageSquare size={18} /></div>
                 <h3>Chat History</h3>
                 <div className="session-header-actions">
-                  <button className="new-chat-btn" type="button" onClick={resetSession} title="New Chat">
-                    <Plus size={16} />
+                  <button className="header-action-btn" type="button" onClick={resetSession} title="New Chat">
+                    <Plus size={14} />
                   </button>
                   <button
-                    className="history-clear-btn"
+                    className="header-action-btn header-action-danger"
                     type="button"
                     onClick={() => { void handleDeleteAllSessions(); }}
                     title="Delete All Chat History"
                     disabled={Boolean(deletingSessionId) || isLoadingSession || sessionList.length === 0}
                   >
-                    <Trash2 size={15} />
+                    <Trash2 size={14} />
+                  </button>
+                  <button className="header-action-btn" type="button" onClick={toggleLeftPanel} title="Close sidebar">
+                    <PanelLeftClose size={14} />
                   </button>
                 </div>
               </div>
@@ -1224,56 +1219,31 @@ export default function WorkspacePage() {
                   </div>
                 )}
                 {sessionList.map((session) => (
-                  <div
+                  <button
                     key={session.session_id}
-                    className={`session-item-shell ${session.session_id === sessionId ? 'active' : ''}`}
+                    type="button"
+                    className={`session-item ${session.session_id === sessionId ? 'active' : ''}`}
+                    onClick={() => { void handleSessionResume(session.session_id); }}
+                    disabled={isLoadingSession || deletingSessionId === session.session_id}
                   >
+                    <div className="session-title">{session.session_name || session.first_query || `세션 ${session.session_id.slice(0, 8)}`}</div>
+                    <div className="session-meta">
+                      <span>{session.turn_count} turns</span>
+                      {session.updated_at && <span>{session.updated_at.slice(0, 10)}</span>}
+                    </div>
                     <button
                       type="button"
-                      className="session-item"
-                      onClick={() => { void handleSessionResume(session.session_id); }}
-                      disabled={isLoadingSession || deletingSessionId === session.session_id}
+                      className="session-delete-inline"
+                      title="삭제"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void handleSessionDelete(session.session_id);
+                      }}
+                      disabled={Boolean(deletingSessionId) || isLoadingSession}
                     >
-                      <div className="session-title">{session.session_name || session.first_query || `세션 ${session.session_id.slice(0, 8)}`}</div>
-                      <div className="session-meta">
-                        <span>{session.turn_count} turns</span>
-                        {session.updated_at && <span>{session.updated_at.slice(0, 10)}</span>}
-                      </div>
+                      <Trash2 size={13} />
                     </button>
-                    <div className="session-menu-shell">
-                      <button
-                        type="button"
-                        className="session-menu-trigger"
-                        title="Session actions"
-                        aria-label={`Session actions for ${session.session_name || session.session_id}`}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setOpenSessionMenuId((current) => (
-                            current === session.session_id ? null : session.session_id
-                          ));
-                        }}
-                        disabled={Boolean(deletingSessionId) || isLoadingSession}
-                      >
-                        <MoreVertical size={14} />
-                      </button>
-                      {openSessionMenuId === session.session_id && (
-                        <div className="session-menu-popover">
-                          <button
-                            type="button"
-                            className="session-menu-delete"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              void handleSessionDelete(session.session_id);
-                            }}
-                            disabled={Boolean(deletingSessionId) || isLoadingSession}
-                          >
-                            <Trash2 size={14} />
-                            <span>삭제</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  </button>
                 ))}
               </div>
 
@@ -1300,16 +1270,28 @@ export default function WorkspacePage() {
             </div>
           </Panel>
 
-          {/* ── Left Separator with Toggle ── */}
           <Separator className="custom-resize-handle">
-            <button className="panel-collapse-btn" type="button" onClick={toggleLeftPanel} title={leftCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
-              {leftCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-            </button>
+            <div className="handle-visual" />
           </Separator>
 
           {/* ── Center Panel: Chat ── */}
           <Panel defaultSize={45} minSize={30} className="workspace-panel-item">
             <div className="panel-inner chat-area">
+              {(leftCollapsed || rightCollapsed) && (
+                <div className="chat-panel-toolbar">
+                  {leftCollapsed && (
+                    <button className="panel-reopen-btn" type="button" onClick={toggleLeftPanel} title="Open sidebar">
+                      <PanelLeftClose size={16} />
+                    </button>
+                  )}
+                  <div className="chat-panel-toolbar-spacer" />
+                  {rightCollapsed && (
+                    <button className="panel-reopen-btn" type="button" onClick={toggleRightPanel} title="Open panel">
+                      <PanelRightClose size={16} />
+                    </button>
+                  )}
+                </div>
+              )}
               <div className="chat-messages" ref={chatMessagesRef} onScroll={handleChatScroll}>
                 {messages.length === 0 && (
                   <div className="chat-welcome">
@@ -1419,11 +1401,8 @@ export default function WorkspacePage() {
             </div>
           </Panel>
 
-          {/* ── Right Separator with Toggle ── */}
           <Separator className="custom-resize-handle">
-            <button className="panel-collapse-btn" type="button" onClick={toggleRightPanel} title={rightCollapsed ? 'Expand panel' : 'Collapse panel'}>
-              {rightCollapsed ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
-            </button>
+            <div className="handle-visual" />
           </Separator>
 
           {/* ── Right Panel: Knowledge Studio + Sources ── */}
@@ -1440,6 +1419,10 @@ export default function WorkspacePage() {
               <div className="panel-header">
                 <div className="header-icon"><BookOpen size={18} /></div>
                 <h3>Knowledge Studio</h3>
+
+                <button className="header-action-btn" type="button" onClick={toggleRightPanel} title="Close panel" style={{ marginLeft: 'auto' }}>
+                  <PanelRightClose size={14} />
+                </button>
 
                 {/* Upload + Sources inline in header */}
                 <input

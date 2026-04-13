@@ -6,7 +6,16 @@ Play Book Studio는 공식 문서, 운영 절차서, 벤더 가이드, 사내 ru
 
 수집된 문서는 정규화 과정을 거쳐 `Manual Book`으로 materialize되고, 여기서 `Topic`, `Operation`, `Troubleshooting`, `Policy`, `Synthesized` 계열의 `Derived Playbook`이 생성된다. 사용자는 `Workspace`에서 근거 기반 챗봇과 문서 뷰어로 이를 탐색하고, `Playbook Library`에서 런타임 북과 파생 자산을 확인할 수 있다.
 
-## Current Scope
+## What It Produces
+
+- `Manual Book`
+  원문 매뉴얼을 canonical section, provenance, quality metadata와 함께 다시 묶은 읽기용 북
+- `Derived Playbook Family`
+  `Topic`, `Operation`, `Troubleshooting`, `Policy Overlay`, `Synthesized` 계열의 실행형 파생 북
+- `Grounded Answer Surface`
+  `answer -> source -> version -> anchor` 추적이 가능한 채팅 응답
+
+## Current Scope And State
 
 - 현재 기본 validated pack은 `OpenShift 4.20` 이다.
 - customer document intake 경로가 연결돼 있다.
@@ -27,12 +36,21 @@ Play Book Studio는 공식 문서, 운영 절차서, 벤더 가이드, 사내 ru
 - `Runtime Backend`
   ingestion, retrieval, session persistence, viewer serving, repository search API
 
-## Test Server URLs
+## Server Access
 
-- Frontend dev server: [http://192.168.119.16:5173/](http://192.168.119.16:5173/)
+### Shared Test Server
+
+- Frontend: [http://192.168.119.16:5173/](http://192.168.119.16:5173/)
 - Workspace: [http://192.168.119.16:5173/workspace](http://192.168.119.16:5173/workspace)
 - Playbook Library: [http://192.168.119.16:5173/playbook-library](http://192.168.119.16:5173/playbook-library)
-- Backend runtime: [http://192.168.119.16:8765/](http://192.168.119.16:8765/)
+- Runtime API: [http://192.168.119.16:8765/](http://192.168.119.16:8765/)
+
+### Local Access
+
+- Frontend: [http://localhost:5173/](http://localhost:5173/)
+- Workspace: [http://localhost:5173/workspace](http://localhost:5173/workspace)
+- Playbook Library: [http://localhost:5173/playbook-library](http://localhost:5173/playbook-library)
+- Runtime API: [http://127.0.0.1:8765/](http://127.0.0.1:8765/)
 
 Vite dev server는 `5173`에서 떠 있고, 아래 경로를 `8765` runtime으로 프록시한다.
 
@@ -46,29 +64,37 @@ Vite dev server는 `5173`에서 떠 있고, 아래 경로를 `8765` runtime으�
 ## System Architecture
 
 ```mermaid
-flowchart LR
-    U["User"] --> FE["Frontend Surface<br/>Vite Dev Server :5173"]
+flowchart TB
+    U["User"]
 
-    subgraph FEBOX["UI Surfaces"]
-      L["Landing"]
-      W["Workspace"]
-      P["Playbook Library"]
+    subgraph SURFACE["Product Surfaces"]
+      LAND["Landing"]
+      WORK["Workspace"]
+      LIB["Playbook Library"]
     end
 
-    FE --> L
-    FE --> W
-    FE --> P
+    FE["Frontend Surface<br/>Vite Dev Server :5173"]
+    API["Runtime Backend<br/>play_book.cmd ui<br/>:8765"]
 
-    FE --> API["Runtime Backend<br/>play_book.cmd ui<br/>127.0.0.1:8765"]
+    subgraph FOUNDRY["Data Foundry Pipeline"]
+      CAP["1. Multi-Source Capture<br/>Official Docs / Upload / Repository"]
+      NORM["2. Canonical Normalization<br/>HTML / PDF / DOCX / PPTX / XLSX"]
+      APPROVE["3. Approval & Materialization<br/>Runtime Books / Manual Books"]
+      DERIVE["4. Derived Playbook Foundry<br/>Topic / Operation / Troubleshooting / Policy / Synthesized"]
+    end
 
-    subgraph INGEST["Knowledge Refinery Runtime"]
-      CAP["Multi-Source Capture<br/>Official Docs / Upload / Repository"]
-      NORM["Canonical Normalization<br/>HTML / PDF / DOCX / PPTX / XLSX"]
-      APPROVE["Approval & Materialization<br/>Runtime Books / Manual Books"]
-      DERIVE["Derived Playbook Foundry<br/>Topic / Operation / Troubleshooting / Policy / Synthesized"]
+    subgraph SERVE["Serving And Recall"]
       RET["Retrieval & Answering<br/>Hybrid Search / Rerank / Citation"]
       SESS["Session Store<br/>runtime sessions json"]
     end
+
+    ART["Artifacts Root<br/>runtime / corpus / playbooks / reports"]
+
+    U --> FE
+    FE --> LAND
+    FE --> WORK
+    FE --> LIB
+    FE --> API
 
     API --> CAP
     CAP --> NORM
@@ -79,7 +105,7 @@ flowchart LR
     RET --> API
     API --> SESS
 
-    CAP --> ART["Artifacts Root<br/>runtime / corpus / playbooks / reports"]
+    CAP --> ART
     NORM --> ART
     APPROVE --> ART
     DERIVE --> ART
@@ -110,7 +136,7 @@ flowchart LR
 - `Viewer serving`
   `/docs/*`, `/playbooks/*` 경로를 backend에서 직접 서빙
 
-## Key APIs
+## Main Runtime APIs
 
 - `POST /api/chat`
 - `GET /api/sessions`
@@ -129,33 +155,43 @@ flowchart LR
 
 핵심 런타임 라우트는 [server.py](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/app/server.py:1), route handler는 [server_routes.py](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/app/server_routes.py:1)를 본다.
 
-## Local Run
+## Run The System
 
-### 1. Backend runtime
+### 1. Backend Runtime
 
 ```powershell
-play_book.cmd ui --host 127.0.0.1 --port 8765 --no-browser
+play_book.cmd ui --host 0.0.0.0 --port 8765 --no-browser
 ```
 
-기본 포트는 `8765` 다. CLI 정의는 [cli.py](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/cli.py:37)를 본다.
+공유 테스트 서버로 열 때는 `0.0.0.0`, 로컬 전용으로만 띄울 때는 `127.0.0.1`을 쓴다. CLI 정의는 [cli.py](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/cli.py:37)를 본다.
 
-### 2. Frontend dev server
+### 2. Frontend Dev Server
 
 ```powershell
 Set-Location presentation-ui
 npm install
-npm run dev
+npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
-기본 dev 주소는 `http://localhost:5173` 이다.
+공유 테스트 서버로 열 때는 `0.0.0.0`, 로컬 전용으로만 띄울 때는 기본 `localhost`를 써도 된다.
 
-### 3. Single query / eval / runtime report
+### 3. Single Query / Eval / Runtime Report
 
 ```powershell
 play_book.cmd ask --query "etcd 백업은 어떻게 하나?"
 play_book.cmd eval
 play_book.cmd runtime
 ```
+
+## Repo Reading Order
+
+아래 순서로 보면 현재 제품과 규칙을 가장 빠르게 파악할 수 있다.
+
+1. [AGENTS.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/AGENTS.md:1)
+2. [PROJECT.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/PROJECT.md:1)
+3. [Q1_8_PRODUCT_CONTRACT.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/Q1_8_PRODUCT_CONTRACT.md:1)
+4. [P0_ARCHITECTURE_FREEZE_ADDENDUM.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/P0_ARCHITECTURE_FREEZE_ADDENDUM.md:1)
+5. [TASK_BOARD.yaml](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/TASK_BOARD.yaml:1)
 
 ## Tech Stack
 
