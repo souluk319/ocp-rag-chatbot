@@ -1,39 +1,40 @@
 board_version: 2
 product: play-book-studio
 product_mode: enterprise_playbook_platform
-north_star: enterprise_owner_wants_to_buy
+north_star: trustworthy_playbook_runtime
+board_role: execution_status_and_sequence
 validated_pack:
   product: openshift_container_platform
   version: "4.20"
   locale: ko
 principles:
-  - owner_value_first
+  - current_scope_before_expansion
   - proof_before_polish
-  - governance_is_product
+  - runtime_evidence_before_claim
   - poc_must_leave_reusable_assets
   - pack_strategy_over_single_demo
-  - playable_pack_over_raw_doc_mirroring
+  - derived_playbooks_over_raw_doc_mirroring
 owners:
   product_architect:
-    role: owner_narrative_pack_strategy_governance
+    role: product_contracts_pack_strategy_governance
   platform_engineer:
-    role: runtime_demo_deployment_controls
+    role: runtime_surface_deployment_controls
   knowledge_engineer:
-    role: intake_normalization_playbook_projection
+    role: intake_normalization_playbook_derivation
   retrieval_engineer:
     role: grounded_runtime_search_session_quality
   judge:
-    role: evaluation_release_and_poc_gate
+    role: evaluation_release_gate
 phases:
   - id: P0
-    name: owner_narrative_reset
-    goal: Rewrite the product so an enterprise owner immediately understands why to buy.
+    name: product_contract_reset
+    goal: 루트 문서를 현재 범위, 증거, release 경계 기준으로 다시 고정한다.
     epics:
       - id: P0-E1
-        name: contract_rewrite
+        name: root_contract_rewrite
         tasks:
           - id: P0-E1-T1
-            title: Rewrite root guidance around buyer value and PoC conversion
+            title: 루트 안내 문서를 제품 계약 기준으로 다시 정리한다
             owner: product_architect
             status: done
             inputs:
@@ -41,13 +42,13 @@ phases:
               - README.md
               - PROJECT.md
               - TASK_BOARD.yaml
-              - FILE_ROLE_GUIDE.md
+              - archive/legacy_reference_docs/FILE_ROLE_GUIDE.md
             outputs:
               - AGENTS.md
               - README.md
               - PROJECT.md
               - TASK_BOARD.yaml
-              - FILE_ROLE_GUIDE.md
+              - archive/legacy_reference_docs/FILE_ROLE_GUIDE.md
             tests:
               - docs_state_owner_value_and_pack_strategy
             acceptance:
@@ -55,10 +56,10 @@ phases:
               - repo_contracts_describe_buying_reason_poc_and_governance
             blockers: []
       - id: P0-E2
-        name: buyer_definition_packet
+        name: scope_and_gate_definition
         tasks:
           - id: P0-E2-T1
-            title: Define owner value case and truthful sales stage
+            title: 현재 상업 범위와 paid PoC 기준을 문서로 잠근다
             owner: product_architect
             status: done
             inputs:
@@ -67,7 +68,7 @@ phases:
               - AGENTS.md
               - ../ocp-rag-chatbot-data/answering/answer_eval_report.json
             outputs:
-              - OWNER_VALUE_CASE.md
+              - archive/legacy_reference_docs/OWNER_VALUE_CASE.md
             tests:
               - owner_value_case_exists_and_states_paid_poc_truth
             acceptance:
@@ -76,7 +77,7 @@ phases:
             blockers:
               - P0-E1-T1
           - id: P0-E2-T2
-            title: Narrow the first ideal customer and trigger events
+            title: 첫 buyer 와 trigger event 를 좁혀서 기록한다
             owner: product_architect
             status: done
             inputs:
@@ -84,7 +85,7 @@ phases:
               - README.md
               - src/play_book_studio/app/static/index.html
             outputs:
-              - BEACHHEAD_ICP_AND_TRIGGER.md
+              - archive/legacy_reference_docs/BEACHHEAD_ICP_AND_TRIGGER.md
             tests:
               - beachhead_icp_is_explicit
             acceptance:
@@ -93,7 +94,7 @@ phases:
             blockers:
               - P0-E1-T1
           - id: P0-E2-T3
-            title: Define why an owner says no before adding more features
+            title: 기능 추가 전에 release 거절 사유를 먼저 고정한다
             owner: judge
             status: done
             inputs:
@@ -111,7 +112,7 @@ phases:
             blockers:
               - P0-E1-T1
           - id: P0-E2-T4
-            title: Lock the owner-demo scorecard and hard blockers
+            title: owner demo scorecard 와 hard blocker 를 잠근다
             owner: judge
             status: done
             inputs:
@@ -121,14 +122,14 @@ phases:
             outputs:
               - OWNER_SCENARIO_SCORECARD.yaml
             tests:
-              - scorecard_lists_full_sale_gate_and_hard_blockers
+              - scorecard_lists_full_sale_gate_and_release_blockers
             acceptance:
               - demo_questions_are_explicit
               - clarification_miss_and_hard_miss_block_release
             blockers:
               - P0-E1-T1
           - id: P0-E2-T5
-            title: Define the customer-document PoC as a contractable buyer packet
+            title: customer document PoC 범위를 계약 가능한 형태로 정리한다
             owner: product_architect
             status: done
             inputs:
@@ -136,7 +137,7 @@ phases:
               - PROJECT.md
               - OWNER_SCENARIO_SCORECARD.yaml
             outputs:
-              - CUSTOMER_POC_BUYER_PACKET.md
+              - archive/legacy_reference_docs/CUSTOMER_POC_BUYER_PACKET.md
             tests:
               - poc_packet_declares_inputs_deliverables_and_stop_conditions
             acceptance:
@@ -145,20 +146,20 @@ phases:
             blockers:
               - P0-E2-T4
           - id: P0-E2-T6
-            title: Lock the Q1-8 buyer questions into a single product contract table
+            title: Q1-8 buyer question 을 하나의 제품 계약표로 잠근다
             owner: judge
             status: done
             inputs:
               - OWNER_SCENARIO_SCORECARD.yaml
-              - OWNER_VALUE_CASE.md
-              - CUSTOMER_POC_BUYER_PACKET.md
+              - archive/legacy_reference_docs/OWNER_VALUE_CASE.md
+              - archive/legacy_reference_docs/CUSTOMER_POC_BUYER_PACKET.md
               - ../ocp-rag-chatbot-data/answering/answer_eval_report.json
               - reports/build_logs/foundry_runs/runtime_report/latest.json
             outputs:
               - Q1_8_PRODUCT_CONTRACT.md
               - README.md
               - PROJECT.md
-              - FILE_ROLE_GUIDE.md
+              - archive/legacy_reference_docs/FILE_ROLE_GUIDE.md
               - TASK_BOARD.yaml
             tests:
               - q1_8_contract_maps_every_buyer_question_to_evidence_and_blockers
@@ -168,20 +169,20 @@ phases:
             blockers:
               - P0-E2-T5
           - id: P0-E2-T7
-            title: Freeze the enterprise architecture addendum from the external review pack
+            title: 외부 리뷰를 반영한 architecture addendum 을 동결한다
             owner: product_architect
             status: done
             inputs:
               - Q1_8_PRODUCT_CONTRACT.md
               - OWNER_SCENARIO_SCORECARD.yaml
-              - CUSTOMER_POC_BUYER_PACKET.md
+              - archive/legacy_reference_docs/CUSTOMER_POC_BUYER_PACKET.md
               - ../play-book-studio-enterprise-review-pack/play-book-studio-enterprise-gap-report.md
               - ../play-book-studio-enterprise-review-pack/play-book-studio-enterprise-plan-v2.md
             outputs:
               - P0_ARCHITECTURE_FREEZE_ADDENDUM.md
               - README.md
               - PROJECT.md
-              - FILE_ROLE_GUIDE.md
+              - archive/legacy_reference_docs/FILE_ROLE_GUIDE.md
               - TASK_BOARD.yaml
             tests:
               - addendum_freezes_parsed_security_surface_and_gold_v2
@@ -192,14 +193,14 @@ phases:
             blockers:
               - P0-E2-T6
   - id: P1
-    name: enterprise_demo_surface
-    goal: Make the main experience sell the product in the first minute.
+    name: core_demo_surface
+    goal: 첫 1분 안에 runtime 구조와 조작 흐름이 이해되게 만든다.
     epics:
       - id: P1-E1
-        name: landing_and_demo_flow
+        name: landing_and_runtime_flow
         tasks:
           - id: P1-E1-T1
-            title: Rebuild the main page as a sales-grade landing plus live demo
+            title: 메인 페이지를 제품 소개와 live demo 가 이어지는 구조로 재구성한다
             owner: platform_engineer
             status: done
             inputs:
@@ -238,13 +239,13 @@ phases:
               - P2-E1-T1
   - id: P2
     name: governance_and_pack_control
-    goal: Turn the platform story into something an enterprise can trust and deploy.
+    goal: provenance, review 상태, pack 경계를 고정해 runtime 신뢰도를 올린다.
     epics:
       - id: P2-E1
         name: provenance_review_and_release_gate
         tasks:
           - id: P2-E1-T1
-            title: Enforce source version anchor and review metadata through manual-book and derived-playbook flow
+            title: manual book 과 derived playbook 전 구간에서 source/version/review 메타를 강제한다
             owner: knowledge_engineer
             status: done
             inputs:
@@ -261,7 +262,7 @@ phases:
             blockers:
               - P0-E1-T1
           - id: P2-E1-T2
-            title: Expose runtime health source-of-truth drift and promotion readiness in control room
+            title: Control Tower 에 source-of-truth drift 와 promotion readiness 를 노출한다
             owner: judge
             status: done
             inputs:
@@ -277,7 +278,7 @@ phases:
             blockers:
               - P2-E1-T1
           - id: P2-E1-T3
-            title: Extend pack governance with parsed-artifact lineage and private-doc security boundary
+            title: parsed-artifact lineage 와 private-doc security boundary 를 pack governance 에 편입한다
             owner: knowledge_engineer
             status: done
             inputs:
@@ -301,13 +302,13 @@ phases:
               - P0-E2-T7
   - id: P3
     name: ocp_pack_hardening
-    goal: Make the first validated pack strong enough to justify a paid PoC.
+    goal: 첫 validated pack 을 안정적인 paid PoC 기준선까지 끌어올린다.
     epics:
       - id: P3-E1
         name: runtime_answer_and_playbook_quality
         tasks:
           - id: P3-E1-T1
-            title: Reduce topic drift and prove whether the current retrieval stack is sufficient in real-world runtime answers
+            title: 실제 질문 로그 기준으로 topic drift 를 줄이고 retrieval sufficiency 를 검증한다
             owner: retrieval_engineer
             status: done
             write_scope:
@@ -334,7 +335,7 @@ phases:
             blockers:
               - P2-E1-T1
           - id: P3-E1-T2
-            title: Keep the OCP pack buyer-ready with reviewed manual-book and topic-playbook coverage and visible limits
+            title: OCP pack 의 reviewed coverage 와 visible limit 를 buyer-readable 상태로 유지한다
             owner: knowledge_engineer
             status: done
             write_scope:
@@ -358,7 +359,7 @@ phases:
             blockers:
               - P2-E1-T1
           - id: P3-E1-T3
-            title: Produce a Graph sidecar decision packet from similar-document validation evidence
+            title: similar-document validation evidence 로 graph sidecar 채택 판단 자료를 만든다
             owner: retrieval_engineer
             status: done
             write_scope:
@@ -385,13 +386,13 @@ phases:
               - P3-E1-T1
   - id: P4
     name: customer_document_poc
-    goal: Prove that customer-owned documents can become a reusable pack not a one-off demo.
+    goal: 고객 문서가 일회성 데모가 아니라 재사용 가능한 pack 으로 승격됨을 증명한다.
     epics:
       - id: P4-E1
         name: intake_to_pack
         tasks:
           - id: P4-E1-T1
-            title: Turn uploaded web or PDF documents into a customer-specific manual-book and topic-playbook path
+            title: 업로드된 web/PDF 문서를 customer-specific manual book 과 topic playbook 경로로 연결한다
             owner: knowledge_engineer
             status: done
             inputs:
@@ -409,18 +410,18 @@ phases:
               - P1-E1-T1
               - P1-E1-T2
           - id: P4-E1-T2
-            title: Lock the customer-document format support matrix and OCR routing contract
+            title: customer document format support matrix 와 OCR routing 계약을 고정한다
             owner: knowledge_engineer
             status: done
             inputs:
               - src/play_book_studio/app/intake_api.py
               - src/play_book_studio/intake/normalization/pdf.py
-              - CUSTOMER_POC_BUYER_PACKET.md
+              - archive/legacy_reference_docs/CUSTOMER_POC_BUYER_PACKET.md
               - Q1_8_PRODUCT_CONTRACT.md
               - P0_ARCHITECTURE_FREEZE_ADDENDUM.md
             outputs:
-              - FORMAT_SUPPORT_MATRIX.md
-              - PARSER_ROUTING_POLICY.md
+              - archive/legacy_reference_docs/FORMAT_SUPPORT_MATRIX.md
+              - archive/legacy_reference_docs/PARSER_ROUTING_POLICY.md
               - updated_customer_poc_support_scope
             tests:
               - supported_staged_and_rejected_formats_are_documented
@@ -435,13 +436,13 @@ phases:
               - P4-E1-T1
   - id: P5
     name: expansion_and_conversion
-    goal: Make paid rollout believable beyond the first pack.
+    goal: 첫 validated pack 이후의 multi-pack 확장과 rollout readiness 를 준비한다.
     epics:
       - id: P5-E1
         name: multi_pack_strategy
         tasks:
           - id: P5-E1-T1
-            title: Define expansion packs and buyer-facing conversion metrics
+            title: 확장 pack 후보와 buyer-facing conversion metric 을 정의한다
             owner: product_architect
             status: planned
             inputs:

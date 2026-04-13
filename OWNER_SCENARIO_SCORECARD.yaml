@@ -1,8 +1,15 @@
 version: 1
 product: play-book-studio
-current_sales_stage: paid_poc_candidate
-truthful_scope: openshift_4_20_validated_pack_plus_customer_document_poc
-promotion_policy:
+document_role: release_and_demo_gate
+current_stage: paid_poc
+current_scope: openshift_4_20_validated_pack_plus_customer_document_poc
+summary:
+  purpose: 데모 통과 기준과 release 차단 조건을 한 문서에 고정한다
+  current_truth:
+    - 현재 상업 단계는 paid PoC 이다
+    - 현재 검증 범위는 OpenShift 4.20 validated pack 과 customer document PoC 이다
+    - scorecard 미통과 상태에서는 full sale 로 말하지 않는다
+promotion_gate:
   full_sale_requires:
     - owner_critical_scenario_pass_rate >= 0.90
     - evidence_linked_answer_rate >= 0.95
@@ -14,24 +21,24 @@ promotion_policy:
     - customer_document_reference_case_count >= 1
   if_any_missing:
     stage: paid_poc_or_pilot_only
-hard_blockers:
+release_blockers:
   - hard_miss_on_owner_demo_question
   - unsupported_assertion_on_demo_set
   - clarification_required_but_answered
   - forbidden_citation
   - unreviewed_asset_exposed_to_customer
   - no_customer_document_poc_path
-scenarios:
+scenario_set:
   - id: owner-001
-    phase: first_minute
+    phase: opening_explanation
     audience: enterprise_owner
     question: "이 플랫폼을 왜 사야 하나?"
-    expected_behavior:
+    expected_result:
       - 60초 안에 문제, 가치, 현재 검증 범위, 다음 확장 경로를 설명한다
       - 내부 구현 용어 대신 구매자 언어를 쓴다
-    required_artifacts:
-      - OWNER_VALUE_CASE.md
-      - BEACHHEAD_ICP_AND_TRIGGER.md
+    evidence_sources:
+      - archive/legacy_reference_docs/OWNER_VALUE_CASE.md
+      - archive/legacy_reference_docs/BEACHHEAD_ICP_AND_TRIGGER.md
     pass_if:
       - buying_reason_is_clear
       - current_scope_is_honest
@@ -43,10 +50,10 @@ scenarios:
     phase: live_demo
     audience: enterprise_owner
     question: "오픈시프트를 신입한테 설명하듯 짧게 말해봐"
-    expected_behavior:
+    expected_result:
       - 주제 이탈 없이 개념 설명을 한다
       - irrelevant_ops_answer 로 튀지 않는다
-    required_artifacts:
+    evidence_sources:
       - realworld_owner_demo_set
     pass_if:
       - no_topic_drift
@@ -57,11 +64,11 @@ scenarios:
     phase: live_demo
     audience: enterprise_owner
     question: "그럼 우리 고객 문서도 이 흐름으로 넣을 수 있나?"
-    expected_behavior:
+    expected_result:
       - intake 경로와 review gate 를 보여준다
       - 무엇이 현재 가능하고 불가능한지 분리해서 말한다
-    required_artifacts:
-      - CUSTOMER_POC_BUYER_PACKET.md
+    evidence_sources:
+      - archive/legacy_reference_docs/CUSTOMER_POC_BUYER_PACKET.md
     pass_if:
       - input_requirements_are_specific
       - 10_business_day_scope_is_defined
@@ -72,10 +79,10 @@ scenarios:
     phase: live_demo
     audience: enterprise_owner
     question: "애매한 질문이면 어떻게 처리하나?"
-    expected_behavior:
+    expected_result:
       - 답을 꾸며내지 않고 clarification 을 우선한다
       - 한계와 필요한 추가 정보를 드러낸다
-    required_artifacts:
+    evidence_sources:
       - realworld_owner_demo_set
     pass_if:
       - clarification_precedes_answer
@@ -86,10 +93,10 @@ scenarios:
     phase: evidence_check
     audience: technical_champion
     question: "이 답이 어디서 왔는지 바로 보여줄 수 있나?"
-    expected_behavior:
+    expected_result:
       - 답변, citation, 원문 뷰어가 한 흐름으로 이어진다
       - source, version, anchor 를 잃지 않는다
-    required_artifacts:
+    evidence_sources:
       - source_viewer
       - reviewed_pack_metadata
     pass_if:
@@ -101,10 +108,10 @@ scenarios:
     phase: operator_review
     audience: operator
     question: "무엇이 안전하게 승격 가능한 상태인지 알 수 있나?"
-    expected_behavior:
+    expected_result:
       - review 상태, promotion readiness, pack 경계를 보여준다
       - 고객 문서와 공용 pack 경계를 섞지 않는다
-    required_artifacts:
+    evidence_sources:
       - data_control_room
       - runtime_report
     pass_if:
@@ -116,9 +123,9 @@ scenarios:
     phase: enterprise_readiness
     audience: architect_or_security
     question: "재시작이나 감사 상황에서도 같은 기록을 재현할 수 있나?"
-    expected_behavior:
+    expected_result:
       - persisted session, replayable turn history, audit trail 을 설명한다
-    required_artifacts:
+    evidence_sources:
       - runtime_architecture_note
       - persisted_session_design
     pass_if:
@@ -127,5 +134,5 @@ scenarios:
     fail_if:
       - memory_only_runtime
 notes:
-  - owner-007 의 `persisted_session` / `audit_trail` 코드는 확보됐지만, truthful sales stage 는 여전히 paid_poc_candidate 다
-  - 현재 truthful sales stage 는 full sale 이 아니라 paid_poc_candidate 다
+  - owner-007 의 `persisted_session` / `audit_trail` 코드는 확보됐지만 현재 단계는 여전히 paid PoC 이다
+  - 이 문서는 데모 성공 조건과 release 차단 조건을 함께 고정하는 active gate 문서다

@@ -22,6 +22,9 @@ import {
   Trash2,
   PanelLeftClose,
   PanelRightClose,
+  Copy,
+  Check,
+  WrapText,
 } from 'lucide-react';
 import gsap from 'gsap';
 import './WorkspacePage.css';
@@ -119,18 +122,18 @@ const PACK_OPTIONS = [
 ] as const;
 
 const SUGGESTED_QUESTIONS = [
-  'OpenShift 클러스터 업그레이드 시 주의사항은?',
-  'etcd 백업 및 복구 절차를 알려주세요',
-  'Pod가 CrashLoopBackOff 상태일 때 해결 방법은?',
-  'OpenShift에서 네트워크 정책을 설정하는 방법은?',
-  '노드 리소스 부족 시 대처 방법은?',
-  'RBAC 권한 설정 베스트 프랙티스는?',
-  'Operator 업데이트 시 호환성 확인 방법은?',
-  'OpenShift 인그레스 컨트롤러 설정 방법은?',
-  '클러스터 인증서 갱신 절차는?',
-  '스토리지 클래스 설정과 PV/PVC 관리 방법은?',
-  'OpenShift 모니터링 스택 커스터마이징 방법은?',
-  '멀티 클러스터 환경에서 ACM을 활용하는 방법은?',
+  'Pod가 CrashLoopBackOff 상태일 때 디버깅하는 oc 명령어를 알려줘',
+  'OpenShift에서 특정 네임스페이스의 리소스 사용량을 확인하는 명령어는?',
+  'oc CLI로 노드 상태를 점검하고 drain하는 절차를 알려줘',
+  'OpenShift Route에 TLS 인증서를 적용하는 YAML 예시를 보여줘',
+  'oc adm 명령어로 클러스터 노드 상태를 진단하는 방법은?',
+  'DeploymentConfig에서 롤링 업데이트 전략을 설정하는 YAML 예시를 보여줘',
+  'PVC가 Pending 상태일 때 원인을 확인하는 명령어를 알려줘',
+  'NetworkPolicy로 특정 Pod 간 트래픽만 허용하는 YAML 예시를 보여줘',
+  'CronJob을 생성하고 실행 이력을 확인하는 oc 명령어는?',
+  'OpenShift에서 Pod에 리소스 제한을 설정하는 YAML 예시를 보여줘',
+  'ServiceAccount에 특정 SCC를 부여하는 명령어를 알려줘',
+  'oc debug 명령어로 노드에 접속해서 디스크 상태를 확인하는 방법은?',
 ];
 
 function pickRandom<T>(pool: T[], count: number): T[] {
@@ -429,11 +432,11 @@ function AnswerCodeBlock({ code, language }: { code: string; language: string })
       <div className="answer-code-header">
         <span className="answer-code-lang">{(language || 'text').toUpperCase()}</span>
         <div className="answer-code-actions">
-          <button type="button" className="answer-code-action" onClick={() => { void handleCopy(); }}>
-            {copied ? '복사됨' : '복사'}
+          <button type="button" className="answer-code-action" onClick={() => { void handleCopy(); }} title={copied ? '복사됨' : '복사'}>
+            {copied ? <Check size={14} /> : <Copy size={14} />}
           </button>
-          <button type="button" className="answer-code-action" onClick={() => setWrapped((value) => !value)}>
-            {wrapped ? '해제' : '줄바꿈'}
+          <button type="button" className={`answer-code-action ${wrapped ? 'active' : ''}`} onClick={() => setWrapped((value) => !value)} title={wrapped ? '줄바꿈 해제' : '줄바꿈'}>
+            <WrapText size={14} />
           </button>
         </div>
       </div>
@@ -472,20 +475,17 @@ function AssistantAnswer({
 }) {
   const [displayLength, setDisplayLength] = useState(0);
 
-  // Real-time scroll sync during streaming — only if user hasn't scrolled up
+  // Real-time scroll sync during streaming — only paused when user scrolls up via mouse wheel
   useEffect(() => {
     if (displayLength > 0) {
       const chatContainer = document.querySelector('.chat-messages');
-      if (chatContainer) {
-        const atBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 80;
-        if (atBottom) {
-          requestAnimationFrame(() => {
-            chatContainer.scrollTo({
-              top: chatContainer.scrollHeight,
-              behavior: 'auto'
-            });
+      if (chatContainer && !chatContainer.classList.contains('scroll-locked')) {
+        requestAnimationFrame(() => {
+          chatContainer.scrollTo({
+            top: chatContainer.scrollHeight,
+            behavior: 'auto'
           });
-        }
+        });
       }
     }
   }, [displayLength]);
@@ -632,16 +632,33 @@ export default function WorkspacePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const welcomeQuestions = useMemo(() => pickRandom(SUGGESTED_QUESTIONS, 4), [sessionId]);
 
-  function handleChatScroll(): void {
+  // Track user scroll-up via wheel only (not programmatic scroll)
+  useEffect(() => {
     const el = chatMessagesRef.current;
     if (!el) return;
-    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-    setUserScrolledUp(!atBottom);
-  }
+
+    function handleWheel(): void {
+      requestAnimationFrame(() => {
+        if (!el) return;
+        const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+        setUserScrolledUp(!atBottom);
+        if (atBottom) {
+          el.classList.remove('scroll-locked');
+        } else {
+          el.classList.add('scroll-locked');
+        }
+      });
+    }
+
+    el.addEventListener('wheel', handleWheel, { passive: true });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, []);
 
   function scrollToBottom(): void {
     const el = chatMessagesRef.current;
     if (el) {
+      el.classList.remove('scroll-locked');
+      setUserScrolledUp(false);
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     }
   }
@@ -764,22 +781,19 @@ export default function WorkspacePage() {
 
   useEffect(() => {
     const container = chatMessagesRef.current;
-    if (messages.length > 0 && container) {
-      const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
-      if (atBottom) {
-        requestAnimationFrame(() => {
-          try {
-            container.scrollTo({
-              top: container.scrollHeight,
-              behavior: 'smooth'
-            });
-          } catch {
-            // ignore
-          }
-        });
-      }
+    if (messages.length > 0 && container && !userScrolledUp) {
+      requestAnimationFrame(() => {
+        try {
+          container.scrollTo({
+            top: container.scrollHeight,
+            behavior: 'smooth'
+          });
+        } catch {
+          // ignore
+        }
+      });
     }
-  }, [messages]);
+  }, [messages, userScrolledUp]);
 
   useEffect(() => {
     let animated = false;
@@ -1292,7 +1306,7 @@ export default function WorkspacePage() {
                   )}
                 </div>
               )}
-              <div className="chat-messages" ref={chatMessagesRef} onScroll={handleChatScroll}>
+              <div className="chat-messages" ref={chatMessagesRef}>
                 {messages.length === 0 && (
                   <div className="chat-welcome">
                     <div className="welcome-icon">
