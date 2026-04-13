@@ -1619,14 +1619,19 @@ export default function WorkspacePage() {
               </div>
 
               <div className="panel-footer">
-                <button className="outline-btn" onClick={() => { void handleCapture(); }} type="button" disabled={!canCapture}>
-                  <Cpu size={14} />
-                  <span>{isCapturing ? 'Analyzing...' : 'Analyze Content'}</span>
-                </button>
-                <button className="primary-btn" onClick={() => { void handleNormalize(); }} type="button" disabled={!canNormalize}>
-                  <span>{isNormalizing ? 'Creating...' : 'Create Playbook'}</span>
-                  <ArrowRight size={14} />
-                </button>
+                {!activeDraft && (
+                  <p className="footer-hint">문서를 업로드하면 분석 및 플레이북 생성이 가능합니다</p>
+                )}
+                <div className="footer-actions">
+                  <button className="outline-btn" onClick={() => { void handleCapture(); }} type="button" disabled={!canCapture}>
+                    <Cpu size={14} />
+                    <span>{isCapturing ? 'Analyzing...' : 'Analyze Content'}</span>
+                  </button>
+                  <button className="primary-btn" onClick={() => { void handleNormalize(); }} type="button" disabled={!canNormalize}>
+                    <span>{isNormalizing ? 'Creating...' : 'Create Playbook'}</span>
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
               </div>
             </div>
           </Panel>
