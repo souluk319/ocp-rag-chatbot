@@ -1,0 +1,10 @@
+{
+  "source_slug": "monitoring",
+  "title": "Troubleshooting Monitoring Issues",
+  "label": "16_troubleshooting_book",
+  "description": "AsciiDoc source-first monitoring troubleshooting book",
+  "inputs": [
+    "observability/monitoring/troubleshooting-monitoring-issues.adoc",
+    "backup_and_restore/14_asciidoc_plus_12_tone"
+  ]
+}

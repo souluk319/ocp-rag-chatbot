@@ -1,0 +1,7 @@
+{
+  "source_slug": "backup_and_restore",
+  "title": "Backup and restore",
+  "label": "05_heading_cleanup_noise_drop",
+  "description": "Heading cleanup + noise drop",
+  "input_path": "data\\gold_manualbook_ko\\playbooks\\backup_and_restore.json"
+}

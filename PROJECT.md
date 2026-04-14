@@ -17,6 +17,21 @@ Play Book Studio는 `기업 문서를 검증 가능한 플레이북으로 전환
 - raw 문서 수는 playable asset 수의 상한이 아니라 하한이다. 운영 질문과 기술 주제가 분화되면 파생 북 수가 원문 수를 넘는 것이 정상이다.
 - 플레이북은 `요약 링크`가 아니라 `사전조건 -> 절차 -> 코드 -> 검증 -> 실패 신호 -> source trace` 를 가진 실행형 책이어야 한다.
 
+## Execution Doctrine
+
+이 프로젝트는 `생각이 긴 팀`이 아니라 `execution harness 기반 제품 팀`으로 운용한다.
+
+- 좋은 결과가 나오는 조합은 빠르게 trial 로 펼친다.
+- 안 되는 기존 라인을 오래 보정하지 않는다.
+- 원본에서 모범답안급 결과를 뽑는 pipeline 을 먼저 찾고, 일반화는 그 다음에 한다.
+- 사용자 승인 1회로 최소 몇 시간은 굴러가는 실행 계약을 기본 단위로 쓴다.
+
+즉 이 프로젝트의 기본 일 방식은
+
+`reference -> trials -> hybrid -> winner -> promotion`
+
+이다.
+
 ## Rule Ownership
 
 현재 프로젝트의 규칙 소유권은 아래로 고정한다.
@@ -27,6 +42,8 @@ Play Book Studio는 `기업 문서를 검증 가능한 플레이북으로 전환
   - 문서 우선순위와 규칙 소유권
 - `Q1_8_PRODUCT_CONTRACT.md`
   - buyer promise, non-promise, promotion prerequisite
+- `HARNESS_ENGINEERING_CONTRACT.md`
+  - execution harness, trial budget, output discipline
 - `OWNER_SCENARIO_SCORECARD.yaml`
   - demo / full-sale 수치 게이트
 - `P0_ARCHITECTURE_FREEZE_ADDENDUM.md`
@@ -48,7 +65,7 @@ Play Book Studio는 `기업 문서를 검증 가능한 플레이북으로 전환
    - `architecture`, `security`, `data-state`, `product-surface`
 3. `PARSED_ARTIFACT_CONTRACT.md` / `SECURITY_BOUNDARY_CONTRACT.md`
    - intake 와 enterprise-private 운영 계약
-4. `Q1_8_PRODUCT_CONTRACT.md` / `OWNER_SCENARIO_SCORECARD.yaml`
+4. `Q1_8_PRODUCT_CONTRACT.md` / `HARNESS_ENGINEERING_CONTRACT.md` / `OWNER_SCENARIO_SCORECARD.yaml`
    - `buyer promise`, `pass/fail`, `forbidden wording`, `release gate`
 5. `TASK_BOARD.yaml`
    - 현재 실행 상태와 선후관계

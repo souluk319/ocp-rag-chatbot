@@ -1,0 +1,7 @@
+{
+  "source_slug": "monitoring",
+  "title": "Monitoring",
+  "label": "05_heading_cleanup_noise_drop",
+  "description": "Heading cleanup + noise drop",
+  "input_path": "data\\gold_manualbook_ko\\playbooks\\monitoring.json"
+}

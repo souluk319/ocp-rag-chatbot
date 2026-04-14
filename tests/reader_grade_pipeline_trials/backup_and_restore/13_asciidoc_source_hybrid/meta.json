@@ -1,0 +1,11 @@
+{
+  "source_slug": "backup_and_restore",
+  "title": "Backup and Restore",
+  "label": "13_asciidoc_source_hybrid",
+  "description": "AsciiDoc source driven hybrid",
+  "inputs": [
+    "tmp_source/openshift-docs-enterprise-4.20/backup_and_restore/index.adoc",
+    "tmp_source/openshift-docs-enterprise-4.20/backup_and_restore/control_plane_backup_and_restore/backing-up-etcd.adoc",
+    "tmp_source/openshift-docs-enterprise-4.20/backup_and_restore/control_plane_backup_and_restore/disaster_recovery/scenario-2-restoring-cluster-state.adoc"
+  ]
+}

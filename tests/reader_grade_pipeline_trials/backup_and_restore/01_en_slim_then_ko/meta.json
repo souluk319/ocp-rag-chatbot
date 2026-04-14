@@ -1,0 +1,7 @@
+{
+  "source_slug": "backup_and_restore",
+  "title": "Backup and restore",
+  "label": "01_en_slim_then_ko",
+  "description": "EN slim book -> KO translation",
+  "input_path": "data\\gold_manualbook_ko\\playbooks\\backup_and_restore.json"
+}

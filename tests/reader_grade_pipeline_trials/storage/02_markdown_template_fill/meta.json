@@ -1,0 +1,7 @@
+{
+  "source_slug": "storage",
+  "title": "스토리지",
+  "label": "02_markdown_template_fill",
+  "description": "Normalized markdown -> runbook template",
+  "input_path": "data\\gold_manualbook_ko\\playbooks\\storage.json"
+}

@@ -1,0 +1,7 @@
+{
+  "source_slug": "machine_configuration",
+  "title": "Machine configuration",
+  "label": "07_toc_aware_book",
+  "description": "TOC-aware book",
+  "input_path": "data\\gold_manualbook_ko\\playbooks\\machine_configuration.json"
+}

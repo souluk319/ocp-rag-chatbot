@@ -749,6 +749,55 @@ def _build_playbook_library(
     }
 
 
+def _markdown_heading_count(path: Path) -> int:
+    if not path.exists() or not path.is_file():
+        return 0
+    count = 0
+    for line in path.read_text(encoding="utf-8").splitlines():
+        normalized = line.strip()
+        if normalized.startswith("## "):
+            count += 1
+    return count
+
+
+def _markdown_code_block_count(path: Path) -> int:
+    if not path.exists() or not path.is_file():
+        return 0
+    fence_count = sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip().startswith("```"))
+    return fence_count // 2
+
+
+def _build_gold_candidate_book_bucket(root: Path) -> dict[str, Any]:
+    manifest_path = root / "data" / "gold_candidate_books" / "wave1_manifest.json"
+    manifest = _safe_read_json(manifest_path)
+    entries = manifest.get("entries") if isinstance(manifest.get("entries"), list) else []
+    books: list[dict[str, Any]] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        promoted_path = Path(str(entry.get("promoted_path") or "")).resolve()
+        books.append(
+            {
+                "book_slug": str(entry.get("slug") or promoted_path.stem),
+                "title": str(entry.get("title") or promoted_path.stem),
+                "grade": "Gold Candidate",
+                "review_status": "promoted_candidate",
+                "source_type": "reader_grade_md",
+                "source_lane": "wave1_gold_candidate",
+                "section_count": _markdown_heading_count(promoted_path),
+                "code_block_count": _markdown_code_block_count(promoted_path),
+                "viewer_path": "",
+                "source_url": str(entry.get("source_trial_path") or ""),
+                "updated_at": str(manifest.get("generated_at_utc") or ""),
+            }
+        )
+    return {
+        "selected_dir": str((root / "data" / "gold_candidate_books" / "wave1").resolve()),
+        "books": books,
+        "manifest_path": str(manifest_path.resolve()),
+    }
+
+
 def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
     root = Path(root_dir).resolve()
     settings = load_settings(root)
@@ -975,6 +1024,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
     }
     manual_book_library = _build_manual_book_library(core_manualbooks, extra_manualbooks)
     playbook_library = _build_playbook_library(derived_playbook_family_statuses)
+    gold_candidate_books = _build_gold_candidate_book_bucket(root)
 
     chunk_candidate_counts = {
         candidate["row_count"]
@@ -1060,6 +1110,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
             "core_corpus_book_count": len(materialized_core_corpus_slugs),
             "manualbook_count": len(materialized_core_manualbook_slugs),
             "core_manualbook_count": len(materialized_core_manualbook_slugs),
+            "gold_candidate_book_count": len(gold_candidate_books.get("books") or []),
             "topic_playbook_count": len(topic_playbooks),
             "operation_playbook_count": len(operation_playbooks),
             "troubleshooting_playbook_count": len(troubleshooting_playbooks),
@@ -1145,6 +1196,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
             "selected_dir": str(selected_playbook_dir) if selected_playbook_dir else "",
             "books": core_manualbooks,
         },
+        "gold_candidate_books": gold_candidate_books,
         "manual_book_library": manual_book_library,
         "topic_playbooks": {
             "selected_dir": str(selected_playbook_dir) if selected_playbook_dir else "",

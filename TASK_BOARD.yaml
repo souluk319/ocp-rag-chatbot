@@ -14,6 +14,8 @@ principles:
   - poc_must_leave_reusable_assets
   - pack_strategy_over_single_demo
   - derived_playbooks_over_raw_doc_mirroring
+  - execution_harness_before_long_running_work
+  - reference_trial_hybrid_winner_promotion
 owners:
   product_architect:
     role: product_contracts_pack_strategy_governance
@@ -26,6 +28,33 @@ owners:
   judge:
     role: evaluation_release_gate
 phases:
+  - id: H0
+    name: harness_engineering_reset
+    goal: 장시간 execution 을 굴릴 수 있는 execution harness 를 루트 규칙과 보드에 고정한다.
+    epics:
+      - id: H0-E1
+        name: root_execution_contract
+        tasks:
+          - id: H0-E1-T1
+            title: execution harness 계약 문서를 active rule set 으로 승격한다
+            owner: product_architect
+            status: done
+            inputs:
+              - AGENTS.md
+              - PROJECT.md
+              - TASK_BOARD.yaml
+            outputs:
+              - AGENTS.md
+              - PROJECT.md
+              - HARNESS_ENGINEERING_CONTRACT.md
+              - TASK_BOARD.yaml
+            tests:
+              - root_docs_define_goal_input_output_done_definition
+            acceptance:
+              - long_running_work_requires_execution_harness
+              - default_3_hour_contract_is_written
+              - winnerless_completion_language_is_banned
+            blockers: []
   - id: P0
     name: product_contract_reset
     goal: 루트 문서를 현재 범위, 증거, release 경계 기준으로 다시 고정한다.
@@ -42,13 +71,11 @@ phases:
               - README.md
               - PROJECT.md
               - TASK_BOARD.yaml
-              - archive/legacy_reference_docs/FILE_ROLE_GUIDE.md
             outputs:
               - AGENTS.md
               - README.md
               - PROJECT.md
               - TASK_BOARD.yaml
-              - archive/legacy_reference_docs/FILE_ROLE_GUIDE.md
             tests:
               - docs_state_owner_value_and_pack_strategy
             acceptance:
@@ -159,7 +186,6 @@ phases:
               - Q1_8_PRODUCT_CONTRACT.md
               - README.md
               - PROJECT.md
-              - archive/legacy_reference_docs/FILE_ROLE_GUIDE.md
               - TASK_BOARD.yaml
             tests:
               - q1_8_contract_maps_every_buyer_question_to_evidence_and_blockers
@@ -182,7 +208,6 @@ phases:
               - P0_ARCHITECTURE_FREEZE_ADDENDUM.md
               - README.md
               - PROJECT.md
-              - archive/legacy_reference_docs/FILE_ROLE_GUIDE.md
               - TASK_BOARD.yaml
             tests:
               - addendum_freezes_parsed_security_surface_and_gold_v2

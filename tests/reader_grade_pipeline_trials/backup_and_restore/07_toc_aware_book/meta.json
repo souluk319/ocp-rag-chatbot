@@ -1,0 +1,7 @@
+{
+  "source_slug": "backup_and_restore",
+  "title": "Backup and restore",
+  "label": "07_toc_aware_book",
+  "description": "TOC-aware book",
+  "input_path": "data\\gold_manualbook_ko\\playbooks\\backup_and_restore.json"
+}

@@ -1,0 +1,10 @@
+{
+  "source_slug": "monitoring",
+  "title": "Managing Alerts as an Administrator",
+  "label": "14_alerts_admin_book",
+  "description": "AsciiDoc source-first alerts admin book",
+  "inputs": [
+    "observability/monitoring/managing-alerts/managing-alerts-as-an-administrator.adoc",
+    "backup_and_restore/14_asciidoc_plus_12_tone"
+  ]
+}

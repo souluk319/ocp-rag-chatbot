@@ -25,6 +25,7 @@ export interface DataControlRoomSummary {
   approved_runtime_count: number;
   gold_book_count: number;
   manualbook_count: number;
+  gold_candidate_book_count?: number;
   topic_playbook_count: number;
   derived_playbook_count: number;
   playable_asset_count: number;
@@ -42,6 +43,7 @@ export interface DataControlRoomResponse {
   known_books: LibraryBook[];
   gold_books: LibraryBook[];
   manualbooks: LibraryBucket;
+  gold_candidate_books?: LibraryBucket;
   topic_playbooks: LibraryBucket;
   operation_playbooks: LibraryBucket;
   troubleshooting_playbooks: LibraryBucket;

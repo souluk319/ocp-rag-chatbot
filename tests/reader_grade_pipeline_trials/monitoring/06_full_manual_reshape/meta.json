@@ -1,0 +1,7 @@
+{
+  "source_slug": "monitoring",
+  "title": "Monitoring",
+  "label": "06_full_manual_reshape",
+  "description": "Full-manual summary reshape",
+  "input_path": "data\\gold_manualbook_ko\\playbooks\\monitoring.json"
+}

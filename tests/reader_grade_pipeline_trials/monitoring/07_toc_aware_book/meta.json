@@ -1,0 +1,7 @@
+{
+  "source_slug": "monitoring",
+  "title": "Monitoring",
+  "label": "07_toc_aware_book",
+  "description": "TOC-aware book",
+  "input_path": "data\\gold_manualbook_ko\\playbooks\\monitoring.json"
+}

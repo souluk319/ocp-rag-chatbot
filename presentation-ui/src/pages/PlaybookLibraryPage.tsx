@@ -356,7 +356,7 @@ const PlaybookLibraryPage: React.FC = () => {
     setPreviewViewerUrl('');
   };
 
-  const openMetricPopover = (kind: 'known' | 'approved' | 'manual' | 'derived') => {
+  const openMetricPopover = (kind: 'known' | 'approved' | 'manual' | 'candidate' | 'derived') => {
     if (!controlRoom) return;
     const cr = controlRoom;
     let title = '';
@@ -373,6 +373,10 @@ const PlaybookLibraryPage: React.FC = () => {
       case 'manual':
         title = 'Materialized Manual Books';
         books = [...(cr.manualbooks?.books ?? [])];
+        break;
+      case 'candidate':
+        title = 'Gold Candidate Books';
+        books = [...(cr.gold_candidate_books?.books ?? [])];
         break;
       case 'derived':
         title = 'Derived Playbooks';
@@ -405,6 +409,7 @@ const PlaybookLibraryPage: React.FC = () => {
   const knownSourceBooks = summary?.known_book_count ?? controlRoom?.known_books?.length ?? 0;
   const approvedRuntimeBooks = summary?.approved_runtime_count ?? summary?.gold_book_count ?? controlRoom?.gold_books?.length ?? 0;
   const materializedManualBooks = summary?.manualbook_count ?? controlRoom?.manualbooks?.books?.length ?? 0;
+  const goldCandidateBooks = summary?.gold_candidate_book_count ?? controlRoom?.gold_candidate_books?.books?.length ?? 0;
   const derivedPlaybooks = summary?.derived_playbook_count ?? 0;
   const hasMetricSourceDrift = Boolean(controlRoom?.source_of_truth_drift?.status_alignment?.mismatches?.length);
   const groupedFavorites = REPOSITORY_CATEGORIES.map((category) => ({
@@ -480,6 +485,14 @@ const PlaybookLibraryPage: React.FC = () => {
                   <p>Materialized Manual Books</p>
                 </div>
                 <div className="metric-status online">Materialized</div>
+              </div>
+              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('candidate')}>
+                <div className="metric-icon"><BookOpen size={24} /></div>
+                <div className="metric-data">
+                  <h3>{goldCandidateBooks.toLocaleString()}</h3>
+                  <p>Gold Candidate Books</p>
+                </div>
+                <div className="metric-status online">Candidate</div>
               </div>
               <div className="metric-card metric-clickable" onClick={() => openMetricPopover('derived')}>
                 <div className="metric-icon"><Activity size={24} /></div>

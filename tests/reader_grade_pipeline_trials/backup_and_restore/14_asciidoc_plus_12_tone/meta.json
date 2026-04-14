@@ -1,0 +1,10 @@
+{
+  "source_slug": "backup_and_restore",
+  "title": "Backup and Restore",
+  "label": "14_asciidoc_plus_12_tone",
+  "description": "AsciiDoc source with 12-style tone",
+  "inputs": [
+    "13_asciidoc_source_hybrid",
+    "12_refined_hybrid"
+  ]
+}
