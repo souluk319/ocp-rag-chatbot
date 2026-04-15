@@ -1,0 +1,21 @@
+{
+  "task_id": "W5-E1-T12",
+  "created_at": "2026-04-14T23:56:58.883487+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "write_scope": "src/play_book_studio/app/data_control_room.py;presentation-ui/src/lib/runtimeApi.ts;presentation-ui/src/pages/PlaybookLibraryPage.tsx;presentation-ui/src/pages/PlaybookLibraryPage.css;scripts/verify_buyer_packet_surface.py;TASK_BOARD.yaml",
+  "target_outputs": [
+    "reports/build_logs/buyer_packet_hero_surface_report.json",
+    "reports/build_logs/buyer_packet_hero_surface_report.md"
+  ],
+  "validation_commands": [
+    ".\\.venv\\Scripts\\python.exe scripts\\verify_buyer_packet_surface.py",
+    "npm.cmd run build",
+    "yaml task board parse"
+  ],
+  "status": "prepared"
+}

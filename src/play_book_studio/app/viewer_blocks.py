@@ -7,12 +7,21 @@ from typing import Any
 from play_book_studio.canonical.command_split import split_inline_commands
 
 NORMALIZED_BLOCK_RE = re.compile(
-    r"(\[CODE(?:\s+[^\]]+)?\].*?\[/CODE\]|\[TABLE(?:\s+[^\]]+)?\].*?\[/TABLE\])",
+    r"(\[CODE(?:\s+[^\]]+)?\].*?\[/CODE\]|\[TABLE(?:\s+[^\]]+)?\].*?\[/TABLE\]|\[FIGURE(?:\s+[^\]]+)?\].*?\[/FIGURE\])",
     re.DOTALL,
 )
+FENCED_CODE_BLOCK_RE = re.compile(
+    r"```(?P<language>[A-Za-z0-9_+\-]*)[ \t]*\n(?P<body>.*?\n?)```",
+    re.DOTALL,
+)
+MARKDOWN_IMAGE_BLOCK_RE = re.compile(
+    r"(?m)^(?:>\s*)?!\[(?P<alt>[^\]]*)\]\((?P<src>[^)\s]+)(?:\s+\"(?P<title>[^\"]+)\")?\)\s*$"
+)
+WIKI_ASSET_URL_RE = re.compile(r"^/playbooks/wiki-assets/[^/]+/(?P<slug>[^/]+)/(?P<asset_name>[^/]+)$")
 MARKER_ATTR_RE = re.compile(r'([a-z_]+)="((?:[^"\\]|\\.)*)"')
 CODE_BLOCK_RE = re.compile(r"^\[CODE(?P<attrs>[^\]]*)\]\s*(?P<body>.*?)\s*\[/CODE\]$", re.DOTALL)
 TABLE_BLOCK_RE = re.compile(r"^\[TABLE(?P<attrs>[^\]]*)\]\s*(?P<body>.*?)\s*\[/TABLE\]$", re.DOTALL)
+FIGURE_BLOCK_RE = re.compile(r"^\[FIGURE(?P<attrs>[^\]]*)\]\s*(?P<body>.*?)\s*\[/FIGURE\]$", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`([^`]+)`")
 SOURCE_VIEW_LEADING_NOISE_RE = re.compile(
     r"^\s*Red Hat OpenShift Documentation Team(?:\s+법적 공지)?(?:\s+초록)?\s*",
@@ -27,6 +36,31 @@ def _clean_source_view_text(text: str) -> str:
     cleaned = SOURCE_VIEW_LEADING_NOISE_RE.sub("", cleaned, count=1).lstrip()
     cleaned = SOURCE_VIEW_TOC_RE.sub("", cleaned, count=1).lstrip()
     return cleaned
+
+
+def _normalize_markdown_fenced_code_blocks(text: str) -> str:
+    def _replace(match: re.Match[str]) -> str:
+        language = (match.group("language") or "").strip() or "shell"
+        body = (match.group("body") or "").strip("\n")
+        return f'[CODE language="{language}" wrap_hint="false"]\n{body}\n[/CODE]'
+
+    return FENCED_CODE_BLOCK_RE.sub(_replace, text)
+
+
+def _normalize_markdown_image_blocks(text: str) -> str:
+    def _replace(match: re.Match[str]) -> str:
+        alt = (match.group("alt") or "").strip()
+        src = (match.group("src") or "").strip()
+        title = (match.group("title") or "").strip()
+        caption = title or alt
+        attrs = ' src="{src}" alt="{alt}"'.format(
+            src=html.escape(src, quote=True),
+            alt=html.escape(alt or caption, quote=True),
+        )
+        body = html.escape(caption)
+        return f'[FIGURE{attrs}]\n{body}\n[/FIGURE]'
+
+    return MARKDOWN_IMAGE_BLOCK_RE.sub(_replace, text)
 
 
 def _render_inline_html(text: str) -> str:
@@ -130,22 +164,19 @@ def _render_code_block_html(
         if caption.strip()
         else ""
     )
-    overflow_button = ""
-    if overflow_hint != "inline":
-        overflow_button = (
-            '<button type="button" class="copy-button" data-label-default="넓게 보기" '
-            'data-label-active="기본 폭" aria-pressed="false" '
-            'onclick="toggleViewerCodeOverflow(this)">넓게 보기</button>'
-        )
+    _ = overflow_hint
     return """
     <section class="{classes}">
       {caption_html}
       <div class="code-header">
         <span class="code-label">{language}</span>
         <div class="code-actions">
-          <button type="button" class="copy-button" data-copy="{copy_payload}" data-label-default="복사" onclick="copyViewerCode(this)">복사</button>
-          <button type="button" class="copy-button" data-label-default="줄바꿈" data-label-active="줄바꿈 해제" aria-pressed="{wrap_pressed}" onclick="toggleViewerCodeWrap(this)">{wrap_label}</button>
-          {overflow_button}
+          <button type="button" class="copy-button icon-button" data-copy="{copy_payload}" data-label-default="복사" onclick="copyViewerCode(this)" title="복사" aria-label="복사">
+            <span aria-hidden="true">⧉</span>
+          </button>
+          <button type="button" class="copy-button icon-button" data-label-default="줄바꿈" data-label-active="줄바꿈 해제" aria-pressed="{wrap_pressed}" onclick="toggleViewerCodeWrap(this)" title="{wrap_title}" aria-label="{wrap_title}">
+            <span aria-hidden="true">↵</span>
+          </button>
         </div>
       </div>
       <pre><code>{code}</code></pre>
@@ -156,8 +187,7 @@ def _render_code_block_html(
         language=html.escape(language),
         copy_payload=copy_payload,
         wrap_pressed="true" if wrap_hint else "false",
-        wrap_label="줄바꿈 해제" if wrap_hint else "줄바꿈",
-        overflow_button=overflow_button,
+        wrap_title="줄바꿈 해제" if wrap_hint else "줄바꿈",
         code=html.escape(code_text),
     ).strip()
 
@@ -199,6 +229,49 @@ def _render_table_block_html(table_text: str, *, caption: str = "") -> str:
       </table>
     </div>
     """.format(caption_html=caption_html, header_html=header_html, rows="".join(body_rows)).strip()
+
+
+def _render_figure_block_html(src: str, *, caption: str = "", alt: str = "", kind: str = "", diagram_type: str = "") -> str:
+    safe_src = html.escape(src, quote=True)
+    safe_alt = html.escape(alt or caption or "figure", quote=True)
+    caption_html = f"<figcaption>{html.escape(caption)}</figcaption>" if caption.strip() else ""
+    normalized_kind = (kind or "").strip().lower()
+    normalized_diagram_type = (diagram_type or "").strip().lower()
+    class_names = ["figure-block"]
+    if normalized_kind == "diagram" or src.strip().lower().endswith(".svg"):
+        class_names.append("diagram-block")
+    eyebrow_html = ""
+    if normalized_kind == "diagram":
+        label = "Diagram" if not normalized_diagram_type else f"Diagram · {normalized_diagram_type.replace('_', ' ')}"
+        eyebrow_html = f'<div class="figure-eyebrow">{html.escape(label)}</div>'
+    href = src
+    external_attrs = ' target="_blank" rel="noreferrer"'
+    match = WIKI_ASSET_URL_RE.fullmatch(src.strip())
+    if match is not None:
+        href = "/wiki/figures/{slug}/{asset_name}/index.html".format(
+            slug=match.group("slug"),
+            asset_name=match.group("asset_name"),
+        )
+        external_attrs = ""
+    else:
+        pass
+    return """
+    <figure class="{class_names}">
+      {eyebrow_html}
+      <a class="figure-link" href="{href}"{external_attrs}>
+        <img src="{src}" alt="{alt}" loading="lazy" />
+      </a>
+      {caption_html}
+    </figure>
+    """.format(
+        class_names=" ".join(class_names),
+        eyebrow_html=eyebrow_html,
+        href=html.escape(href, quote=True),
+        external_attrs=external_attrs,
+        src=safe_src,
+        alt=safe_alt,
+        caption_html=caption_html,
+    ).strip()
 
 
 def _render_playbook_block_html(block: dict[str, Any]) -> str:
@@ -283,6 +356,8 @@ def _render_playbook_block_html(block: dict[str, Any]) -> str:
 def _render_normalized_section_html(text: str) -> str:
     blocks: list[str] = []
     normalized = _clean_source_view_text(text)
+    normalized = _normalize_markdown_fenced_code_blocks(normalized)
+    normalized = _normalize_markdown_image_blocks(normalized)
     for part in NORMALIZED_BLOCK_RE.split(normalized):
         if not part:
             continue
@@ -313,6 +388,19 @@ def _render_normalized_section_html(text: str) -> str:
                 _render_table_block_html(
                     table_text,
                     caption=str(attrs.get("caption") or "").strip(),
+                )
+            )
+            continue
+        figure_match = FIGURE_BLOCK_RE.match(stripped)
+        if figure_match:
+            attrs = _parse_marker_attrs(figure_match.group("attrs"))
+            blocks.append(
+                _render_figure_block_html(
+                    str(attrs.get("src") or "").strip(),
+                    caption=html.unescape(figure_match.group("body").strip()),
+                    alt=str(attrs.get("alt") or "").strip(),
+                    kind=str(attrs.get("kind") or "").strip(),
+                    diagram_type=str(attrs.get("diagram_type") or "").strip(),
                 )
             )
             continue

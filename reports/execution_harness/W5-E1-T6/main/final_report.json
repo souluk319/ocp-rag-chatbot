@@ -1,0 +1,22 @@
+{
+  "task_id": "W5-E1-T6",
+  "lane_id": "main",
+  "role": "main",
+  "status": "done",
+  "code_paths": [
+    "scripts/generate_buyer_demo_live_packet.py",
+    "scripts/verify_buyer_demo_live_packet.py",
+    "TASK_BOARD.yaml"
+  ],
+  "artifacts": [
+    "reports/build_logs/buyer_demo_live_packet.json",
+    "reports/build_logs/buyer_demo_live_packet.md",
+    "reports/build_logs/buyer_demo_live_packet_verification_report.json",
+    "reports/build_logs/buyer_demo_live_packet_verification_report.md"
+  ],
+  "validation": [
+    ".venv\\Scripts\\python.exe scripts\\generate_buyer_demo_live_packet.py",
+    ".venv\\Scripts\\python.exe scripts\\verify_buyer_demo_live_packet.py",
+    "yaml TASK_BOARD.yaml parse"
+  ]
+}

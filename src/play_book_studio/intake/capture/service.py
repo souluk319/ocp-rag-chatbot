@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import mimetypes
 import shutil
+import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
@@ -47,6 +48,7 @@ class CustomerPackCaptureService:
             record.capture_artifact_path = str(artifact_path)
             record.capture_content_type = content_type
             record.capture_byte_size = byte_size
+            record.source_fingerprint = self._capture_fingerprint(artifact_path)
             record.capture_error = ""
         except Exception as exc:  # noqa: BLE001
             record.status = "capture_failed"
@@ -58,6 +60,16 @@ class CustomerPackCaptureService:
         record.updated_at = _utc_now()
         self.store.save(record)
         return record
+
+    def _capture_fingerprint(self, path: Path) -> str:
+        digest = hashlib.sha256()
+        with path.open("rb") as handle:
+            while True:
+                chunk = handle.read(1024 * 1024)
+                if not chunk:
+                    break
+                digest.update(chunk)
+        return digest.hexdigest()
 
     def _load_or_create(
         self,
@@ -215,4 +227,3 @@ class CustomerPackCaptureService:
 
 
 __all__ = ["CustomerPackCaptureService"]
-

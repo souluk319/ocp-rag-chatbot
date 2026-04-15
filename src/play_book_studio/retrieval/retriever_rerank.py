@@ -4,8 +4,10 @@ import copy
 import time
 from typing import Any
 
+from play_book_studio.app.wiki_user_overlay import build_wiki_overlay_signal_payload
+
 from .followups import has_follow_up_reference
-from .models import RetrievalHit
+from .models import RetrievalHit, SessionContext
 from .query import (
     has_backup_restore_intent,
     has_cluster_node_usage_intent,
@@ -341,13 +343,13 @@ def _rebalance_etcd_backup_restore_hits(
     priority_fn = _etcd_backup_priority if classification == "backup" else _etcd_restore_priority
     if classification == "backup":
         preferred_books = {
-            "postinstallation_configuration": 0,
+            "backup_and_restore": 0,
             "etcd": 1,
-            "backup_and_restore": 2,
+            "postinstallation_configuration": 2,
             "hosted_control_planes": 3,
             "updating_clusters": 4,
         }
-        companion_books = {"etcd", "backup_and_restore"}
+        companion_books = {"etcd", "postinstallation_configuration"}
     else:
         preferred_books = {
             "postinstallation_configuration": 0,
@@ -370,8 +372,8 @@ def _rebalance_etcd_backup_restore_hits(
         )
     )
 
-    # etcd backup 절차는 postinstall 래퍼를 primary로 유지하되,
-    # dedicated etcd/backup book 하나는 함께 남겨야 예전 2문서 참조 구조가 살아난다.
+    # etcd backup 절차는 backup_and_restore 를 primary로 유지하되,
+    # dedicated etcd 또는 legacy postinstall 문서 하나는 함께 남겨 참조 폭을 유지한다.
     if classification == "backup":
         def _companion_sort_key(hit: RetrievalHit) -> tuple[int, int, int, float, float, str, str]:
             return (
@@ -414,8 +416,102 @@ def _rebalance_etcd_backup_restore_hits(
                     float(companion_hit.component_scores["pre_rerank_fused_score"]),
                 )
         if companion_hit is not None:
-            insert_at = 1 if reordered and reordered[0].book_slug == "postinstallation_configuration" else 0
+            insert_at = 1 if reordered and reordered[0].book_slug == "backup_and_restore" else 0
             reordered.insert(insert_at, companion_hit)
+    return reordered
+
+
+def _overlay_recent_preference_scores(
+    *,
+    root_dir,
+    user_id: str,
+) -> tuple[dict[str, int], dict[str, int]]:
+    normalized_user_id = str(user_id or "").strip()
+    if root_dir is None or not normalized_user_id:
+        return {}, {}
+    try:
+        payload = build_wiki_overlay_signal_payload(root_dir, user_id=normalized_user_id)
+    except Exception:  # noqa: BLE001
+        return {}, {}
+    user_focus = payload.get("user_focus") if isinstance(payload, dict) else None
+    recent_targets = user_focus.get("recent_targets") if isinstance(user_focus, dict) else None
+    if not isinstance(recent_targets, list):
+        return {}, {}
+    book_scores: dict[str, int] = {}
+    entity_scores: dict[str, int] = {}
+    for index, item in enumerate(recent_targets[:12]):
+        if not isinstance(item, dict):
+            continue
+        target_ref = str(item.get("target_ref") or "").strip()
+        if not target_ref:
+            continue
+        base_score = max(10, 80 - index * 6)
+        if target_ref.startswith("book:"):
+            slug = target_ref.split(":", 1)[1].strip()
+            if slug:
+                book_scores[slug] = max(book_scores.get(slug, 0), base_score)
+        elif target_ref.startswith("section:"):
+            slug = target_ref.split(":", 1)[1].split("#", 1)[0].strip()
+            if slug:
+                book_scores[slug] = max(book_scores.get(slug, 0), base_score - 8)
+        elif target_ref.startswith("figure:"):
+            parts = target_ref.split(":")
+            if len(parts) >= 3 and parts[1].strip():
+                book_scores[parts[1].strip()] = max(book_scores.get(parts[1].strip(), 0), base_score - 16)
+        elif target_ref.startswith("entity:"):
+            entity = target_ref.split(":", 1)[1].strip()
+            if entity:
+                entity_scores[entity] = max(entity_scores.get(entity, 0), base_score)
+    return book_scores, entity_scores
+
+
+def _overlay_entity_hit_score(hit: RetrievalHit, entity_scores: dict[str, int]) -> int:
+    lowered_section = (hit.section or "").lower()
+    lowered_text = (hit.text or "").lower()
+    score = 0
+    if "etcd" in lowered_section or "etcd" in lowered_text:
+        score = max(score, entity_scores.get("etcd", 0))
+    if "machine config" in lowered_section or "machine config" in lowered_text or "mco" in lowered_section or "mco" in lowered_text:
+        score = max(score, entity_scores.get("machine-config-operator", 0))
+    if "prometheus" in lowered_section or "prometheus" in lowered_text:
+        score = max(score, entity_scores.get("prometheus", 0))
+    if "proxy" in lowered_section or "proxy" in lowered_text:
+        score = max(score, entity_scores.get("cluster-wide-proxy", 0))
+    if "control plane" in lowered_section or "control plane" in lowered_text:
+        score = max(score, entity_scores.get("control-plane-nodes", 0))
+    return score
+
+
+def _rebalance_overlay_preference_hits(
+    query: str,
+    *,
+    hybrid_hits: list[RetrievalHit],
+    reranked_hits: list[RetrievalHit],
+    context: SessionContext | None,
+    root_dir,
+) -> list[RetrievalHit]:
+    del query
+    user_id = str(getattr(context, "user_id", "") or "").strip()
+    if not user_id:
+        return reranked_hits
+    book_scores, entity_scores = _overlay_recent_preference_scores(root_dir=root_dir, user_id=user_id)
+    if not book_scores and not entity_scores:
+        return reranked_hits
+    hybrid_rank = {hit.chunk_id: index for index, hit in enumerate(hybrid_hits)}
+    reordered = list(reranked_hits)
+    reordered.sort(
+        key=lambda hit: (
+            -max(
+                book_scores.get(hit.book_slug, 0),
+                _overlay_entity_hit_score(hit, entity_scores),
+            ),
+            hybrid_rank.get(hit.chunk_id, 999),
+            -hit.component_scores.get("pre_rerank_fused_score", 0.0),
+            -hit.component_scores.get("reranker_score", hit.fused_score),
+            hit.book_slug,
+            hit.chunk_id,
+        )
+    )
     return reordered
 
 
@@ -554,6 +650,7 @@ def maybe_rerank_hits(
     *,
     query: str,
     hybrid_hits: list[RetrievalHit],
+    context: SessionContext | None,
     top_k: int,
     trace_callback,
     timings_ms: dict[str, float],
@@ -587,6 +684,20 @@ def maybe_rerank_hits(
         )
         reranker_trace["top1_after_model"] = _top_book_slug(reranked_hits)
         rebalance_reasons: list[str] = []
+        reranked_hits = _apply_rebalance_rule(
+            rule_name="overlay_preference",
+            query=query,
+            hybrid_hits=hybrid_hits,
+            reranked_hits=reranked_hits,
+            rule_fn=lambda rebalance_query, *, hybrid_hits, reranked_hits: _rebalance_overlay_preference_hits(
+                rebalance_query,
+                hybrid_hits=hybrid_hits,
+                reranked_hits=reranked_hits,
+                context=context,
+                root_dir=retriever.settings.root_dir,
+            ),
+            rebalance_reasons=rebalance_reasons,
+        )
         reranked_hits = _apply_rebalance_rule(
             rule_name="registry_storage_intent",
             query=query,

@@ -1,0 +1,26 @@
+{
+  "task_id": "W5-E1-T12",
+  "lane_id": "main",
+  "role": "main",
+  "status": "ok",
+  "code_paths": [
+    "src/play_book_studio/app/data_control_room.py",
+    "presentation-ui/src/lib/runtimeApi.ts",
+    "presentation-ui/src/pages/PlaybookLibraryPage.tsx",
+    "presentation-ui/src/pages/PlaybookLibraryPage.css",
+    "scripts/verify_buyer_packet_surface.py",
+    "TASK_BOARD.yaml"
+  ],
+  "artifacts": [
+    "reports/build_logs/buyer_packet_surface_report.json",
+    "reports/build_logs/buyer_packet_surface_report.md",
+    "reports/build_logs/buyer_packet_hero_surface_report.json",
+    "reports/build_logs/buyer_packet_hero_surface_report.md"
+  ],
+  "validation": [
+    ".venv\\Scripts\\python.exe scripts\\verify_buyer_packet_surface.py => ok",
+    "presentation-ui\\\\npm.cmd run build => ok",
+    "TASK_BOARD.yaml parse => yaml_ok",
+    "live route /buyer-packets/release-candidate-freeze?embed=1 => viewer ok"
+  ]
+}

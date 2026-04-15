@@ -1,0 +1,22 @@
+{
+  "task_id": "W4-E1-T13",
+  "created_at": "2026-04-14T16:21:06.164277+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "write_scope": "align customer pack viewer truth evidence block with shared visual system",
+  "target_outputs": [
+    "src/play_book_studio/app/source_books.py",
+    "src/play_book_studio/app/viewer_page.py",
+    "scripts/verify_customer_pack_truth_visual_system.py",
+    "reports/build_logs/customer_pack_truth_visual_system_report.json"
+  ],
+  "validation_commands": [
+    ".venv\\\\Scripts\\\\python.exe scripts\\\\verify_customer_pack_truth_visual_system.py",
+    ".venv\\\\Scripts\\\\python.exe scripts\\\\verify_customer_pack_surface.py"
+  ],
+  "status": "prepared"
+}

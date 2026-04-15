@@ -1,5 +1,7 @@
 # BEACHHEAD_ICP_AND_TRIGGER
 
+> Legacy reference only. 현재 기준선이 아니며, active rule set 은 루트 문서를 따른다.
+
 ## Current Judgment
 
 첫 구매 고객은 넓게 잡으면 안 된다. 지금 가장 현실적인 beachhead 는 `복잡한 벤더 문서와 내부 운영 지식이 얽혀 있고, 반복 대응 비용이 큰 플랫폼 운영 조직`이다.

@@ -1,0 +1,20 @@
+{
+  "task_id": "W5-E1-T3",
+  "created_at": "2026-04-14T16:58:28.078051+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "write_scope": "rehearse owner scenarios and compute pass rate with blockers from live runtime and evidence artifacts",
+  "target_outputs": [
+    "scripts/verify_owner_demo_rehearsal.py",
+    "reports/build_logs/owner_demo_rehearsal_report.json",
+    "reports/build_logs/owner_demo_rehearsal_report.md"
+  ],
+  "validation_commands": [
+    ".venv\\\\Scripts\\\\python.exe scripts\\\\verify_owner_demo_rehearsal.py"
+  ],
+  "status": "prepared"
+}

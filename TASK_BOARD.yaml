@@ -1,486 +1,632 @@
-board_version: 2
+board_version: 3
 product: play-book-studio
-product_mode: enterprise_playbook_platform
-north_star: trustworthy_playbook_runtime
-board_role: execution_status_and_sequence
+product_mode: technical_wiki_platform
+north_star: source_first_figure_aware_wiki_runtime
+current_stage: paid_poc_candidate
 validated_pack:
   product: openshift_container_platform
-  version: "4.20"
+  version: '4.20'
   locale: ko
 principles:
-  - current_scope_before_expansion
-  - proof_before_polish
-  - runtime_evidence_before_claim
-  - poc_must_leave_reusable_assets
-  - pack_strategy_over_single_demo
-  - derived_playbooks_over_raw_doc_mirroring
-  - execution_harness_before_long_running_work
-  - reference_trial_hybrid_winner_promotion
+- archive_before_goal_reset
+- source_first_before_fallback
+- structured_book_over_markdown
+- wiki_runtime_over_static_viewer
+- figure_and_relation_as_first_class_assets
+- overlay_is_personalization_not_body_edit
+- harness_first_execution
+- local_worklog_buffering
+- worktree_isolated_lanes
+- parallel_explore_build_review
 owners:
   product_architect:
-    role: product_contracts_pack_strategy_governance
-  platform_engineer:
-    role: runtime_surface_deployment_controls
+    role: contract_reset_product_surface
   knowledge_engineer:
-    role: intake_normalization_playbook_derivation
-  retrieval_engineer:
-    role: grounded_runtime_search_session_quality
+    role: source_parse_runtime_materialization
+  platform_engineer:
+    role: viewer_chat_control_tower_runtime
   judge:
-    role: evaluation_release_gate
+    role: release_gate_and_evidence
 phases:
-  - id: H0
-    name: harness_engineering_reset
-    goal: 장시간 execution 을 굴릴 수 있는 execution harness 를 루트 규칙과 보드에 고정한다.
-    epics:
-      - id: H0-E1
-        name: root_execution_contract
-        tasks:
-          - id: H0-E1-T1
-            title: execution harness 계약 문서를 active rule set 으로 승격한다
-            owner: product_architect
-            status: done
-            inputs:
-              - AGENTS.md
-              - PROJECT.md
-              - TASK_BOARD.yaml
-            outputs:
-              - AGENTS.md
-              - PROJECT.md
-              - HARNESS_ENGINEERING_CONTRACT.md
-              - TASK_BOARD.yaml
-            tests:
-              - root_docs_define_goal_input_output_done_definition
-            acceptance:
-              - long_running_work_requires_execution_harness
-              - default_3_hour_contract_is_written
-              - winnerless_completion_language_is_banned
-            blockers: []
-  - id: P0
-    name: product_contract_reset
-    goal: 루트 문서를 현재 범위, 증거, release 경계 기준으로 다시 고정한다.
-    epics:
-      - id: P0-E1
-        name: root_contract_rewrite
-        tasks:
-          - id: P0-E1-T1
-            title: 루트 안내 문서를 제품 계약 기준으로 다시 정리한다
-            owner: product_architect
-            status: done
-            inputs:
-              - AGENTS.md
-              - README.md
-              - PROJECT.md
-              - TASK_BOARD.yaml
-            outputs:
-              - AGENTS.md
-              - README.md
-              - PROJECT.md
-              - TASK_BOARD.yaml
-            tests:
-              - docs_state_owner_value_and_pack_strategy
-            acceptance:
-              - customer_facing_language_avoids_foundry_jargon
-              - repo_contracts_describe_buying_reason_poc_and_governance
-            blockers: []
-      - id: P0-E2
-        name: scope_and_gate_definition
-        tasks:
-          - id: P0-E2-T1
-            title: 현재 상업 범위와 paid PoC 기준을 문서로 잠근다
-            owner: product_architect
-            status: done
-            inputs:
-              - README.md
-              - PROJECT.md
-              - AGENTS.md
-              - ../ocp-rag-chatbot-data/answering/answer_eval_report.json
-            outputs:
-              - archive/legacy_reference_docs/OWNER_VALUE_CASE.md
-            tests:
-              - owner_value_case_exists_and_states_paid_poc_truth
-            acceptance:
-              - owner_value_is_not_generic_ai_pitch
-              - full_sale_claim_is_blocked_until_proof_exists
-            blockers:
-              - P0-E1-T1
-          - id: P0-E2-T2
-            title: 첫 buyer 와 trigger event 를 좁혀서 기록한다
-            owner: product_architect
-            status: done
-            inputs:
-              - PROJECT.md
-              - README.md
-              - src/play_book_studio/app/static/index.html
-            outputs:
-              - archive/legacy_reference_docs/BEACHHEAD_ICP_AND_TRIGGER.md
-            tests:
-              - beachhead_icp_is_explicit
-            acceptance:
-              - first_buyer_is_specific
-              - non_targets_are_written_down
-            blockers:
-              - P0-E1-T1
-          - id: P0-E2-T3
-            title: 기능 추가 전에 release 거절 사유를 먼저 고정한다
-            owner: judge
-            status: done
-            inputs:
-              - ../ocp-rag-chatbot-data/answering/answer_eval_report.json
-              - reports/build_logs/foundry_runs/runtime_report/latest.json
-              - src/play_book_studio/app/server.py
-              - src/play_book_studio/app/sessions.py
-            outputs:
-              - archive/legacy_reference_docs/2026-04-11__retired__BUYER_REJECTION_CRITERIA.md
-            tests:
-              - rejection_reasons_are_ordered_and_actionable
-            acceptance:
-              - every_rejection_reason_has_a_stop_condition
-              - forbidden_excuses_are_documented
-            blockers:
-              - P0-E1-T1
-          - id: P0-E2-T4
-            title: owner demo scorecard 와 hard blocker 를 잠근다
-            owner: judge
-            status: done
-            inputs:
-              - AGENTS.md
-              - README.md
-              - ../ocp-rag-chatbot-data/answering/answer_eval_report.json
-            outputs:
-              - OWNER_SCENARIO_SCORECARD.yaml
-            tests:
-              - scorecard_lists_full_sale_gate_and_release_blockers
-            acceptance:
-              - demo_questions_are_explicit
-              - clarification_miss_and_hard_miss_block_release
-            blockers:
-              - P0-E1-T1
-          - id: P0-E2-T5
-            title: customer document PoC 범위를 계약 가능한 형태로 정리한다
-            owner: product_architect
-            status: done
-            inputs:
-              - README.md
-              - PROJECT.md
-              - OWNER_SCENARIO_SCORECARD.yaml
-            outputs:
-              - archive/legacy_reference_docs/CUSTOMER_POC_BUYER_PACKET.md
-            tests:
-              - poc_packet_declares_inputs_deliverables_and_stop_conditions
-            acceptance:
-              - truthful_sales_posture_is_paid_poc
-              - buyer_can_read_scope_and_non_promises
-            blockers:
-              - P0-E2-T4
-          - id: P0-E2-T6
-            title: Q1-8 buyer question 을 하나의 제품 계약표로 잠근다
-            owner: judge
-            status: done
-            inputs:
-              - OWNER_SCENARIO_SCORECARD.yaml
-              - archive/legacy_reference_docs/OWNER_VALUE_CASE.md
-              - archive/legacy_reference_docs/CUSTOMER_POC_BUYER_PACKET.md
-              - ../ocp-rag-chatbot-data/answering/answer_eval_report.json
-              - reports/build_logs/foundry_runs/runtime_report/latest.json
-            outputs:
-              - Q1_8_PRODUCT_CONTRACT.md
-              - README.md
-              - PROJECT.md
-              - TASK_BOARD.yaml
-            tests:
-              - q1_8_contract_maps_every_buyer_question_to_evidence_and_blockers
-            acceptance:
-              - every_buyer_question_has_current_truth_pass_condition_and_non_promise
-              - root_docs_point_to_single_contract_source
-            blockers:
-              - P0-E2-T5
-          - id: P0-E2-T7
-            title: 외부 리뷰를 반영한 architecture addendum 을 동결한다
-            owner: product_architect
-            status: done
-            inputs:
-              - Q1_8_PRODUCT_CONTRACT.md
-              - OWNER_SCENARIO_SCORECARD.yaml
-              - archive/legacy_reference_docs/CUSTOMER_POC_BUYER_PACKET.md
-              - ../play-book-studio-enterprise-review-pack/play-book-studio-enterprise-gap-report.md
-              - ../play-book-studio-enterprise-review-pack/play-book-studio-enterprise-plan-v2.md
-            outputs:
-              - P0_ARCHITECTURE_FREEZE_ADDENDUM.md
-              - README.md
-              - PROJECT.md
-              - TASK_BOARD.yaml
-            tests:
-              - addendum_freezes_parsed_security_surface_and_gold_v2
-            acceptance:
-              - bronze_parsed_security_boundary_and_3_surface_structure_are_written_into_p0_charter
-              - graph_sidecar_is_recorded_as_conditional_adoption_not_day1_commitment
-              - official_private_mixed_bundle_truth_does_not_conflict_with_buyer_facing_docs
-            blockers:
-              - P0-E2-T6
-  - id: P1
-    name: core_demo_surface
-    goal: 첫 1분 안에 runtime 구조와 조작 흐름이 이해되게 만든다.
-    epics:
-      - id: P1-E1
-        name: landing_and_runtime_flow
-        tasks:
-          - id: P1-E1-T1
-            title: 메인 페이지를 제품 소개와 live demo 가 이어지는 구조로 재구성한다
-            owner: platform_engineer
-            status: done
-            inputs:
-              - src/play_book_studio/app/static/index.html
-              - src/play_book_studio/app/static/assets/app-shell.css
-              - src/play_book_studio/app/static/assets/app-shell-sales-landing.css
-            outputs:
-              - sales_landing_above_live_demo
-              - proof_sections_and_cta_flow
-            tests:
-              - python -m unittest tests.test_app_runtime_ui
-            acceptance:
-              - first_screen_explains_problem_value_and_proof
-              - live_demo_is_still_operable
-              - customer_document_poc_cta_is_visible
-            blockers:
-              - P0-E1-T1
-          - id: P1-E1-T2
-            title: Lock the playbook workspace viewer as a manual-book plus topic-playbook executable surface
-            owner: platform_engineer
-            status: planned
-            inputs:
-              - src/play_book_studio/app/source_books.py
-              - src/play_book_studio/app/viewer_page.py
-              - src/play_book_studio/app/viewer_blocks.py
-              - Q1_8_PRODUCT_CONTRACT.md
-            outputs:
-              - executable_playbook_viewer
-            tests:
-              - pytest tests/test_app_runtime_ui.py
-            acceptance:
-              - manual_book_and_topic_playbook_are_visibly_distinct
-              - executable_steps_and_code_actions_are_first_class
-              - source_trace_and_version_meta_stay_clickable
-            blockers:
-              - P2-E1-T1
-  - id: P2
-    name: governance_and_pack_control
-    goal: provenance, review 상태, pack 경계를 고정해 runtime 신뢰도를 올린다.
-    epics:
-      - id: P2-E1
-        name: provenance_review_and_release_gate
-        tasks:
-          - id: P2-E1-T1
-            title: manual book 과 derived playbook 전 구간에서 source/version/review 메타를 강제한다
-            owner: knowledge_engineer
-            status: done
-            inputs:
-              - schemas/document.schema.json
-              - schemas/chunk.schema.json
-              - schemas/manualbook.schema.json
-            outputs:
-              - pack_governance_contract
-            tests:
-              - pytest tests/test_foundry_contracts.py
-            acceptance:
-              - customer_facing_manual_and_topic_playbooks_never_lose_source_or_version
-              - review_state_is_explicit_at_runtime
-            blockers:
-              - P0-E1-T1
-          - id: P2-E1-T2
-            title: Control Tower 에 source-of-truth drift 와 promotion readiness 를 노출한다
-            owner: judge
-            status: done
-            inputs:
-              - src/play_book_studio/app/data_control_room.py
-              - src/play_book_studio/app/runtime_report.py
-            outputs:
-              - operator_grade_visibility
-            tests:
-              - pytest tests/test_app_data_control_room.py tests/test_runtime_report.py
-            acceptance:
-              - operator_can_see_what_is_safe_to_promote
-              - owner_can_read_platform_readiness_without_source_code
-            blockers:
-              - P2-E1-T1
-          - id: P2-E1-T3
-            title: parsed-artifact lineage 와 private-doc security boundary 를 pack governance 에 편입한다
-            owner: knowledge_engineer
-            status: done
-            inputs:
-              - schemas/document.schema.json
-              - schemas/chunk.schema.json
-              - schemas/manualbook.schema.json
-              - src/play_book_studio/ingestion/models.py
-              - P0_ARCHITECTURE_FREEZE_ADDENDUM.md
-              - ../play-book-studio-enterprise-review-pack/play-book-studio-enterprise-plan-v2.md
-            outputs:
-              - PARSED_ARTIFACT_CONTRACT.md
-              - SECURITY_BOUNDARY_CONTRACT.md
-              - pack_governance_contract_v2
-            tests:
-              - parsed_artifact_and_security_contracts_are_documented
-            acceptance:
-              - bronze_raw_to_bronze_parsed_to_silver_structured_to_gold_lineage_is_explicit
-              - parser_version_page_refs_extraction_confidence_and_security_fields_are_contractual
-              - default_deny_unreviewed_asset_ban_and_citation_boundary_are_written
-            blockers:
-              - P0-E2-T7
-  - id: P3
-    name: ocp_pack_hardening
-    goal: 첫 validated pack 을 안정적인 paid PoC 기준선까지 끌어올린다.
-    epics:
-      - id: P3-E1
-        name: runtime_answer_and_playbook_quality
-        tasks:
-          - id: P3-E1-T1
-            title: 실제 질문 로그 기준으로 topic drift 를 줄이고 retrieval sufficiency 를 검증한다
-            owner: retrieval_engineer
-            status: done
-            write_scope:
-              - src/play_book_studio/retrieval/
-              - src/play_book_studio/answering/
-              - artifacts/answering/answer_eval_report.json
-            inputs:
-              - src/play_book_studio/retrieval/
-              - src/play_book_studio/answering/
-              - manifests/answer_eval_realworld_cases.jsonl
-            outputs:
-              - improved_realworld_answer_quality
-            verify_cmd:
-              - ./.venv/Scripts/python.exe -m pytest tests/test_answering_routes.py tests/test_retrieval_runtime.py -q
-              - play_book.cmd eval --cases manifests/answer_eval_realworld_cases.jsonl
-            tests:
-              - pytest tests/test_answering_routes.py tests/test_retrieval_runtime.py
-              - play_book.cmd eval --cases manifests/answer_eval_realworld_cases.jsonl
-            acceptance:
-              - clarification_required_cases_stop_overanswering
-              - topic_switch_cases_do_not_fall_back_to_irrelevant_ops_answers
-              - realworld_misses_are_tagged_as_retrieval_generation_or_provenance_root_cause
-              - similar_procedure_cases_choose_the_correct_playbook_family
-            blockers:
-              - P2-E1-T1
-          - id: P3-E1-T2
-            title: OCP pack 의 reviewed coverage 와 visible limit 를 buyer-readable 상태로 유지한다
-            owner: knowledge_engineer
-            status: done
-            write_scope:
-              - manifests/ocp_ko_4_20_approved_ko.json
-              - manifests/ocp_ko_4_20_translated_ko_draft.json
-              - reports/build_logs/source_bundle_quality_report.json
-              - reports/build_logs/synthesis_lane_report.json
-            inputs:
-              - manifests/ocp_ko_4_20_approved_ko.json
-              - manifests/ocp_ko_4_20_translated_ko_draft.json
-            outputs:
-              - buyer_readable_pack_scope
-            verify_cmd:
-              - ./.venv/Scripts/python.exe -m pytest tests/test_source_bundle_quality.py tests/test_synthesis_lane.py -q
-            tests:
-              - pytest tests/test_source_bundle_quality.py tests/test_synthesis_lane.py
-            acceptance:
-              - pack_scope_is_honest
-              - promotion_queue_is_visible
-              - raw_manual_count_and_playable_book_count_are_both_visible
-            blockers:
-              - P2-E1-T1
-          - id: P3-E1-T3
-            title: similar-document validation evidence 로 graph sidecar 채택 판단 자료를 만든다
-            owner: retrieval_engineer
-            status: done
-            write_scope:
-              - src/play_book_studio/retrieval/
-              - artifacts/retrieval/retrieval_eval_report.json
-              - artifacts/answering/answer_eval_report.json
-            inputs:
-              - src/play_book_studio/retrieval/
-              - manifests/answer_eval_realworld_cases.jsonl
-              - Q1_8_PRODUCT_CONTRACT.md
-              - P0_ARCHITECTURE_FREEZE_ADDENDUM.md
-            outputs:
-              - graph_sidecar_evidence_packet
-            verify_cmd:
-              - ./.venv/Scripts/python.exe -m pytest tests/test_retrieval_runtime.py -q
-              - scripts/codex_python.ps1 -ScriptPath scripts/run_retrieval_eval.py -WriteScope reports/build_logs/retrieval_eval_report.json -VerifyCmd ./.venv/Scripts/python.exe -m pytest tests/test_retrieval_runtime.py -q
-              - play_book.cmd eval --cases manifests/answer_eval_realworld_cases.jsonl
-            tests:
-              - play_book.cmd eval --cases manifests/answer_eval_realworld_cases.jsonl
-            acceptance:
-              - similar_document_and_policy_overlay_misses_are_tagged
-              - graph_adoption_is_decided_from_evidence_not_habit
-            blockers:
-              - P3-E1-T1
-  - id: P4
-    name: customer_document_poc
-    goal: 고객 문서가 일회성 데모가 아니라 재사용 가능한 pack 으로 승격됨을 증명한다.
-    epics:
-      - id: P4-E1
-        name: intake_to_pack
-        tasks:
-          - id: P4-E1-T1
-            title: 업로드된 web/PDF 문서를 customer-specific manual book 과 topic playbook 경로로 연결한다
-            owner: knowledge_engineer
-            status: done
-            inputs:
-              - src/play_book_studio/intake/
-              - src/play_book_studio/app/intake_api.py
-            outputs:
-              - customer_pack_intake_flow
-            tests:
-              - pytest tests/test_intake_scaffold.py tests/test_app_intake_ui.py
-            acceptance:
-              - customer_doc_intake_is_visible_and_repeatable
-              - uploaded_docs_can_become_reviewable_playbooks
-              - uploaded_docs_can_spawn_reviewable_topic_playbooks
-            blockers:
-              - P1-E1-T1
-              - P1-E1-T2
-          - id: P4-E1-T2
-            title: customer document format support matrix 와 OCR routing 계약을 고정한다
-            owner: knowledge_engineer
-            status: done
-            inputs:
-              - src/play_book_studio/app/intake_api.py
-              - src/play_book_studio/intake/normalization/pdf.py
-              - archive/legacy_reference_docs/CUSTOMER_POC_BUYER_PACKET.md
-              - Q1_8_PRODUCT_CONTRACT.md
-              - P0_ARCHITECTURE_FREEZE_ADDENDUM.md
-            outputs:
-              - archive/legacy_reference_docs/FORMAT_SUPPORT_MATRIX.md
-              - archive/legacy_reference_docs/PARSER_ROUTING_POLICY.md
-              - updated_customer_poc_support_scope
-            tests:
-              - supported_staged_and_rejected_formats_are_documented
-            acceptance:
-              - web_html_text_pdf_scan_pdf_and_md_asciidoc_routes_are_written
-              - ocr_fallback_and_review_rules_are_explicit
-              - docx_pptx_xlsx_are_truthfully_staged_or_rejected
-              - customer_self_service_rebuild_scope_matches_format_support
-            blockers:
-              - P0-E2-T7
-              - P2-E1-T3
-              - P4-E1-T1
-  - id: P5
-    name: expansion_and_conversion
-    goal: 첫 validated pack 이후의 multi-pack 확장과 rollout readiness 를 준비한다.
-    epics:
-      - id: P5-E1
-        name: multi_pack_strategy
-        tasks:
-          - id: P5-E1-T1
-            title: 확장 pack 후보와 buyer-facing conversion metric 을 정의한다
-            owner: product_architect
-            status: planned
-            inputs:
-              - PROJECT.md
-              - TASK_BOARD.yaml
-              - reports/
-            outputs:
-              - multi_pack_growth_plan
-              - poc_to_rollout_metrics
-            tests:
-              - expansion_plan_is_documented
-            acceptance:
-              - product_is_not_read_as_ocp_only
-              - owner_can_see_path_from_poc_to_enterprise_rollout
-            blockers:
-              - P4-E1-T1
+- id: R0
+  name: active_rule_reset
+  goal: 새 위키대백과 기준선으로 active rule set 을 재작성한다.
+  epics:
+  - id: R0-E1
+    name: contract_rewrite
+    tasks:
+    - id: R0-E1-T1
+      title: 기존 active rule set 을 날짜 기준 archive backup 한다
+      owner: product_architect
+      status: done
+      outputs:
+      - archive/root_contracts/2026-04-14_active_rule_reset_backup
+      tests:
+      - archived_active_docs_exist
+    - id: R0-E1-T2
+      title: active rule set 전체를 technical wiki 기준으로 다시 작성한다
+      owner: product_architect
+      status: done
+      outputs:
+      - AGENTS.md
+      - PROJECT.md
+      - CODEX_OPERATING_CHARTER.md
+      - Q1_8_PRODUCT_CONTRACT.md
+      - OWNER_SCENARIO_SCORECARD.yaml
+      - P0_ARCHITECTURE_FREEZE_ADDENDUM.md
+      - PARSED_ARTIFACT_CONTRACT.md
+      - SECURITY_BOUNDARY_CONTRACT.md
+      - TASK_BOARD.yaml
+      tests:
+      - active_rule_docs_match_technical_wiki_charter
+- id: H1
+  name: execution_harness
+  goal: lane 별 하네스로 preflight, worklog, final evidence 를 고정하고 closeout packet 으로만
+    보고한다.
+  epics:
+  - id: H1-E1
+    name: harness_contract_and_bootstrap
+    tasks:
+    - id: H1-E1-T1
+      title: execution harness contract 를 active rule set 에 추가한다
+      owner: product_architect
+      status: done
+      outputs:
+      - EXECUTION_HARNESS_CONTRACT.md
+      - AGENTS.md
+      - CODEX_OPERATING_CHARTER.md
+      - PROJECT.md
+      tests:
+      - active_rule_docs_reference_execution_harness
+    - id: H1-E1-T2
+      title: milestone preflight 와 local worklog bootstrap 스크립트를 추가한다
+      owner: platform_engineer
+      status: done
+      outputs:
+      - scripts/prepare_execution_harness.py
+      - reports/execution_harness
+      tests:
+      - execution_harness_bootstrap_creates_manifest_worklog_and_final_report
+  - id: H1-E2
+    name: parallel_lane_execution
+    tasks:
+    - id: H1-E2-T1
+      title: execution harness 는 lane_id 와 role 을 포함한 manifest 를 생성한다
+      owner: platform_engineer
+      status: done
+      outputs:
+      - scripts/prepare_execution_harness.py
+      - reports/execution_harness
+      tests:
+      - harness_manifest_supports_parallel_lanes
+- id: W1
+  name: source_first_wiki_runtime
+  goal: source-first full rebuild 이 technical wiki runtime 으로 재현 가능해야 한다.
+  epics:
+  - id: W1-E1
+    name: one_click_runtime
+    tasks:
+    - id: W1-E1-T1
+      title: one-click runtime rebuild path 를 유지한다
+      owner: knowledge_engineer
+      status: done
+      outputs:
+      - scripts/run_ocp420_one_click_runtime.py
+      - reports/build_logs/ocp420_one_click_runtime_report.json
+      tests:
+      - one_click_runtime_report_status_ok
+    - id: W1-E1-T2
+      title: active runtime 은 29권 기준 source-first 위키 런타임을 유지한다
+      owner: platform_engineer
+      status: done
+      outputs:
+      - data/wiki_runtime_books/active_manifest.json
+      tests:
+      - active_runtime_count_is_29
+  - id: W1-E2
+    name: relation_runtime
+    tasks:
+    - id: W1-E2-T1
+      title: entity section figure relation graph 를 active runtime 기준으로 유지한다
+      owner: knowledge_engineer
+      status: done
+      outputs:
+      - data/wiki_relations
+      - reports/build_logs/full_rebuild_wiki_relations_report.json
+      tests:
+      - relation_reports_have_book_and_entity_counts
+- id: W2
+  name: technical_wiki_quality
+  goal: 위키 본문, 탐색, 그림, 개인화가 서로 계층을 침범하지 않게 정리한다.
+  epics:
+  - id: W2-E1
+    name: viewer_information_architecture
+    tasks:
+    - id: W2-E1-T1
+      title: 본문에서 과도한 overlay 를 제거하고 읽기 중심 viewer 로 정리한다
+      owner: platform_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/viewer_page.py
+      - src/play_book_studio/app/viewer_blocks.py
+      - reports/build_logs/viewer_cleanup_report.json
+      - reports/build_logs/viewer_cleanup_live_report.json
+      tests:
+      - live_viewer_has_no_section_or_figure_overlay_toolbar
+    - id: W2-E1-T2
+      title: 위키 탐색 패널 정보 구조를 다시 설계한다
+      owner: platform_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app
+      - presentation-ui
+      - reports/build_logs
+      tests:
+      - runtime_viewer_navigation_hierarchy_is_reduced_and_clear
+  - id: W2-E2
+    name: figure_and_diagram_runtime
+    tasks:
+    - id: W2-E2-T1
+      title: figure-aware runtime 과 figure relation 을 유지한다
+      owner: knowledge_engineer
+      status: done
+      outputs:
+      - data/wiki_relations/figure_assets.json
+      - data/wiki_relations/figure_entity_index.json
+      - data/wiki_relations/figure_section_index.json
+      tests:
+      - figure_assets_are_reachable_from_runtime_and_hubs
+    - id: W2-E2-T2
+      title: diagram block 계약과 실제 coverage 를 추가한다
+      owner: knowledge_engineer
+      status: done
+      outputs:
+      - archive/root_contracts
+      - scripts
+      - data
+      - reports/build_logs
+      tests:
+      - diagram_blocks_exist_for_supported_sources
+- id: W3
+  name: personalization_and_signals
+  goal: 개인화 overlay 를 위키 탐색과 backlog 신호로만 사용하고 본문을 더럽히지 않는다.
+  epics:
+  - id: W3-E1
+    name: overlay_runtime
+    tasks:
+    - id: W3-E1-T1
+      title: overlay storage and signal path 를 유지한다
+      owner: platform_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/wiki_user_overlay.py
+      - reports/build_logs/wiki_user_overlay_storage_report.json
+      - reports/build_logs/wiki_overlay_usage_signals_report.json
+      tests:
+      - overlay_signals_feed_control_tower_and_next_plays
+    - id: W3-E1-T2
+      title: overlay signal 을 챗봇 랭킹과 관련 탐색에 반영한다
+      owner: platform_engineer
+      status: done
+      outputs:
+      - reports/build_logs/overlay_chat_ranking_report.json
+      tests:
+      - overlay_preference_can_change_chat_ranking
+- id: W4
+  name: customer_document_lane
+  goal: customer/private 문서를 같은 기술 위키 아키텍처 안에서 안전한 pack runtime 으로 수용한다.
+  epics:
+  - id: W4-E1
+    name: customer_pack_contract
+    tasks:
+    - id: W4-E1-T1
+      title: customer document source-first lane 과 pack boundary 계약을 다시 잠근다
+      owner: product_architect
+      status: done
+      outputs:
+      - archive/root_contracts/CUSTOMER_SOURCE_FIRST_PACK_CONTRACT.md
+      - PARSED_ARTIFACT_CONTRACT.md
+      - SECURITY_BOUNDARY_CONTRACT.md
+      - PROJECT.md
+      - Q1_8_PRODUCT_CONTRACT.md
+      - P0_ARCHITECTURE_FREEZE_ADDENDUM.md
+      - TASK_BOARD.yaml
+      tests:
+      - customer_pack_contract_matches_security_boundary
+    - id: W4-E1-T2
+      title: customer pack parsed/runtime evidence 경로를 실제 코드와 리포트로 고정한다
+      owner: knowledge_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/intake/models.py
+      - src/play_book_studio/intake/capture/service.py
+      - src/play_book_studio/intake/normalization/service.py
+      - scripts/verify_customer_pack_evidence.py
+      - reports/build_logs/customer_pack_evidence_report.json
+      tests:
+      - customer_pack_runtime_evidence_exists_for_synthetic_draft
+    - id: W4-E1-T3
+      title: customer pack viewer 와 chat citation 에 pack runtime evidence 를 실제로 노출한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/source_books.py
+      - src/play_book_studio/app/presenters.py
+      - presentation-ui/src/lib/runtimeApi.ts
+      - presentation-ui/src/pages/WorkspacePage.tsx
+      - presentation-ui/src/pages/WorkspacePage.css
+      - scripts/verify_customer_pack_surface.py
+      - reports/build_logs/customer_pack_surface_report.json
+      tests:
+      - customer_pack_viewer_surface_contains_runtime_truth
+      - customer_pack_chat_citation_contains_runtime_truth
+    - id: W4-E1-T4
+      title: customer pack runtime truth 를 Control Tower 와 Playbook Library surface
+        에 노출한다
+      owner: platform_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/data_control_room.py
+      - presentation-ui/src/lib/runtimeApi.ts
+      - presentation-ui/src/pages/PlaybookLibraryPage.tsx
+      - presentation-ui/src/pages/PlaybookLibraryPage.css
+      - scripts/verify_customer_pack_library_surface.py
+      - reports/build_logs/customer_pack_library_surface_report.json
+      tests:
+      - customer_pack_runtime_bucket_exposes_boundary_truth
+      - playbook_library_surfaces_customer_pack_runtime_bucket
+    - id: W4-E1-T5
+      title: customer pack runtime truth 를 chat answer header 와 session history surface
+        에 노출한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/sessions.py
+      - src/play_book_studio/app/server_chat.py
+      - presentation-ui/src/lib/runtimeApi.ts
+      - presentation-ui/src/pages/WorkspacePage.tsx
+      - presentation-ui/src/pages/WorkspacePage.css
+      - scripts/verify_customer_pack_chat_history_surface.py
+      - reports/build_logs/customer_pack_chat_history_surface_report.json
+      tests:
+      - customer_pack_chat_answer_header_contains_runtime_truth
+      - customer_pack_session_history_contains_runtime_truth
+    - id: W4-E1-T6
+      title: chat answer header 와 session history 의 truth copy 를 validated/private
+        runtime 기준으로 통일한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/presenters.py
+      - presentation-ui/src/pages/WorkspacePage.tsx
+      - presentation-ui/src/pages/WorkspacePage.css
+      - scripts/verify_chat_truth_copy_surface.py
+      - reports/build_logs/chat_truth_copy_surface_report.json
+      tests:
+      - official_chat_citation_exposes_validated_runtime_truth
+      - customer_pack_chat_surface_uses_private_runtime_copy
+    - id: W4-E1-T7
+      title: chat citation 과 related navigation 이 official private candidate truth
+        taxonomy 를 공통으로 사용한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/source_books.py
+      - presentation-ui/src/lib/runtimeApi.ts
+      - presentation-ui/src/pages/WorkspacePage.tsx
+      - scripts/verify_chat_truth_taxonomy.py
+      - reports/build_logs/chat_truth_taxonomy_report.json
+      tests:
+      - related_navigation_book_links_expose_truth_taxonomy
+      - frontend_related_navigation_uses_shared_truth_copy
+    - id: W4-E1-T8
+      title: official 과 private citation 이 함께 있을 때 mixed runtime truth 를 chat surface
+        에 materialize 한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/server_chat.py
+      - presentation-ui/src/pages/WorkspacePage.tsx
+      - scripts/verify_mixed_runtime_truth_surface.py
+      - reports/build_logs/mixed_runtime_truth_surface_report.json
+      tests:
+      - mixed_citation_set_promotes_mixed_runtime_truth
+      - frontend_mixed_runtime_copy_exists
+    - id: W4-E1-T9
+      title: live chat 와 session history 에서 mixed runtime truth 를 official private
+        bridge 답변으로 end-to-end 검증한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/answering/citations.py
+      - src/play_book_studio/answering/answerer.py
+      - scripts/verify_mixed_runtime_end_to_end.py
+      - reports/build_logs/mixed_runtime_end_to_end_report.json
+      tests:
+      - live_chat_returns_private_and_official_citations
+      - session_history_promotes_mixed_runtime_truth
+    - id: W4-E1-T10
+      title: mixed runtime header copy 를 실제 official/private runtime 이름 조합으로 polish
+        한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/server_chat.py
+      - scripts/verify_mixed_runtime_truth_surface.py
+      - scripts/verify_mixed_runtime_end_to_end.py
+      - reports/build_logs/mixed_runtime_end_to_end_report.json
+      tests:
+      - mixed_runtime_header_uses_combined_runtime_labels
+      - live_mixed_runtime_session_summary_uses_combined_runtime_labels
+    - id: W4-E1-T11
+      title: mixed runtime citation 의 visual hierarchy 를 badge title meta 구조로 polish
+        한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - presentation-ui/src/pages/WorkspacePage.tsx
+      - presentation-ui/src/pages/WorkspacePage.css
+      - scripts/verify_mixed_runtime_visual_hierarchy.py
+      - reports/build_logs/mixed_runtime_visual_hierarchy_report.json
+      tests:
+      - citation_tag_uses_badge_title_meta_structure
+      - workspace_styles_define_mixed_runtime_citation_hierarchy
+    - id: W4-E1-T12
+      title: assistant header citation card related link 가 같은 truth visual system
+        을 사용하도록 통일한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - presentation-ui/src/pages/WorkspacePage.tsx
+      - presentation-ui/src/pages/WorkspacePage.css
+      - scripts/verify_truth_visual_system.py
+      - reports/build_logs/truth_visual_system_report.json
+      tests:
+      - related_link_card_uses_truth_badge_title_meta
+      - assistant_and_session_truth_share_visual_system
+    - id: W4-E1-T13
+      title: customer pack viewer truth evidence surface 를 shared truth visual system
+        에 맞춘다
+      owner: product_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/source_books.py
+      - src/play_book_studio/app/viewer_page.py
+      - scripts/verify_customer_pack_truth_visual_system.py
+      - reports/build_logs/customer_pack_truth_visual_system_report.json
+      tests:
+      - customer_pack_viewer_uses_truth_badge_title_meta
+      - customer_pack_meta_pills_share_viewer_truth_system
+    - id: W4-E1-T14
+      title: truth surface 의 copy 중복과 badge density 를 trim 해서 compact runtime surface
+        로 정리한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - presentation-ui/src/pages/WorkspacePage.tsx
+      - presentation-ui/src/pages/WorkspacePage.css
+      - src/play_book_studio/app/source_books.py
+      - scripts/verify_truth_surface_trim.py
+      - reports/build_logs/truth_surface_trim_report.json
+      tests:
+      - assistant_and_session_truth_rows_are_compact
+      - related_links_prefer_summary_over_truth_meta
+      - customer_pack_viewer_drops_duplicate_runtime_copy
+    - id: W4-E1-T15
+      title: chat header session list related links customer viewer 의 truth surface
+        를 실제 compact audit 으로 닫는다
+      owner: product_engineer
+      status: done
+      outputs:
+      - scripts/verify_truth_surface_sweep.py
+      - reports/build_logs/truth_surface_sweep_report.json
+      - reports/build_logs/truth_surface_sweep_report.md
+      tests:
+      - assistant_session_related_viewer_surfaces_pass_compact_truth_audit
+- id: W5
+  name: buyer_demo_and_release_gate
+  goal: buyer 가 제품 가치와 release gate, buyer/demo/release packet surface 를 화면에서 바로 확인할 수 있게 한다.
+  epics:
+  - id: W5-E1
+    name: control_tower_gate_surface
+    tasks:
+    - id: W5-E1-T1
+      title: buyer demo gate 를 Control Tower surface 와 popover bucket 으로 노출한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/data_control_room.py
+      - presentation-ui/src/lib/runtimeApi.ts
+      - presentation-ui/src/pages/PlaybookLibraryPage.tsx
+      - scripts/verify_buyer_demo_gate_surface.py
+      - reports/build_logs/buyer_demo_gate_surface_report.json
+      tests:
+      - control_tower_exposes_buyer_demo_gate_bucket
+    - id: W5-E1-T2
+      title: buyer demo gate 의 pass blocking current stage 를 summary banner 로 노출한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/data_control_room.py
+      - presentation-ui/src/lib/runtimeApi.ts
+      - presentation-ui/src/pages/PlaybookLibraryPage.tsx
+      - presentation-ui/src/pages/PlaybookLibraryPage.css
+      - scripts/verify_buyer_demo_gate_banner.py
+      - reports/build_logs/buyer_demo_gate_banner_report.json
+      tests:
+      - control_tower_exposes_buyer_demo_gate_banner
+    - id: W5-E1-T3
+      title: owner 질문 5개를 rehearsal 해서 pass rate 와 blocker evidence 를 남긴다
+      owner: judge
+      status: done
+      outputs:
+      - scripts/verify_owner_demo_rehearsal.py
+      - reports/build_logs/owner_demo_rehearsal_report.json
+      - reports/build_logs/owner_demo_rehearsal_report.md
+      tests:
+      - owner_demo_rehearsal_computes_pass_rate_and_blockers
+    - id: W5-E1-T4
+      title: owner demo rehearsal 결과를 pass rate 와 current blockers surface 로 노출한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/data_control_room.py
+      - presentation-ui/src/lib/runtimeApi.ts
+      - presentation-ui/src/pages/PlaybookLibraryPage.tsx
+      - presentation-ui/src/pages/PlaybookLibraryPage.css
+      - scripts/verify_owner_demo_surface.py
+      - reports/build_logs/owner_demo_surface_report.json
+      tests:
+      - control_tower_exposes_owner_demo_pass_rate_and_blockers
+    - id: W5-E1-T5
+      title: owner demo rehearsal 결과를 바로 읽을 수 있는 script packet 으로 생성한다
+      owner: judge
+      status: done
+      outputs:
+      - scripts/generate_owner_demo_script_packet.py
+      - reports/build_logs/owner_demo_script_packet.json
+      - reports/build_logs/owner_demo_script_packet.md
+      tests:
+      - owner_demo_script_packet_is_generated_from_contract_scorecard_and_rehearsal
+    - id: W5-E1-T6
+      title: buyer demo live rehearsal packet 으로 실제 클릭 경로와 live evidence 를 고정한다
+      owner: judge
+      status: done
+      outputs:
+      - scripts/generate_buyer_demo_live_packet.py
+      - scripts/verify_buyer_demo_live_packet.py
+      - reports/build_logs/buyer_demo_live_packet.json
+      - reports/build_logs/buyer_demo_live_packet.md
+      tests:
+      - buyer_demo_live_packet_contains_live_routes_and_surface_checks
+    - id: W5-E1-T7
+      title: owner demo one-sheet 를 생성해서 buyer-facing 세일즈 요약을 한 장으로 고정한다
+      owner: judge
+      status: done
+      outputs:
+      - scripts/generate_owner_demo_one_sheet.py
+      - scripts/verify_owner_demo_one_sheet.py
+      - reports/build_logs/owner_demo_one_sheet.json
+      - reports/build_logs/owner_demo_one_sheet.md
+      tests:
+      - owner_demo_one_sheet_summarizes_value_boundary_and_live_entry_points
+    - id: W5-E1-T8
+      title: release gate one-sheet 를 생성해서 현재 판매 가능 범위와 full-sale blocker 를 한 장으로 고정한다
+      owner: judge
+      status: done
+      outputs:
+      - scripts/generate_release_gate_one_sheet.py
+      - scripts/verify_release_gate_one_sheet.py
+      - reports/build_logs/release_gate_one_sheet.json
+      - reports/build_logs/release_gate_one_sheet.md
+      tests:
+      - release_gate_one_sheet_summarizes_current_stage_gate_and_blockers
+    - id: W5-E1-T9
+      title: buyer packet bundle index 를 생성해서 세일즈 산출물 4종을 한 번에 여는 entry packet 으로 묶는다
+      owner: judge
+      status: done
+      outputs:
+      - scripts/generate_buyer_packet_bundle_index.py
+      - scripts/verify_buyer_packet_bundle_index.py
+      - reports/build_logs/buyer_packet_bundle_index.json
+      - reports/build_logs/buyer_packet_bundle_index.md
+      tests:
+      - buyer_packet_bundle_index_lists_all_sales_packets_with_ready_status
+    - id: W5-E1-T10
+      title: buyer packet bundle 을 Control Tower surface 에서 바로 열 수 있게 packet preview surface 로 노출한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/data_control_room.py
+      - src/play_book_studio/app/server.py
+      - src/play_book_studio/app/server_routes.py
+      - presentation-ui/src/lib/runtimeApi.ts
+      - presentation-ui/src/pages/PlaybookLibraryPage.tsx
+      - presentation-ui/src/pages/PlaybookLibraryPage.css
+      - scripts/verify_buyer_packet_surface.py
+      - reports/build_logs/buyer_packet_surface_report.json
+      tests:
+      - control_tower_exposes_buyer_packet_bundle_and_preview_api
+    - id: W5-E1-T11
+      title: release candidate freeze packet 을 생성하고 buyer packet bundle 에 내일 시작 기준선을 편입한다
+      owner: judge
+      status: done
+      outputs:
+      - scripts/generate_release_candidate_freeze_packet.py
+      - scripts/verify_release_candidate_freeze_packet.py
+      - scripts/generate_buyer_packet_bundle_index.py
+      - scripts/verify_buyer_packet_bundle_index.py
+      - scripts/verify_buyer_packet_surface.py
+      - reports/build_logs/release_candidate_freeze_packet.json
+      - reports/build_logs/release_candidate_freeze_packet.md
+      - reports/build_logs/release_candidate_freeze_packet_verification_report.json
+      - reports/build_logs/buyer_packet_bundle_index.json
+      - reports/build_logs/buyer_packet_bundle_index.md
+      tests:
+      - release_candidate_freeze_packet_summarizes_today_runtime_stage_and_demo_truth
+      - buyer_packet_bundle_includes_release_candidate_freeze_packet
+      - control_tower_buyer_packet_bundle_surfaces_five_packets
+    - id: W5-E1-T12
+      title: release candidate freeze packet 을 Control Tower 첫 화면의 today start hero 로 끌어올린다
+      owner: product_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/data_control_room.py
+      - presentation-ui/src/lib/runtimeApi.ts
+      - presentation-ui/src/pages/PlaybookLibraryPage.tsx
+      - presentation-ui/src/pages/PlaybookLibraryPage.css
+      - scripts/verify_buyer_packet_surface.py
+      - reports/build_logs/buyer_packet_surface_report.json
+      tests:
+      - control_tower_exposes_release_candidate_freeze_summary
+      - playbook_library_shows_today_start_hero_for_release_candidate_freeze
+- id: W6
+  name: reset_and_rebaseline
+  goal: 기존 산출물을 archive 경계로 분리하고, 새 baseline 을 harness-first execution 으로 다시 세운다.
+  epics:
+  - id: W6-E1
+    name: archive_and_rebaseline
+    tasks:
+    - id: W6-E1-T1
+      title: 이전 W5 산출물과 tmp 출력물을 오늘 날짜 archive snapshot 으로 분리한다
+      owner: product_architect
+      status: done
+      outputs:
+      - archive/reset_snapshots/2026-04-15_w6_reset_and_rebaseline
+      - archive/reset_snapshots/2026-04-15_w6_reset_and_rebaseline/root_residue
+      tests:
+      - archived_old_outputs_exist_under_date_stamped_snapshot
+      - legacy_reference_paths_are_out_of_active_scope
+    - id: W6-E1-T2
+      title: 새 W6 execution packet 을 prepare_execution_harness 로 부트스트랩한다
+      owner: platform_engineer
+      status: done
+      outputs:
+      - reports/execution_harness/W6-RESET-AND-REBASELINE/main/manifest.json
+      - reports/execution_harness/W6-RESET-AND-REBASELINE/main/worklog.md
+      - reports/execution_harness/W6-RESET-AND-REBASELINE/main/final_report.json
+      tests:
+      - execution_harness_bootstrap_creates_manifest_worklog_and_final_report
+      - manifest_captures_task_scope_and_validation_commands
+    - id: W6-E1-T3
+      title: active runtime, relation, figure, and packet evidence 를 새 baseline 기준으로 다시 물질화한다
+      owner: knowledge_engineer
+      status: done
+      outputs:
+      - data/wiki_runtime_books/active_manifest.json
+      - data/wiki_relations
+      - data/wiki_assets
+      - reports/build_logs
+      tests:
+      - active_runtime_remains_source_first_and_figure_aware
+      - buyer_packet_surface_remains_in_sync_with_active_truth
+    - id: W6-E1-T4
+      title: 새 baseline 에 대해 smoke validation 과 board closeout 을 닫는다
+      owner: judge
+      status: done
+      outputs:
+      - reports/execution_harness/W6-RESET-AND-REBASELINE/main/final_report.json
+      - TASK_BOARD.yaml
+      tests:
+      - runtime_smoke_passes_for_rebaselined_active_truth
+      - task_board_status_reflects_completed_w6_closeout

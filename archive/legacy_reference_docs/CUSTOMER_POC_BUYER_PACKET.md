@@ -1,5 +1,7 @@
 # CUSTOMER_POC_BUYER_PACKET
 
+> Legacy reference only. 현재 기준선이 아니며, customer document 정책은 active rule set 과 security boundary 계약을 우선한다.
+
 ## Current Judgment
 
 이 문서는 `고객 문서 PoC`를 어떻게 팔고, 무엇을 납품하고, 어디까지를 약속하지 않을지 정의한다.

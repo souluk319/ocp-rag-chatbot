@@ -23,9 +23,35 @@ def _display_heading(text: str) -> str:
     return cleaned or raw
 
 
+def _render_page_overlay_toolbar(
+    *,
+    target_kind: str,
+    target_ref: str,
+    title: str,
+    book_slug: str = "",
+    anchor: str = "",
+    asset_name: str = "",
+    entity_slug: str = "",
+    viewer_path: str = "",
+) -> str:
+    return """
+    <div class="overlay-page-target" hidden data-page-root="true" data-target-kind="{target_kind}" data-target-ref="{target_ref}" data-target-title="{title}" data-book-slug="{book_slug}" data-anchor="{anchor}" data-asset-name="{asset_name}" data-entity-slug="{entity_slug}" data-viewer-path="{viewer_path}"></div>
+    """.format(
+        target_kind=html.escape(target_kind, quote=True),
+        target_ref=html.escape(target_ref, quote=True),
+        title=html.escape(title, quote=True),
+        book_slug=html.escape(book_slug, quote=True),
+        anchor=html.escape(anchor, quote=True),
+        asset_name=html.escape(asset_name, quote=True),
+        entity_slug=html.escape(entity_slug, quote=True),
+        viewer_path=html.escape(viewer_path, quote=True),
+    ).strip()
+
+
 def _build_study_section_cards(
     sections: list[dict[str, Any]],
     *,
+    book_slug: str = "",
     target_anchor: str = "",
     embedded: bool = False,
 ) -> list[str]:
@@ -94,10 +120,12 @@ def _render_study_viewer_html(
     title: str,
     source_url: str,
     cards: list[str],
+    supplementary_blocks: list[str] | None = None,
     section_count: int,
     eyebrow: str,
     summary: str,
     embedded: bool = False,
+    page_overlay_toolbar: str = "",
 ) -> str:
     hero_block = ""
     embedded_meta_block = ""
@@ -108,6 +136,7 @@ def _render_study_viewer_html(
             <div class="eyebrow">{eyebrow}</div>
             <h1>{title}</h1>
             <p class="summary">{summary}</p>
+            {page_overlay_toolbar}
             <div class="actions">
               <span>섹션 수: {section_count}</span>
               <a href="{source_url}" target="_blank" rel="noreferrer">원문 열기</a>
@@ -122,6 +151,9 @@ def _render_study_viewer_html(
                 <a class="embedded-origin-link" href="{source_url}" target="_blank" rel="noreferrer">공식 매뉴얼 원문</a>
               </div>
             """
+        if page_overlay_toolbar:
+            embedded_meta_block = (embedded_meta_block + page_overlay_toolbar) if embedded_meta_block else page_overlay_toolbar
+    extra_blocks = "\n".join(supplementary_blocks or [])
     return """
     <!DOCTYPE html>
     <html lang="ko">
@@ -229,9 +261,272 @@ def _render_study_viewer_html(
             gap: 18px;
             margin-top: 24px;
           }}
+          .wiki-grid {{
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 18px;
+            margin-bottom: 10px;
+          }}
+          .wiki-grid-primary {{
+            align-items: start;
+          }}
+          .wiki-grid-secondary {{
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin-top: 0;
+          }}
+          .wiki-parent-card {{
+            display: grid;
+            gap: 10px;
+            margin-top: 18px;
+            margin-bottom: 14px;
+            background: linear-gradient(180deg, rgba(198, 40, 40, 0.06), rgba(198, 40, 40, 0.02));
+            border: 1px solid rgba(198, 40, 40, 0.12);
+            border-radius: 18px;
+            padding: 16px 18px;
+          }}
+          .wiki-parent-eyebrow {{
+            color: var(--accent);
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+          }}
+          .viewer-truth-topline {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+          }}
+          .viewer-truth-badge {{
+            display: inline-flex;
+            align-items: center;
+            min-height: 24px;
+            padding: 0 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(198, 40, 40, 0.16);
+            background: rgba(198, 40, 40, 0.08);
+            color: var(--accent);
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+          }}
+          .viewer-truth-link {{
+            display: inline-flex;
+            align-items: center;
+            min-height: 24px;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 700;
+          }}
+          .viewer-truth-title {{
+            color: var(--ink);
+            font-size: 1.02rem;
+            font-weight: 800;
+            line-height: 1.4;
+          }}
+          .wiki-parent-card a {{
+            color: var(--ink);
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 1.02rem;
+            line-height: 1.4;
+          }}
+          .wiki-parent-card p {{
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.55;
+          }}
+          .wiki-card {{
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 16px 18px;
+            box-shadow: 0 10px 24px rgba(17, 20, 24, 0.05);
+          }}
+          .wiki-card h3 {{
+            margin: 0 0 10px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+          }}
+          .wiki-card h4 {{
+            margin: 0 0 10px;
+            font-size: 0.82rem;
+            line-height: 1.4;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+          }}
+          .wiki-card-primary {{
+            padding: 18px 20px;
+          }}
+          .wiki-card-intro {{
+            margin: 0 0 12px;
+            color: var(--muted);
+            font-size: 0.92rem;
+            line-height: 1.6;
+          }}
+          .wiki-card-stack {{
+            display: grid;
+            gap: 16px;
+          }}
+          .wiki-links,
+          .wiki-path {{
+            display: grid;
+            gap: 10px;
+          }}
+          .wiki-details {{
+            margin-top: 8px;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.78);
+            overflow: hidden;
+          }}
+          .wiki-details summary {{
+            list-style: none;
+            cursor: pointer;
+            padding: 14px 18px;
+            font-size: 0.88rem;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            color: var(--muted);
+            background: rgba(17, 20, 24, 0.025);
+          }}
+          .wiki-details summary::-webkit-details-marker {{
+            display: none;
+          }}
+          .wiki-details[open] summary {{
+            border-bottom: 1px solid var(--line);
+            color: var(--ink);
+          }}
+          .wiki-details > .wiki-grid {{
+            padding: 14px 14px 12px;
+            margin: 0;
+          }}
+          .wiki-links a,
+          .wiki-path a {{
+            color: var(--ink);
+            text-decoration: none;
+            font-weight: 700;
+            line-height: 1.5;
+          }}
+          .wiki-links a:hover,
+          .wiki-path a:hover {{
+            color: var(--accent);
+          }}
+          .wiki-links span,
+          .wiki-path span {{
+            color: var(--muted);
+            font-size: 0.88rem;
+            line-height: 1.55;
+          }}
+          .wiki-empty {{
+            color: var(--muted);
+            font-size: 0.92rem;
+            line-height: 1.55;
+          }}
+          .wiki-entity-list {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+          }}
+          .wiki-entity-list a,
+          .meta-pill {{
+            display: inline-flex;
+            align-items: center;
+            min-height: 34px;
+            padding: 0 12px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: rgba(17, 20, 24, 0.025);
+            color: var(--ink);
+            text-decoration: none;
+            font-size: 0.86rem;
+            font-weight: 700;
+          }}
+          .wiki-entity-list a:hover {{
+            color: var(--accent);
+            border-color: rgba(198, 40, 40, 0.2);
+            background: rgba(198, 40, 40, 0.05);
+          }}
+          .figure-block {{
+            display: grid;
+            gap: 10px;
+            margin: 18px 0;
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: rgba(17, 20, 24, 0.02);
+          }}
+          .diagram-block {{
+            border-color: rgba(198, 40, 40, 0.18);
+            background: linear-gradient(180deg, rgba(198, 40, 40, 0.05), rgba(198, 40, 40, 0.015));
+          }}
+          .figure-eyebrow {{
+            color: var(--accent);
+            font-size: 0.74rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+          }}
+          .figure-link {{
+            display: block;
+            text-decoration: none;
+          }}
+          .figure-block img {{
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: 100%;
+            border-radius: 12px;
+            border: 1px solid rgba(17, 20, 24, 0.08);
+            background: #fff;
+          }}
+          .figure-block figcaption {{
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.55;
+          }}
           body.is-embedded .section-list {{
             margin-top: 14px;
             gap: 0;
+          }}
+          body.is-embedded .wiki-grid {{
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin: 8px 0 18px;
+          }}
+          body.is-embedded .wiki-parent-card {{
+            margin: 8px 0 14px;
+            padding: 14px 16px;
+            border-radius: 16px;
+          }}
+          body.is-embedded .wiki-card {{
+            border-radius: 16px;
+            padding: 14px 16px;
+          }}
+          body.is-embedded .wiki-details {{
+            margin: 6px 0 16px;
+            border-radius: 16px;
+          }}
+          body.is-embedded .wiki-details summary {{
+            padding: 12px 16px;
+          }}
+          @media (max-width: 1100px) {{
+            .wiki-grid,
+            body.is-embedded .wiki-grid {{
+              grid-template-columns: 1fr;
+            }}
+            .wiki-grid-secondary {{
+              grid-template-columns: 1fr;
+            }}
           }}
           .embedded-origin-row {{
             display: flex;
@@ -409,6 +704,16 @@ def _render_study_viewer_html(
             cursor: pointer;
             transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
           }}
+          .icon-button {{
+            width: 34px;
+            min-width: 34px;
+            height: 34px;
+            padding: 0;
+            display: inline-grid;
+            place-items: center;
+            font-size: 0.95rem;
+            line-height: 1;
+          }}
           .code-actions {{
             display: flex;
             gap: 8px;
@@ -422,12 +727,6 @@ def _render_study_viewer_html(
           .code-block.is-wrapped code {{
             white-space: pre-wrap;
             word-break: break-word;
-          }}
-          .code-block.is-expanded {{
-            margin-inline: -10px;
-          }}
-          .code-block.is-expanded pre {{
-            overflow-x: visible;
           }}
           .code-block pre {{
             margin: 0;
@@ -597,16 +896,48 @@ def _render_study_viewer_html(
               ? (button.dataset.labelActive || "줄바꿈 해제")
               : (button.dataset.labelDefault || "줄바꿈");
           }}
-          function toggleViewerCodeOverflow(button) {{
-            const block = button.closest(".code-block");
-            if (!block) return;
-            block.classList.toggle("is-expanded");
-            const expanded = block.classList.contains("is-expanded");
-            button.setAttribute("aria-pressed", expanded ? "true" : "false");
-            button.textContent = expanded
-              ? (button.dataset.labelActive || "기본 폭")
-              : (button.dataset.labelDefault || "넓게 보기");
+          const OVERLAY_USER_KEY = "playbook_studio_overlay_user";
+          function overlayUserId() {{
+            return window.localStorage.getItem(OVERLAY_USER_KEY) || "viewer-user";
           }}
+          async function overlayFetch(path, init) {{
+            const response = await fetch(path, {{
+              headers: {{ "Content-Type": "application/json; charset=utf-8" }},
+              ...init,
+            }});
+            if (!response.ok) {{
+              throw new Error("overlay request failed");
+            }}
+            return response.json();
+          }}
+          function toolbarPayload(toolbar) {{
+            return {{
+              user_id: overlayUserId(),
+              target_kind: toolbar.dataset.targetKind || "",
+              target_ref: toolbar.dataset.targetRef || "",
+              book_slug: toolbar.dataset.bookSlug || "",
+              anchor: toolbar.dataset.anchor || "",
+              asset_name: toolbar.dataset.assetName || "",
+              entity_slug: toolbar.dataset.entitySlug || "",
+              viewer_path: toolbar.dataset.viewerPath || window.location.pathname + window.location.hash,
+            }};
+          }}
+          async function markRecentPosition() {{
+            const target = document.querySelector(".overlay-page-target[data-page-root='true']");
+            if (!target) return;
+            const payload = toolbarPayload(target);
+            await overlayFetch('/api/wiki-overlays', {{
+              method: 'POST',
+              body: JSON.stringify({{ ...payload, kind: "recent_position" }}),
+            }});
+          }}
+          document.addEventListener("DOMContentLoaded", async () => {{
+            try {{
+              await markRecentPosition();
+            }} catch (error) {{
+              console.error(error);
+            }}
+          }});
         </script>
       </head>
       <body class="{body_class}">
@@ -614,6 +945,7 @@ def _render_study_viewer_html(
           {hero_block}
           <article class="{document_class}">
             {embedded_meta_block}
+            {extra_blocks}
             <div class="section-list">
               {cards}
             </div>
@@ -629,15 +961,18 @@ def _render_study_viewer_html(
         source_url=html.escape(source_url, quote=True),
         body_class="is-embedded" if embedded else "",
         document_class=document_class,
+        extra_blocks=extra_blocks,
         embedded_meta_block=embedded_meta_block.format(
             source_url=html.escape(source_url, quote=True),
         ) if embedded_meta_block else "",
+        page_overlay_toolbar=page_overlay_toolbar,
         hero_block=hero_block.format(
             title=html.escape(title),
             eyebrow=html.escape(eyebrow),
             summary=html.escape(summary),
             section_count=section_count,
             source_url=html.escape(source_url, quote=True),
+            page_overlay_toolbar=page_overlay_toolbar,
         ) if hero_block else "",
         cards="\n".join(cards),
     ).strip()

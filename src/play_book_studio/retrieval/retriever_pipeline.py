@@ -289,6 +289,7 @@ def execute_retrieval_pipeline(
         retriever,
         query=plan.rewritten_query,
         hybrid_hits=graph_enriched_hits,
+        context=context,
         top_k=top_k,
         trace_callback=trace_callback,
         timings_ms=timings_ms,

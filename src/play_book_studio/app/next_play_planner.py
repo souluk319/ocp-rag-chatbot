@@ -110,20 +110,20 @@ def build_next_play_plan(
     if ETCD_RE.search(query) or "etcd" in topic.lower():
         if has_backup_restore_intent(query) or "백업" in topic or "복원" in topic:
             return NextPlayPlan(
-                next_action="etcd 백업 명령과 순서를 다시 정리해줘",
-                verification="백업 파일이 정상적으로 생성됐는지 확인하는 방법도 알려줘",
-                next_branch="백업이나 복원 중 문제가 나면 어디부터 확인해야 해?",
+                next_action="etcd 허브에서 같이 봐야 할 운영 문서를 보여줘",
+                verification="복원 후 Machine Configuration은 왜 같이 봐야 하는지 알려줘",
+                next_branch="백업 후 Monitoring에서는 어떤 신호를 먼저 확인해야 해?",
             )
         return NextPlayPlan(
-            next_action="etcd 운영에서 실제로 먼저 해야 하는 작업 순서를 알려줘",
-            verification="etcd 상태를 확인하는 기본 점검 방법도 알려줘",
-            next_branch="장애가 나면 어떤 증상부터 확인해야 하는지 알려줘",
+            next_action="etcd 허브에서 바로 가야 할 관련 문서를 보여줘",
+            verification="etcd 상태를 확인한 다음 어떤 북으로 이어가야 해?",
+            next_branch="장애가 나면 Monitoring이나 Backup and Restore 중 어디부터 보는 게 맞아?",
         )
     if MCO_RE.search(query) or "machine config operator" in topic.lower():
         return NextPlayPlan(
-            next_action="MachineConfigPool 상태를 확인하는 명령을 알려줘",
-            verification="노드에 변경이 반영됐는지 확인하는 방법도 알려줘",
-            next_branch="MCO가 Degraded일 때 어디부터 봐야 하는지 알려줘",
+            next_action="Machine Config Operator 허브에서 같이 봐야 할 문서를 보여줘",
+            verification="MCP 확인 다음에 Monitoring에서는 뭘 봐야 하는지 알려줘",
+            next_branch="MCO가 Degraded면 어떤 관련 북으로 이동해야 하는지 알려줘",
         )
     if has_deployment_scaling_intent(query):
         return NextPlayPlan(
@@ -139,9 +139,9 @@ def build_next_play_plan(
         )
     if has_openshift_kubernetes_compare_intent(query) or is_generic_intro_query(query):
         return NextPlayPlan(
-            next_action="실무에서 가장 먼저 하는 OpenShift 작업 3가지를 알려줘",
-            verification="클러스터 기본 상태를 확인하는 명령도 알려줘",
-            next_branch="운영 중 문제가 생기면 어떤 순서로 접근하는지 알려줘",
+            next_action="운영 입문 기준으로 먼저 봐야 할 플레이북 3개를 알려줘",
+            verification="기본 상태 확인 뒤 어떤 허브로 들어가야 하는지 알려줘",
+            next_branch="문제가 생기면 위키 안에서 어떤 순서로 이동해야 하는지 알려줘",
         )
     if has_doc_locator_intent(query):
         return NextPlayPlan(

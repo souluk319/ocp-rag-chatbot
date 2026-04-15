@@ -4,7 +4,7 @@
 
 이 카탈로그는 Wave 1에서 현재 gold 승격 기준선으로 채택한 reader-grade md만 모아둔 것이다.
 
-- generated_at_utc: `2026-04-14T01:19:33+00:00`
+- generated_at_utc: `2026-04-15T00:55:27+00:00`
 
 ## Entries
 

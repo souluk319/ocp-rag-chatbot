@@ -1,0 +1,2263 @@
+{
+  "generated_at_utc": "2026-04-15T00:56:33+00:00",
+  "entity_count": 13,
+  "book_count": 18,
+  "by_entity": {
+    "cluster-wide-proxy": [
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "viewer_path": "/wiki/figures/advanced_networking/524-openshift-bgp-ovn-k8s-no-vpn-0325.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/524-openshift-bgp-ovn-k8s-no-vpn-0325.png",
+        "section_hint": "6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "viewer_path": "/wiki/figures/advanced_networking/524-openshift-bgp-ovn-k8s-vrf-lite-0325.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/524-openshift-bgp-ovn-k8s-vrf-lite-0325.png",
+        "section_hint": "6.1.3.3. VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "PTP 할 마스터 클록을 보여주는 다이어그램",
+        "viewer_path": "/wiki/figures/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1123_PTP_network.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1123_PTP_network.png",
+        "section_hint": "7.1.1. PTP 도메인의 요소 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "GNSS 및 T-GM 시스템 아키텍처",
+        "viewer_path": "/wiki/figures/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1023_PTP.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1023_PTP.png",
+        "section_hint": "7.1.3. PTP 할 마스터 클록에 대한 GNSS 타이밍 개요 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "GNSS 타이밍 소스 및 다운스트림 PTP 경계 및 일반 클럭에 연결된 듀얼 NIC PTP 마스터 클럭",
+        "viewer_path": "/wiki/figures/advanced_networking/openshift-ptp-using-dual-nic-ptp.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/openshift-ptp-using-dual-nic-ptp.png",
+        "section_hint": "7.1.5. 2 카드 E810 NIC 구성 참조 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "GNSS 타이밍 소스 및 다운스트림 PTP 경계 및 일반 클럭에 연결된 3- 카드 PTP 할 마스터 클럭",
+        "viewer_path": "/wiki/figures/advanced_networking/openshift-ptp-3-card-grandmaster.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/openshift-ptp-3-card-grandmaster.png",
+        "section_hint": "7.1.7. 3-card Intel E810 PTP grandmaster 클록 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "GNSS를 소스로 사용하는 T-GM 클록의 홀드오버",
+        "viewer_path": "/wiki/figures/advanced_networking/openshift-ptp-holdover-tgm-clock-with-gnss.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/openshift-ptp-holdover-tgm-clock-with-gnss.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-1.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-1.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-2.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-2.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-3.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-3.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-4.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-4.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-5.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-5.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-6.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-6.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "PTP 이벤트 생산자 REST API의 PTP 빠른 이벤트 사용 개요",
+        "viewer_path": "/wiki/figures/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_0323_4.17.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_0323_4.17.png",
+        "section_hint": "7.3.2. PTP 이벤트 REST API v2를 사용하여 PTP 이벤트 검색 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "disconnected_environments",
+        "book_title": "연결이 끊긴 환경",
+        "caption": "Enclave 지원",
+        "viewer_path": "/wiki/figures/disconnected_environments/445_OpenShift_Enclave_support_0724.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/disconnected_environments/445_OpenShift_Enclave_support_0724.png",
+        "section_hint": "5.8.1. Enclave 미러링 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "경로가 속하는 네임스페이스와 관계없이 지정된 경로 선택기와 일치하는 라벨을 포함하는 모든 경로를 제공하는 다른 경로 선택기가 있는 여러 Ingress 컨트롤러를 보여주는 다이어그램",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/nw-sharding-route-labels.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/nw-sharding-route-labels.png",
+        "section_hint": "2.3.6.5. 경로 라벨을 사용하여 Ingress 컨트롤러 분할 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "지정된 네임스페이스 선택기와 일치하는 라벨이 포함된 네임스페이스에 속하는 경로가 다른 네임스페이스 선택기가 있는 여러 Ingress 컨트롤러를 표시하는 다이어그램",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/nw-sharding-namespace-labels.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/nw-sharding-namespace-labels.png",
+        "section_hint": "2.3.6.6. 네임스페이스 라벨을 사용하여 Ingress 컨트롤러 분할 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "OpenShift Container Platform Ingress NodePort 끝점 게시 전략",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/202_OpenShift_Ingress_0222_node_port.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/202_OpenShift_Ingress_0222_node_port.png",
+        "section_hint": "2.4.1. Ingress 컨트롤러 끝점 게시 전략 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "OpenShift Container Platform 환경에서 작동하는 Ingress 컨트롤러의 네트워크 워크플로 예제를 보여주는 이미지입니다.",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/external-load-balancer-default.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/external-load-balancer-default.png",
+        "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "OpenShift Container Platform 환경에서 작동하는 OpenShift API의 네트워크 워크플로 예제를 보여주는 이미지입니다.",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/external-load-balancer-openshift-api.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/external-load-balancer-openshift-api.png",
+        "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "OpenShift Container Platform 환경에서 작동하는 OpenShift MachineConfig API의 네트워크 워크플로 예제를 보여주는 이미지입니다.",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/external-load-balancer-machine-config-api.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/external-load-balancer-machine-config-api.png",
+        "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "MetalLB와 함께 VRF를 사용하여 대칭 라우팅 관리에 대한 네트워크 개요",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/357_OpenShift_MetalLB_VRF_0823.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/357_OpenShift_MetalLB_VRF_0823.png",
+        "section_hint": "4.7.2. MetalLB와 함께 VRF를 사용하여 대칭 라우팅 관리 개요 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "FRR과의 MetalLB 통합",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/695_OpenShift_MetalLB_FRRK8s_integration_0624.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/695_OpenShift_MetalLB_FRRK8s_integration_0624.png",
+        "section_hint": "4.8. MetalLB 및 FRR-K8의 통합 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "postinstallation_configuration",
+        "book_title": "설치 후 구성",
+        "caption": "결정 워크플로",
+        "viewer_path": "/wiki/figures/postinstallation_configuration/node-tuning-operator-workflow-revised.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/postinstallation_configuration/node-tuning-operator-workflow-revised.png",
+        "section_hint": "5.13.2. 사용자 정의 튜닝 사양 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "postinstallation_configuration",
+        "book_title": "설치 후 구성",
+        "caption": "OpenShift Container Platform RBAC",
+        "viewer_path": "/wiki/figures/postinstallation_configuration/rbac.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/postinstallation_configuration/rbac.png",
+        "section_hint": "9.2.1.1. 기본 클러스터 역할 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      }
+    ],
+    "networking": [
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "viewer_path": "/wiki/figures/advanced_networking/524-openshift-bgp-ovn-k8s-no-vpn-0325.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/524-openshift-bgp-ovn-k8s-no-vpn-0325.png",
+        "section_hint": "6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "viewer_path": "/wiki/figures/advanced_networking/524-openshift-bgp-ovn-k8s-vrf-lite-0325.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/524-openshift-bgp-ovn-k8s-vrf-lite-0325.png",
+        "section_hint": "6.1.3.3. VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "PTP 할 마스터 클록을 보여주는 다이어그램",
+        "viewer_path": "/wiki/figures/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1123_PTP_network.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1123_PTP_network.png",
+        "section_hint": "7.1.1. PTP 도메인의 요소 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "GNSS 및 T-GM 시스템 아키텍처",
+        "viewer_path": "/wiki/figures/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1023_PTP.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1023_PTP.png",
+        "section_hint": "7.1.3. PTP 할 마스터 클록에 대한 GNSS 타이밍 개요 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "GNSS 타이밍 소스 및 다운스트림 PTP 경계 및 일반 클럭에 연결된 듀얼 NIC PTP 마스터 클럭",
+        "viewer_path": "/wiki/figures/advanced_networking/openshift-ptp-using-dual-nic-ptp.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/openshift-ptp-using-dual-nic-ptp.png",
+        "section_hint": "7.1.5. 2 카드 E810 NIC 구성 참조 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "GNSS 타이밍 소스 및 다운스트림 PTP 경계 및 일반 클럭에 연결된 3- 카드 PTP 할 마스터 클럭",
+        "viewer_path": "/wiki/figures/advanced_networking/openshift-ptp-3-card-grandmaster.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/openshift-ptp-3-card-grandmaster.png",
+        "section_hint": "7.1.7. 3-card Intel E810 PTP grandmaster 클록 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "GNSS를 소스로 사용하는 T-GM 클록의 홀드오버",
+        "viewer_path": "/wiki/figures/advanced_networking/openshift-ptp-holdover-tgm-clock-with-gnss.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/openshift-ptp-holdover-tgm-clock-with-gnss.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-1.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-1.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-2.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-2.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-3.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-3.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-4.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-4.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-5.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-5.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-6.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-6.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "PTP 이벤트 생산자 REST API의 PTP 빠른 이벤트 사용 개요",
+        "viewer_path": "/wiki/figures/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_0323_4.17.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_0323_4.17.png",
+        "section_hint": "7.3.2. PTP 이벤트 REST API v2를 사용하여 PTP 이벤트 검색 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "disconnected_environments",
+        "book_title": "연결이 끊긴 환경",
+        "caption": "Enclave 지원",
+        "viewer_path": "/wiki/figures/disconnected_environments/445_OpenShift_Enclave_support_0724.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/disconnected_environments/445_OpenShift_Enclave_support_0724.png",
+        "section_hint": "5.8.1. Enclave 미러링 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "경로가 속하는 네임스페이스와 관계없이 지정된 경로 선택기와 일치하는 라벨을 포함하는 모든 경로를 제공하는 다른 경로 선택기가 있는 여러 Ingress 컨트롤러를 보여주는 다이어그램",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/nw-sharding-route-labels.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/nw-sharding-route-labels.png",
+        "section_hint": "2.3.6.5. 경로 라벨을 사용하여 Ingress 컨트롤러 분할 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "지정된 네임스페이스 선택기와 일치하는 라벨이 포함된 네임스페이스에 속하는 경로가 다른 네임스페이스 선택기가 있는 여러 Ingress 컨트롤러를 표시하는 다이어그램",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/nw-sharding-namespace-labels.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/nw-sharding-namespace-labels.png",
+        "section_hint": "2.3.6.6. 네임스페이스 라벨을 사용하여 Ingress 컨트롤러 분할 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "OpenShift Container Platform Ingress NodePort 끝점 게시 전략",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/202_OpenShift_Ingress_0222_node_port.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/202_OpenShift_Ingress_0222_node_port.png",
+        "section_hint": "2.4.1. Ingress 컨트롤러 끝점 게시 전략 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "OpenShift Container Platform 환경에서 작동하는 Ingress 컨트롤러의 네트워크 워크플로 예제를 보여주는 이미지입니다.",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/external-load-balancer-default.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/external-load-balancer-default.png",
+        "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "OpenShift Container Platform 환경에서 작동하는 OpenShift API의 네트워크 워크플로 예제를 보여주는 이미지입니다.",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/external-load-balancer-openshift-api.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/external-load-balancer-openshift-api.png",
+        "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "OpenShift Container Platform 환경에서 작동하는 OpenShift MachineConfig API의 네트워크 워크플로 예제를 보여주는 이미지입니다.",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/external-load-balancer-machine-config-api.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/external-load-balancer-machine-config-api.png",
+        "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "MetalLB와 함께 VRF를 사용하여 대칭 라우팅 관리에 대한 네트워크 개요",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/357_OpenShift_MetalLB_VRF_0823.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/357_OpenShift_MetalLB_VRF_0823.png",
+        "section_hint": "4.7.2. MetalLB와 함께 VRF를 사용하여 대칭 라우팅 관리 개요 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "FRR과의 MetalLB 통합",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/695_OpenShift_MetalLB_FRRK8s_integration_0624.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/695_OpenShift_MetalLB_FRRK8s_integration_0624.png",
+        "section_hint": "4.8. MetalLB 및 FRR-K8의 통합 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Networking and Connectivity"
+      }
+    ],
+    "platform-foundation": [
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "Red Hat OpenShift Kubernetes Engine",
+        "viewer_path": "/wiki/figures/architecture/525-OpenShift-arch-012025.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/525-OpenShift-arch-012025.png",
+        "section_hint": "2.1. OpenShift Container Platform 소개 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Platform Foundation"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "상위 레벨 OpenShift Container Platform 플로우",
+        "viewer_path": "/wiki/figures/architecture/ocp_arch_lifecycle.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/ocp_arch_lifecycle.png",
+        "section_hint": "2.1.3.4. OpenShift Container Platform 라이프사이클 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Platform Foundation"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "OpenShift Container Platform 설치 대상 및 종속 항목",
+        "viewer_path": "/wiki/figures/architecture/targets-and-dependencies.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/targets-and-dependencies.png",
+        "section_hint": "3.1.1. 설치 프로그램 정보 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Platform Foundation"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "부트스트랩 생성",
+        "viewer_path": "/wiki/figures/architecture/create-nodes.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/create-nodes.png",
+        "section_hint": "3.1.4.5. 설치 프로세스 세부사항 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Platform Foundation"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "컨테이너화된 애플리케이션 생성 및 푸시",
+        "viewer_path": "/wiki/figures/architecture/create-push-app.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/create-push-app.png",
+        "section_hint": "7.2. 간단한 컨테이너 빌드 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Platform Foundation"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "OpenShift Container Platform 개발자 카탈로그",
+        "viewer_path": "/wiki/figures/architecture/developer-catalog.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/developer-catalog.png",
+        "section_hint": "7.2.2. 기본 이미지 옵션 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Platform Foundation"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "API 승인 스테이지",
+        "viewer_path": "/wiki/figures/architecture/api-admission-chain.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/api-admission-chain.png",
+        "section_hint": "9.3. Webhook 승인 플러그인 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Platform Foundation"
+      },
+      {
+        "book_slug": "installation_overview",
+        "book_title": "설치 개요",
+        "caption": "OpenShift Container Platform 설치 대상 및 종속 항목",
+        "viewer_path": "/wiki/figures/installation_overview/targets-and-dependencies.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/installation_overview/targets-and-dependencies.png",
+        "section_hint": "1.1.1. 설치 프로그램 정보 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Platform Foundation"
+      },
+      {
+        "book_slug": "installation_overview",
+        "book_title": "설치 개요",
+        "caption": "부트스트랩 생성",
+        "viewer_path": "/wiki/figures/installation_overview/create-nodes.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/installation_overview/create-nodes.png",
+        "section_hint": "1.1.4.5. 설치 프로세스 세부사항 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Platform Foundation"
+      },
+      {
+        "book_slug": "overview",
+        "book_title": "개요",
+        "caption": "Red Hat OpenShift Kubernetes Engine",
+        "viewer_path": "/wiki/figures/overview/oke-about-ocp-stack-image.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/overview/oke-about-ocp-stack-image.png",
+        "section_hint": "2.1. OpenShift Container Platform 이해 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Platform Foundation"
+      },
+      {
+        "book_slug": "overview",
+        "book_title": "개요",
+        "caption": "247 OpenShift Kubernetes 개요",
+        "viewer_path": "/wiki/figures/overview/247-OpenShift-Kubernetes-Overview.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/overview/247-OpenShift-Kubernetes-Overview.png",
+        "section_hint": "4장. Kubernetes 개요 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Platform Foundation"
+      },
+      {
+        "book_slug": "overview",
+        "book_title": "개요",
+        "caption": "247 OpenShift Kubernetes 개요 1",
+        "viewer_path": "/wiki/figures/overview/247_OpenShift_Kubernetes_Overview-1.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/overview/247_OpenShift_Kubernetes_Overview-1.png",
+        "section_hint": "4.2. Kubernetes 리소스 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Platform Foundation"
+      },
+      {
+        "book_slug": "overview",
+        "book_title": "개요",
+        "caption": "247 OpenShift Kubernetes 개요 2",
+        "viewer_path": "/wiki/figures/overview/247_OpenShift_Kubernetes_Overview-2.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/overview/247_OpenShift_Kubernetes_Overview-2.png",
+        "section_hint": "4.2. Kubernetes 리소스 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Platform Foundation"
+      }
+    ],
+    "control-plane-nodes": [
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "Red Hat OpenShift Kubernetes Engine",
+        "viewer_path": "/wiki/figures/architecture/525-OpenShift-arch-012025.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/525-OpenShift-arch-012025.png",
+        "section_hint": "2.1. OpenShift Container Platform 소개 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "상위 레벨 OpenShift Container Platform 플로우",
+        "viewer_path": "/wiki/figures/architecture/ocp_arch_lifecycle.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/ocp_arch_lifecycle.png",
+        "section_hint": "2.1.3.4. OpenShift Container Platform 라이프사이클 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "OpenShift Container Platform 설치 대상 및 종속 항목",
+        "viewer_path": "/wiki/figures/architecture/targets-and-dependencies.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/targets-and-dependencies.png",
+        "section_hint": "3.1.1. 설치 프로그램 정보 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "부트스트랩 생성",
+        "viewer_path": "/wiki/figures/architecture/create-nodes.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/create-nodes.png",
+        "section_hint": "3.1.4.5. 설치 프로세스 세부사항 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "컨테이너화된 애플리케이션 생성 및 푸시",
+        "viewer_path": "/wiki/figures/architecture/create-push-app.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/create-push-app.png",
+        "section_hint": "7.2. 간단한 컨테이너 빌드 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "OpenShift Container Platform 개발자 카탈로그",
+        "viewer_path": "/wiki/figures/architecture/developer-catalog.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/developer-catalog.png",
+        "section_hint": "7.2.2. 기본 이미지 옵션 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "API 승인 스테이지",
+        "viewer_path": "/wiki/figures/architecture/api-admission-chain.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/api-admission-chain.png",
+        "section_hint": "9.3. Webhook 승인 플러그인 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      },
+      {
+        "book_slug": "machine_management",
+        "book_title": "머신 관리",
+        "caption": "시스템 'Deleting' 단계의 이벤트 시퀀스입니다.",
+        "viewer_path": "/wiki/figures/machine_management/310_OpenShift_machine_deletion_hooks_0223.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/machine_management/310_OpenShift_machine_deletion_hooks_0223.png",
+        "section_hint": "6.2.2. 머신 삭제 처리 순서 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      },
+      {
+        "book_slug": "nodes",
+        "book_title": "노드",
+        "caption": "Overview of control plane and worker node",
+        "viewer_path": "/wiki/figures/nodes/295_OpenShift_Nodes_Overview_1222.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/nodes/295_OpenShift_Nodes_Overview_1222.png",
+        "section_hint": "1.1. 노드 정보 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      },
+      {
+        "book_slug": "updating_clusters",
+        "book_title": "클러스터 업데이트",
+        "caption": "Runlevels 순서 및 각 수준 내의 구성 요소의 매니페스트를 표시하는 다이어그램",
+        "viewer_path": "/wiki/figures/updating_clusters/update-runlevels.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/updating_clusters/update-runlevels.png",
+        "section_hint": "1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      },
+      {
+        "book_slug": "updating_clusters",
+        "book_title": "클러스터 업데이트",
+        "caption": "OCP 업데이트 중에 클러스터 Operator가 자체 업데이트되는 기간을 표시하는 다이어그램",
+        "viewer_path": "/wiki/figures/updating_clusters/update-duration.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/updating_clusters/update-duration.png",
+        "section_hint": "1.4.2.3. 클러스터 Operator 업데이트 기간의 예 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      },
+      {
+        "book_slug": "updating_clusters",
+        "book_title": "클러스터 업데이트",
+        "caption": "구성된 CCO 인증 정보 모드에 따라 클러스터에 대한 가능한 업데이트 경로를 표시하는 의사 결정 트리입니다.",
+        "viewer_path": "/wiki/figures/updating_clusters/334_OpenShift_cluster_updating_and_CCO_workflows_0523_4.11_B_AliCloud_patch.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/updating_clusters/334_OpenShift_cluster_updating_and_CCO_workflows_0523_4.11_B_AliCloud_patch.png",
+        "section_hint": "2.2.1.1. 클라우드 인증 정보 구성 옵션 및 플랫폼 유형별 업데이트 요구 사항 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      },
+      {
+        "book_slug": "validation_and_troubleshooting",
+        "book_title": "검증 및 문제 해결",
+        "caption": "대시보드 컴퓨팅 리소스 모니터링",
+        "viewer_path": "/wiki/figures/validation_and_troubleshooting/monitoring-dashboard-compute-resources.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/validation_and_troubleshooting/monitoring-dashboard-compute-resources.png",
+        "section_hint": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      }
+    ],
+    "security-and-auth": [
+      {
+        "book_slug": "authentication_and_authorization",
+        "book_title": "인증 및 권한 부여",
+        "caption": "OpenShift Container Platform RBAC",
+        "viewer_path": "/wiki/figures/authentication_and_authorization/rbac.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/authentication_and_authorization/rbac.png",
+        "section_hint": "9.1.1. 기본 클러스터 역할 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "authentication_and_authorization",
+        "book_title": "인증 및 권한 부여",
+        "caption": "클러스터에 대해 구성된 CCO 인증 정보 모드를 결정하는 방법을 보여주는 의사 결정 트리입니다.",
+        "viewer_path": "/wiki/figures/authentication_and_authorization/334_OpenShift_cluster_updating_and_CCO_workflows_0923_4.11_A_AliCloud_patch.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/authentication_and_authorization/334_OpenShift_cluster_updating_and_CCO_workflows_0923_4.11_A_AliCloud_patch.png",
+        "section_hint": "20.1.2. Cloud Credential Operator 모드 확인 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "authentication_and_authorization",
+        "book_title": "인증 및 권한 부여",
+        "caption": "AWS STS를 사용할 때 AWS와 클러스터 간의 자세한 인증 흐름",
+        "viewer_path": "/wiki/figures/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_0623_AWS.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_0623_AWS.png",
+        "section_hint": "20.5.1.1.1. AWS STS의 인증 흐름 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "authentication_and_authorization",
+        "book_title": "인증 및 권한 부여",
+        "caption": "Google Cloud 워크로드 ID를 사용할 때 Google Cloud와 클러스터 간의 자세한 인증 흐름",
+        "viewer_path": "/wiki/figures/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_0623_GCP.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_0623_GCP.png",
+        "section_hint": "20.5.2.1. Google Cloud 워크로드 ID 인증 프로세스 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "authentication_and_authorization",
+        "book_title": "인증 및 권한 부여",
+        "caption": "Workload ID를 사용할 때 Azure와 클러스터 간의 자세한 인증 흐름",
+        "viewer_path": "/wiki/figures/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_1023_Azure.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_1023_Azure.png",
+        "section_hint": "20.5.3.1. Microsoft Entra Workload ID 인증 프로세스 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "trustedsupplychain",
+        "viewer_path": "/wiki/figures/security_and_compliance/trustedsupplychain.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/trustedsupplychain.png",
+        "section_hint": "2.8.1. 한 번 빌드하여 어디에나 배포 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "소스-이미지 빌드",
+        "viewer_path": "/wiki/figures/security_and_compliance/build_process1.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/build_process1.png",
+        "section_hint": "2.8.2. 빌드 관리 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "빌드 프로세스 설계",
+        "viewer_path": "/wiki/figures/security_and_compliance/build_process2.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/build_process2.png",
+        "section_hint": "2.8.4. 빌드 프로세스 설계 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "안전한 배포",
+        "viewer_path": "/wiki/figures/security_and_compliance/secure_deployments.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/secure_deployments.png",
+        "section_hint": "2.9.1. 트리거를 사용하여 컨테이너 배포 제어 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-0.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-0.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-1.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-1.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-2.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-2.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-3.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-3.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-4.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-4.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-5.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-5.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-6.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-6.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-7.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-7.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-8.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-8.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-9.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-9.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-10.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-10.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-11.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-11.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "소프트웨어 카탈로그의 NBDE Tang Server Operator",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-01-operatorhub.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-01-operatorhub.png",
+        "section_hint": "8.4.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator 설치 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "NBDE Tang Server Operator 설치 확인",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-03-confirmation.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-03-confirmation.png",
+        "section_hint": "8.4.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator 설치 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "NBDE Tang Server Operator 상태",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-05-succeeded.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-05-succeeded.png",
+        "section_hint": "8.4.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator 설치 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "웹 콘솔에서 프로젝트 생성",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-07-create-project.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-07-create-project.png",
+        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "프로젝트 생성 페이지의 값 예",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-09-project-values.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-09-project-values.png",
+        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "Storage 메뉴의 PersistentVolumeClaims",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-11-pvc.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-11-pvc.png",
+        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "PersistentVolumeClaims 페이지 생성",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-13-create-pvc.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-13-create-pvc.png",
+        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "NBDE Tang 서버 인스턴스 생성",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-15-create-instance.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-15-create-instance.png",
+        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "TangServer 페이지 생성",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-17-create-tangserver.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-17-create-tangserver.png",
+        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "NBDE Tang Server Operator 세부 정보",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-19-tangserver-details.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-19-tangserver-details.png",
+        "section_hint": "8.6.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator의 URL 확인 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "Tang 서버의 NBDE Tang Server Operator 개요",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-21-tangserver-overview.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-21-tangserver-overview.png",
+        "section_hint": "8.6.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator의 URL 확인 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "NBDE 배포 모델",
+        "viewer_path": "/wiki/figures/security_and_compliance/179_OpenShift_NBDE_implementation_0821_1.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/179_OpenShift_NBDE_implementation_0821_1.png",
+        "section_hint": "18.1.1.3. NBDE(Network-Bound Disk Encryption) 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "NBDE 재부팅 동작",
+        "viewer_path": "/wiki/figures/security_and_compliance/179_OpenShift_NBDE_implementation_0821_2.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/179_OpenShift_NBDE_implementation_0821_2.png",
+        "section_hint": "18.1.1.3. NBDE(Network-Bound Disk Encryption) 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "NBDE(Network-Bound Disk Encryption)",
+        "viewer_path": "/wiki/figures/security_and_compliance/179_OpenShift_NBDE_implementation_0821_3.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/179_OpenShift_NBDE_implementation_0821_3.png",
+        "section_hint": "18.1.2. Tang 서버 디스크 암호화 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "Tang 서버 키 다시 지정",
+        "viewer_path": "/wiki/figures/security_and_compliance/179_OpenShift_NBDE_implementation_0821_4.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/179_OpenShift_NBDE_implementation_0821_4.png",
+        "section_hint": "18.3.3. Tang 서버 키 다시 지정 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Security and Access"
+      }
+    ],
+    "operators-and-tooling": [
+      {
+        "book_slug": "cli_tools",
+        "book_title": "CLI 툴",
+        "caption": "물음표를 클릭합니다.",
+        "viewer_path": "/wiki/figures/cli_tools/click-question-mark.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/cli_tools/click-question-mark.png",
+        "section_hint": "2.1.2.2.1. 웹 콘솔을 사용하여 Linux에 OpenShift CLI 설치 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "cli_tools",
+        "book_title": "CLI 툴",
+        "caption": "CLI 목록",
+        "viewer_path": "/wiki/figures/cli_tools/CLI-list.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/cli_tools/CLI-list.png",
+        "section_hint": "2.1.2.2.1. 웹 콘솔을 사용하여 Linux에 OpenShift CLI 설치 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "cli_tools",
+        "book_title": "CLI 툴",
+        "caption": "redcircle 1",
+        "viewer_path": "/wiki/figures/cli_tools/redcircle-1.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/cli_tools/redcircle-1.png",
+        "section_hint": "2.3.1. oc 바이너리 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "cli_tools",
+        "book_title": "CLI 툴",
+        "caption": "redcircle 3",
+        "viewer_path": "/wiki/figures/cli_tools/redcircle-3.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/cli_tools/redcircle-3.png",
+        "section_hint": "2.3.1. oc 바이너리 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "cli_tools",
+        "book_title": "CLI 툴",
+        "caption": "redcircle 2",
+        "viewer_path": "/wiki/figures/cli_tools/redcircle-2.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/cli_tools/redcircle-2.png",
+        "section_hint": "2.3.1. oc 바이너리 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "operators",
+        "book_title": "Operator 운영 플레이북",
+        "caption": "Operator 완성 모델",
+        "viewer_path": "/wiki/figures/operators/operator-maturity-model.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/operator-maturity-model.png",
+        "section_hint": "2.1.3. Operator 완성 모델 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "operators",
+        "book_title": "Operator 운영 플레이북",
+        "caption": "olm 워크플로",
+        "viewer_path": "/wiki/figures/operators/olm-workflow.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-workflow.png",
+        "section_hint": "2.4.1.1. OLM(Operator Lifecycle Manager) Classic이란 무엇입니까? 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "operators",
+        "book_title": "Operator 운영 플레이북",
+        "caption": "olm catalogsource",
+        "viewer_path": "/wiki/figures/operators/olm-catalogsource.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-catalogsource.png",
+        "section_hint": "2.4.3.1. OLM의 Operator 설치 및 업그레이드 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "operators",
+        "book_title": "Operator 운영 플레이북",
+        "caption": "olm channels",
+        "viewer_path": "/wiki/figures/operators/olm-channels.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-channels.png",
+        "section_hint": "2.4.3.1. OLM의 Operator 설치 및 업그레이드 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "operators",
+        "book_title": "Operator 운영 플레이북",
+        "caption": "OLM 대체",
+        "viewer_path": "/wiki/figures/operators/olm-replaces.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-replaces.png",
+        "section_hint": "2.4.3.1. OLM의 Operator 설치 및 업그레이드 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "operators",
+        "book_title": "Operator 운영 플레이북",
+        "caption": "업데이트를 건너뛰는 OLM",
+        "viewer_path": "/wiki/figures/operators/olm-skipping-updates.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-skipping-updates.png",
+        "section_hint": "2.4.3.1.2. 업그레이드 건너뛰기 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "operators",
+        "book_title": "Operator 운영 플레이북",
+        "caption": "olm z 스트림",
+        "viewer_path": "/wiki/figures/operators/olm-z-stream.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-z-stream.png",
+        "section_hint": "2.4.3.1.4. z-stream 지원 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "web_console",
+        "book_title": "웹 콘솔",
+        "caption": "선택할 수 있는 올바른 콘솔 구성 리소스를 보여주는 설정 페이지의 이미지",
+        "viewer_path": "/wiki/figures/web_console/cluster-settings-console.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/cluster-settings-console.png",
+        "section_hint": "5.3. 웹 콘솔에서 퀵 스타트 비활성화 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "web_console",
+        "book_title": "웹 콘솔",
+        "caption": "사용자 화면 사용자 정의",
+        "viewer_path": "/wiki/figures/web_console/customizing-user-perspective.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/customizing-user-perspective.png",
+        "section_hint": "6.9.2. 양식 보기를 사용하여 화면 사용자 정의 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "web_console",
+        "book_title": "웹 콘솔",
+        "caption": "odc 사용자 지정 개발자 카탈로그",
+        "viewer_path": "/wiki/figures/web_console/odc_customizing_developer_catalog.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/odc_customizing_developer_catalog.png",
+        "section_hint": "6.10.2. 양식 보기를 사용하여 개발자 카탈로그 또는 하위 카탈로그 사용자 정의 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "web_console",
+        "book_title": "웹 콘솔",
+        "caption": "웹 콘솔에서 conclusion 퀵 스타트",
+        "viewer_path": "/wiki/figures/web_console/quick-start-conclusion.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/quick-start-conclusion.png",
+        "section_hint": "10.4.2.1. conclusion 요소 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "web_console",
+        "book_title": "웹 콘솔",
+        "caption": "웹 콘솔에서 퀵 스타트 설명",
+        "viewer_path": "/wiki/figures/web_console/quick-start-description.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/quick-start-description.png",
+        "section_hint": "10.4.2.2. description 요소 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "web_console",
+        "book_title": "웹 콘솔",
+        "caption": "웹 콘솔에서 퀵 스타트 표시 이름",
+        "viewer_path": "/wiki/figures/web_console/quick-start-display-name.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/quick-start-display-name.png",
+        "section_hint": "10.4.2.3. displayName 요소 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "web_console",
+        "book_title": "웹 콘솔",
+        "caption": "웹 콘솔에서 퀵 스타트 durationMinutes 요소",
+        "viewer_path": "/wiki/figures/web_console/quick-start-duration.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/quick-start-duration.png",
+        "section_hint": "10.4.2.4. durationMinutes 요소 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      },
+      {
+        "book_slug": "web_console",
+        "book_title": "웹 콘솔",
+        "caption": "웹 콘솔에서 퀵스타트 introduction 요소",
+        "viewer_path": "/wiki/figures/web_console/quick-start-introduction.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/quick-start-introduction.png",
+        "section_hint": "10.4.2.6. introduction 요소 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Operators and Tooling"
+      }
+    ],
+    "storage-and-content": [
+      {
+        "book_slug": "disconnected_environments",
+        "book_title": "연결이 끊긴 환경",
+        "caption": "Enclave 지원",
+        "viewer_path": "/wiki/figures/disconnected_environments/445_OpenShift_Enclave_support_0724.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/disconnected_environments/445_OpenShift_Enclave_support_0724.png",
+        "section_hint": "5.8.1. Enclave 미러링 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Storage, Registry, and Images"
+      },
+      {
+        "book_slug": "storage",
+        "book_title": "스토리지",
+        "caption": "CSI 구성 요소의 아키텍처",
+        "viewer_path": "/wiki/figures/storage/csi-arch-rev1.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/storage/csi-arch-rev1.png",
+        "section_hint": "6.1.1. CSI 아키텍처 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Storage, Registry, and Images"
+      }
+    ],
+    "installation-day2": [
+      {
+        "book_slug": "installation_overview",
+        "book_title": "설치 개요",
+        "caption": "OpenShift Container Platform 설치 대상 및 종속 항목",
+        "viewer_path": "/wiki/figures/installation_overview/targets-and-dependencies.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/installation_overview/targets-and-dependencies.png",
+        "section_hint": "1.1.1. 설치 프로그램 정보 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Installation and Day-2"
+      },
+      {
+        "book_slug": "installation_overview",
+        "book_title": "설치 개요",
+        "caption": "부트스트랩 생성",
+        "viewer_path": "/wiki/figures/installation_overview/create-nodes.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/installation_overview/create-nodes.png",
+        "section_hint": "1.1.4.5. 설치 프로세스 세부사항 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Installation and Day-2"
+      },
+      {
+        "book_slug": "postinstallation_configuration",
+        "book_title": "설치 후 구성",
+        "caption": "결정 워크플로",
+        "viewer_path": "/wiki/figures/postinstallation_configuration/node-tuning-operator-workflow-revised.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/postinstallation_configuration/node-tuning-operator-workflow-revised.png",
+        "section_hint": "5.13.2. 사용자 정의 튜닝 사양 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Installation and Day-2"
+      },
+      {
+        "book_slug": "postinstallation_configuration",
+        "book_title": "설치 후 구성",
+        "caption": "OpenShift Container Platform RBAC",
+        "viewer_path": "/wiki/figures/postinstallation_configuration/rbac.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/postinstallation_configuration/rbac.png",
+        "section_hint": "9.2.1.1. 기본 클러스터 역할 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Installation and Day-2"
+      },
+      {
+        "book_slug": "updating_clusters",
+        "book_title": "클러스터 업데이트",
+        "caption": "Runlevels 순서 및 각 수준 내의 구성 요소의 매니페스트를 표시하는 다이어그램",
+        "viewer_path": "/wiki/figures/updating_clusters/update-runlevels.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/updating_clusters/update-runlevels.png",
+        "section_hint": "1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Installation and Day-2"
+      },
+      {
+        "book_slug": "updating_clusters",
+        "book_title": "클러스터 업데이트",
+        "caption": "OCP 업데이트 중에 클러스터 Operator가 자체 업데이트되는 기간을 표시하는 다이어그램",
+        "viewer_path": "/wiki/figures/updating_clusters/update-duration.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/updating_clusters/update-duration.png",
+        "section_hint": "1.4.2.3. 클러스터 Operator 업데이트 기간의 예 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Installation and Day-2"
+      },
+      {
+        "book_slug": "updating_clusters",
+        "book_title": "클러스터 업데이트",
+        "caption": "구성된 CCO 인증 정보 모드에 따라 클러스터에 대한 가능한 업데이트 경로를 표시하는 의사 결정 트리입니다.",
+        "viewer_path": "/wiki/figures/updating_clusters/334_OpenShift_cluster_updating_and_CCO_workflows_0523_4.11_B_AliCloud_patch.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/updating_clusters/334_OpenShift_cluster_updating_and_CCO_workflows_0523_4.11_B_AliCloud_patch.png",
+        "section_hint": "2.2.1.1. 클라우드 인증 정보 구성 옵션 및 플랫폼 유형별 업데이트 요구 사항 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Installation and Day-2"
+      }
+    ],
+    "machine-config-operator": [
+      {
+        "book_slug": "machine_management",
+        "book_title": "머신 관리",
+        "caption": "시스템 'Deleting' 단계의 이벤트 시퀀스입니다.",
+        "viewer_path": "/wiki/figures/machine_management/310_OpenShift_machine_deletion_hooks_0223.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/machine_management/310_OpenShift_machine_deletion_hooks_0223.png",
+        "section_hint": "6.2.2. 머신 삭제 처리 순서 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Machine Config Operator"
+      },
+      {
+        "book_slug": "nodes",
+        "book_title": "노드",
+        "caption": "Overview of control plane and worker node",
+        "viewer_path": "/wiki/figures/nodes/295_OpenShift_Nodes_Overview_1222.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/nodes/295_OpenShift_Nodes_Overview_1222.png",
+        "section_hint": "1.1. 노드 정보 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Machine Config Operator"
+      },
+      {
+        "book_slug": "postinstallation_configuration",
+        "book_title": "설치 후 구성",
+        "caption": "결정 워크플로",
+        "viewer_path": "/wiki/figures/postinstallation_configuration/node-tuning-operator-workflow-revised.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/postinstallation_configuration/node-tuning-operator-workflow-revised.png",
+        "section_hint": "5.13.2. 사용자 정의 튜닝 사양 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Machine Config Operator"
+      },
+      {
+        "book_slug": "postinstallation_configuration",
+        "book_title": "설치 후 구성",
+        "caption": "OpenShift Container Platform RBAC",
+        "viewer_path": "/wiki/figures/postinstallation_configuration/rbac.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/postinstallation_configuration/rbac.png",
+        "section_hint": "9.2.1.1. 기본 클러스터 역할 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Machine Config Operator"
+      }
+    ],
+    "control-plane-ops": [
+      {
+        "book_slug": "machine_management",
+        "book_title": "머신 관리",
+        "caption": "시스템 'Deleting' 단계의 이벤트 시퀀스입니다.",
+        "viewer_path": "/wiki/figures/machine_management/310_OpenShift_machine_deletion_hooks_0223.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/machine_management/310_OpenShift_machine_deletion_hooks_0223.png",
+        "section_hint": "6.2.2. 머신 삭제 처리 순서 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane and Node Operations"
+      },
+      {
+        "book_slug": "nodes",
+        "book_title": "노드",
+        "caption": "Overview of control plane and worker node",
+        "viewer_path": "/wiki/figures/nodes/295_OpenShift_Nodes_Overview_1222.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/nodes/295_OpenShift_Nodes_Overview_1222.png",
+        "section_hint": "1.1. 노드 정보 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane and Node Operations"
+      }
+    ],
+    "lifecycle-and-support": [
+      {
+        "book_slug": "support",
+        "book_title": "지원",
+        "caption": "Telemetry and Insights Operator data flow",
+        "viewer_path": "/wiki/figures/support/telmetry-and-insights-operator-data-flow.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/support/telmetry-and-insights-operator-data-flow.png",
+        "section_hint": "4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Lifecycle and Support"
+      },
+      {
+        "book_slug": "support",
+        "book_title": "지원",
+        "caption": "Insights Operator ConfigMap 오브젝트의 예",
+        "viewer_path": "/wiki/figures/support/insights-operator-configmap-example.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/support/insights-operator-configmap-example.png",
+        "section_hint": "4.5.1. Insights Operator 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Lifecycle and Support"
+      },
+      {
+        "book_slug": "updating_clusters",
+        "book_title": "클러스터 업데이트",
+        "caption": "Runlevels 순서 및 각 수준 내의 구성 요소의 매니페스트를 표시하는 다이어그램",
+        "viewer_path": "/wiki/figures/updating_clusters/update-runlevels.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/updating_clusters/update-runlevels.png",
+        "section_hint": "1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Lifecycle and Support"
+      },
+      {
+        "book_slug": "updating_clusters",
+        "book_title": "클러스터 업데이트",
+        "caption": "OCP 업데이트 중에 클러스터 Operator가 자체 업데이트되는 기간을 표시하는 다이어그램",
+        "viewer_path": "/wiki/figures/updating_clusters/update-duration.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/updating_clusters/update-duration.png",
+        "section_hint": "1.4.2.3. 클러스터 Operator 업데이트 기간의 예 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Lifecycle and Support"
+      },
+      {
+        "book_slug": "updating_clusters",
+        "book_title": "클러스터 업데이트",
+        "caption": "구성된 CCO 인증 정보 모드에 따라 클러스터에 대한 가능한 업데이트 경로를 표시하는 의사 결정 트리입니다.",
+        "viewer_path": "/wiki/figures/updating_clusters/334_OpenShift_cluster_updating_and_CCO_workflows_0523_4.11_B_AliCloud_patch.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/updating_clusters/334_OpenShift_cluster_updating_and_CCO_workflows_0523_4.11_B_AliCloud_patch.png",
+        "section_hint": "2.2.1.1. 클라우드 인증 정보 구성 옵션 및 플랫폼 유형별 업데이트 요구 사항 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Lifecycle and Support"
+      }
+    ],
+    "prometheus": [
+      {
+        "book_slug": "validation_and_troubleshooting",
+        "book_title": "검증 및 문제 해결",
+        "caption": "대시보드 컴퓨팅 리소스 모니터링",
+        "viewer_path": "/wiki/figures/validation_and_troubleshooting/monitoring-dashboard-compute-resources.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/validation_and_troubleshooting/monitoring-dashboard-compute-resources.png",
+        "section_hint": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Prometheus"
+      }
+    ],
+    "observability": [
+      {
+        "book_slug": "validation_and_troubleshooting",
+        "book_title": "검증 및 문제 해결",
+        "caption": "대시보드 컴퓨팅 리소스 모니터링",
+        "viewer_path": "/wiki/figures/validation_and_troubleshooting/monitoring-dashboard-compute-resources.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/validation_and_troubleshooting/monitoring-dashboard-compute-resources.png",
+        "section_hint": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Observability and Troubleshooting"
+      }
+    ]
+  },
+  "by_book": {
+    "advanced_networking": [
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "viewer_path": "/wiki/figures/advanced_networking/524-openshift-bgp-ovn-k8s-no-vpn-0325.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/524-openshift-bgp-ovn-k8s-no-vpn-0325.png",
+        "section_hint": "6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "viewer_path": "/wiki/figures/advanced_networking/524-openshift-bgp-ovn-k8s-vrf-lite-0325.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/524-openshift-bgp-ovn-k8s-vrf-lite-0325.png",
+        "section_hint": "6.1.3.3. VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "PTP 할 마스터 클록을 보여주는 다이어그램",
+        "viewer_path": "/wiki/figures/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1123_PTP_network.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1123_PTP_network.png",
+        "section_hint": "7.1.1. PTP 도메인의 요소 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "GNSS 및 T-GM 시스템 아키텍처",
+        "viewer_path": "/wiki/figures/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1023_PTP.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1023_PTP.png",
+        "section_hint": "7.1.3. PTP 할 마스터 클록에 대한 GNSS 타이밍 개요 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "GNSS 타이밍 소스 및 다운스트림 PTP 경계 및 일반 클럭에 연결된 듀얼 NIC PTP 마스터 클럭",
+        "viewer_path": "/wiki/figures/advanced_networking/openshift-ptp-using-dual-nic-ptp.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/openshift-ptp-using-dual-nic-ptp.png",
+        "section_hint": "7.1.5. 2 카드 E810 NIC 구성 참조 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "GNSS 타이밍 소스 및 다운스트림 PTP 경계 및 일반 클럭에 연결된 3- 카드 PTP 할 마스터 클럭",
+        "viewer_path": "/wiki/figures/advanced_networking/openshift-ptp-3-card-grandmaster.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/openshift-ptp-3-card-grandmaster.png",
+        "section_hint": "7.1.7. 3-card Intel E810 PTP grandmaster 클록 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "GNSS를 소스로 사용하는 T-GM 클록의 홀드오버",
+        "viewer_path": "/wiki/figures/advanced_networking/openshift-ptp-holdover-tgm-clock-with-gnss.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/openshift-ptp-holdover-tgm-clock-with-gnss.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-1.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-1.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-2.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-2.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-3.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-3.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-4.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-4.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-5.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-5.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-6.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-6.png",
+        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "advanced_networking",
+        "book_title": "고급 네트워킹",
+        "caption": "PTP 이벤트 생산자 REST API의 PTP 빠른 이벤트 사용 개요",
+        "viewer_path": "/wiki/figures/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_0323_4.17.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_0323_4.17.png",
+        "section_hint": "7.3.2. PTP 이벤트 REST API v2를 사용하여 PTP 이벤트 검색 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "architecture": [
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "Red Hat OpenShift Kubernetes Engine",
+        "viewer_path": "/wiki/figures/architecture/525-OpenShift-arch-012025.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/525-OpenShift-arch-012025.png",
+        "section_hint": "2.1. OpenShift Container Platform 소개 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "상위 레벨 OpenShift Container Platform 플로우",
+        "viewer_path": "/wiki/figures/architecture/ocp_arch_lifecycle.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/ocp_arch_lifecycle.png",
+        "section_hint": "2.1.3.4. OpenShift Container Platform 라이프사이클 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "OpenShift Container Platform 설치 대상 및 종속 항목",
+        "viewer_path": "/wiki/figures/architecture/targets-and-dependencies.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/targets-and-dependencies.png",
+        "section_hint": "3.1.1. 설치 프로그램 정보 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "부트스트랩 생성",
+        "viewer_path": "/wiki/figures/architecture/create-nodes.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/create-nodes.png",
+        "section_hint": "3.1.4.5. 설치 프로세스 세부사항 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "컨테이너화된 애플리케이션 생성 및 푸시",
+        "viewer_path": "/wiki/figures/architecture/create-push-app.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/create-push-app.png",
+        "section_hint": "7.2. 간단한 컨테이너 빌드 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "OpenShift Container Platform 개발자 카탈로그",
+        "viewer_path": "/wiki/figures/architecture/developer-catalog.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/developer-catalog.png",
+        "section_hint": "7.2.2. 기본 이미지 옵션 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "caption": "API 승인 스테이지",
+        "viewer_path": "/wiki/figures/architecture/api-admission-chain.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/api-admission-chain.png",
+        "section_hint": "9.3. Webhook 승인 플러그인 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "authentication_and_authorization": [
+      {
+        "book_slug": "authentication_and_authorization",
+        "book_title": "인증 및 권한 부여",
+        "caption": "OpenShift Container Platform RBAC",
+        "viewer_path": "/wiki/figures/authentication_and_authorization/rbac.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/authentication_and_authorization/rbac.png",
+        "section_hint": "9.1.1. 기본 클러스터 역할 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "authentication_and_authorization",
+        "book_title": "인증 및 권한 부여",
+        "caption": "클러스터에 대해 구성된 CCO 인증 정보 모드를 결정하는 방법을 보여주는 의사 결정 트리입니다.",
+        "viewer_path": "/wiki/figures/authentication_and_authorization/334_OpenShift_cluster_updating_and_CCO_workflows_0923_4.11_A_AliCloud_patch.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/authentication_and_authorization/334_OpenShift_cluster_updating_and_CCO_workflows_0923_4.11_A_AliCloud_patch.png",
+        "section_hint": "20.1.2. Cloud Credential Operator 모드 확인 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "authentication_and_authorization",
+        "book_title": "인증 및 권한 부여",
+        "caption": "AWS STS를 사용할 때 AWS와 클러스터 간의 자세한 인증 흐름",
+        "viewer_path": "/wiki/figures/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_0623_AWS.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_0623_AWS.png",
+        "section_hint": "20.5.1.1.1. AWS STS의 인증 흐름 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "authentication_and_authorization",
+        "book_title": "인증 및 권한 부여",
+        "caption": "Google Cloud 워크로드 ID를 사용할 때 Google Cloud와 클러스터 간의 자세한 인증 흐름",
+        "viewer_path": "/wiki/figures/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_0623_GCP.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_0623_GCP.png",
+        "section_hint": "20.5.2.1. Google Cloud 워크로드 ID 인증 프로세스 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "authentication_and_authorization",
+        "book_title": "인증 및 권한 부여",
+        "caption": "Workload ID를 사용할 때 Azure와 클러스터 간의 자세한 인증 흐름",
+        "viewer_path": "/wiki/figures/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_1023_Azure.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_1023_Azure.png",
+        "section_hint": "20.5.3.1. Microsoft Entra Workload ID 인증 프로세스 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "cli_tools": [
+      {
+        "book_slug": "cli_tools",
+        "book_title": "CLI 툴",
+        "caption": "물음표를 클릭합니다.",
+        "viewer_path": "/wiki/figures/cli_tools/click-question-mark.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/cli_tools/click-question-mark.png",
+        "section_hint": "2.1.2.2.1. 웹 콘솔을 사용하여 Linux에 OpenShift CLI 설치 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "cli_tools",
+        "book_title": "CLI 툴",
+        "caption": "CLI 목록",
+        "viewer_path": "/wiki/figures/cli_tools/CLI-list.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/cli_tools/CLI-list.png",
+        "section_hint": "2.1.2.2.1. 웹 콘솔을 사용하여 Linux에 OpenShift CLI 설치 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "cli_tools",
+        "book_title": "CLI 툴",
+        "caption": "redcircle 1",
+        "viewer_path": "/wiki/figures/cli_tools/redcircle-1.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/cli_tools/redcircle-1.png",
+        "section_hint": "2.3.1. oc 바이너리 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "cli_tools",
+        "book_title": "CLI 툴",
+        "caption": "redcircle 3",
+        "viewer_path": "/wiki/figures/cli_tools/redcircle-3.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/cli_tools/redcircle-3.png",
+        "section_hint": "2.3.1. oc 바이너리 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "cli_tools",
+        "book_title": "CLI 툴",
+        "caption": "redcircle 2",
+        "viewer_path": "/wiki/figures/cli_tools/redcircle-2.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/cli_tools/redcircle-2.png",
+        "section_hint": "2.3.1. oc 바이너리 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "disconnected_environments": [
+      {
+        "book_slug": "disconnected_environments",
+        "book_title": "연결이 끊긴 환경",
+        "caption": "Enclave 지원",
+        "viewer_path": "/wiki/figures/disconnected_environments/445_OpenShift_Enclave_support_0724.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/disconnected_environments/445_OpenShift_Enclave_support_0724.png",
+        "section_hint": "5.8.1. Enclave 미러링 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "ingress_and_load_balancing": [
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "경로가 속하는 네임스페이스와 관계없이 지정된 경로 선택기와 일치하는 라벨을 포함하는 모든 경로를 제공하는 다른 경로 선택기가 있는 여러 Ingress 컨트롤러를 보여주는 다이어그램",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/nw-sharding-route-labels.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/nw-sharding-route-labels.png",
+        "section_hint": "2.3.6.5. 경로 라벨을 사용하여 Ingress 컨트롤러 분할 구성 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "지정된 네임스페이스 선택기와 일치하는 라벨이 포함된 네임스페이스에 속하는 경로가 다른 네임스페이스 선택기가 있는 여러 Ingress 컨트롤러를 표시하는 다이어그램",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/nw-sharding-namespace-labels.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/nw-sharding-namespace-labels.png",
+        "section_hint": "2.3.6.6. 네임스페이스 라벨을 사용하여 Ingress 컨트롤러 분할 구성 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "OpenShift Container Platform Ingress NodePort 끝점 게시 전략",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/202_OpenShift_Ingress_0222_node_port.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/202_OpenShift_Ingress_0222_node_port.png",
+        "section_hint": "2.4.1. Ingress 컨트롤러 끝점 게시 전략 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "OpenShift Container Platform 환경에서 작동하는 Ingress 컨트롤러의 네트워크 워크플로 예제를 보여주는 이미지입니다.",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/external-load-balancer-default.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/external-load-balancer-default.png",
+        "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "OpenShift Container Platform 환경에서 작동하는 OpenShift API의 네트워크 워크플로 예제를 보여주는 이미지입니다.",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/external-load-balancer-openshift-api.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/external-load-balancer-openshift-api.png",
+        "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "OpenShift Container Platform 환경에서 작동하는 OpenShift MachineConfig API의 네트워크 워크플로 예제를 보여주는 이미지입니다.",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/external-load-balancer-machine-config-api.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/external-load-balancer-machine-config-api.png",
+        "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "MetalLB와 함께 VRF를 사용하여 대칭 라우팅 관리에 대한 네트워크 개요",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/357_OpenShift_MetalLB_VRF_0823.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/357_OpenShift_MetalLB_VRF_0823.png",
+        "section_hint": "4.7.2. MetalLB와 함께 VRF를 사용하여 대칭 라우팅 관리 개요 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "ingress_and_load_balancing",
+        "book_title": "Ingress 및 로드 밸런싱",
+        "caption": "FRR과의 MetalLB 통합",
+        "viewer_path": "/wiki/figures/ingress_and_load_balancing/695_OpenShift_MetalLB_FRRK8s_integration_0624.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/695_OpenShift_MetalLB_FRRK8s_integration_0624.png",
+        "section_hint": "4.8. MetalLB 및 FRR-K8의 통합 구성 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "installation_overview": [
+      {
+        "book_slug": "installation_overview",
+        "book_title": "설치 개요",
+        "caption": "OpenShift Container Platform 설치 대상 및 종속 항목",
+        "viewer_path": "/wiki/figures/installation_overview/targets-and-dependencies.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/installation_overview/targets-and-dependencies.png",
+        "section_hint": "1.1.1. 설치 프로그램 정보 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "installation_overview",
+        "book_title": "설치 개요",
+        "caption": "부트스트랩 생성",
+        "viewer_path": "/wiki/figures/installation_overview/create-nodes.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/installation_overview/create-nodes.png",
+        "section_hint": "1.1.4.5. 설치 프로세스 세부사항 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "machine_management": [
+      {
+        "book_slug": "machine_management",
+        "book_title": "머신 관리",
+        "caption": "시스템 'Deleting' 단계의 이벤트 시퀀스입니다.",
+        "viewer_path": "/wiki/figures/machine_management/310_OpenShift_machine_deletion_hooks_0223.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/machine_management/310_OpenShift_machine_deletion_hooks_0223.png",
+        "section_hint": "6.2.2. 머신 삭제 처리 순서 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "nodes": [
+      {
+        "book_slug": "nodes",
+        "book_title": "노드",
+        "caption": "Overview of control plane and worker node",
+        "viewer_path": "/wiki/figures/nodes/295_OpenShift_Nodes_Overview_1222.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/nodes/295_OpenShift_Nodes_Overview_1222.png",
+        "section_hint": "1.1. 노드 정보 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "operators": [
+      {
+        "book_slug": "operators",
+        "book_title": "Operator 운영 플레이북",
+        "caption": "Operator 완성 모델",
+        "viewer_path": "/wiki/figures/operators/operator-maturity-model.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/operator-maturity-model.png",
+        "section_hint": "2.1.3. Operator 완성 모델 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "operators",
+        "book_title": "Operator 운영 플레이북",
+        "caption": "olm 워크플로",
+        "viewer_path": "/wiki/figures/operators/olm-workflow.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-workflow.png",
+        "section_hint": "2.4.1.1. OLM(Operator Lifecycle Manager) Classic이란 무엇입니까? 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "operators",
+        "book_title": "Operator 운영 플레이북",
+        "caption": "olm catalogsource",
+        "viewer_path": "/wiki/figures/operators/olm-catalogsource.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-catalogsource.png",
+        "section_hint": "2.4.3.1. OLM의 Operator 설치 및 업그레이드 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "operators",
+        "book_title": "Operator 운영 플레이북",
+        "caption": "olm channels",
+        "viewer_path": "/wiki/figures/operators/olm-channels.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-channels.png",
+        "section_hint": "2.4.3.1. OLM의 Operator 설치 및 업그레이드 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "operators",
+        "book_title": "Operator 운영 플레이북",
+        "caption": "OLM 대체",
+        "viewer_path": "/wiki/figures/operators/olm-replaces.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-replaces.png",
+        "section_hint": "2.4.3.1. OLM의 Operator 설치 및 업그레이드 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "operators",
+        "book_title": "Operator 운영 플레이북",
+        "caption": "업데이트를 건너뛰는 OLM",
+        "viewer_path": "/wiki/figures/operators/olm-skipping-updates.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-skipping-updates.png",
+        "section_hint": "2.4.3.1.2. 업그레이드 건너뛰기 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "operators",
+        "book_title": "Operator 운영 플레이북",
+        "caption": "olm z 스트림",
+        "viewer_path": "/wiki/figures/operators/olm-z-stream.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-z-stream.png",
+        "section_hint": "2.4.3.1.4. z-stream 지원 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "overview": [
+      {
+        "book_slug": "overview",
+        "book_title": "개요",
+        "caption": "Red Hat OpenShift Kubernetes Engine",
+        "viewer_path": "/wiki/figures/overview/oke-about-ocp-stack-image.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/overview/oke-about-ocp-stack-image.png",
+        "section_hint": "2.1. OpenShift Container Platform 이해 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "overview",
+        "book_title": "개요",
+        "caption": "247 OpenShift Kubernetes 개요",
+        "viewer_path": "/wiki/figures/overview/247-OpenShift-Kubernetes-Overview.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/overview/247-OpenShift-Kubernetes-Overview.png",
+        "section_hint": "4장. Kubernetes 개요 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "overview",
+        "book_title": "개요",
+        "caption": "247 OpenShift Kubernetes 개요 1",
+        "viewer_path": "/wiki/figures/overview/247_OpenShift_Kubernetes_Overview-1.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/overview/247_OpenShift_Kubernetes_Overview-1.png",
+        "section_hint": "4.2. Kubernetes 리소스 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "overview",
+        "book_title": "개요",
+        "caption": "247 OpenShift Kubernetes 개요 2",
+        "viewer_path": "/wiki/figures/overview/247_OpenShift_Kubernetes_Overview-2.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/overview/247_OpenShift_Kubernetes_Overview-2.png",
+        "section_hint": "4.2. Kubernetes 리소스 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "postinstallation_configuration": [
+      {
+        "book_slug": "postinstallation_configuration",
+        "book_title": "설치 후 구성",
+        "caption": "결정 워크플로",
+        "viewer_path": "/wiki/figures/postinstallation_configuration/node-tuning-operator-workflow-revised.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/postinstallation_configuration/node-tuning-operator-workflow-revised.png",
+        "section_hint": "5.13.2. 사용자 정의 튜닝 사양 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "postinstallation_configuration",
+        "book_title": "설치 후 구성",
+        "caption": "OpenShift Container Platform RBAC",
+        "viewer_path": "/wiki/figures/postinstallation_configuration/rbac.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/postinstallation_configuration/rbac.png",
+        "section_hint": "9.2.1.1. 기본 클러스터 역할 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "security_and_compliance": [
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "trustedsupplychain",
+        "viewer_path": "/wiki/figures/security_and_compliance/trustedsupplychain.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/trustedsupplychain.png",
+        "section_hint": "2.8.1. 한 번 빌드하여 어디에나 배포 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "소스-이미지 빌드",
+        "viewer_path": "/wiki/figures/security_and_compliance/build_process1.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/build_process1.png",
+        "section_hint": "2.8.2. 빌드 관리 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "빌드 프로세스 설계",
+        "viewer_path": "/wiki/figures/security_and_compliance/build_process2.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/build_process2.png",
+        "section_hint": "2.8.4. 빌드 프로세스 설계 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "안전한 배포",
+        "viewer_path": "/wiki/figures/security_and_compliance/secure_deployments.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/secure_deployments.png",
+        "section_hint": "2.9.1. 트리거를 사용하여 컨테이너 배포 제어 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-0.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-0.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-1.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-1.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-2.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-2.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-3.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-3.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-4.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-4.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-5.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-5.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-6.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-6.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-7.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-7.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-8.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-8.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-9.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-9.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-10.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-10.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "20",
+        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-11.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-11.png",
+        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "소프트웨어 카탈로그의 NBDE Tang Server Operator",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-01-operatorhub.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-01-operatorhub.png",
+        "section_hint": "8.4.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator 설치 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "NBDE Tang Server Operator 설치 확인",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-03-confirmation.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-03-confirmation.png",
+        "section_hint": "8.4.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator 설치 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "NBDE Tang Server Operator 상태",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-05-succeeded.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-05-succeeded.png",
+        "section_hint": "8.4.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator 설치 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "웹 콘솔에서 프로젝트 생성",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-07-create-project.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-07-create-project.png",
+        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "프로젝트 생성 페이지의 값 예",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-09-project-values.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-09-project-values.png",
+        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "Storage 메뉴의 PersistentVolumeClaims",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-11-pvc.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-11-pvc.png",
+        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "PersistentVolumeClaims 페이지 생성",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-13-create-pvc.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-13-create-pvc.png",
+        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "NBDE Tang 서버 인스턴스 생성",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-15-create-instance.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-15-create-instance.png",
+        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "TangServer 페이지 생성",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-17-create-tangserver.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-17-create-tangserver.png",
+        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "NBDE Tang Server Operator 세부 정보",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-19-tangserver-details.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-19-tangserver-details.png",
+        "section_hint": "8.6.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator의 URL 확인 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "Tang 서버의 NBDE Tang Server Operator 개요",
+        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-21-tangserver-overview.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-21-tangserver-overview.png",
+        "section_hint": "8.6.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator의 URL 확인 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "NBDE 배포 모델",
+        "viewer_path": "/wiki/figures/security_and_compliance/179_OpenShift_NBDE_implementation_0821_1.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/179_OpenShift_NBDE_implementation_0821_1.png",
+        "section_hint": "18.1.1.3. NBDE(Network-Bound Disk Encryption) 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "NBDE 재부팅 동작",
+        "viewer_path": "/wiki/figures/security_and_compliance/179_OpenShift_NBDE_implementation_0821_2.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/179_OpenShift_NBDE_implementation_0821_2.png",
+        "section_hint": "18.1.1.3. NBDE(Network-Bound Disk Encryption) 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "NBDE(Network-Bound Disk Encryption)",
+        "viewer_path": "/wiki/figures/security_and_compliance/179_OpenShift_NBDE_implementation_0821_3.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/179_OpenShift_NBDE_implementation_0821_3.png",
+        "section_hint": "18.1.2. Tang 서버 디스크 암호화 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "security_and_compliance",
+        "book_title": "보안 및 컴플라이언스",
+        "caption": "Tang 서버 키 다시 지정",
+        "viewer_path": "/wiki/figures/security_and_compliance/179_OpenShift_NBDE_implementation_0821_4.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/179_OpenShift_NBDE_implementation_0821_4.png",
+        "section_hint": "18.3.3. Tang 서버 키 다시 지정 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "storage": [
+      {
+        "book_slug": "storage",
+        "book_title": "스토리지",
+        "caption": "CSI 구성 요소의 아키텍처",
+        "viewer_path": "/wiki/figures/storage/csi-arch-rev1.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/storage/csi-arch-rev1.png",
+        "section_hint": "6.1.1. CSI 아키텍처 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "support": [
+      {
+        "book_slug": "support",
+        "book_title": "지원",
+        "caption": "Telemetry and Insights Operator data flow",
+        "viewer_path": "/wiki/figures/support/telmetry-and-insights-operator-data-flow.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/support/telmetry-and-insights-operator-data-flow.png",
+        "section_hint": "4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "support",
+        "book_title": "지원",
+        "caption": "Insights Operator ConfigMap 오브젝트의 예",
+        "viewer_path": "/wiki/figures/support/insights-operator-configmap-example.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/support/insights-operator-configmap-example.png",
+        "section_hint": "4.5.1. Insights Operator 구성 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "updating_clusters": [
+      {
+        "book_slug": "updating_clusters",
+        "book_title": "클러스터 업데이트",
+        "caption": "Runlevels 순서 및 각 수준 내의 구성 요소의 매니페스트를 표시하는 다이어그램",
+        "viewer_path": "/wiki/figures/updating_clusters/update-runlevels.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/updating_clusters/update-runlevels.png",
+        "section_hint": "1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "updating_clusters",
+        "book_title": "클러스터 업데이트",
+        "caption": "OCP 업데이트 중에 클러스터 Operator가 자체 업데이트되는 기간을 표시하는 다이어그램",
+        "viewer_path": "/wiki/figures/updating_clusters/update-duration.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/updating_clusters/update-duration.png",
+        "section_hint": "1.4.2.3. 클러스터 Operator 업데이트 기간의 예 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "updating_clusters",
+        "book_title": "클러스터 업데이트",
+        "caption": "구성된 CCO 인증 정보 모드에 따라 클러스터에 대한 가능한 업데이트 경로를 표시하는 의사 결정 트리입니다.",
+        "viewer_path": "/wiki/figures/updating_clusters/334_OpenShift_cluster_updating_and_CCO_workflows_0523_4.11_B_AliCloud_patch.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/updating_clusters/334_OpenShift_cluster_updating_and_CCO_workflows_0523_4.11_B_AliCloud_patch.png",
+        "section_hint": "2.2.1.1. 클라우드 인증 정보 구성 옵션 및 플랫폼 유형별 업데이트 요구 사항 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "validation_and_troubleshooting": [
+      {
+        "book_slug": "validation_and_troubleshooting",
+        "book_title": "검증 및 문제 해결",
+        "caption": "대시보드 컴퓨팅 리소스 모니터링",
+        "viewer_path": "/wiki/figures/validation_and_troubleshooting/monitoring-dashboard-compute-resources.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/validation_and_troubleshooting/monitoring-dashboard-compute-resources.png",
+        "section_hint": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "web_console": [
+      {
+        "book_slug": "web_console",
+        "book_title": "웹 콘솔",
+        "caption": "선택할 수 있는 올바른 콘솔 구성 리소스를 보여주는 설정 페이지의 이미지",
+        "viewer_path": "/wiki/figures/web_console/cluster-settings-console.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/cluster-settings-console.png",
+        "section_hint": "5.3. 웹 콘솔에서 퀵 스타트 비활성화 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "web_console",
+        "book_title": "웹 콘솔",
+        "caption": "사용자 화면 사용자 정의",
+        "viewer_path": "/wiki/figures/web_console/customizing-user-perspective.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/customizing-user-perspective.png",
+        "section_hint": "6.9.2. 양식 보기를 사용하여 화면 사용자 정의 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "web_console",
+        "book_title": "웹 콘솔",
+        "caption": "odc 사용자 지정 개발자 카탈로그",
+        "viewer_path": "/wiki/figures/web_console/odc_customizing_developer_catalog.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/odc_customizing_developer_catalog.png",
+        "section_hint": "6.10.2. 양식 보기를 사용하여 개발자 카탈로그 또는 하위 카탈로그 사용자 정의 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "web_console",
+        "book_title": "웹 콘솔",
+        "caption": "웹 콘솔에서 conclusion 퀵 스타트",
+        "viewer_path": "/wiki/figures/web_console/quick-start-conclusion.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/quick-start-conclusion.png",
+        "section_hint": "10.4.2.1. conclusion 요소 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "web_console",
+        "book_title": "웹 콘솔",
+        "caption": "웹 콘솔에서 퀵 스타트 설명",
+        "viewer_path": "/wiki/figures/web_console/quick-start-description.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/quick-start-description.png",
+        "section_hint": "10.4.2.2. description 요소 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "web_console",
+        "book_title": "웹 콘솔",
+        "caption": "웹 콘솔에서 퀵 스타트 표시 이름",
+        "viewer_path": "/wiki/figures/web_console/quick-start-display-name.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/quick-start-display-name.png",
+        "section_hint": "10.4.2.3. displayName 요소 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "web_console",
+        "book_title": "웹 콘솔",
+        "caption": "웹 콘솔에서 퀵 스타트 durationMinutes 요소",
+        "viewer_path": "/wiki/figures/web_console/quick-start-duration.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/quick-start-duration.png",
+        "section_hint": "10.4.2.4. durationMinutes 요소 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "web_console",
+        "book_title": "웹 콘솔",
+        "caption": "웹 콘솔에서 퀵스타트 introduction 요소",
+        "viewer_path": "/wiki/figures/web_console/quick-start-introduction.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/quick-start-introduction.png",
+        "section_hint": "10.4.2.6. introduction 요소 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ]
+  }
+}

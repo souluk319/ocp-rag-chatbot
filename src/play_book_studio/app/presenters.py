@@ -330,6 +330,13 @@ def _customer_pack_meta_for_viewer_path(root_dir: Path, viewer_path: str) -> dic
         "source_collection": str(payload.get("source_collection") or "uploaded"),
         "pack_id": str(payload.get("pack_id") or ""),
         "pack_label": str(payload.get("pack_label") or ""),
+        "source_lane": str(payload.get("source_lane") or "customer_source_first_pack"),
+        "approval_state": str(payload.get("approval_state") or "unreviewed"),
+        "publication_state": str(payload.get("publication_state") or "draft"),
+        "parser_backend": str(payload.get("parser_backend") or ""),
+        "boundary_truth": str(payload.get("boundary_truth") or "private_customer_pack_runtime"),
+        "runtime_truth_label": str(payload.get("runtime_truth_label") or "Customer Source-First Pack"),
+        "boundary_badge": str(payload.get("boundary_badge") or "Private Pack Runtime"),
         "inferred_product": str(payload.get("inferred_product") or "unknown"),
         "inferred_version": str(payload.get("inferred_version") or "unknown"),
         "quality_status": str(payload.get("quality_status") or "ready"),
@@ -342,20 +349,33 @@ def _customer_pack_meta_for_viewer_path(root_dir: Path, viewer_path: str) -> dic
 
 def _default_customer_pack_summary(payload: dict[str, Any]) -> str:
     source_type = str(payload.get("source_type") or "").strip().lower()
-    if source_type == "pdf":
-        return (
-            "업로드 PDF를 canonical section으로 정리한 내부 review view입니다. "
-            "이후 retrieval chunk는 이 section들을 부모로 파생됩니다."
-        )
-    if source_type in {"md", "asciidoc", "txt"}:
-        return (
-            "업로드 텍스트 문서를 canonical section으로 정리한 내부 review view입니다. "
-            "이후 retrieval chunk는 이 section들을 부모로 파생됩니다."
-        )
+    source_kind = {
+        "pdf": "PDF",
+        "md": "text",
+        "asciidoc": "text",
+        "txt": "text",
+    }.get(source_type, "web")
     return (
-        "업로드 웹 문서를 canonical section으로 정리한 내부 review view입니다. "
-        "이후 retrieval chunk는 이 section들을 부모로 파생됩니다."
+        f"업로드 {source_kind} 문서를 canonical section으로 정리한 customer pack view입니다. "
+        "이후 retrieval chunk는 이 section을 부모로 파생됩니다."
     )
+
+
+def _official_runtime_truth_payload(
+    *,
+    settings: Settings,
+    manifest_entry: dict[str, Any],
+) -> dict[str, str]:
+    pack_label = str(manifest_entry.get("pack_label") or settings.active_pack.pack_label or "").strip()
+    runtime_truth_label = f"{pack_label} Runtime" if pack_label else "Validated Pack Runtime"
+    return {
+        "source_lane": str(manifest_entry.get("source_lane") or "approved_wiki_runtime"),
+        "boundary_truth": "official_validated_runtime",
+        "runtime_truth_label": runtime_truth_label,
+        "boundary_badge": "Validated Runtime",
+    }
+
+
 def _normalized_row_for_viewer_path(root_dir: Path, viewer_path: str) -> dict[str, Any] | None:
     row, _matched_exact = _resolve_normalized_row_for_viewer_path(root_dir, viewer_path)
     return row
@@ -425,6 +445,13 @@ def _serialize_citation(root_dir: Path, citation: Citation) -> dict[str, Any]:
             "source_collection": str(customer_pack_meta.get("source_collection") or "uploaded"),
             "pack_id": str(customer_pack_meta.get("pack_id") or ""),
             "pack_label": str(customer_pack_meta.get("pack_label") or ""),
+            "source_lane": str(customer_pack_meta.get("source_lane") or "customer_source_first_pack"),
+            "approval_state": str(customer_pack_meta.get("approval_state") or "unreviewed"),
+            "publication_state": str(customer_pack_meta.get("publication_state") or "draft"),
+            "parser_backend": str(customer_pack_meta.get("parser_backend") or ""),
+            "boundary_truth": str(customer_pack_meta.get("boundary_truth") or "private_customer_pack_runtime"),
+            "runtime_truth_label": str(customer_pack_meta.get("runtime_truth_label") or "Customer Source-First Pack"),
+            "boundary_badge": str(customer_pack_meta.get("boundary_badge") or "Private Pack Runtime"),
             "inferred_product": str(customer_pack_meta.get("inferred_product") or "unknown"),
             "inferred_version": str(customer_pack_meta.get("inferred_version") or "unknown"),
             "section_match_exact": bool(customer_pack_meta.get("section_match_exact", True)),
@@ -455,6 +482,6 @@ def _serialize_citation(root_dir: Path, citation: Citation) -> dict[str, Any]:
         "section_path_label": section_label,
         "source_label": f"{book_title} · {section_label}" if section_label else book_title,
         **_core_pack_payload(version=settings.ocp_version, language=settings.docs_language),
+        **_official_runtime_truth_payload(settings=settings, manifest_entry=manifest_entry),
         "section_match_exact": matched_exact,
     }
-

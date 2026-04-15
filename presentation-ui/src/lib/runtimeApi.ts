@@ -13,6 +13,12 @@ export interface LibraryBook {
   viewer_path: string;
   source_url: string;
   updated_at: string;
+  approval_state?: string;
+  publication_state?: string;
+  parser_backend?: string;
+  boundary_truth?: string;
+  runtime_truth_label?: string;
+  boundary_badge?: string;
 }
 
 export interface LibraryBucket {
@@ -20,12 +26,68 @@ export interface LibraryBucket {
   books: LibraryBook[];
 }
 
+export interface BuyerPacket {
+  book_slug: string;
+  title: string;
+  review_status: string;
+  viewer_path: string;
+  source_url: string;
+  runtime_truth_label?: string;
+  boundary_badge?: string;
+  approval_state?: string;
+  publication_state?: string;
+}
+
+export interface BuyerPacketBucket {
+  selected_dir: string;
+  books: BuyerPacket[];
+}
+
+export interface BuyerPacketPreview {
+  packet_id: string;
+  title: string;
+  purpose: string;
+  status: string;
+  markdown_path: string;
+  json_path: string;
+  body: string;
+}
+
+export interface ReleaseCandidateFreezeSummary {
+  packet_id: string;
+  title: string;
+  viewer_path: string;
+  freeze_date: string;
+  current_stage: string;
+  commercial_truth: string;
+  runtime_count: number;
+  active_group: string;
+  owner_demo_pass_rate: number;
+  owner_demo_pass_count: number;
+  owner_demo_scenario_count: number;
+  promotion_gate_count: number;
+  release_blocker_count: number;
+  sell_now: string;
+  do_not_sell_yet: string;
+  close: string;
+  exists: boolean;
+  report_path: string;
+}
+
 export interface DataControlRoomSummary {
   known_book_count: number;
   approved_runtime_count: number;
   gold_book_count: number;
   manualbook_count: number;
+  customer_pack_runtime_book_count?: number;
   gold_candidate_book_count?: number;
+  approved_wiki_runtime_book_count?: number;
+  wiki_navigation_backlog_count?: number;
+  wiki_usage_signal_count?: number;
+  buyer_demo_gate_count?: number;
+  buyer_packet_bundle_count?: number;
+  release_candidate_freeze_ready?: boolean;
+  owner_demo_pass_rate?: number;
   topic_playbook_count: number;
   derived_playbook_count: number;
   playable_asset_count: number;
@@ -40,10 +102,34 @@ export interface DataControlRoomResponse {
     viewer_path_prefix: string;
   };
   summary: DataControlRoomSummary;
+  gate?: {
+    status: string;
+    release_blocking: boolean;
+    reasons?: string[];
+    summary?: {
+      failed_validation_checks?: string[];
+      failed_data_quality_checks?: string[];
+    };
+  };
+  owner_demo_rehearsal?: {
+    status: string;
+    current_stage: string;
+    scenario_count: number;
+    pass_count: number;
+    owner_critical_scenario_pass_rate: number;
+    blockers: string[];
+  };
   known_books: LibraryBook[];
   gold_books: LibraryBook[];
   manualbooks: LibraryBucket;
+  customer_pack_runtime_books?: LibraryBucket;
   gold_candidate_books?: LibraryBucket;
+  approved_wiki_runtime_books?: LibraryBucket;
+  wiki_navigation_backlog?: LibraryBucket;
+  wiki_usage_signals?: LibraryBucket;
+  buyer_demo_gate?: LibraryBucket;
+  buyer_packet_bundle?: BuyerPacketBucket;
+  release_candidate_freeze?: ReleaseCandidateFreezeSummary;
   topic_playbooks: LibraryBucket;
   operation_playbooks: LibraryBucket;
   troubleshooting_playbooks: LibraryBucket;
@@ -65,6 +151,13 @@ export interface ChatCitation {
   source_label?: string;
   source_collection?: string;
   pack_label?: string;
+  source_lane?: string;
+  approval_state?: string;
+  publication_state?: string;
+  parser_backend?: string;
+  boundary_truth?: string;
+  runtime_truth_label?: string;
+  boundary_badge?: string;
 }
 
 export interface ChatTraceEvent {
@@ -75,12 +168,122 @@ export interface ChatTraceEvent {
   timestamp_ms?: number;
 }
 
+export interface ChatRelatedLink {
+  label: string;
+  href: string;
+  kind: 'entity' | 'book' | string;
+  summary?: string;
+  source_lane?: string;
+  boundary_truth?: string;
+  runtime_truth_label?: string;
+  boundary_badge?: string;
+}
+
+export type WikiOverlayKind = 'favorite' | 'check' | 'note' | 'recent_position';
+export type WikiOverlayTargetKind = 'book' | 'entity_hub' | 'section' | 'figure';
+
+export interface WikiOverlayResolvedTarget {
+  target_kind: WikiOverlayTargetKind | string;
+  target_ref: string;
+  book_slug: string;
+  viewer_path: string;
+  title: string;
+  summary: string;
+}
+
+export interface WikiOverlayRecord {
+  overlay_id: string;
+  user_id: string;
+  kind: WikiOverlayKind;
+  target_kind: WikiOverlayTargetKind;
+  target_ref: string;
+  book_slug: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  resolved_target?: WikiOverlayResolvedTarget;
+  status?: string;
+  checked_at?: string;
+  body?: string;
+  pinned?: boolean;
+  title?: string;
+  summary?: string;
+  viewer_path?: string;
+}
+
+export interface WikiOverlayResponse {
+  count: number;
+  updated_at: string;
+  items: WikiOverlayRecord[];
+}
+
+export interface WikiOverlaySignalTarget {
+  target_ref: string;
+  target_kind: WikiOverlayTargetKind | string;
+  book_slug: string;
+  title: string;
+  viewer_path: string;
+  summary: string;
+  count: number;
+  user_count: number;
+  last_touched_at: string;
+  weight_score: number;
+  kind_breakdown: Record<string, number>;
+  primary_kind: string;
+  primary_kind_count: number;
+}
+
+export interface WikiOverlayRecommendedPlay {
+  label: string;
+  href: string;
+  kind: 'book' | 'entity' | 'section' | string;
+  summary: string;
+  reason: string;
+  source_target_ref: string;
+  source_overlay_kind: WikiOverlayKind | string;
+}
+
+export interface WikiOverlaySignalsResponse {
+  updated_at: string;
+  summary: {
+    total_overlay_count: number;
+    favorite_count: number;
+    check_count: number;
+    note_count: number;
+    recent_position_count: number;
+    target_count: number;
+    user_count: number;
+  };
+  top_targets: WikiOverlaySignalTarget[];
+  user_focus?: {
+    user_id: string;
+    overlay_count: number;
+    favorite_count: number;
+    check_count: number;
+    note_count: number;
+    recent_position_count: number;
+    recent_targets: Array<{
+      overlay_id: string;
+      kind: string;
+      target_ref: string;
+      target_kind: string;
+      label: string;
+      href: string;
+      summary: string;
+      updated_at: string;
+    }>;
+    recommended_next_plays: WikiOverlayRecommendedPlay[];
+  };
+}
+
 export interface ChatResponse {
   answer: string;
   citations: ChatCitation[];
   warnings: string[];
   session_id: string;
   suggested_queries: string[];
+  related_links?: ChatRelatedLink[];
+  related_sections?: ChatRelatedLink[];
   pipeline_trace?: {
     events?: ChatTraceEvent[];
   };
@@ -113,6 +316,17 @@ export interface CustomerPackDraft {
   uploaded_file_name?: string;
   uploaded_byte_size?: number;
   capture_artifact_path?: string;
+  source_lane?: string;
+  source_fingerprint?: string;
+  parser_route?: string;
+  parser_backend?: string;
+  parser_version?: string;
+  ocr_used?: boolean;
+  extraction_confidence?: number;
+  tenant_id?: string;
+  workspace_id?: string;
+  approval_state?: string;
+  publication_state?: string;
   playable_asset_count: number;
   derived_asset_count: number;
   derived_assets: DerivedAsset[];
@@ -143,6 +357,14 @@ export interface CustomerPackBook {
   sections: CustomerPackBookSection[];
   pack_label: string;
   source_type: string;
+  source_lane?: string;
+  approval_state?: string;
+  publication_state?: string;
+  parser_backend?: string;
+  boundary_truth?: string;
+  runtime_truth_label?: string;
+  boundary_badge?: string;
+  customer_pack_evidence?: Record<string, unknown>;
 }
 
 export type RepositoryCategory =
@@ -218,6 +440,13 @@ export interface SourceMetaResponse {
   section_match_exact: boolean;
   source_collection?: string;
   pack_label?: string;
+  source_lane?: string;
+  approval_state?: string;
+  publication_state?: string;
+  parser_backend?: string;
+  boundary_truth?: string;
+  runtime_truth_label?: string;
+  boundary_badge?: string;
 }
 
 export interface SessionSummary {
@@ -226,6 +455,12 @@ export interface SessionSummary {
   turn_count: number;
   updated_at: string;
   first_query: string;
+  primary_source_lane?: string;
+  primary_boundary_truth?: string;
+  primary_runtime_truth_label?: string;
+  primary_boundary_badge?: string;
+  primary_publication_state?: string;
+  primary_approval_state?: string;
 }
 
 export interface SessionListResponse {
@@ -233,10 +468,23 @@ export interface SessionListResponse {
   count: number;
 }
 
+export interface SessionTurnSnapshot {
+  query: string;
+  answer: string;
+  turn_id: string;
+  created_at: string;
+  primary_source_lane?: string;
+  primary_boundary_truth?: string;
+  primary_runtime_truth_label?: string;
+  primary_boundary_badge?: string;
+  primary_publication_state?: string;
+  primary_approval_state?: string;
+}
+
 export interface SessionSnapshot {
   session_id: string;
   session_name: string;
-  turns: Array<{ query: string; answer: string; turn_id: string; created_at: string }>;
+  turns: SessionTurnSnapshot[];
   updated_at: string;
 }
 
@@ -277,6 +525,10 @@ export async function loadDataControlRoom(): Promise<DataControlRoomResponse> {
   return requestJson<DataControlRoomResponse>('/api/data-control-room');
 }
 
+export async function loadBuyerPacket(packetId: string): Promise<BuyerPacketPreview> {
+  return requestJson<BuyerPacketPreview>(`/api/buyer-packet?packet_id=${encodeURIComponent(packetId)}`);
+}
+
 export async function searchRepositories(query: string, limit = 12): Promise<RepositorySearchResponse> {
   const params = new URLSearchParams({
     query,
@@ -306,10 +558,33 @@ export async function removeRepositoryFavorite(fullName: string): Promise<Reposi
   });
 }
 
+export async function loadWikiOverlays(userId: string): Promise<WikiOverlayResponse> {
+  return requestJson<WikiOverlayResponse>(`/api/wiki-overlays?user_id=${encodeURIComponent(userId)}`);
+}
+
+export async function loadWikiOverlaySignals(userId: string): Promise<WikiOverlaySignalsResponse> {
+  return requestJson<WikiOverlaySignalsResponse>(`/api/wiki-overlay-signals?user_id=${encodeURIComponent(userId)}`);
+}
+
+export async function saveWikiOverlay(payload: Record<string, unknown>): Promise<{ saved: boolean; record: WikiOverlayRecord; count: number; updated_at: string }> {
+  return requestJson('/api/wiki-overlays', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function removeWikiOverlay(payload: Record<string, unknown>): Promise<{ removed: number; count: number; updated_at: string }> {
+  return requestJson('/api/wiki-overlays/remove', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function sendChat(payload: {
   query: string;
   sessionId: string;
   mode?: string;
+  userId?: string;
   selectedDraftIds?: string[];
   restrictUploadedSources?: boolean;
 }): Promise<ChatResponse> {
@@ -319,6 +594,7 @@ export async function sendChat(payload: {
       query: payload.query,
       session_id: payload.sessionId,
       mode: payload.mode ?? 'ops',
+      user_id: payload.userId ?? '',
       selected_draft_ids: payload.selectedDraftIds ?? [],
       restrict_uploaded_sources: payload.restrictUploadedSources ?? false,
     }),

@@ -42,6 +42,12 @@ def serialize_turn(turn: "Turn") -> dict[str, Any]:
         "warnings": list(turn.warnings),
         "stages": list(turn.stages),
         "diagnosis": dict(turn.diagnosis),
+        "primary_source_lane": turn.primary_source_lane,
+        "primary_boundary_truth": turn.primary_boundary_truth,
+        "primary_runtime_truth_label": turn.primary_runtime_truth_label,
+        "primary_boundary_badge": turn.primary_boundary_badge,
+        "primary_publication_state": turn.primary_publication_state,
+        "primary_approval_state": turn.primary_approval_state,
     }
 
 
@@ -71,6 +77,12 @@ def deserialize_turn(payload: dict[str, Any]) -> "Turn":
         warnings=[str(item) for item in warnings if str(item).strip()],
         stages=[dict(item) for item in stages if isinstance(item, dict)],
         diagnosis={str(key): value for key, value in diagnosis.items()},
+        primary_source_lane=str(payload.get("primary_source_lane") or ""),
+        primary_boundary_truth=str(payload.get("primary_boundary_truth") or ""),
+        primary_runtime_truth_label=str(payload.get("primary_runtime_truth_label") or ""),
+        primary_boundary_badge=str(payload.get("primary_boundary_badge") or ""),
+        primary_publication_state=str(payload.get("primary_publication_state") or ""),
+        primary_approval_state=str(payload.get("primary_approval_state") or ""),
     )
 
 
@@ -84,6 +96,12 @@ class Turn:
     warnings: list[str] = field(default_factory=list)
     stages: list[dict[str, object]] = field(default_factory=list)
     diagnosis: dict[str, object] = field(default_factory=dict)
+    primary_source_lane: str = ""
+    primary_boundary_truth: str = ""
+    primary_runtime_truth_label: str = ""
+    primary_boundary_badge: str = ""
+    primary_publication_state: str = ""
+    primary_approval_state: str = ""
     turn_id: str = ""
     parent_turn_id: str = ""
     created_at: str = ""
@@ -366,6 +384,12 @@ class SessionStore:
                     "turn_count": len(session.history),
                     "updated_at": session.updated_at or "",
                     "first_query": first_query[:80],
+                    "primary_source_lane": session.history[-1].primary_source_lane if session.history else "",
+                    "primary_boundary_truth": session.history[-1].primary_boundary_truth if session.history else "",
+                    "primary_runtime_truth_label": session.history[-1].primary_runtime_truth_label if session.history else "",
+                    "primary_boundary_badge": session.history[-1].primary_boundary_badge if session.history else "",
+                    "primary_publication_state": session.history[-1].primary_publication_state if session.history else "",
+                    "primary_approval_state": session.history[-1].primary_approval_state if session.history else "",
                 })
         summaries.sort(key=lambda s: s["updated_at"], reverse=True)
         return summaries[:limit]

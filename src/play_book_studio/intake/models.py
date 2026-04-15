@@ -235,6 +235,17 @@ class CustomerPackDraftRecord:
     capture_artifact_path: str = ""
     capture_content_type: str = ""
     capture_byte_size: int = 0
+    source_lane: str = "customer_source_first_pack"
+    source_fingerprint: str = ""
+    parser_route: str = ""
+    parser_backend: str = ""
+    parser_version: str = ""
+    ocr_used: bool = False
+    extraction_confidence: float = 0.0
+    tenant_id: str = "default-tenant"
+    workspace_id: str = "default-workspace"
+    approval_state: str = "unreviewed"
+    publication_state: str = "draft"
     capture_error: str = ""
     canonical_book_path: str = ""
     normalized_section_count: int = 0
@@ -266,6 +277,17 @@ class CustomerPackDraftRecord:
             "capture_artifact_path": self.capture_artifact_path,
             "capture_content_type": self.capture_content_type,
             "capture_byte_size": self.capture_byte_size,
+            "source_lane": self.source_lane,
+            "source_fingerprint": self.source_fingerprint,
+            "parser_route": self.parser_route,
+            "parser_backend": self.parser_backend,
+            "parser_version": self.parser_version,
+            "ocr_used": self.ocr_used,
+            "extraction_confidence": self.extraction_confidence,
+            "tenant_id": self.tenant_id,
+            "workspace_id": self.workspace_id,
+            "approval_state": self.approval_state,
+            "publication_state": self.publication_state,
             "capture_error": self.capture_error,
             "canonical_book_path": self.canonical_book_path,
             "normalized_section_count": self.normalized_section_count,
@@ -296,6 +318,17 @@ class CustomerPackDraftRecord:
             "capture_artifact_path": self.capture_artifact_path,
             "capture_content_type": self.capture_content_type,
             "capture_byte_size": self.capture_byte_size,
+            "source_lane": self.source_lane,
+            "source_fingerprint": self.source_fingerprint,
+            "parser_route": self.parser_route,
+            "parser_backend": self.parser_backend,
+            "parser_version": self.parser_version,
+            "ocr_used": self.ocr_used,
+            "extraction_confidence": self.extraction_confidence,
+            "tenant_id": self.tenant_id,
+            "workspace_id": self.workspace_id,
+            "approval_state": self.approval_state,
+            "publication_state": self.publication_state,
             "capture_error": self.capture_error,
             "canonical_book_path": self.canonical_book_path,
             "normalized_section_count": self.normalized_section_count,
@@ -343,6 +376,17 @@ class CustomerPackDraftRecord:
             capture_artifact_path=str(payload.get("capture_artifact_path") or "").strip(),
             capture_content_type=str(payload.get("capture_content_type") or "").strip(),
             capture_byte_size=int(payload.get("capture_byte_size") or 0),
+            source_lane=str(payload.get("source_lane") or "customer_source_first_pack").strip() or "customer_source_first_pack",
+            source_fingerprint=str(payload.get("source_fingerprint") or "").strip(),
+            parser_route=str(payload.get("parser_route") or "").strip(),
+            parser_backend=str(payload.get("parser_backend") or "").strip(),
+            parser_version=str(payload.get("parser_version") or "").strip(),
+            ocr_used=bool(payload.get("ocr_used") or False),
+            extraction_confidence=float(payload.get("extraction_confidence") or 0.0),
+            tenant_id=str(payload.get("tenant_id") or "default-tenant").strip() or "default-tenant",
+            workspace_id=str(payload.get("workspace_id") or "default-workspace").strip() or "default-workspace",
+            approval_state=str(payload.get("approval_state") or "unreviewed").strip() or "unreviewed",
+            publication_state=str(payload.get("publication_state") or "draft").strip() or "draft",
             capture_error=str(payload.get("capture_error") or "").strip(),
             canonical_book_path=str(payload.get("canonical_book_path") or "").strip(),
             normalized_section_count=int(payload.get("normalized_section_count") or 0),

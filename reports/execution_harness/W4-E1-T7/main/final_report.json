@@ -1,0 +1,27 @@
+{
+  "task_id": "W4-E1-T7",
+  "status": "ok",
+  "outputs": [
+    "src/play_book_studio/app/source_books.py",
+    "presentation-ui/src/lib/runtimeApi.ts",
+    "presentation-ui/src/pages/WorkspacePage.tsx",
+    "scripts/verify_chat_truth_taxonomy.py",
+    "reports/build_logs/chat_truth_taxonomy_report.json",
+    "reports/build_logs/chat_truth_taxonomy_report.md"
+  ],
+  "validations": [
+    ".venv\\Scripts\\python.exe scripts\\verify_chat_truth_taxonomy.py",
+    "npm.cmd run build",
+    ".venv\\Scripts\\python.exe -c \"import yaml, pathlib; yaml.safe_load(pathlib.Path('TASK_BOARD.yaml').read_text(encoding='utf-8')); print('yaml_ok')\""
+  ],
+  "summary": {
+    "status": "ok",
+    "validated_link_found": true,
+    "validated_boundary_badge": "Validated Runtime",
+    "validated_runtime_truth_label": "OpenShift 4.20 Runtime",
+    "validated_source_lane": "approved_wiki_runtime",
+    "entity_link_has_no_boundary_truth": true,
+    "frontend_mentions_candidate_runtime": true,
+    "frontend_uses_truth_surface_for_related_links": true
+  }
+}

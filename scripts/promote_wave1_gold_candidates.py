@@ -12,6 +12,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from play_book_studio.config.settings import load_settings
+from play_book_studio.app import source_books
 
 
 @dataclass(slots=True)
@@ -174,6 +175,20 @@ def main() -> int:
         _catalog_markdown(created_at, promoted),
         encoding="utf-8",
     )
+    wiki_relations_dir = settings.root_dir / "data" / "wiki_relations"
+    wiki_relations_dir.mkdir(parents=True, exist_ok=True)
+    (wiki_relations_dir / "entity_hubs.json").write_text(
+        json.dumps(source_books._entity_hubs(), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    (wiki_relations_dir / "chat_navigation_aliases.json").write_text(
+        json.dumps(source_books._chat_navigation_aliases(), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    (wiki_relations_dir / "candidate_relations.json").write_text(
+        json.dumps(source_books._candidate_relations(), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     print(
         json.dumps(
             {
@@ -182,6 +197,7 @@ def main() -> int:
                 "output_root": str(out_root),
                 "manifest_path": str(_manifest_path(settings.root_dir)),
                 "catalog_path": str(_catalog_path(settings.root_dir)),
+                "wiki_relations_dir": str(wiki_relations_dir),
             },
             ensure_ascii=False,
             indent=2,

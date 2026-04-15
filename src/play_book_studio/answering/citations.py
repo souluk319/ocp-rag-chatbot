@@ -71,6 +71,48 @@ def finalize_citations(
     return rewritten_answer, final_citations, cited_indices
 
 
+def preserve_explicit_mixed_runtime_citations(
+    query: str,
+    *,
+    selected_citations,
+    final_citations,
+) -> list:
+    if not _is_explicit_mixed_runtime_query(query):
+        return final_citations
+    if not selected_citations:
+        return final_citations
+
+    private_selected = next(
+        (
+            citation
+            for citation in selected_citations
+            if _citation_truth_bucket(citation) == "private"
+        ),
+        None,
+    )
+    official_selected = next(
+        (
+            citation
+            for citation in selected_citations
+            if _citation_truth_bucket(citation) == "official"
+        ),
+        None,
+    )
+    if private_selected is None or official_selected is None:
+        return final_citations
+
+    preserved = [replace(citation, index=index + 1) for index, citation in enumerate(final_citations)]
+    existing_identities = {citation_identity(citation) for citation in preserved}
+
+    for candidate in (private_selected, official_selected):
+        identity = citation_identity(candidate)
+        if identity in existing_identities:
+            continue
+        preserved.append(replace(candidate, index=len(preserved) + 1))
+        existing_identities.add(identity)
+    return preserved
+
+
 def _normalize_non_code_spacing(answer_text: str) -> str:
     segments: list[str] = []
     last_end = 0
@@ -136,3 +178,31 @@ def select_fallback_citations(
         if len(selected) >= limit:
             break
     return selected
+
+
+def _is_explicit_mixed_runtime_query(query: str) -> bool:
+    lowered = (query or "").lower()
+    has_private_signal = any(
+        token in lowered
+        for token in (
+            "customer pack",
+            "customer-pack",
+            "our document",
+        )
+    ) or any(token in (query or "") for token in ("고객 문서", "고객문서", "우리 문서", "업로드 문서", "업로드한 문서"))
+    has_official_signal = any(
+        token in lowered
+        for token in (
+            "official runtime",
+            "official document",
+            "official docs",
+        )
+    ) or any(token in (query or "") for token in ("공식 runtime", "공식 문서", "공식 근거"))
+    return has_private_signal and has_official_signal
+
+
+def _citation_truth_bucket(citation) -> str:
+    source_collection = str(getattr(citation, "source_collection", "") or "").strip().lower()
+    if source_collection == "uploaded":
+        return "private"
+    return "official"

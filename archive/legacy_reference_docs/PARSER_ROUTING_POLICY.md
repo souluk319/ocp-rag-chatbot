@@ -1,5 +1,7 @@
 # Parser Routing Policy
 
+> Legacy reference only. 현재 기준선이 아니며, parser 관련 현재 계약은 루트 active rule set 과 parsed artifact 계약을 우선한다.
+
 ## Purpose
 
 이 문서는 customer-pack intake에서 입력 포맷이 어떤 parser/OCR 경로를 타는지, 어디서 degraded/review로 내려가는지, 어떤 경우 즉시 거부하는지 고정한다.

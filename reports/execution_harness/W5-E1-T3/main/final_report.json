@@ -1,0 +1,17 @@
+{
+  "task_id": "W5-E1-T3",
+  "lane_id": "main",
+  "role": "main",
+  "status": "done",
+  "code_paths": [
+    "scripts/verify_owner_demo_rehearsal.py",
+    "TASK_BOARD.yaml"
+  ],
+  "artifacts": [
+    "reports/build_logs/owner_demo_rehearsal_report.json",
+    "reports/build_logs/owner_demo_rehearsal_report.md"
+  ],
+  "validation": [
+    ".venv\\Scripts\\python.exe scripts\\verify_owner_demo_rehearsal.py"
+  ]
+}

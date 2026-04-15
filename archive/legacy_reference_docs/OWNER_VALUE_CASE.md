@@ -1,5 +1,7 @@
 # OWNER_VALUE_CASE
 
+> Legacy reference only. 현재 기준선이 아니며, buyer-facing 현재 truth 는 루트 active rule set 과 scorecard 를 우선한다.
+
 ## Current Judgment
 
 현재 이 제품의 정직한 판매 단계는 `본판매`가 아니라 `유료 PoC 후보`다.

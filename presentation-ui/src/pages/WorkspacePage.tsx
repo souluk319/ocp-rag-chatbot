@@ -25,17 +25,25 @@ import {
   Copy,
   Check,
   WrapText,
+  Star,
+  Clock3,
+  NotebookPen,
 } from 'lucide-react';
 import gsap from 'gsap';
 import './WorkspacePage.css';
 import {
   type ChatCitation,
+  type ChatRelatedLink,
   type CustomerPackBook,
   type CustomerPackDraft,
   type DerivedAsset,
   type LibraryBook,
   type SessionSummary,
+  type WikiOverlayRecommendedPlay,
+  type WikiOverlaySignalsResponse,
   type SourceMetaResponse,
+  type WikiOverlayRecord,
+  type WikiOverlayTargetKind,
   captureCustomerPackDraft,
   formatBytes,
   listCustomerPackDrafts,
@@ -43,11 +51,15 @@ import {
   loadCustomerPackBook,
   loadCustomerPackDraft,
   loadDataControlRoom,
+  loadWikiOverlaySignals,
+  loadWikiOverlays,
   loadSession,
   deleteAllSessions,
   deleteSession,
   loadSourceMeta,
   normalizeCustomerPackDraft,
+  removeWikiOverlay,
+  saveWikiOverlay,
   sendChat,
   toRuntimeUrl,
   uploadCustomerPackDraft,
@@ -59,6 +71,14 @@ interface Message {
   content: string;
   citations?: ChatCitation[];
   suggestedQueries?: string[];
+  relatedLinks?: ChatRelatedLink[];
+  relatedSections?: ChatRelatedLink[];
+  primarySourceLane?: string;
+  primaryBoundaryTruth?: string;
+  primaryRuntimeTruthLabel?: string;
+  primaryBoundaryBadge?: string;
+  primaryPublicationState?: string;
+  primaryApprovalState?: string;
 }
 
 interface SourceEntry {
@@ -69,6 +89,14 @@ interface SourceEntry {
   viewerPath?: string;
   book?: LibraryBook;
   draft?: CustomerPackDraft;
+}
+
+interface OverlayTargetDescriptor {
+  kind: WikiOverlayTargetKind;
+  ref: string;
+  title: string;
+  viewerPath: string;
+  payload: Record<string, unknown>;
 }
 
 type PreviewState =
@@ -110,6 +138,181 @@ function formatDraftMeta(draft: CustomerPackDraft): string {
   return pieces.filter(Boolean).join(' · ');
 }
 
+function truthSurfaceCopy(payload?: {
+  boundary_truth?: string;
+  runtime_truth_label?: string;
+  boundary_badge?: string;
+  source_lane?: string;
+  approval_state?: string;
+  publication_state?: string;
+  parser_backend?: string;
+  pack_label?: string;
+} | null): {
+  label: string;
+  meta: string[];
+} {
+  if (!payload) {
+    return { label: 'Runtime', meta: [] };
+  }
+  const boundaryTruth = String(payload.boundary_truth || '').trim();
+  const sourceLane = String(payload.source_lane || '').trim();
+  const runtimeTruthLabel = String(payload.runtime_truth_label || '').trim();
+  const packLabel = String(payload.pack_label || '').trim();
+
+  if (boundaryTruth === 'private_customer_pack_runtime' || sourceLane === 'customer_source_first_pack') {
+    return {
+      label: 'Private Runtime',
+      meta: [
+        runtimeTruthLabel || 'Customer Source-First Pack',
+        payload.approval_state ? `approval ${payload.approval_state}` : '',
+        payload.publication_state ? `publication ${payload.publication_state}` : '',
+        payload.parser_backend ? `parser ${payload.parser_backend}` : '',
+      ].filter(Boolean),
+    };
+  }
+
+  if (boundaryTruth === 'official_validated_runtime' || sourceLane.includes('wiki_runtime') || sourceLane.includes('approved')) {
+    return {
+      label: 'Validated Runtime',
+      meta: [
+        runtimeTruthLabel || (packLabel ? `${packLabel} Runtime` : 'Validated Pack Runtime'),
+        packLabel || '',
+      ].filter(Boolean),
+    };
+  }
+
+  if (boundaryTruth === 'official_candidate_runtime' || sourceLane.includes('candidate')) {
+    const isLegacyArchiveLane =
+      sourceLane === 'wave1_gold_candidate'
+      || sourceLane === 'legacy_gold_candidate_archive'
+      || sourceLane === 'gold_candidate_archive';
+    return {
+      label: isLegacyArchiveLane ? 'Archived Runtime' : 'Candidate Runtime',
+      meta: [
+        runtimeTruthLabel || (packLabel ? `${packLabel} Candidate` : 'Validated Pack Candidate'),
+      ].filter(Boolean),
+    };
+  }
+
+  if (boundaryTruth === 'mixed_runtime_bridge' || sourceLane.includes('mixed')) {
+    return {
+      label: 'Mixed Runtime',
+      meta: [
+        runtimeTruthLabel || 'Official + Private Runtime',
+      ].filter(Boolean),
+    };
+  }
+
+  return {
+    label: payload.boundary_badge || runtimeTruthLabel || sourceLane || 'Runtime',
+    meta: [
+      payload.approval_state ? `approval ${payload.approval_state}` : '',
+      payload.publication_state ? `publication ${payload.publication_state}` : '',
+      payload.parser_backend ? `parser ${payload.parser_backend}` : '',
+    ].filter(Boolean),
+  };
+}
+
+function primaryCitationTruth(citations?: ChatCitation[] | null): {
+  sourceLane?: string;
+  boundaryTruth?: string;
+  runtimeTruthLabel?: string;
+  boundaryBadge?: string;
+  publicationState?: string;
+  approvalState?: string;
+} | null {
+  if (!citations || citations.length === 0) {
+    return null;
+  }
+  const primary = citations[0];
+  return {
+    sourceLane: primary.source_lane,
+    boundaryTruth: primary.boundary_truth,
+    runtimeTruthLabel: primary.runtime_truth_label,
+    boundaryBadge: primary.boundary_badge,
+    publicationState: primary.publication_state,
+    approvalState: primary.approval_state,
+  };
+}
+
+function formatCitationLabel(citation: ChatCitation): string {
+  const base = citation.source_label || citation.book_title || citation.section;
+  const truth = truthSurfaceCopy(citation);
+  if (truth.label) {
+    return `${truth.label} · ${base}`;
+  }
+  return base;
+}
+
+function citationSurfaceCopy(citation: ChatCitation): {
+  badge: string;
+  title: string;
+  meta: string[];
+} {
+  const truth = truthSurfaceCopy(citation);
+  const title = citation.source_label || citation.book_title || citation.section || citation.book_slug;
+  const meta = [...truth.meta];
+  if (!meta.length && citation.section && citation.section !== title) {
+    meta.push(citation.section);
+  }
+  return {
+    badge: truth.label || 'Runtime',
+    title,
+    meta,
+  };
+}
+
+function truthBlockCopy(payload?: {
+  boundary_truth?: string;
+  runtime_truth_label?: string;
+  boundary_badge?: string;
+  source_lane?: string;
+  approval_state?: string;
+  publication_state?: string;
+  parser_backend?: string;
+  pack_label?: string;
+} | null): {
+  badge: string;
+  meta: string[];
+} {
+  const truth = truthSurfaceCopy(payload);
+  return {
+    badge: truth.label || 'Runtime',
+    meta: truth.meta,
+  };
+}
+
+function TruthBadgeBlock({
+  payload,
+  badgeClassName = 'truth-badge',
+  metaClassName = 'truth-meta',
+  showMeta = true,
+}: {
+  payload?: {
+    boundary_truth?: string;
+    runtime_truth_label?: string;
+    boundary_badge?: string;
+    source_lane?: string;
+    approval_state?: string;
+    publication_state?: string;
+    parser_backend?: string;
+    pack_label?: string;
+  } | null;
+  badgeClassName?: string;
+  metaClassName?: string;
+  showMeta?: boolean;
+}) {
+  const truth = truthBlockCopy(payload);
+  return (
+    <>
+      <span className={badgeClassName}>{truth.badge}</span>
+      {showMeta && truth.meta.length > 0 && (
+        <span className={metaClassName}>{truth.meta.join(' · ')}</span>
+      )}
+    </>
+  );
+}
+
 function extractDraftIdFromViewerPath(viewerPath: string): string | null {
   const match = viewerPath.match(/\/playbooks\/customer-packs\/([^/]+)/);
   return match?.[1] ?? null;
@@ -136,6 +339,8 @@ const SUGGESTED_QUESTIONS = [
   'oc debug 명령어로 노드에 접속해서 디스크 상태를 확인하는 방법은?',
 ];
 
+const WIKI_OVERLAY_USER_ID = 'kugnus@cywell.co.kr';
+
 function pickRandom<T>(pool: T[], count: number): T[] {
   const copy = [...pool];
   for (let i = copy.length - 1; i > 0; i--) {
@@ -143,6 +348,93 @@ function pickRandom<T>(pool: T[], count: number): T[] {
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy.slice(0, count);
+}
+
+function runtimePathFromUrl(viewerUrl: string): string {
+  try {
+    const parsed = new URL(viewerUrl, window.location.origin);
+    return `${parsed.pathname}${parsed.hash || ''}`;
+  } catch {
+    return viewerUrl;
+  }
+}
+
+function buildOverlayTargetFromViewerPath(
+  viewerUrl: string,
+  fallbackTitle: string,
+): OverlayTargetDescriptor | null {
+  const runtimePath = runtimePathFromUrl(viewerUrl);
+  const [pathOnly, anchorPart] = runtimePath.split('#', 2);
+  const anchor = anchorPart?.trim() ?? '';
+
+  const entityMatch = pathOnly.match(/^\/wiki\/entities\/([^/]+)\/index\.html$/);
+  if (entityMatch) {
+    const entitySlug = entityMatch[1];
+    return {
+      kind: 'entity_hub',
+      ref: `entity:${entitySlug}`,
+      title: fallbackTitle,
+      viewerPath: runtimePath,
+      payload: {
+        user_id: WIKI_OVERLAY_USER_ID,
+        target_kind: 'entity_hub',
+        entity_slug: entitySlug,
+        viewer_path: runtimePath,
+      },
+    };
+  }
+
+  const figureMatch = pathOnly.match(/^\/wiki\/figures\/([^/]+)\/([^/]+)\/index\.html$/);
+  if (figureMatch) {
+    const [, bookSlug, assetName] = figureMatch;
+    return {
+      kind: 'figure',
+      ref: `figure:${bookSlug}:${assetName}`,
+      title: fallbackTitle,
+      viewerPath: runtimePath,
+      payload: {
+        user_id: WIKI_OVERLAY_USER_ID,
+        target_kind: 'figure',
+        book_slug: bookSlug,
+        asset_name: assetName,
+        viewer_path: runtimePath,
+      },
+    };
+  }
+
+  const bookMatch = pathOnly.match(/^\/playbooks\/(?:wiki-runtime\/active|wiki-runtime\/wave1|gold-candidates\/wave1)\/([^/]+)\/index\.html$/);
+  if (bookMatch) {
+    const bookSlug = bookMatch[1];
+    if (anchor) {
+      return {
+        kind: 'section',
+        ref: `section:${bookSlug}#${anchor}`,
+        title: fallbackTitle,
+        viewerPath: runtimePath,
+        payload: {
+          user_id: WIKI_OVERLAY_USER_ID,
+          target_kind: 'section',
+          book_slug: bookSlug,
+          anchor,
+          viewer_path: runtimePath,
+        },
+      };
+    }
+    return {
+      kind: 'book',
+      ref: `book:${bookSlug}`,
+      title: fallbackTitle,
+      viewerPath: runtimePath,
+      payload: {
+        user_id: WIKI_OVERLAY_USER_ID,
+        target_kind: 'book',
+        book_slug: bookSlug,
+        viewer_path: runtimePath,
+      },
+    };
+  }
+
+  return null;
 }
 
 type InlineToken =
@@ -467,11 +759,37 @@ function ThinkingIndicator() {
 function AssistantAnswer({
   content,
   citations,
+  relatedLinks,
+  relatedSections,
+  primarySourceLane,
+  primaryBoundaryTruth,
+  primaryRuntimeTruthLabel,
+  primaryBoundaryBadge,
+  primaryPublicationState,
+  primaryApprovalState,
   onCitationClick,
+  onRelatedLinkClick,
+  onToggleFavoriteLink,
+  onCheckSectionLink,
+  isFavoriteLink,
+  isCheckedSectionLink,
 }: {
   content: string;
   citations: ChatCitation[];
+  relatedLinks: ChatRelatedLink[];
+  relatedSections: ChatRelatedLink[];
+  primarySourceLane?: string;
+  primaryBoundaryTruth?: string;
+  primaryRuntimeTruthLabel?: string;
+  primaryBoundaryBadge?: string;
+  primaryPublicationState?: string;
+  primaryApprovalState?: string;
   onCitationClick: (citation: ChatCitation) => void;
+  onRelatedLinkClick: (link: ChatRelatedLink) => void;
+  onToggleFavoriteLink: (link: ChatRelatedLink) => void;
+  onCheckSectionLink: (link: ChatRelatedLink) => void;
+  isFavoriteLink: (link: ChatRelatedLink) => boolean;
+  isCheckedSectionLink: (link: ChatRelatedLink) => boolean;
 }) {
   const [displayLength, setDisplayLength] = useState(0);
 
@@ -502,6 +820,15 @@ function AssistantAnswer({
 
   const displayedContent = content.slice(0, displayLength);
   const blocks = useMemo(() => parseAnswerBlocks(displayedContent, citations), [displayedContent, citations]);
+  const truthSurface = truthSurfaceCopy({
+    boundary_truth: primaryBoundaryTruth,
+    runtime_truth_label: primaryRuntimeTruthLabel,
+    boundary_badge: primaryBoundaryBadge,
+    source_lane: primarySourceLane,
+    approval_state: primaryApprovalState,
+    publication_state: primaryPublicationState,
+  });
+  const hasTruth = Boolean(primaryBoundaryTruth || truthSurface.label);
 
   return (
     <div className="assistant-answer">
@@ -509,7 +836,26 @@ function AssistantAnswer({
         <div className="assistant-avatar">
           <Bot size={18} />
         </div>
-        <span className="assistant-label">PlayBot</span>
+        <div className="assistant-head-copy">
+              <span className="assistant-label">PlayBot</span>
+              {hasTruth && (
+                <div className="assistant-truth-row">
+                  <TruthBadgeBlock
+                    payload={{
+                      boundary_truth: primaryBoundaryTruth,
+                      runtime_truth_label: primaryRuntimeTruthLabel,
+                      boundary_badge: primaryBoundaryBadge,
+                      source_lane: primarySourceLane,
+                      approval_state: primaryApprovalState,
+                      publication_state: primaryPublicationState,
+                    }}
+                    badgeClassName="assistant-truth-chip"
+                    metaClassName="assistant-truth-meta"
+                    showMeta={false}
+                  />
+                </div>
+              )}
+            </div>
       </div>
       <div className="assistant-copy">
         {blocks.map((block, index) => {
@@ -576,7 +922,112 @@ function AssistantAnswer({
           );
         })}
       </div>
+      {relatedLinks.length > 0 && (
+        <div className="assistant-related-group">
+          <div className="suggested-query-label">관련 탐색</div>
+          <div className="suggested-query-list">
+            {relatedLinks.map((link, index) => (
+              <div key={`${link.href}-${index}`} className="overlay-chip-row">
+                <RelatedLinkCard link={link} onOpen={onRelatedLinkClick} />
+                <button
+                  type="button"
+                  className={`overlay-mini-action ${isFavoriteLink(link) ? 'active' : ''}`}
+                  onClick={() => onToggleFavoriteLink(link)}
+                  title={isFavoriteLink(link) ? '즐겨찾기 해제' : '즐겨찾기'}
+                >
+                  <Star size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {relatedSections.length > 0 && (
+        <div className="assistant-related-group">
+          <div className="suggested-query-label">정확한 절차</div>
+          <div className="suggested-query-list">
+            {relatedSections.map((link, index) => (
+              <div key={`${link.href}-${index}`} className="overlay-chip-row">
+                <button
+                  className="suggested-query-chip"
+                  type="button"
+                  onClick={() => onRelatedLinkClick(link)}
+                  title={link.summary ?? ''}
+                >
+                  섹션 · {link.label}
+                </button>
+                <button
+                  type="button"
+                  className={`overlay-mini-action ${isCheckedSectionLink(link) ? 'active' : ''}`}
+                  onClick={() => onCheckSectionLink(link)}
+                  title={isCheckedSectionLink(link) ? '체크 해제' : '체크 완료'}
+                >
+                  <Check size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function CitationTag({
+  citation,
+  onOpen,
+}: {
+  citation: ChatCitation;
+  onOpen: (citation: ChatCitation) => void;
+}) {
+  const surface = citationSurfaceCopy(citation);
+  return (
+    <button
+      className="citation-tag"
+      onClick={() => { onOpen(citation); }}
+      type="button"
+      title={formatCitationLabel(citation)}
+    >
+      <div className="citation-tag-topline">
+        <span className="citation-tag-badge">{surface.badge}</span>
+        <span className="citation-tag-link">
+          <LinkIcon size={12} />
+        </span>
+      </div>
+      <div className="citation-tag-title">{surface.title}</div>
+      {surface.meta.length > 0 && (
+        <div className="citation-tag-meta">{surface.meta.join(' · ')}</div>
+      )}
+    </button>
+  );
+}
+
+function RelatedLinkCard({
+  link,
+  onOpen,
+}: {
+  link: ChatRelatedLink;
+  onOpen: (link: ChatRelatedLink) => void;
+}) {
+  const truth = truthBlockCopy(link);
+  const meta = link.summary ? [link.summary] : [];
+  return (
+    <button
+      className="related-link-card"
+      type="button"
+      onClick={() => onOpen(link)}
+    >
+      <div className="related-link-topline">
+        <span className="related-link-badge">{link.kind === 'entity' ? 'Entity' : truth.badge}</span>
+        <span className="related-link-link">
+          <LinkIcon size={12} />
+        </span>
+      </div>
+      <div className="related-link-title">{link.label}</div>
+      {link.kind !== 'entity' && meta.length > 0 && (
+        <div className="related-link-meta">{meta.join(' · ')}</div>
+      )}
+    </button>
   );
 }
 
@@ -611,6 +1062,12 @@ export default function WorkspacePage() {
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
   const [sourcesDrawerOpen, setSourcesDrawerOpen] = useState(false);
+  const [wikiOverlays, setWikiOverlays] = useState<WikiOverlayRecord[]>([]);
+  const [wikiOverlaySignals, setWikiOverlaySignals] = useState<WikiOverlaySignalsResponse | null>(null);
+  const [isOverlayLoading, setIsOverlayLoading] = useState(false);
+  const [isOverlaySaving, setIsOverlaySaving] = useState(false);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [noteOpen, setNoteOpen] = useState(false);
 
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -629,10 +1086,30 @@ export default function WorkspacePage() {
     }
   }, []);
 
+  const refreshWikiOverlays = useCallback(async () => {
+    setIsOverlayLoading(true);
+    try {
+      const [overlayResult, signalResult] = await Promise.all([
+        loadWikiOverlays(WIKI_OVERLAY_USER_ID),
+        loadWikiOverlaySignals(WIKI_OVERLAY_USER_ID),
+      ]);
+      setWikiOverlays(overlayResult.items ?? []);
+      setWikiOverlaySignals(signalResult);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsOverlayLoading(false);
+    }
+  }, []);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const welcomeQuestions = useMemo(() => pickRandom(SUGGESTED_QUESTIONS, 4), [sessionId]);
 
   // Track user scroll-up via wheel only (not programmatic scroll)
+  useEffect(() => {
+    void refreshWikiOverlays();
+  }, [refreshWikiOverlays]);
+
   useEffect(() => {
     const el = chatMessagesRef.current;
     if (!el) return;
@@ -679,7 +1156,17 @@ export default function WorkspacePage() {
       setMessages(
         (snapshot.turns ?? []).flatMap((turn) => [
           { id: makeId('u'), role: 'user' as const, content: turn.query },
-          { id: makeId('a'), role: 'assistant' as const, content: turn.answer },
+          {
+            id: makeId('a'),
+            role: 'assistant' as const,
+            content: turn.answer,
+            primarySourceLane: turn.primary_source_lane,
+            primaryBoundaryTruth: turn.primary_boundary_truth,
+            primaryRuntimeTruthLabel: turn.primary_runtime_truth_label,
+            primaryBoundaryBadge: turn.primary_boundary_badge,
+            primaryPublicationState: turn.primary_publication_state,
+            primaryApprovalState: turn.primary_approval_state,
+          },
         ]),
       );
     } catch (error) {
@@ -884,6 +1371,46 @@ export default function WorkspacePage() {
     [activeSourceId, drafts],
   );
 
+  const currentOverlayTarget = useMemo<OverlayTargetDescriptor | null>(() => {
+    if (preview.kind !== 'viewer' || !preview.viewerUrl) {
+      return null;
+    }
+    return buildOverlayTargetFromViewerPath(preview.viewerUrl, preview.title);
+  }, [preview]);
+
+  const favoriteOverlays = useMemo(
+    () => wikiOverlays.filter((item) => item.kind === 'favorite'),
+    [wikiOverlays],
+  );
+  const recentPositionOverlays = useMemo(
+    () => wikiOverlays.filter((item) => item.kind === 'recent_position'),
+    [wikiOverlays],
+  );
+  const noteOverlays = useMemo(
+    () => wikiOverlays.filter((item) => item.kind === 'note'),
+    [wikiOverlays],
+  );
+  const personalizedNextPlays = useMemo<WikiOverlayRecommendedPlay[]>(
+    () => wikiOverlaySignals?.user_focus?.recommended_next_plays ?? [],
+    [wikiOverlaySignals],
+  );
+
+  const currentFavorite = useMemo(
+    () => favoriteOverlays.find((item) => item.target_ref === currentOverlayTarget?.ref) ?? null,
+    [currentOverlayTarget, favoriteOverlays],
+  );
+  const currentSectionCheck = useMemo(
+    () =>
+      wikiOverlays.find(
+        (item) => item.kind === 'check' && item.target_ref === currentOverlayTarget?.ref,
+      ) ?? null,
+    [currentOverlayTarget, wikiOverlays],
+  );
+  const currentNote = useMemo(
+    () => noteOverlays.find((item) => item.target_ref === currentOverlayTarget?.ref) ?? null,
+    [currentOverlayTarget, noteOverlays],
+  );
+
   function mergeDraft(nextDraft: CustomerPackDraft, currentDrafts: CustomerPackDraft[] = drafts): CustomerPackDraft[] {
     return [nextDraft, ...currentDrafts.filter((draft) => draft.draft_id !== nextDraft.draft_id)];
   }
@@ -943,13 +1470,36 @@ export default function WorkspacePage() {
     setPreview({
       kind: 'draft',
       title: loadedDraft.title,
-      subtitle: `${loadedDraft.pack_label} · ${loadedDraft.quality_status}`,
+      subtitle: `${loadedDraft.pack_label} · ${truthSurfaceCopy(loadedBook ?? loadedDraft).label} · ${loadedDraft.quality_status}`,
       draft: loadedDraft,
       book: loadedBook,
       viewerUrl,
       derivedAssets: loadedBook?.derived_assets ?? loadedDraft.derived_assets ?? [],
     });
   }
+
+  useEffect(() => {
+    setNoteDraft(currentNote?.body ?? '');
+  }, [currentNote?.body, currentOverlayTarget?.ref]);
+
+  useEffect(() => {
+    if (!currentOverlayTarget) {
+      return;
+    }
+    if (currentOverlayTarget.kind === 'entity_hub' || currentOverlayTarget.kind === 'book' || currentOverlayTarget.kind === 'section' || currentOverlayTarget.kind === 'figure') {
+      const timer = window.setTimeout(() => {
+        void saveWikiOverlay({
+          user_id: WIKI_OVERLAY_USER_ID,
+          kind: 'recent_position',
+          ...currentOverlayTarget.payload,
+        })
+          .then(() => refreshWikiOverlays())
+          .catch((error) => console.error(error));
+      }, 500);
+      return () => window.clearTimeout(timer);
+    }
+    return;
+  }, [currentOverlayTarget, refreshWikiOverlays]);
 
   function resetParentScroll(): void {
     requestAnimationFrame(() => {
@@ -1003,6 +1553,190 @@ export default function WorkspacePage() {
     }
   }
 
+  async function handleRelatedLinkClick(link: ChatRelatedLink): Promise<void> {
+    try {
+      const runtimeUrl = toRuntimeUrl(link.href);
+      const label = link.kind === 'entity' ? 'Entity Hub' : 'Related Document';
+      setPreview({
+        kind: 'viewer',
+        title: link.label,
+        subtitle: label,
+        viewerUrl: `${runtimeUrl}${runtimeUrl.includes('?') ? '&' : '?'}embed=1`,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  function overlayTargetFromLink(link: ChatRelatedLink): OverlayTargetDescriptor | null {
+    return buildOverlayTargetFromViewerPath(toRuntimeUrl(link.href), link.label);
+  }
+
+  function overlayExists(kind: 'favorite' | 'check', targetRef: string): WikiOverlayRecord | null {
+    return wikiOverlays.find((item) => item.kind === kind && item.target_ref === targetRef) ?? null;
+  }
+
+  async function handleToggleFavoriteCurrent(): Promise<void> {
+    if (!currentOverlayTarget) {
+      return;
+    }
+    setIsOverlaySaving(true);
+    try {
+      if (currentFavorite) {
+        await removeWikiOverlay({
+          user_id: WIKI_OVERLAY_USER_ID,
+          kind: 'favorite',
+          target_ref: currentFavorite.target_ref,
+        });
+      } else {
+        await saveWikiOverlay({
+          user_id: WIKI_OVERLAY_USER_ID,
+          kind: 'favorite',
+          title: currentOverlayTarget.title,
+          summary: preview.kind === 'viewer' ? preview.subtitle : '',
+          ...currentOverlayTarget.payload,
+        });
+      }
+      await refreshWikiOverlays();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsOverlaySaving(false);
+    }
+  }
+
+  async function handleToggleFavoriteLink(link: ChatRelatedLink): Promise<void> {
+    const target = overlayTargetFromLink(link);
+    if (!target) {
+      return;
+    }
+    setIsOverlaySaving(true);
+    try {
+      const existing = overlayExists('favorite', target.ref);
+      if (existing) {
+        await removeWikiOverlay({
+          user_id: WIKI_OVERLAY_USER_ID,
+          kind: 'favorite',
+          target_ref: existing.target_ref,
+        });
+      } else {
+        await saveWikiOverlay({
+          user_id: WIKI_OVERLAY_USER_ID,
+          kind: 'favorite',
+          title: link.label,
+          summary: link.summary ?? '',
+          ...target.payload,
+        });
+      }
+      await refreshWikiOverlays();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsOverlaySaving(false);
+    }
+  }
+
+  async function handleToggleSectionCheckCurrent(): Promise<void> {
+    if (!currentOverlayTarget || currentOverlayTarget.kind !== 'section') {
+      return;
+    }
+    setIsOverlaySaving(true);
+    try {
+      if (currentSectionCheck) {
+        await removeWikiOverlay({
+          user_id: WIKI_OVERLAY_USER_ID,
+          kind: 'check',
+          target_ref: currentSectionCheck.target_ref,
+        });
+      } else {
+        await saveWikiOverlay({
+          user_id: WIKI_OVERLAY_USER_ID,
+          kind: 'check',
+          status: 'checked',
+          ...currentOverlayTarget.payload,
+        });
+      }
+      await refreshWikiOverlays();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsOverlaySaving(false);
+    }
+  }
+
+  async function handleToggleSectionCheckLink(link: ChatRelatedLink): Promise<void> {
+    const target = overlayTargetFromLink(link);
+    if (!target || target.kind !== 'section') {
+      return;
+    }
+    setIsOverlaySaving(true);
+    try {
+      const existing = overlayExists('check', target.ref);
+      if (existing) {
+        await removeWikiOverlay({
+          user_id: WIKI_OVERLAY_USER_ID,
+          kind: 'check',
+          target_ref: existing.target_ref,
+        });
+      } else {
+        await saveWikiOverlay({
+          user_id: WIKI_OVERLAY_USER_ID,
+          kind: 'check',
+          status: 'checked',
+          ...target.payload,
+        });
+      }
+      await refreshWikiOverlays();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsOverlaySaving(false);
+    }
+  }
+
+  async function handleSaveCurrentNote(): Promise<void> {
+    if (!currentOverlayTarget) {
+      return;
+    }
+    const body = noteDraft.trim();
+    setIsOverlaySaving(true);
+    try {
+      if (!body && currentNote) {
+        await removeWikiOverlay({
+          user_id: WIKI_OVERLAY_USER_ID,
+          overlay_id: currentNote.overlay_id,
+        });
+      } else if (body) {
+        await saveWikiOverlay({
+          user_id: WIKI_OVERLAY_USER_ID,
+          kind: 'note',
+          overlay_id: currentNote?.overlay_id ?? '',
+          body,
+          pinned: true,
+          ...currentOverlayTarget.payload,
+        });
+      }
+      await refreshWikiOverlays();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsOverlaySaving(false);
+    }
+  }
+
+  async function handleOverlayJump(item: WikiOverlayRecord): Promise<void> {
+    const href = item.resolved_target?.viewer_path;
+    if (!href) {
+      return;
+    }
+    await handleRelatedLinkClick({
+      label: item.resolved_target?.title || item.title || item.target_ref,
+      href,
+      kind: item.target_kind === 'entity_hub' ? 'entity' : 'book',
+      summary: item.resolved_target?.summary || item.summary || '',
+    });
+  }
+
   async function handleUploadSelection(event: ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = event.target.files?.[0];
     if (!file) {
@@ -1036,7 +1770,7 @@ export default function WorkspacePage() {
       await openDraftPreview(captured.draft_id, mergeDraft(captured));
     } catch (error) {
       console.error(error);
-      window.alert(error instanceof Error ? error.message : 'Analyze Content 중 오류가 발생했습니다.');
+      window.alert(error instanceof Error ? error.message : 'Inspect Source 중 오류가 발생했습니다.');
     } finally {
       setIsCapturing(false);
     }
@@ -1053,7 +1787,7 @@ export default function WorkspacePage() {
       await openDraftPreview(normalized.draft_id, mergeDraft(normalized));
     } catch (error) {
       console.error(error);
-      window.alert(error instanceof Error ? error.message : 'Create Playbook 중 오류가 발생했습니다.');
+      window.alert(error instanceof Error ? error.message : 'Build Book 중 오류가 발생했습니다.');
     } finally {
       setIsNormalizing(false);
     }
@@ -1081,9 +1815,11 @@ export default function WorkspacePage() {
         query: trimmed,
         sessionId,
         mode: 'ops',
+        userId: WIKI_OVERLAY_USER_ID,
         selectedDraftIds: activeDraft ? [activeDraft.draft_id] : [],
         restrictUploadedSources: Boolean(activeDraft),
       });
+      const primaryTruth = primaryCitationTruth(response.citations);
 
       setSessionId(response.session_id || sessionId);
       setMessages((current) => [
@@ -1094,6 +1830,14 @@ export default function WorkspacePage() {
           content: response.answer,
           citations: response.citations ?? [],
           suggestedQueries: response.suggested_queries ?? [],
+          relatedLinks: response.related_links ?? [],
+          relatedSections: response.related_sections ?? [],
+          primarySourceLane: primaryTruth?.sourceLane,
+          primaryBoundaryTruth: primaryTruth?.boundaryTruth,
+          primaryRuntimeTruthLabel: primaryTruth?.runtimeTruthLabel,
+          primaryBoundaryBadge: primaryTruth?.boundaryBadge,
+          primaryPublicationState: primaryTruth?.publicationState,
+          primaryApprovalState: primaryTruth?.approvalState,
         },
       ]);
 
@@ -1132,6 +1876,9 @@ export default function WorkspacePage() {
   const canNormalize = Boolean(activeDraft) && !isNormalizing;
 
   const totalSourceCount = manualSources.length + draftSources.length;
+  const recentOverlayItems = recentPositionOverlays.slice(0, 4);
+  const favoriteOverlayItems = favoriteOverlays.slice(0, 4);
+  const nextPlayItems = personalizedNextPlays.slice(0, 4);
 
   return (
     <div className="workspace-wrapper" ref={containerRef} data-lenis-prevent>
@@ -1241,6 +1988,23 @@ export default function WorkspacePage() {
                     disabled={isLoadingSession || deletingSessionId === session.session_id}
                   >
                     <div className="session-title">{session.session_name || session.first_query || `세션 ${session.session_id.slice(0, 8)}`}</div>
+                    {(session.primary_boundary_badge || session.primary_runtime_truth_label || session.primary_source_lane) && (
+                      <div className="session-truth-row">
+                        <TruthBadgeBlock
+                          payload={{
+                            boundary_truth: session.primary_boundary_truth,
+                            runtime_truth_label: session.primary_runtime_truth_label,
+                            boundary_badge: session.primary_boundary_badge,
+                            source_lane: session.primary_source_lane,
+                            approval_state: session.primary_approval_state,
+                            publication_state: session.primary_publication_state,
+                          }}
+                          badgeClassName="session-truth-chip"
+                          metaClassName="session-truth-meta"
+                          showMeta={false}
+                        />
+                      </div>
+                    )}
                     <div className="session-meta">
                       <span>{session.turn_count} turns</span>
                       {session.updated_at && <span>{session.updated_at.slice(0, 10)}</span>}
@@ -1312,8 +2076,8 @@ export default function WorkspacePage() {
                     <div className="welcome-icon">
                       <Sparkles size={36} />
                     </div>
-                    <h2 className="welcome-title">무엇이든 질문하세요</h2>
-                    <p className="welcome-subtitle">OpenShift 운영에 필요한 답변을 찾아드립니다</p>
+                    <h2 className="welcome-title">문서를 탐색하세요</h2>
+                    <p className="welcome-subtitle">기술 위키 runtime 에서 근거와 문맥을 찾습니다</p>
                     <div className="welcome-question-grid">
                       {welcomeQuestions.map((q, i) => (
                         <button
@@ -1337,8 +2101,33 @@ export default function WorkspacePage() {
                           <AssistantAnswer
                             content={message.content}
                             citations={message.citations ?? []}
+                            relatedLinks={message.relatedLinks ?? []}
+                            relatedSections={message.relatedSections ?? []}
+                            primarySourceLane={message.primarySourceLane}
+                            primaryBoundaryTruth={message.primaryBoundaryTruth}
+                            primaryRuntimeTruthLabel={message.primaryRuntimeTruthLabel}
+                            primaryBoundaryBadge={message.primaryBoundaryBadge}
+                            primaryPublicationState={message.primaryPublicationState}
+                            primaryApprovalState={message.primaryApprovalState}
                             onCitationClick={(citation) => {
                               void handleCitationClick(citation);
+                            }}
+                            onRelatedLinkClick={(link) => {
+                              void handleRelatedLinkClick(link);
+                            }}
+                            onToggleFavoriteLink={(link) => {
+                              void handleToggleFavoriteLink(link);
+                            }}
+                            onCheckSectionLink={(link) => {
+                              void handleToggleSectionCheckLink(link);
+                            }}
+                            isFavoriteLink={(link) => {
+                              const target = overlayTargetFromLink(link);
+                              return Boolean(target && overlayExists('favorite', target.ref));
+                            }}
+                            isCheckedSectionLink={(link) => {
+                              const target = overlayTargetFromLink(link);
+                              return Boolean(target && overlayExists('check', target.ref));
                             }}
                           />
                         ) : (
@@ -1348,15 +2137,11 @@ export default function WorkspacePage() {
                       {message.role !== 'assistant' && message.citations && message.citations.length > 0 && (
                         <div className="message-tags">
                           {message.citations.map((citation) => (
-                            <button
+                            <CitationTag
                               key={`${message.id}-${citation.index}`}
-                              className="citation-tag"
-                              onClick={() => { void handleCitationClick(citation); }}
-                              type="button"
-                            >
-                              <LinkIcon size={12} />
-                              {citation.source_label || citation.book_title || citation.section}
-                            </button>
+                              citation={citation}
+                              onOpen={(selected) => { void handleCitationClick(selected); }}
+                            />
                           ))}
                         </div>
                       )}
@@ -1419,7 +2204,7 @@ export default function WorkspacePage() {
             <div className="handle-visual" />
           </Separator>
 
-          {/* ── Right Panel: Knowledge Studio + Sources ── */}
+          {/* ── Right Panel: Runtime Sources + Overlay ── */}
           <Panel
             panelRef={rightPanelRef}
             defaultSize={35}
@@ -1432,7 +2217,7 @@ export default function WorkspacePage() {
             <div className={`panel-inner glass-panel no-border-radius-left ${rightCollapsed ? 'panel-collapsed-inner' : ''}`}>
               <div className="panel-header">
                 <div className="header-icon"><BookOpen size={18} /></div>
-                <h3>Knowledge Studio</h3>
+                <h3>Runtime Sources</h3>
 
                 <button className="header-action-btn" type="button" onClick={toggleRightPanel} title="Close panel" style={{ marginLeft: 'auto' }}>
                   <PanelRightClose size={14} />
@@ -1477,7 +2262,7 @@ export default function WorkspacePage() {
                       <button className="section-header-btn" onClick={() => toggleSection('manuals')} type="button">
                         <div className="header-label-group">
                           {collapsedSections.manuals ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                          <span className="list-title">Runtime Manual Books</span>
+                          <span className="list-title">Validated Books</span>
                         </div>
                         <span className="item-count-badge">{manualSources.length}</span>
                       </button>
@@ -1504,7 +2289,7 @@ export default function WorkspacePage() {
                       <button className="section-header-btn" onClick={() => toggleSection('drafts')} type="button">
                         <div className="header-label-group">
                           {collapsedSections.drafts ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                          <span className="list-title">Uploaded Drafts</span>
+                          <span className="list-title">Customer Packs</span>
                         </div>
                         <span className="item-count-badge">{draftSources.length}</span>
                       </button>
@@ -1530,6 +2315,70 @@ export default function WorkspacePage() {
                 </div>
               )}
 
+              <div className="wiki-overlay-strip">
+                <div className="wiki-overlay-strip-header">
+                  <span>User Overlay</span>
+                  {(isOverlayLoading || isOverlaySaving) && <span className="wiki-overlay-status">syncing...</span>}
+                </div>
+                <div className="wiki-overlay-strip-grid">
+                  <div className="wiki-overlay-card">
+                    <div className="wiki-overlay-card-title">
+                      <Clock3 size={14} />
+                      <span>Recent Position</span>
+                    </div>
+                    <div className="wiki-overlay-chip-list">
+                      {recentOverlayItems.length > 0 ? recentOverlayItems.map((item) => (
+                        <button
+                          key={item.overlay_id}
+                          type="button"
+                          className="wiki-overlay-chip"
+                          onClick={() => { void handleOverlayJump(item); }}
+                        >
+                          {item.resolved_target?.title || item.title || item.target_ref}
+                        </button>
+                      )) : <span className="wiki-overlay-empty">아직 기록이 없습니다.</span>}
+                    </div>
+                  </div>
+                  <div className="wiki-overlay-card">
+                    <div className="wiki-overlay-card-title">
+                      <Star size={14} />
+                      <span>Favorites</span>
+                    </div>
+                    <div className="wiki-overlay-chip-list">
+                      {favoriteOverlayItems.length > 0 ? favoriteOverlayItems.map((item) => (
+                        <button
+                          key={item.overlay_id}
+                          type="button"
+                          className="wiki-overlay-chip"
+                          onClick={() => { void handleOverlayJump(item); }}
+                        >
+                          {item.resolved_target?.title || item.title || item.target_ref}
+                        </button>
+                      )) : <span className="wiki-overlay-empty">즐겨찾기가 없습니다.</span>}
+                    </div>
+                  </div>
+                  <div className="wiki-overlay-card">
+                    <div className="wiki-overlay-card-title">
+                      <ArrowRight size={14} />
+                      <span>Next Reads</span>
+                    </div>
+                    <div className="wiki-overlay-chip-list">
+                      {nextPlayItems.length > 0 ? nextPlayItems.map((item, index) => (
+                        <button
+                          key={`${item.source_target_ref}-${item.href}-${index}`}
+                          type="button"
+                          className="wiki-overlay-chip"
+                          title={item.reason}
+                          onClick={() => { void handleRelatedLinkClick(item); }}
+                        >
+                          {item.label}
+                        </button>
+                      )) : <span className="wiki-overlay-empty">행동 신호가 쌓이면 다음 읽기 경로가 제안됩니다.</span>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="source-viewer-content">
                 {preview.kind === 'empty' && (
                   <div className="empty-state">
@@ -1547,85 +2396,157 @@ export default function WorkspacePage() {
                   </div>
                 )}
 
-                {preview.kind === 'viewer' && (
-                  <div className="document-page animate-in">
-                    <div className="doc-header">
-                      <span className="doc-kicker">{preview.meta?.pack_label || 'Source Viewer'}</span>
-                      <h2>{preview.title}</h2>
-                    </div>
-                    {preview.subtitle && <p className="doc-summary">{preview.subtitle}</p>}
-                    <div className="doc-metadata">
-                      {preview.meta?.source_url && (
-                        <a href={preview.meta.source_url} className="doc-inline-link" target="_blank" rel="noreferrer">
-                          원문 열기
-                        </a>
+                {preview.kind === 'viewer' && (() => {
+                  const previewTruth = truthSurfaceCopy(preview.meta);
+                  return (
+                    <div className="document-page animate-in">
+                      <div className="doc-header">
+                        <span className="doc-kicker">{previewTruth.label || preview.meta?.pack_label || 'Source Viewer'}</span>
+                        <h2>{preview.title}</h2>
+                      </div>
+                      {preview.subtitle && <p className="doc-summary">{preview.subtitle}</p>}
+                      {previewTruth.meta.length > 0 && (
+                        <div className="doc-chip-row">
+                          {previewTruth.meta.map((item) => (
+                            <span key={item} className="doc-evidence-chip">{item}</span>
+                          ))}
+                        </div>
+                      )}
+                      {currentOverlayTarget && (
+                        <div className="wiki-overlay-toolbar">
+                          <button
+                            type="button"
+                            className={`wiki-overlay-action ${currentFavorite ? 'active' : ''}`}
+                            onClick={() => { void handleToggleFavoriteCurrent(); }}
+                            disabled={isOverlaySaving}
+                          >
+                            <Star size={14} />
+                            <span>{currentFavorite ? 'Saved' : 'Save'}</span>
+                          </button>
+                          {currentOverlayTarget.kind === 'section' && (
+                            <button
+                              type="button"
+                              className={`wiki-overlay-action ${currentSectionCheck ? 'active' : ''}`}
+                              onClick={() => { void handleToggleSectionCheckCurrent(); }}
+                              disabled={isOverlaySaving}
+                            >
+                              <Check size={14} />
+                              <span>{currentSectionCheck ? 'Done' : 'Mark Done'}</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className={`wiki-overlay-action ${noteOpen ? 'active' : ''}`}
+                            onClick={() => setNoteOpen((value) => !value)}
+                          >
+                            <NotebookPen size={14} />
+                            <span>Note</span>
+                          </button>
+                        </div>
+                      )}
+                      {currentOverlayTarget && noteOpen && (
+                        <div className="wiki-note-panel">
+                          <textarea
+                            className="wiki-note-input"
+                            value={noteDraft}
+                            onChange={(event) => setNoteDraft(event.target.value)}
+                            placeholder="이 문서, 엔터티, 섹션에 대한 개인 메모를 남기세요."
+                          />
+                          <div className="wiki-note-actions">
+                            <button
+                              type="button"
+                              className="outline-btn"
+                              onClick={() => { void handleSaveCurrentNote(); }}
+                              disabled={isOverlaySaving}
+                            >
+                              {currentNote ? '노트 업데이트' : '노트 저장'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      <div className="doc-metadata">
+                        {preview.meta?.source_url && (
+                          <a href={preview.meta.source_url} className="doc-inline-link" target="_blank" rel="noreferrer">
+                            원문 열기
+                          </a>
+                        )}
+                      </div>
+                      {preview.viewerUrl && (
+                        <iframe
+                          title={preview.title}
+                          className="source-preview-frame"
+                          src={preview.viewerUrl}
+                          onLoad={resetParentScroll}
+                        />
                       )}
                     </div>
-                    {preview.viewerUrl && (
-                      <iframe
-                        title={preview.title}
-                        className="source-preview-frame"
-                        src={preview.viewerUrl}
-                        onLoad={resetParentScroll}
-                      />
-                    )}
-                  </div>
-                )}
+                  );
+                })()}
 
-                {preview.kind === 'draft' && (
-                  <div className="document-page animate-in">
-                    <div className="doc-header">
-                      <span className="doc-kicker">Customer Pack</span>
-                      <h2>{preview.title}</h2>
-                    </div>
-                    <p className="doc-summary">{preview.subtitle}</p>
-                    <div className="doc-metadata">
-                      <span>Quality {preview.draft.quality_score}</span>
-                      <span>{preview.draft.playable_asset_count} assets</span>
-                    </div>
-                    {preview.derivedAssets.length > 0 && (
-                      <div className="doc-chip-row">
-                        {preview.derivedAssets.map((asset) => (
-                          <button
-                            key={asset.asset_slug}
-                            className="citation-tag"
-                            onClick={() => handleDerivedAssetOpen(asset)}
-                            type="button"
-                          >
-                            <LinkIcon size={12} />
-                            {asset.family_label}
-                          </button>
-                        ))}
+                {preview.kind === 'draft' && (() => {
+                  const draftTruth = truthSurfaceCopy(preview.book ?? preview.draft);
+                  return (
+                    <div className="document-page animate-in">
+                      <div className="doc-header">
+                        <span className="doc-kicker">{draftTruth.label}</span>
+                        <h2>{preview.title}</h2>
                       </div>
-                    )}
-                    {preview.viewerUrl ? (
-                      <iframe
-                        title={preview.title}
-                        className="source-preview-frame"
-                        src={preview.viewerUrl}
-                        onLoad={resetParentScroll}
-                      />
-                    ) : (
-                      <div className="doc-section">
-                        <h4>Draft Status</h4>
-                        <p>{preview.draft.status}</p>
+                      <p className="doc-summary">{preview.subtitle}</p>
+                      <div className="doc-metadata">
+                        <span>Quality {preview.draft.quality_score}</span>
+                        <span>{preview.draft.playable_asset_count} assets</span>
                       </div>
-                    )}
-                  </div>
-                )}
+                      {draftTruth.meta.length > 0 && (
+                        <div className="doc-chip-row">
+                          {draftTruth.meta.map((item) => (
+                            <span key={item} className="doc-evidence-chip">{item}</span>
+                          ))}
+                        </div>
+                      )}
+                      {preview.derivedAssets.length > 0 && (
+                        <div className="doc-chip-row">
+                          {preview.derivedAssets.map((asset) => (
+                            <button
+                              key={asset.asset_slug}
+                              className="citation-tag"
+                              onClick={() => handleDerivedAssetOpen(asset)}
+                              type="button"
+                            >
+                              <LinkIcon size={12} />
+                              {asset.family_label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {preview.viewerUrl ? (
+                        <iframe
+                          title={preview.title}
+                          className="source-preview-frame"
+                          src={preview.viewerUrl}
+                          onLoad={resetParentScroll}
+                        />
+                      ) : (
+                        <div className="doc-section">
+                          <h4>Pack Status</h4>
+                          <p>{preview.draft.status}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="panel-footer">
                 {!activeDraft && (
-                  <p className="footer-hint">문서를 업로드하면 분석 및 플레이북 생성이 가능합니다</p>
+                  <p className="footer-hint">문서를 업로드하면 검사와 북 생성을 시작합니다</p>
                 )}
                 <div className="footer-actions">
                   <button className="outline-btn" onClick={() => { void handleCapture(); }} type="button" disabled={!canCapture}>
                     <Cpu size={14} />
-                    <span>{isCapturing ? 'Analyzing...' : 'Analyze Content'}</span>
+                    <span>{isCapturing ? 'Inspecting...' : 'Inspect Source'}</span>
                   </button>
                   <button className="primary-btn" onClick={() => { void handleNormalize(); }} type="button" disabled={!canNormalize}>
-                    <span>{isNormalizing ? 'Creating...' : 'Create Playbook'}</span>
+                    <span>{isNormalizing ? 'Building...' : 'Build Book'}</span>
                     <ArrowRight size={14} />
                   </button>
                 </div>

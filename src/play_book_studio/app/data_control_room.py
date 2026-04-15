@@ -7,8 +7,11 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+import yaml
 
 from play_book_studio.config.settings import load_settings
+from play_book_studio.app.wiki_user_overlay import build_wiki_overlay_signal_payload
+from play_book_studio.intake import CustomerPackDraftStore
 from play_book_studio.ingestion.topic_playbooks import (
     DERIVED_PLAYBOOK_SOURCE_TYPES,
     OPERATION_PLAYBOOK_SOURCE_TYPE,
@@ -50,6 +53,16 @@ def _safe_read_json(path: Path | None) -> dict[str, Any]:
         return {}
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _safe_read_yaml(path: Path | None) -> dict[str, Any]:
+    if path is None or not path.exists() or not path.is_file():
+        return {}
+    try:
+        payload = yaml.safe_load(path.read_text(encoding="utf-8"))
     except Exception:  # noqa: BLE001
         return {}
     return payload if isinstance(payload, dict) else {}
@@ -466,7 +479,49 @@ def _simplify_book(book: dict[str, Any]) -> dict[str, Any]:
         "citation_eligible": bool(book.get("citation_eligible")),
         "gap_lane": str(book.get("gap_lane") or ""),
         "gap_action": str(book.get("gap_action") or ""),
+        "approval_state": str(book.get("approval_state") or ""),
+        "publication_state": str(book.get("publication_state") or ""),
+        "parser_backend": str(book.get("parser_backend") or ""),
+        "boundary_truth": str(book.get("boundary_truth") or ""),
+        "runtime_truth_label": str(book.get("runtime_truth_label") or ""),
+        "boundary_badge": str(book.get("boundary_badge") or ""),
     }
+
+
+def _customer_pack_draft_id_from_book(book: dict[str, Any]) -> str:
+    viewer_path = str(book.get("viewer_path") or "").strip()
+    prefix = "/playbooks/customer-packs/"
+    if viewer_path.startswith(prefix):
+        remainder = viewer_path[len(prefix) :]
+        parts = [part for part in remainder.split("/") if part]
+        if parts:
+            return str(parts[0]).strip()
+    slug = str(book.get("book_slug") or "").strip()
+    if "--" in slug:
+        return slug.split("--", 1)[0].strip()
+    return ""
+
+
+def _apply_customer_pack_runtime_truth(
+    books: list[dict[str, Any]],
+    *,
+    draft_records_by_id: dict[str, Any],
+) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for book in books:
+        entry = dict(book)
+        draft_id = _customer_pack_draft_id_from_book(entry)
+        record = draft_records_by_id.get(draft_id) if draft_id else None
+        if record is not None:
+            entry["source_lane"] = str(entry.get("source_lane") or getattr(record, "source_lane", "") or "customer_source_first_pack")
+            entry["approval_state"] = str(entry.get("approval_state") or getattr(record, "approval_state", "") or "unreviewed")
+            entry["publication_state"] = str(entry.get("publication_state") or getattr(record, "publication_state", "") or "draft")
+            entry["parser_backend"] = str(entry.get("parser_backend") or getattr(record, "parser_backend", "") or "customer_pack_normalize_service")
+            entry["boundary_truth"] = str(entry.get("boundary_truth") or "private_customer_pack_runtime")
+            entry["runtime_truth_label"] = str(entry.get("runtime_truth_label") or "Customer Source-First Pack")
+            entry["boundary_badge"] = str(entry.get("boundary_badge") or "Private Pack Runtime")
+        items.append(entry)
+    return items
 
 
 def _aggregate_corpus_books(
@@ -768,6 +823,7 @@ def _markdown_code_block_count(path: Path) -> int:
 
 
 def _build_gold_candidate_book_bucket(root: Path) -> dict[str, Any]:
+    settings = load_settings(root)
     manifest_path = root / "data" / "gold_candidate_books" / "wave1_manifest.json"
     manifest = _safe_read_json(manifest_path)
     entries = manifest.get("entries") if isinstance(manifest.get("entries"), list) else []
@@ -783,10 +839,10 @@ def _build_gold_candidate_book_bucket(root: Path) -> dict[str, Any]:
                 "grade": "Gold Candidate",
                 "review_status": "promoted_candidate",
                 "source_type": "reader_grade_md",
-                "source_lane": "wave1_gold_candidate",
+                "source_lane": "legacy_gold_candidate_archive",
                 "section_count": _markdown_heading_count(promoted_path),
                 "code_block_count": _markdown_code_block_count(promoted_path),
-                "viewer_path": "",
+                "viewer_path": f"/playbooks/gold-candidates/wave1/{str(entry.get('slug') or promoted_path.stem)}/index.html",
                 "source_url": str(entry.get("source_trial_path") or ""),
                 "updated_at": str(manifest.get("generated_at_utc") or ""),
             }
@@ -796,6 +852,286 @@ def _build_gold_candidate_book_bucket(root: Path) -> dict[str, Any]:
         "books": books,
         "manifest_path": str(manifest_path.resolve()),
     }
+
+
+def _build_approved_wiki_runtime_book_bucket(root: Path) -> dict[str, Any]:
+    manifest_path = root / "data" / "wiki_runtime_books" / "active_manifest.json"
+    manifest = _safe_read_json(manifest_path)
+    entries = manifest.get("entries") if isinstance(manifest.get("entries"), list) else []
+    books: list[dict[str, Any]] = []
+    runtime_paths: list[Path] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        runtime_path = Path(str(entry.get("runtime_path") or "")).resolve()
+        slug = str(entry.get("slug") or runtime_path.stem)
+        if runtime_path.exists() and runtime_path.is_file():
+            runtime_paths.append(runtime_path)
+        books.append(
+            {
+                "book_slug": slug,
+                "title": str(entry.get("title") or runtime_path.stem),
+                "grade": "Approved Wiki Runtime",
+                "review_status": "approved_wiki_runtime",
+                "source_type": "reader_grade_md",
+                "source_lane": str(manifest.get("active_group") or "active_wiki_runtime"),
+                "section_count": _markdown_heading_count(runtime_path),
+                "code_block_count": _markdown_code_block_count(runtime_path),
+                "viewer_path": f"/playbooks/wiki-runtime/active/{slug}/index.html",
+                "source_url": str(entry.get("source_candidate_path") or ""),
+                "updated_at": str(manifest.get("generated_at_utc") or ""),
+            }
+        )
+    selected_dir = ""
+    if runtime_paths:
+        parents = {str(path.parent) for path in runtime_paths}
+        selected_dir = sorted(parents)[0] if len(parents) == 1 else str((root / "data" / "wiki_runtime_books").resolve())
+    else:
+        selected_dir = str((root / "data" / "wiki_runtime_books").resolve())
+    return {
+        "selected_dir": selected_dir,
+        "books": books,
+        "manifest_path": str(manifest_path.resolve()),
+    }
+
+
+def _build_navigation_backlog_bucket(root: Path) -> dict[str, Any]:
+    asset_path = root / "data" / "wiki_relations" / "navigation_backlog.json"
+    asset = _safe_read_json(asset_path)
+    entries = asset.get("entries") if isinstance(asset.get("entries"), list) else []
+    books: list[dict[str, Any]] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        signal_id = str(entry.get("signal_id") or "").strip()
+        label = str(entry.get("label") or signal_id or "Backlog Signal").strip()
+        signal_type = str(entry.get("signal_type") or "unknown").strip()
+        href = str(entry.get("href") or "").strip()
+        books.append(
+            {
+                "book_slug": signal_id or label.lower().replace(" ", "-"),
+                "title": label,
+                "grade": "Navigation Backlog",
+                "review_status": signal_type,
+                "source_type": "chat_navigation_signal",
+                "source_lane": "wiki_navigation_backlog",
+                "section_count": _safe_int(entry.get("count")),
+                "code_block_count": 0,
+                "viewer_path": href,
+                "source_url": str(asset_path.resolve()),
+                "updated_at": str(asset.get("generated_at") or ""),
+            }
+        )
+    return {
+        "selected_dir": str((root / "data" / "wiki_relations").resolve()),
+        "books": books,
+        "manifest_path": str(asset_path.resolve()),
+    }
+
+
+def _build_wiki_usage_signal_bucket(root: Path) -> dict[str, Any]:
+    payload = build_wiki_overlay_signal_payload(root)
+    top_targets = payload.get("top_targets") if isinstance(payload.get("top_targets"), list) else []
+    books: list[dict[str, Any]] = []
+    for index, entry in enumerate(top_targets):
+        if not isinstance(entry, dict):
+            continue
+        target_ref = str(entry.get("target_ref") or "").strip()
+        title = str(entry.get("title") or target_ref or f"signal-{index + 1}").strip()
+        kind = str(entry.get("primary_kind") or entry.get("target_kind") or "signal").strip()
+        books.append(
+            {
+                "book_slug": target_ref.replace(":", "-").replace("#", "-") or f"signal-{index + 1}",
+                "title": title,
+                "grade": "Wiki Usage Signal",
+                "review_status": f"{kind} · {int(entry.get('count') or 0)}",
+                "source_type": "wiki_user_overlay_signal",
+                "source_lane": "wiki_usage_signals",
+                "section_count": int(entry.get("count") or 0),
+                "code_block_count": int(entry.get("user_count") or 0),
+                "viewer_path": str(entry.get("viewer_path") or ""),
+                "source_url": "",
+                "updated_at": str(entry.get("last_touched_at") or payload.get("updated_at") or ""),
+            }
+        )
+    return {
+        "selected_dir": str((load_settings(root).runtime_dir / "wiki_overlays").resolve()),
+        "books": books,
+        "manifest_path": str((load_settings(root).runtime_dir / "wiki_overlays" / "overlays.json").resolve()),
+        "summary": payload.get("summary") if isinstance(payload.get("summary"), dict) else {},
+    }
+
+
+def _build_buyer_demo_gate_bucket(root: Path) -> dict[str, Any]:
+    scorecard_path = root / "OWNER_SCENARIO_SCORECARD.yaml"
+    scorecard = _safe_read_yaml(scorecard_path)
+    promotion_gate = (
+        scorecard.get("promotion_gate", {}).get("full_sale_requires", [])
+        if isinstance(scorecard.get("promotion_gate"), dict)
+        else []
+    )
+    release_blockers = scorecard.get("release_blockers", [])
+    scenario_set = scorecard.get("scenario_set", [])
+
+    books = [
+        {
+            "book_slug": "buyer_demo_gate__promotion",
+            "title": "Full-Sale Promotion Gate",
+            "grade": "Gate",
+            "review_status": "locked",
+            "source_type": "scorecard_gate",
+            "source_lane": "buyer_demo_gate",
+            "section_count": len(promotion_gate),
+            "code_block_count": 0,
+            "viewer_path": "",
+            "source_url": str(scorecard_path.resolve()),
+            "updated_at": _iso_now(),
+            "boundary_badge": "Promotion Gate",
+            "runtime_truth_label": f"{len(promotion_gate)} release requirements",
+            "approval_state": "full_sale",
+            "publication_state": "criteria",
+        },
+        {
+            "book_slug": "buyer_demo_gate__blockers",
+            "title": "Release Blockers",
+            "grade": "Gate",
+            "review_status": "blocking",
+            "source_type": "scorecard_gate",
+            "source_lane": "buyer_demo_gate",
+            "section_count": len(release_blockers),
+            "code_block_count": 0,
+            "viewer_path": "",
+            "source_url": str(scorecard_path.resolve()),
+            "updated_at": _iso_now(),
+            "boundary_badge": "Blockers",
+            "runtime_truth_label": f"{len(release_blockers)} hard blockers",
+            "approval_state": "release",
+            "publication_state": "blocking",
+        },
+        {
+            "book_slug": "buyer_demo_gate__scenarios",
+            "title": "Owner Demo Scenarios",
+            "grade": "Gate",
+            "review_status": "scored",
+            "source_type": "scorecard_gate",
+            "source_lane": "buyer_demo_gate",
+            "section_count": len(scenario_set),
+            "code_block_count": 0,
+            "viewer_path": "",
+            "source_url": str(scorecard_path.resolve()),
+            "updated_at": _iso_now(),
+            "boundary_badge": "Demo Gate",
+            "runtime_truth_label": f"{len(scenario_set)} owner scenarios",
+            "approval_state": "owner_demo",
+            "publication_state": str(scorecard.get("current_stage") or "paid_poc_candidate"),
+        },
+    ]
+    return {
+        "selected_dir": str(scorecard_path.resolve()),
+        "books": books,
+        "manifest_path": str(scorecard_path.resolve()),
+        "summary": {
+            "promotion_requirement_count": len(promotion_gate),
+            "release_blocker_count": len(release_blockers),
+            "owner_scenario_count": len(scenario_set),
+            "current_stage": str(scorecard.get("current_stage") or ""),
+        },
+    }
+
+
+def _build_owner_demo_rehearsal_summary(root: Path) -> dict[str, Any]:
+    report_path = root / "reports" / "build_logs" / "owner_demo_rehearsal_report.json"
+    payload = _safe_read_json(report_path)
+    return {
+        "report_path": str(report_path.resolve()),
+        "status": str(payload.get("status") or "unknown"),
+        "current_stage": str(payload.get("current_stage") or ""),
+        "scenario_count": _safe_int(payload.get("scenario_count")),
+        "pass_count": _safe_int(payload.get("pass_count")),
+        "owner_critical_scenario_pass_rate": float(payload.get("owner_critical_scenario_pass_rate") or 0.0),
+        "blockers": list(payload.get("blockers") or []),
+    }
+
+
+def _build_buyer_packet_bundle_bucket(root: Path) -> dict[str, Any]:
+    bundle_path = root / "reports" / "build_logs" / "buyer_packet_bundle_index.json"
+    payload = _safe_read_json(bundle_path)
+    packets = payload.get("packets") if isinstance(payload.get("packets"), list) else []
+    books: list[dict[str, Any]] = []
+    for entry in packets:
+        if not isinstance(entry, dict):
+            continue
+        packet_id = str(entry.get("id") or "").strip()
+        books.append(
+            {
+                "book_slug": f"buyer_packet__{packet_id}",
+                "title": str(entry.get("title") or packet_id),
+                "grade": "Packet",
+                "review_status": "ready" if str(entry.get("status") or "") == "ok" else "pending",
+                "source_type": "buyer_packet_bundle",
+                "source_lane": "buyer_packet_bundle",
+                "section_count": 1,
+                "code_block_count": 0,
+                "viewer_path": f"/buyer-packets/{packet_id}",
+                "source_url": str(entry.get("markdown_path") or ""),
+                "updated_at": _iso_now(),
+                "boundary_badge": "Release Packet",
+                "runtime_truth_label": str(entry.get("purpose") or ""),
+                "approval_state": str(payload.get("current_stage") or ""),
+                "publication_state": "ready" if str(entry.get("status") or "") == "ok" else "pending",
+            }
+        )
+    return {
+        "selected_dir": str(bundle_path.resolve()),
+        "books": books,
+        "manifest_path": str(bundle_path.resolve()),
+        "summary": {
+            "packet_count": len(books),
+            "all_ready": bool(payload.get("all_ready")),
+        },
+    }
+
+
+def _build_release_candidate_freeze_summary(root: Path) -> dict[str, Any]:
+    freeze_path = root / "reports" / "build_logs" / "release_candidate_freeze_packet.json"
+    payload = _safe_read_json(freeze_path)
+    runtime_snapshot = payload.get("runtime_snapshot") if isinstance(payload.get("runtime_snapshot"), dict) else {}
+    owner_demo = payload.get("owner_demo") if isinstance(payload.get("owner_demo"), dict) else {}
+    release_gate = payload.get("release_gate") if isinstance(payload.get("release_gate"), dict) else {}
+    return {
+        "packet_id": "release-candidate-freeze",
+        "title": str(payload.get("title") or "Release Candidate Freeze Packet"),
+        "viewer_path": "/buyer-packets/release-candidate-freeze",
+        "freeze_date": str(payload.get("freeze_date") or ""),
+        "current_stage": str(payload.get("current_stage") or ""),
+        "commercial_truth": str(payload.get("commercial_truth") or ""),
+        "runtime_count": _safe_int(runtime_snapshot.get("runtime_count")),
+        "active_group": str(runtime_snapshot.get("active_group") or ""),
+        "owner_demo_pass_rate": float(owner_demo.get("pass_rate") or 0.0),
+        "owner_demo_pass_count": _safe_int(owner_demo.get("pass_count")),
+        "owner_demo_scenario_count": _safe_int(owner_demo.get("scenario_count")),
+        "promotion_gate_count": _safe_int(release_gate.get("promotion_gate_count")),
+        "release_blocker_count": _safe_int(release_gate.get("release_blocker_count")),
+        "sell_now": str(release_gate.get("sell_now") or ""),
+        "do_not_sell_yet": str(release_gate.get("do_not_sell_yet") or ""),
+        "close": str(payload.get("close") or ""),
+        "exists": bool(payload),
+        "report_path": str(freeze_path.resolve()),
+    }
+
+
+def _apply_viewer_path_fallback(books: list[dict[str, Any]], *, root: Path) -> list[dict[str, Any]]:
+    settings = load_settings(root)
+    playbook_dir = settings.playbook_books_dir.resolve()
+    for book in books:
+        if str(book.get("viewer_path") or "").strip():
+            continue
+        slug = str(book.get("book_slug") or "").strip()
+        if not slug:
+            continue
+        if (playbook_dir / f"{slug}.json").exists():
+            book["viewer_path"] = settings.viewer_path_template.format(slug=slug)
+    return books
 
 
 def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
@@ -889,6 +1225,11 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
         expected_count=len(manifest_by_slug),
     )
     customer_pack_files = sorted(settings.customer_pack_books_dir.glob("*.json"))
+    customer_pack_draft_records = {
+        record.draft_id: record
+        for record in CustomerPackDraftStore(root).list()
+        if str(record.draft_id or "").strip()
+    }
     all_playbook_files: list[Path] = []
     seen_playbook_paths: set[str] = set()
     for path in [*playbook_files, *customer_pack_files]:
@@ -907,6 +1248,10 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
         all_playbook_files,
         manifest_by_slug=manifest_by_slug,
         known_books=known_books,
+    )
+    manualbooks = _apply_customer_pack_runtime_truth(
+        manualbooks,
+        draft_records_by_id=customer_pack_draft_records,
     )
     derived_playbook_family_statuses = {
         family: _derived_family_status(
@@ -934,18 +1279,33 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
         for book in corpus_books
         if str(book.get("book_slug") or "").strip() not in manifest_slugs
     ]
-    topic_playbooks = list(derived_playbook_family_statuses[TOPIC_PLAYBOOK_SOURCE_TYPE]["books"])
-    operation_playbooks = list(
+    topic_playbooks = _apply_viewer_path_fallback(
+        list(derived_playbook_family_statuses[TOPIC_PLAYBOOK_SOURCE_TYPE]["books"]),
+        root=root,
+    )
+    operation_playbooks = _apply_viewer_path_fallback(
+        list(
         derived_playbook_family_statuses[OPERATION_PLAYBOOK_SOURCE_TYPE]["books"]
+        ),
+        root=root,
     )
-    troubleshooting_playbooks = list(
+    troubleshooting_playbooks = _apply_viewer_path_fallback(
+        list(
         derived_playbook_family_statuses[TROUBLESHOOTING_PLAYBOOK_SOURCE_TYPE]["books"]
+        ),
+        root=root,
     )
-    policy_overlay_books = list(
+    policy_overlay_books = _apply_viewer_path_fallback(
+        list(
         derived_playbook_family_statuses[POLICY_OVERLAY_BOOK_SOURCE_TYPE]["books"]
+        ),
+        root=root,
     )
-    synthesized_playbooks = list(
+    synthesized_playbooks = _apply_viewer_path_fallback(
+        list(
         derived_playbook_family_statuses[SYNTHESIZED_PLAYBOOK_SOURCE_TYPE]["books"]
+        ),
+        root=root,
     )
     core_manualbooks = [
         book
@@ -959,6 +1319,15 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
         if str(book.get("source_type") or "").strip() not in DATA_CONTROL_ROOM_DERIVED_PLAYBOOK_SOURCE_TYPE_SET
         and str(book.get("book_slug") or "").strip() not in manifest_slugs
     ]
+    customer_pack_runtime_books = _apply_viewer_path_fallback(
+        [
+            book
+            for book in manualbooks
+            if str(book.get("boundary_truth") or "").strip() == "private_customer_pack_runtime"
+            or str(book.get("source_lane") or "").strip() == "customer_source_first_pack"
+        ],
+        root=root,
+    )
 
     grade_breakdown_counter = Counter(_grade_label(book) for book in source_books)
     gold_books = [
@@ -1025,6 +1394,13 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
     manual_book_library = _build_manual_book_library(core_manualbooks, extra_manualbooks)
     playbook_library = _build_playbook_library(derived_playbook_family_statuses)
     gold_candidate_books = _build_gold_candidate_book_bucket(root)
+    approved_wiki_runtime_books = _build_approved_wiki_runtime_book_bucket(root)
+    navigation_backlog = _build_navigation_backlog_bucket(root)
+    wiki_usage_signals = _build_wiki_usage_signal_bucket(root)
+    buyer_demo_gate = _build_buyer_demo_gate_bucket(root)
+    owner_demo_rehearsal = _build_owner_demo_rehearsal_summary(root)
+    buyer_packet_bundle = _build_buyer_packet_bundle_bucket(root)
+    release_candidate_freeze = _build_release_candidate_freeze_summary(root)
 
     chunk_candidate_counts = {
         candidate["row_count"]
@@ -1110,7 +1486,15 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
             "core_corpus_book_count": len(materialized_core_corpus_slugs),
             "manualbook_count": len(materialized_core_manualbook_slugs),
             "core_manualbook_count": len(materialized_core_manualbook_slugs),
+            "customer_pack_runtime_book_count": len(customer_pack_runtime_books),
             "gold_candidate_book_count": len(gold_candidate_books.get("books") or []),
+            "approved_wiki_runtime_book_count": len(approved_wiki_runtime_books.get("books") or []),
+            "wiki_navigation_backlog_count": len(navigation_backlog.get("books") or []),
+            "wiki_usage_signal_count": len(wiki_usage_signals.get("books") or []),
+            "buyer_demo_gate_count": len(buyer_demo_gate.get("books") or []),
+            "buyer_packet_bundle_count": len(buyer_packet_bundle.get("books") or []),
+            "release_candidate_freeze_ready": bool(release_candidate_freeze.get("exists")),
+            "owner_demo_pass_rate": owner_demo_rehearsal.get("owner_critical_scenario_pass_rate"),
             "topic_playbook_count": len(topic_playbooks),
             "operation_playbook_count": len(operation_playbooks),
             "troubleshooting_playbook_count": len(troubleshooting_playbooks),
@@ -1196,7 +1580,18 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
             "selected_dir": str(selected_playbook_dir) if selected_playbook_dir else "",
             "books": core_manualbooks,
         },
+        "customer_pack_runtime_books": {
+            "selected_dir": str(settings.customer_pack_books_dir.resolve()),
+            "books": customer_pack_runtime_books,
+        },
         "gold_candidate_books": gold_candidate_books,
+        "approved_wiki_runtime_books": approved_wiki_runtime_books,
+        "wiki_navigation_backlog": navigation_backlog,
+        "wiki_usage_signals": wiki_usage_signals,
+        "buyer_demo_gate": buyer_demo_gate,
+        "buyer_packet_bundle": buyer_packet_bundle,
+        "release_candidate_freeze": release_candidate_freeze,
+        "owner_demo_rehearsal": owner_demo_rehearsal,
         "manual_book_library": manual_book_library,
         "topic_playbooks": {
             "selected_dir": str(selected_playbook_dir) if selected_playbook_dir else "",
@@ -1227,6 +1622,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
             "core_corpus_book_count": len(core_corpus_books),
             "manualbook_book_count": len(core_manualbooks),
             "core_manualbook_book_count": len(core_manualbooks),
+            "customer_pack_runtime_book_count": len(customer_pack_runtime_books),
             "topic_playbook_book_count": len(topic_playbooks),
             "operation_playbook_book_count": len(operation_playbooks),
             "troubleshooting_playbook_book_count": len(troubleshooting_playbooks),

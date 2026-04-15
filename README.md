@@ -1,171 +1,125 @@
 # Play Book Studio
 
-> 테스트 서버: [http://192.168.119.16:5173/](http://192.168.119.16:5173/) | Runtime API: [http://192.168.119.16:8765/](http://192.168.119.16:8765/)
+> Test UI: [http://192.168.119.16:5173/](http://192.168.119.16:5173/)  
+> Runtime API: [http://192.168.119.16:8765/](http://192.168.119.16:8765/)
 
-Play Book Studio는 공식 문서, 운영 절차서, 벤더 가이드, 사내 runbook을 같은 구조로 정리해서 `읽는 문서`, `실행용 플레이북`, `근거 기반 답변`으로 이어 주는 플레이북 플랫폼이다.
+Play Book Studio는 `기술 문서를 수집해 위키 대백과형 운영·학습 런타임으로 바꾸는 제품`이다.
 
-수집된 문서는 정규화 과정을 거쳐 `Manual Book`으로 materialize되고, 여기서 `Topic`, `Operation`, `Troubleshooting`, `Policy`, `Synthesized` 계열의 `Derived Playbook`이 생성된다. 사용자는 `Workspace`에서 근거 기반 챗봇과 문서 뷰어로 이를 탐색하고, `Playbook Library`에서 런타임 북과 파생 자산을 확인할 수 있다.
+이 저장소의 기준선은 더 이상 `markdown viewer` 나 `문서 정리 도구`가 아니다.
 
-## What It Produces
+현재 기준선은 아래다.
 
-- `Manual Book`
-  원문 매뉴얼을 canonical section, provenance, quality metadata와 함께 다시 묶은 읽기용 북
-- `Derived Playbook Family`
-  `Topic`, `Operation`, `Troubleshooting`, `Policy Overlay`, `Synthesized` 계열의 실행형 파생 북
-- `Grounded Answer Surface`
-  `answer -> source -> version -> anchor` 추적이 가능한 채팅 응답
+`source-first figure-aware technical wiki runtime`
 
-## Current Scope And State
+## What The Product Is
 
-- 현재 기본 validated pack은 `OpenShift 4.20` 이다.
-- customer document intake 경로가 연결돼 있다.
-- repository source staging 경로가 연결돼 있다.
-- 주요 산출물은 `Manual Book`, `Derived Playbook Family`, `grounded answer surface` 다.
-- frontend는 `5173`, backend runtime은 `8765`에서 동작한다.
+이 제품은 아래를 함께 제공한다.
 
-현재 범위와 품질 기준은 [Q1_8_PRODUCT_CONTRACT.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/Q1_8_PRODUCT_CONTRACT.md:1), [OWNER_SCENARIO_SCORECARD.yaml](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/OWNER_SCENARIO_SCORECARD.yaml:1)을 본다.
+- `source-first corpus`
+- `structured technical books`
+- `entity / section / figure relation graph`
+- `grounded chat`
+- `user overlay`
+
+즉 사용자는
+
+- 책처럼 읽고
+- 위키처럼 이동하고
+- 챗봇으로 묻고
+- 개인화 overlay 로 다시 작업을 이어간다.
+
+## Current Commercial Scope
+
+- current stage: `paid_poc_candidate`
+- validated pack: `OpenShift 4.20`
+- commercial scope: `OpenShift 4.20 source-first validated pack + customer document PoC`
+
+현재 단계에서 이 제품은 `full sale` 이 아니다.
+
+## Canonical Runtime Shape
+
+최종 제품 자산의 canonical form 은 markdown 파일이 아니다.
+
+현재 canonical runtime 은 아래를 합친 것이다.
+
+- `structured technical book`
+  - paragraph
+  - code
+  - table
+  - figure
+  - diagram
+  - xref
+- `wiki relations`
+  - entity hubs
+  - related books
+  - related sections
+  - related figures
+  - backlinks
+- `user overlay`
+  - favorites
+  - checks
+  - private notes
+  - recent positions
+
+markdown 은 export 와 review 용 중간 산출물로만 취급한다.
 
 ## Product Surfaces
 
-- `Landing`
-  제품 포지셔닝, Data Foundry Pipeline, 제품 표면 설명
-- `Workspace`
-  근거 기반 챗봇, 세션 히스토리, source preview, customer-pack 작업
-- `Playbook Library`
-  runtime books, derived assets, repository search/favorites, control tower 메트릭
-- `Runtime Backend`
-  ingestion, retrieval, session persistence, viewer serving, repository search API
+### 1. Playbook Library
 
-## Server Access
+- corpus / runtime / candidate / signal 상태 확인
+- gold candidate 와 active runtime 확인
+- control tower 메트릭 확인
 
-### Shared Test Server
+### 2. Wiki Runtime Viewer
+
+- book reading
+- entity hub 탐색
+- related sections / figures 이동
+- source trace 확인
+
+### 3. Workspace
+
+- grounded chat
+- related navigation
+- next plays
+- overlay 기반 개인화 흐름
+
+## Current Runtime Capabilities
+
+- `source-first runtime build`
+  - official repo 우선, html-single fallback
+- `one-click runtime rebuild`
+  - rebuild -> materialize -> relation refresh -> active switch -> smoke
+- `figure-aware runtime`
+  - figure asset materialization
+  - figure page
+  - related figure / related section
+- `grounded chat`
+  - citation
+  - active runtime viewer path
+  - related links
+- `user overlay`
+  - favorite / check / note / recent position
+  - next plays
+  - usage signals
+
+## Shared Test Server
 
 - Frontend: [http://192.168.119.16:5173/](http://192.168.119.16:5173/)
 - Workspace: [http://192.168.119.16:5173/workspace](http://192.168.119.16:5173/workspace)
 - Playbook Library: [http://192.168.119.16:5173/playbook-library](http://192.168.119.16:5173/playbook-library)
 - Runtime API: [http://192.168.119.16:8765/](http://192.168.119.16:8765/)
 
-### Local Access
+## Local Run
 
-- Frontend: [http://localhost:5173/](http://localhost:5173/)
-- Workspace: [http://localhost:5173/workspace](http://localhost:5173/workspace)
-- Playbook Library: [http://localhost:5173/playbook-library](http://localhost:5173/playbook-library)
-- Runtime API: [http://127.0.0.1:8765/](http://127.0.0.1:8765/)
-
-Vite dev server는 `5173`에서 떠 있고, 아래 경로를 `8765` runtime으로 프록시한다.
-
-- `/api`
-- `/docs`
-- `/playbooks`
-- `/data-situation-room`
-
-프록시 설정은 [vite.config.ts](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/presentation-ui/vite.config.ts:1)를 본다.
-
-## System Architecture
-
-```mermaid
-flowchart TB
-    U["User"]
-
-    subgraph SURFACE["Product Surfaces"]
-      LAND["Landing"]
-      WORK["Workspace"]
-      LIB["Playbook Library"]
-    end
-
-    FE["Frontend Surface<br/>Vite Dev Server :5173"]
-    API["Runtime Backend<br/>play_book.cmd ui<br/>:8765"]
-
-    subgraph FOUNDRY["Data Foundry Pipeline"]
-      CAP["1. Multi-Source Capture<br/>Official Docs / Upload / Repository"]
-      NORM["2. Canonical Normalization<br/>HTML / PDF / DOCX / PPTX / XLSX"]
-      APPROVE["3. Approval & Materialization<br/>Runtime Books / Manual Books"]
-      DERIVE["4. Derived Playbook Foundry<br/>Topic / Operation / Troubleshooting / Policy / Synthesized"]
-    end
-
-    subgraph SERVE["Serving And Recall"]
-      RET["Retrieval & Answering<br/>Hybrid Search / Rerank / Citation"]
-      SESS["Session Store<br/>runtime sessions json"]
-    end
-
-    ART["Artifacts Root<br/>runtime / corpus / playbooks / reports"]
-
-    U --> FE
-    FE --> LAND
-    FE --> WORK
-    FE --> LIB
-    FE --> API
-
-    API --> CAP
-    CAP --> NORM
-    NORM --> APPROVE
-    APPROVE --> DERIVE
-    APPROVE --> RET
-    DERIVE --> RET
-    RET --> API
-    API --> SESS
-
-    CAP --> ART
-    NORM --> ART
-    APPROVE --> ART
-    DERIVE --> ART
-    SESS --> ART
-```
-
-## Data Foundry Pipeline
-
-1. `Multi-Source Capture`
-   공식 문서, 업로드 파일, 선택한 레포지토리 문서를 수집하고 원본과 출처를 고정한다.
-2. `Canonical Normalization`
-   HTML, PDF, DOCX, PPTX, XLSX를 정규 섹션으로 바꾸고 명령어, 표, 절차, 앵커, provenance를 추출한다.
-3. `Approval & Materialization`
-   품질 게이트를 통과한 문서만 Approved Runtime Book으로 승격하고 viewer/library 자산으로 반영한다.
-4. `Derived Playbook Foundry`
-   승격된 북을 Topic, Operation, Troubleshooting, Policy, Synthesized Playbook으로 파생한다.
-
-## Current Runtime Capabilities
-
-- `Grounded chat`
-  answer -> source -> version -> anchor 추적이 가능한 RAG 답변
-- `Session persistence`
-  세션 목록 조회, 세션 재개, 단건 삭제, 전체 삭제
-- `Customer document intake`
-  upload -> capture -> normalize -> viewer/library 반영
-- `Repository source staging`
-  GitHub repository docs-first 검색, favorites 저장
-- `Viewer serving`
-  `/docs/*`, `/playbooks/*` 경로를 backend에서 직접 서빙
-
-## Main Runtime APIs
-
-- `POST /api/chat`
-- `GET /api/sessions`
-- `GET /api/sessions/load`
-- `POST /api/sessions/delete`
-- `POST /api/sessions/delete-all`
-- `POST /api/customer-packs/upload-draft`
-- `POST /api/customer-packs/capture`
-- `POST /api/customer-packs/normalize`
-- `POST /api/customer-packs/ingest`
-- `GET /api/repositories/search`
-- `GET /api/repositories/favorites`
-- `POST /api/repositories/favorites`
-- `POST /api/repositories/favorites/remove`
-- `GET /api/data-control-room`
-
-핵심 런타임 라우트는 [server.py](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/app/server.py:1), route handler는 [server_routes.py](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/app/server_routes.py:1)를 본다.
-
-## Run The System
-
-### 1. Backend Runtime
+### Backend
 
 ```powershell
 play_book.cmd ui --host 0.0.0.0 --port 8765 --no-browser
 ```
 
-공유 테스트 서버로 열 때는 `0.0.0.0`, 로컬 전용으로만 띄울 때는 `127.0.0.1`을 쓴다. CLI 정의는 [cli.py](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/cli.py:37)를 본다.
-
-### 2. Frontend Dev Server
+### Frontend
 
 ```powershell
 Set-Location presentation-ui
@@ -173,146 +127,36 @@ npm install
 npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
-공유 테스트 서버로 열 때는 `0.0.0.0`, 로컬 전용으로만 띄울 때는 기본 `localhost`를 써도 된다.
-
-### 3. Single Query / Eval / Runtime Report
+### One-Click Runtime Rebuild
 
 ```powershell
-play_book.cmd ask --query "etcd 백업은 어떻게 하나?"
-play_book.cmd eval
-play_book.cmd runtime
+& .\.venv\Scripts\python.exe scripts\run_ocp420_one_click_runtime.py
 ```
+
+## Main Runtime Routes
+
+- `POST /api/chat`
+- `GET /api/data-control-room`
+- `GET /api/wiki-overlay-signals`
+- `GET /api/repositories/search`
+- `GET /docs/*`
+- `GET /playbooks/*`
+- `GET /wiki/entities/*`
+- `GET /wiki/figures/*`
 
 ## Repo Reading Order
 
-아래 순서로 보면 현재 제품과 규칙을 가장 빠르게 파악할 수 있다.
+현재 기준선을 가장 빨리 파악하려면 아래 순서로 읽는다.
 
 1. [AGENTS.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/AGENTS.md:1)
 2. [PROJECT.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/PROJECT.md:1)
-3. [Q1_8_PRODUCT_CONTRACT.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/Q1_8_PRODUCT_CONTRACT.md:1)
-4. [P0_ARCHITECTURE_FREEZE_ADDENDUM.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/P0_ARCHITECTURE_FREEZE_ADDENDUM.md:1)
-5. [TASK_BOARD.yaml](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/TASK_BOARD.yaml:1)
-
-## Tech Stack
-
-![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
-![React](https://img.shields.io/badge/React-19.2.4-20232A?logo=react&logoColor=61DAFB)
-![Vite](https://img.shields.io/badge/Vite-8.0.4-646CFF?logo=vite&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white)
-![MarkItDown](https://img.shields.io/badge/MarkItDown-0.1.5-0F172A)
-![Docling](https://img.shields.io/badge/Docling-2.84.0-0EA5E9)
-![SentenceTransformers](https://img.shields.io/badge/SentenceTransformers-5.3.0-7C3AED)
-![ONNX Runtime](https://img.shields.io/badge/ONNX_Runtime-1.20-005CED)
-
-아래는 현재 저장소에 선언된 의존성을 기준으로 정리한 `5개 카드형 스택 맵`이다.
-
-### 1. Backend Core
-
-> `Python 3.11+` 기반 런타임과 기본 서버/검증 계층
-
-| Package / Component | Version Spec | Role |
-|---|---|---|
-| `Python stdlib http.server` | built-in | local backend runtime |
-| `requests` | `>=2.31` | HTTP client |
-| `jsonschema` | `>=4.26` | schema validation |
-| `setuptools` | `>=68` | Python build backend |
-| `wheel` | `latest` | wheel packaging |
-
-### 2. Frontend App
-
-> `5173`에서 구동되는 UI surface와 interaction 계층
-
-| Package | Version Spec | Role |
-|---|---|---|
-| `react` | `^19.2.4` | UI runtime |
-| `react-dom` | `^19.2.4` | DOM renderer |
-| `react-router-dom` | `^7.14.0` | routing |
-| `@types/react-router-dom` | `^5.3.3` | router typings used in project |
-| `react-resizable-panels` | `^4.10.0` | resizable / collapsible workspace panels |
-| `gsap` | `^3.14.2` | motion and scroll animation |
-| `lucide-react` | `^1.8.0` | icons |
-| `react-markdown` | `^10.1.0` | markdown rendering |
-| `clsx` | `^2.1.1` | conditional class composition |
-| `lenis` | `^1.3.21` | smooth scroll behavior |
-
-### 3. AI / Retrieval
-
-> 답변 생성 전에 recall, rerank, evaluation을 담당하는 모델 계층
-
-| Package / Component | Version Spec | Role |
-|---|---|---|
-| `sentence-transformers` | `==5.3.0` | embeddings / reranker model runtime |
-| `onnxruntime` | `>=1.20` | local inference runtime |
-| `ragas` | `>=0.4.3` | answer / RAG evaluation |
-| `datasets` | `>=4.8.4` | eval dataset handling |
-| `Qdrant integration` | runtime component | retrieval backend path |
-| `Neo4j graph runtime` | runtime component | graph sidecar integration |
-
-### 4. Document Processing
-
-> 다중 포맷 문서를 canonical section으로 바꾸는 제련 계층
-
-| Package / Component | Version Spec | Role |
-|---|---|---|
-| `markitdown[docx,pdf,pptx,xlsx]` | `>=0.1.5` | multi-format document to markdown conversion |
-| `docling` | `>=2.84.0` | document parsing / OCR pipeline |
-| `beautifulsoup4` | `>=4.12` | HTML parsing |
-| `pypdf` | `>=6.0` | PDF text extraction |
-| `pypdfium2` | `>=4.30` | PDF rendering support |
-| `rapidocr` | `>=3.7.0` | OCR fallback |
-
-### 5. Infra / Tooling
-
-> 개발, 번들링, 저장, 프록시, 운영에 필요한 기반 계층
-
-| Package / Component | Version Spec | Role |
-|---|---|---|
-| `vite` | `^8.0.4` | dev server / bundler |
-| `@vitejs/plugin-react` | `^6.0.1` | React support for Vite |
-| `typescript` | `~6.0.2` | static typing |
-| `@types/node` | `^24.12.2` | Node typings |
-| `@types/react` | `^19.2.14` | React typings |
-| `@types/react-dom` | `^19.2.3` | React DOM typings |
-| `eslint` | `^9.39.4` | lint runner |
-| `@eslint/js` | `^9.39.4` | ESLint base config |
-| `typescript-eslint` | `^8.58.0` | TypeScript lint integration |
-| `eslint-plugin-react-hooks` | `^7.0.1` | React hooks lint rules |
-| `eslint-plugin-react-refresh` | `^0.5.2` | React refresh lint rules |
-| `globals` | `^17.4.0` | standard global variable sets |
-| `Vite proxy` | runtime component | `5173 -> 8765` API/docs/playbooks forwarding |
-| `JSON session snapshots` | runtime component | chat history persistence |
-| `artifacts root` | runtime component | runtime / corpus / playbooks / reports storage |
-
-의존성 선언 원본은 [pyproject.toml](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/pyproject.toml:1) 과 [package.json](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/presentation-ui/package.json:1)을 본다.
-
-## Active Rule Set
-
-현재 프로젝트 규칙은 아래 문서만 소유한다.
-
-- [AGENTS.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/AGENTS.md:1)
-- [PROJECT.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/PROJECT.md:1)
-- [Q1_8_PRODUCT_CONTRACT.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/Q1_8_PRODUCT_CONTRACT.md:1)
-- [OWNER_SCENARIO_SCORECARD.yaml](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/OWNER_SCENARIO_SCORECARD.yaml:1)
-- [P0_ARCHITECTURE_FREEZE_ADDENDUM.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/P0_ARCHITECTURE_FREEZE_ADDENDUM.md:1)
-- [PARSED_ARTIFACT_CONTRACT.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/PARSED_ARTIFACT_CONTRACT.md:1)
-- [SECURITY_BOUNDARY_CONTRACT.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/SECURITY_BOUNDARY_CONTRACT.md:1)
-- [TASK_BOARD.yaml](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/TASK_BOARD.yaml:1)
-
-## Next Thread Start Order
-
-1. [AGENTS.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/AGENTS.md:1)
-2. [PROJECT.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/PROJECT.md:1)
-3. [TASK_BOARD.yaml](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/TASK_BOARD.yaml:1)
+3. [CODEX_OPERATING_CHARTER.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/CODEX_OPERATING_CHARTER.md:1)
 4. [Q1_8_PRODUCT_CONTRACT.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/Q1_8_PRODUCT_CONTRACT.md:1)
-5. [OWNER_SCENARIO_SCORECARD.yaml](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/OWNER_SCENARIO_SCORECARD.yaml:1)
+5. [P0_ARCHITECTURE_FREEZE_ADDENDUM.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/P0_ARCHITECTURE_FREEZE_ADDENDUM.md:1)
+6. [TASK_BOARD.yaml](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/TASK_BOARD.yaml:1)
 
-## Reference Documents
+## Rule Reminder
 
-- [Archive Index](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/archive/INDEX.md:1)
-- [Legacy Reference Docs](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/archive/legacy_reference_docs/README.md:1)
+`README.md` 는 active rule owner 가 아니다.
 
-## Repository Notes
-
-- 규칙 우선순위는 [PROJECT.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/PROJECT.md:1) 를 본다.
-- 보조 문서 분류는 [Archive Index](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/archive/INDEX.md:1) 를 본다.
-- `archive/` 아래 문서는 현재 판단 기준이 아니다. 분류 기준은 [archive/INDEX.md](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/archive/INDEX.md:1)를 본다.
+현재 기준은 항상 루트의 active rule set 을 따른다.

@@ -1,0 +1,22 @@
+{
+  "task_id": "W5-E1-T7",
+  "created_at": "2026-04-14T17:56:27.376826+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "write_scope": "scripts/generate_owner_demo_one_sheet.py;scripts/verify_owner_demo_one_sheet.py;reports/build_logs/owner_demo_one_sheet.json;reports/build_logs/owner_demo_one_sheet.md;TASK_BOARD.yaml",
+  "target_outputs": [
+    "scripts/generate_owner_demo_one_sheet.py",
+    "scripts/verify_owner_demo_one_sheet.py",
+    "reports/build_logs/owner_demo_one_sheet.json",
+    "reports/build_logs/owner_demo_one_sheet.md"
+  ],
+  "validation_commands": [
+    ".venv\\Scripts\\python.exe scripts\\generate_owner_demo_one_sheet.py",
+    ".venv\\Scripts\\python.exe scripts\\verify_owner_demo_one_sheet.py"
+  ],
+  "status": "prepared"
+}

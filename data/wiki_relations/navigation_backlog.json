@@ -1,0 +1,216 @@
+{
+  "status": "ok",
+  "generated_at": "2026-04-15T09:55:30+09:00",
+  "source_report_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\reports\\build_logs\\chat_navigation_backlog_report.json",
+  "entry_count": 26,
+  "entries": [
+    {
+      "signal_id": "query:복원-후-machine-configuration은-왜-같이-봐야-하는지-알려줘",
+      "label": "복원 후 Machine Configuration은 왜 같이 봐야 하는지 알려줘",
+      "signal_type": "suggested_query",
+      "count": 45,
+      "href": "",
+      "kind": "query"
+    },
+    {
+      "signal_id": "query:백업-후-monitoring에서는-어떤-신호를-먼저-확인해야-해?",
+      "label": "백업 후 Monitoring에서는 어떤 신호를 먼저 확인해야 해?",
+      "signal_type": "suggested_query",
+      "count": 45,
+      "href": "",
+      "kind": "query"
+    },
+    {
+      "signal_id": "query:etcd-허브에서-같이-봐야-할-운영-문서를-보여줘",
+      "label": "etcd 허브에서 같이 봐야 할 운영 문서를 보여줘",
+      "signal_type": "suggested_query",
+      "count": 45,
+      "href": "",
+      "kind": "query"
+    },
+    {
+      "signal_id": "entity:etcd",
+      "label": "etcd",
+      "signal_type": "entity_hub",
+      "count": 40,
+      "href": "/wiki/entities/etcd/index.html",
+      "kind": "entity"
+    },
+    {
+      "signal_id": "entity:cluster-wide-proxy",
+      "label": "Cluster-Wide Proxy",
+      "signal_type": "entity_hub",
+      "count": 38,
+      "href": "/wiki/entities/cluster-wide-proxy/index.html",
+      "kind": "entity"
+    },
+    {
+      "signal_id": "book:installing-on-any-platform",
+      "label": "Installing on any platform",
+      "signal_type": "related_book",
+      "count": 33,
+      "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
+      "kind": "book"
+    },
+    {
+      "signal_id": "entity:machine-config-operator",
+      "label": "Machine Config Operator",
+      "signal_type": "entity_hub",
+      "count": 33,
+      "href": "/wiki/entities/machine-config-operator/index.html",
+      "kind": "entity"
+    },
+    {
+      "signal_id": "entity:installation-and-day-2",
+      "label": "Installation and Day-2",
+      "signal_type": "entity_hub",
+      "count": 33,
+      "href": "/wiki/entities/installation-day2/index.html",
+      "kind": "entity"
+    },
+    {
+      "signal_id": "book:설치-개요",
+      "label": "설치 개요",
+      "signal_type": "related_book",
+      "count": 31,
+      "href": "/playbooks/wiki-runtime/active/installation_overview/index.html",
+      "kind": "book"
+    },
+    {
+      "signal_id": "entity:control-plane-nodes",
+      "label": "Control Plane Nodes",
+      "signal_type": "entity_hub",
+      "count": 15,
+      "href": "/wiki/entities/control-plane-nodes/index.html",
+      "kind": "entity"
+    },
+    {
+      "signal_id": "book:machine-configuration",
+      "label": "Machine configuration",
+      "signal_type": "related_book",
+      "count": 7,
+      "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
+      "kind": "book"
+    },
+    {
+      "signal_id": "book:backup-and-restore",
+      "label": "Backup and restore",
+      "signal_type": "related_book",
+      "count": 7,
+      "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
+      "kind": "book"
+    },
+    {
+      "signal_id": "entity:control-plane-and-node-operations",
+      "label": "Control Plane and Node Operations",
+      "signal_type": "entity_hub",
+      "count": 7,
+      "href": "/wiki/entities/control-plane-ops/index.html",
+      "kind": "entity"
+    },
+    {
+      "signal_id": "query:프로젝트가-terminating에서-안-지워질-때-어떻게-해?",
+      "label": "프로젝트가 Terminating에서 안 지워질 때 어떻게 해?",
+      "signal_type": "suggested_query",
+      "count": 3,
+      "href": "",
+      "kind": "query"
+    },
+    {
+      "signal_id": "query:특정-namespace에-admin-권한-주는-법-알려줘",
+      "label": "특정 namespace에 admin 권한 주는 법 알려줘",
+      "signal_type": "suggested_query",
+      "count": 3,
+      "href": "",
+      "kind": "query"
+    },
+    {
+      "signal_id": "query:오픈시프트가-뭐야?",
+      "label": "오픈시프트가 뭐야?",
+      "signal_type": "suggested_query",
+      "count": 3,
+      "href": "",
+      "kind": "query"
+    },
+    {
+      "signal_id": "query:장애가-나면-monitoring이나-backup-and-restore-중-어디부터-보는-게-맞아?",
+      "label": "장애가 나면 Monitoring이나 Backup and Restore 중 어디부터 보는 게 맞아?",
+      "signal_type": "suggested_query",
+      "count": 2,
+      "href": "",
+      "kind": "query"
+    },
+    {
+      "signal_id": "query:etcd-상태를-확인한-다음-어떤-북으로-이어가야-해?",
+      "label": "etcd 상태를 확인한 다음 어떤 북으로 이어가야 해?",
+      "signal_type": "suggested_query",
+      "count": 2,
+      "href": "",
+      "kind": "query"
+    },
+    {
+      "signal_id": "book:검증-및-문제-해결",
+      "label": "검증 및 문제 해결",
+      "signal_type": "related_book",
+      "count": 2,
+      "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html",
+      "kind": "book"
+    },
+    {
+      "signal_id": "book:control-plane-nodes",
+      "label": "Control Plane Nodes",
+      "signal_type": "related_book",
+      "count": 2,
+      "href": "/docs/ocp/4.20/ko/nodes/index.html",
+      "kind": "book"
+    },
+    {
+      "signal_id": "query:이-문서-기준으로-바로-실행할-절차만-추려줘",
+      "label": "이 문서 기준으로 바로 실행할 절차만 추려줘",
+      "signal_type": "suggested_query",
+      "count": 1,
+      "href": "",
+      "kind": "query"
+    },
+    {
+      "signal_id": "query:실행-후-검증-포인트도-같이-정리해줘",
+      "label": "실행 후 검증 포인트도 같이 정리해줘",
+      "signal_type": "suggested_query",
+      "count": 1,
+      "href": "",
+      "kind": "query"
+    },
+    {
+      "signal_id": "query:실패-시-다음-분기까지-같이-정리해줘",
+      "label": "실패 시 다음 분기까지 같이 정리해줘",
+      "signal_type": "suggested_query",
+      "count": 1,
+      "href": "",
+      "kind": "query"
+    },
+    {
+      "signal_id": "query:sctp-프로토콜을-사용하는-구성의-예-실행-절차를-순서대로-다시-보여줘",
+      "label": "SCTP 프로토콜을 사용하는 구성의 예 실행 절차를 순서대로 다시 보여줘",
+      "signal_type": "suggested_query",
+      "count": 1,
+      "href": "",
+      "kind": "query"
+    },
+    {
+      "signal_id": "entity:storage,-registry,-and-images",
+      "label": "Storage, Registry, and Images",
+      "signal_type": "entity_hub",
+      "count": 1,
+      "href": "/wiki/entities/storage-and-content/index.html",
+      "kind": "entity"
+    },
+    {
+      "signal_id": "entity:lifecycle-and-support",
+      "label": "Lifecycle and Support",
+      "signal_type": "entity_hub",
+      "count": 1,
+      "href": "/wiki/entities/lifecycle-and-support/index.html",
+      "kind": "entity"
+    }
+  ]
+}

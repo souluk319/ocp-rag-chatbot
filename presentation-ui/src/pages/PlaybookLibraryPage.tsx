@@ -8,6 +8,7 @@ import {
   Globe,
   Cpu,
   ShieldCheck,
+  ShieldAlert,
   Search,
   FileText,
   UploadCloud,
@@ -28,6 +29,7 @@ import gsap from 'gsap';
 import './PlaybookLibraryPage.css';
 import {
   type CustomerPackDraft,
+  type BuyerPacket,
   type DataControlRoomResponse,
   type LibraryBook,
   type RepositoryCategory,
@@ -91,6 +93,26 @@ function statusColor(status: string): string {
   }
 }
 
+function customerPackBookTruth(book?: LibraryBook | null): string {
+  if (!book) {
+    return '';
+  }
+  return book.boundary_badge || book.runtime_truth_label || '';
+}
+
+function customerPackBookEvidenceBits(book?: LibraryBook | null): string[] {
+  if (!book) {
+    return [];
+  }
+  const bits = [
+    book.approval_state ? `approval ${book.approval_state}` : '',
+    book.publication_state ? `publication ${book.publication_state}` : '',
+    book.source_lane ? `lane ${book.source_lane}` : '',
+    book.parser_backend ? `parser ${book.parser_backend}` : '',
+  ];
+  return bits.filter(Boolean);
+}
+
 const PlaybookLibraryPage: React.FC = () => {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'monitoring' | 'repository'>('monitoring');
@@ -103,6 +125,8 @@ const PlaybookLibraryPage: React.FC = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [previewDraft, setPreviewDraft] = useState<CustomerPackDraft | null>(null);
   const [metricPopover, setMetricPopover] = useState<{ title: string; books: LibraryBook[] } | null>(null);
+  const [buyerPacketPopover, setBuyerPacketPopover] = useState<{ title: string; packets: BuyerPacket[] } | null>(null);
+  const [bookViewer, setBookViewer] = useState<LibraryBook | null>(null);
   const [previewViewerUrl, setPreviewViewerUrl] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -356,11 +380,12 @@ const PlaybookLibraryPage: React.FC = () => {
     setPreviewViewerUrl('');
   };
 
-  const openMetricPopover = (kind: 'known' | 'approved' | 'manual' | 'candidate' | 'derived') => {
+  const openMetricPopover = (kind: 'known' | 'approved' | 'manual' | 'customerPack' | 'candidate' | 'wikiRuntime' | 'navBacklog' | 'wikiUsage' | 'buyerGate' | 'buyerPackets' | 'derived') => {
     if (!controlRoom) return;
     const cr = controlRoom;
     let title = '';
     let books: LibraryBook[] = [];
+    let packets: BuyerPacket[] = [];
     switch (kind) {
       case 'known':
         title = 'Known Source Books';
@@ -374,9 +399,33 @@ const PlaybookLibraryPage: React.FC = () => {
         title = 'Materialized Manual Books';
         books = [...(cr.manualbooks?.books ?? [])];
         break;
+      case 'customerPack':
+        title = 'Customer Pack Runtime Books';
+        books = [...(cr.customer_pack_runtime_books?.books ?? [])];
+        break;
       case 'candidate':
         title = 'Gold Candidate Books';
         books = [...(cr.gold_candidate_books?.books ?? [])];
+        break;
+      case 'wikiRuntime':
+        title = 'Approved Wiki Runtime Books';
+        books = [...(cr.approved_wiki_runtime_books?.books ?? [])];
+        break;
+      case 'navBacklog':
+        title = 'Wiki Navigation Backlog';
+        books = [...(cr.wiki_navigation_backlog?.books ?? [])];
+        break;
+      case 'wikiUsage':
+        title = 'Wiki Usage Signals';
+        books = [...(cr.wiki_usage_signals?.books ?? [])];
+        break;
+      case 'buyerGate':
+        title = 'Release Gate Surface';
+        books = [...(cr.buyer_demo_gate?.books ?? [])];
+        break;
+      case 'buyerPackets':
+        title = 'Release Candidate Packets';
+        packets = [...(cr.buyer_packet_bundle?.books ?? [])];
         break;
       case 'derived':
         title = 'Derived Playbooks';
@@ -389,7 +438,38 @@ const PlaybookLibraryPage: React.FC = () => {
         ];
         break;
     }
+    if (kind === 'buyerPackets') {
+      setBuyerPacketPopover({ title, packets });
+      return;
+    }
     setMetricPopover({ title, books });
+  };
+
+  const openBuyerPacket = (packet: BuyerPacket) => {
+    setBuyerPacketPopover(null);
+    setBookViewer({
+      book_slug: packet.book_slug,
+      title: packet.title,
+      grade: 'Release Packet',
+      review_status: packet.review_status,
+      source_type: 'buyer_packet_bundle',
+      source_lane: 'buyer_packet_bundle',
+      section_count: 1,
+      code_block_count: 0,
+      viewer_path: packet.viewer_path,
+      source_url: packet.source_url,
+      updated_at: '',
+      approval_state: packet.approval_state,
+      publication_state: packet.publication_state,
+      runtime_truth_label: packet.runtime_truth_label,
+      boundary_badge: packet.boundary_badge || 'Release Packet',
+    });
+  };
+
+  const openReleaseCandidateFreeze = () => {
+    if (releaseCandidatePacket) {
+      openBuyerPacket(releaseCandidatePacket);
+    }
   };
 
   const stageLabel = (stage: PipelineStage) => {
@@ -409,9 +489,35 @@ const PlaybookLibraryPage: React.FC = () => {
   const knownSourceBooks = summary?.known_book_count ?? controlRoom?.known_books?.length ?? 0;
   const approvedRuntimeBooks = summary?.approved_runtime_count ?? summary?.gold_book_count ?? controlRoom?.gold_books?.length ?? 0;
   const materializedManualBooks = summary?.manualbook_count ?? controlRoom?.manualbooks?.books?.length ?? 0;
+  const customerPackRuntimeBooks = summary?.customer_pack_runtime_book_count ?? controlRoom?.customer_pack_runtime_books?.books?.length ?? 0;
   const goldCandidateBooks = summary?.gold_candidate_book_count ?? controlRoom?.gold_candidate_books?.books?.length ?? 0;
+  const approvedWikiRuntimeBooks = summary?.approved_wiki_runtime_book_count ?? controlRoom?.approved_wiki_runtime_books?.books?.length ?? 0;
+  const wikiNavigationBacklog = summary?.wiki_navigation_backlog_count ?? controlRoom?.wiki_navigation_backlog?.books?.length ?? 0;
+  const wikiUsageSignals = summary?.wiki_usage_signal_count ?? controlRoom?.wiki_usage_signals?.books?.length ?? 0;
+  const buyerDemoGate = summary?.buyer_demo_gate_count ?? controlRoom?.buyer_demo_gate?.books?.length ?? 0;
+  const buyerPacketBundle = summary?.buyer_packet_bundle_count ?? controlRoom?.buyer_packet_bundle?.books?.length ?? 0;
+  const releaseCandidateFreeze = controlRoom?.release_candidate_freeze;
+  const releaseCandidatePacket = controlRoom?.buyer_packet_bundle?.books?.find(
+    (packet) => packet.book_slug === 'buyer_packet__release-candidate-freeze',
+  ) ?? null;
   const derivedPlaybooks = summary?.derived_playbook_count ?? 0;
   const hasMetricSourceDrift = Boolean(controlRoom?.source_of_truth_drift?.status_alignment?.mismatches?.length);
+  const gate = controlRoom?.gate;
+  const ownerDemo = controlRoom?.owner_demo_rehearsal;
+  const gateReasons = [
+    ...((gate?.reasons ?? []).slice(0, 3)),
+    ...((gate?.summary?.failed_validation_checks ?? []).slice(0, 2)),
+    ...((gate?.summary?.failed_data_quality_checks ?? []).slice(0, 2)),
+  ].filter(Boolean).slice(0, 3);
+  const ownerDemoPassRate = typeof ownerDemo?.owner_critical_scenario_pass_rate === 'number'
+    ? Math.round(ownerDemo.owner_critical_scenario_pass_rate * 100)
+    : 0;
+  const ownerDemoBlockerCopy = ownerDemo?.blockers?.length
+    ? ownerDemo.blockers.join(' · ')
+    : 'No current owner-demo blockers';
+  const gateBannerCopy = gate?.release_blocking
+    ? `Release blocked · ${gate?.status ?? 'unknown'}`
+    : `Release gate · ${gate?.status ?? 'unknown'}`;
   const groupedFavorites = REPOSITORY_CATEGORIES.map((category) => ({
     category,
     items: repositoryFavorites.filter((item) => item.favorite_category === category),
@@ -486,6 +592,14 @@ const PlaybookLibraryPage: React.FC = () => {
                 </div>
                 <div className="metric-status online">Materialized</div>
               </div>
+              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('customerPack')}>
+                <div className="metric-icon"><HardDrive size={24} /></div>
+                <div className="metric-data">
+                  <h3>{customerPackRuntimeBooks.toLocaleString()}</h3>
+                  <p>Customer Pack Runtime</p>
+                </div>
+                <div className="metric-status optimized">Pack</div>
+              </div>
               <div className="metric-card metric-clickable" onClick={() => openMetricPopover('candidate')}>
                 <div className="metric-icon"><BookOpen size={24} /></div>
                 <div className="metric-data">
@@ -493,6 +607,56 @@ const PlaybookLibraryPage: React.FC = () => {
                   <p>Gold Candidate Books</p>
                 </div>
                 <div className="metric-status online">Candidate</div>
+              </div>
+              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('wikiRuntime')}>
+                <div className="metric-icon"><CheckCircle2 size={24} /></div>
+                <div className="metric-data">
+                  <h3>{approvedWikiRuntimeBooks.toLocaleString()}</h3>
+                  <p>Approved Wiki Runtime</p>
+                </div>
+                <div className="metric-status online">Runtime</div>
+              </div>
+              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('navBacklog')}>
+                <div className="metric-icon"><Search size={24} /></div>
+                <div className="metric-data">
+                  <h3>{wikiNavigationBacklog.toLocaleString()}</h3>
+                  <p>Wiki Navigation Backlog</p>
+                </div>
+                <div className="metric-status online">Signals</div>
+              </div>
+              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('wikiUsage')}>
+                <div className="metric-icon"><Star size={24} /></div>
+                <div className="metric-data">
+                  <h3>{wikiUsageSignals.toLocaleString()}</h3>
+                  <p>Wiki Usage Signals</p>
+                </div>
+                <div className="metric-status optimized">Personal</div>
+              </div>
+              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('buyerGate')}>
+                <div className="metric-icon"><ShieldAlert size={24} /></div>
+                <div className="metric-data">
+                  <h3>{buyerDemoGate.toLocaleString()}</h3>
+                  <p>Release Gate</p>
+                </div>
+                <div className="metric-status warning">Release</div>
+              </div>
+              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('buyerPackets')}>
+                <div className="metric-icon"><FileText size={24} /></div>
+                <div className="metric-data">
+                  <h3>{buyerPacketBundle.toLocaleString()}</h3>
+                  <p>Release Candidate Packets</p>
+                </div>
+                <div className="metric-status online">Packets</div>
+              </div>
+              <div className="metric-card">
+                <div className="metric-icon"><CheckCircle2 size={24} /></div>
+                <div className="metric-data">
+                  <h3>{ownerDemoPassRate}%</h3>
+                  <p>Owner Demo Rehearsal</p>
+                </div>
+                <div className={`metric-status ${ownerDemo?.blockers?.length ? 'warning' : 'online'}`}>
+                  {ownerDemo?.blockers?.length ? 'Blocking' : 'Passing'}
+                </div>
               </div>
               <div className="metric-card metric-clickable" onClick={() => openMetricPopover('derived')}>
                 <div className="metric-icon"><Activity size={24} /></div>
@@ -504,11 +668,67 @@ const PlaybookLibraryPage: React.FC = () => {
               </div>
             </section>
 
-            {hasMetricSourceDrift && (
+            {(gate || hasMetricSourceDrift) && (
               <div className="truth-banner">
                 <AlertCircle size={16} />
-                <span>Stale gate snapshot was detected. This view is showing current source approval and materialized storage counts.</span>
+                <div className="truth-banner-copy">
+                  {gate && (
+                    <>
+                      <strong>{gateBannerCopy}</strong>
+                      <span>
+                        {gateReasons.length > 0
+                          ? gateReasons.join(' · ')
+                          : 'Current release gate surface is aligned with the latest runtime evidence.'}
+                      </span>
+                    </>
+                  )}
+                  {ownerDemo && (
+                    <span>
+                      Owner demo {ownerDemo.pass_count}/{ownerDemo.scenario_count} passed · {ownerDemoBlockerCopy}
+                    </span>
+                  )}
+                  {hasMetricSourceDrift && (
+                    <span>Stale gate snapshot was detected. This view is showing current source approval and materialized storage counts.</span>
+                  )}
+                </div>
               </div>
+            )}
+
+            {releaseCandidateFreeze?.exists && (
+              <section className="release-freeze-hero">
+                <div className="release-freeze-hero-copy">
+                  <span className="release-freeze-eyebrow">Today Start</span>
+                  <h2>{releaseCandidateFreeze.title}</h2>
+                  <p>{releaseCandidateFreeze.close || releaseCandidateFreeze.commercial_truth}</p>
+                  <div className="release-freeze-meta">
+                    <span>{releaseCandidateFreeze.current_stage || 'paid_poc_candidate'}</span>
+                    <span>{releaseCandidateFreeze.runtime_count} runtime books</span>
+                    <span>
+                      owner demo {releaseCandidateFreeze.owner_demo_pass_count}/{releaseCandidateFreeze.owner_demo_scenario_count}
+                    </span>
+                    <span>{releaseCandidateFreeze.release_blocker_count} blockers</span>
+                  </div>
+                </div>
+                <div className="release-freeze-hero-actions">
+                  <button
+                    type="button"
+                    className="release-freeze-primary-btn"
+                    onClick={openReleaseCandidateFreeze}
+                    disabled={!releaseCandidatePacket}
+                  >
+                    <FileText size={16} />
+                    <span>Open Freeze Packet</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="release-freeze-secondary-btn"
+                    onClick={() => openMetricPopover('buyerPackets')}
+                  >
+                    <Layers size={16} />
+                    <span>View All Packets</span>
+                  </button>
+                </div>
+              </section>
             )}
 
             {/* Pipeline Visualization */}
@@ -975,18 +1195,32 @@ const PlaybookLibraryPage: React.FC = () => {
               ) : (
                 <div className="metric-book-list">
                   {metricPopover.books.map((book) => (
-                    <div className="metric-book-row" key={book.book_slug}>
+                    <button
+                      type="button"
+                      className="metric-book-row metric-book-row-clickable"
+                      key={book.book_slug}
+                      onClick={() => setBookViewer(book)}
+                      disabled={!book.viewer_path}
+                      title={book.viewer_path ? '문서 열기' : '뷰어 경로 없음'}
+                    >
                       <FileText size={16} className="metric-book-icon" />
                       <div className="metric-book-info">
                         <span className="metric-book-title">{book.title}</span>
                         <span className="metric-book-meta">
-                          {book.source_lane} · {book.section_count} sections · {book.grade}
+                          {customerPackBookTruth(book) || book.source_lane} · {book.section_count} sections · {book.grade}
                         </span>
+                        {customerPackBookEvidenceBits(book).length > 0 && (
+                          <div className="metric-book-chip-row">
+                            {customerPackBookEvidenceBits(book).map((item) => (
+                              <span key={item} className="metric-book-chip">{item}</span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <span className={`metric-book-status ${book.review_status === 'approved' ? 'approved' : ''}`}>
                         {book.review_status}
                       </span>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -994,6 +1228,87 @@ const PlaybookLibraryPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {buyerPacketPopover && (
+        <div className="preview-overlay" onClick={() => setBuyerPacketPopover(null)}>
+          <div className="preview-popover" onClick={(e) => e.stopPropagation()}>
+            <div className="preview-header">
+              <div className="preview-header-left">
+                <h3>{buyerPacketPopover.title}</h3>
+                <div className="preview-header-meta">
+                  <span>{buyerPacketPopover.packets.length} packets</span>
+                </div>
+              </div>
+              <button className="preview-close-btn" onClick={() => setBuyerPacketPopover(null)}><X size={18} /></button>
+            </div>
+            <div className="metric-popover-body">
+              {buyerPacketPopover.packets.length === 0 ? (
+                <div className="preview-no-sections">등록된 buyer packet이 없습니다.</div>
+              ) : (
+                <div className="metric-book-list">
+                  {buyerPacketPopover.packets.map((packet) => (
+                    <button
+                      type="button"
+                      className="metric-book-row metric-book-row-clickable"
+                      key={packet.book_slug}
+                      onClick={() => openBuyerPacket(packet)}
+                    >
+                      <FileText size={16} className="metric-book-icon" />
+                      <div className="metric-book-info">
+                        <span className="metric-book-title">{packet.title}</span>
+                        <span className="metric-book-meta">
+                        {packet.boundary_badge || 'Release Packet'} · {packet.runtime_truth_label || ''}
+                      </span>
+                    </div>
+                    <span className={`metric-book-status ${packet.review_status === 'ready' ? 'approved' : ''}`}>
+                      {packet.review_status}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Book Viewer Popover */}
+      {bookViewer && (
+        <div className="preview-overlay" onClick={() => setBookViewer(null)}>
+          <div className="preview-popover" onClick={(e) => e.stopPropagation()}>
+            <div className="preview-header">
+              <div className="preview-header-left">
+                <h3>{bookViewer.title}</h3>
+                <div className="preview-header-meta">
+                  <span>{customerPackBookTruth(bookViewer) || bookViewer.source_lane}</span>
+                  <span>{bookViewer.section_count} sections</span>
+                  <span>{bookViewer.grade}</span>
+                </div>
+                {customerPackBookEvidenceBits(bookViewer).length > 0 && (
+                  <div className="preview-chip-row">
+                    {customerPackBookEvidenceBits(bookViewer).map((item) => (
+                      <span key={item} className="preview-chip">{item}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button className="preview-close-btn" onClick={() => setBookViewer(null)}><X size={18} /></button>
+            </div>
+            <div className="preview-body">
+              {bookViewer.viewer_path ? (
+                <iframe
+                  title={bookViewer.title}
+                  className="preview-viewer-frame"
+                  src={toRuntimeUrl(bookViewer.viewer_path)}
+                />
+              ) : (
+                <div className="preview-no-sections">뷰어 경로가 없는 북입니다.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

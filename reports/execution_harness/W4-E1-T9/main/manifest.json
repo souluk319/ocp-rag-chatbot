@@ -1,0 +1,22 @@
+{
+  "task_id": "W4-E1-T9",
+  "created_at": "2026-04-14T15:15:23.833440+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "write_scope": "prove mixed runtime truth end-to-end through live chat and session history",
+  "target_outputs": [
+    "src/play_book_studio/app/server_chat.py",
+    "src/play_book_studio/app/sessions.py",
+    "scripts/verify_mixed_runtime_end_to_end.py",
+    "reports/build_logs/mixed_runtime_end_to_end_report.json"
+  ],
+  "validation_commands": [
+    ".venv\\\\Scripts\\\\python.exe scripts\\\\verify_mixed_runtime_end_to_end.py",
+    "npm.cmd run build"
+  ],
+  "status": "prepared"
+}

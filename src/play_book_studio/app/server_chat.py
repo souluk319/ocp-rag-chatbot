@@ -11,6 +11,69 @@ from play_book_studio.retrieval.models import SessionContext
 from play_book_studio.app.sessions import RUNTIME_CHAT_MODE, Turn
 
 
+def _summarize_citation_truth(response_payload: dict[str, Any]) -> dict[str, str]:
+    citations = response_payload.get("citations")
+    if not isinstance(citations, list) or not citations:
+        return {}
+    payloads = [item for item in citations if isinstance(item, dict)]
+    if not payloads:
+        return {}
+    boundary_truths = {str(item.get("boundary_truth") or "").strip() for item in payloads if str(item.get("boundary_truth") or "").strip()}
+    has_private = "private_customer_pack_runtime" in boundary_truths
+    has_official = any(
+        truth in {"official_validated_runtime", "official_candidate_runtime"}
+        for truth in boundary_truths
+    )
+    if has_private and has_official:
+        official_label = next(
+            (
+                str(item.get("runtime_truth_label") or "").strip()
+                for item in payloads
+                if str(item.get("boundary_truth") or "").strip() in {"official_validated_runtime", "official_candidate_runtime"}
+                and str(item.get("runtime_truth_label") or "").strip()
+            ),
+            "Official Runtime",
+        )
+        private_label = next(
+            (
+                str(item.get("runtime_truth_label") or "").strip()
+                for item in payloads
+                if str(item.get("boundary_truth") or "").strip() == "private_customer_pack_runtime"
+                and str(item.get("runtime_truth_label") or "").strip()
+            ),
+            "Private Runtime",
+        )
+        return {
+            "source_lane": "mixed_runtime_bridge",
+            "boundary_truth": "mixed_runtime_bridge",
+            "runtime_truth_label": f"{official_label} + {private_label}",
+            "boundary_badge": "Mixed Runtime",
+            "publication_state": "mixed",
+            "approval_state": "mixed",
+        }
+    primary = payloads[0]
+    return {
+        "source_lane": str(primary.get("source_lane") or ""),
+        "boundary_truth": str(primary.get("boundary_truth") or ""),
+        "runtime_truth_label": str(primary.get("runtime_truth_label") or ""),
+        "boundary_badge": str(primary.get("boundary_badge") or ""),
+        "publication_state": str(primary.get("publication_state") or ""),
+        "approval_state": str(primary.get("approval_state") or ""),
+    }
+
+
+def _apply_primary_citation_truth(turn: Turn, response_payload: dict[str, Any]) -> None:
+    summary = _summarize_citation_truth(response_payload)
+    if not summary:
+        return
+    turn.primary_source_lane = str(summary.get("source_lane") or "")
+    turn.primary_boundary_truth = str(summary.get("boundary_truth") or "")
+    turn.primary_runtime_truth_label = str(summary.get("runtime_truth_label") or "")
+    turn.primary_boundary_badge = str(summary.get("boundary_badge") or "")
+    turn.primary_publication_state = str(summary.get("publication_state") or "")
+    turn.primary_approval_state = str(summary.get("approval_state") or "")
+
+
 def handle_chat(
     handler: Any,
     payload: dict[str, Any],
@@ -94,6 +157,14 @@ def handle_chat(
     session.revision += 1
     session.updated_at = now
     store.update(session)
+    response_payload = build_chat_payload(
+        root_dir=root_dir,
+        answerer=active_answerer,
+        session=session,
+        result=result,
+    )
+    _apply_primary_citation_truth(turn, response_payload)
+    store.update(session)
     append_chat_turn_log(
         root_dir,
         answerer=active_answerer,
@@ -102,15 +173,11 @@ def handle_chat(
         result=result,
         context_before=context_before,
         context_after=session.context,
+        suggested_queries=response_payload.get("suggested_queries"),
+        related_links=response_payload.get("related_links"),
+        related_sections=response_payload.get("related_sections"),
     )
-    handler._send_json(
-        build_chat_payload(
-            root_dir=root_dir,
-            answerer=active_answerer,
-            session=session,
-            result=result,
-        )
-    )
+    handler._send_json(response_payload)
 
 
 def handle_chat_stream(
@@ -207,6 +274,14 @@ def handle_chat_stream(
     session.revision += 1
     session.updated_at = now
     store.update(session)
+    response_payload = build_chat_payload(
+        root_dir=root_dir,
+        answerer=active_answerer,
+        session=session,
+        result=result,
+    )
+    _apply_primary_citation_truth(turn, response_payload)
+    store.update(session)
     append_chat_turn_log(
         root_dir,
         answerer=active_answerer,
@@ -215,15 +290,13 @@ def handle_chat_stream(
         result=result,
         context_before=context_before,
         context_after=session.context,
+        suggested_queries=response_payload.get("suggested_queries"),
+        related_links=response_payload.get("related_links"),
+        related_sections=response_payload.get("related_sections"),
     )
     handler._stream_event(
         {
             "type": "result",
-            "payload": build_chat_payload(
-                root_dir=root_dir,
-                answerer=active_answerer,
-                session=session,
-                result=result,
-            ),
+            "payload": response_payload,
         }
     )

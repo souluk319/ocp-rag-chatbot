@@ -1,0 +1,26 @@
+{
+  "task_id": "W4-E1-T5",
+  "created_at": "2026-04-14T14:01:14.913263+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "write_scope": "customer pack truth on chat answer header and session history",
+  "target_outputs": [
+    "src/play_book_studio/app/server_chat.py",
+    "src/play_book_studio/app/session_flow.py",
+    "src/play_book_studio/app/presenters.py",
+    "presentation-ui/src/lib/runtimeApi.ts",
+    "presentation-ui/src/pages/WorkspacePage.tsx",
+    "presentation-ui/src/pages/WorkspacePage.css",
+    "scripts/verify_customer_pack_chat_history_surface.py",
+    "reports/build_logs/customer_pack_chat_history_surface_report.json"
+  ],
+  "validation_commands": [
+    ".venv\\\\Scripts\\\\python.exe scripts/verify_customer_pack_chat_history_surface.py",
+    "npm.cmd run build"
+  ],
+  "status": "prepared"
+}

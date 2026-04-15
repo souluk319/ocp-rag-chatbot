@@ -43,6 +43,9 @@ def context_with_request_overrides(
     del mode
     context = SessionContext.from_dict(previous.to_dict() if previous else None)
     context.mode = RUNTIME_CHAT_MODE
+    requested_user_id = str(payload.get("user_id") or "").strip()
+    if requested_user_id:
+        context.user_id = requested_user_id
     requested_version = str(payload.get("ocp_version") or "").strip()
     if requested_version:
         context.ocp_version = requested_version
@@ -319,25 +322,36 @@ def suggest_follow_up_questions(*, session: ChatSession, result: AnswerResult) -
     elif ETCD_RE.search(query) or "etcd" in topic.lower() or book_slug == "etcd":
         if has_backup_restore_intent(query) or "백업" in topic or "복원" in topic:
             candidates = [
-                "복원 절차도 같이 알려줘",
-                "백업 파일이 정상인지 확인하는 방법도 알려줘",
-                "운영 중 주의사항도 함께 정리해줘",
+                "etcd 허브에서 같이 봐야 할 관련 문서도 보여줘",
+                "복원 후 Machine Configuration은 왜 같이 봐야 해?",
+                "백업 후 Monitoring에서 어떤 신호를 확인해야 해?",
             ]
         else:
             candidates = [
-                "etcd가 왜 중요한지도 설명해줘",
+                "etcd 허브에서 바로 가야 할 운영 문서를 보여줘",
                 "etcd 백업은 어떻게 해?",
-                "etcd 복원은 언제 써야 해?",
-                "장애가 나면 어떤 증상이 먼저 보이는지 알려줘",
+                "etcd 복원 후 어떤 문서로 이어서 확인해야 해?",
+                "장애가 나면 어떤 신호를 먼저 봐야 해?",
             ]
     elif MCO_RE.search(query) or "machine config" in topic.lower() or book_slug in {
         "machine_configuration",
         "operators",
     }:
         candidates = [
+            "Machine Config Operator 허브에서 같이 봐야 할 문서를 보여줘",
             "MachineConfigPool 상태는 어떻게 확인해?",
-            "노드 설정 변경 시 재부팅 여부는 어떻게 판단해?",
-            "MCO가 관리하는 범위를 설명해줘",
+            "노드 설정 변경 뒤 Monitoring에서는 뭘 봐야 해?",
+        ]
+    elif "monitoring" in normalized or "prometheus" in normalized or "alert" in normalized or book_slug in {
+        "monitoring",
+        "monitoring_alerts_admin",
+        "monitoring_metrics_admin",
+        "monitoring_troubleshooting",
+    }:
+        candidates = [
+            "Prometheus 허브에서 같이 봐야 할 운영 문서를 보여줘",
+            "경보를 본 다음 어떤 메트릭 문서로 이어가야 해?",
+            "Monitoring 장애를 볼 때 Machine Configuration도 같이 봐야 해?",
         ]
     elif has_openshift_kubernetes_compare_intent(query):
         candidates = [
@@ -371,9 +385,9 @@ def suggest_follow_up_questions(*, session: ChatSession, result: AnswerResult) -
 
     if not candidates and "backup" in section:
         candidates = [
-            "복원 절차도 같이 알려줘",
+            "복원 후 이어서 봐야 할 문서도 알려줘",
             "백업 파일 확인 방법도 알려줘",
-            "운영 중 주의사항도 정리해줘",
+            "운영 중 어떤 허브로 이어지는지 정리해줘",
         ]
 
     subject = _suggestion_subject(query=query, topic=topic, primary=primary)

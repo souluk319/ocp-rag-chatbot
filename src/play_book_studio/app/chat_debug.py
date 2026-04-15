@@ -190,6 +190,9 @@ def append_chat_turn_log(
     result: AnswerResult,
     context_before: SessionContext | None,
     context_after: SessionContext | None,
+    suggested_queries: list[str] | None = None,
+    related_links: list[dict[str, Any]] | None = None,
+    related_sections: list[dict[str, Any]] | None = None,
 ) -> Path:
     settings = load_settings(root_dir)
     target = settings.chat_log_path
@@ -228,6 +231,9 @@ def append_chat_turn_log(
         "history": [serialize_turn(turn) for turn in session.history],
         "retrieval_trace": dict(result.retrieval_trace),
         "pipeline_trace": dict(result.pipeline_trace),
+        "suggested_queries": list(suggested_queries or []),
+        "related_links": list(related_links or []),
+        "related_sections": list(related_sections or []),
     }
     if answerer is not None:
         payload["runtime"] = _build_health_payload(answerer)["runtime"]

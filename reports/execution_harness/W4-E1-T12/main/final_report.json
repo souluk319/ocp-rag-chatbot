@@ -1,0 +1,20 @@
+{
+  "task_id": "W4-E1-T12",
+  "lane_id": "main",
+  "role": "main",
+  "status": "done",
+  "code_paths": [
+    "presentation-ui/src/pages/WorkspacePage.tsx",
+    "presentation-ui/src/pages/WorkspacePage.css",
+    "scripts/verify_truth_visual_system.py",
+    "TASK_BOARD.yaml"
+  ],
+  "artifacts": [
+    "reports/build_logs/truth_visual_system_report.json"
+  ],
+  "validation": [
+    ".venv\\Scripts\\python.exe scripts\\verify_truth_visual_system.py",
+    "npm.cmd run build",
+    "TASK_BOARD.yaml yaml_ok"
+  ]
+}

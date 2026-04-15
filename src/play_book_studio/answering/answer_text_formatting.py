@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import textwrap
 
 from play_book_studio.retrieval import SessionContext
 from play_book_studio.retrieval.query import (
@@ -12,8 +13,8 @@ from play_book_studio.retrieval.query import (
 )
 
 CITATION_RE = re.compile(r"\[(\d+)\]")
-ANSWER_CODE_BLOCK_RE = re.compile(r"\[CODE\]\s*\n?(.*?)\n?\[(?:/)?CODE\]", re.DOTALL)
-ANSWER_TABLE_BLOCK_RE = re.compile(r"\[TABLE\]\s*\n?(.*?)\n?\[(?:/)?TABLE\]", re.DOTALL)
+ANSWER_CODE_BLOCK_RE = re.compile(r"\[CODE\][ \t]*\n?(.*?)\n?[ \t]*\[(?:/)?CODE\]", re.DOTALL)
+ANSWER_TABLE_BLOCK_RE = re.compile(r"\[TABLE\][ \t]*\n?(.*?)\n?[ \t]*\[(?:/)?TABLE\]", re.DOTALL)
 ANSWER_HEADER_RE = re.compile(
     r"^\s*(?:[#>*\-\s`]*)(?:답변|answer)\s*[:：]?\s*",
     re.IGNORECASE,
@@ -98,12 +99,19 @@ def normalize_answer_markup_blocks(answer_text: str) -> str:
     if not normalized:
         return normalized
 
+    def _preserve_indent(raw: str) -> str:
+        # Strip only leading/trailing blank lines, then dedent common leading
+        # whitespace so internal indentation (YAML, nested commands) is kept.
+        body = raw.strip("\n")
+        body = textwrap.dedent(body)
+        return body.rstrip()
+
     normalized = ANSWER_CODE_BLOCK_RE.sub(
-        lambda match: f"\n```bash\n{match.group(1).strip()}\n```\n",
+        lambda match: f"\n```bash\n{_preserve_indent(match.group(1))}\n```\n",
         normalized,
     )
     normalized = ANSWER_TABLE_BLOCK_RE.sub(
-        lambda match: f"\n```text\n{match.group(1).strip()}\n```\n",
+        lambda match: f"\n```text\n{_preserve_indent(match.group(1))}\n```\n",
         normalized,
     )
     normalized = re.sub(r"\n{3,}", "\n\n", normalized)

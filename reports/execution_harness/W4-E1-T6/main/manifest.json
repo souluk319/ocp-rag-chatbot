@@ -1,0 +1,26 @@
+{
+  "task_id": "W4-E1-T6",
+  "created_at": "2026-04-14T14:16:52.419341+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "write_scope": "normalize truth copy for chat answer header and session history",
+  "target_outputs": [
+    "src/play_book_studio/app/presenters.py",
+    "src/play_book_studio/app/source_books.py",
+    "src/play_book_studio/app/server_chat.py",
+    "presentation-ui/src/lib/runtimeApi.ts",
+    "presentation-ui/src/pages/WorkspacePage.tsx",
+    "presentation-ui/src/pages/WorkspacePage.css",
+    "scripts/verify_chat_truth_copy_surface.py",
+    "reports/build_logs/chat_truth_copy_surface_report.json"
+  ],
+  "validation_commands": [
+    ".venv\\\\Scripts\\\\python.exe scripts\\\\verify_chat_truth_copy_surface.py",
+    "npm.cmd run build"
+  ],
+  "status": "prepared"
+}

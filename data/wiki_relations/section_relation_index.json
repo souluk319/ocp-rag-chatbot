@@ -1,0 +1,1065 @@
+{
+  "generated_at_utc": "2026-04-15T00:56:33+00:00",
+  "book_count": 29,
+  "entity_count": 13,
+  "by_book": {
+    "advanced_networking": [
+      {
+        "label": "6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#6132-bgp를-통해-클러스터-사용자-정의-네트워크에서-pod-ip-광고",
+        "summary": "nc <cluster_IP> 30102 --sctp > 4장. 보조 인터페이스 지표와 네트워크 연결 연관 짓기 > 6.1. 경로 알림 정보 > 6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "source": "figure_section"
+      },
+      {
+        "label": "6.1.3.3. VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#6133-vpn을-사용하여-bgp를-통해-클러스터-사용자-정의-네트워크에서-pod-ip-광고",
+        "summary": "nc <cluster_IP> 30102 --sctp > 4장. 보조 인터페이스 지표와 네트워크 연결 연관 짓기 > 6.1. 경로 알림 정보 > 6.1.3.3. VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "source": "figure_section"
+      },
+      {
+        "label": "7.1.1. PTP 도메인의 요소",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#711-ptp-도메인의-요소",
+        "summary": "the normal daemon command is added to this at the end. > 7.1. OpenShift 클러스터 노드의 PTP 정보 > 7.1.1. PTP 도메인의 요소",
+        "source": "figure_section"
+      },
+      {
+        "label": "7.1.3. PTP 할 마스터 클록에 대한 GNSS 타이밍 개요",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#713-ptp-할-마스터-클록에-대한-gnss-타이밍-개요",
+        "summary": "the normal daemon command is added to this at the end. > 7.1. OpenShift 클러스터 노드의 PTP 정보 > 7.1.1. PTP 도메인의 요소 > 7.1.3. PTP 할 마스터 클록에 대한 GNSS 타이밍 개요",
+        "source": "figure_section"
+      },
+      {
+        "label": "7.1.5. 2 카드 E810 NIC 구성 참조",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#715-2-카드-e810-nic-구성-참조",
+        "summary": "the normal daemon command is added to this at the end. > 7.1. OpenShift 클러스터 노드의 PTP 정보 > 7.1.1. PTP 도메인의 요소 > 7.1.5. 2 카드 E810 NIC 구성 참조",
+        "source": "figure_section"
+      },
+      {
+        "label": "7.1.7. 3-card Intel E810 PTP grandmaster 클록",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#717-3-card-intel-e810-ptp-grandmaster-클록",
+        "summary": "the normal daemon command is added to this at the end. > 7.1. OpenShift 클러스터 노드의 PTP 정보 > 7.1.1. PTP 도메인의 요소 > 7.1.7. 3-card Intel E810 PTP grandmaster 클록",
+        "source": "figure_section"
+      }
+    ],
+    "architecture": [
+      {
+        "label": "2.1. OpenShift Container Platform 소개",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#21-openshift-container-platform-소개",
+        "summary": "아키텍처 > 1장. 아키텍처 개요 > 2.1. OpenShift Container Platform 소개",
+        "source": "figure_section"
+      },
+      {
+        "label": "2.1.3.4. OpenShift Container Platform 라이프사이클",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#2134-openshift-container-platform-라이프사이클",
+        "summary": "아키텍처 > 1장. 아키텍처 개요 > 2.1. OpenShift Container Platform 소개 > 2.1.3.4. OpenShift Container Platform 라이프사이클",
+        "source": "figure_section"
+      },
+      {
+        "label": "3.1.1. 설치 프로그램 정보",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#311-설치-프로그램-정보",
+        "summary": "아키텍처 > 1장. 아키텍처 개요 > 3.1. OpenShift Container Platform 설치 정보 > 3.1.1. 설치 프로그램 정보",
+        "source": "figure_section"
+      },
+      {
+        "label": "3.1.4.5. 설치 프로세스 세부사항",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#3145-설치-프로세스-세부사항",
+        "summary": "아키텍처 > 1장. 아키텍처 개요 > 3.1. OpenShift Container Platform 설치 정보 > 3.1.4.5. 설치 프로세스 세부사항",
+        "source": "figure_section"
+      },
+      {
+        "label": "7.2. 간단한 컨테이너 빌드",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#72-간단한-컨테이너-빌드",
+        "summary": "아키텍처 > 7장. OpenShift Container Platform 개발 이해 > 7.2. 간단한 컨테이너 빌드",
+        "source": "figure_section"
+      },
+      {
+        "label": "7.2.2. 기본 이미지 옵션",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#722-기본-이미지-옵션",
+        "summary": "아키텍처 > 7장. OpenShift Container Platform 개발 이해 > 7.2. 간단한 컨테이너 빌드 > 7.2.2. 기본 이미지 옵션",
+        "source": "figure_section"
+      }
+    ],
+    "authentication_and_authorization": [
+      {
+        "label": "9.1.1. 기본 클러스터 역할",
+        "href": "/playbooks/wiki-runtime/active/authentication_and_authorization/index.html#911-기본-클러스터-역할",
+        "summary": "... > 8.2.1. OIDC 공급자 구성 매개변수 > 9.1. RBAC 개요 > 9.1.1. 기본 클러스터 역할",
+        "source": "figure_section"
+      },
+      {
+        "label": "20.1.2. Cloud Credential Operator 모드 확인",
+        "href": "/playbooks/wiki-runtime/active/authentication_and_authorization/index.html#2012-cloud-credential-operator-모드-확인",
+        "summary": "... > 19장. LDAP 그룹 동기화 > 20.1. Cloud Credential Operator 정보 > 20.1.2. Cloud Credential Operator 모드 확인",
+        "source": "figure_section"
+      },
+      {
+        "label": "20.5.1.1.1. AWS STS의 인증 흐름",
+        "href": "/playbooks/wiki-runtime/active/authentication_and_authorization/index.html#205111-aws-sts의-인증-흐름",
+        "summary": "... > 19장. LDAP 그룹 동기화 > 20.5. 구성 요소에 대한 단기 인증 정보가 있는 수동 모드 > 20.5.1.1.1. AWS STS의 인증 흐름",
+        "source": "figure_section"
+      },
+      {
+        "label": "20.5.2.1. Google Cloud 워크로드 ID 인증 프로세스",
+        "href": "/playbooks/wiki-runtime/active/authentication_and_authorization/index.html#20521-google-cloud-워크로드-id-인증-프로세스",
+        "summary": "... > 19장. LDAP 그룹 동기화 > 20.5. 구성 요소에 대한 단기 인증 정보가 있는 수동 모드 > 20.5.2.1. Google Cloud 워크로드 ID 인증 프로세스",
+        "source": "figure_section"
+      },
+      {
+        "label": "20.5.3.1. Microsoft Entra Workload ID 인증 프로세스",
+        "href": "/playbooks/wiki-runtime/active/authentication_and_authorization/index.html#20531-microsoft-entra-workload-id-인증-프로세스",
+        "summary": "... > 19장. LDAP 그룹 동기화 > 20.5. 구성 요소에 대한 단기 인증 정보가 있는 수동 모드 > 20.5.3.1. Microsoft Entra Workload ID 인증 프로세스",
+        "source": "figure_section"
+      },
+      {
+        "label": "2.8.1. 한 번 빌드하여 어디에나 배포",
+        "href": "/playbooks/wiki-runtime/active/security_and_compliance/index.html#281-한-번-빌드하여-어디에나-배포",
+        "summary": "보안 및 컴플라이언스 · 보안 및 컴플라이언스 > OpenShift Container Platform의 보안 학습 및 관리 > 2.8. 빌드 프로세스 보안 > 2.8.1. 한 번 빌드하여 어디에나 배포",
+        "source": "related_doc_section"
+      }
+    ],
+    "cli_tools": [
+      {
+        "label": "2.1.2.2.1. 웹 콘솔을 사용하여 Linux에 OpenShift CLI 설치",
+        "href": "/playbooks/wiki-runtime/active/cli_tools/index.html#21221-웹-콘솔을-사용하여-linux에-openshift-cli-설치",
+        "summary": "CLI 툴 > 1장. OpenShift Container Platform CLI 툴 개요 > 1.1. CLI 툴 목록 > 2.1.2.2.1. 웹 콘솔을 사용하여 Linux에 OpenShift CLI 설치",
+        "source": "figure_section"
+      },
+      {
+        "label": "2.3.1. oc 바이너리",
+        "href": "/playbooks/wiki-runtime/active/cli_tools/index.html#231-oc-바이너리",
+        "summary": "yum install openshift-clients > 2.1.2.4. Homebrew를 사용하여 OpenShift CLI 설치 > 2.3. oc 및 kubectl 명령 사용 > 2.3.1. oc 바이너리",
+        "source": "figure_section"
+      },
+      {
+        "label": "2.1.3. Operator 완성 모델",
+        "href": "/playbooks/wiki-runtime/active/operators/index.html#213-operator-완성-모델",
+        "summary": "Operator 운영 플레이북 · Operator 운영 플레이북 > 1장. Operator 개요 > 2.1. Operator란 무엇인가? > 2.1.3. Operator 완성 모델",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "5.3. 웹 콘솔에서 퀵 스타트 비활성화",
+        "href": "/playbooks/wiki-runtime/active/web_console/index.html#53-웹-콘솔에서-퀵-스타트-비활성화",
+        "summary": "웹 콘솔 · 웹 콘솔 > 5장. OpenShift Container Platform에서 웹 콘솔 구성 > 5.3. 웹 콘솔에서 퀵 스타트 비활성화",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해",
+        "href": "/playbooks/wiki-runtime/active/support/index.html#413-telemetry-및-insights-operator-데이터-흐름-이해",
+        "summary": "지원 · 지원 > 2장. 클러스터 리소스 관리 > 4.1. 원격 상태 모니터링 정보 > 4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "6.1.1. CSI 아키텍처",
+        "href": "/playbooks/wiki-runtime/active/storage/index.html#611-csi-아키텍처",
+        "summary": "스토리지 · oc delete pvc <clone_pvc_name> -n <namespace> > 5.4.11. LVM 스토리지 업데이트 > 6.1. CSI 볼륨 구성 > 6.1.1. CSI 아키텍처",
+        "source": "related_doc_section"
+      }
+    ],
+    "disconnected_environments": [
+      {
+        "label": "5.8.1. Enclave 미러링 워크플로",
+        "href": "/playbooks/wiki-runtime/active/disconnected_environments/index.html#581-enclave-미러링-워크플로",
+        "summary": "연결이 끊긴 환경 > 5장. oc-mirror 플러그인 v2를 사용하여 연결이 끊긴 설치의 이미지 미러링 > 5.8. enclave 지원의 이점 > 5.8.1. Enclave 미러링 워크플로",
+        "source": "figure_section"
+      },
+      {
+        "label": "6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#6132-bgp를-통해-클러스터-사용자-정의-네트워크에서-pod-ip-광고",
+        "summary": "고급 네트워킹 · nc <cluster_IP> 30102 --sctp > 4장. 보조 인터페이스 지표와 네트워크 연결 연관 짓기 > 6.1. 경로 알림 정보 > 6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "5.13.2. 사용자 정의 튜닝 사양",
+        "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#5132-사용자-정의-튜닝-사양",
+        "summary": "설치 후 구성 · ... > 5.12. 가비지 컬렉션을 사용하여 노드 리소스 해제 > 5.13. Node Tuning Operator 사용 > 5.13.2. 사용자 정의 튜닝 사양",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "1.1.1. 설치 프로그램 정보",
+        "href": "/playbooks/wiki-runtime/active/installation_overview/index.html#111-설치-프로그램-정보",
+        "summary": "설치 개요 · 설치 개요 > OpenShift Container Platform 설치를 위한 개요 콘텐츠 > 1.1. OpenShift Container Platform 설치 정보 > 1.1.1. 설치 프로그램 정보",
+        "source": "related_doc_section"
+      }
+    ],
+    "ingress_and_load_balancing": [
+      {
+        "label": "2.3.6.5. 경로 라벨을 사용하여 Ingress 컨트롤러 분할 구성",
+        "href": "/playbooks/wiki-runtime/active/ingress_and_load_balancing/index.html#2365-경로-라벨을-사용하여-ingress-컨트롤러-분할-구성",
+        "summary": "... > 2.2.6. ExternalIP 주소 블록 구성 > 2.3. Ingress 컨트롤러를 사용한 수신 클러스터 트래픽 구성 > 2.3.6.5. 경로 라벨을 사용하여 Ingress 컨트롤러 분할 구성",
+        "source": "figure_section"
+      },
+      {
+        "label": "2.3.6.6. 네임스페이스 라벨을 사용하여 Ingress 컨트롤러 분할 구성",
+        "href": "/playbooks/wiki-runtime/active/ingress_and_load_balancing/index.html#2366-네임스페이스-라벨을-사용하여-ingress-컨트롤러-분할-구성",
+        "summary": "oc apply -f router-internal.yaml > 2.3.6.6. 네임스페이스 라벨을 사용하여 Ingress 컨트롤러 분할 구성",
+        "source": "figure_section"
+      },
+      {
+        "label": "2.4.1. Ingress 컨트롤러 끝점 게시 전략",
+        "href": "/playbooks/wiki-runtime/active/ingress_and_load_balancing/index.html#241-ingress-컨트롤러-끝점-게시-전략",
+        "summary": "oc apply -f router-internal.yaml > 2.3.6.6. 네임스페이스 라벨을 사용하여 Ingress 컨트롤러 분할 구성 > 2.4. Ingress 컨트롤러 끝점 게시 전략 구성 > 2.4.1. Ingress 컨트롤러 끝점 게시 전략",
+        "source": "figure_section"
+      },
+      {
+        "label": "3.3. 사용자 관리 로드 밸런서의 서비스",
+        "href": "/playbooks/wiki-runtime/active/ingress_and_load_balancing/index.html#33-사용자-관리-로드-밸런서의-서비스",
+        "summary": "... > 2.12. DNS 관리 정책 이해 > 3.3. 사용자 관리 로드 밸런서의 서비스",
+        "source": "figure_section"
+      },
+      {
+        "label": "4.7.2. MetalLB와 함께 VRF를 사용하여 대칭 라우팅 관리 개요",
+        "href": "/playbooks/wiki-runtime/active/ingress_and_load_balancing/index.html#472-metallb와-함께-vrf를-사용하여-대칭-라우팅-관리-개요",
+        "summary": "... > 4.1.5. 다음 단계 > 4.7. MetalLB를 사용하여 대칭 라우팅 관리 > 4.7.2. MetalLB와 함께 VRF를 사용하여 대칭 라우팅 관리 개요",
+        "source": "figure_section"
+      },
+      {
+        "label": "4.8. MetalLB 및 FRR-K8의 통합 구성",
+        "href": "/playbooks/wiki-runtime/active/ingress_and_load_balancing/index.html#48-metallb-및-frr-k8의-통합-구성",
+        "summary": "... > 4.1.5. 다음 단계 > 4.8. MetalLB 및 FRR-K8의 통합 구성",
+        "source": "figure_section"
+      }
+    ],
+    "installation_overview": [
+      {
+        "label": "1.1.1. 설치 프로그램 정보",
+        "href": "/playbooks/wiki-runtime/active/installation_overview/index.html#111-설치-프로그램-정보",
+        "summary": "설치 개요 > OpenShift Container Platform 설치를 위한 개요 콘텐츠 > 1.1. OpenShift Container Platform 설치 정보 > 1.1.1. 설치 프로그램 정보",
+        "source": "figure_section"
+      },
+      {
+        "label": "1.1.4.5. 설치 프로세스 세부사항",
+        "href": "/playbooks/wiki-runtime/active/installation_overview/index.html#1145-설치-프로세스-세부사항",
+        "summary": "설치 개요 > OpenShift Container Platform 설치를 위한 개요 콘텐츠 > 1.1. OpenShift Container Platform 설치 정보 > 1.1.4.5. 설치 프로세스 세부사항",
+        "source": "figure_section"
+      },
+      {
+        "label": "5.13.2. 사용자 정의 튜닝 사양",
+        "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#5132-사용자-정의-튜닝-사양",
+        "summary": "설치 후 구성 · ... > 5.12. 가비지 컬렉션을 사용하여 노드 리소스 해제 > 5.13. Node Tuning Operator 사용 > 5.13.2. 사용자 정의 튜닝 사양",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      }
+    ],
+    "machine_management": [
+      {
+        "label": "6.2.2. 머신 삭제 처리 순서",
+        "href": "/playbooks/wiki-runtime/active/machine_management/index.html#622-머신-삭제-처리-순서",
+        "summary": "... > 6장. 머신 삭제 > 6.2. 머신 삭제 단계에 대한 라이프사이클 후크 > 6.2.2. 머신 삭제 처리 순서",
+        "source": "figure_section"
+      },
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      }
+    ],
+    "nodes": [
+      {
+        "label": "1.1. 노드 정보",
+        "href": "/playbooks/wiki-runtime/active/nodes/index.html#11-노드-정보",
+        "summary": "노드 > OpenShift Container Platform에서 노드 구성 및 관리 > 1.1. 노드 정보",
+        "source": "figure_section"
+      },
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      }
+    ],
+    "operators": [
+      {
+        "label": "2.1.3. Operator 완성 모델",
+        "href": "/playbooks/wiki-runtime/active/operators/index.html#213-operator-완성-모델",
+        "summary": "Operator 운영 플레이북 > 1장. Operator 개요 > 2.1. Operator란 무엇인가? > 2.1.3. Operator 완성 모델",
+        "source": "figure_section"
+      },
+      {
+        "label": "2.4.1.1. OLM(Operator Lifecycle Manager) Classic이란 무엇입니까?",
+        "href": "/playbooks/wiki-runtime/active/operators/index.html#2411-olmoperator-lifecycle-manager-classic이란-무엇입니까",
+        "summary": "Ignore everything except non-object .json and .yaml files > 2.2.2.2. 스키마 > 2.3. Operator 프레임워크 일반 용어집 > 2.4.1.1. OLM(Operator Lifecycle Manager) Classic이란 무엇입니까?",
+        "source": "figure_section"
+      },
+      {
+        "label": "2.4.3.1. OLM의 Operator 설치 및 업그레이드 워크플로",
+        "href": "/playbooks/wiki-runtime/active/operators/index.html#2431-olm의-operator-설치-및-업그레이드-워크플로",
+        "summary": "Ignore everything except non-object .json and .yaml files > 2.2.2.2. 스키마 > 2.3. Operator 프레임워크 일반 용어집 > 2.4.3.1. OLM의 Operator 설치 및 업그레이드 워크플로",
+        "source": "figure_section"
+      },
+      {
+        "label": "2.4.3.1.2. 업그레이드 건너뛰기",
+        "href": "/playbooks/wiki-runtime/active/operators/index.html#24312-업그레이드-건너뛰기",
+        "summary": "Ignore everything except non-object .json and .yaml files > 2.2.2.2. 스키마 > 2.3. Operator 프레임워크 일반 용어집 > 2.4.3.1.2. 업그레이드 건너뛰기",
+        "source": "figure_section"
+      },
+      {
+        "label": "2.4.3.1.4. z-stream 지원",
+        "href": "/playbooks/wiki-runtime/active/operators/index.html#24314-z-stream-지원",
+        "summary": "Ignore everything except non-object .json and .yaml files > 2.2.2.2. 스키마 > 2.3. Operator 프레임워크 일반 용어집 > 2.4.3.1.4. z-stream 지원",
+        "source": "figure_section"
+      },
+      {
+        "label": "2.1.2.2.1. 웹 콘솔을 사용하여 Linux에 OpenShift CLI 설치",
+        "href": "/playbooks/wiki-runtime/active/cli_tools/index.html#21221-웹-콘솔을-사용하여-linux에-openshift-cli-설치",
+        "summary": "CLI 툴 · CLI 툴 > 1장. OpenShift Container Platform CLI 툴 개요 > 1.1. CLI 툴 목록 > 2.1.2.2.1. 웹 콘솔을 사용하여 Linux에 OpenShift CLI 설치",
+        "source": "related_doc_section"
+      }
+    ],
+    "overview": [
+      {
+        "label": "2.1. OpenShift Container Platform 이해",
+        "href": "/playbooks/wiki-runtime/active/overview/index.html#21-openshift-container-platform-이해",
+        "summary": "개요 > 2장. OpenShift Container Platform 소개 > 2.1. OpenShift Container Platform 이해",
+        "source": "figure_section"
+      },
+      {
+        "label": "4장. Kubernetes 개요",
+        "href": "/playbooks/wiki-runtime/active/overview/index.html#4장-kubernetes-개요",
+        "summary": "개요 > 4장. Kubernetes 개요",
+        "source": "figure_section"
+      },
+      {
+        "label": "4.2. Kubernetes 리소스",
+        "href": "/playbooks/wiki-runtime/active/overview/index.html#42-kubernetes-리소스",
+        "summary": "개요 > 4장. Kubernetes 개요 > 4.2. Kubernetes 리소스",
+        "source": "figure_section"
+      },
+      {
+        "label": "2.1. OpenShift Container Platform 소개",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#21-openshift-container-platform-소개",
+        "summary": "아키텍처 · 아키텍처 > 1장. 아키텍처 개요 > 2.1. OpenShift Container Platform 소개",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "1.1.1. 설치 프로그램 정보",
+        "href": "/playbooks/wiki-runtime/active/installation_overview/index.html#111-설치-프로그램-정보",
+        "summary": "설치 개요 · 설치 개요 > OpenShift Container Platform 설치를 위한 개요 콘텐츠 > 1.1. OpenShift Container Platform 설치 정보 > 1.1.1. 설치 프로그램 정보",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#6132-bgp를-통해-클러스터-사용자-정의-네트워크에서-pod-ip-광고",
+        "summary": "네트워킹 개요 · 고급 네트워킹 · nc <cluster_IP> 30102 --sctp > 4장. 보조 인터페이스 지표와 네트워크 연결 연관 짓기 > 6.1. 경로 알림 정보 > 6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "source": "related_doc_section"
+      }
+    ],
+    "postinstallation_configuration": [
+      {
+        "label": "5.13.2. 사용자 정의 튜닝 사양",
+        "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#5132-사용자-정의-튜닝-사양",
+        "summary": "... > 5.12. 가비지 컬렉션을 사용하여 노드 리소스 해제 > 5.13. Node Tuning Operator 사용 > 5.13.2. 사용자 정의 튜닝 사양",
+        "source": "figure_section"
+      },
+      {
+        "label": "9.2.1.1. 기본 클러스터 역할",
+        "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#9211-기본-클러스터-역할",
+        "summary": "... > 9장. 사용자를 위한 준비 > 9.2. RBAC를 사용하여 권한 정의 및 적용 > 9.2.1.1. 기본 클러스터 역할",
+        "source": "figure_section"
+      },
+      {
+        "label": "1.1.1. 설치 프로그램 정보",
+        "href": "/playbooks/wiki-runtime/active/installation_overview/index.html#111-설치-프로그램-정보",
+        "summary": "설치 개요 · 설치 개요 > OpenShift Container Platform 설치를 위한 개요 콘텐츠 > 1.1. OpenShift Container Platform 설치 정보 > 1.1.1. 설치 프로그램 정보",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "Machine configuration · Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      }
+    ],
+    "security_and_compliance": [
+      {
+        "label": "2.8.1. 한 번 빌드하여 어디에나 배포",
+        "href": "/playbooks/wiki-runtime/active/security_and_compliance/index.html#281-한-번-빌드하여-어디에나-배포",
+        "summary": "보안 및 컴플라이언스 > OpenShift Container Platform의 보안 학습 및 관리 > 2.8. 빌드 프로세스 보안 > 2.8.1. 한 번 빌드하여 어디에나 배포",
+        "source": "figure_section"
+      },
+      {
+        "label": "2.8.2. 빌드 관리",
+        "href": "/playbooks/wiki-runtime/active/security_and_compliance/index.html#282-빌드-관리",
+        "summary": "보안 및 컴플라이언스 > OpenShift Container Platform의 보안 학습 및 관리 > 2.8. 빌드 프로세스 보안 > 2.8.2. 빌드 관리",
+        "source": "figure_section"
+      },
+      {
+        "label": "2.8.4. 빌드 프로세스 설계",
+        "href": "/playbooks/wiki-runtime/active/security_and_compliance/index.html#284-빌드-프로세스-설계",
+        "summary": "보안 및 컴플라이언스 > OpenShift Container Platform의 보안 학습 및 관리 > 2.8. 빌드 프로세스 보안 > 2.8.4. 빌드 프로세스 설계",
+        "source": "figure_section"
+      },
+      {
+        "label": "2.9.1. 트리거를 사용하여 컨테이너 배포 제어",
+        "href": "/playbooks/wiki-runtime/active/security_and_compliance/index.html#291-트리거를-사용하여-컨테이너-배포-제어",
+        "summary": "보안 및 컴플라이언스 > OpenShift Container Platform의 보안 학습 및 관리 > 2.9. 컨테이너 배포 > 2.9.1. 트리거를 사용하여 컨테이너 배포 제어",
+        "source": "figure_section"
+      },
+      {
+        "label": "4.11.3. 워크플로",
+        "href": "/playbooks/wiki-runtime/active/security_and_compliance/index.html#4113-워크플로",
+        "summary": "... > 3.3.4. API 서비스에 서비스 CA 번들 추가 > 3.3.5. 사용자 정의 리소스 정의에 서비스 CA 번들 추가 > 4.11.3. 워크플로",
+        "source": "figure_section"
+      },
+      {
+        "label": "8.4.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator 설치",
+        "href": "/playbooks/wiki-runtime/active/security_and_compliance/index.html#841-웹-콘솔을-사용하여-nbde-tang-server-operator-설치",
+        "summary": "TYPE security_profiles_operator_seccomp_profile_total counter > 7.8.6.1. controller-runtime 메트릭 > 8.4. NBDE Tang Server Operator 설치 > 8.4.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator 설치",
+        "source": "figure_section"
+      }
+    ],
+    "storage": [
+      {
+        "label": "6.1.1. CSI 아키텍처",
+        "href": "/playbooks/wiki-runtime/active/storage/index.html#611-csi-아키텍처",
+        "summary": "oc delete pvc <clone_pvc_name> -n <namespace> > 5.4.11. LVM 스토리지 업데이트 > 6.1. CSI 볼륨 구성 > 6.1.1. CSI 아키텍처",
+        "source": "figure_section"
+      },
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "2.1.3. Operator 완성 모델",
+        "href": "/playbooks/wiki-runtime/active/operators/index.html#213-operator-완성-모델",
+        "summary": "Operator 운영 플레이북 · Operator 운영 플레이북 > 1장. Operator 개요 > 2.1. Operator란 무엇인가? > 2.1.3. Operator 완성 모델",
+        "source": "related_doc_section"
+      }
+    ],
+    "support": [
+      {
+        "label": "4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해",
+        "href": "/playbooks/wiki-runtime/active/support/index.html#413-telemetry-및-insights-operator-데이터-흐름-이해",
+        "summary": "지원 > 2장. 클러스터 리소스 관리 > 4.1. 원격 상태 모니터링 정보 > 4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해",
+        "source": "figure_section"
+      },
+      {
+        "label": "4.5.1. Insights Operator 구성",
+        "href": "/playbooks/wiki-runtime/active/support/index.html#451-insights-operator-구성",
+        "summary": "지원 > 2장. 클러스터 리소스 관리 > 4.5. Insights Operator 사용 > 4.5.1. Insights Operator 구성",
+        "source": "figure_section"
+      },
+      {
+        "label": "1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해",
+        "href": "/playbooks/wiki-runtime/active/updating_clusters/index.html#124-업데이트-중에-매니페스트가-적용되는-방법-이해",
+        "summary": "클러스터 업데이트 · 클러스터 업데이트 > OpenShift Container Platform 클러스터 업데이트 > 1.2. 클러스터 업데이트 작동 방식 > 1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      }
+    ],
+    "updating_clusters": [
+      {
+        "label": "1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해",
+        "href": "/playbooks/wiki-runtime/active/updating_clusters/index.html#124-업데이트-중에-매니페스트가-적용되는-방법-이해",
+        "summary": "클러스터 업데이트 > OpenShift Container Platform 클러스터 업데이트 > 1.2. 클러스터 업데이트 작동 방식 > 1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해",
+        "source": "figure_section"
+      },
+      {
+        "label": "1.4.2.3. 클러스터 Operator 업데이트 기간의 예",
+        "href": "/playbooks/wiki-runtime/active/updating_clusters/index.html#1423-클러스터-operator-업데이트-기간의-예",
+        "summary": "클러스터 업데이트 > OpenShift Container Platform 클러스터 업데이트 > 1.4. OpenShift Container Platform 업데이트 기간 이해 > 1.4.2.3. 클러스터 Operator 업데이트 기간의 예",
+        "source": "figure_section"
+      },
+      {
+        "label": "2.2.1.1. 클라우드 인증 정보 구성 옵션 및 플랫폼 유형별 업데이트 요구 사항",
+        "href": "/playbooks/wiki-runtime/active/updating_clusters/index.html#2211-클라우드-인증-정보-구성-옵션-및-플랫폼-유형별-업데이트-요구-사항",
+        "summary": "클러스터 업데이트 > OpenShift Container Platform 클러스터 업데이트 > 2.2. 수동으로 유지 관리되는 인증 정보로 클러스터 업데이트 준비 > 2.2.1.1. 클라우드 인증 정보 구성 옵션 및 플랫폼 유형별 업데이트 요구 사항",
+        "source": "figure_section"
+      },
+      {
+        "label": "4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해",
+        "href": "/playbooks/wiki-runtime/active/support/index.html#413-telemetry-및-insights-operator-데이터-흐름-이해",
+        "summary": "지원 · 지원 > 2장. 클러스터 리소스 관리 > 4.1. 원격 상태 모니터링 정보 > 4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      }
+    ],
+    "validation_and_troubleshooting": [
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "figure_section"
+      }
+    ],
+    "web_console": [
+      {
+        "label": "5.3. 웹 콘솔에서 퀵 스타트 비활성화",
+        "href": "/playbooks/wiki-runtime/active/web_console/index.html#53-웹-콘솔에서-퀵-스타트-비활성화",
+        "summary": "웹 콘솔 > 5장. OpenShift Container Platform에서 웹 콘솔 구성 > 5.3. 웹 콘솔에서 퀵 스타트 비활성화",
+        "source": "figure_section"
+      },
+      {
+        "label": "6.9.2. 양식 보기를 사용하여 화면 사용자 정의",
+        "href": "/playbooks/wiki-runtime/active/web_console/index.html#692-양식-보기를-사용하여-화면-사용자-정의",
+        "summary": "... > 6.5. 외부 로그 링크의 템플릿 정의 > 6.9. 사용자 화면 사용자 정의 > 6.9.2. 양식 보기를 사용하여 화면 사용자 정의",
+        "source": "figure_section"
+      },
+      {
+        "label": "6.10.2. 양식 보기를 사용하여 개발자 카탈로그 또는 하위 카탈로그 사용자 정의",
+        "href": "/playbooks/wiki-runtime/active/web_console/index.html#6102-양식-보기를-사용하여-개발자-카탈로그-또는-하위-카탈로그-사용자-정의",
+        "summary": "... > 6.5. 외부 로그 링크의 템플릿 정의 > 6.10. 개발자 카탈로그 및 하위 카탈로그 사용자 정의 > 6.10.2. 양식 보기를 사용하여 개발자 카탈로그 또는 하위 카탈로그 사용자 정의",
+        "source": "figure_section"
+      },
+      {
+        "label": "10.4.2.1. conclusion 요소",
+        "href": "/playbooks/wiki-runtime/active/web_console/index.html#10421-conclusion-요소",
+        "summary": "... > 10장. 웹 콘솔에서 퀵 스타트 튜토리얼 만들기 > 10.4. 퀵 스타트 사용 > 10.4.2.1. conclusion 요소",
+        "source": "figure_section"
+      },
+      {
+        "label": "10.4.2.2. description 요소",
+        "href": "/playbooks/wiki-runtime/active/web_console/index.html#10422-description-요소",
+        "summary": "... > 10장. 웹 콘솔에서 퀵 스타트 튜토리얼 만들기 > 10.4. 퀵 스타트 사용 > 10.4.2.2. description 요소",
+        "source": "figure_section"
+      },
+      {
+        "label": "10.4.2.3. displayName 요소",
+        "href": "/playbooks/wiki-runtime/active/web_console/index.html#10423-displayname-요소",
+        "summary": "... > 10장. 웹 콘솔에서 퀵 스타트 튜토리얼 만들기 > 10.4. 퀵 스타트 사용 > 10.4.2.3. displayName 요소",
+        "source": "figure_section"
+      }
+    ],
+    "backup_and_restore": [
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      }
+    ],
+    "etcd": [
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      }
+    ],
+    "images": [
+      {
+        "label": "6.1.1. CSI 아키텍처",
+        "href": "/playbooks/wiki-runtime/active/storage/index.html#611-csi-아키텍처",
+        "summary": "스토리지 · oc delete pvc <clone_pvc_name> -n <namespace> > 5.4.11. LVM 스토리지 업데이트 > 6.1. CSI 볼륨 구성 > 6.1.1. CSI 아키텍처",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "2.1.3. Operator 완성 모델",
+        "href": "/playbooks/wiki-runtime/active/operators/index.html#213-operator-완성-모델",
+        "summary": "Operator 운영 플레이북 · Operator 운영 플레이북 > 1장. Operator 개요 > 2.1. Operator란 무엇인가? > 2.1.3. Operator 완성 모델",
+        "source": "related_doc_section"
+      }
+    ],
+    "installing_on_any_platform": [
+      {
+        "label": "1.1.1. 설치 프로그램 정보",
+        "href": "/playbooks/wiki-runtime/active/installation_overview/index.html#111-설치-프로그램-정보",
+        "summary": "설치 개요 · 설치 개요 > OpenShift Container Platform 설치를 위한 개요 콘텐츠 > 1.1. OpenShift Container Platform 설치 정보 > 1.1.1. 설치 프로그램 정보",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "5.13.2. 사용자 정의 튜닝 사양",
+        "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#5132-사용자-정의-튜닝-사양",
+        "summary": "설치 후 구성 · ... > 5.12. 가비지 컬렉션을 사용하여 노드 리소스 해제 > 5.13. Node Tuning Operator 사용 > 5.13.2. 사용자 정의 튜닝 사양",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      }
+    ],
+    "logging": [
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      }
+    ],
+    "machine_configuration": [
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      }
+    ],
+    "monitoring": [
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "로깅 · Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      }
+    ],
+    "networking_overview": [
+      {
+        "label": "6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#6132-bgp를-통해-클러스터-사용자-정의-네트워크에서-pod-ip-광고",
+        "summary": "고급 네트워킹 · nc <cluster_IP> 30102 --sctp > 4장. 보조 인터페이스 지표와 네트워크 연결 연관 짓기 > 6.1. 경로 알림 정보 > 6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "2.3.6.5. 경로 라벨을 사용하여 Ingress 컨트롤러 분할 구성",
+        "href": "/playbooks/wiki-runtime/active/ingress_and_load_balancing/index.html#2365-경로-라벨을-사용하여-ingress-컨트롤러-분할-구성",
+        "summary": "Ingress 및 로드 밸런싱 · ... > 2.2.6. ExternalIP 주소 블록 구성 > 2.3. Ingress 컨트롤러를 사용한 수신 클러스터 트래픽 구성 > 2.3.6.5. 경로 라벨을 사용하여 Ingress 컨트롤러 분할 구성",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "5.13.2. 사용자 정의 튜닝 사양",
+        "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#5132-사용자-정의-튜닝-사양",
+        "summary": "설치 후 구성 · ... > 5.12. 가비지 컬렉션을 사용하여 노드 리소스 해제 > 5.13. Node Tuning Operator 사용 > 5.13.2. 사용자 정의 튜닝 사양",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "1.1.1. 설치 프로그램 정보",
+        "href": "/playbooks/wiki-runtime/active/installation_overview/index.html#111-설치-프로그램-정보",
+        "summary": "설치 개요 · 설치 개요 > OpenShift Container Platform 설치를 위한 개요 콘텐츠 > 1.1. OpenShift Container Platform 설치 정보 > 1.1.1. 설치 프로그램 정보",
+        "source": "related_doc_section"
+      }
+    ],
+    "observability_overview": [
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "Monitoring · 로깅 · Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      }
+    ],
+    "registry": [
+      {
+        "label": "6.1.1. CSI 아키텍처",
+        "href": "/playbooks/wiki-runtime/active/storage/index.html#611-csi-아키텍처",
+        "summary": "스토리지 · oc delete pvc <clone_pvc_name> -n <namespace> > 5.4.11. LVM 스토리지 업데이트 > 6.1. CSI 볼륨 구성 > 6.1.1. CSI 아키텍처",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "2.1.3. Operator 완성 모델",
+        "href": "/playbooks/wiki-runtime/active/operators/index.html#213-operator-완성-모델",
+        "summary": "Operator 운영 플레이북 · Operator 운영 플레이북 > 1장. Operator 개요 > 2.1. Operator란 무엇인가? > 2.1.3. Operator 완성 모델",
+        "source": "related_doc_section"
+      }
+    ],
+    "release_notes": [
+      {
+        "label": "1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해",
+        "href": "/playbooks/wiki-runtime/active/updating_clusters/index.html#124-업데이트-중에-매니페스트가-적용되는-방법-이해",
+        "summary": "클러스터 업데이트 · 클러스터 업데이트 > OpenShift Container Platform 클러스터 업데이트 > 1.2. 클러스터 업데이트 작동 방식 > 1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해",
+        "href": "/playbooks/wiki-runtime/active/support/index.html#413-telemetry-및-insights-operator-데이터-흐름-이해",
+        "summary": "지원 · 지원 > 2장. 클러스터 리소스 관리 > 4.1. 원격 상태 모니터링 정보 > 4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      }
+    ]
+  },
+  "by_entity": {
+    "cluster-wide-proxy": [
+      {
+        "label": "6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#6132-bgp를-통해-클러스터-사용자-정의-네트워크에서-pod-ip-광고",
+        "summary": "고급 네트워킹 · nc <cluster_IP> 30102 --sctp > 4장. 보조 인터페이스 지표와 네트워크 연결 연관 짓기 > 6.1. 경로 알림 정보 > 6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "6.1.3.3. VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#6133-vpn을-사용하여-bgp를-통해-클러스터-사용자-정의-네트워크에서-pod-ip-광고",
+        "summary": "고급 네트워킹 · nc <cluster_IP> 30102 --sctp > 4장. 보조 인터페이스 지표와 네트워크 연결 연관 짓기 > 6.1. 경로 알림 정보 > 6.1.3.3. VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "7.1.1. PTP 도메인의 요소",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#711-ptp-도메인의-요소",
+        "summary": "고급 네트워킹 · the normal daemon command is added to this at the end. > 7.1. OpenShift 클러스터 노드의 PTP 정보 > 7.1.1. PTP 도메인의 요소",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "7.1.3. PTP 할 마스터 클록에 대한 GNSS 타이밍 개요",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#713-ptp-할-마스터-클록에-대한-gnss-타이밍-개요",
+        "summary": "고급 네트워킹 · the normal daemon command is added to this at the end. > 7.1. OpenShift 클러스터 노드의 PTP 정보 > 7.1.1. PTP 도메인의 요소 > 7.1.3. PTP 할 마스터 클록에 대한 GNSS 타이밍 개요",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "7.1.5. 2 카드 E810 NIC 구성 참조",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#715-2-카드-e810-nic-구성-참조",
+        "summary": "고급 네트워킹 · the normal daemon command is added to this at the end. > 7.1. OpenShift 클러스터 노드의 PTP 정보 > 7.1.1. PTP 도메인의 요소 > 7.1.5. 2 카드 E810 NIC 구성 참조",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "7.1.7. 3-card Intel E810 PTP grandmaster 클록",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#717-3-card-intel-e810-ptp-grandmaster-클록",
+        "summary": "고급 네트워킹 · the normal daemon command is added to this at the end. > 7.1. OpenShift 클러스터 노드의 PTP 정보 > 7.1.1. PTP 도메인의 요소 > 7.1.7. 3-card Intel E810 PTP grandmaster 클록",
+        "source": "entity_figure_section"
+      }
+    ],
+    "networking": [
+      {
+        "label": "6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#6132-bgp를-통해-클러스터-사용자-정의-네트워크에서-pod-ip-광고",
+        "summary": "고급 네트워킹 · nc <cluster_IP> 30102 --sctp > 4장. 보조 인터페이스 지표와 네트워크 연결 연관 짓기 > 6.1. 경로 알림 정보 > 6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "6.1.3.3. VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#6133-vpn을-사용하여-bgp를-통해-클러스터-사용자-정의-네트워크에서-pod-ip-광고",
+        "summary": "고급 네트워킹 · nc <cluster_IP> 30102 --sctp > 4장. 보조 인터페이스 지표와 네트워크 연결 연관 짓기 > 6.1. 경로 알림 정보 > 6.1.3.3. VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "7.1.1. PTP 도메인의 요소",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#711-ptp-도메인의-요소",
+        "summary": "고급 네트워킹 · the normal daemon command is added to this at the end. > 7.1. OpenShift 클러스터 노드의 PTP 정보 > 7.1.1. PTP 도메인의 요소",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "7.1.3. PTP 할 마스터 클록에 대한 GNSS 타이밍 개요",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#713-ptp-할-마스터-클록에-대한-gnss-타이밍-개요",
+        "summary": "고급 네트워킹 · the normal daemon command is added to this at the end. > 7.1. OpenShift 클러스터 노드의 PTP 정보 > 7.1.1. PTP 도메인의 요소 > 7.1.3. PTP 할 마스터 클록에 대한 GNSS 타이밍 개요",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "7.1.5. 2 카드 E810 NIC 구성 참조",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#715-2-카드-e810-nic-구성-참조",
+        "summary": "고급 네트워킹 · the normal daemon command is added to this at the end. > 7.1. OpenShift 클러스터 노드의 PTP 정보 > 7.1.1. PTP 도메인의 요소 > 7.1.5. 2 카드 E810 NIC 구성 참조",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "7.1.7. 3-card Intel E810 PTP grandmaster 클록",
+        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#717-3-card-intel-e810-ptp-grandmaster-클록",
+        "summary": "고급 네트워킹 · the normal daemon command is added to this at the end. > 7.1. OpenShift 클러스터 노드의 PTP 정보 > 7.1.1. PTP 도메인의 요소 > 7.1.7. 3-card Intel E810 PTP grandmaster 클록",
+        "source": "entity_figure_section"
+      }
+    ],
+    "platform-foundation": [
+      {
+        "label": "2.1. OpenShift Container Platform 소개",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#21-openshift-container-platform-소개",
+        "summary": "아키텍처 · 아키텍처 > 1장. 아키텍처 개요 > 2.1. OpenShift Container Platform 소개",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "2.1.3.4. OpenShift Container Platform 라이프사이클",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#2134-openshift-container-platform-라이프사이클",
+        "summary": "아키텍처 · 아키텍처 > 1장. 아키텍처 개요 > 2.1. OpenShift Container Platform 소개 > 2.1.3.4. OpenShift Container Platform 라이프사이클",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "3.1.1. 설치 프로그램 정보",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#311-설치-프로그램-정보",
+        "summary": "아키텍처 · 아키텍처 > 1장. 아키텍처 개요 > 3.1. OpenShift Container Platform 설치 정보 > 3.1.1. 설치 프로그램 정보",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "3.1.4.5. 설치 프로세스 세부사항",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#3145-설치-프로세스-세부사항",
+        "summary": "아키텍처 · 아키텍처 > 1장. 아키텍처 개요 > 3.1. OpenShift Container Platform 설치 정보 > 3.1.4.5. 설치 프로세스 세부사항",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "7.2. 간단한 컨테이너 빌드",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#72-간단한-컨테이너-빌드",
+        "summary": "아키텍처 · 아키텍처 > 7장. OpenShift Container Platform 개발 이해 > 7.2. 간단한 컨테이너 빌드",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "7.2.2. 기본 이미지 옵션",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#722-기본-이미지-옵션",
+        "summary": "아키텍처 · 아키텍처 > 7장. OpenShift Container Platform 개발 이해 > 7.2. 간단한 컨테이너 빌드 > 7.2.2. 기본 이미지 옵션",
+        "source": "entity_figure_section"
+      }
+    ],
+    "control-plane-nodes": [
+      {
+        "label": "2.1. OpenShift Container Platform 소개",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#21-openshift-container-platform-소개",
+        "summary": "아키텍처 · 아키텍처 > 1장. 아키텍처 개요 > 2.1. OpenShift Container Platform 소개",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "2.1.3.4. OpenShift Container Platform 라이프사이클",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#2134-openshift-container-platform-라이프사이클",
+        "summary": "아키텍처 · 아키텍처 > 1장. 아키텍처 개요 > 2.1. OpenShift Container Platform 소개 > 2.1.3.4. OpenShift Container Platform 라이프사이클",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "3.1.1. 설치 프로그램 정보",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#311-설치-프로그램-정보",
+        "summary": "아키텍처 · 아키텍처 > 1장. 아키텍처 개요 > 3.1. OpenShift Container Platform 설치 정보 > 3.1.1. 설치 프로그램 정보",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "3.1.4.5. 설치 프로세스 세부사항",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#3145-설치-프로세스-세부사항",
+        "summary": "아키텍처 · 아키텍처 > 1장. 아키텍처 개요 > 3.1. OpenShift Container Platform 설치 정보 > 3.1.4.5. 설치 프로세스 세부사항",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "7.2. 간단한 컨테이너 빌드",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#72-간단한-컨테이너-빌드",
+        "summary": "아키텍처 · 아키텍처 > 7장. OpenShift Container Platform 개발 이해 > 7.2. 간단한 컨테이너 빌드",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "7.2.2. 기본 이미지 옵션",
+        "href": "/playbooks/wiki-runtime/active/architecture/index.html#722-기본-이미지-옵션",
+        "summary": "아키텍처 · 아키텍처 > 7장. OpenShift Container Platform 개발 이해 > 7.2. 간단한 컨테이너 빌드 > 7.2.2. 기본 이미지 옵션",
+        "source": "entity_figure_section"
+      }
+    ],
+    "security-and-auth": [
+      {
+        "label": "9.1.1. 기본 클러스터 역할",
+        "href": "/playbooks/wiki-runtime/active/authentication_and_authorization/index.html#911-기본-클러스터-역할",
+        "summary": "인증 및 권한 부여 · ... > 8.2.1. OIDC 공급자 구성 매개변수 > 9.1. RBAC 개요 > 9.1.1. 기본 클러스터 역할",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "20.1.2. Cloud Credential Operator 모드 확인",
+        "href": "/playbooks/wiki-runtime/active/authentication_and_authorization/index.html#2012-cloud-credential-operator-모드-확인",
+        "summary": "인증 및 권한 부여 · ... > 19장. LDAP 그룹 동기화 > 20.1. Cloud Credential Operator 정보 > 20.1.2. Cloud Credential Operator 모드 확인",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "20.5.1.1.1. AWS STS의 인증 흐름",
+        "href": "/playbooks/wiki-runtime/active/authentication_and_authorization/index.html#205111-aws-sts의-인증-흐름",
+        "summary": "인증 및 권한 부여 · ... > 19장. LDAP 그룹 동기화 > 20.5. 구성 요소에 대한 단기 인증 정보가 있는 수동 모드 > 20.5.1.1.1. AWS STS의 인증 흐름",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "20.5.2.1. Google Cloud 워크로드 ID 인증 프로세스",
+        "href": "/playbooks/wiki-runtime/active/authentication_and_authorization/index.html#20521-google-cloud-워크로드-id-인증-프로세스",
+        "summary": "인증 및 권한 부여 · ... > 19장. LDAP 그룹 동기화 > 20.5. 구성 요소에 대한 단기 인증 정보가 있는 수동 모드 > 20.5.2.1. Google Cloud 워크로드 ID 인증 프로세스",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "20.5.3.1. Microsoft Entra Workload ID 인증 프로세스",
+        "href": "/playbooks/wiki-runtime/active/authentication_and_authorization/index.html#20531-microsoft-entra-workload-id-인증-프로세스",
+        "summary": "인증 및 권한 부여 · ... > 19장. LDAP 그룹 동기화 > 20.5. 구성 요소에 대한 단기 인증 정보가 있는 수동 모드 > 20.5.3.1. Microsoft Entra Workload ID 인증 프로세스",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "2.8.1. 한 번 빌드하여 어디에나 배포",
+        "href": "/playbooks/wiki-runtime/active/security_and_compliance/index.html#281-한-번-빌드하여-어디에나-배포",
+        "summary": "보안 및 컴플라이언스 · 보안 및 컴플라이언스 > OpenShift Container Platform의 보안 학습 및 관리 > 2.8. 빌드 프로세스 보안 > 2.8.1. 한 번 빌드하여 어디에나 배포",
+        "source": "entity_figure_section"
+      }
+    ],
+    "operators-and-tooling": [
+      {
+        "label": "2.1.2.2.1. 웹 콘솔을 사용하여 Linux에 OpenShift CLI 설치",
+        "href": "/playbooks/wiki-runtime/active/cli_tools/index.html#21221-웹-콘솔을-사용하여-linux에-openshift-cli-설치",
+        "summary": "CLI 툴 · CLI 툴 > 1장. OpenShift Container Platform CLI 툴 개요 > 1.1. CLI 툴 목록 > 2.1.2.2.1. 웹 콘솔을 사용하여 Linux에 OpenShift CLI 설치",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "2.3.1. oc 바이너리",
+        "href": "/playbooks/wiki-runtime/active/cli_tools/index.html#231-oc-바이너리",
+        "summary": "CLI 툴 · yum install openshift-clients > 2.1.2.4. Homebrew를 사용하여 OpenShift CLI 설치 > 2.3. oc 및 kubectl 명령 사용 > 2.3.1. oc 바이너리",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "2.1.3. Operator 완성 모델",
+        "href": "/playbooks/wiki-runtime/active/operators/index.html#213-operator-완성-모델",
+        "summary": "Operator 운영 플레이북 · Operator 운영 플레이북 > 1장. Operator 개요 > 2.1. Operator란 무엇인가? > 2.1.3. Operator 완성 모델",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "2.4.1.1. OLM(Operator Lifecycle Manager) Classic이란 무엇입니까?",
+        "href": "/playbooks/wiki-runtime/active/operators/index.html#2411-olmoperator-lifecycle-manager-classic이란-무엇입니까",
+        "summary": "Operator 운영 플레이북 · Ignore everything except non-object .json and .yaml files > 2.2.2.2. 스키마 > 2.3. Operator 프레임워크 일반 용어집 > 2.4.1.1. OLM(Operator Lifecycle Manager) Classic이란 무엇입니까?",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "2.4.3.1. OLM의 Operator 설치 및 업그레이드 워크플로",
+        "href": "/playbooks/wiki-runtime/active/operators/index.html#2431-olm의-operator-설치-및-업그레이드-워크플로",
+        "summary": "Operator 운영 플레이북 · Ignore everything except non-object .json and .yaml files > 2.2.2.2. 스키마 > 2.3. Operator 프레임워크 일반 용어집 > 2.4.3.1. OLM의 Operator 설치 및 업그레이드 워크플로",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "2.4.3.1.2. 업그레이드 건너뛰기",
+        "href": "/playbooks/wiki-runtime/active/operators/index.html#24312-업그레이드-건너뛰기",
+        "summary": "Operator 운영 플레이북 · Ignore everything except non-object .json and .yaml files > 2.2.2.2. 스키마 > 2.3. Operator 프레임워크 일반 용어집 > 2.4.3.1.2. 업그레이드 건너뛰기",
+        "source": "entity_figure_section"
+      }
+    ],
+    "storage-and-content": [
+      {
+        "label": "5.8.1. Enclave 미러링 워크플로",
+        "href": "/playbooks/wiki-runtime/active/disconnected_environments/index.html#581-enclave-미러링-워크플로",
+        "summary": "연결이 끊긴 환경 · 연결이 끊긴 환경 > 5장. oc-mirror 플러그인 v2를 사용하여 연결이 끊긴 설치의 이미지 미러링 > 5.8. enclave 지원의 이점 > 5.8.1. Enclave 미러링 워크플로",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "6.1.1. CSI 아키텍처",
+        "href": "/playbooks/wiki-runtime/active/storage/index.html#611-csi-아키텍처",
+        "summary": "스토리지 · oc delete pvc <clone_pvc_name> -n <namespace> > 5.4.11. LVM 스토리지 업데이트 > 6.1. CSI 볼륨 구성 > 6.1.1. CSI 아키텍처",
+        "source": "entity_figure_section"
+      }
+    ],
+    "installation-day2": [
+      {
+        "label": "1.1.1. 설치 프로그램 정보",
+        "href": "/playbooks/wiki-runtime/active/installation_overview/index.html#111-설치-프로그램-정보",
+        "summary": "설치 개요 · 설치 개요 > OpenShift Container Platform 설치를 위한 개요 콘텐츠 > 1.1. OpenShift Container Platform 설치 정보 > 1.1.1. 설치 프로그램 정보",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "1.1.4.5. 설치 프로세스 세부사항",
+        "href": "/playbooks/wiki-runtime/active/installation_overview/index.html#1145-설치-프로세스-세부사항",
+        "summary": "설치 개요 · 설치 개요 > OpenShift Container Platform 설치를 위한 개요 콘텐츠 > 1.1. OpenShift Container Platform 설치 정보 > 1.1.4.5. 설치 프로세스 세부사항",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "5.13.2. 사용자 정의 튜닝 사양",
+        "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#5132-사용자-정의-튜닝-사양",
+        "summary": "설치 후 구성 · ... > 5.12. 가비지 컬렉션을 사용하여 노드 리소스 해제 > 5.13. Node Tuning Operator 사용 > 5.13.2. 사용자 정의 튜닝 사양",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "9.2.1.1. 기본 클러스터 역할",
+        "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#9211-기본-클러스터-역할",
+        "summary": "설치 후 구성 · ... > 9장. 사용자를 위한 준비 > 9.2. RBAC를 사용하여 권한 정의 및 적용 > 9.2.1.1. 기본 클러스터 역할",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해",
+        "href": "/playbooks/wiki-runtime/active/updating_clusters/index.html#124-업데이트-중에-매니페스트가-적용되는-방법-이해",
+        "summary": "클러스터 업데이트 · 클러스터 업데이트 > OpenShift Container Platform 클러스터 업데이트 > 1.2. 클러스터 업데이트 작동 방식 > 1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "1.4.2.3. 클러스터 Operator 업데이트 기간의 예",
+        "href": "/playbooks/wiki-runtime/active/updating_clusters/index.html#1423-클러스터-operator-업데이트-기간의-예",
+        "summary": "클러스터 업데이트 · 클러스터 업데이트 > OpenShift Container Platform 클러스터 업데이트 > 1.4. OpenShift Container Platform 업데이트 기간 이해 > 1.4.2.3. 클러스터 Operator 업데이트 기간의 예",
+        "source": "entity_figure_section"
+      }
+    ],
+    "machine-config-operator": [
+      {
+        "label": "6.2.2. 머신 삭제 처리 순서",
+        "href": "/playbooks/wiki-runtime/active/machine_management/index.html#622-머신-삭제-처리-순서",
+        "summary": "머신 관리 · ... > 6장. 머신 삭제 > 6.2. 머신 삭제 단계에 대한 라이프사이클 후크 > 6.2.2. 머신 삭제 처리 순서",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "1.1. 노드 정보",
+        "href": "/playbooks/wiki-runtime/active/nodes/index.html#11-노드-정보",
+        "summary": "노드 · 노드 > OpenShift Container Platform에서 노드 구성 및 관리 > 1.1. 노드 정보",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "5.13.2. 사용자 정의 튜닝 사양",
+        "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#5132-사용자-정의-튜닝-사양",
+        "summary": "설치 후 구성 · ... > 5.12. 가비지 컬렉션을 사용하여 노드 리소스 해제 > 5.13. Node Tuning Operator 사용 > 5.13.2. 사용자 정의 튜닝 사양",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "9.2.1.1. 기본 클러스터 역할",
+        "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#9211-기본-클러스터-역할",
+        "summary": "설치 후 구성 · ... > 9장. 사용자를 위한 준비 > 9.2. RBAC를 사용하여 권한 정의 및 적용 > 9.2.1.1. 기본 클러스터 역할",
+        "source": "entity_figure_section"
+      }
+    ],
+    "control-plane-ops": [
+      {
+        "label": "6.2.2. 머신 삭제 처리 순서",
+        "href": "/playbooks/wiki-runtime/active/machine_management/index.html#622-머신-삭제-처리-순서",
+        "summary": "머신 관리 · ... > 6장. 머신 삭제 > 6.2. 머신 삭제 단계에 대한 라이프사이클 후크 > 6.2.2. 머신 삭제 처리 순서",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "1.1. 노드 정보",
+        "href": "/playbooks/wiki-runtime/active/nodes/index.html#11-노드-정보",
+        "summary": "노드 · 노드 > OpenShift Container Platform에서 노드 구성 및 관리 > 1.1. 노드 정보",
+        "source": "entity_figure_section"
+      }
+    ],
+    "lifecycle-and-support": [
+      {
+        "label": "4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해",
+        "href": "/playbooks/wiki-runtime/active/support/index.html#413-telemetry-및-insights-operator-데이터-흐름-이해",
+        "summary": "지원 · 지원 > 2장. 클러스터 리소스 관리 > 4.1. 원격 상태 모니터링 정보 > 4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "4.5.1. Insights Operator 구성",
+        "href": "/playbooks/wiki-runtime/active/support/index.html#451-insights-operator-구성",
+        "summary": "지원 · 지원 > 2장. 클러스터 리소스 관리 > 4.5. Insights Operator 사용 > 4.5.1. Insights Operator 구성",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해",
+        "href": "/playbooks/wiki-runtime/active/updating_clusters/index.html#124-업데이트-중에-매니페스트가-적용되는-방법-이해",
+        "summary": "클러스터 업데이트 · 클러스터 업데이트 > OpenShift Container Platform 클러스터 업데이트 > 1.2. 클러스터 업데이트 작동 방식 > 1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "1.4.2.3. 클러스터 Operator 업데이트 기간의 예",
+        "href": "/playbooks/wiki-runtime/active/updating_clusters/index.html#1423-클러스터-operator-업데이트-기간의-예",
+        "summary": "클러스터 업데이트 · 클러스터 업데이트 > OpenShift Container Platform 클러스터 업데이트 > 1.4. OpenShift Container Platform 업데이트 기간 이해 > 1.4.2.3. 클러스터 Operator 업데이트 기간의 예",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "2.2.1.1. 클라우드 인증 정보 구성 옵션 및 플랫폼 유형별 업데이트 요구 사항",
+        "href": "/playbooks/wiki-runtime/active/updating_clusters/index.html#2211-클라우드-인증-정보-구성-옵션-및-플랫폼-유형별-업데이트-요구-사항",
+        "summary": "클러스터 업데이트 · 클러스터 업데이트 > OpenShift Container Platform 클러스터 업데이트 > 2.2. 수동으로 유지 관리되는 인증 정보로 클러스터 업데이트 준비 > 2.2.1.1. 클라우드 인증 정보 구성 옵션 및 플랫폼 유형별 업데이트 요구 사항",
+        "source": "entity_figure_section"
+      }
+    ],
+    "prometheus": [
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "entity_figure_section"
+      }
+    ],
+    "observability": [
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "entity_figure_section"
+      }
+    ]
+  }
+}

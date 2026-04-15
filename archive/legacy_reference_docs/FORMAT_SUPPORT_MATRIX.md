@@ -1,5 +1,7 @@
 # Format Support Matrix
 
+> Legacy reference only. 현재 기준선이 아니며, format 관련 현재 계약은 루트 active rule set 과 parsed artifact 계약을 우선한다.
+
 ## Purpose
 
 이 문서는 customer-pack intake가 어떤 포맷을 실제로 `capture -> normalize -> canonical book`까지 처리하는지, 어디서 review/degraded로 내려가는지, 무엇을 아직 거부하는지 잠근다.

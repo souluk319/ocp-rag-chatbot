@@ -8,6 +8,7 @@
 
 - `AGENTS.md`
 - `PROJECT.md`
+- `CODEX_OPERATING_CHARTER.md`
 - `Q1_8_PRODUCT_CONTRACT.md`
 - `OWNER_SCENARIO_SCORECARD.yaml`
 - `P0_ARCHITECTURE_FREEZE_ADDENDUM.md`
@@ -19,8 +20,6 @@
 
 아래 문서는 현재 판단 기준이 아니며, 배경 확인이나 과거 의사결정 추적용으로만 읽는다.
 
-- `legacy_reference_docs/FILE_ROLE_GUIDE.md`
-- `legacy_reference_docs/CODEX_OPERATING_CHARTER.md`
 - `legacy_reference_docs/OWNER_VALUE_CASE.md`
 - `legacy_reference_docs/BEACHHEAD_ICP_AND_TRIGGER.md`
 - `legacy_reference_docs/CUSTOMER_POC_BUYER_PACKET.md`

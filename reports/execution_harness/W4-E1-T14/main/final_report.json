@@ -1,0 +1,25 @@
+{
+  "task_id": "W4-E1-T14",
+  "lane_id": "main",
+  "role": "main",
+  "status": "done",
+  "code_paths": [
+    "presentation-ui/src/pages/WorkspacePage.tsx",
+    "presentation-ui/src/pages/WorkspacePage.css",
+    "src/play_book_studio/app/source_books.py",
+    "scripts/verify_truth_surface_trim.py",
+    "TASK_BOARD.yaml"
+  ],
+  "artifacts": [
+    "reports/build_logs/truth_surface_trim_report.json",
+    "reports/build_logs/truth_surface_trim_report.md",
+    "reports/build_logs/customer_pack_surface_report.json"
+  ],
+  "validation": [
+    ".venv\\Scripts\\python.exe scripts\\verify_truth_surface_trim.py",
+    ".venv\\Scripts\\python.exe scripts\\verify_truth_visual_system.py",
+    ".venv\\Scripts\\python.exe scripts\\verify_customer_pack_truth_visual_system.py",
+    ".venv\\Scripts\\python.exe scripts\\verify_customer_pack_surface.py",
+    "npm.cmd run build"
+  ]
+}

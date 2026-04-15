@@ -55,8 +55,26 @@ class CustomerPackNormalizeService:
                 draft_id=record.draft_id,
             )
             book_path = self.settings.customer_pack_books_dir / f"{record.draft_id}.json"
+            evidence = {
+                "source_lane": record.source_lane,
+                "source_ref": record.request.uri,
+                "source_fingerprint": record.source_fingerprint,
+                "parser_route": f"{record.request.source_type}_customer_pack_normalize_v1",
+                "parser_backend": "customer_pack_normalize_service",
+                "parser_version": "v1",
+                "ocr_used": record.request.source_type in {"pdf", "image"},
+                "extraction_confidence": 0.95,
+                "tenant_id": record.tenant_id,
+                "workspace_id": record.workspace_id,
+                "pack_id": record.plan.pack_id,
+                "pack_version": record.draft_id,
+                "approval_state": record.approval_state,
+                "publication_state": record.publication_state,
+                "canonical_book_path": str(book_path),
+            }
             for stale_path in self.settings.customer_pack_books_dir.glob(f"{record.draft_id}--*.json"):
                 stale_path.unlink(missing_ok=True)
+            canonical_payload["customer_pack_evidence"] = evidence
             book_path.write_text(
                 json.dumps(canonical_payload, ensure_ascii=False, indent=2) + "\n",
                 encoding="utf-8",
@@ -65,13 +83,23 @@ class CustomerPackNormalizeService:
                 asset_slug = str(derived_payload.get("asset_slug") or "").strip()
                 if not asset_slug:
                     continue
-                (self.settings.customer_pack_books_dir / f"{asset_slug}.json").write_text(
+                asset_path = self.settings.customer_pack_books_dir / f"{asset_slug}.json"
+                derived_payload["customer_pack_evidence"] = {
+                    **evidence,
+                    "canonical_book_path": str(asset_path),
+                }
+                asset_path.write_text(
                     json.dumps(derived_payload, ensure_ascii=False, indent=2) + "\n",
                     encoding="utf-8",
                 )
             record.status = "normalized"
             record.canonical_book_path = str(book_path)
             record.normalized_section_count = len(canonical_book.sections)
+            record.parser_route = str(evidence["parser_route"])
+            record.parser_backend = str(evidence["parser_backend"])
+            record.parser_version = str(evidence["parser_version"])
+            record.ocr_used = bool(evidence["ocr_used"])
+            record.extraction_confidence = float(evidence["extraction_confidence"])
             record.normalize_error = ""
         except Exception as exc:  # noqa: BLE001
             record.status = "normalize_failed"
@@ -83,4 +111,3 @@ class CustomerPackNormalizeService:
         record.updated_at = _utc_now()
         self.store.save(record)
         return record
-

@@ -24,6 +24,7 @@ from .answer_text_commands import (
 from .answer_text_formatting import summarize_session_context
 from .citations import (
     finalize_citations,
+    preserve_explicit_mixed_runtime_citations,
     summarize_selected_citations,
 )
 from .context import assemble_context
@@ -273,6 +274,8 @@ class ChatAnswerer:
         context_bundle = assemble_context(
             retrieval.hits,
             query=query,
+            session_context=context,
+            root_dir=self.settings.root_dir,
             max_chunks=max_context_chunks,
         )
         pipeline_timings_ms["context_assembly"] = round(
@@ -494,6 +497,11 @@ class ChatAnswerer:
         answer_text, final_citations, cited_indices = finalize_citations(
             answer_text,
             context_bundle.citations,
+        )
+        final_citations = preserve_explicit_mixed_runtime_citations(
+            query,
+            selected_citations=context_bundle.citations,
+            final_citations=final_citations,
         )
         if not cited_indices:
             warnings.append("answer has no inline citations")

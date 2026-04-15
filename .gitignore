@@ -12,9 +12,7 @@ archive/*
 archive/legacy_reference_docs/*
 !archive/legacy_reference_docs/README.md
 !archive/legacy_reference_docs/BEACHHEAD_ICP_AND_TRIGGER.md
-!archive/legacy_reference_docs/CODEX_OPERATING_CHARTER.md
 !archive/legacy_reference_docs/CUSTOMER_POC_BUYER_PACKET.md
-!archive/legacy_reference_docs/FILE_ROLE_GUIDE.md
 !archive/legacy_reference_docs/FORMAT_SUPPORT_MATRIX.md
 !archive/legacy_reference_docs/OWNER_VALUE_CASE.md
 !archive/legacy_reference_docs/PARSER_ROUTING_POLICY.md

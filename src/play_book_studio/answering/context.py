@@ -8,8 +8,12 @@ from __future__ import annotations
 
 import re
 from collections import Counter, defaultdict
+from pathlib import Path
+from typing import Any
 
+from play_book_studio.app.wiki_user_overlay import build_wiki_overlay_signal_payload
 from play_book_studio.retrieval.models import RetrievalHit
+from play_book_studio.retrieval.models import SessionContext
 from play_book_studio.retrieval.query import (
     has_backup_restore_intent,
     has_cluster_node_usage_intent,
@@ -208,6 +212,80 @@ def _unique_top_hits(hits: list[RetrievalHit], *, limit: int) -> list[RetrievalH
     return unique
 
 
+def _load_overlay_preference_payload(
+    *,
+    root_dir: Path | None,
+    user_id: str,
+) -> dict[str, Any]:
+    if root_dir is None or not user_id.strip():
+        return {}
+    try:
+        return build_wiki_overlay_signal_payload(root_dir, user_id=user_id.strip())
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def _overlay_target_ref_scores(
+    payload: dict[str, Any],
+) -> tuple[dict[str, int], dict[str, int]]:
+    exact_scores: dict[str, int] = {}
+    book_scores: dict[str, int] = {}
+    user_focus = payload.get("user_focus") if isinstance(payload, dict) else None
+    recent_targets = user_focus.get("recent_targets") if isinstance(user_focus, dict) else None
+    if not isinstance(recent_targets, list):
+        return exact_scores, book_scores
+    for index, item in enumerate(recent_targets[:12]):
+        if not isinstance(item, dict):
+            continue
+        target_ref = str(item.get("target_ref") or "").strip()
+        if not target_ref:
+            continue
+        base_score = max(10, 80 - index * 6)
+        exact_scores[target_ref] = max(exact_scores.get(target_ref, 0), base_score)
+        if target_ref.startswith("book:"):
+            slug = target_ref.split(":", 1)[1].strip()
+            if slug:
+                book_scores[slug] = max(book_scores.get(slug, 0), base_score)
+        elif target_ref.startswith("section:"):
+            book_part = target_ref.split(":", 1)[1].split("#", 1)[0].strip()
+            if book_part:
+                book_scores[book_part] = max(book_scores.get(book_part, 0), base_score - 10)
+        elif target_ref.startswith("figure:"):
+            figure_parts = target_ref.split(":")
+            if len(figure_parts) >= 3:
+                book_part = figure_parts[1].strip()
+                if book_part:
+                    book_scores[book_part] = max(book_scores.get(book_part, 0), base_score - 20)
+    return exact_scores, book_scores
+
+
+def _overlay_hit_boost(
+    hit: RetrievalHit,
+    *,
+    exact_scores: dict[str, int],
+    book_scores: dict[str, int],
+) -> int:
+    score = book_scores.get(hit.book_slug, 0)
+    if hit.book_slug:
+        score = max(score, exact_scores.get(f"book:{hit.book_slug}", 0))
+    anchor_root = _anchor_root(hit.anchor)
+    if anchor_root:
+        score = max(score, exact_scores.get(f"section:{hit.book_slug}#{anchor_root}", 0))
+    if hit.book_slug and any(token in (hit.section or "").lower() for token in ("etcd", "machine config", "prometheus", "proxy", "control plane")):
+        lowered_section = (hit.section or "").lower()
+        if "etcd" in lowered_section:
+            score = max(score, exact_scores.get("entity:etcd", 0) - 10)
+        if "machine config" in lowered_section or "mco" in lowered_section:
+            score = max(score, exact_scores.get("entity:machine-config-operator", 0) - 10)
+        if "prometheus" in lowered_section:
+            score = max(score, exact_scores.get("entity:prometheus", 0) - 10)
+        if "proxy" in lowered_section:
+            score = max(score, exact_scores.get("entity:cluster-wide-proxy", 0) - 10)
+        if "control plane" in lowered_section:
+            score = max(score, exact_scores.get("entity:control-plane-nodes", 0) - 10)
+    return max(score, 0)
+
+
 def _should_force_clarification(
     hits: list[RetrievalHit],
     *,
@@ -391,9 +469,9 @@ def _select_hits(
         top_book = support_window[0].book_slug
     elif _is_backup_only_etcd_query(normalized):
         preferred_order = {
-            "postinstallation_configuration": 0,
+            "backup_and_restore": 0,
             "etcd": 1,
-            "backup_and_restore": 2,
+            "postinstallation_configuration": 2,
             "hosted_control_planes": 3,
             "updating_clusters": 4,
         }
@@ -615,9 +693,9 @@ def _select_hits(
         operational_books = tuple(
             book_slug
             for book_slug in (
-                "postinstallation_configuration",
-                "etcd",
                 "backup_and_restore",
+                "etcd",
+                "postinstallation_configuration",
                 "hosted_control_planes",
                 "updating_clusters",
             )
@@ -628,11 +706,11 @@ def _select_hits(
             locked_allowed_books = True
         else:
             for book_slug in (
+                "backup_and_restore",
+                "etcd",
                 "postinstallation_configuration",
                 "hosted_control_planes",
                 "updating_clusters",
-                "etcd",
-                "backup_and_restore",
             ):
                 if best_book_scores.get(book_slug, 0.0) >= top_score * 0.5:
                     allowed_books.add(book_slug)
@@ -785,6 +863,8 @@ def assemble_context(
     hits: list[RetrievalHit],
     *,
     query: str = "",
+    session_context: SessionContext | None = None,
+    root_dir: Path | None = None,
     max_chunks: int = 6,
     max_chars_per_chunk: int = 900,
 ) -> ContextBundle:
@@ -798,8 +878,28 @@ def assemble_context(
         "etcd",
         "backup_and_restore",
     }
+    overlay_payload = _load_overlay_preference_payload(
+        root_dir=root_dir,
+        user_id=str(getattr(session_context, "user_id", "") or ""),
+    )
+    overlay_exact_scores, overlay_book_scores = _overlay_target_ref_scores(overlay_payload)
+    selected_hits = _select_hits(hits, query=query, max_chunks=max_chunks)
+    if overlay_exact_scores or overlay_book_scores:
+        selected_hits = sorted(
+            selected_hits,
+            key=lambda hit: (
+                -_overlay_hit_boost(
+                    hit,
+                    exact_scores=overlay_exact_scores,
+                    book_scores=overlay_book_scores,
+                ),
+                -_hit_score(hit),
+                hit.book_slug,
+                hit.chunk_id,
+            ),
+        )
 
-    for hit in _select_hits(hits, query=query, max_chunks=max_chunks):
+    for hit in selected_hits:
         if hit.chunk_id in seen_chunk_ids:
             continue
         excerpt = _normalize_excerpt(hit.text)

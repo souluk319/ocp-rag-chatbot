@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import './PipelineScroller.css';
+
+gsap.registerPlugin(ScrollTrigger);
 
 export default function PipelineScroller() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,23 +53,31 @@ export default function PipelineScroller() {
         }
       );
 
-      // 3. Sequential Ignition for Each Card
+      // 3. Sequential Ignition for Each Card — fires as the nerve line's leading edge reaches the card
       sections.forEach((section: any) => {
         const card = section.querySelector('.step-card');
         const node = section.querySelector('.step-node');
 
-        gsap.to(card, {
-          scrollTrigger: {
-            trigger: section,
-            containerAnimation: scrollTween,
-            start: "left center+=10%",
-            end: "right center-=10%",
-            toggleClass: { targets: [card, node], className: "active-glow node-active" },
-            scrub: false,
-          }
+        ScrollTrigger.create({
+          trigger: section,
+          containerAnimation: scrollTween,
+          // Ignite slightly before the card reaches the viewport center and hold until it leaves
+          start: "left center",
+          end: "right center",
+          onToggle: (self) => {
+            if (self.isActive) {
+              card.classList.add('active-glow');
+              node.classList.add('node-active');
+            } else {
+              card.classList.remove('active-glow');
+              node.classList.remove('node-active');
+            }
+          },
         });
       });
 
+      // Make sure triggers are re-measured once layout/fonts settle
+      requestAnimationFrame(() => ScrollTrigger.refresh());
     }, containerRef);
     return () => ctx.revert();
   }, []);

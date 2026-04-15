@@ -22,6 +22,7 @@ from play_book_studio.app.server_routes import (
     handle_debug_chat_log as _handle_debug_chat_log_request,
     handle_debug_session as _handle_debug_session_request,
     handle_customer_pack_book as _handle_customer_pack_book_request,
+    handle_buyer_packet as _handle_buyer_packet_request,
     handle_customer_pack_capture as _handle_customer_pack_capture_request,
     handle_customer_pack_captured as _handle_customer_pack_captured_request,
     handle_customer_pack_draft_create as _handle_customer_pack_draft_create_request,
@@ -41,6 +42,10 @@ from play_book_studio.app.server_routes import (
     handle_repository_favorites_save as _handle_repository_favorites_save_request,
     handle_repository_search as _handle_repository_search_request,
     handle_source_meta as _handle_source_meta_request,
+    handle_wiki_overlay_signals as _handle_wiki_overlay_signals_request,
+    handle_wiki_user_overlay_remove as _handle_wiki_user_overlay_remove_request,
+    handle_wiki_user_overlay_save as _handle_wiki_user_overlay_save_request,
+    handle_wiki_user_overlays as _handle_wiki_user_overlays_request,
 )
 from play_book_studio.app.chat_debug import (
     append_chat_turn_log as _append_chat_turn_log,
@@ -56,7 +61,13 @@ from play_book_studio.app.presenters import (
     _serialize_citation,
 )
 from play_book_studio.app.source_books import (
+    build_chat_navigation_links as _build_chat_navigation_links,
+    internal_buyer_packet_viewer_html as _internal_buyer_packet_viewer_html,
+    build_chat_section_links as _build_chat_section_links,
     internal_customer_pack_viewer_html as _internal_customer_pack_viewer_html,
+    internal_entity_hub_viewer_html as _internal_entity_hub_viewer_html,
+    internal_figure_viewer_html as _internal_figure_viewer_html,
+    internal_gold_candidate_markdown_viewer_html as _internal_gold_candidate_markdown_viewer_html,
     internal_viewer_html as _internal_viewer_html,
 )
 from play_book_studio.app.session_flow import (
@@ -83,6 +94,10 @@ def _build_chat_payload(
     result: AnswerResult,
 ) -> dict[str, Any]:
     # UI 응답과 재현성 로그에 쓰는 chat payload serialization helper.
+    serialized_citations = [
+        _serialize_citation(root_dir, citation)
+        for citation in result.citations
+    ]
     payload = {
         "session_id": session.session_id,
         "mode": session.mode,
@@ -91,10 +106,17 @@ def _build_chat_payload(
         "response_kind": result.response_kind,
         "warnings": list(result.warnings),
         "cited_indices": list(result.cited_indices),
-        "citations": [
-            _serialize_citation(root_dir, citation)
-            for citation in result.citations
-        ],
+        "citations": serialized_citations,
+        "related_links": _build_chat_navigation_links(
+            root_dir,
+            serialized_citations,
+            user_id=session.context.user_id,
+        ),
+        "related_sections": _build_chat_section_links(
+            root_dir,
+            serialized_citations,
+            user_id=session.context.user_id,
+        ),
         "suggested_queries": _suggest_follow_up_questions(session=session, result=result),
         "context": session.context.to_dict(),
         "history_size": len(session.history),
@@ -206,11 +228,24 @@ def _build_handler(
                     return
                 self.send_error(HTTPStatus.NOT_FOUND, "Not found")
                 return
+            if request_path.startswith("/playbooks/wiki-assets/"):
+                relative = request_path.removeprefix("/playbooks/wiki-assets/").strip("/")
+                asset_path = (root_dir / "data" / "wiki_assets" / relative).resolve()
+                assets_root = (root_dir / "data" / "wiki_assets").resolve()
+                if asset_path.is_file() and (asset_path == assets_root or assets_root in asset_path.parents):
+                    content_type = mimetypes.guess_type(str(asset_path))[0] or "application/octet-stream"
+                    self._send_bytes(asset_path.read_bytes(), content_type=content_type)
+                    return
+                self.send_error(HTTPStatus.NOT_FOUND, "Not found")
+                return
             if request_path == "/api/health":
                 self._send_json(_build_health_payload(current_answerer()))
                 return
             if request_path == "/api/data-control-room":
                 self._handle_data_control_room(parsed_request.query)
+                return
+            if request_path == "/api/buyer-packet":
+                self._handle_buyer_packet(parsed_request.query)
                 return
             if request_path == "/api/customer-packs/support-matrix":
                 self._handle_customer_pack_support_matrix(parsed_request.query)
@@ -236,6 +271,12 @@ def _build_handler(
             if request_path == "/api/repositories/favorites":
                 self._handle_repository_favorites(parsed_request.query)
                 return
+            if request_path == "/api/wiki-overlays":
+                self._handle_wiki_user_overlays(parsed_request.query)
+                return
+            if request_path == "/api/wiki-overlay-signals":
+                self._handle_wiki_overlay_signals(parsed_request.query)
+                return
             if request_path == "/api/customer-packs/drafts":
                 self._handle_customer_pack_drafts(parsed_request.query)
                 return
@@ -245,9 +286,25 @@ def _build_handler(
             if request_path == "/api/customer-packs/captured":
                 self._handle_customer_pack_captured(parsed_request.query)
                 return
+            internal_buyer_packet_viewer = _internal_buyer_packet_viewer_html(root_dir, self.path)
+            if internal_buyer_packet_viewer is not None:
+                self._send_html(internal_buyer_packet_viewer)
+                return
             internal_customer_pack_viewer = _internal_customer_pack_viewer_html(root_dir, self.path)
             if internal_customer_pack_viewer is not None:
                 self._send_html(internal_customer_pack_viewer)
+                return
+            internal_gold_candidate_markdown_viewer = _internal_gold_candidate_markdown_viewer_html(root_dir, self.path)
+            if internal_gold_candidate_markdown_viewer is not None:
+                self._send_html(internal_gold_candidate_markdown_viewer)
+                return
+            internal_entity_hub_viewer = _internal_entity_hub_viewer_html(root_dir, self.path)
+            if internal_entity_hub_viewer is not None:
+                self._send_html(internal_entity_hub_viewer)
+                return
+            internal_figure_viewer = _internal_figure_viewer_html(root_dir, self.path)
+            if internal_figure_viewer is not None:
+                self._send_html(internal_figure_viewer)
                 return
             internal_viewer = _internal_viewer_html(root_dir, self.path)
             if internal_viewer is not None:
@@ -307,6 +364,12 @@ def _build_handler(
             if self.path == "/api/repositories/favorites/remove":
                 self._handle_repository_favorites_remove(payload)
                 return
+            if self.path == "/api/wiki-overlays":
+                self._handle_wiki_user_overlay_save(payload)
+                return
+            if self.path == "/api/wiki-overlays/remove":
+                self._handle_wiki_user_overlay_remove(payload)
+                return
             if self.path == "/api/reset":
                 self._handle_reset(payload)
                 return
@@ -333,8 +396,29 @@ def _build_handler(
                 root_dir=root_dir,
             )
 
+        def _handle_wiki_user_overlays(self, query: str) -> None:
+            _handle_wiki_user_overlays_request(
+                self,
+                query,
+                root_dir=root_dir,
+            )
+
+        def _handle_wiki_overlay_signals(self, query: str) -> None:
+            _handle_wiki_overlay_signals_request(
+                self,
+                query,
+                root_dir=root_dir,
+            )
+
         def _handle_data_control_room(self, query: str) -> None:
             _handle_data_control_room_request(
+                self,
+                query,
+                root_dir=root_dir,
+            )
+
+        def _handle_buyer_packet(self, query: str) -> None:
+            _handle_buyer_packet_request(
                 self,
                 query,
                 root_dir=root_dir,
@@ -449,6 +533,20 @@ def _build_handler(
 
         def _handle_repository_favorites_remove(self, payload: dict[str, Any]) -> None:
             _handle_repository_favorites_remove_request(
+                self,
+                payload,
+                root_dir=root_dir,
+            )
+
+        def _handle_wiki_user_overlay_save(self, payload: dict[str, Any]) -> None:
+            _handle_wiki_user_overlay_save_request(
+                self,
+                payload,
+                root_dir=root_dir,
+            )
+
+        def _handle_wiki_user_overlay_remove(self, payload: dict[str, Any]) -> None:
+            _handle_wiki_user_overlay_remove_request(
                 self,
                 payload,
                 root_dir=root_dir,

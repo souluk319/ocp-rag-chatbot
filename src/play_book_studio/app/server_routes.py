@@ -14,6 +14,12 @@ from play_book_studio.app.repository_registry import (
     save_repository_favorites as _save_repository_favorites,
     search_github_repositories as _search_github_repositories,
 )
+from play_book_studio.app.wiki_user_overlay import (
+    build_wiki_overlay_signal_payload as _build_wiki_overlay_signal_payload,
+    list_wiki_user_overlays as _list_wiki_user_overlays,
+    remove_wiki_user_overlay as _remove_wiki_user_overlay,
+    save_wiki_user_overlay as _save_wiki_user_overlay,
+)
 from play_book_studio.config.settings import load_settings
 from play_book_studio.app.intake_api import (
     build_customer_pack_plan as _build_customer_pack_plan,
@@ -169,6 +175,46 @@ def handle_data_control_room(handler: Any, query: str, *, root_dir: Path) -> Non
     handler._send_json(build_data_control_room_payload(root_dir))
 
 
+def handle_buyer_packet(handler: Any, query: str, *, root_dir: Path) -> None:
+    params = parse_qs(query, keep_blank_values=False)
+    packet_id = str((params.get("packet_id") or [""])[0]).strip()
+    if not packet_id:
+        handler._send_json({"error": "packet_id가 필요합니다."}, HTTPStatus.BAD_REQUEST)
+        return
+    bundle_path = root_dir / "reports" / "build_logs" / "buyer_packet_bundle_index.json"
+    if not bundle_path.exists():
+        handler._send_json({"error": "buyer packet bundle이 없습니다."}, HTTPStatus.NOT_FOUND)
+        return
+    bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
+    packets = bundle.get("packets") if isinstance(bundle.get("packets"), list) else []
+    match = next(
+        (
+            entry for entry in packets
+            if isinstance(entry, dict) and str(entry.get("id") or "").strip() == packet_id
+        ),
+        None,
+    )
+    if not isinstance(match, dict):
+        handler._send_json({"error": "buyer packet을 찾을 수 없습니다."}, HTTPStatus.NOT_FOUND)
+        return
+    markdown_path = root_dir / str(match.get("markdown_path") or "")
+    json_path = root_dir / str(match.get("json_path") or "")
+    if not markdown_path.exists():
+        handler._send_json({"error": "buyer packet markdown을 찾을 수 없습니다."}, HTTPStatus.NOT_FOUND)
+        return
+    handler._send_json(
+        {
+            "packet_id": packet_id,
+            "title": str(match.get("title") or packet_id),
+            "purpose": str(match.get("purpose") or ""),
+            "status": str(match.get("status") or ""),
+            "markdown_path": str(markdown_path.resolve()),
+            "json_path": str(json_path.resolve()) if json_path.exists() else "",
+            "body": markdown_path.read_text(encoding="utf-8"),
+        }
+    )
+
+
 def handle_customer_pack_plan(handler: Any, payload: dict[str, Any]) -> None:
     try:
         plan = _build_customer_pack_plan(payload)
@@ -237,6 +283,44 @@ def handle_repository_favorites_save(handler: Any, payload: dict[str, Any], *, r
 def handle_repository_favorites_remove(handler: Any, payload: dict[str, Any], *, root_dir: Path) -> None:
     try:
         saved = _remove_repository_favorite(root_dir, payload)
+    except ValueError as exc:
+        handler._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+        return
+    handler._send_json(saved)
+
+
+def handle_wiki_user_overlays(handler: Any, query: str, *, root_dir: Path) -> None:
+    params = parse_qs(query, keep_blank_values=False)
+    user_id = str((params.get("user_id") or [""])[0]).strip()
+    if not user_id:
+        handler._send_json({"error": "user_id가 필요합니다."}, HTTPStatus.BAD_REQUEST)
+        return
+    try:
+        payload = _list_wiki_user_overlays(root_dir, user_id=user_id)
+    except ValueError as exc:
+        handler._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+        return
+    handler._send_json(payload)
+
+
+def handle_wiki_overlay_signals(handler: Any, query: str, *, root_dir: Path) -> None:
+    params = parse_qs(query, keep_blank_values=False)
+    user_id = str((params.get("user_id") or [""])[0]).strip()
+    handler._send_json(_build_wiki_overlay_signal_payload(root_dir, user_id=user_id or None))
+
+
+def handle_wiki_user_overlay_save(handler: Any, payload: dict[str, Any], *, root_dir: Path) -> None:
+    try:
+        saved = _save_wiki_user_overlay(root_dir, payload)
+    except ValueError as exc:
+        handler._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+        return
+    handler._send_json(saved, HTTPStatus.CREATED)
+
+
+def handle_wiki_user_overlay_remove(handler: Any, payload: dict[str, Any], *, root_dir: Path) -> None:
+    try:
+        saved = _remove_wiki_user_overlay(root_dir, payload)
     except ValueError as exc:
         handler._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
         return

@@ -10,6 +10,7 @@ from .text_utils import strip_section_prefix
 @dataclass(slots=True)
 class SessionContext:
     mode: str | None = None
+    user_id: str | None = None
     user_goal: str | None = None
     current_topic: str | None = None
     open_entities: list[str] = field(default_factory=list)
@@ -30,6 +31,7 @@ class SessionContext:
             selected_draft_ids = [selected_draft_ids]
         return cls(
             mode=payload.get("mode"),
+            user_id=(str(payload.get("user_id") or "").strip() or None),
             user_goal=payload.get("user_goal"),
             current_topic=(
                 strip_section_prefix(str(payload.get("current_topic") or ""))

@@ -1,0 +1,50 @@
+{
+  "task_id": "W5-E1-T11",
+  "lane_id": "main",
+  "role": "main",
+  "status": "done",
+  "code_paths": [
+    "AGENTS.md",
+    "PROJECT.md",
+    "CODEX_OPERATING_CHARTER.md",
+    "Q1_8_PRODUCT_CONTRACT.md",
+    "OWNER_SCENARIO_SCORECARD.yaml",
+    "scripts/generate_release_candidate_freeze_packet.py",
+    "scripts/verify_release_candidate_freeze_packet.py",
+    "scripts/generate_owner_demo_script_packet.py",
+    "scripts/verify_owner_demo_script_packet.py",
+    "scripts/generate_buyer_packet_bundle_index.py",
+    "scripts/verify_buyer_packet_bundle_index.py",
+    "scripts/verify_buyer_packet_surface.py",
+    "src/play_book_studio/app/source_books.py",
+    "src/play_book_studio/app/server.py",
+    "src/play_book_studio/app/data_control_room.py",
+    "src/play_book_studio/app/presenters.py",
+    "presentation-ui/src/pages/PlaybookLibraryPage.tsx",
+    "presentation-ui/src/pages/WorkspacePage.tsx",
+    "presentation-ui/src/pages/WorkspacePage.css",
+    "TASK_BOARD.yaml"
+  ],
+  "artifacts": [
+    "reports/build_logs/release_candidate_freeze_packet.json",
+    "reports/build_logs/release_candidate_freeze_packet.md",
+    "reports/build_logs/release_candidate_freeze_packet_verification_report.json",
+    "reports/build_logs/release_candidate_freeze_packet_verification_report.md",
+    "reports/build_logs/buyer_packet_bundle_index.json",
+    "reports/build_logs/buyer_packet_bundle_index.md",
+    "reports/build_logs/buyer_packet_bundle_index_verification_report.json",
+    "reports/build_logs/buyer_packet_surface_report.json",
+    "reports/build_logs/buyer_packet_surface_report.md",
+    "reports/build_logs/owner_demo_script_packet_verification_report.json"
+  ],
+  "validation": [
+    ".venv\\Scripts\\python.exe scripts\\generate_release_candidate_freeze_packet.py",
+    ".venv\\Scripts\\python.exe scripts\\generate_buyer_packet_bundle_index.py",
+    ".venv\\Scripts\\python.exe scripts\\verify_release_candidate_freeze_packet.py",
+    ".venv\\Scripts\\python.exe scripts\\verify_owner_demo_script_packet.py",
+    ".venv\\Scripts\\python.exe scripts\\verify_buyer_packet_bundle_index.py",
+    ".venv\\Scripts\\python.exe scripts\\verify_buyer_packet_surface.py",
+    "npm.cmd run build",
+    "yaml TASK_BOARD.yaml parse"
+  ]
+}
