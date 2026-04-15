@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-04-15T00:55:32+00:00",
+  "generated_at_utc": "2026-04-15T05:53:36+00:00",
   "candidate_count": 29,
   "promotion_group": "full_rebuild_gold_candidates",
   "entries": [
@@ -36,12 +36,12 @@
     {
       "slug": "backup_and_restore",
       "title": "Backup and restore",
-      "source_kind": "official_source_repo",
+      "source_kind": "generic_manualbook_export",
       "source_lane": "official_en_fallback",
       "source_manifest_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\manifests\\ocp420_source_first_full_rebuild_manifest.json",
       "promoted_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\gold_candidate_books\\full_rebuild\\backup_and_restore.md",
-      "source_trial_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tests\\reader_grade_pipeline_trials\\backup_and_restore\\14_asciidoc_plus_12_tone\\output.md",
-      "promotion_strategy": "asciidoc_source_first_plus_12_tone"
+      "source_trial_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\gold_candidate_books\\full_rebuild\\backup_and_restore.md",
+      "promotion_strategy": "full_rebuild_generic_export"
     },
     {
       "slug": "cli_tools",
@@ -106,12 +106,12 @@
     {
       "slug": "installing_on_any_platform",
       "title": "Installing on any platform",
-      "source_kind": "official_source_repo",
+      "source_kind": "generic_manualbook_export",
       "source_lane": "official_en_fallback",
       "source_manifest_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\manifests\\ocp420_source_first_full_rebuild_manifest.json",
       "promoted_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\gold_candidate_books\\full_rebuild\\installing_on_any_platform.md",
-      "source_trial_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tests\\reader_grade_pipeline_trials\\installing_on_any_platform\\14_asciidoc_plus_12_tone\\output.md",
-      "promotion_strategy": "asciidoc_source_first_plus_12_tone"
+      "source_trial_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\gold_candidate_books\\full_rebuild\\installing_on_any_platform.md",
+      "promotion_strategy": "full_rebuild_generic_export"
     },
     {
       "slug": "logging",
@@ -126,12 +126,12 @@
     {
       "slug": "machine_configuration",
       "title": "Machine configuration",
-      "source_kind": "official_source_repo",
+      "source_kind": "generic_manualbook_export",
       "source_lane": "official_en_fallback",
       "source_manifest_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\manifests\\ocp420_source_first_full_rebuild_manifest.json",
       "promoted_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\gold_candidate_books\\full_rebuild\\machine_configuration.md",
-      "source_trial_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tests\\reader_grade_pipeline_trials\\machine_configuration\\14_asciidoc_plus_12_tone\\output.md",
-      "promotion_strategy": "asciidoc_source_first_plus_12_tone"
+      "source_trial_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\gold_candidate_books\\full_rebuild\\machine_configuration.md",
+      "promotion_strategy": "full_rebuild_generic_export"
     },
     {
       "slug": "machine_management",

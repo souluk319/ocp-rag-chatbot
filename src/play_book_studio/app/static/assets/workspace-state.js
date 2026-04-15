@@ -25,7 +25,7 @@ window.createWorkspaceState = function createWorkspaceState(deps) {
     if (!refs.topicPlaybookListEl) return;
     const rows = Array.isArray(playbooks) ? playbooks.filter((item) => item && typeof item === "object") : [];
     if (!rows.length) {
-      refs.topicPlaybookListEl.innerHTML = '<div class="trace-empty rail-inline-empty">토픽 플레이북이 아직 없습니다.</div>';
+      refs.topicPlaybookListEl.innerHTML = '<div class="trace-empty rail-inline-empty">No playbooks.</div>';
       if (refs.topicPlaybookSummaryEl) {
         refs.topicPlaybookSummaryEl.textContent = "토픽 플레이북 0개";
       }
@@ -40,7 +40,7 @@ window.createWorkspaceState = function createWorkspaceState(deps) {
         <article class="rail-metric-card">
           <span>Topic Playbook</span>
           <strong>${title}</strong>
-          <p>${meta || "실행형 토픽 플레이북"}</p>
+          <p>${meta || "Topic Playbook"}</p>
         </article>
       `;
     }).join("");

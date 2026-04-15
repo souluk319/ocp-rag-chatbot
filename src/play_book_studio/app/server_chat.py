@@ -85,6 +85,7 @@ def handle_chat(
     context_with_request_overrides: Any,
     derive_next_context: Any,
     append_chat_turn_log: Any,
+    append_unanswered_question_log: Any,
     write_recent_chat_session_snapshot: Any,
     build_turn_stages: Any,
     build_turn_diagnosis: Any,
@@ -107,7 +108,7 @@ def handle_chat(
         query = session.last_query
 
     if not query:
-        handler._send_json({"error": "질문을 입력해 주세요."}, HTTPStatus.BAD_REQUEST)
+        handler._send_json({"error": "Query is required."}, HTTPStatus.BAD_REQUEST)
         return
 
     try:
@@ -177,6 +178,13 @@ def handle_chat(
         related_links=response_payload.get("related_links"),
         related_sections=response_payload.get("related_sections"),
     )
+    if result.response_kind == "no_answer":
+        append_unanswered_question_log(
+            root_dir,
+            session=session,
+            query=query,
+            result=result,
+        )
     handler._send_json(response_payload)
 
 
@@ -191,6 +199,7 @@ def handle_chat_stream(
     context_with_request_overrides: Any,
     derive_next_context: Any,
     append_chat_turn_log: Any,
+    append_unanswered_question_log: Any,
     write_recent_chat_session_snapshot: Any,
     build_turn_stages: Any,
     build_turn_diagnosis: Any,
@@ -212,7 +221,7 @@ def handle_chat_stream(
         query = session.last_query
 
     if not query:
-        handler._send_json({"error": "질문을 입력해 주세요."}, HTTPStatus.BAD_REQUEST)
+        handler._send_json({"error": "Query is required."}, HTTPStatus.BAD_REQUEST)
         return
 
     handler._start_ndjson_stream()
@@ -294,6 +303,13 @@ def handle_chat_stream(
         related_links=response_payload.get("related_links"),
         related_sections=response_payload.get("related_sections"),
     )
+    if result.response_kind == "no_answer":
+        append_unanswered_question_log(
+            root_dir,
+            session=session,
+            query=query,
+            result=result,
+        )
     handler._stream_event(
         {
             "type": "result",

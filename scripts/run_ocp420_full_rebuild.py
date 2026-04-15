@@ -22,18 +22,6 @@ STEPS = [
         "verify_cmd": "full rebuild manifest exists with source_first/fallback counts",
     },
     {
-        "step_id": "promote_wave1_gold_candidates",
-        "script": ROOT / "scripts" / "promote_wave1_gold_candidates.py",
-        "write_scope": "data/gold_candidate_books/wave1 + reports/build_logs/wave1_gold_candidate_promotion_report.json + data/wiki_relations/*.json",
-        "verify_cmd": "wave1 gold candidate manifest exists and wiki relations are regenerated",
-    },
-    {
-        "step_id": "promote_wave1_wiki_runtime",
-        "script": ROOT / "scripts" / "promote_wave1_wiki_runtime.py",
-        "write_scope": "data/wiki_runtime_books/wave1 + reports/build_logs/wave1_wiki_runtime_promotion_report.json",
-        "verify_cmd": "wave1 wiki runtime manifest exists",
-    },
-    {
         "step_id": "build_navigation_backlog",
         "script": ROOT / "scripts" / "build_chat_navigation_backlog_report.py",
         "write_scope": "reports/build_logs/chat_navigation_backlog_report.* + data/wiki_relations/navigation_backlog.*",

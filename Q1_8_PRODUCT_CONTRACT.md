@@ -58,6 +58,17 @@ Play Book Studio 는 아래를 만드는 제품이다.
 - 절차는 `related section` 으로 다시 진입 가능하다.
 - 그림은 `figure asset` 및 `figure page` 로 연결된다.
 
+### 2A. Runtime Reader Contract
+
+- 위키 본문은 `reader-grade paragraph shaping` 을 유지해야 한다.
+- 긴 설명 본문은 문단 단위로 분리되어야 하며, 과도한 한 문단 몰아쓰기를 허용하지 않는다.
+- 절차, 코드, 표, 주의문은 paragraph 와 다른 block 으로 유지한다.
+- 본문 가독성은 `paragraph width`, `line-height`, `section spacing` 을 기준으로 관리한다.
+- figure 와 diagram 은 기본적으로 `본문보다 약간 좁은 comfortable width` 로 렌더한다.
+- figure 는 기본 화면에서 과도하게 가로폭을 점유하지 않아야 하며, 필요할 때만 확대 또는 원문 이동으로 상세 확인을 유도한다.
+- screenshot 성격 figure 와 semantic diagram 은 같은 크기 정책으로 묶지 않는다.
+- viewer CSS 기본값이 reader contract 를 대신하면 안 되며, contract 위반은 product issue 로 본다.
+
 ### 3. Grounded Chat
 
 - 챗봇은 같은 active runtime 위에서 답한다.
@@ -105,6 +116,8 @@ Play Book Studio 는 아래를 만드는 제품이다.
 - section anchor
 - code block
 - figure support
+- reader-grade paragraph shaping
+- figure comfortable-width rendering
 
 ### B. Wiki Layer
 
@@ -188,6 +201,8 @@ fail 조건:
 - 코드가 raw text 로 노출됨
 - figure-heavy 문서가 text-only 로 노출됨
 - figure 가 source trace 없이 분리됨
+- 긴 본문이 reader-grade 개행 없이 벽처럼 노출됨
+- figure 가 viewer 폭을 과도하게 점유해 읽기 경험을 방해함
 
 ### Q6. 고객사 문서도 다룰 수 있나?
 

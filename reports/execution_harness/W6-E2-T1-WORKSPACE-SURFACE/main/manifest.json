@@ -1,0 +1,22 @@
+{
+  "task_id": "W6-E2-T1-WORKSPACE-SURFACE",
+  "created_at": "2026-04-15T01:15:31.055900+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "write_scope": "presentation-ui/src/pages/WorkspacePage.tsx;presentation-ui/src/pages/WorkspacePage.css;TASK_BOARD.yaml;reports/execution_harness/W6-E2-T1-WORKSPACE-SURFACE",
+  "target_outputs": [
+    "presentation-ui/src/pages/WorkspacePage.tsx",
+    "presentation-ui/src/pages/WorkspacePage.css",
+    "reports/execution_harness/W6-E2-T1-WORKSPACE-SURFACE/main/manifest.json",
+    "reports/execution_harness/W6-E2-T1-WORKSPACE-SURFACE/main/worklog.md",
+    "reports/execution_harness/W6-E2-T1-WORKSPACE-SURFACE/main/final_report.json"
+  ],
+  "validation_commands": [
+    "npm --prefix presentation-ui run build"
+  ],
+  "status": "prepared"
+}

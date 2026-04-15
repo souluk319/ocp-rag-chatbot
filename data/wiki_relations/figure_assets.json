@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-04-15T00:55:32+00:00",
+  "generated_at_utc": "2026-04-15T05:53:36+00:00",
   "book_count": 29,
   "entries": {
     "advanced_networking": [
@@ -534,7 +534,124 @@
         ]
       }
     ],
-    "backup_and_restore": [],
+    "backup_and_restore": [
+      {
+        "caption": "must-gather markdown output",
+        "alt": "must-gather markdown output",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-must-gather-markdown-output.png",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-must-gather-markdown-output.png/index.html",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\backup_and_restore.html",
+        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Backup_and_restore-en-US/images/56a024e21900e41938c3a1c9581fafbf/oadp-must-gather-markdown-output.png",
+        "section_hint": "5.26.11.1. Using the must-gather tool 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "related_entities": [
+          {
+            "label": "etcd",
+            "href": "/wiki/entities/etcd/index.html"
+          },
+          {
+            "label": "Control Plane Nodes",
+            "href": "/wiki/entities/control-plane-nodes/index.html"
+          },
+          {
+            "label": "Cluster-Wide Proxy",
+            "href": "/wiki/entities/cluster-wide-proxy/index.html"
+          },
+          {
+            "label": "Control Plane and Node Operations",
+            "href": "/wiki/entities/control-plane-ops/index.html"
+          }
+        ]
+      },
+      {
+        "caption": "OADP metrics targets",
+        "alt": "OADP metrics targets",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-targets.png",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-targets.png/index.html",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\backup_and_restore.html",
+        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Backup_and_restore-en-US/images/47240306a8c205165d320ea66e151979/oadp-metrics-targets.png",
+        "section_hint": "5.26.12.2. Creating OADP service monitor 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "related_entities": [
+          {
+            "label": "etcd",
+            "href": "/wiki/entities/etcd/index.html"
+          },
+          {
+            "label": "Control Plane Nodes",
+            "href": "/wiki/entities/control-plane-nodes/index.html"
+          },
+          {
+            "label": "Cluster-Wide Proxy",
+            "href": "/wiki/entities/cluster-wide-proxy/index.html"
+          },
+          {
+            "label": "Control Plane and Node Operations",
+            "href": "/wiki/entities/control-plane-ops/index.html"
+          }
+        ]
+      },
+      {
+        "caption": "OADP backup failing alert",
+        "alt": "OADP backup failing alert",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-backup-failing-alert.png",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-backup-failing-alert.png/index.html",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\backup_and_restore.html",
+        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Backup_and_restore-en-US/images/19940971950304402ec9c77d698f6dda/oadp-backup-failing-alert.png",
+        "section_hint": "5.26.12.3. Creating an alerting rule 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "related_entities": [
+          {
+            "label": "etcd",
+            "href": "/wiki/entities/etcd/index.html"
+          },
+          {
+            "label": "Control Plane Nodes",
+            "href": "/wiki/entities/control-plane-nodes/index.html"
+          },
+          {
+            "label": "Cluster-Wide Proxy",
+            "href": "/wiki/entities/cluster-wide-proxy/index.html"
+          },
+          {
+            "label": "Control Plane and Node Operations",
+            "href": "/wiki/entities/control-plane-ops/index.html"
+          }
+        ]
+      },
+      {
+        "caption": "OADP metrics query",
+        "alt": "OADP metrics query",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-query.png",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-query.png/index.html",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\backup_and_restore.html",
+        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Backup_and_restore-en-US/images/4a108c848630a508c6b0aef32ab58404/oadp-metrics-query.png",
+        "section_hint": "5.26.12.5. Viewing metrics using the Observe UI 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "related_entities": [
+          {
+            "label": "etcd",
+            "href": "/wiki/entities/etcd/index.html"
+          },
+          {
+            "label": "Control Plane Nodes",
+            "href": "/wiki/entities/control-plane-nodes/index.html"
+          },
+          {
+            "label": "Cluster-Wide Proxy",
+            "href": "/wiki/entities/cluster-wide-proxy/index.html"
+          },
+          {
+            "label": "Control Plane and Node Operations",
+            "href": "/wiki/entities/control-plane-ops/index.html"
+          }
+        ]
+      }
+    ],
     "cli_tools": [
       {
         "caption": "물음표를 클릭합니다.",

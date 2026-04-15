@@ -1,0 +1,33 @@
+{
+  "task_id": "W6-E2-T4-FULL-PIPELINE-VERIFICATION",
+  "lane_id": "main",
+  "role": "main",
+  "status": "ok",
+  "code_paths": [
+    "scripts/build_chat_navigation_backlog_report.py",
+    "TASK_BOARD.yaml"
+  ],
+  "artifacts": [
+    "reports/build_logs/ocp420_one_click_runtime_report.json",
+    "reports/build_logs/full_pipeline_verification_report.json",
+    "reports/build_logs/runtime_readiness_report.json",
+    "reports/build_logs/retrieval_eval_report.json",
+    "reports/build_logs/mixed_runtime_end_to_end_report.json",
+    "reports/build_logs/chat_navigation_backlog_report.json",
+    "data/wiki_relations/navigation_backlog.json",
+    "reports/build_logs/priority_targets_report.json"
+  ],
+  "validation": [
+    "powershell -File scripts/codex_python.ps1 scripts/run_ocp420_one_click_runtime.py",
+    "powershell -File scripts/codex_python.ps1 scripts/check_runtime_endpoints.py --output reports/build_logs/runtime_readiness_report.json",
+    "powershell -File scripts/codex_python.ps1 scripts/run_retrieval_eval.py --output reports/build_logs/retrieval_eval_report.json",
+    "powershell -File scripts/codex_python.ps1 scripts/verify_mixed_runtime_end_to_end.py",
+    "powershell -File scripts/codex_python.ps1 scripts/build_chat_navigation_backlog_report.py",
+    "powershell -File scripts/codex_python.ps1 scripts/promote_navigation_backlog_targets.py",
+    "PY_COMPILE_BACKLOG_OK",
+    "navigation_backlog_has_no_legacy_wave1_links",
+    "YAML_OK",
+    "npm --prefix presentation-ui run build"
+  ],
+  "summary": "Re-ran the active OCP 4.20 one-click runtime, verified runtime/embedding/retrieval/mixed-runtime health, and regenerated navigation backlog outputs with legacy wave1 links filtered out from active-facing reports."
+}

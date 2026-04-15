@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import copy
+import json
 import time
+from functools import lru_cache
+from pathlib import Path
 
 from .models import RetrievalHit, RetrievalResult, SessionContext
 from .retriever_plan import build_retrieval_plan
@@ -74,6 +77,49 @@ def _preserve_uploaded_customer_pack_candidate(
     preserved = [rescued]
     preserved.extend(hit for hit in hybrid_hits if hit.chunk_id != rescued.chunk_id)
     return preserved[: max(len(hybrid_hits), 1)]
+
+
+@lru_cache(maxsize=1)
+def _active_runtime_slug_set(manifest_path: str) -> frozenset[str]:
+    path = Path(manifest_path)
+    if not path.exists():
+        return frozenset()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return frozenset()
+    entries = payload.get("entries")
+    if not isinstance(entries, list):
+        return frozenset()
+    return frozenset(
+        str(item.get("slug") or "").strip()
+        for item in entries
+        if isinstance(item, dict) and str(item.get("slug") or "").strip()
+    )
+
+
+def _active_runtime_manifest_path(retriever) -> Path:
+    return retriever.settings.root_dir / "data" / "wiki_runtime_books" / "active_manifest.json"
+
+
+def _is_latest_only_hit(hit: RetrievalHit, *, active_slugs: frozenset[str]) -> bool:
+    if str(hit.source_collection or "").strip() == "uploaded":
+        return True
+    if active_slugs and str(hit.book_slug or "").strip() not in active_slugs:
+        return False
+    if str(hit.review_status or "").strip() != "approved":
+        return False
+    if str(hit.source_collection or "").strip() != "core":
+        return False
+    allowed_lanes = {"official_ko"}
+    if str(hit.source_lane or "").strip() not in allowed_lanes:
+        return False
+    return True
+
+
+def _filter_latest_only_hits(retriever, hits: list[RetrievalHit]) -> list[RetrievalHit]:
+    active_slugs = _active_runtime_slug_set(str(_active_runtime_manifest_path(retriever)))
+    return [hit for hit in hits if _is_latest_only_hit(hit, active_slugs=active_slugs)]
 
 
 def execute_retrieval_pipeline(
@@ -190,6 +236,8 @@ def execute_retrieval_pipeline(
         )
         bm25_hits = bm25_search["hits"]
         overlay_bm25_hits = bm25_search["overlay_hits"]
+        bm25_hits = _filter_latest_only_hits(retriever, bm25_hits)
+        overlay_bm25_hits = _filter_latest_only_hits(retriever, overlay_bm25_hits)
     vector_hits: list[RetrievalHit] = []
     vector_runtime: dict[str, object] = {}
     if use_vector:
@@ -202,6 +250,7 @@ def execute_retrieval_pipeline(
         )
         vector_hits = vector_search["hits"]
         vector_runtime = vector_search["runtime"]
+        vector_hits = _filter_latest_only_hits(retriever, vector_hits)
 
     _emit_trace_event(
         trace_callback,
@@ -230,6 +279,7 @@ def execute_retrieval_pipeline(
         hybrid_hits=hybrid_hits,
         overlay_hits=overlay_bm25_hits,
     )
+    hybrid_hits = _filter_latest_only_hits(retriever, hybrid_hits)
     timings_ms["fusion"] = _duration_ms(fusion_started_at)
     top_hit = hybrid_hits[0] if hybrid_hits else None
     top_detail = (
@@ -285,6 +335,7 @@ def execute_retrieval_pipeline(
         hybrid_hits=graph_enriched_hits,
         overlay_hits=overlay_bm25_hits,
     )
+    graph_enriched_hits = _filter_latest_only_hits(retriever, graph_enriched_hits)
     hits, reranker_trace = maybe_rerank_hits(
         retriever,
         query=plan.rewritten_query,
@@ -294,6 +345,7 @@ def execute_retrieval_pipeline(
         trace_callback=trace_callback,
         timings_ms=timings_ms,
     )
+    hits = _filter_latest_only_hits(retriever, hits)
     trace = build_retrieval_trace(
         warnings=warnings,
         bm25_hits=bm25_hits,

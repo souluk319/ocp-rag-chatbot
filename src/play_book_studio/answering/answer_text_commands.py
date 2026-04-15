@@ -70,6 +70,64 @@ RBAC_USER_VALUE_PATTERNS = (
         re.IGNORECASE,
     ),
 )
+_COMMAND_TOKEN_RE = re.compile(
+    r"\b(?:oc(?:\s+adm)?\s+[a-z0-9-]+(?:\s+[a-z0-9-]+)?|kubectl\s+[a-z0-9-]+(?:\s+[a-z0-9-]+)?|lsblk|df\s+-h|journalctl|must-gather)\b",
+    re.IGNORECASE,
+)
+_DISK_QUERY_RE = re.compile(r"(디스크|disk|filesystem|파일시스템|lsblk|df\s+-h)", re.IGNORECASE)
+_NODE_ACCESS_QUERY_RE = re.compile(r"(노드.*접속|접속.*노드|host.*access|ssh|oc debug|debug\s+명령)", re.IGNORECASE)
+_LOG_QUERY_RE = re.compile(r"(로그|log|journal|node-logs|must-gather)", re.IGNORECASE)
+
+
+def _citation_text(citation) -> str:
+    parts: list[str] = [
+        str(getattr(citation, "section", "") or ""),
+        str(getattr(citation, "excerpt", "") or ""),
+    ]
+    parts.extend(str(command or "") for command in (getattr(citation, "cli_commands", ()) or ()))
+    return "\n".join(part for part in parts if part).lower()
+
+
+def _query_command_tokens(query: str) -> set[str]:
+    return {
+        re.sub(r"\s+", " ", match.group(0).strip().lower())
+        for match in _COMMAND_TOKEN_RE.finditer(query or "")
+    }
+
+
+def has_sufficient_command_grounding(*, query: str, citations) -> bool:
+    if not citations:
+        return False
+    lowered_query = (query or "").lower()
+    citation_texts = [_citation_text(citation) for citation in citations]
+    joined = "\n".join(citation_texts)
+
+    explicit_commands = _query_command_tokens(lowered_query)
+    if explicit_commands and not any(token in joined for token in explicit_commands):
+        return False
+
+    if _NODE_ACCESS_QUERY_RE.search(lowered_query):
+        if not any(
+            any(token in text for token in ("oc debug", "chroot /host", "node debug", "ssh", "host access"))
+            for text in citation_texts
+        ):
+            return False
+
+    if _DISK_QUERY_RE.search(lowered_query):
+        if not any(
+            any(token in text for token in ("lsblk", "df -h", "filesystem", "disk", "디스크", "파일시스템"))
+            for text in citation_texts
+        ):
+            return False
+
+    if _LOG_QUERY_RE.search(lowered_query) and not _DISK_QUERY_RE.search(lowered_query):
+        if not any(
+            any(token in text for token in ("node-logs", "must-gather", "journal", "로그", "log"))
+            for text in citation_texts
+        ):
+            return False
+
+    return True
 
 
 def align_answer_to_grounded_commands(answer_text: str, *, query: str, citations) -> str:
@@ -188,6 +246,8 @@ def _extract_grounded_commands(*texts: str, limit: int = 3) -> list[str]:
         for match in INLINE_COMMAND_RE.finditer(text or ""):
             add(match.group(1))
         for raw_line in (text or "").splitlines():
+            if raw_line.strip().startswith("#"):
+                continue
             line = raw_line.strip().lstrip("-*").strip()
             add(line)
         if len(commands) >= limit:
@@ -258,7 +318,7 @@ def shape_actionable_ops_answer(
         return answer_text
 
     excerpt_text = "\n".join((citation.excerpt or "") for citation in citations)
-    commands = _extract_grounded_commands(answer_text, excerpt_text, limit=3)
+    commands = _extract_grounded_commands(answer_text, excerpt_text, limit=2)
     if not commands:
         return answer_text
 
@@ -296,10 +356,12 @@ def build_grounded_command_guide_answer(
         or has_corrective_follow_up(query)
     ):
         return None
+    if not has_sufficient_command_grounding(query=query, citations=citations):
+        return None
 
     commands = _extract_grounded_commands(
         *[(citation.excerpt or "") for citation in citations],
-        limit=3,
+        limit=2,
     )
     if not commands:
         return None
@@ -822,6 +884,7 @@ __all__ = [
     "deployment_scaling_signal",
     "extract_replica_counts",
     "has_grounded_deployment_scale_citation",
+    "has_sufficient_command_grounding",
     "shape_actionable_ops_answer",
     "shape_certificate_monitor_answer",
     "shape_etcd_backup_answer",

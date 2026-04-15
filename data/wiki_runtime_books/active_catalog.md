@@ -4,7 +4,7 @@
 
 이 카탈로그는 현재 서비스 viewer 와 chatbot runtime 이 직접 읽는 active wiki runtime md만 모아둔 것이다.
 
-- generated_at_utc: `2026-04-15T00:56:32+00:00`
+- generated_at_utc: `2026-04-15T05:53:51+00:00`
 - active_group: `full_rebuild`
 
 ## Entries
@@ -35,7 +35,7 @@
 - title: `Backup and restore`
 - runtime_path: [backup_and_restore.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\backup_and_restore.md)
 - source_candidate_path: [backup_and_restore.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\gold_candidate_books\full_rebuild\backup_and_restore.md)
-- promotion_strategy: `asciidoc_source_first_plus_12_tone`
+- promotion_strategy: `full_rebuild_generic_export`
 
 ### `cli_tools`
 
@@ -84,7 +84,7 @@
 - title: `Installing on any platform`
 - runtime_path: [installing_on_any_platform.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\installing_on_any_platform.md)
 - source_candidate_path: [installing_on_any_platform.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\gold_candidate_books\full_rebuild\installing_on_any_platform.md)
-- promotion_strategy: `asciidoc_source_first_plus_12_tone`
+- promotion_strategy: `full_rebuild_generic_export`
 
 ### `logging`
 
@@ -98,7 +98,7 @@
 - title: `Machine configuration`
 - runtime_path: [machine_configuration.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\machine_configuration.md)
 - source_candidate_path: [machine_configuration.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\gold_candidate_books\full_rebuild\machine_configuration.md)
-- promotion_strategy: `asciidoc_source_first_plus_12_tone`
+- promotion_strategy: `full_rebuild_generic_export`
 
 ### `machine_management`
 

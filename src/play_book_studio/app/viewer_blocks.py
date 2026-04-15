@@ -23,12 +23,14 @@ CODE_BLOCK_RE = re.compile(r"^\[CODE(?P<attrs>[^\]]*)\]\s*(?P<body>.*?)\s*\[/COD
 TABLE_BLOCK_RE = re.compile(r"^\[TABLE(?P<attrs>[^\]]*)\]\s*(?P<body>.*?)\s*\[/TABLE\]$", re.DOTALL)
 FIGURE_BLOCK_RE = re.compile(r"^\[FIGURE(?P<attrs>[^\]]*)\]\s*(?P<body>.*?)\s*\[/FIGURE\]$", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`([^`]+)`")
+ORDERED_LIST_ITEM_RE = re.compile(r"^(?P<index>\d+)\.\s+(?P<body>.+)$", re.DOTALL)
 SOURCE_VIEW_LEADING_NOISE_RE = re.compile(
     r"^\s*Red Hat OpenShift Documentation Team(?:\s+법적 공지)?(?:\s+초록)?\s*",
 )
 SOURCE_VIEW_TOC_RE = re.compile(r"^\s*목차\s*(?:\n\n|\n)?")
 ASCII_GRID_BORDER_RE = re.compile(r"^\s*[+\-=:]{3,}\s*$")
 ASCII_GRID_ROW_RE = re.compile(r"^\s*\|.*\|\s*$")
+LOW_SIGNAL_SHELL_RE = re.compile(r"^\$?\s*(oc|kubectl)\s*$", re.IGNORECASE)
 
 
 def _clean_source_view_text(text: str) -> str:
@@ -142,6 +144,16 @@ def _looks_like_ascii_grid(text: str) -> bool:
     return border_rows >= 2 and cell_rows >= 1
 
 
+def _should_suppress_low_signal_code_block(code_text: str, *, language: str = "shell") -> bool:
+    normalized = (code_text or "").strip()
+    if not normalized:
+        return True
+    normalized_language = (language or "shell").strip().lower()
+    if normalized_language not in {"shell", "shell-session", "bash", "sh", "console", "text"}:
+        return False
+    return LOW_SIGNAL_SHELL_RE.fullmatch(normalized) is not None
+
+
 def _render_code_block_html(
     code_text: str,
     *,
@@ -152,6 +164,8 @@ def _render_code_block_html(
     caption: str = "",
     preserve_layout: bool = False,
 ) -> str:
+    if _should_suppress_low_signal_code_block(code_text, language=language):
+        return ""
     copy_payload = html.escape(json.dumps(copy_text or code_text), quote=True)
     classes = ["code-block"]
     if preserve_layout:
@@ -358,6 +372,49 @@ def _render_normalized_section_html(text: str) -> str:
     normalized = _clean_source_view_text(text)
     normalized = _normalize_markdown_fenced_code_blocks(normalized)
     normalized = _normalize_markdown_image_blocks(normalized)
+    paragraph_queue: list[str] = []
+
+    def flush_paragraph_queue() -> None:
+        nonlocal paragraph_queue
+        if not paragraph_queue:
+            return
+        index = 0
+        while index < len(paragraph_queue):
+            current = paragraph_queue[index]
+            ordered_match = ORDERED_LIST_ITEM_RE.match(current)
+            if not ordered_match:
+                if _looks_like_subheading(current):
+                    blocks.append(f"<h3>{html.escape(current)}</h3>")
+                else:
+                    blocks.append(f"<p>{_render_inline_html(current)}</p>")
+                index += 1
+                continue
+
+            start = int(ordered_match.group("index"))
+            items: list[str] = []
+            while index < len(paragraph_queue):
+                item_match = ORDERED_LIST_ITEM_RE.match(paragraph_queue[index])
+                if not item_match:
+                    break
+                item_body_parts = [_render_inline_html(item_match.group("body").strip())]
+                index += 1
+                while index < len(paragraph_queue):
+                    continuation = paragraph_queue[index]
+                    if ORDERED_LIST_ITEM_RE.match(continuation) or _looks_like_subheading(continuation):
+                        break
+                    item_body_parts.append(
+                        "<p>{}</p>".format(_render_inline_html(continuation))
+                    )
+                    index += 1
+                items.append("<li>{}</li>".format("".join(item_body_parts)))
+            blocks.append(
+                '<ol class="normalized-ordered-list" start="{}">{}</ol>'.format(
+                    start,
+                    "".join(items),
+                )
+            )
+        paragraph_queue = []
+
     for part in NORMALIZED_BLOCK_RE.split(normalized):
         if not part:
             continue
@@ -366,6 +423,7 @@ def _render_normalized_section_html(text: str) -> str:
             continue
         code_match = CODE_BLOCK_RE.match(stripped)
         if code_match:
+            flush_paragraph_queue()
             attrs = _parse_marker_attrs(code_match.group("attrs"))
             code_text = code_match.group("body").strip("\n")
             blocks.append(
@@ -382,6 +440,7 @@ def _render_normalized_section_html(text: str) -> str:
             continue
         table_match = TABLE_BLOCK_RE.match(stripped)
         if table_match:
+            flush_paragraph_queue()
             attrs = _parse_marker_attrs(table_match.group("attrs"))
             table_text = table_match.group("body").strip("\n")
             blocks.append(
@@ -393,6 +452,7 @@ def _render_normalized_section_html(text: str) -> str:
             continue
         figure_match = FIGURE_BLOCK_RE.match(stripped)
         if figure_match:
+            flush_paragraph_queue()
             attrs = _parse_marker_attrs(figure_match.group("attrs"))
             blocks.append(
                 _render_figure_block_html(
@@ -408,8 +468,6 @@ def _render_normalized_section_html(text: str) -> str:
             cleaned = re.sub(r"\s*\n\s*", " ", paragraph).strip()
             if not cleaned:
                 continue
-            if _looks_like_subheading(cleaned):
-                blocks.append(f"<h3>{html.escape(cleaned)}</h3>")
-            else:
-                blocks.append(f"<p>{_render_inline_html(cleaned)}</p>")
+            paragraph_queue.append(cleaned)
+    flush_paragraph_queue()
     return "\n".join(blocks)

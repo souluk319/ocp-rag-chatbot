@@ -61,7 +61,7 @@ export default function Hero() {
         </p>
 
         <div className="hero-actions">
-          <Link to="/workspace" className="primary-cta">
+          <Link to="/studio" className="primary-cta">
             <span>Launch Studio</span>
             <ArrowRight size={18} />
           </Link>
@@ -73,7 +73,7 @@ export default function Hero() {
         <div className="mouse-icon">
           <div className="mouse-wheel"></div>
         </div>
-        <span>Explore the knowledge</span>
+        <span>Knowledge</span>
       </div>
     </section>
   );

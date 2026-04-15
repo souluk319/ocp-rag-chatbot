@@ -273,6 +273,10 @@ class SettingsPathMixin:
         return self.runtime_dir / "recent_chat_session.json"
 
     @property
+    def unanswered_questions_path(self) -> Path:
+        return self.runtime_dir / "unanswered_questions.jsonl"
+
+    @property
     def runtime_report_path(self) -> Path:
         return self.runtime_dir / "runtime_report.json"
 

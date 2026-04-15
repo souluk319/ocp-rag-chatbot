@@ -1,6 +1,7 @@
 # 채팅 세션 문맥, follow-up, 추천 질문 규칙을 담당한다.
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from play_book_studio.answering.models import AnswerResult
@@ -252,6 +253,97 @@ def fallback_follow_up_questions(*, query: str) -> list[str]:
     ]
 
 
+def fallback_no_answer_questions(*, query: str, topic: str = "") -> list[str]:
+    lowered = (query or "").lower()
+    if "networkpolicy" in lowered:
+        return [
+            "NetworkPolicy 기본 구조를 예시와 함께 설명해줘",
+            "특정 namespace 에서 Pod 간 통신만 허용하는 예시를 보여줘",
+            "NetworkPolicy 적용 후 통신 확인 방법도 알려줘",
+        ]
+    subject = _suggestion_subject(query=query, topic=topic, primary=None)
+    return dedupe_suggestions(
+        [
+            _contextualize_follow_up("초보자 기준으로 단계별로 설명해줘", subject=subject),
+            _contextualize_follow_up("실행 예시도 같이 보여줘", subject=subject),
+            _contextualize_follow_up("상태 확인 방법도 같이 알려줘", subject=subject),
+        ],
+        query=query,
+        limit=3,
+    )
+
+
+_SUGGESTION_TOKEN_RE = re.compile(r"[0-9A-Za-z가-힣_-]+")
+_BAD_SUGGESTION_PATTERNS = (
+    "지원 요청",
+    "추가 리소스",
+    "확인된 문제",
+    "release notes",
+    "릴리스",
+    "card copy",
+    "퀵 스타트",
+    "workspace",
+    "--cache-dir",
+    "--workspace",
+    "플래그 정보",
+    "oc-mirror",
+)
+
+
+def _tokenize_suggestion_text(*parts: str) -> set[str]:
+    tokens: set[str] = set()
+    for part in parts:
+        for token in _SUGGESTION_TOKEN_RE.findall(str(part or "").lower()):
+            normalized = token.strip("-_ ")
+            if len(normalized) >= 2:
+                tokens.add(normalized)
+    return tokens
+
+
+def _is_bad_suggestion_section(section: str) -> bool:
+    lowered = str(section or "").strip().lower()
+    if not lowered:
+        return True
+    return any(pattern in lowered for pattern in _BAD_SUGGESTION_PATTERNS)
+
+
+def _suggestions_from_retrieval_hits(result: AnswerResult) -> list[str]:
+    retrieval_trace = result.retrieval_trace or {}
+    metrics = retrieval_trace.get("metrics") or {}
+    query_tokens = _tokenize_suggestion_text(result.query or "", result.rewritten_query or "")
+    candidate_groups: list[list[dict[str, Any]]] = []
+    for metric_key in ("vector", "hybrid", "bm25"):
+        payload = metrics.get(metric_key) or {}
+        top_hits = payload.get("top_hits") if isinstance(payload, dict) else []
+        if isinstance(top_hits, list):
+            candidate_groups.append(top_hits)
+    suggestions: list[str] = []
+    seen: set[str] = set()
+    for top_hits in candidate_groups:
+        for item in top_hits:
+            if not isinstance(item, dict):
+                continue
+            section = str(item.get("section") or "").strip()
+            book_slug = str(item.get("book_slug") or "").strip()
+            if (
+                not section
+                or not any("\uac00" <= char <= "\ud7a3" for char in section)
+                or _is_bad_suggestion_section(section)
+            ):
+                continue
+            section_tokens = _tokenize_suggestion_text(section, book_slug)
+            if query_tokens and not (query_tokens & section_tokens):
+                continue
+            suggestion = f"{section} 기준으로 설명해줘"
+            if suggestion in seen:
+                continue
+            seen.add(suggestion)
+            suggestions.append(suggestion)
+            if len(suggestions) >= 3:
+                return suggestions
+    return suggestions
+
+
 def suggest_follow_up_questions(*, session: ChatSession, result: AnswerResult) -> list[str]:
     query = (result.query or "").strip()
     normalized = query.lower()
@@ -266,6 +358,22 @@ def suggest_follow_up_questions(*, session: ChatSession, result: AnswerResult) -
             "특정 namespace에 admin 권한 주는 법 알려줘",
             "프로젝트가 Terminating에서 안 지워질 때 어떻게 해?",
         ]
+    if result.response_kind == "no_answer":
+        retrieval_backed = _suggestions_from_retrieval_hits(result)
+        if retrieval_backed:
+            return retrieval_backed
+        return []
+    if result.response_kind == "clarification":
+        subject = _suggestion_subject(query=query, topic=topic, primary=primary)
+        return dedupe_suggestions(
+            [
+                _contextualize_follow_up("실행 예시도 같이 보여줘", subject=subject),
+                _contextualize_follow_up("상태 확인 방법도 같이 알려줘", subject=subject),
+                _contextualize_follow_up("주의사항도 함께 정리해줘", subject=subject),
+            ],
+            query=query,
+            limit=3,
+        )
     if (
         result.response_kind != "rag"
         or not result.citations

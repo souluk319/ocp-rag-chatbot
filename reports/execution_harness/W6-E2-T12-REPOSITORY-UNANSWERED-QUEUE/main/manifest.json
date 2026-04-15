@@ -1,0 +1,25 @@
+{
+  "task_id": "W6-E2-T12-REPOSITORY-UNANSWERED-QUEUE",
+  "lane_id": "main",
+  "role": "product_engineer",
+  "cwd": "C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio",
+  "shell": "powershell",
+  "write_scope": [
+    "src/play_book_studio/app/server_routes.py",
+    "src/play_book_studio/app/server.py",
+    "presentation-ui/src/lib/runtimeApi.ts",
+    "presentation-ui/src/pages/PlaybookLibraryPage.tsx",
+    "presentation-ui/src/pages/PlaybookLibraryPage.css",
+    "TASK_BOARD.yaml"
+  ],
+  "target_outputs": [
+    "reports/build_logs/repository_unanswered_queue_report.json",
+    "reports/build_logs/repository_unanswered_queue_verification_report.json",
+    "reports/execution_harness/W6-E2-T12-REPOSITORY-UNANSWERED-QUEUE/main/final_report.json"
+  ],
+  "validation_commands": [
+    "python -m py_compile src/play_book_studio/app/server.py src/play_book_studio/app/server_routes.py",
+    "npm --prefix presentation-ui run build",
+    "GET /api/repositories/unanswered?limit=5"
+  ]
+}

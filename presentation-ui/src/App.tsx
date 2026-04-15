@@ -11,7 +11,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/details" element={<ProjectDetailsPage />} />
-        <Route path="/workspace" element={<WorkspacePage />} />
+        <Route path="/studio" element={<WorkspacePage />} />
         <Route path="/playbook-library" element={<PlaybookLibraryPage />} />
       </Routes>
     </Router>

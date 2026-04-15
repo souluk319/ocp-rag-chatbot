@@ -1,8 +1,8 @@
 {
-  "generated_at_utc": "2026-04-15T00:56:33+00:00",
-  "book_count": 18,
-  "figure_count": 103,
-  "matched_section_count": 103,
+  "generated_at_utc": "2026-04-15T05:53:51+00:00",
+  "book_count": 19,
+  "figure_count": 107,
+  "matched_section_count": 107,
   "by_slug": {
     "advanced_networking": [
       {
@@ -268,6 +268,48 @@
         "section_anchor": "20531-microsoft-entra-workload-id-인증-프로세스",
         "section_path": "... > 19장. LDAP 그룹 동기화 > 20.5. 구성 요소에 대한 단기 인증 정보가 있는 수동 모드 > 20.5.3.1. Microsoft Entra Workload ID 인증 프로세스",
         "section_href": "/playbooks/wiki-runtime/active/authentication_and_authorization/index.html#20531-microsoft-entra-workload-id-인증-프로세스"
+      }
+    ],
+    "backup_and_restore": [
+      {
+        "asset_name": "oadp-must-gather-markdown-output.png",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-must-gather-markdown-output.png/index.html",
+        "caption": "must-gather markdown output",
+        "section_hint": "5.26.11.1. Using the must-gather tool 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "section_heading": "5.26.11. Using the must-gather tool",
+        "section_anchor": "52611-using-the-must-gather-tool",
+        "section_path": "... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
+        "section_href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool"
+      },
+      {
+        "asset_name": "oadp-metrics-targets.png",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-targets.png/index.html",
+        "caption": "OADP metrics targets",
+        "section_hint": "5.26.12.2. Creating OADP service monitor 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "section_heading": "5.26.12.2. Creating OADP service monitor",
+        "section_anchor": "526122-creating-oadp-service-monitor",
+        "section_path": "... > 5.26.12.2. Creating OADP service monitor",
+        "section_href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#526122-creating-oadp-service-monitor"
+      },
+      {
+        "asset_name": "oadp-backup-failing-alert.png",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-backup-failing-alert.png/index.html",
+        "caption": "OADP backup failing alert",
+        "section_hint": "5.26.12.3. Creating an alerting rule 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "section_heading": "5.26.12.3. Creating an alerting rule",
+        "section_anchor": "526123-creating-an-alerting-rule",
+        "section_path": "... > 5.26.12.2. Creating OADP service monitor > 5.26.12.3. Creating an alerting rule",
+        "section_href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#526123-creating-an-alerting-rule"
+      },
+      {
+        "asset_name": "oadp-metrics-query.png",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-query.png/index.html",
+        "caption": "OADP metrics query",
+        "section_hint": "5.26.12.5. Viewing metrics using the Observe UI 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "section_heading": "5.26.12.5. Viewing metrics using the Observe UI",
+        "section_anchor": "526125-viewing-metrics-using-the-observe-ui",
+        "section_path": "... > 5.26.12.2. Creating OADP service monitor > 5.26.12.3. Creating an alerting rule > 5.26.12.5. Viewing metrics using the Observe UI",
+        "section_href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#526125-viewing-metrics-using-the-observe-ui"
       }
     ],
     "cli_tools": [

@@ -823,34 +823,12 @@ def _markdown_code_block_count(path: Path) -> int:
 
 
 def _build_gold_candidate_book_bucket(root: Path) -> dict[str, Any]:
-    settings = load_settings(root)
-    manifest_path = root / "data" / "gold_candidate_books" / "wave1_manifest.json"
-    manifest = _safe_read_json(manifest_path)
-    entries = manifest.get("entries") if isinstance(manifest.get("entries"), list) else []
-    books: list[dict[str, Any]] = []
-    for entry in entries:
-        if not isinstance(entry, dict):
-            continue
-        promoted_path = Path(str(entry.get("promoted_path") or "")).resolve()
-        books.append(
-            {
-                "book_slug": str(entry.get("slug") or promoted_path.stem),
-                "title": str(entry.get("title") or promoted_path.stem),
-                "grade": "Gold Candidate",
-                "review_status": "promoted_candidate",
-                "source_type": "reader_grade_md",
-                "source_lane": "legacy_gold_candidate_archive",
-                "section_count": _markdown_heading_count(promoted_path),
-                "code_block_count": _markdown_code_block_count(promoted_path),
-                "viewer_path": f"/playbooks/gold-candidates/wave1/{str(entry.get('slug') or promoted_path.stem)}/index.html",
-                "source_url": str(entry.get("source_trial_path") or ""),
-                "updated_at": str(manifest.get("generated_at_utc") or ""),
-            }
-        )
+    manifest_path = root / "data" / "gold_candidate_books" / "full_rebuild_manifest.json"
     return {
-        "selected_dir": str((root / "data" / "gold_candidate_books" / "wave1").resolve()),
-        "books": books,
+        "selected_dir": "",
+        "books": [],
         "manifest_path": str(manifest_path.resolve()),
+        "surface_policy": "hidden_from_latest_only_surface",
     }
 
 

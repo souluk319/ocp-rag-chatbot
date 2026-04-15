@@ -478,21 +478,35 @@ def _render_study_viewer_html(
           }}
           .figure-link {{
             display: block;
+            width: fit-content;
+            max-width: min(100%, 760px);
+            margin: 0 auto;
             text-decoration: none;
           }}
           .figure-block img {{
             display: block;
-            width: 100%;
+            width: auto;
             height: auto;
             max-width: 100%;
+            max-height: min(68vh, 760px);
+            margin: 0 auto;
             border-radius: 12px;
             border: 1px solid rgba(17, 20, 24, 0.08);
             background: #fff;
+            object-fit: contain;
+          }}
+          .diagram-block .figure-link {{
+            max-width: min(100%, 920px);
           }}
           .figure-block figcaption {{
             color: var(--muted);
             font-size: 0.9rem;
             line-height: 1.55;
+            max-width: min(100%, 760px);
+            margin: 0 auto;
+          }}
+          .diagram-block figcaption {{
+            max-width: min(100%, 920px);
           }}
           body.is-embedded .section-list {{
             margin-top: 14px;
@@ -790,10 +804,22 @@ def _render_study_viewer_html(
             line-height: 1.5;
           }}
           .list-block,
+          .normalized-ordered-list,
           .procedure-list,
           .substep-list {{
             margin: 0;
             padding-left: 1.2rem;
+          }}
+          .normalized-ordered-list {{
+            display: grid;
+            gap: 10px;
+            margin: 8px 0 14px;
+          }}
+          .normalized-ordered-list > li {{
+            line-height: 1.82;
+          }}
+          .normalized-ordered-list > li > p {{
+            margin: 8px 0 0;
           }}
           .procedure-list {{
             display: grid;

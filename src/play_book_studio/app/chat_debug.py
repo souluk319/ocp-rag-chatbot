@@ -242,6 +242,32 @@ def append_chat_turn_log(
     return target
 
 
+def append_unanswered_question_log(
+    root_dir: Path,
+    *,
+    session: ChatSession,
+    query: str,
+    result: AnswerResult,
+) -> Path:
+    settings = load_settings(root_dir)
+    target = settings.unanswered_questions_path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "record_kind": "unanswered_question",
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "session_id": session.session_id,
+        "query": query,
+        "rewritten_query": result.rewritten_query,
+        "response_kind": result.response_kind,
+        "warnings": list(result.warnings),
+        "retrieval_trace": dict(result.retrieval_trace),
+        "pipeline_trace": dict(result.pipeline_trace),
+    }
+    with target.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    return target
+
+
 def write_recent_chat_session_snapshot(
     root_dir: Path,
     *,
@@ -264,6 +290,7 @@ def write_recent_chat_session_snapshot(
 
 __all__ = [
     "append_chat_turn_log",
+    "append_unanswered_question_log",
     "build_session_debug_payload",
     "build_turn_diagnosis",
     "build_turn_stages",

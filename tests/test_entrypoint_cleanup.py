@@ -479,10 +479,10 @@ class ExecutionGuardTests(unittest.TestCase):
         self.assertIn("id: P3-E1-T3", content)
         self.assertIn("write_scope:", content)
         self.assertIn("verify_cmd:", content)
-        self.assertIn("../ocp-rag-chatbot-data/answering/answer_eval_report.json", content)
-        self.assertIn("../ocp-rag-chatbot-data/retrieval/retrieval_eval_report.json", content)
+        self.assertIn("artifacts/answering/answer_eval_report.json", content)
+        self.assertIn("artifacts/retrieval/retrieval_eval_report.json", content)
         self.assertIn(
-            "scripts/codex_python.ps1 -ScriptPath scripts/run_retrieval_eval.py -WriteScope ../ocp-rag-chatbot-data/retrieval/retrieval_eval_report.json",
+                "scripts/codex_python.ps1 -ScriptPath scripts/run_retrieval_eval.py -WriteScope artifacts/retrieval/retrieval_eval_report.json",
             content,
         )
 

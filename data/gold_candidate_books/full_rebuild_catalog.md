@@ -4,7 +4,7 @@
 
 이 카탈로그는 OCP 4.20 full rebuild 기준으로 물질화된 md 북만 모아둔 것이다.
 
-- generated_at_utc: `2026-04-15T00:55:32+00:00`
+- generated_at_utc: `2026-04-15T05:53:36+00:00`
 
 ## Entries
 
@@ -37,8 +37,8 @@
 - title: `Backup and restore`
 - promoted_path: [backup_and_restore.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\gold_candidate_books\full_rebuild\backup_and_restore.md)
 - source_manifest_slug: `backup_and_restore`
-- source_kind: `official_source_repo`
-- promotion_strategy: `asciidoc_source_first_plus_12_tone`
+- source_kind: `generic_manualbook_export`
+- promotion_strategy: `full_rebuild_generic_export`
 
 ### `cli_tools`
 
@@ -93,8 +93,8 @@
 - title: `Installing on any platform`
 - promoted_path: [installing_on_any_platform.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\gold_candidate_books\full_rebuild\installing_on_any_platform.md)
 - source_manifest_slug: `installing_on_any_platform`
-- source_kind: `official_source_repo`
-- promotion_strategy: `asciidoc_source_first_plus_12_tone`
+- source_kind: `generic_manualbook_export`
+- promotion_strategy: `full_rebuild_generic_export`
 
 ### `logging`
 
@@ -109,8 +109,8 @@
 - title: `Machine configuration`
 - promoted_path: [machine_configuration.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\gold_candidate_books\full_rebuild\machine_configuration.md)
 - source_manifest_slug: `machine_configuration`
-- source_kind: `official_source_repo`
-- promotion_strategy: `asciidoc_source_first_plus_12_tone`
+- source_kind: `generic_manualbook_export`
+- promotion_strategy: `full_rebuild_generic_export`
 
 ### `machine_management`
 

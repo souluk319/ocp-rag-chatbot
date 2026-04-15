@@ -16,8 +16,6 @@ VALID_OVERLAY_KINDS = {"favorite", "check", "note", "recent_position"}
 VALID_TARGET_KINDS = {"book", "entity_hub", "section", "figure"}
 BOOK_PREFIXES = (
     "/playbooks/wiki-runtime/active/",
-    "/playbooks/wiki-runtime/wave1/",
-    "/playbooks/gold-candidates/wave1/",
     "/docs/ocp/",
 )
 

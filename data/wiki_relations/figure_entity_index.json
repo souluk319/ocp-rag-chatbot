@@ -1,7 +1,7 @@
 {
-  "generated_at_utc": "2026-04-15T00:56:33+00:00",
-  "entity_count": 13,
-  "book_count": 18,
+  "generated_at_utc": "2026-04-15T05:53:51+00:00",
+  "entity_count": 14,
+  "book_count": 19,
   "by_entity": {
     "cluster-wide-proxy": [
       {
@@ -128,6 +128,42 @@
         "viewer_path": "/wiki/figures/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_0323_4.17.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_0323_4.17.png",
         "section_hint": "7.3.2. PTP 이벤트 REST API v2를 사용하여 PTP 이벤트 검색 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "must-gather markdown output",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-must-gather-markdown-output.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-must-gather-markdown-output.png",
+        "section_hint": "5.26.11.1. Using the must-gather tool 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "OADP metrics targets",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-targets.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-targets.png",
+        "section_hint": "5.26.12.2. Creating OADP service monitor 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "OADP backup failing alert",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-backup-failing-alert.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-backup-failing-alert.png",
+        "section_hint": "5.26.12.3. Creating an alerting rule 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Cluster-Wide Proxy"
+      },
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "OADP metrics query",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-query.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-query.png",
+        "section_hint": "5.26.12.5. Viewing metrics using the Observe UI 링크 복사 링크가 클립보드에 복사되었습니다!",
         "entity_label": "Cluster-Wide Proxy"
       },
       {
@@ -623,6 +659,42 @@
         "entity_label": "Control Plane Nodes"
       },
       {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "must-gather markdown output",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-must-gather-markdown-output.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-must-gather-markdown-output.png",
+        "section_hint": "5.26.11.1. Using the must-gather tool 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      },
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "OADP metrics targets",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-targets.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-targets.png",
+        "section_hint": "5.26.12.2. Creating OADP service monitor 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      },
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "OADP backup failing alert",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-backup-failing-alert.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-backup-failing-alert.png",
+        "section_hint": "5.26.12.3. Creating an alerting rule 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      },
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "OADP metrics query",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-query.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-query.png",
+        "section_hint": "5.26.12.5. Viewing metrics using the Observe UI 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane Nodes"
+      },
+      {
         "book_slug": "machine_management",
         "book_title": "머신 관리",
         "caption": "시스템 'Deleting' 단계의 이벤트 시퀀스입니다.",
@@ -1003,6 +1075,100 @@
         "entity_label": "Security and Access"
       }
     ],
+    "etcd": [
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "must-gather markdown output",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-must-gather-markdown-output.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-must-gather-markdown-output.png",
+        "section_hint": "5.26.11.1. Using the must-gather tool 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "etcd"
+      },
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "OADP metrics targets",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-targets.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-targets.png",
+        "section_hint": "5.26.12.2. Creating OADP service monitor 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "etcd"
+      },
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "OADP backup failing alert",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-backup-failing-alert.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-backup-failing-alert.png",
+        "section_hint": "5.26.12.3. Creating an alerting rule 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "etcd"
+      },
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "OADP metrics query",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-query.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-query.png",
+        "section_hint": "5.26.12.5. Viewing metrics using the Observe UI 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "etcd"
+      }
+    ],
+    "control-plane-ops": [
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "must-gather markdown output",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-must-gather-markdown-output.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-must-gather-markdown-output.png",
+        "section_hint": "5.26.11.1. Using the must-gather tool 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane and Node Operations"
+      },
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "OADP metrics targets",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-targets.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-targets.png",
+        "section_hint": "5.26.12.2. Creating OADP service monitor 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane and Node Operations"
+      },
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "OADP backup failing alert",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-backup-failing-alert.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-backup-failing-alert.png",
+        "section_hint": "5.26.12.3. Creating an alerting rule 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane and Node Operations"
+      },
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "OADP metrics query",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-query.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-query.png",
+        "section_hint": "5.26.12.5. Viewing metrics using the Observe UI 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane and Node Operations"
+      },
+      {
+        "book_slug": "machine_management",
+        "book_title": "머신 관리",
+        "caption": "시스템 'Deleting' 단계의 이벤트 시퀀스입니다.",
+        "viewer_path": "/wiki/figures/machine_management/310_OpenShift_machine_deletion_hooks_0223.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/machine_management/310_OpenShift_machine_deletion_hooks_0223.png",
+        "section_hint": "6.2.2. 머신 삭제 처리 순서 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane and Node Operations"
+      },
+      {
+        "book_slug": "nodes",
+        "book_title": "노드",
+        "caption": "Overview of control plane and worker node",
+        "viewer_path": "/wiki/figures/nodes/295_OpenShift_Nodes_Overview_1222.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/nodes/295_OpenShift_Nodes_Overview_1222.png",
+        "section_hint": "1.1. 노드 정보 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "entity_label": "Control Plane and Node Operations"
+      }
+    ],
     "operators-and-tooling": [
       {
         "book_slug": "cli_tools",
@@ -1308,26 +1474,6 @@
         "entity_label": "Machine Config Operator"
       }
     ],
-    "control-plane-ops": [
-      {
-        "book_slug": "machine_management",
-        "book_title": "머신 관리",
-        "caption": "시스템 'Deleting' 단계의 이벤트 시퀀스입니다.",
-        "viewer_path": "/wiki/figures/machine_management/310_OpenShift_machine_deletion_hooks_0223.png/index.html",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/machine_management/310_OpenShift_machine_deletion_hooks_0223.png",
-        "section_hint": "6.2.2. 머신 삭제 처리 순서 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Control Plane and Node Operations"
-      },
-      {
-        "book_slug": "nodes",
-        "book_title": "노드",
-        "caption": "Overview of control plane and worker node",
-        "viewer_path": "/wiki/figures/nodes/295_OpenShift_Nodes_Overview_1222.png/index.html",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/nodes/295_OpenShift_Nodes_Overview_1222.png",
-        "section_hint": "1.1. 노드 정보 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Control Plane and Node Operations"
-      }
-    ],
     "lifecycle-and-support": [
       {
         "book_slug": "support",
@@ -1611,6 +1757,40 @@
         "viewer_path": "/wiki/figures/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_1023_Azure.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_1023_Azure.png",
         "section_hint": "20.5.3.1. Microsoft Entra Workload ID 인증 프로세스 링크 복사 링크가 클립보드에 복사되었습니다!"
+      }
+    ],
+    "backup_and_restore": [
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "must-gather markdown output",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-must-gather-markdown-output.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-must-gather-markdown-output.png",
+        "section_hint": "5.26.11.1. Using the must-gather tool 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "OADP metrics targets",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-targets.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-targets.png",
+        "section_hint": "5.26.12.2. Creating OADP service monitor 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "OADP backup failing alert",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-backup-failing-alert.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-backup-failing-alert.png",
+        "section_hint": "5.26.12.3. Creating an alerting rule 링크 복사 링크가 클립보드에 복사되었습니다!"
+      },
+      {
+        "book_slug": "backup_and_restore",
+        "book_title": "Backup and restore",
+        "caption": "OADP metrics query",
+        "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-query.png/index.html",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-query.png",
+        "section_hint": "5.26.12.5. Viewing metrics using the Observe UI 링크 복사 링크가 클립보드에 복사되었습니다!"
       }
     ],
     "cli_tools": [

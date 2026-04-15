@@ -47,34 +47,34 @@ DEFAULT_ENTITY_HUBS: dict[str, dict[str, Any]] = {
         "related_books": [
             {
                 "label": "Backup and Restore",
-                "href": "/playbooks/gold-candidates/wave1/backup_and_restore/index.html",
+                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
                 "summary": "etcd 백업, 수동 복구, 복구 후 검증의 기준 문서다.",
             },
             {
                 "label": "Machine Configuration",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
                 "summary": "복구 이후 node 와 MCO 상태가 정상으로 수렴하는지 확인할 때 이어진다.",
             },
             {
                 "label": "Monitoring Troubleshooting",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "복구 후 cluster signal 과 operator 이상 징후를 추적할 때 이어진다.",
             },
         ],
         "next_reading_path": [
             {
                 "label": "1. 백업 및 복구 절차 확인",
-                "href": "/playbooks/gold-candidates/wave1/backup_and_restore/index.html",
+                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
                 "summary": "etcd 를 실제로 다룰 때 가장 먼저 봐야 하는 운영 경로다.",
             },
             {
                 "label": "2. node / MCO 안정화 점검",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
                 "summary": "복구 이후 control plane node 구성과 rollout 상태를 확인한다.",
             },
             {
                 "label": "3. 관측 신호 추적",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "alert, metrics, operator degraded 신호로 후속 이상을 추적한다.",
             },
         ],
@@ -91,34 +91,34 @@ DEFAULT_ENTITY_HUBS: dict[str, dict[str, Any]] = {
         "related_books": [
             {
                 "label": "Machine Configuration",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
                 "summary": "MCO, MCP, node rollout, verify 절차의 기준 문서다.",
             },
             {
                 "label": "Installing on Any Platform",
-                "href": "/playbooks/gold-candidates/wave1/installing_on_any_platform/index.html",
+                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
                 "summary": "설치 직후 MCO 수렴과 bootstrap 후속 안정화 점검으로 이어진다.",
             },
             {
                 "label": "Monitoring Alerts Admin Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "MCO degraded 와 node alert 를 관측 신호로 추적할 때 같이 본다.",
             },
         ],
         "next_reading_path": [
             {
                 "label": "1. MCO/MCP 운영 절차 확인",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
                 "summary": "상태 확인, verify, failure signal 을 먼저 본다.",
             },
             {
                 "label": "2. 설치 후 안정화 확인",
-                "href": "/playbooks/gold-candidates/wave1/installing_on_any_platform/index.html",
+                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
                 "summary": "설치 직후 cluster baseline 이 정상인지 되짚는다.",
             },
             {
                 "label": "3. alert 연계 추적",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "구성 변경이 실제 alert 로 이어졌는지 본다.",
             },
         ],
@@ -135,34 +135,34 @@ DEFAULT_ENTITY_HUBS: dict[str, dict[str, Any]] = {
         "related_books": [
             {
                 "label": "Monitoring Metrics Admin Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_metrics_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "Prometheus 기반 메트릭 확인의 기준 문서다.",
             },
             {
                 "label": "Monitoring Alerts Admin Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "메트릭 이상이 alert 로 어떻게 보이는지 연결한다.",
             },
             {
                 "label": "Monitoring Troubleshooting Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "scrape target, query, operator 이상을 파고들 때 이어진다.",
             },
         ],
         "next_reading_path": [
             {
                 "label": "1. 메트릭 확인",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_metrics_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "현재 cluster signal 을 수치로 먼저 본다.",
             },
             {
                 "label": "2. alert 상태 연결",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "메트릭 이상이 실제 경보와 연결됐는지 확인한다.",
             },
             {
                 "label": "3. troubleshooting 진입",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "원인 분석과 장애 대응 경로로 넘어간다.",
             },
         ],
@@ -179,34 +179,34 @@ DEFAULT_ENTITY_HUBS: dict[str, dict[str, Any]] = {
         "related_books": [
             {
                 "label": "Backup and Restore",
-                "href": "/playbooks/gold-candidates/wave1/backup_and_restore/index.html",
+                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
                 "summary": "etcd 백업과 수동 복구 절차를 control plane node 작업 맥락으로 확인한다.",
             },
             {
                 "label": "Machine Configuration",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
                 "summary": "MCO, MCP, node rollout 상태를 직접 검증할 때 이어진다.",
             },
             {
                 "label": "Monitoring Troubleshooting Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "복구 이후 degraded signal, operator 이상, alert 신호를 node 관점으로 연결한다.",
             },
         ],
         "next_reading_path": [
             {
                 "label": "1. 복구 절차 확인",
-                "href": "/playbooks/gold-candidates/wave1/backup_and_restore/index.html",
+                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
                 "summary": "control plane node 에 들어가 실제 복구를 수행하기 전에 절차를 먼저 고정한다.",
             },
             {
                 "label": "2. MCO / node rollout 확인",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
                 "summary": "복구나 변경 이후 node 구성이 정상 수렴하는지 확인한다.",
             },
             {
                 "label": "3. 관측 신호 추적",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "control plane 이상이 실제 metrics, alerts, operator 상태에 어떻게 나타나는지 추적한다.",
             },
         ],
@@ -223,34 +223,34 @@ DEFAULT_ENTITY_HUBS: dict[str, dict[str, Any]] = {
         "related_books": [
             {
                 "label": "Installing on Any Platform",
-                "href": "/playbooks/gold-candidates/wave1/installing_on_any_platform/index.html",
+                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
                 "summary": "프록시와 방화벽을 설치 전 인프라 준비 항목으로 고정할 때 먼저 보는 문서다.",
             },
             {
                 "label": "Backup and Restore",
-                "href": "/playbooks/gold-candidates/wave1/backup_and_restore/index.html",
+                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
                 "summary": "debug shell 안에서 proxy 환경 변수를 확인하고 복구 절차 전 네트워크 접근성을 점검할 때 이어진다.",
             },
             {
                 "label": "Monitoring Troubleshooting Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "프록시 문제로 인한 external scrape, operator degraded, telemetry 이상을 추적할 때 연결한다.",
             },
         ],
         "next_reading_path": [
             {
                 "label": "1. 설치 전 프록시 준비",
-                "href": "/playbooks/gold-candidates/wave1/installing_on_any_platform/index.html",
+                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
                 "summary": "DNS, 방화벽, 외부 대상 접근 경로와 함께 프록시 기준선을 맞춘다.",
             },
             {
                 "label": "2. 복구 절차 중 proxy 확인",
-                "href": "/playbooks/gold-candidates/wave1/backup_and_restore/index.html",
+                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
                 "summary": "debug shell 과 수동 복구 절차에서 proxy 변수가 실제로 필요한지 확인한다.",
             },
             {
                 "label": "3. 장애 신호 추적",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "프록시 misconfiguration 이 메트릭, alert, operator health 에 어떻게 드러나는지 본다.",
             },
         ],
@@ -260,23 +260,23 @@ DEFAULT_ENTITY_HUBS: dict[str, dict[str, Any]] = {
 DEFAULT_CHAT_NAVIGATION_ALIASES: dict[str, list[dict[str, str]]] = {
     "etcd": [
         {"label": "etcd", "href": "/wiki/entities/etcd/index.html", "kind": "entity"},
-        {"label": "Backup and Restore", "href": "/playbooks/gold-candidates/wave1/backup_and_restore/index.html", "kind": "book"},
+        {"label": "Backup and Restore", "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html", "kind": "book"},
     ],
     "postinstallation_configuration": [
         {"label": "Cluster-Wide Proxy", "href": "/wiki/entities/cluster-wide-proxy/index.html", "kind": "entity"},
-        {"label": "Backup and Restore", "href": "/playbooks/gold-candidates/wave1/backup_and_restore/index.html", "kind": "book"},
+        {"label": "Backup and Restore", "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html", "kind": "book"},
     ],
     "machine_configuration": [
         {"label": "Machine Config Operator", "href": "/wiki/entities/machine-config-operator/index.html", "kind": "entity"},
-        {"label": "Machine Configuration", "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html", "kind": "book"},
+        {"label": "Machine Configuration", "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html", "kind": "book"},
     ],
     "nodes": [
         {"label": "Control Plane Nodes", "href": "/wiki/entities/control-plane-nodes/index.html", "kind": "entity"},
-        {"label": "Machine Configuration", "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html", "kind": "book"},
+        {"label": "Machine Configuration", "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html", "kind": "book"},
     ],
     "monitoring": [
         {"label": "Prometheus", "href": "/wiki/entities/prometheus/index.html", "kind": "entity"},
-        {"label": "Monitoring Metrics Admin Book", "href": "/playbooks/gold-candidates/wave1/monitoring_metrics_admin/index.html", "kind": "book"},
+        {"label": "Monitoring Metrics Admin Book", "href": "/playbooks/wiki-runtime/active/monitoring/index.html", "kind": "book"},
     ],
 }
 
@@ -310,117 +310,117 @@ DEFAULT_WIKI_CANDIDATE_RELATIONS: dict[str, dict[str, Any]] = {
         "entities": [
             {"label": "etcd", "href": "/wiki/entities/etcd/index.html"},
             {"label": "Control Plane Nodes", "href": "/wiki/entities/control-plane-nodes/index.html"},
-            {"label": "Machine Configuration", "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html"},
+            {"label": "Machine Configuration", "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html"},
             {"label": "Cluster-Wide Proxy", "href": "/wiki/entities/cluster-wide-proxy/index.html"},
         ],
         "related_docs": [
             {
                 "label": "Installing on Any Platform",
-                "href": "/playbooks/gold-candidates/wave1/installing_on_any_platform/index.html",
+                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
                 "summary": "UPI 설치 준비와 bootstrap 검증 경로를 먼저 확인할 때 연결한다.",
             },
             {
                 "label": "Machine Configuration",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
                 "summary": "복구 후 노드 구성과 MCO 상태를 점검할 때 같이 본다.",
             },
             {
                 "label": "Monitoring Troubleshooting",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "복구 이후 cluster signal 과 alert 관찰을 이어서 본다.",
             },
         ],
         "next_reading_path": [
             {
                 "label": "1. 설치/구성 기준 확인",
-                "href": "/playbooks/gold-candidates/wave1/installing_on_any_platform/index.html",
+                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
                 "summary": "복구 전후에 설치 기준선과 인프라 조건을 다시 맞춘다.",
             },
             {
                 "label": "2. 노드 구성 안정화",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
                 "summary": "MCP, kubelet, daemon rollout 을 점검한다.",
             },
             {
                 "label": "3. 복구 후 관측 신호 확인",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "alert, metrics, operator 상태를 기반으로 후속 이상 신호를 추적한다.",
             },
         ],
         "parent_topic": {
             "label": "Control Plane Recovery",
-            "href": "/playbooks/gold-candidates/wave1/backup_and_restore/index.html",
+            "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
             "summary": "etcd 백업, 수동 복구, 복구 후 검증을 묶는 운영 허브다.",
         },
         "siblings": [
             {
                 "label": "Installing on Any Platform",
-                "href": "/playbooks/gold-candidates/wave1/installing_on_any_platform/index.html",
+                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
                 "summary": "클러스터 기준선과 설치 전후 검증 절차를 같이 본다.",
             },
             {
                 "label": "Machine Configuration",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
                 "summary": "복구 후 MCO, MCP, node rollout 안정화를 확인한다.",
             },
         ],
     },
     "installing_on_any_platform": {
         "entities": [
-            {"label": "Installer", "href": "/playbooks/gold-candidates/wave1/installing_on_any_platform/index.html"},
-            {"label": "Bootstrap", "href": "/playbooks/gold-candidates/wave1/installing_on_any_platform/index.html#bootstrap-validation"},
+            {"label": "Installer", "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html"},
+            {"label": "Bootstrap", "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html#bootstrap-validation"},
             {"label": "Cluster-Wide Proxy", "href": "/wiki/entities/cluster-wide-proxy/index.html"},
-            {"label": "Machine Configuration", "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html"},
-            {"label": "Monitoring", "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html"},
+            {"label": "Machine Configuration", "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html"},
+            {"label": "Monitoring", "href": "/playbooks/wiki-runtime/active/monitoring/index.html"},
         ],
         "related_docs": [
             {
                 "label": "Machine Configuration",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
                 "summary": "설치 직후 노드 구성과 MCO 수렴 상태를 점검할 때 같이 본다.",
             },
             {
                 "label": "Backup and Restore",
-                "href": "/playbooks/gold-candidates/wave1/backup_and_restore/index.html",
+                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
                 "summary": "설치 후 운영 단계에서 control plane 복구 경로를 준비할 때 이어서 본다.",
             },
             {
                 "label": "Monitoring Troubleshooting",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "설치 이후 cluster signal 검증과 경보 추적에 연결한다.",
             },
         ],
         "next_reading_path": [
             {
                 "label": "1. 노드 구성 안정화",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
                 "summary": "설치 직후 MCO와 MCP가 정상 수렴하는지 확인한다.",
             },
             {
                 "label": "2. 관측 신호 확인",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_metrics_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "메트릭과 operator 상태로 초기 안정성을 확인한다.",
             },
             {
                 "label": "3. 복구 경로 준비",
-                "href": "/playbooks/gold-candidates/wave1/backup_and_restore/index.html",
+                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
                 "summary": "운영 이전에 etcd 백업과 수동 복구 절차를 익힌다.",
             },
         ],
         "parent_topic": {
             "label": "Cluster Provisioning",
-            "href": "/playbooks/gold-candidates/wave1/installing_on_any_platform/index.html",
+            "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
             "summary": "UPI 설치, bootstrap 검증, 설치 후 안정화의 허브다.",
         },
         "siblings": [
             {
                 "label": "Machine Configuration",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
                 "summary": "설치 이후 바로 이어지는 node 구성 점검 문서다.",
             },
             {
                 "label": "Monitoring Metrics Admin Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_metrics_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "설치 후 cluster health를 수치로 확인할 때 함께 본다.",
             },
         ],
@@ -428,117 +428,117 @@ DEFAULT_WIKI_CANDIDATE_RELATIONS: dict[str, dict[str, Any]] = {
     "machine_configuration": {
         "entities": [
             {"label": "Machine Config Operator", "href": "/wiki/entities/machine-config-operator/index.html"},
-            {"label": "MachineConfigPool", "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html#mcp-status"},
+            {"label": "MachineConfigPool", "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html#mcp-status"},
             {"label": "Control Plane Nodes", "href": "/wiki/entities/control-plane-nodes/index.html"},
-            {"label": "Monitoring", "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html"},
+            {"label": "Monitoring", "href": "/playbooks/wiki-runtime/active/monitoring/index.html"},
         ],
         "related_docs": [
             {
                 "label": "Installing on Any Platform",
-                "href": "/playbooks/gold-candidates/wave1/installing_on_any_platform/index.html",
+                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
                 "summary": "설치 직후 MCO 수렴과 bootstrap 후속 점검으로 이어진다.",
             },
             {
                 "label": "Backup and Restore",
-                "href": "/playbooks/gold-candidates/wave1/backup_and_restore/index.html",
+                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
                 "summary": "복구 후 node 구성과 static pod 상태를 확인할 때 같이 본다.",
             },
             {
                 "label": "Monitoring Alerts Admin Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "MCO 관련 alert 와 degraded signal 을 함께 추적한다.",
             },
         ],
         "next_reading_path": [
             {
                 "label": "1. MCO/MCP 상태 확인",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html#mcp-status",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html#mcp-status",
                 "summary": "degraded, updating, paused 상태를 먼저 확인한다.",
             },
             {
                 "label": "2. 경보/메트릭 확인",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "구성 변경이 alert 로 이어지는지 바로 추적한다.",
             },
             {
                 "label": "3. 복구 절차 대비",
-                "href": "/playbooks/gold-candidates/wave1/backup_and_restore/index.html",
+                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
                 "summary": "문제가 control plane 전체로 번지기 전 복구 경로를 숙지한다.",
             },
         ],
         "parent_topic": {
             "label": "Node Configuration",
-            "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+            "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
             "summary": "MCO, MCP, node rollout, kubelet 설정을 묶는 허브다.",
         },
         "siblings": [
             {
                 "label": "Monitoring Alerts Admin Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "구성 이상이 실제 alert 로 올라오는지 같이 본다.",
             },
             {
                 "label": "Monitoring Troubleshooting Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "MCO degraded 이후 follow-up 문제를 추적할 때 이어진다.",
             },
         ],
     },
     "monitoring_alerts_admin": {
         "entities": [
-            {"label": "Alertmanager", "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html"},
+            {"label": "Alertmanager", "href": "/playbooks/wiki-runtime/active/monitoring/index.html"},
             {"label": "Prometheus", "href": "/wiki/entities/prometheus/index.html"},
             {"label": "ClusterOperator", "href": "/docs/ocp/4.20/ko/operators/understanding-operators/olm-understanding-operatorhub.html"},
-            {"label": "Machine Configuration", "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html"},
+            {"label": "Machine Configuration", "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html"},
         ],
         "related_docs": [
             {
                 "label": "Monitoring Metrics Admin Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_metrics_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "경보가 실제 메트릭 이상과 어떻게 연결되는지 이어서 본다.",
             },
             {
                 "label": "Monitoring Troubleshooting Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "경보 원인을 더 깊게 파고들 때 연결한다.",
             },
             {
                 "label": "Machine Configuration",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
                 "summary": "node or MCO 관련 alert 는 구성 문서와 함께 본다.",
             },
         ],
         "next_reading_path": [
             {
                 "label": "1. 메트릭 확인",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_metrics_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "alert 와 연결된 수치 신호를 바로 확인한다.",
             },
             {
                 "label": "2. 원인 추적",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "operator, target, scrape 문제를 세부적으로 추적한다.",
             },
             {
                 "label": "3. 구성 점검",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
                 "summary": "node configuration 문제인지 연결해서 확인한다.",
             },
         ],
         "parent_topic": {
             "label": "Monitoring",
-            "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html",
+            "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
             "summary": "경보, 메트릭, 트러블슈팅을 묶는 monitoring 허브다.",
         },
         "siblings": [
             {
                 "label": "Monitoring Metrics Admin Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_metrics_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "alerts 와 같이 보는 메트릭 중심 문서다.",
             },
             {
                 "label": "Monitoring Troubleshooting Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "경보 원인 분석과 장애 대응 문서다.",
             },
         ],
@@ -546,117 +546,117 @@ DEFAULT_WIKI_CANDIDATE_RELATIONS: dict[str, dict[str, Any]] = {
     "monitoring_metrics_admin": {
         "entities": [
             {"label": "Prometheus", "href": "/wiki/entities/prometheus/index.html"},
-            {"label": "Alertmanager", "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html"},
-            {"label": "Cluster Metrics", "href": "/playbooks/gold-candidates/wave1/monitoring_metrics_admin/index.html"},
-            {"label": "Monitoring Troubleshooting", "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html"},
+            {"label": "Alertmanager", "href": "/playbooks/wiki-runtime/active/monitoring/index.html"},
+            {"label": "Cluster Metrics", "href": "/playbooks/wiki-runtime/active/monitoring/index.html"},
+            {"label": "Monitoring Troubleshooting", "href": "/playbooks/wiki-runtime/active/monitoring/index.html"},
         ],
         "related_docs": [
             {
                 "label": "Monitoring Alerts Admin Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "메트릭 이상이 alert 로 어떻게 반영되는지 연결한다.",
             },
             {
                 "label": "Monitoring Troubleshooting Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "query 결과 이상이나 target missing 상태를 추적한다.",
             },
             {
                 "label": "Installing on Any Platform",
-                "href": "/playbooks/gold-candidates/wave1/installing_on_any_platform/index.html",
+                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
                 "summary": "설치 직후 cluster 안정성 검증과 함께 본다.",
             },
         ],
         "next_reading_path": [
             {
                 "label": "1. Alert 상태 연결",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "수치 이상이 실제 경보와 연결됐는지 본다.",
             },
             {
                 "label": "2. 원인 분석",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "scrape target, operator, query 오류를 추적한다.",
             },
             {
                 "label": "3. 설치 기준 재확인",
-                "href": "/playbooks/gold-candidates/wave1/installing_on_any_platform/index.html",
+                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
                 "summary": "초기 cluster baseline 자체가 맞는지 되짚는다.",
             },
         ],
         "parent_topic": {
             "label": "Monitoring",
-            "href": "/playbooks/gold-candidates/wave1/monitoring_metrics_admin/index.html",
+            "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
             "summary": "Prometheus 기반 메트릭 확인과 운영 해석 허브다.",
         },
         "siblings": [
             {
                 "label": "Monitoring Alerts Admin Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "같은 monitoring 축의 경보 문서다.",
             },
             {
                 "label": "Monitoring Troubleshooting Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "이상 신호가 있을 때 바로 이어지는 장애 대응 문서다.",
             },
         ],
     },
     "monitoring_troubleshooting": {
         "entities": [
-            {"label": "Alertmanager", "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html"},
+            {"label": "Alertmanager", "href": "/playbooks/wiki-runtime/active/monitoring/index.html"},
             {"label": "Prometheus", "href": "/wiki/entities/prometheus/index.html"},
-            {"label": "Cluster Monitoring Operator", "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html"},
-            {"label": "Machine Configuration", "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html"},
+            {"label": "Cluster Monitoring Operator", "href": "/playbooks/wiki-runtime/active/monitoring/index.html"},
+            {"label": "Machine Configuration", "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html"},
         ],
         "related_docs": [
             {
                 "label": "Monitoring Alerts Admin Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "경보에서 들어왔을 때 가장 먼저 이어지는 문서다.",
             },
             {
                 "label": "Monitoring Metrics Admin Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_metrics_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "장애 원인을 수치로 검증할 때 같이 본다.",
             },
             {
                 "label": "Machine Configuration",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
                 "summary": "node or MCO 이슈가 원인일 때 연결된다.",
             },
         ],
         "next_reading_path": [
             {
                 "label": "1. Alert 상태 확인",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "현재 어떤 경보가 active 인지 다시 확인한다.",
             },
             {
                 "label": "2. Metrics 검증",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_metrics_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "원인 후보를 메트릭으로 확인한다.",
             },
             {
                 "label": "3. Node/MCO 경로 점검",
-                "href": "/playbooks/gold-candidates/wave1/machine_configuration/index.html",
+                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
                 "summary": "문제가 monitoring 자체가 아니라 node 구성일 수 있는지 본다.",
             },
         ],
         "parent_topic": {
             "label": "Monitoring",
-            "href": "/playbooks/gold-candidates/wave1/monitoring_troubleshooting/index.html",
+            "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
             "summary": "관측 계층의 장애 원인 분석과 대응 허브다.",
         },
         "siblings": [
             {
                 "label": "Monitoring Alerts Admin Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_alerts_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "경보 상태를 직접 보는 대응 문서다.",
             },
             {
                 "label": "Monitoring Metrics Admin Book",
-                "href": "/playbooks/gold-candidates/wave1/monitoring_metrics_admin/index.html",
+                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
                 "summary": "메트릭 기반으로 원인을 검증하는 문서다.",
             },
         ],
@@ -697,14 +697,32 @@ def _chat_link_truth_payload(root_dir: Path, href: str, kind: str) -> dict[str, 
             "runtime_truth_label": f"{settings.active_pack.pack_label} Runtime",
             "boundary_badge": "Validated Runtime",
         }
-    if normalized_href.startswith("/playbooks/gold-candidates/"):
-        return {
-            "source_lane": "legacy_gold_candidate_archive",
-            "boundary_truth": "legacy_gold_candidate_archive",
-            "runtime_truth_label": f"{settings.active_pack.pack_label} Archive",
-            "boundary_badge": "Archived Runtime",
-        }
     return {}
+
+
+def _contains_hangul(text: str) -> bool:
+    return any("\uac00" <= char <= "\ud7a3" for char in str(text or ""))
+
+
+def _link_book_slug(href: str) -> str:
+    match = RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE.match(str(href or "").strip())
+    if match:
+        return str(match.group(2) or "").strip()
+    return ""
+
+
+def _prefer_korean_book_links(links: list[dict[str, str]]) -> list[dict[str, str]]:
+    korean_books = [
+        link for link in links
+        if str(link.get("kind") or "").strip() == "book" and _contains_hangul(str(link.get("label") or ""))
+    ]
+    if korean_books:
+        return korean_books
+    return links
+
+
+def _is_final_runtime_href(href: str) -> bool:
+    return str(href or "").strip().startswith(f"{ACTIVE_WIKI_RUNTIME_BOOK_PREFIX}/")
 
 
 def _candidate_relations() -> dict[str, dict[str, Any]]:
@@ -872,7 +890,8 @@ def _preferred_book_href(root_dir: Path, slug: str) -> str:
         return ""
     if normalized in _approved_wiki_runtime_slugs(root_dir):
         return f"{ACTIVE_WIKI_RUNTIME_BOOK_PREFIX}/{normalized}/index.html"
-    return f"{GOLD_CANDIDATE_BOOK_PREFIX}/{normalized}/index.html"
+    settings = load_settings(root_dir)
+    return f"/docs/ocp/{settings.ocp_version}/{settings.docs_language}/{normalized}/index.html"
 
 
 def _rewrite_book_href(root_dir: Path, href: str) -> str:
@@ -887,22 +906,22 @@ def _rewrite_book_href(root_dir: Path, href: str) -> str:
             if anchor:
                 rewritten = f"{rewritten}#{anchor}"
             return rewritten
-    if not normalized.startswith(f"{GOLD_CANDIDATE_BOOK_PREFIX}/"):
-        return normalized
-    parts = [part for part in normalized.split("/") if part]
-    if len(parts) < 4:
-        return normalized
-    slug = parts[-2]
-    return _preferred_book_href(root_dir, slug)
+    if normalized.startswith(f"{GOLD_CANDIDATE_BOOK_PREFIX}/") or normalized.startswith(f"{LEGACY_WIKI_RUNTIME_BOOK_PREFIX}/"):
+        parts = [part for part in normalized.split("/") if part]
+        if len(parts) >= 4:
+            slug = parts[-2]
+            return _preferred_book_href(root_dir, slug)
+    return normalized
 
 
 def _relation_href_matches_slug(href: str, slug: str) -> bool:
     normalized = str(href or "").strip()
+    docs_pattern = re.compile(rf"^/docs/ocp/[^/]+/[^/]+/{re.escape(slug)}/index\.html$")
     return normalized in {
         f"{GOLD_CANDIDATE_BOOK_PREFIX}/{slug}/index.html",
         f"{ACTIVE_WIKI_RUNTIME_BOOK_PREFIX}/{slug}/index.html",
         f"{LEGACY_WIKI_RUNTIME_BOOK_PREFIX}/{slug}/index.html",
-    }
+    } or bool(docs_pattern.match(normalized))
 
 
 def _build_backlinks(root_dir: Path, slug: str) -> list[dict[str, str]]:
@@ -957,9 +976,9 @@ def _entity_hub_sections(entity_slug: str) -> list[dict[str, Any]]:
     )
     navigation_text = "\n\n".join(
         [
-            "이 엔터티는 절차 문서, 장애 대응 문서, 상위 운영 문서 사이를 오가는 허브로 쓴다.",
-            "문서 안에서 막히면 이 허브로 돌아와 관련 북과 후속 읽기 경로를 다시 고른다.",
-            "특정 작업으로 바로 이동해야 할 때는 아래 Related Books 와 Backlinks 를 우선 본다.",
+            "이 엔터티는 절차 문서, 장애 대응 문서, 상위 운영 문서 사이의 연결 허브다.",
+            "관련 북, 역참조 문서, 연계 섹션을 함께 볼 수 있다.",
+            "연결 구조를 따라 필요한 문서와 경로를 탐색한다.",
         ]
     )
     title = str(entity.get("title") or entity_slug)
@@ -1072,26 +1091,25 @@ def _build_entity_hub_supplementary_blocks(root_dir: Path, entity_slug: str) -> 
         </section>
         <section class="wiki-grid wiki-grid-primary">
           <article class="wiki-card wiki-card-primary">
-            <h3>Start Here</h3>
-            <p class="wiki-card-intro">이 엔터티를 처음 잡았을 때 바로 이어봐야 할 경로만 먼저 보여준다.</p>
+            <h3>Recommended Path</h3>
             {next_path_links}
           </article>
           <article class="wiki-card wiki-card-primary">
-            <h3>Explore</h3>
+            <h3>Connections</h3>
             <div class="wiki-card-stack">
               <div>
-                <h4>Related Books</h4>
+                <h4>Books</h4>
                 {related_books}
               </div>
               <div>
-                <h4>Backlinks</h4>
+                <h4>Referenced By</h4>
                 {backlink_links}
               </div>
             </div>
           </article>
         </section>
         <details class="wiki-details">
-          <summary>More Connections</summary>
+          <summary>More</summary>
           <section class="wiki-grid wiki-grid-secondary">
             <article class="wiki-card">
               <h3>Related Figures</h3>
@@ -1108,7 +1126,7 @@ def _build_entity_hub_supplementary_blocks(root_dir: Path, entity_slug: str) -> 
             title=html.escape(str(entity.get("title") or entity_slug)),
             summary=html.escape(str(entity.get("summary") or "")),
             related_books=related_books or '<div class="wiki-empty">연결된 북이 아직 없습니다.</div>',
-            next_path_links=next_path_links or '<div class="wiki-empty">다음 읽기 경로가 아직 없습니다.</div>',
+            next_path_links=next_path_links or '<div class="wiki-empty">연결된 경로가 아직 없습니다.</div>',
             backlink_links=backlink_links or '<div class="wiki-empty">이 엔터티를 참조하는 문서가 아직 없습니다.</div>',
             figure_links=figure_links or '<div class="wiki-empty">연결된 figure 자산이 아직 없습니다.</div>',
             section_links=section_links or '<div class="wiki-empty">연결된 절차 섹션이 아직 없습니다.</div>',
@@ -1193,22 +1211,47 @@ def build_chat_navigation_links(
 ) -> list[dict[str, str]]:
     links: list[dict[str, str]] = []
     seen: set[str] = set()
+    slug_seen: set[str] = set()
+    semantic_seen: set[str] = set()
     alias_map = _chat_navigation_aliases()
     relation_map = _candidate_relations()
     href_scores, ref_scores = _overlay_recent_target_scores(root_dir, user_id=user_id)
+
+    def duplicate_semantic(label: str, kind: str) -> bool:
+        normalized = re.sub(r"\s+", " ", str(label or "").strip().lower())
+        if not normalized:
+            return False
+        keys = {normalized, f"{kind}:{normalized}"}
+        if any(key in semantic_seen for key in keys):
+            return True
+        semantic_seen.update(keys)
+        return False
+
     for citation in citations:
         if not isinstance(citation, dict):
             continue
         slug = str(citation.get("book_slug") or "").strip()
         if slug and slug in alias_map:
             for item in alias_map.get(slug, []):
+                kind = str(item.get("kind") or "book")
+                if kind != "book":
+                    continue
                 href = str(item.get("href") or "").strip()
                 label = str(item.get("label") or "").strip()
-                if not href or not label or href in seen:
-                    continue
-                seen.add(href)
                 rewritten_href = _rewrite_book_href(root_dir, href)
-                kind = str(item.get("kind") or "book")
+                book_slug = _link_book_slug(rewritten_href)
+                if (
+                    not href
+                    or not label
+                    or not _is_final_runtime_href(rewritten_href)
+                    or rewritten_href in seen
+                    or (book_slug and book_slug in slug_seen)
+                    or duplicate_semantic(label, kind)
+                ):
+                    continue
+                seen.add(rewritten_href)
+                if book_slug:
+                    slug_seen.add(book_slug)
                 links.append(
                     {
                         "label": label,
@@ -1232,27 +1275,23 @@ def build_chat_navigation_links(
                 relation = relation_map.get("monitoring_troubleshooting")
         if relation is None:
             continue
-        for item in _wiki_relation_items(relation, "entities")[:2]:
-            href = str(item.get("href") or "").strip()
-            label = str(item.get("label") or "").strip()
-            if not href or not label or href in seen:
-                continue
-            seen.add(href)
-            rewritten_href = _rewrite_book_href(root_dir, href)
-            links.append(
-                {
-                    "label": label,
-                    "href": rewritten_href,
-                    "kind": "entity",
-                }
-            )
         for item in _wiki_relation_items(relation, "related_docs")[:2]:
             href = str(item.get("href") or "").strip()
             label = str(item.get("label") or "").strip()
-            if not href or not label or href in seen:
-                continue
-            seen.add(href)
             rewritten_href = _rewrite_book_href(root_dir, href)
+            book_slug = _link_book_slug(rewritten_href)
+            if (
+                not href
+                or not label
+                or not _is_final_runtime_href(rewritten_href)
+                or rewritten_href in seen
+                or (book_slug and book_slug in slug_seen)
+                or duplicate_semantic(label, "book")
+            ):
+                continue
+            seen.add(rewritten_href)
+            if book_slug:
+                slug_seen.add(book_slug)
             links.append(
                 {
                     "label": label,
@@ -1261,8 +1300,9 @@ def build_chat_navigation_links(
                     **_chat_link_truth_payload(root_dir, rewritten_href, "book"),
                 }
             )
-        if len(links) >= 6:
+        if len(links) >= 2:
             break
+    links = _prefer_korean_book_links(links)
     ranked_links = sorted(
         links,
         key=lambda item: (
@@ -1276,11 +1316,11 @@ def build_chat_navigation_links(
                     0,
                 ),
             ),
-            0 if str(item.get("kind") or "").strip() == "entity" else 1,
+            0 if _contains_hangul(str(item.get("label") or "")) else 1,
             str(item.get("label") or ""),
         ),
     )
-    return ranked_links[:6]
+    return ranked_links[:2]
 
 
 _SECTION_TOKEN_RE = re.compile(r"[0-9A-Za-z가-힣_-]+")
@@ -1339,6 +1379,8 @@ def build_chat_section_links(
     user_id: str | None = None,
 ) -> list[dict[str, str]]:
     candidates: dict[str, dict[str, Any]] = {}
+    label_seen: set[str] = set()
+    slug_seen: set[str] = set()
     href_scores, ref_scores = _overlay_recent_target_scores(root_dir, user_id=user_id)
     for citation in citations:
         if not isinstance(citation, dict):
@@ -1350,16 +1392,17 @@ def build_chat_section_links(
         citation_section = str(citation.get("section") or "").strip()
         if citation_href and citation_section:
             rewritten_citation_href = _rewrite_book_href(root_dir, citation_href)
-            direct_candidate = {
-                "label": citation_section,
-                "href": rewritten_citation_href,
-                "kind": "section",
-                "summary": str(citation.get("source_label") or "").strip(),
-            }
-            candidates[rewritten_citation_href] = {
-                **direct_candidate,
-                "_score": max(int(candidates.get(rewritten_citation_href, {}).get("_score", 0)), 1500),
-            }
+            if _is_final_runtime_href(rewritten_citation_href) and _contains_hangul(citation_section):
+                direct_candidate = {
+                    "label": citation_section,
+                    "href": rewritten_citation_href,
+                    "kind": "section",
+                    "summary": str(citation.get("source_label") or "").strip(),
+                }
+                candidates[rewritten_citation_href] = {
+                    **direct_candidate,
+                    "_score": max(int(candidates.get(rewritten_citation_href, {}).get("_score", 0)), 1500),
+                }
         for item in _book_related_sections(slug):
             href = str(item.get("href") or "").strip()
             label = str(item.get("label") or "").strip()
@@ -1368,6 +1411,8 @@ def build_chat_section_links(
             score = _section_link_score(item, citation)
             current = candidates.get(href)
             rewritten_href = _rewrite_book_href(root_dir, href)
+            if not _is_final_runtime_href(rewritten_href) or not _contains_hangul(label):
+                continue
             if current is None or score > int(current.get("_score", 0)):
                 candidates[href] = {
                     "label": label,
@@ -1397,18 +1442,30 @@ def build_chat_section_links(
     seen: set[str] = set()
     for item in ranked:
         href = str(item.get("href") or "").strip()
-        if not href or href in seen:
+        label = str(item.get("label") or "").strip()
+        normalized_label = re.sub(r"\s+", " ", label.lower())
+        book_slug = _link_book_slug(href)
+        if (
+            not href
+            or href in seen
+            or (normalized_label and normalized_label in label_seen)
+            or (book_slug and book_slug in slug_seen)
+        ):
             continue
         seen.add(href)
+        if normalized_label:
+            label_seen.add(normalized_label)
+        if book_slug:
+            slug_seen.add(book_slug)
         links.append(
             {
-                "label": str(item.get("label") or "").strip(),
+                "label": label,
                 "href": href,
                 "kind": "section",
                 "summary": str(item.get("summary") or "").strip(),
             }
         )
-        if len(links) >= 4:
+        if len(links) >= 2:
             break
     return links
 
@@ -1676,7 +1733,7 @@ def _build_wiki_supplementary_blocks(root_dir: Path, slug: str) -> list[str]:
     if parent_topic:
         parent_block = """
         <section class="wiki-parent-card">
-          <div class="wiki-parent-eyebrow">Parent Topic</div>
+          <div class="wiki-parent-eyebrow">Topic</div>
           <a href="{href}">{label}</a>
           <p>{summary}</p>
         </section>
@@ -1690,29 +1747,28 @@ def _build_wiki_supplementary_blocks(root_dir: Path, slug: str) -> list[str]:
         {parent_block}
         <section class="wiki-grid wiki-grid-primary">
           <article class="wiki-card wiki-card-primary">
-            <h3>Start Here</h3>
-            <p class="wiki-card-intro">지금 이 문서를 읽는 사람이 가장 먼저 따라가야 할 경로만 앞에 둔다.</p>
+            <h3>Recommended Path</h3>
             {next_path_links}
           </article>
           <article class="wiki-card wiki-card-primary">
-            <h3>Explore</h3>
+            <h3>Connections</h3>
             <div class="wiki-card-stack">
               <div>
-                <h4>Key Entities</h4>
+                <h4>Entities</h4>
                 <div class="wiki-entity-list">{entity_links}</div>
               </div>
               <div>
-                <h4>Related Documents</h4>
+                <h4>Documents</h4>
                 {related_links}
               </div>
             </div>
           </article>
         </section>
         <details class="wiki-details">
-          <summary>More Connections</summary>
+          <summary>More</summary>
           <section class="wiki-grid wiki-grid-secondary">
             <article class="wiki-card">
-              <h3>Backlinks</h3>
+              <h3>Referenced By</h3>
               {backlink_links}
             </article>
             <article class="wiki-card">
@@ -1733,7 +1789,7 @@ def _build_wiki_supplementary_blocks(root_dir: Path, slug: str) -> list[str]:
             parent_block=parent_block,
             entity_links=entity_links or '<div class="wiki-empty">핵심 엔터티 연결이 아직 없습니다.</div>',
             related_links=related_links or '<div class="wiki-empty">연결된 문서가 아직 없습니다.</div>',
-            next_path_links=next_path_links or '<div class="wiki-empty">다음 읽기 경로가 아직 없습니다.</div>',
+            next_path_links=next_path_links or '<div class="wiki-empty">연결된 경로가 아직 없습니다.</div>',
             backlink_links=backlink_links or '<div class="wiki-empty">아직 연결된 역방향 문서가 없습니다.</div>',
             sibling_blocks=sibling_blocks or '<div class="wiki-empty">같은 작업군 문서는 아직 준비 중입니다.</div>',
             figure_blocks=figure_blocks or '<div class="wiki-empty">연결된 figure 자산이 아직 없습니다.</div>',
@@ -1744,15 +1800,9 @@ def _build_wiki_supplementary_blocks(root_dir: Path, slug: str) -> list[str]:
 
 def parse_gold_candidate_markdown_viewer_path(viewer_path: str) -> tuple[str, str, str | None] | None:
     parsed = urlparse((viewer_path or "").strip())
-    match = MARKDOWN_VIEWER_PATH_RE.fullmatch(parsed.path.strip())
-    if match is not None:
-        return ("candidate", match.group(1), None)
     active_runtime_match = ACTIVE_RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE.fullmatch(parsed.path.strip())
     if active_runtime_match is not None:
         return ("runtime", active_runtime_match.group(1), "active")
-    legacy_runtime_match = RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE.fullmatch(parsed.path.strip())
-    if legacy_runtime_match is not None:
-        return ("runtime", legacy_runtime_match.group(2), legacy_runtime_match.group(1))
     return None
 
 
@@ -1989,22 +2039,22 @@ def _build_figure_supplementary_blocks(root_dir: Path, slug: str, asset_name: st
         </section>
         <section class="wiki-grid">
           <article class="wiki-card">
-            <h3>Related Entities</h3>
+            <h3>Entities</h3>
             <div class="wiki-entity-list">{entity_links}</div>
           </article>
           <article class="wiki-card">
-            <h3>Related Documents</h3>
+            <h3>Documents</h3>
             {related_books}
           </article>
           <article class="wiki-card">
-            <h3>Next Reading Path</h3>
+            <h3>Recommended Path</h3>
             {next_path_links}
           </article>
         </section>
         <section class="wiki-grid wiki-grid-secondary">
           {related_section_block}
           <article class="wiki-card">
-            <h3>Sibling Figures</h3>
+            <h3>Figures</h3>
             {sibling_figure_links}
           </article>
         </section>
@@ -2014,8 +2064,8 @@ def _build_figure_supplementary_blocks(root_dir: Path, slug: str, asset_name: st
             summary=html.escape(parent_summary),
             entity_links=related_entity_links or '<div class="wiki-empty">연결된 엔터티가 아직 없습니다.</div>',
             related_books=related_books or '<div class="wiki-empty">연관 문서가 아직 없습니다.</div>',
-            next_path_links=next_path_links or '<div class="wiki-empty">다음 읽기 경로가 아직 없습니다.</div>',
-            related_section_block=related_section_block or '<article class="wiki-card"><h3>Related Section</h3><div class="wiki-empty">정확한 섹션 매칭이 아직 없습니다.</div></article>',
+            next_path_links=next_path_links or '<div class="wiki-empty">연결된 경로가 아직 없습니다.</div>',
+            related_section_block=related_section_block or '<article class="wiki-card"><h3>Section Match</h3><div class="wiki-empty">정확한 섹션 매칭이 아직 없습니다.</div></article>',
             sibling_figure_links=sibling_figure_links or '<div class="wiki-empty">같은 문서의 다른 figure 자산이 없습니다.</div>',
         ).strip()
     ]
@@ -2277,7 +2327,7 @@ def internal_customer_pack_viewer_html(root_dir: Path, viewer_path: str) -> str 
             <a class="viewer-truth-link" href="{source_url}" target="_blank" rel="noreferrer">원본 캡처 열기</a>
           </div>
           <div class="viewer-truth-title">{title}</div>
-          <p>customer source-first private runtime 문서다. 아래 evidence 로 현재 상태만 확인하면 된다.</p>
+          <p>Customer pack runtime evidence</p>
           <div class="wiki-entity-list">{badges}</div>
         </section>
         """.format(

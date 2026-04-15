@@ -1,0 +1,21 @@
+{
+  "task_id": "W6-E2-T2-READER-RESET-AUDIT",
+  "created_at": "2026-04-15T04:18:28.119526+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": ".",
+  "lane_id": "main",
+  "role": "main",
+  "write_scope": "active rule docs; viewer_page.py; answer_text_formatting.py; ingestion/normalize.py; reports/build_logs; reports/execution_harness; TASK_BOARD.yaml",
+  "target_outputs": [
+    "reports/execution_harness/W6-E2-T2-READER-RESET-AUDIT/main/manifest.json",
+    "reports/build_logs/reader_reset_audit_report.json",
+    "reports/build_logs/reader_contract_verification_report.json"
+  ],
+  "validation_commands": [
+    "python YAML parse TASK_BOARD",
+    "npm --prefix presentation-ui run build"
+  ],
+  "status": "prepared"
+}

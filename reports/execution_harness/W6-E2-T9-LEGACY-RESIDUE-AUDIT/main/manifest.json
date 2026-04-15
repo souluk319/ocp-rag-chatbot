@@ -1,0 +1,20 @@
+{
+  "task_id": "W6-E2-T9-LEGACY-RESIDUE-AUDIT",
+  "created_at": "2026-04-15T06:05:27.075721+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "write_scope": "reports/execution_harness/W6-E2-T9-LEGACY-RESIDUE-AUDIT/main;reports/build_logs;TASK_BOARD.yaml",
+  "target_outputs": [
+    "reports/build_logs/legacy_residue_audit_report.json",
+    "reports/build_logs/legacy_residue_classification_report.json",
+    "reports/execution_harness/W6-E2-T9-LEGACY-RESIDUE-AUDIT/main/final_report.json"
+  ],
+  "validation_commands": [
+    "python scripts/codex_python.py --help"
+  ],
+  "status": "prepared"
+}

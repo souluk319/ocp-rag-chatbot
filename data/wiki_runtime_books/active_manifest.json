@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-04-15T00:56:32+00:00",
+  "generated_at_utc": "2026-04-15T05:53:51+00:00",
   "active_group": "full_rebuild",
   "runtime_count": 29,
   "source_manifest_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\wiki_runtime_books\\full_rebuild_manifest.json",
@@ -30,7 +30,7 @@
       "title": "Backup and restore",
       "source_candidate_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\gold_candidate_books\\full_rebuild\\backup_and_restore.md",
       "runtime_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\wiki_runtime_books\\full_rebuild\\backup_and_restore.md",
-      "promotion_strategy": "asciidoc_source_first_plus_12_tone"
+      "promotion_strategy": "full_rebuild_generic_export"
     },
     {
       "slug": "cli_tools",
@@ -79,7 +79,7 @@
       "title": "Installing on any platform",
       "source_candidate_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\gold_candidate_books\\full_rebuild\\installing_on_any_platform.md",
       "runtime_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\wiki_runtime_books\\full_rebuild\\installing_on_any_platform.md",
-      "promotion_strategy": "asciidoc_source_first_plus_12_tone"
+      "promotion_strategy": "full_rebuild_generic_export"
     },
     {
       "slug": "logging",
@@ -93,7 +93,7 @@
       "title": "Machine configuration",
       "source_candidate_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\gold_candidate_books\\full_rebuild\\machine_configuration.md",
       "runtime_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\wiki_runtime_books\\full_rebuild\\machine_configuration.md",
-      "promotion_strategy": "asciidoc_source_first_plus_12_tone"
+      "promotion_strategy": "full_rebuild_generic_export"
     },
     {
       "slug": "machine_management",

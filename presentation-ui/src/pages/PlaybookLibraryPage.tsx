@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Activity,
@@ -35,6 +35,7 @@ import {
   type RepositoryCategory,
   type RepositoryFavorite,
   type RepositorySearchResult,
+  type RepositoryUnansweredItem,
   uploadCustomerPackDraft,
   captureCustomerPackDraft,
   normalizeCustomerPackDraft,
@@ -43,6 +44,7 @@ import {
   deleteCustomerPackDraft,
   loadCustomerPackBook,
   loadRepositoryFavorites,
+  loadRepositoryUnanswered,
   removeRepositoryFavorite,
   saveRepositoryFavorites,
   searchRepositories,
@@ -115,6 +117,7 @@ function customerPackBookEvidenceBits(book?: LibraryBook | null): string[] {
 
 const PlaybookLibraryPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'monitoring' | 'repository'>('monitoring');
   const [pipelineStage, setPipelineStage] = useState<PipelineStage>('idle');
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -132,6 +135,7 @@ const PlaybookLibraryPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [repositoryResults, setRepositoryResults] = useState<RepositorySearchResult[]>([]);
   const [repositoryFavorites, setRepositoryFavorites] = useState<RepositoryFavorite[]>([]);
+  const [repositoryUnanswered, setRepositoryUnanswered] = useState<RepositoryUnansweredItem[]>([]);
   const [activeRepositoryCategory, setActiveRepositoryCategory] = useState<RepositoryCategory>('Official Docs');
   const [selectedRepositoryNames, setSelectedRepositoryNames] = useState<string[]>([]);
   const [repositoryStage, setRepositoryStage] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
@@ -144,6 +148,7 @@ const PlaybookLibraryPage: React.FC = () => {
   const [removingFavoriteName, setRemovingFavoriteName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pipelineRef = useRef<HTMLDivElement>(null);
+  const repositoryAutoloadKeyRef = useRef('');
 
   const addLog = (tag: LogEntry['tag'], msg: string) => {
     setLogs((prev) => [{ time: nowTime(), tag, msg }, ...prev].slice(0, 10));
@@ -155,15 +160,60 @@ const PlaybookLibraryPage: React.FC = () => {
       .catch(() => setRepositoryFavorites([]));
   }, []);
 
+  const refreshRepositoryUnanswered = useCallback(() => {
+    loadRepositoryUnanswered(20)
+      .then((payload) => setRepositoryUnanswered(payload.items))
+      .catch(() => setRepositoryUnanswered([]));
+  }, []);
+
   const refreshData = useCallback(() => {
     loadDataControlRoom().then(setControlRoom).catch(() => { });
     listCustomerPackDrafts().then((res) => setDrafts(res.drafts)).catch(() => { });
     refreshRepositoryFavorites();
-  }, [refreshRepositoryFavorites]);
+    refreshRepositoryUnanswered();
+  }, [refreshRepositoryFavorites, refreshRepositoryUnanswered]);
 
   useEffect(() => {
     refreshData();
   }, [refreshData]);
+
+  useEffect(() => {
+    const requestedView = (searchParams.get('view') || '').trim();
+    const requestedQuery = (searchParams.get('q') || '').trim();
+    if (requestedView === 'repository') {
+      setViewMode('repository');
+    }
+    if (!requestedQuery) {
+      repositoryAutoloadKeyRef.current = '';
+      return;
+    }
+    const autoloadKey = `${requestedView}|${requestedQuery}`;
+    if (repositoryAutoloadKeyRef.current === autoloadKey) {
+      return;
+    }
+    repositoryAutoloadKeyRef.current = autoloadKey;
+    setSearchQuery(requestedQuery);
+    setRepositoryStage('loading');
+    setRepositoryError('');
+    searchRepositories(requestedQuery, 12)
+      .then((payload) => {
+        setRepositoryResults(payload.results);
+        setRepositoryMeta({
+          rewrittenQuery: payload.rewritten_query,
+          authMode: payload.auth_mode,
+        });
+        setSelectedRepositoryNames([]);
+        setRepositoryStage('done');
+        addLog('info', `Repository search '${requestedQuery}' → ${payload.count} matches`);
+      })
+      .catch((err: any) => {
+        const msg = err?.message || 'Repository search failed';
+        setRepositoryStage('error');
+        setRepositoryError(msg);
+        setRepositoryResults([]);
+        addLog('error', `Repository search failed: ${msg}`);
+      });
+  }, [searchParams]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -297,6 +347,8 @@ const PlaybookLibraryPage: React.FC = () => {
   const handleRepositorySubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     await handleRepositorySearch();
+    const normalizedQuery = searchQuery.trim();
+    setSearchParams(normalizedQuery ? { view: 'repository', q: normalizedQuery } : { view: 'repository' });
   };
 
   const toggleRepositorySelection = (fullName: string) => {
@@ -388,27 +440,23 @@ const PlaybookLibraryPage: React.FC = () => {
     let packets: BuyerPacket[] = [];
     switch (kind) {
       case 'known':
-        title = 'Known Source Books';
+        title = 'Full Source Catalog';
         books = [...(cr.known_books ?? [])];
         break;
       case 'approved':
-        title = 'Approved Runtime Books';
+        title = 'Operational Shortlist';
         books = [...(cr.gold_books ?? [])];
         break;
       case 'manual':
-        title = 'Materialized Manual Books';
+        title = 'Catalog Playbooks';
         books = [...(cr.manualbooks?.books ?? [])];
         break;
       case 'customerPack':
         title = 'Customer Pack Runtime Books';
         books = [...(cr.customer_pack_runtime_books?.books ?? [])];
         break;
-      case 'candidate':
-        title = 'Gold Candidate Books';
-        books = [...(cr.gold_candidate_books?.books ?? [])];
-        break;
       case 'wikiRuntime':
-        title = 'Approved Wiki Runtime Books';
+        title = 'Live Operational Wiki';
         books = [...(cr.approved_wiki_runtime_books?.books ?? [])];
         break;
       case 'navBacklog':
@@ -416,7 +464,7 @@ const PlaybookLibraryPage: React.FC = () => {
         books = [...(cr.wiki_navigation_backlog?.books ?? [])];
         break;
       case 'wikiUsage':
-        title = 'Wiki Usage Signals';
+        title = 'Usage';
         books = [...(cr.wiki_usage_signals?.books ?? [])];
         break;
       case 'buyerGate':
@@ -490,8 +538,9 @@ const PlaybookLibraryPage: React.FC = () => {
   const approvedRuntimeBooks = summary?.approved_runtime_count ?? summary?.gold_book_count ?? controlRoom?.gold_books?.length ?? 0;
   const materializedManualBooks = summary?.manualbook_count ?? controlRoom?.manualbooks?.books?.length ?? 0;
   const customerPackRuntimeBooks = summary?.customer_pack_runtime_book_count ?? controlRoom?.customer_pack_runtime_books?.books?.length ?? 0;
-  const goldCandidateBooks = summary?.gold_candidate_book_count ?? controlRoom?.gold_candidate_books?.books?.length ?? 0;
   const approvedWikiRuntimeBooks = summary?.approved_wiki_runtime_book_count ?? controlRoom?.approved_wiki_runtime_books?.books?.length ?? 0;
+  const allOperationalWikiBooks = [...(controlRoom?.approved_wiki_runtime_books?.books ?? [])];
+  const operationalWikiBooks = allOperationalWikiBooks.slice(0, 8);
   const wikiNavigationBacklog = summary?.wiki_navigation_backlog_count ?? controlRoom?.wiki_navigation_backlog?.books?.length ?? 0;
   const wikiUsageSignals = summary?.wiki_usage_signal_count ?? controlRoom?.wiki_usage_signals?.books?.length ?? 0;
   const buyerDemoGate = summary?.buyer_demo_gate_count ?? controlRoom?.buyer_demo_gate?.books?.length ?? 0;
@@ -531,7 +580,7 @@ const PlaybookLibraryPage: React.FC = () => {
       <header className="library-header">
         <div className="header-container">
           <div className="header-content">
-            <button className="back-btn" onClick={() => navigate('/workspace')}>
+            <button className="back-btn" onClick={() => navigate('/studio')}>
               <ArrowLeft size={20} />
             </button>
             <div className="header-text">
@@ -564,140 +613,69 @@ const PlaybookLibraryPage: React.FC = () => {
       <main className="library-main">
         {viewMode === 'monitoring' ? (
           <div className="monitoring-view">
-            {/* Real Metrics */}
-            <section className="metrics-grid">
-              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('known')}>
-                <div className="metric-icon"><Globe size={24} /></div>
-                <div className="metric-data">
-                  <h3>{knownSourceBooks.toLocaleString()}</h3>
-                  <p>Known Source Books</p>
+            {operationalWikiBooks.length > 0 && (
+              <section className="operational-shelf box-container">
+                <div className="operational-shelf-header">
+                  <div>
+                    <span className="operational-shelf-eyebrow">Operational Wiki</span>
+                    <h2>바로 읽을 수 있는 운영 위키</h2>
+                    <p>지금 제품 표면에서 바로 여는 핵심 운영 문서 묶음입니다.</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="operational-shelf-link"
+                    onClick={() => openMetricPopover('wikiRuntime')}
+                  >
+                    전체 29권 보기
+                  </button>
                 </div>
-                <div className="metric-status online">Catalog</div>
-              </div>
-              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('approved')}>
-                <div className="metric-icon"><ShieldCheck size={24} /></div>
-                <div className="metric-data">
-                  <h3>{approvedRuntimeBooks.toLocaleString()}</h3>
-                  <p>Approved Runtime Books</p>
+                <div className="operational-shelf-grid">
+                  {operationalWikiBooks.map((book) => (
+                    <button
+                      key={book.book_slug}
+                      type="button"
+                      className="operational-book-card"
+                      onClick={() => setBookViewer(book)}
+                    >
+                      <span className="operational-book-badge">Live Wiki</span>
+                      <strong>{book.title}</strong>
+                      <span>{book.book_slug.replace(/_/g, ' ')}</span>
+                    </button>
+                  ))}
                 </div>
-                <div className="metric-trend positive">
-                  <BookOpen size={14} /> <span>Current</span>
-                </div>
-              </div>
-              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('manual')}>
-                <div className="metric-icon"><Layers size={24} /></div>
-                <div className="metric-data">
-                  <h3>{materializedManualBooks.toLocaleString()}</h3>
-                  <p>Materialized Manual Books</p>
-                </div>
-                <div className="metric-status online">Materialized</div>
-              </div>
-              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('customerPack')}>
-                <div className="metric-icon"><HardDrive size={24} /></div>
-                <div className="metric-data">
-                  <h3>{customerPackRuntimeBooks.toLocaleString()}</h3>
-                  <p>Customer Pack Runtime</p>
-                </div>
-                <div className="metric-status optimized">Pack</div>
-              </div>
-              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('candidate')}>
-                <div className="metric-icon"><BookOpen size={24} /></div>
-                <div className="metric-data">
-                  <h3>{goldCandidateBooks.toLocaleString()}</h3>
-                  <p>Gold Candidate Books</p>
-                </div>
-                <div className="metric-status online">Candidate</div>
-              </div>
-              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('wikiRuntime')}>
-                <div className="metric-icon"><CheckCircle2 size={24} /></div>
-                <div className="metric-data">
-                  <h3>{approvedWikiRuntimeBooks.toLocaleString()}</h3>
-                  <p>Approved Wiki Runtime</p>
-                </div>
-                <div className="metric-status online">Runtime</div>
-              </div>
-              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('navBacklog')}>
-                <div className="metric-icon"><Search size={24} /></div>
-                <div className="metric-data">
-                  <h3>{wikiNavigationBacklog.toLocaleString()}</h3>
-                  <p>Wiki Navigation Backlog</p>
-                </div>
-                <div className="metric-status online">Signals</div>
-              </div>
-              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('wikiUsage')}>
-                <div className="metric-icon"><Star size={24} /></div>
-                <div className="metric-data">
-                  <h3>{wikiUsageSignals.toLocaleString()}</h3>
-                  <p>Wiki Usage Signals</p>
-                </div>
-                <div className="metric-status optimized">Personal</div>
-              </div>
-              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('buyerGate')}>
-                <div className="metric-icon"><ShieldAlert size={24} /></div>
-                <div className="metric-data">
-                  <h3>{buyerDemoGate.toLocaleString()}</h3>
-                  <p>Release Gate</p>
-                </div>
-                <div className="metric-status warning">Release</div>
-              </div>
-              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('buyerPackets')}>
-                <div className="metric-icon"><FileText size={24} /></div>
-                <div className="metric-data">
-                  <h3>{buyerPacketBundle.toLocaleString()}</h3>
-                  <p>Release Candidate Packets</p>
-                </div>
-                <div className="metric-status online">Packets</div>
-              </div>
-              <div className="metric-card">
-                <div className="metric-icon"><CheckCircle2 size={24} /></div>
-                <div className="metric-data">
-                  <h3>{ownerDemoPassRate}%</h3>
-                  <p>Owner Demo Rehearsal</p>
-                </div>
-                <div className={`metric-status ${ownerDemo?.blockers?.length ? 'warning' : 'online'}`}>
-                  {ownerDemo?.blockers?.length ? 'Blocking' : 'Passing'}
-                </div>
-              </div>
-              <div className="metric-card metric-clickable" onClick={() => openMetricPopover('derived')}>
-                <div className="metric-icon"><Activity size={24} /></div>
-                <div className="metric-data">
-                  <h3>{derivedPlaybooks.toLocaleString()}</h3>
-                  <p>Derived Playbooks</p>
-                </div>
-                <div className="metric-status optimized">Generated</div>
-              </div>
-            </section>
+              </section>
+            )}
 
-            {(gate || hasMetricSourceDrift) && (
-              <div className="truth-banner">
-                <AlertCircle size={16} />
-                <div className="truth-banner-copy">
-                  {gate && (
-                    <>
-                      <strong>{gateBannerCopy}</strong>
-                      <span>
-                        {gateReasons.length > 0
-                          ? gateReasons.join(' · ')
-                          : 'Current release gate surface is aligned with the latest runtime evidence.'}
-                      </span>
-                    </>
-                  )}
-                  {ownerDemo && (
-                    <span>
-                      Owner demo {ownerDemo.pass_count}/{ownerDemo.scenario_count} passed · {ownerDemoBlockerCopy}
-                    </span>
-                  )}
-                  {hasMetricSourceDrift && (
-                    <span>Stale gate snapshot was detected. This view is showing current source approval and materialized storage counts.</span>
-                  )}
+            {allOperationalWikiBooks.length > 0 && (
+              <section className="operational-library box-container">
+                <div className="operational-library-header">
+                  <div>
+                    <span className="operational-library-eyebrow">Operational Library</span>
+                    <h2>운영 위키 29권</h2>
+                  </div>
+                  <span className="operational-library-count">{approvedWikiRuntimeBooks.toLocaleString()} books</span>
                 </div>
-              </div>
+                <div className="operational-library-grid">
+                  {allOperationalWikiBooks.map((book) => (
+                    <button
+                      key={`library-${book.book_slug}`}
+                      type="button"
+                      className="operational-library-card"
+                      onClick={() => setBookViewer(book)}
+                    >
+                      <span className="operational-library-card-badge">Live Wiki</span>
+                      <strong>{book.title}</strong>
+                      <span>{book.book_slug.replace(/_/g, ' ')}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
             )}
 
             {releaseCandidateFreeze?.exists && (
               <section className="release-freeze-hero">
                 <div className="release-freeze-hero-copy">
-                  <span className="release-freeze-eyebrow">Today Start</span>
+                  <span className="release-freeze-eyebrow">Current Freeze</span>
                   <h2>{releaseCandidateFreeze.title}</h2>
                   <p>{releaseCandidateFreeze.close || releaseCandidateFreeze.commercial_truth}</p>
                   <div className="release-freeze-meta">
@@ -717,7 +695,7 @@ const PlaybookLibraryPage: React.FC = () => {
                     disabled={!releaseCandidatePacket}
                   >
                     <FileText size={16} />
-                    <span>Open Freeze Packet</span>
+                    <span>Open Packet</span>
                   </button>
                   <button
                     type="button"
@@ -725,11 +703,131 @@ const PlaybookLibraryPage: React.FC = () => {
                     onClick={() => openMetricPopover('buyerPackets')}
                   >
                     <Layers size={16} />
-                    <span>View All Packets</span>
+                    <span>Packets</span>
                   </button>
                 </div>
               </section>
             )}
+
+            {(gate || hasMetricSourceDrift) && (
+              <div className="truth-banner">
+                <AlertCircle size={16} />
+                <div className="truth-banner-copy">
+                  {gate && (
+                    <>
+                      <strong>{gateBannerCopy}</strong>
+                      <span>{gateReasons.length > 0 ? gateReasons.join(' · ') : 'Aligned with current runtime evidence.'}</span>
+                    </>
+                  )}
+                  {ownerDemo && (
+                    <span>
+                      Owner demo {ownerDemo.pass_count}/{ownerDemo.scenario_count} · {ownerDemoBlockerCopy}
+                    </span>
+                  )}
+                  {hasMetricSourceDrift && (
+                    <span>Current approval and storage counts are shown.</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <section className="metrics-grid metrics-grid-primary">
+              <div className="metric-card metric-card-priority metric-clickable" onClick={() => openMetricPopover('known')}>
+                <div className="metric-icon"><Globe size={24} /></div>
+                <div className="metric-data">
+                  <h3>{knownSourceBooks.toLocaleString()}</h3>
+                  <p>Full Source Catalog</p>
+                </div>
+                <div className="metric-status online">Catalog</div>
+              </div>
+              <div className="metric-card metric-card-priority metric-clickable" onClick={() => openMetricPopover('approved')}>
+                <div className="metric-icon"><ShieldCheck size={24} /></div>
+                <div className="metric-data">
+                  <h3>{approvedRuntimeBooks.toLocaleString()}</h3>
+                  <p>Operational Shortlist</p>
+                </div>
+                <div className="metric-trend positive">
+                  <BookOpen size={14} /> <span>Selected</span>
+                </div>
+              </div>
+              <div className="metric-card metric-card-priority metric-clickable" onClick={() => openMetricPopover('wikiRuntime')}>
+                <div className="metric-icon"><CheckCircle2 size={24} /></div>
+                <div className="metric-data">
+                  <h3>{approvedWikiRuntimeBooks.toLocaleString()}</h3>
+                  <p>Live Operational Wiki</p>
+                </div>
+                <div className="metric-status online">Runtime</div>
+              </div>
+              <div className="metric-card metric-card-priority metric-clickable" onClick={() => openMetricPopover('buyerGate')}>
+                <div className="metric-icon"><ShieldAlert size={24} /></div>
+                <div className="metric-data">
+                  <h3>{buyerDemoGate.toLocaleString()}</h3>
+                  <p>Release Gate</p>
+                </div>
+                <div className="metric-status warning">Release</div>
+              </div>
+            </section>
+
+            <section className="metrics-grid metrics-grid-secondary">
+              <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('manual')}>
+                <div className="metric-icon"><Layers size={24} /></div>
+                <div className="metric-data">
+                  <h3>{materializedManualBooks.toLocaleString()}</h3>
+                  <p>Catalog Playbooks</p>
+                </div>
+                <div className="metric-status online">Materialized</div>
+              </div>
+              <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('customerPack')}>
+                <div className="metric-icon"><HardDrive size={24} /></div>
+                <div className="metric-data">
+                  <h3>{customerPackRuntimeBooks.toLocaleString()}</h3>
+                  <p>Customer Pack Runtime</p>
+                </div>
+                <div className="metric-status optimized">Pack</div>
+              </div>
+              <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('navBacklog')}>
+                <div className="metric-icon"><Search size={24} /></div>
+                <div className="metric-data">
+                  <h3>{wikiNavigationBacklog.toLocaleString()}</h3>
+                  <p>Wiki Navigation Backlog</p>
+                </div>
+                <div className="metric-status online">Signals</div>
+              </div>
+              <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('wikiUsage')}>
+                <div className="metric-icon"><Star size={24} /></div>
+                <div className="metric-data">
+                  <h3>{wikiUsageSignals.toLocaleString()}</h3>
+                  <p>Usage</p>
+                </div>
+                <div className="metric-status optimized">Personal</div>
+              </div>
+              <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('buyerPackets')}>
+                <div className="metric-icon"><FileText size={24} /></div>
+                <div className="metric-data">
+                  <h3>{buyerPacketBundle.toLocaleString()}</h3>
+                  <p>Release Candidate Packets</p>
+                </div>
+                <div className="metric-status online">Packets</div>
+              </div>
+              <div className="metric-card metric-card-secondary">
+                <div className="metric-icon"><CheckCircle2 size={24} /></div>
+                <div className="metric-data">
+                  <h3>{ownerDemoPassRate}%</h3>
+                  <p>Owner Demo Rehearsal</p>
+                </div>
+                <div className={`metric-status ${ownerDemo?.blockers?.length ? 'warning' : 'online'}`}>
+                  {ownerDemo?.blockers?.length ? 'Blocking' : 'Passing'}
+                </div>
+              </div>
+              <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('derived')}>
+                <div className="metric-icon"><Activity size={24} /></div>
+                <div className="metric-data">
+                  <h3>{derivedPlaybooks.toLocaleString()}</h3>
+                  <p>Derived Playbooks</p>
+                </div>
+                <div className="metric-status optimized">Generated</div>
+              </div>
+            </section>
 
             {/* Pipeline Visualization */}
             <section className="pipeline-section box-container">
@@ -843,7 +941,7 @@ const PlaybookLibraryPage: React.FC = () => {
                 <div className="log-container">
                   <div className="log-header">Recent Processing Logs</div>
                   {logs.length === 0 && (
-                    <div className="log-empty">No activity yet — upload a file to start.</div>
+                    <div className="log-empty">No activity yet.</div>
                   )}
                   {logs.map((log, i) => (
                     <div className="log-item" key={i}>
@@ -910,6 +1008,47 @@ const PlaybookLibraryPage: React.FC = () => {
         ) : (
           <div className="repository-view">
             <section className="repo-panel box-container">
+              <div className="repo-unanswered-strip">
+                <div className="repo-panel-header">
+                  <div>
+                    <h2>답변하지 못한 질문</h2>
+                    <p className="text-muted">
+                      현재 Playbook Library에 자료가 없어 답변하지 못한 질문을 저장합니다.
+                    </p>
+                  </div>
+                  <div className="repo-panel-badge">
+                    <AlertCircle size={14} />
+                    <span>{repositoryUnanswered.length} queued</span>
+                  </div>
+                </div>
+                {repositoryUnanswered.length === 0 ? (
+                  <div className="repo-empty repo-unanswered-empty">
+                    <AlertCircle size={32} />
+                    <p>아직 저장된 미답변 질문이 없습니다.</p>
+                  </div>
+                ) : (
+                  <div className="repo-unanswered-list">
+                    {repositoryUnanswered.map((item) => (
+                      <button
+                        key={`${item.timestamp}-${item.query}`}
+                        type="button"
+                        className="repo-unanswered-item"
+                        onClick={() => {
+                          setViewMode('repository');
+                          setSearchQuery(item.query);
+                        }}
+                      >
+                        <div className="repo-unanswered-query">{item.query}</div>
+                        <div className="repo-unanswered-meta">
+                          <span>{new Date(item.timestamp).toLocaleString()}</span>
+                          {item.warnings.length > 0 ? <span>{item.warnings[0]}</span> : null}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="repo-panel-header">
                 <div>
                   <h2>GitHub Repository Search</h2>

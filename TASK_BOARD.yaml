@@ -123,6 +123,68 @@ phases:
       - data/wiki_runtime_books/active_manifest.json
       tests:
       - active_runtime_count_is_29
+    - id: W1-E1-T3
+      title: full pipeline rerun 과 runtime retrieval mixed smoke 를 active 기준으로 다시 검증한다
+      owner: judge
+      status: done
+      outputs:
+      - reports/build_logs/ocp420_one_click_runtime_report.json
+      - reports/build_logs/full_pipeline_verification_report.json
+      - reports/build_logs/runtime_readiness_report.json
+      - reports/build_logs/retrieval_eval_report.json
+      - reports/build_logs/mixed_runtime_end_to_end_report.json
+      - reports/build_logs/chat_navigation_backlog_report.json
+      tests:
+      - one_click_runtime_report_status_ok
+      - retrieval_eval_hit_at_5_is_1_0
+      - mixed_runtime_end_to_end_report_status_ok
+      - navigation_backlog_excludes_legacy_wave1_links
+    - id: W1-E1-T4
+      title: wave1 processed archive 를 active 파이프라인에서 분리하고 full_rebuild only rebuild path 로 고정한다
+      owner: product_architect
+      status: done
+      outputs:
+      - archive/reset_snapshots/2026-04-15_w6_archive_reset
+      - scripts/run_ocp420_full_rebuild.py
+      - scripts/materialize_ocp420_full_rebuild_books.py
+      - src/play_book_studio/app/source_books.py
+      - src/play_book_studio/app/data_control_room.py
+      - reports/build_logs/archive_reset_report.json
+      - reports/build_logs/archive_reset_verification_report.json
+      tests:
+      - archive_reset_moves_wave1_processed_assets_out_of_active_paths
+      - full_rebuild_materialization_no_longer_depends_on_wave1_manifest
+      - one_click_runtime_report_status_ok_after_archive_reset
+    - id: W1-E1-T5
+      title: 최신 full_rebuild active runtime 만 서비스 표면에 노출하고 legacy candidate/archive viewer 는 차단한다
+      owner: platform_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/server.py
+      - src/play_book_studio/app/source_books.py
+      - src/play_book_studio/app/data_control_room.py
+      - presentation-ui/src/pages/PlaybookLibraryPage.tsx
+      - reports/build_logs/latest_only_surface_gate_report.json
+      - reports/build_logs/latest_only_surface_gate_verification_report.json
+      tests:
+      - legacy_candidate_and_wave1_viewer_paths_return_not_found
+      - control_room_latest_only_surface_hides_gold_candidate_books
+      - presentation_ui_build_passes_after_latest_only_surface_gate
+    - id: W1-E1-T6
+      title: old processed output 을 archive snapshot 으로 이동한 뒤 runtime catalog library 와 final one-click rebuild 를 다시 실행한다
+      owner: knowledge_engineer
+      status: done
+      outputs:
+      - archive/reset_snapshots/2026-04-15_w6_final_only_rebuild_reset
+      - reports/build_logs/runtime_catalog_library_report.json
+      - reports/build_logs/final_only_rebuild_reset_report.json
+      - reports/build_logs/final_only_rebuild_reset_verification_report.json
+      - reports/build_logs/ocp420_one_click_runtime_report.json
+      - data/wiki_runtime_books/active_manifest.json
+      tests:
+      - runtime_catalog_library_report_exists_after_processed_output_reset
+      - one_click_runtime_report_status_ok_after_final_only_rebuild_reset
+      - active_runtime_count_is_29_after_final_only_rebuild_reset
   - id: W1-E2
     name: relation_runtime
     tasks:
@@ -163,6 +225,57 @@ phases:
       - reports/build_logs
       tests:
       - runtime_viewer_navigation_hierarchy_is_reduced_and_clear
+    - id: W2-E1-T3
+      title: reader-grade paragraph shaping 과 figure width contract 를 active rule set 에 고정한다
+      owner: product_architect
+      status: done
+      outputs:
+      - PROJECT.md
+      - CODEX_OPERATING_CHARTER.md
+      - Q1_8_PRODUCT_CONTRACT.md
+      - TASK_BOARD.yaml
+      tests:
+      - active_rule_docs_define_reader_grade_paragraph_and_figure_contract
+    - id: W2-E1-T4
+      title: reader-grade paragraph shaping 과 comfortable-width figure rendering 을 실제 runtime code 에 반영한다
+      owner: platform_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/ingestion/normalize.py
+      - src/play_book_studio/answering/answer_text_formatting.py
+      - src/play_book_studio/app/viewer_page.py
+      - reports/build_logs/reader_reset_audit_report.json
+      - reports/build_logs/reader_contract_verification_report.json
+      tests:
+      - text_shaping_restores_reader_grade_paragraph_breaks
+      - viewer_renders_figures_with_comfortable_width_defaults
+    - id: W2-E1-T5
+      title: active reader 와 overlay 경로에서 legacy wave1 gold-candidate reference 수용을 차단한다
+      owner: platform_engineer
+      status: done
+      outputs:
+      - presentation-ui/src/pages/WorkspacePage.tsx
+      - src/play_book_studio/app/source_books.py
+      - src/play_book_studio/app/wiki_user_overlay.py
+      - reports/build_logs/stale_reference_purge_report.json
+      - reports/build_logs/stale_reference_verification_report.json
+      tests:
+      - legacy_viewer_routes_are_blocked_from_active_reader_paths
+      - workspace_overlay_accepts_active_runtime_only
+    - id: W2-E1-T6
+      title: archive reset 이후 reader-grade 문단 분리와 figure comfortable width 를 다시 조정하고 재검증한다
+      owner: platform_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/answering/answer_text_formatting.py
+      - src/play_book_studio/ingestion/normalize.py
+      - src/play_book_studio/app/viewer_page.py
+      - reports/build_logs/reader_grade_rerun_report.json
+      - reports/build_logs/reader_grade_rerun_verification_report.json
+      tests:
+      - reader_grade_rerun_text_shaping_is_more_aggressive_for_long_prose
+      - viewer_figure_defaults_use_narrower_comfortable_width_after_rerun
+      - presentation_ui_build_passes_after_reader_grade_rerun
   - id: W2-E2
     name: figure_and_diagram_runtime
     tasks:
@@ -630,3 +743,103 @@ phases:
       tests:
       - runtime_smoke_passes_for_rebaselined_active_truth
       - task_board_status_reflects_completed_w6_closeout
+    - id: W6-E1-T5
+      title: 레포 밖 artifacts data root 를 레포 안 artifacts 로 재잠그고 외부 폴더를 제거한다
+      owner: platform_engineer
+      status: done
+      outputs:
+      - .env
+      - artifacts
+      - archive/reset_snapshots/2026-04-15_w6_data_root_relock
+      - reports/build_logs/data_root_relock_report.json
+      - reports/build_logs/data_root_relock_verification_report.json
+      tests:
+      - load_settings_resolves_repo_internal_artifacts_dir
+      - external_ocp_rag_chatbot_data_directory_is_removed
+      - one_click_runtime_passes_with_repo_internal_artifacts_dir
+  - id: W6-E2
+    name: workspace_surface_cleanup
+    tasks:
+    - id: W6-E2-T1
+      title: workspace 좌측 패널을 history 와 outline 모드로 분리하고 우측 뷰어 rail 을 문서 중심 구조로 단순화한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - presentation-ui/src/pages/WorkspacePage.tsx
+      - presentation-ui/src/pages/WorkspacePage.css
+      - reports/execution_harness/W6-E2-T1-WORKSPACE-SURFACE/main/manifest.json
+      - reports/execution_harness/W6-E2-T1-WORKSPACE-SURFACE/main/worklog.md
+      - reports/execution_harness/W6-E2-T1-WORKSPACE-SURFACE/main/final_report.json
+      tests:
+      - workspace_left_rail_supports_history_and_outline_modes
+      - workspace_right_rail_prioritizes_document_viewer_over_source_console
+      - presentation_ui_build_passes_after_workspace_surface_cleanup
+    - id: W6-E2-T9
+      title: legacy residue 를 keep archive delete-candidate active-contract-conflict 로 분류해 다음 cleanup packet 기준선을 고정한다
+      owner: product_architect
+      status: done
+      outputs:
+      - reports/build_logs/legacy_residue_audit_report.json
+      - reports/build_logs/legacy_residue_classification_report.json
+      - reports/execution_harness/W6-E2-T9-LEGACY-RESIDUE-AUDIT/main/final_report.json
+      tests:
+      - focused_pytest_reproduces_only_stale_entrypoint_cleanup_failures
+      - external_ocp_rag_chatbot_data_directory_remains_absent
+      - doc_to_book_artifacts_still_show_external_root_fingerprints_for_purge_planning
+    - id: W6-E2-T10
+      title: chat answer surface 를 중간점검 기준으로 압축하고 no-answer next-question dedupe contract 를 정리한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/answering/answerer.py
+      - src/play_book_studio/answering/answer_text_commands.py
+      - src/play_book_studio/app/session_flow.py
+      - src/play_book_studio/config/settings_paths.py
+      - src/play_book_studio/app/chat_debug.py
+      - src/play_book_studio/app/server.py
+      - src/play_book_studio/app/server_chat.py
+      - src/play_book_studio/app/source_books.py
+      - presentation-ui/src/pages/WorkspacePage.tsx
+      - reports/build_logs/chat_answer_contract_cleanup_report.json
+      - reports/build_logs/chat_answer_contract_cleanup_verification_report.json
+      - reports/execution_harness/W6-E2-T10-CHAT-ANSWER-CONTRACT-CLEANUP/main/final_report.json
+      tests:
+      - presentation_ui_build_passes_after_chat_answer_contract_cleanup
+      - no_answer_surface_always_returns_three_next_question_suggestions
+      - related_links_and_sections_are_deduped_and_capped
+      - unanswered_questions_are_logged_separately
+    - id: W6-E2-T11
+      title: no-answer 를 Playbook Library 부재 안내와 Repository acquisition flow 로 전환한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/answering/answerer.py
+      - src/play_book_studio/app/server.py
+      - presentation-ui/src/lib/runtimeApi.ts
+      - presentation-ui/src/pages/WorkspacePage.tsx
+      - presentation-ui/src/pages/WorkspacePage.css
+      - presentation-ui/src/pages/PlaybookLibraryPage.tsx
+      - reports/build_logs/no_answer_acquisition_flow_report.json
+      - reports/build_logs/no_answer_acquisition_flow_verification_report.json
+      - reports/execution_harness/W6-E2-T11-NO-ANSWER-ACQUISITION-FLOW/main/final_report.json
+      tests:
+      - route_tls_yaml_query_returns_no_answer_with_repository_acquisition_payload
+      - workspace_surfaces_no_answer_repository_confirmation_card
+      - playbook_library_repository_search_autoloads_from_query_params
+    - id: W6-E2-T12
+      title: Repository 페이지에 현재 자료가 없어 답변하지 못한 질문 큐를 저장하고 노출한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/server_routes.py
+      - src/play_book_studio/app/server.py
+      - presentation-ui/src/lib/runtimeApi.ts
+      - presentation-ui/src/pages/PlaybookLibraryPage.tsx
+      - presentation-ui/src/pages/PlaybookLibraryPage.css
+      - reports/build_logs/repository_unanswered_queue_report.json
+      - reports/build_logs/repository_unanswered_queue_verification_report.json
+      - reports/execution_harness/W6-E2-T12-REPOSITORY-UNANSWERED-QUEUE/main/final_report.json
+      tests:
+      - repository_unanswered_api_returns_recent_unique_no_answer_questions
+      - playbook_library_repository_view_renders_unanswered_question_queue
+      - unanswered_question_queue_items_prefill_repository_search_input_only_on_click

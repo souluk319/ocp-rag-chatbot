@@ -1,6 +1,6 @@
 # OCP 4.20 Full Rebuild Wiki Relations
 
-- generated_at_utc: `2026-04-15T00:56:33+00:00`
+- generated_at_utc: `2026-04-15T05:53:51+00:00`
 - entity_hub_count: `14`
 - candidate_relation_count: `29`
 
@@ -180,9 +180,10 @@
 
 ## Figure Entity Coverage
 
-- `cluster-wide-proxy` · figure_count=`25`
-- `control-plane-nodes` · figure_count=`13`
-- `control-plane-ops` · figure_count=`2`
+- `cluster-wide-proxy` · figure_count=`29`
+- `control-plane-nodes` · figure_count=`17`
+- `control-plane-ops` · figure_count=`6`
+- `etcd` · figure_count=`4`
 - `installation-day2` · figure_count=`7`
 - `lifecycle-and-support` · figure_count=`5`
 - `machine-config-operator` · figure_count=`4`
@@ -199,6 +200,7 @@
 - `advanced_networking` · matched_sections=`14/14`
 - `architecture` · matched_sections=`7/7`
 - `authentication_and_authorization` · matched_sections=`5/5`
+- `backup_and_restore` · matched_sections=`4/4`
 - `cli_tools` · matched_sections=`5/5`
 - `disconnected_environments` · matched_sections=`1/1`
 - `ingress_and_load_balancing` · matched_sections=`8/8`
@@ -220,29 +222,29 @@
 - `advanced_networking` · related_sections=`6`
 - `architecture` · related_sections=`6`
 - `authentication_and_authorization` · related_sections=`6`
-- `backup_and_restore` · related_sections=`1`
+- `backup_and_restore` · related_sections=`5`
 - `cli_tools` · related_sections=`6`
 - `disconnected_environments` · related_sections=`4`
-- `etcd` · related_sections=`1`
+- `etcd` · related_sections=`2`
 - `images` · related_sections=`3`
 - `ingress_and_load_balancing` · related_sections=`6`
 - `installation_overview` · related_sections=`4`
 - `installing_on_any_platform` · related_sections=`3`
 - `logging` · related_sections=`1`
-- `machine_configuration` · related_sections=`1`
-- `machine_management` · related_sections=`2`
+- `machine_configuration` · related_sections=`2`
+- `machine_management` · related_sections=`3`
 - `monitoring` · related_sections=`1`
 - `networking_overview` · related_sections=`4`
-- `nodes` · related_sections=`2`
+- `nodes` · related_sections=`3`
 - `observability_overview` · related_sections=`1`
 - `operators` · related_sections=`6`
 - `overview` · related_sections=`6`
 - `postinstallation_configuration` · related_sections=`4`
 - `registry` · related_sections=`3`
-- `release_notes` · related_sections=`3`
+- `release_notes` · related_sections=`4`
 - `security_and_compliance` · related_sections=`6`
 - `storage` · related_sections=`3`
-- `support` · related_sections=`4`
-- `updating_clusters` · related_sections=`5`
-- `validation_and_troubleshooting` · related_sections=`1`
+- `support` · related_sections=`5`
+- `updating_clusters` · related_sections=`6`
+- `validation_and_troubleshooting` · related_sections=`2`
 - `web_console` · related_sections=`6`

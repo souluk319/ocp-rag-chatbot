@@ -281,9 +281,18 @@ export interface ChatResponse {
   citations: ChatCitation[];
   warnings: string[];
   session_id: string;
+  response_kind?: string;
   suggested_queries: string[];
   related_links?: ChatRelatedLink[];
   related_sections?: ChatRelatedLink[];
+  acquisition?: {
+    kind: 'repository_search' | string;
+    title: string;
+    body: string;
+    checkbox_label: string;
+    confirm_label: string;
+    repository_query: string;
+  };
   pipeline_trace?: {
     events?: ChatTraceEvent[];
   };
@@ -428,6 +437,19 @@ export interface RepositoryFavoritesResponse {
   groups: Record<string, RepositoryFavorite[]>;
 }
 
+export interface RepositoryUnansweredItem {
+  query: string;
+  rewritten_query: string;
+  timestamp: string;
+  response_kind: string;
+  warnings: string[];
+}
+
+export interface RepositoryUnansweredResponse {
+  count: number;
+  items: RepositoryUnansweredItem[];
+}
+
 export interface SourceMetaResponse {
   book_slug: string;
   book_title: string;
@@ -539,6 +561,10 @@ export async function searchRepositories(query: string, limit = 12): Promise<Rep
 
 export async function loadRepositoryFavorites(): Promise<RepositoryFavoritesResponse> {
   return requestJson<RepositoryFavoritesResponse>('/api/repositories/favorites');
+}
+
+export async function loadRepositoryUnanswered(limit = 20): Promise<RepositoryUnansweredResponse> {
+  return requestJson<RepositoryUnansweredResponse>(`/api/repositories/unanswered?limit=${encodeURIComponent(String(limit))}`);
 }
 
 export async function saveRepositoryFavorites(

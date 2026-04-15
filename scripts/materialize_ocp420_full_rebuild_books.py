@@ -24,11 +24,6 @@ def _utc_now() -> str:
 def _manifest_path() -> Path:
     return ROOT / "manifests" / "ocp420_source_first_full_rebuild_manifest.json"
 
-
-def _wave1_candidate_manifest_path() -> Path:
-    return ROOT / "data" / "gold_candidate_books" / "wave1_manifest.json"
-
-
 def _gold_candidate_root() -> Path:
     return ROOT / "data" / "gold_candidate_books" / "full_rebuild"
 
@@ -561,13 +556,6 @@ def _load_relation_entities() -> dict[str, list[dict[str, str]]]:
 
 def main() -> int:
     manifest = _load_json(_manifest_path())
-    wave1_manifest = _load_json(_wave1_candidate_manifest_path())
-    wave1_entries = wave1_manifest.get("entries") if isinstance(wave1_manifest.get("entries"), list) else []
-    wave1_by_slug = {
-        str(entry.get("slug") or "").strip(): entry
-        for entry in wave1_entries
-        if isinstance(entry, dict) and str(entry.get("slug") or "").strip()
-    }
 
     _gold_candidate_root().mkdir(parents=True, exist_ok=True)
     _wiki_runtime_root().mkdir(parents=True, exist_ok=True)
@@ -576,7 +564,7 @@ def main() -> int:
 
     candidate_entries: list[dict[str, str]] = []
     runtime_entries: list[dict[str, str]] = []
-    generation_mode_counter = {"wave1_reuse": 0, "generic_export": 0}
+    generation_mode_counter = {"generic_export": 0}
     figure_stats: dict[str, int] = {}
     diagram_stats: dict[str, int] = {}
     inline_placed_stats: dict[str, int] = {}
@@ -603,18 +591,10 @@ def main() -> int:
 
         source_kind = "generic_manualbook_export"
         promotion_strategy = "full_rebuild_generic_export"
-
-        if slug in wave1_by_slug:
-            source_candidate_path = Path(str(wave1_by_slug[slug].get("promoted_path") or "")).resolve()
-            markdown_text = source_candidate_path.read_text(encoding="utf-8")
-            source_kind = str(wave1_by_slug[slug].get("source_kind") or "wave1_reader_grade")
-            promotion_strategy = str(wave1_by_slug[slug].get("promotion_strategy") or "wave1_reader_grade_reuse")
-            generation_mode_counter["wave1_reuse"] += 1
-        else:
-            playbook_json_path = ROOT / "data" / "gold_manualbook_ko" / "playbooks" / f"{slug}.json"
-            playbook_payload = _load_json(playbook_json_path)
-            markdown_text = _generic_markdown_from_playbook(playbook_payload, title_override=title)
-            generation_mode_counter["generic_export"] += 1
+        playbook_json_path = ROOT / "data" / "gold_manualbook_ko" / "playbooks" / f"{slug}.json"
+        playbook_payload = _load_json(playbook_json_path)
+        markdown_text = _generic_markdown_from_playbook(playbook_payload, title_override=title)
+        generation_mode_counter["generic_export"] += 1
 
         source_relative_path = str(entry.get("source_relative_path") or "").strip()
         figures: list[dict[str, str]] = []
@@ -635,12 +615,11 @@ def main() -> int:
             )
             figure["asset_kind"] = asset_kind
             figure["diagram_type"] = diagram_type
-        drop_unmatched = slug in wave1_by_slug
         markdown_text, placement_stats, visible_figures = _place_figures_inline(
             markdown_text,
             figures=figures,
             section_hints=_extract_html_section_hints(slug),
-            drop_unmatched=drop_unmatched,
+            drop_unmatched=False,
         )
         figure_stats[slug] = int(placement_stats.get("figure_count", 0))
         diagram_stats[slug] = sum(1 for figure in figures if str(figure.get("asset_kind") or "") == "diagram")
@@ -680,7 +659,7 @@ def main() -> int:
                 "source_lane": str(entry.get("source_lane") or ""),
                 "source_manifest_path": str(_manifest_path().resolve()),
                 "promoted_path": str(candidate_path.resolve()),
-                "source_trial_path": str(candidate_path.resolve()) if slug not in wave1_by_slug else str(Path(str(wave1_by_slug[slug].get("source_trial_path") or "")).resolve()),
+                "source_trial_path": str(candidate_path.resolve()),
                 "promotion_strategy": promotion_strategy,
             }
         )

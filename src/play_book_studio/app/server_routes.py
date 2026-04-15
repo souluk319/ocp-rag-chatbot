@@ -47,6 +47,42 @@ from play_book_studio.app.source_books import (
 from play_book_studio.app.viewers import _parse_viewer_path
 
 
+def _list_unanswered_questions(root_dir: Path, *, limit: int = 20) -> dict[str, Any]:
+    settings = load_settings(root_dir)
+    target = settings.unanswered_questions_path
+    if not target.exists():
+        return {"count": 0, "items": []}
+
+    rows: list[dict[str, Any]] = []
+    seen_queries: set[str] = set()
+    for line in reversed(target.read_text(encoding="utf-8").splitlines()):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if str(payload.get("record_kind") or "") != "unanswered_question":
+            continue
+        query = str(payload.get("query") or "").strip()
+        if not query or query in seen_queries:
+            continue
+        seen_queries.add(query)
+        rows.append(
+            {
+                "query": query,
+                "rewritten_query": str(payload.get("rewritten_query") or "").strip(),
+                "timestamp": str(payload.get("timestamp") or "").strip(),
+                "response_kind": str(payload.get("response_kind") or "").strip(),
+                "warnings": [str(item) for item in (payload.get("warnings") or []) if str(item).strip()],
+            }
+        )
+        if len(rows) >= max(1, limit):
+            break
+    return {"count": len(rows), "items": rows}
+
+
 def handle_source_meta(handler: Any, query: str, *, root_dir: Path) -> None:
     params = parse_qs(query, keep_blank_values=False)
     viewer_path = str((params.get("viewer_path") or [""])[0]).strip()
@@ -264,6 +300,17 @@ def handle_repository_search(handler: Any, query: str, *, root_dir: Path) -> Non
         )
         return
     handler._send_json(payload)
+
+
+def handle_repository_unanswered(handler: Any, query: str, *, root_dir: Path) -> None:
+    params = parse_qs(query, keep_blank_values=False)
+    limit_raw = str((params.get("limit") or ["20"])[0]).strip()
+    try:
+        limit = int(limit_raw or "20")
+    except ValueError:
+        handler._send_json({"error": "limit는 정수여야 합니다."}, HTTPStatus.BAD_REQUEST)
+        return
+    handler._send_json(_list_unanswered_questions(root_dir, limit=limit))
 
 
 def handle_repository_favorites(handler: Any, query: str, *, root_dir: Path) -> None:

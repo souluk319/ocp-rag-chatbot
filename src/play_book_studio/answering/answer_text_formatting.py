@@ -65,6 +65,120 @@ ACTIONABLE_GUIDE_QUERY_RE = re.compile(
     r"(어떻게|방법|절차|명령|예시|실행|확인|복구|회수|부여|디버깅|주의사항|상태|보여줘|알려줘)",
     re.IGNORECASE,
 )
+FENCED_BLOCK_RE = re.compile(r"```[\s\S]*?```")
+PARAGRAPH_SPLIT_RE = re.compile(r"\n\s*\n+")
+SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?。！？])\s+|(?<=다\.)\s+|(?<=니다\.)\s+")
+STRUCTURED_LINE_RE = re.compile(r"(?m)^\s*(?:[-*]|\d+\.)\s+")
+HEADING_LINE_RE = re.compile(r"(?m)^\s*#{1,6}\s+")
+
+
+def _split_fenced_blocks(text: str) -> list[tuple[bool, str]]:
+    parts: list[tuple[bool, str]] = []
+    last = 0
+    for match in FENCED_BLOCK_RE.finditer(text or ""):
+        if match.start() > last:
+            parts.append((False, text[last:match.start()]))
+        parts.append((True, match.group(0)))
+        last = match.end()
+    if last < len(text or ""):
+        parts.append((False, text[last:]))
+    return parts
+
+
+def _collapse_excess_blank_lines(text: str) -> str:
+    return re.sub(r"\n{3,}", "\n\n", text)
+
+
+def _collapse_excess_blank_lines_outside_fences(text: str) -> str:
+    normalized_parts: list[str] = []
+    for is_fenced, chunk in _split_fenced_blocks(text):
+        if not chunk:
+            continue
+        if is_fenced:
+            normalized_parts.append(chunk.strip())
+        else:
+            normalized_parts.append(_collapse_excess_blank_lines(chunk))
+    return "\n\n".join(part for part in normalized_parts if part).strip()
+
+
+def _is_structured_plain_block(text: str) -> bool:
+    return bool(
+        STRUCTURED_LINE_RE.search(text)
+        or HEADING_LINE_RE.search(text)
+        or re.search(r"(?m)^\s*>\s+", text)
+    )
+
+
+def _group_reader_sentences(sentences: list[str]) -> list[str]:
+    if not sentences:
+        return []
+    if len(sentences) <= 2:
+        combined = " ".join(sentences).strip()
+        if len(combined) > 150:
+            return [sentence.strip() for sentence in sentences if sentence.strip()]
+        return [" ".join(sentences).strip()]
+
+    paragraphs: list[str] = []
+    bucket: list[str] = []
+    bucket_length = 0
+    for sentence in sentences:
+        normalized = sentence.strip()
+        if not normalized:
+            continue
+        if bucket and (bucket_length + len(normalized) > 180 or len(bucket) >= 2):
+            paragraphs.append(" ".join(bucket).strip())
+            bucket = []
+            bucket_length = 0
+        bucket.append(normalized)
+        bucket_length += len(normalized) + 1
+    if bucket:
+        paragraphs.append(" ".join(bucket).strip())
+    return paragraphs
+
+
+def _restore_plain_prose_block(text: str) -> str:
+    normalized = (text or "").replace("\r\n", "\n").replace("\r", "\n").strip()
+    if not normalized:
+        return ""
+
+    paragraphs: list[str] = []
+    for chunk in PARAGRAPH_SPLIT_RE.split(normalized):
+        cleaned_lines = [re.sub(r"[ \t]+", " ", line).strip() for line in chunk.splitlines()]
+        cleaned_lines = [line for line in cleaned_lines if line]
+        if not cleaned_lines:
+            continue
+
+        if len(cleaned_lines) > 1 and _is_structured_plain_block(chunk):
+            paragraphs.append("\n".join(cleaned_lines))
+            continue
+
+        combined = " ".join(cleaned_lines)
+        if len(combined) < 100:
+            paragraphs.append(combined)
+            continue
+
+        sentences = [part.strip() for part in SENTENCE_SPLIT_RE.split(combined) if part.strip()]
+        if len(sentences) >= 3:
+            paragraphs.extend(_group_reader_sentences(sentences))
+        else:
+            paragraphs.append(combined)
+
+    return "\n\n".join(paragraphs).strip()
+
+
+def _reader_paragraphs_need_reshaping(text: str) -> bool:
+    normalized = (text or "").replace("\r\n", "\n").replace("\r", "\n").strip()
+    if not normalized or "```" in normalized or _is_structured_plain_block(normalized):
+        return False
+    for chunk in PARAGRAPH_SPLIT_RE.split(normalized):
+        cleaned_lines = [re.sub(r"[ \t]+", " ", line).strip() for line in chunk.splitlines()]
+        cleaned_lines = [line for line in cleaned_lines if line]
+        if not cleaned_lines:
+            continue
+        combined = " ".join(cleaned_lines)
+        if len(combined) > 220:
+            return True
+    return False
 
 
 def normalize_answer_text(answer_text: str) -> str:
@@ -114,7 +228,7 @@ def normalize_answer_markup_blocks(answer_text: str) -> str:
         lambda match: f"\n```text\n{_preserve_indent(match.group(1))}\n```\n",
         normalized,
     )
-    normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+    normalized = _collapse_excess_blank_lines_outside_fences(normalized)
     return normalized.strip()
 
 
@@ -220,25 +334,30 @@ def restore_readable_paragraphs(answer_text: str) -> str:
     normalized = (answer_text or "").strip()
     if not normalized:
         return normalized
-    if "```" in normalized or "\n\n" in normalized:
+    if "```" in normalized and not ANSWER_HEADER_RE.search(normalized):
         return normalized
     if re.search(r"(?m)^\s*(?:[-*]|\d+\.)\s+", normalized):
         return normalized
 
     has_prefix = normalized.startswith("답변:")
     body = ANSWER_HEADER_RE.sub("", normalized, count=1).strip()
-    if len(body) < 120 and not any(marker in body for marker in ("실무에서는", "원하면")):
+    if "\n\n" in body and not _reader_paragraphs_need_reshaping(body):
+        return normalized
+    if len(body) < 120 and "```" not in body and not any(marker in body for marker in ("실무에서는", "원하면")):
         return normalized
 
-    restored = body
-    restored = re.sub(r"\s+(실무에서는)", r"\n\n\1", restored, count=1)
-    restored = re.sub(r"\s+(원하면)", r"\n\n\1", restored, count=1)
-    if "\n\n" not in restored:
-        sentences = [part.strip() for part in re.split(r"(?<=[.!?])\s+", restored) if part.strip()]
-        if len(sentences) >= 3:
-            restored = f"{sentences[0]}\n\n{' '.join(sentences[1:])}".strip()
+    restored_parts: list[str] = []
+    for is_fenced, chunk in _split_fenced_blocks(body):
+        if not chunk:
+            continue
+        if is_fenced:
+            restored_parts.append(chunk.strip())
+            continue
+        shaped = _restore_plain_prose_block(chunk)
+        if shaped:
+            restored_parts.append(shaped)
 
-    restored = re.sub(r"\n{3,}", "\n\n", restored).strip()
+    restored = "\n\n".join(restored_parts).strip() if restored_parts else body
     if has_prefix:
         return f"답변: {restored}"
     return restored

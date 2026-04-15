@@ -85,6 +85,7 @@ final report 는 closeout evidence 를 담는다.
 본문은 읽기와 근거 제시에 집중한다.
 위키 탐색은 related books, entity hubs, sections, figures 로 확장한다.
 overlay 는 page-level 또는 별도 surface 에서 개인화 신호를 쌓는다.
+reader contract 는 paragraph shaping 과 figure width 기본값을 포함한다.
 
 ## Runtime Doctrine
 

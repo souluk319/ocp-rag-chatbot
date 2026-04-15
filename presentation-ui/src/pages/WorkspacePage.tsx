@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
-import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels';
+import { Group, Panel, Separator, usePanelRef, useDefaultLayout } from 'react-resizable-panels';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Upload,
@@ -65,6 +65,13 @@ import {
   uploadCustomerPackDraft,
 } from '../lib/runtimeApi';
 
+type WorkspaceManualBook = LibraryBook & {
+  library_group?: string;
+  library_group_label?: string;
+  family?: string;
+  family_label?: string;
+};
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -73,6 +80,15 @@ interface Message {
   suggestedQueries?: string[];
   relatedLinks?: ChatRelatedLink[];
   relatedSections?: ChatRelatedLink[];
+  responseKind?: string;
+  acquisition?: {
+    kind: string;
+    title: string;
+    body: string;
+    checkbox_label: string;
+    confirm_label: string;
+    repository_query: string;
+  };
   primarySourceLane?: string;
   primaryBoundaryTruth?: string;
   primaryRuntimeTruthLabel?: string;
@@ -99,6 +115,50 @@ interface OverlayTargetDescriptor {
   payload: Record<string, unknown>;
 }
 
+type LeftPanelMode = 'history' | 'outline' | 'signals';
+
+interface OutlineLinkItem {
+  id: string;
+  label: string;
+  meta?: string;
+  action: () => void;
+  tone?: 'default' | 'muted';
+}
+
+interface OutlineTocNode {
+  id: string;
+  heading: string;
+  depth: number;
+  viewerPath: string;
+  sectionPathLabel: string;
+}
+
+interface OutlineCategoryGroup {
+  key: string;
+  label: string;
+  description: string;
+  books: WorkspaceManualBook[];
+}
+
+const OUTLINE_CATEGORY_RULES: Array<{
+  key: string;
+  label: string;
+  description: string;
+  patterns: string[];
+}> = [
+  { key: 'install', label: 'Install', description: '클러스터 설치와 Day-1 경로', patterns: ['install', 'installation', 'day-1', 'day 1', 'cluster installation'] },
+  { key: 'day2', label: 'Day-2', description: '운영 전환과 후속 구성', patterns: ['day-2', 'day 2', 'postinstall', 'post-install', 'day two'] },
+  { key: 'operations', label: 'Operations', description: '일상 운영과 변경 관리', patterns: ['machine config', 'operator', 'control plane', 'node', 'proxy', 'configuration', 'operations'] },
+  { key: 'storage', label: 'Storage', description: '스토리지, 백업, 복구', patterns: ['storage', 'backup', 'restore', 'etcd', 'registry', 'image'] },
+  { key: 'observability', label: 'Observability', description: '모니터링과 진단', patterns: ['monitor', 'observab', 'alert', 'logging', 'telemetry'] },
+  { key: 'security', label: 'Security', description: '권한, 인증, 보안 운영', patterns: ['security', 'auth', 'authorization', 'rbac', 'certificate', 'compliance'] },
+  { key: 'networking', label: 'Networking', description: '네트워크와 연결 경로', patterns: ['network', 'ingress', 'egress', 'dns', 'route'] },
+  { key: 'troubleshooting', label: 'Troubleshooting', description: '문제 해결과 복구 경로', patterns: ['troubleshoot', 'issue', 'failure', 'debug', 'problem'] },
+  { key: 'reference', label: 'Reference', description: '기타 참조 문서', patterns: [] },
+];
+
+const OUTLINE_CATEGORY_COLLAPSED = '__collapsed__';
+
 type PreviewState =
   | { kind: 'empty' }
   | { kind: 'loading'; title: string }
@@ -124,9 +184,43 @@ function makeId(prefix: string): string {
   return `${prefix}-${shortPart}`;
 }
 
-function formatBookMeta(book: LibraryBook): string {
-  const pieces = [book.grade, book.source_type].filter(Boolean);
-  return pieces.join(' · ');
+function summarizeBookMeta(book: WorkspaceManualBook): string {
+  const parts = [
+    book.library_group_label,
+    book.family_label,
+    book.source_type,
+    Number.isFinite(book.section_count) && book.section_count > 0 ? `${book.section_count} sections` : '',
+  ].filter(Boolean);
+  return parts.join(' · ');
+}
+
+function inferOutlineCategory(book: WorkspaceManualBook): OutlineCategoryGroup {
+  const haystack = [
+    book.book_slug,
+    book.title,
+    book.source_type,
+    book.source_lane,
+    book.family,
+    book.family_label,
+  ].join(' ').toLowerCase();
+
+  const matchedRule = OUTLINE_CATEGORY_RULES.find((rule) => rule.patterns.some((pattern) => haystack.includes(pattern)));
+  if (matchedRule) {
+    return {
+      key: matchedRule.key,
+      label: matchedRule.label,
+      description: matchedRule.description,
+      books: [],
+    };
+  }
+
+  const fallbackRule = OUTLINE_CATEGORY_RULES[OUTLINE_CATEGORY_RULES.length - 1];
+  return {
+    key: fallbackRule.key,
+    label: fallbackRule.label,
+    description: fallbackRule.description,
+    books: [],
+  };
 }
 
 function formatDraftMeta(draft: CustomerPackDraft): string {
@@ -150,9 +244,9 @@ function truthSurfaceCopy(payload?: {
 } | null): {
   label: string;
   meta: string[];
-} {
-  if (!payload) {
-    return { label: 'Runtime', meta: [] };
+  } {
+    if (!payload) {
+      return { label: '', meta: [] };
   }
   const boundaryTruth = String(payload.boundary_truth || '').trim();
   const sourceLane = String(payload.source_lane || '').trim();
@@ -183,8 +277,7 @@ function truthSurfaceCopy(payload?: {
 
   if (boundaryTruth === 'official_candidate_runtime' || sourceLane.includes('candidate')) {
     const isLegacyArchiveLane =
-      sourceLane === 'wave1_gold_candidate'
-      || sourceLane === 'legacy_gold_candidate_archive'
+      sourceLane === 'legacy_gold_candidate_archive'
       || sourceLane === 'gold_candidate_archive';
     return {
       label: isLegacyArchiveLane ? 'Archived Runtime' : 'Candidate Runtime',
@@ -204,7 +297,7 @@ function truthSurfaceCopy(payload?: {
   }
 
   return {
-    label: payload.boundary_badge || runtimeTruthLabel || sourceLane || 'Runtime',
+    label: payload.boundary_badge || runtimeTruthLabel || sourceLane || '',
     meta: [
       payload.approval_state ? `approval ${payload.approval_state}` : '',
       payload.publication_state ? `publication ${payload.publication_state}` : '',
@@ -313,6 +406,39 @@ function TruthBadgeBlock({
   );
 }
 
+function NoAnswerAcquisitionCard({
+  acquisition,
+  onConfirm,
+}: {
+  acquisition: NonNullable<Message['acquisition']>;
+  onConfirm: () => void;
+}) {
+  const [checked, setChecked] = useState(true);
+
+  return (
+    <div className="no-answer-acquisition-card">
+      <div className="no-answer-acquisition-title">{acquisition.title}</div>
+      <p className="no-answer-acquisition-body">{acquisition.body}</p>
+      <label className="no-answer-acquisition-check">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(event) => setChecked(event.target.checked)}
+        />
+        <span>{acquisition.checkbox_label}</span>
+      </label>
+      <button
+        type="button"
+        className="suggested-query-chip acquisition-confirm-btn"
+        disabled={!checked}
+        onClick={() => onConfirm()}
+      >
+        {acquisition.confirm_label}
+      </button>
+    </div>
+  );
+}
+
 function extractDraftIdFromViewerPath(viewerPath: string): string | null {
   const match = viewerPath.match(/\/playbooks\/customer-packs\/([^/]+)/);
   return match?.[1] ?? null;
@@ -324,30 +450,10 @@ const PACK_OPTIONS = [
   'Harbor Registry',
 ] as const;
 
-const SUGGESTED_QUESTIONS = [
-  'Pod가 CrashLoopBackOff 상태일 때 디버깅하는 oc 명령어를 알려줘',
-  'OpenShift에서 특정 네임스페이스의 리소스 사용량을 확인하는 명령어는?',
-  'oc CLI로 노드 상태를 점검하고 drain하는 절차를 알려줘',
-  'OpenShift Route에 TLS 인증서를 적용하는 YAML 예시를 보여줘',
-  'oc adm 명령어로 클러스터 노드 상태를 진단하는 방법은?',
-  'DeploymentConfig에서 롤링 업데이트 전략을 설정하는 YAML 예시를 보여줘',
-  'PVC가 Pending 상태일 때 원인을 확인하는 명령어를 알려줘',
-  'NetworkPolicy로 특정 Pod 간 트래픽만 허용하는 YAML 예시를 보여줘',
-  'CronJob을 생성하고 실행 이력을 확인하는 oc 명령어는?',
-  'OpenShift에서 Pod에 리소스 제한을 설정하는 YAML 예시를 보여줘',
-  'ServiceAccount에 특정 SCC를 부여하는 명령어를 알려줘',
-  'oc debug 명령어로 노드에 접속해서 디스크 상태를 확인하는 방법은?',
-];
-
 const WIKI_OVERLAY_USER_ID = 'kugnus@cywell.co.kr';
 
-function pickRandom<T>(pool: T[], count: number): T[] {
-  const copy = [...pool];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy.slice(0, count);
+function containsHangul(text: string): boolean {
+  return /[가-힣]/.test(String(text || ''));
 }
 
 function runtimePathFromUrl(viewerUrl: string): string {
@@ -402,7 +508,7 @@ function buildOverlayTargetFromViewerPath(
     };
   }
 
-  const bookMatch = pathOnly.match(/^\/playbooks\/(?:wiki-runtime\/active|wiki-runtime\/wave1|gold-candidates\/wave1)\/([^/]+)\/index\.html$/);
+  const bookMatch = pathOnly.match(/^\/playbooks\/wiki-runtime\/active\/([^/]+)\/index\.html$/);
   if (bookMatch) {
     const bookSlug = bookMatch[1];
     if (anchor) {
@@ -696,6 +802,52 @@ function InlineParts({
 function AnswerCodeBlock({ code, language }: { code: string; language: string }) {
   const [wrapped, setWrapped] = useState(false);
   const [copied, setCopied] = useState(false);
+  const segments = useMemo(() => {
+    const lines = code.split('\n');
+    const parsed: Array<{ type: 'note' | 'code'; value: string }> = [];
+    let noteBuffer: string[] = [];
+    let codeBuffer: string[] = [];
+
+    const flushNotes = () => {
+      const text = noteBuffer
+        .map((line) => line.replace(/^#\s?/, '').trim())
+        .filter(Boolean)
+        .join(' ');
+      if (text) {
+        parsed.push({ type: 'note', value: text });
+      }
+      noteBuffer = [];
+    };
+
+    const flushCode = () => {
+      const text = codeBuffer.join('\n').trim();
+      if (text) {
+        parsed.push({ type: 'code', value: text });
+      }
+      codeBuffer = [];
+    };
+
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        flushNotes();
+        flushCode();
+        return;
+      }
+      if (trimmed.startsWith('#')) {
+        flushCode();
+        noteBuffer.push(trimmed);
+        return;
+      }
+      flushNotes();
+      codeBuffer.push(line);
+    });
+
+    flushNotes();
+    flushCode();
+
+    return parsed.length > 0 ? parsed : [{ type: 'code', value: code.trim() }];
+  }, [code]);
 
   async function handleCopy(): Promise<void> {
     try {
@@ -732,7 +884,15 @@ function AnswerCodeBlock({ code, language }: { code: string; language: string })
           </button>
         </div>
       </div>
-      <pre className="answer-code-pre"><code>{code}</code></pre>
+      <div className="answer-code-body">
+        {segments.map((segment, index) => (
+          segment.type === 'note' ? (
+            <p key={`note-${index}`} className="answer-code-note">{segment.value}</p>
+          ) : (
+            <pre key={`code-${index}`} className="answer-code-pre"><code>{segment.value}</code></pre>
+          )
+        ))}
+      </div>
     </section>
   );
 }
@@ -820,15 +980,12 @@ function AssistantAnswer({
 
   const displayedContent = content.slice(0, displayLength);
   const blocks = useMemo(() => parseAnswerBlocks(displayedContent, citations), [displayedContent, citations]);
-  const truthSurface = truthSurfaceCopy({
-    boundary_truth: primaryBoundaryTruth,
-    runtime_truth_label: primaryRuntimeTruthLabel,
-    boundary_badge: primaryBoundaryBadge,
-    source_lane: primarySourceLane,
-    approval_state: primaryApprovalState,
-    publication_state: primaryPublicationState,
-  });
-  const hasTruth = Boolean(primaryBoundaryTruth || truthSurface.label);
+  const hasTruth = Boolean(
+    primaryBoundaryTruth ||
+    primarySourceLane ||
+    primaryRuntimeTruthLabel ||
+    primaryBoundaryBadge
+  );
 
   return (
     <div className="assistant-answer">
@@ -924,7 +1081,7 @@ function AssistantAnswer({
       </div>
       {relatedLinks.length > 0 && (
         <div className="assistant-related-group">
-          <div className="suggested-query-label">관련 탐색</div>
+          <div className="suggested-query-label">관련 문서</div>
           <div className="suggested-query-list">
             {relatedLinks.map((link, index) => (
               <div key={`${link.href}-${index}`} className="overlay-chip-row">
@@ -944,7 +1101,7 @@ function AssistantAnswer({
       )}
       {relatedSections.length > 0 && (
         <div className="assistant-related-group">
-          <div className="suggested-query-label">정확한 절차</div>
+          <div className="suggested-query-label">바로 볼 절차</div>
           <div className="suggested-query-list">
             {relatedSections.map((link, index) => (
               <div key={`${link.href}-${index}`} className="overlay-chip-row">
@@ -1034,7 +1191,7 @@ function RelatedLinkCard({
 export default function WorkspacePage() {
   const [packLabel, setPackLabel] = useState('OpenShift 4.20');
   const [packDropdownOpen, setPackDropdownOpen] = useState(false);
-  const [manualBooks, setManualBooks] = useState<LibraryBook[]>([]);
+  const [manualBooks, setManualBooks] = useState<WorkspaceManualBook[]>([]);
   const [drafts, setDrafts] = useState<CustomerPackDraft[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [query, setQuery] = useState('');
@@ -1054,6 +1211,14 @@ export default function WorkspacePage() {
   const [sessionList, setSessionList] = useState<SessionSummary[]>([]);
   const [isLoadingSession, setIsLoadingSession] = useState(false);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [leftPanelMode, setLeftPanelMode] = useState<LeftPanelMode>(() => {
+    if (typeof window === 'undefined') return 'history';
+    const saved = window.localStorage.getItem('workspace.leftPanelMode');
+    if (saved === 'history' || saved === 'outline' || saved === 'signals') {
+      return saved;
+    }
+    return 'history';
+  });
 
   // Scroll + welcome
   const [userScrolledUp, setUserScrolledUp] = useState(false);
@@ -1062,6 +1227,12 @@ export default function WorkspacePage() {
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
   const [sourcesDrawerOpen, setSourcesDrawerOpen] = useState(false);
+  const [outlineCategoryKey, setOutlineCategoryKey] = useState(() => {
+    if (typeof window === 'undefined') {
+      return '';
+    }
+    return window.localStorage.getItem('workspace.outlineCategoryKey') ?? '';
+  });
   const [wikiOverlays, setWikiOverlays] = useState<WikiOverlayRecord[]>([]);
   const [wikiOverlaySignals, setWikiOverlaySignals] = useState<WikiOverlaySignalsResponse | null>(null);
   const [isOverlayLoading, setIsOverlayLoading] = useState(false);
@@ -1076,6 +1247,13 @@ export default function WorkspacePage() {
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const leftPanelRef = usePanelRef();
   const rightPanelRef = usePanelRef();
+
+  // Persist + restore panel sizes across reloads.
+  const { defaultLayout: savedLayout, onLayoutChanged: handlePanelLayoutChanged } = useDefaultLayout({
+    id: 'workspace.panelLayout.v2',
+    panelIds: ['workspace-left', 'workspace-center', 'workspace-right'],
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+  });
 
   const refreshSessionList = useCallback(async () => {
     try {
@@ -1102,8 +1280,23 @@ export default function WorkspacePage() {
     }
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const welcomeQuestions = useMemo(() => pickRandom(SUGGESTED_QUESTIONS, 4), [sessionId]);
+  const welcomeQuestions = useMemo(() => {
+    return manualBooks
+      .filter((book) => Boolean(book.title?.trim()))
+      .filter((book) => containsHangul(book.title) || book.title.length > 0)
+      .slice(0, 4)
+      .map((book) => `${book.title} 핵심 절차를 알려줘`);
+  }, [manualBooks]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('workspace.leftPanelMode', leftPanelMode);
+  }, [leftPanelMode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('workspace.outlineCategoryKey', outlineCategoryKey);
+  }, [outlineCategoryKey]);
 
   // Track user scroll-up via wheel only (not programmatic scroll)
   useEffect(() => {
@@ -1248,6 +1441,18 @@ export default function WorkspacePage() {
     }
   }
 
+  // Close the Sources overlay with Esc
+  useEffect(() => {
+    if (!sourcesDrawerOpen) return undefined;
+    const handleKey = (event: globalThis.KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        setSourcesDrawerOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [sourcesDrawerOpen]);
+
   useEffect(() => {
     if (!packDropdownOpen) {
       return undefined;
@@ -1324,7 +1529,12 @@ export default function WorkspacePage() {
           return;
         }
 
-        const runtimeBooks = Array.isArray(room.gold_books) ? room.gold_books : [];
+        const runtimeBooks = (
+          room.approved_wiki_runtime_books?.books
+          ?? room.manualbooks?.books
+          ?? room.gold_books
+          ?? []
+        ) as WorkspaceManualBook[];
         const nextDrafts = draftPayload.drafts ?? [];
 
         setPackLabel(room.active_pack.pack_label || 'OpenShift 4.20');
@@ -1343,11 +1553,11 @@ export default function WorkspacePage() {
 
   const manualSources = useMemo<SourceEntry[]>(
     () =>
-      manualBooks.slice(0, 16).map((book) => ({
+      manualBooks.map((book) => ({
         id: `manual:${book.book_slug}`,
         kind: 'manual',
         name: book.title,
-        meta: formatBookMeta(book),
+        meta: summarizeBookMeta(book),
         viewerPath: book.viewer_path,
         book,
       })),
@@ -1770,7 +1980,7 @@ export default function WorkspacePage() {
       await openDraftPreview(captured.draft_id, mergeDraft(captured));
     } catch (error) {
       console.error(error);
-      window.alert(error instanceof Error ? error.message : 'Inspect Source 중 오류가 발생했습니다.');
+      window.alert(error instanceof Error ? error.message : 'Prepare Pack failed.');
     } finally {
       setIsCapturing(false);
     }
@@ -1787,7 +1997,7 @@ export default function WorkspacePage() {
       await openDraftPreview(normalized.draft_id, mergeDraft(normalized));
     } catch (error) {
       console.error(error);
-      window.alert(error instanceof Error ? error.message : 'Build Book 중 오류가 발생했습니다.');
+      window.alert(error instanceof Error ? error.message : 'Save to Wiki failed.');
     } finally {
       setIsNormalizing(false);
     }
@@ -1832,6 +2042,8 @@ export default function WorkspacePage() {
           suggestedQueries: response.suggested_queries ?? [],
           relatedLinks: response.related_links ?? [],
           relatedSections: response.related_sections ?? [],
+          responseKind: response.response_kind,
+          acquisition: response.acquisition,
           primarySourceLane: primaryTruth?.sourceLane,
           primaryBoundaryTruth: primaryTruth?.boundaryTruth,
           primaryRuntimeTruthLabel: primaryTruth?.runtimeTruthLabel,
@@ -1851,6 +2063,10 @@ export default function WorkspacePage() {
       setIsSending(false);
       void refreshSessionList();
     }
+  }
+
+  function handleAcquisitionConfirm(): void {
+    navigate('/playbook-library?view=repository');
   }
 
   function handleInputKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
@@ -1879,7 +2095,162 @@ export default function WorkspacePage() {
   const recentOverlayItems = recentPositionOverlays.slice(0, 4);
   const favoriteOverlayItems = favoriteOverlays.slice(0, 4);
   const nextPlayItems = personalizedNextPlays.slice(0, 4);
+  const activeAssistantMessage = useMemo(
+    () => [...messages].reverse().find((message) => message.role === 'assistant') ?? null,
+    [messages],
+  );
+  const activeBookSlug = useMemo(() => {
+    if (preview.kind === 'viewer' && preview.meta?.book_slug) {
+      return preview.meta.book_slug;
+    }
+    if (activeSourceId && activeSourceId.startsWith('manual:')) {
+      return activeSourceId.replace('manual:', '');
+    }
+    return '';
+  }, [activeSourceId, preview]);
+  const outlineCategoryGroups = useMemo<OutlineCategoryGroup[]>(() => {
+    const grouped = new Map<string, OutlineCategoryGroup>();
+    for (const book of manualBooks) {
+      const inferred = inferOutlineCategory(book);
+      const existing = grouped.get(inferred.key) ?? { ...inferred, books: [] };
+      existing.books.push(book);
+      grouped.set(inferred.key, existing);
+    }
+    return Array.from(grouped.values())
+      .map((group) => ({
+        ...group,
+        books: [...group.books].sort((left, right) => left.title.localeCompare(right.title, 'ko')),
+      }))
+      .sort((left, right) => {
+        const leftIndex = OUTLINE_CATEGORY_RULES.findIndex((rule) => rule.key === left.key);
+        const rightIndex = OUTLINE_CATEGORY_RULES.findIndex((rule) => rule.key === right.key);
+        return leftIndex - rightIndex;
+      });
+  }, [manualBooks]);
+  const autoOutlineCategoryKey = useMemo(() => {
+    if (activeBookSlug) {
+      const matched = outlineCategoryGroups.find((group) => group.books.some((book) => book.book_slug === activeBookSlug));
+      if (matched) {
+        return matched.key;
+      }
+    }
+    return outlineCategoryGroups[0]?.key ?? '';
+  }, [activeBookSlug, outlineCategoryGroups]);
+  const resolvedOutlineCategoryKey = outlineCategoryKey === OUTLINE_CATEGORY_COLLAPSED
+    ? ''
+    : outlineCategoryGroups.some((group) => group.key === outlineCategoryKey)
+      ? outlineCategoryKey
+      : autoOutlineCategoryKey;
+  useEffect(() => {
+    if (
+      !resolvedOutlineCategoryKey
+      || resolvedOutlineCategoryKey === outlineCategoryKey
+      || outlineCategoryKey === OUTLINE_CATEGORY_COLLAPSED
+    ) {
+      return;
+    }
+    setOutlineCategoryKey(resolvedOutlineCategoryKey);
+  }, [outlineCategoryKey, resolvedOutlineCategoryKey]);
+  // Breadcrumb path for the currently focused section (used as a header line above the TOC)
+  const outlineBreadcrumb = useMemo<string[]>(() => {
+    if (preview.kind === 'viewer' && preview.meta?.section_path?.length) {
+      return preview.meta.section_path;
+    }
+    return [];
+  }, [preview]);
 
+  // Hierarchical TOC derived from the currently open document's sections
+  const outlineTocNodes = useMemo<OutlineTocNode[]>(() => {
+    if (preview.kind === 'draft' && preview.book?.sections?.length) {
+      return preview.book.sections.map((section, index) => {
+        const segments = (section.section_path_label || '')
+          .split(/\s*[>/]\s*/)
+          .map((part) => part.trim())
+          .filter(Boolean);
+        const rawDepth = Math.max(0, segments.length - 1);
+        return {
+          id: `toc-draft:${section.viewer_path}:${index}`,
+          heading: section.heading || segments[segments.length - 1] || 'Untitled section',
+          depth: Math.min(rawDepth, 3),
+          viewerPath: section.viewer_path,
+          sectionPathLabel: section.section_path_label || '',
+        };
+      });
+    }
+
+    if (preview.kind === 'viewer' && preview.meta?.section_path?.length) {
+      const sectionPath = preview.meta.section_path;
+      return sectionPath.map((section, index) => ({
+        id: `toc-viewer:${index}:${section}`,
+        heading: section,
+        depth: Math.min(index, 3),
+        viewerPath: preview.meta?.viewer_path || '',
+        sectionPathLabel: sectionPath.slice(0, index + 1).join(' > '),
+      }));
+    }
+
+    return [];
+  }, [preview]);
+
+  // Active TOC node identifier — best-effort match by viewerPath / section label
+  const activeTocNodeId = useMemo<string | null>(() => {
+    if (!outlineTocNodes.length) return null;
+    if (preview.kind === 'viewer') {
+      const currentPath = preview.meta?.viewer_path;
+      const lastSection = preview.meta?.section_path?.[preview.meta.section_path.length - 1];
+      const match = outlineTocNodes.find((node) => {
+        if (currentPath && node.viewerPath === currentPath) return true;
+        if (lastSection && node.heading === lastSection) return true;
+        return false;
+      });
+      return match?.id ?? null;
+    }
+    if (preview.kind === 'draft') {
+      // No persistent "active section" in draft mode — highlight the first node as a reading anchor
+      return outlineTocNodes[0]?.id ?? null;
+    }
+    return null;
+  }, [outlineTocNodes, preview]);
+  const outlineProcedureItems = useMemo<OutlineLinkItem[]>(
+    () => (activeAssistantMessage?.relatedSections ?? []).slice(0, 6).map((link, index) => ({
+      id: `procedure:${link.href}:${index}`,
+      label: link.label,
+      meta: link.summary || '',
+      action: () => {
+        void handleRelatedLinkClick(link);
+      },
+    })),
+    [activeAssistantMessage],
+  );
+  const outlineRuntimeItems = useMemo<OutlineLinkItem[]>(
+    () => manualSources.map((source) => ({
+      id: source.id,
+      label: source.name,
+      meta: source.meta,
+      action: () => {
+        void handleSourceClick(source);
+      },
+      tone: activeSourceId === source.id ? 'default' : 'muted',
+    })),
+    [activeSourceId, manualSources],
+  );
+  const outlineCustomerItems = useMemo<OutlineLinkItem[]>(
+    () => draftSources.slice(0, 4).map((source) => ({
+      id: source.id,
+      label: source.name,
+      meta: source.meta,
+      action: () => {
+        void handleSourceClick(source);
+      },
+      tone: activeSourceId === source.id ? 'default' : 'muted',
+    })),
+    [activeSourceId, draftSources],
+  );
+  const viewerSurfaceTitle = preview.kind === 'draft'
+    ? 'Customer Pack Viewer'
+    : preview.kind === 'viewer'
+      ? 'Wiki Viewer'
+      : 'Document Viewer';
   return (
     <div className="workspace-wrapper" ref={containerRef} data-lenis-prevent>
       <div className="bokeh-bg bokeh-1"></div>
@@ -1937,93 +2308,356 @@ export default function WorkspacePage() {
       </header>
 
       <main className="workspace-content">
-        <Group orientation="horizontal" className="main-panel-group">
+        <Group
+          orientation="horizontal"
+          className="main-panel-group"
+          defaultLayout={savedLayout}
+          onLayoutChanged={handlePanelLayoutChanged}
+        >
 
           {/* ── Left Panel: Chat History ── */}
           <Panel
+            id="workspace-left"
             panelRef={leftPanelRef}
-            defaultSize={20}
-            minSize={15}
+            defaultSize={14}
+            minSize={12}
             collapsible={true}
             collapsedSize={0}
             onResize={(panelSize) => setLeftCollapsed(panelSize.asPercentage <= 0.5)}
             className="workspace-panel-item"
           >
             <div className={`panel-inner glass-panel no-border-radius-right ${leftCollapsed ? 'panel-collapsed-inner' : ''}`}>
-              <div className="panel-header">
+              <div className="panel-header panel-header-stacked">
                 <div className="header-icon"><MessageSquare size={18} /></div>
-                <h3>Chat History</h3>
-                <div className="session-header-actions">
-                  <button className="header-action-btn" type="button" onClick={resetSession} title="New Chat">
-                    <Plus size={14} />
-                  </button>
-                  <button
-                    className="header-action-btn header-action-danger"
-                    type="button"
-                    onClick={() => { void handleDeleteAllSessions(); }}
-                    title="Delete All Chat History"
-                    disabled={Boolean(deletingSessionId) || isLoadingSession || sessionList.length === 0}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                  <button className="header-action-btn" type="button" onClick={toggleLeftPanel} title="Close sidebar">
-                    <PanelLeftClose size={14} />
-                  </button>
+                <div className="panel-header-main">
+                  <div className="panel-header-copy">
+                    <h3>
+                      {leftPanelMode === 'history' && 'Chat History'}
+                      {leftPanelMode === 'outline' && 'Document Outline'}
+                      {leftPanelMode === 'signals' && 'Reader Signals'}
+                    </h3>
+                  </div>
+                  <div className="session-header-actions">
+                    <button className="header-action-btn" type="button" onClick={resetSession} title="New Chat">
+                      <Plus size={14} />
+                    </button>
+                    <button
+                      className="header-action-btn header-action-danger"
+                      type="button"
+                      onClick={() => { void handleDeleteAllSessions(); }}
+                      title="Delete All Chat History"
+                      disabled={Boolean(deletingSessionId) || isLoadingSession || sessionList.length === 0}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                    <button className="header-action-btn" type="button" onClick={toggleLeftPanel} title="Close sidebar">
+                      <PanelLeftClose size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="panel-mode-strip">
+                <div className="panel-mode-switch" role="tablist" aria-label="Left panel mode">
+                    <button
+                      type="button"
+                      className={`panel-mode-btn ${leftPanelMode === 'history' ? 'active' : ''}`}
+                      onClick={() => setLeftPanelMode('history')}
+                      title="History"
+                    >
+                      History
+                    </button>
+                    <button
+                      type="button"
+                      className={`panel-mode-btn ${leftPanelMode === 'outline' ? 'active' : ''}`}
+                      onClick={() => setLeftPanelMode('outline')}
+                      title="Outline"
+                    >
+                      Outline
+                    </button>
+                    <button
+                      type="button"
+                      className={`panel-mode-btn ${leftPanelMode === 'signals' ? 'active' : ''}`}
+                      onClick={() => setLeftPanelMode('signals')}
+                      title="Reader Signals"
+                    >
+                      Signals
+                    </button>
                 </div>
               </div>
 
-              <div className="session-list">
-                {sessionList.length === 0 && (
-                  <div className="session-list-empty">
-                    <MessageSquare size={24} className="text-dim" />
-                    <p>아직 대화 기록이 없습니다</p>
-                  </div>
-                )}
-                {sessionList.map((session) => (
-                  <button
-                    key={session.session_id}
-                    type="button"
-                    className={`session-item ${session.session_id === sessionId ? 'active' : ''}`}
-                    onClick={() => { void handleSessionResume(session.session_id); }}
-                    disabled={isLoadingSession || deletingSessionId === session.session_id}
-                  >
-                    <div className="session-title">{session.session_name || session.first_query || `세션 ${session.session_id.slice(0, 8)}`}</div>
-                    {(session.primary_boundary_badge || session.primary_runtime_truth_label || session.primary_source_lane) && (
-                      <div className="session-truth-row">
-                        <TruthBadgeBlock
-                          payload={{
-                            boundary_truth: session.primary_boundary_truth,
-                            runtime_truth_label: session.primary_runtime_truth_label,
-                            boundary_badge: session.primary_boundary_badge,
-                            source_lane: session.primary_source_lane,
-                            approval_state: session.primary_approval_state,
-                            publication_state: session.primary_publication_state,
-                          }}
-                          badgeClassName="session-truth-chip"
-                          metaClassName="session-truth-meta"
-                          showMeta={false}
-                        />
+              {leftPanelMode === 'history' ? (
+                <div className="session-list">
+                  {sessionList.length === 0 && (
+                    <div className="session-list-empty">
+                      <MessageSquare size={24} className="text-dim" />
+                      <p>아직 대화 기록이 없습니다</p>
+                    </div>
+                  )}
+                  {sessionList.map((session) => (
+                    <button
+                      key={session.session_id}
+                      type="button"
+                      className={`session-item ${session.session_id === sessionId ? 'active' : ''}`}
+                      onClick={() => { void handleSessionResume(session.session_id); }}
+                      disabled={isLoadingSession || deletingSessionId === session.session_id}
+                    >
+                      <div className="session-title">{session.session_name || session.first_query || `세션 ${session.session_id.slice(0, 8)}`}</div>
+                      {(session.primary_boundary_badge || session.primary_runtime_truth_label || session.primary_source_lane) && (
+                        <div className="session-truth-row">
+                          <TruthBadgeBlock
+                            payload={{
+                              boundary_truth: session.primary_boundary_truth,
+                              runtime_truth_label: session.primary_runtime_truth_label,
+                              boundary_badge: session.primary_boundary_badge,
+                              source_lane: session.primary_source_lane,
+                              approval_state: session.primary_approval_state,
+                              publication_state: session.primary_publication_state,
+                            }}
+                            badgeClassName="session-truth-chip"
+                            metaClassName="session-truth-meta"
+                            showMeta={false}
+                          />
+                        </div>
+                      )}
+                      <div className="session-meta">
+                        <span>{session.turn_count} turns</span>
+                        {session.updated_at && <span>{session.updated_at.slice(0, 10)}</span>}
+                      </div>
+                      <button
+                        type="button"
+                        className="session-delete-inline"
+                        title="삭제"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleSessionDelete(session.session_id);
+                        }}
+                        disabled={Boolean(deletingSessionId) || isLoadingSession}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </button>
+                  ))}
+                </div>
+              ) : leftPanelMode === 'outline' ? (
+                <div className="outline-panel">
+                  {outlineCategoryGroups.length > 0 && (
+                    <section className="outline-category-board">
+                      <div className="outline-section-head">
+                        <strong>Categories</strong>
+                        <span>{outlineCategoryGroups.length}</span>
+                      </div>
+                      <div className="outline-category-list">
+                        {outlineCategoryGroups.map((group) => {
+                          const isActive = group.key === resolvedOutlineCategoryKey;
+                          const groupItems = group.books.slice(0, 14).map((book) => ({
+                            id: `outline-book:${book.book_slug}`,
+                            label: book.title,
+                            meta: summarizeBookMeta(book),
+                            action: () => {
+                              void openManualPreview(book);
+                            },
+                            tone: activeBookSlug === book.book_slug ? 'default' : 'muted',
+                          }));
+                          return (
+                            <div key={group.key} className={`outline-category-card${isActive ? ' active' : ''}`}>
+                              <button
+                                type="button"
+                                className={`outline-category-item${isActive ? ' active' : ''}`}
+                                onClick={() => setOutlineCategoryKey(isActive ? OUTLINE_CATEGORY_COLLAPSED : group.key)}
+                              >
+                                <div className="outline-category-main">
+                                  <span className="outline-category-label">{group.label}</span>
+                                  <span className="outline-category-description">{group.description}</span>
+                                </div>
+                                <div className="outline-category-side">
+                                  <span className="outline-category-count">{group.books.length}</span>
+                                  {isActive ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                </div>
+                              </button>
+                              {isActive && (
+                                <div className="outline-category-expand">
+                                  {groupItems.map((item) => (
+                                    <button
+                                      key={item.id}
+                                      type="button"
+                                      className={`outline-library-item ${item.tone === 'muted' ? 'muted' : 'active'}`}
+                                      onClick={item.action}
+                                    >
+                                      <span className="outline-library-title">{item.label}</span>
+                                      {item.meta && <span className="outline-library-meta">{item.meta}</span>}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  )}
+
+                  <nav className="outline-toc" aria-label="Document outline">
+                    <div className="outline-section-head">
+                      <div className="outline-section-copy">
+                        <strong>Current Document</strong>
+                        {preview.kind !== 'empty' && <span>{preview.title}</span>}
+                      </div>
+                      {outlineTocNodes.length > 0 && <span>{outlineTocNodes.length}</span>}
+                    </div>
+                    {outlineTocNodes.length === 0 ? (
+                      <div className="outline-empty">
+                        <p>목차 없음</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="outline-toc-header">
+                          <strong className="outline-toc-title">{preview.kind !== 'empty' ? preview.title : ''}</strong>
+                          {outlineBreadcrumb.length > 0 && (
+                            <span className="outline-toc-breadcrumb">{outlineBreadcrumb.join(' › ')}</span>
+                          )}
+                          <span className="outline-toc-meta">{outlineTocNodes.length} sections</span>
+                        </div>
+                        <ul className="outline-toc-tree">
+                          {outlineTocNodes.map((node) => {
+                            const isActive = activeTocNodeId === node.id;
+                            return (
+                              <li
+                                key={node.id}
+                                className={`outline-toc-item${isActive ? ' active' : ''}`}
+                                style={{ ['--depth' as string]: node.depth } as React.CSSProperties}
+                              >
+                                <button
+                                  type="button"
+                                  aria-current={isActive ? 'location' : undefined}
+                                  onClick={() => { void openViewerPreview(node.viewerPath, node.heading); }}
+                                  title={node.sectionPathLabel || node.heading}
+                                >
+                                  <span className="outline-toc-heading">{node.heading}</span>
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </>
+                    )}
+                    {outlineProcedureItems.length > 0 && (
+                      <div className="outline-toc-suggested">
+                        <div className="outline-toc-suggested-title">Suggested next</div>
+                        <div className="outline-toc-suggested-chips">
+                          {outlineProcedureItems.slice(0, 3).map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              className="outline-toc-chip"
+                              onClick={item.action}
+                              title={item.meta}
+                            >
+                              {item.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     )}
-                    <div className="session-meta">
-                      <span>{session.turn_count} turns</span>
-                      {session.updated_at && <span>{session.updated_at.slice(0, 10)}</span>}
+                  </nav>
+
+                  {(outlineRuntimeItems.length > 0 || outlineCustomerItems.length > 0) && (
+                    <details className="outline-more">
+                      <summary>More sources</summary>
+                      {outlineRuntimeItems.length > 0 && (
+                        <div className="outline-group">
+                          <div className="outline-group-title">All Runtime Books</div>
+                          {outlineRuntimeItems.slice(0, 10).map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              className={`outline-item ${item.tone === 'muted' ? 'muted' : ''}`}
+                              onClick={item.action}
+                            >
+                              <span className="outline-item-label">{item.label}</span>
+                              {item.meta && <span className="outline-item-meta">{item.meta}</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {outlineCustomerItems.length > 0 && (
+                        <div className="outline-group">
+                          <div className="outline-group-title">Customer Packs</div>
+                          {outlineCustomerItems.map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              className={`outline-item ${item.tone === 'muted' ? 'muted' : ''}`}
+                              onClick={item.action}
+                            >
+                              <span className="outline-item-label">{item.label}</span>
+                              {item.meta && <span className="outline-item-meta">{item.meta}</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </details>
+                  )}
+                </div>
+              ) : (
+                <div className="signals-panel">
+                  {(isOverlayLoading || isOverlaySaving) && <div className="signals-status">syncing</div>}
+                  <div className="signals-card">
+                    <div className="signals-card-title">
+                      <Clock3 size={14} />
+                      <span>Recent Position</span>
                     </div>
-                    <button
-                      type="button"
-                      className="session-delete-inline"
-                      title="삭제"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        void handleSessionDelete(session.session_id);
-                      }}
-                      disabled={Boolean(deletingSessionId) || isLoadingSession}
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </button>
-                ))}
-              </div>
+                    <div className="signals-chip-list">
+                      {recentOverlayItems.length > 0 ? recentOverlayItems.map((item) => (
+                        <button
+                          key={item.overlay_id}
+                          type="button"
+                          className="signals-chip"
+                          onClick={() => { void handleOverlayJump(item); }}
+                        >
+                          {item.resolved_target?.title || item.title || item.target_ref}
+                        </button>
+                      )) : <span className="signals-empty">아직 기록이 없습니다.</span>}
+                    </div>
+                  </div>
+                  <div className="signals-card">
+                    <div className="signals-card-title">
+                      <Star size={14} />
+                      <span>Favorites</span>
+                    </div>
+                    <div className="signals-chip-list">
+                      {favoriteOverlayItems.length > 0 ? favoriteOverlayItems.map((item) => (
+                        <button
+                          key={item.overlay_id}
+                          type="button"
+                          className="signals-chip"
+                          onClick={() => { void handleOverlayJump(item); }}
+                        >
+                          {item.resolved_target?.title || item.title || item.target_ref}
+                        </button>
+                      )) : <span className="signals-empty">즐겨찾기가 없습니다.</span>}
+                    </div>
+                  </div>
+                  <div className="signals-card">
+                    <div className="signals-card-title">
+                      <ArrowRight size={14} />
+                      <span>Next</span>
+                    </div>
+                    <div className="signals-chip-list">
+                      {nextPlayItems.length > 0 ? nextPlayItems.map((item, index) => (
+                        <button
+                          key={`${item.source_target_ref}-${item.href}-${index}`}
+                          type="button"
+                          className="signals-chip"
+                          title={item.reason}
+                          onClick={() => { void handleRelatedLinkClick(item); }}
+                        >
+                          {item.label}
+                        </button>
+                      )) : <span className="signals-empty">없음</span>}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="user-profile-section">
                 <div className="profile-container">
@@ -2053,7 +2687,7 @@ export default function WorkspacePage() {
           </Separator>
 
           {/* ── Center Panel: Chat ── */}
-          <Panel defaultSize={45} minSize={30} className="workspace-panel-item">
+          <Panel id="workspace-center" defaultSize={46} minSize={30} className="workspace-panel-item">
             <div className="panel-inner chat-area">
               {(leftCollapsed || rightCollapsed) && (
                 <div className="chat-panel-toolbar">
@@ -2076,8 +2710,7 @@ export default function WorkspacePage() {
                     <div className="welcome-icon">
                       <Sparkles size={36} />
                     </div>
-                    <h2 className="welcome-title">문서를 탐색하세요</h2>
-                    <p className="welcome-subtitle">기술 위키 runtime 에서 근거와 문맥을 찾습니다</p>
+                    <h2 className="welcome-title">질문을 시작하세요</h2>
                     <div className="welcome-question-grid">
                       {welcomeQuestions.map((q, i) => (
                         <button
@@ -2147,7 +2780,7 @@ export default function WorkspacePage() {
                       )}
                       {message.role === 'assistant' && message.suggestedQueries && message.suggestedQueries.length > 0 && (
                         <div className="suggested-query-group">
-                          <div className="suggested-query-label">추천 질문</div>
+                            <div className="suggested-query-label">이런 질문은 어떠세요?</div>
                           <div className="suggested-query-list">
                             {message.suggestedQueries.map((suggestedQuery, suggestedIndex) => (
                               <button
@@ -2162,6 +2795,12 @@ export default function WorkspacePage() {
                             ))}
                           </div>
                         </div>
+                      )}
+                      {message.role === 'assistant' && message.acquisition && (
+                        <NoAnswerAcquisitionCard
+                          acquisition={message.acquisition}
+                          onConfirm={handleAcquisitionConfirm}
+                        />
                       )}
                     </div>
                   </div>
@@ -2206,24 +2845,27 @@ export default function WorkspacePage() {
 
           {/* ── Right Panel: Runtime Sources + Overlay ── */}
           <Panel
+            id="workspace-right"
             panelRef={rightPanelRef}
-            defaultSize={35}
-            minSize={20}
+            defaultSize={40}
+            minSize={24}
             collapsible={true}
             collapsedSize={0}
             onResize={(panelSize) => setRightCollapsed(panelSize.asPercentage <= 0.5)}
             className="workspace-panel-item"
           >
-            <div className={`panel-inner glass-panel no-border-radius-left ${rightCollapsed ? 'panel-collapsed-inner' : ''}`}>
-              <div className="panel-header">
-                <div className="header-icon"><BookOpen size={18} /></div>
-                <h3>Runtime Sources</h3>
+              <div className={`panel-inner glass-panel no-border-radius-left ${rightCollapsed ? 'panel-collapsed-inner' : ''}`}>
+                <div className="panel-header">
+                  <div className="header-icon"><BookOpen size={18} /></div>
+                  <div className="panel-header-copy">
+                    <h3>{viewerSurfaceTitle}</h3>
+                  </div>
 
-                <button className="header-action-btn" type="button" onClick={toggleRightPanel} title="Close panel" style={{ marginLeft: 'auto' }}>
-                  <PanelRightClose size={14} />
-                </button>
+                  <button className="header-action-btn" type="button" onClick={toggleRightPanel} title="Close panel" style={{ marginLeft: 'auto' }}>
+                    <PanelRightClose size={14} />
+                  </button>
+                </div>
 
-                {/* Upload + Sources inline in header */}
                 <input
                   ref={fileInputRef}
                   className="file-input-hidden"
@@ -2232,18 +2874,9 @@ export default function WorkspacePage() {
                     void handleUploadSelection(event);
                   }}
                 />
-                <div className="header-toolbar-actions">
+                <div className="viewer-utility-bar">
                   <button
-                    className="toolbar-inline-btn"
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                  >
-                    <Upload size={13} />
-                    <span>{isUploading ? 'Uploading...' : 'Upload'}</span>
-                  </button>
-                  <button
-                    className={`toolbar-inline-btn ${sourcesDrawerOpen ? 'active' : ''}`}
+                    className={`viewer-utility-btn ${sourcesDrawerOpen ? 'active' : ''}`}
                     type="button"
                     onClick={() => setSourcesDrawerOpen((prev) => !prev)}
                   >
@@ -2251,140 +2884,90 @@ export default function WorkspacePage() {
                     <span>Sources ({totalSourceCount})</span>
                     <ChevronDown size={11} className={`sources-chevron ${sourcesDrawerOpen ? 'open' : ''}`} />
                   </button>
+                  <button
+                    className="viewer-utility-btn"
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    <Upload size={13} />
+                    <span>{isUploading ? 'Uploading...' : 'Upload Pack'}</span>
+                  </button>
                 </div>
-              </div>
 
-              {/* Sources Drawer (collapsible) */}
+              {/* Sources Drawer — absolute overlay above the viewer */}
               {sourcesDrawerOpen && (
-                <div className="sources-drawer">
-                  <div className="source-list">
-                    <div className={`source-section ${collapsedSections.manuals ? 'collapsed' : ''}`}>
-                      <button className="section-header-btn" onClick={() => toggleSection('manuals')} type="button">
-                        <div className="header-label-group">
-                          {collapsedSections.manuals ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                          <span className="list-title">Validated Books</span>
-                        </div>
-                        <span className="item-count-badge">{manualSources.length}</span>
-                      </button>
-                      {!collapsedSections.manuals && (
-                        <div className="section-items-container">
-                          {manualSources.map((file) => (
-                            <div
-                              key={file.id}
-                              className={`source-item ${activeSourceId === file.id ? 'selected' : ''}`}
-                              onClick={() => { void handleSourceClick(file); }}
-                            >
-                              <div className="item-main">
-                                <FileText size={16} className="file-icon" />
-                                <span className="file-name">{file.name}</span>
+                <>
+                  <div
+                    className="sources-drawer-scrim"
+                    onClick={() => setSourcesDrawerOpen(false)}
+                    aria-hidden="true"
+                  />
+                  <div className="sources-drawer-overlay" role="dialog" aria-label="Sources">
+                    <div className="source-list">
+                      <div className={`source-section ${collapsedSections.manuals ? 'collapsed' : ''}`}>
+                        <button className="section-header-btn" onClick={() => toggleSection('manuals')} type="button">
+                          <div className="header-label-group">
+                            {collapsedSections.manuals ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                            <span className="list-title">Validated Books</span>
+                          </div>
+                          <span className="item-count-badge">{manualSources.length}</span>
+                        </button>
+                        {!collapsedSections.manuals && (
+                          <div className="section-items-container">
+                            {manualSources.map((file) => (
+                              <div
+                                key={file.id}
+                                className={`source-item ${activeSourceId === file.id ? 'selected' : ''}`}
+                                onClick={() => { void handleSourceClick(file); }}
+                              >
+                                <div className="item-main">
+                                  <FileText size={16} className="file-icon" />
+                                  <span className="file-name">{file.name}</span>
+                                </div>
+                                <div className="item-meta">{file.meta}</div>
                               </div>
-                              <div className="item-meta">{file.meta}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
 
-                    <div className={`source-section ${collapsedSections.drafts ? 'collapsed' : ''}`}>
-                      <button className="section-header-btn" onClick={() => toggleSection('drafts')} type="button">
-                        <div className="header-label-group">
-                          {collapsedSections.drafts ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                          <span className="list-title">Customer Packs</span>
-                        </div>
-                        <span className="item-count-badge">{draftSources.length}</span>
-                      </button>
-                      {!collapsedSections.drafts && (
-                        <div className="section-items-container">
-                          {draftSources.map((file) => (
-                            <div
-                              key={file.id}
-                              className={`source-item ${activeSourceId === file.id ? 'selected' : ''}`}
-                              onClick={() => { void handleSourceClick(file); }}
-                            >
-                              <div className="item-main">
-                                <FileText size={16} className="file-icon" />
-                                <span className="file-name">{file.name}</span>
+                      <div className={`source-section ${collapsedSections.drafts ? 'collapsed' : ''}`}>
+                        <button className="section-header-btn" onClick={() => toggleSection('drafts')} type="button">
+                          <div className="header-label-group">
+                            {collapsedSections.drafts ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                            <span className="list-title">Customer Packs</span>
+                          </div>
+                          <span className="item-count-badge">{draftSources.length}</span>
+                        </button>
+                        {!collapsedSections.drafts && (
+                          <div className="section-items-container">
+                            {draftSources.map((file) => (
+                              <div
+                                key={file.id}
+                                className={`source-item ${activeSourceId === file.id ? 'selected' : ''}`}
+                                onClick={() => { void handleSourceClick(file); }}
+                              >
+                                <div className="item-main">
+                                  <FileText size={16} className="file-icon" />
+                                  <span className="file-name">{file.name}</span>
+                                </div>
+                                <div className="item-meta">{file.meta}</div>
                               </div>
-                              <div className="item-meta">{file.meta}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                </>
               )}
 
-              <div className="wiki-overlay-strip">
-                <div className="wiki-overlay-strip-header">
-                  <span>User Overlay</span>
-                  {(isOverlayLoading || isOverlaySaving) && <span className="wiki-overlay-status">syncing...</span>}
-                </div>
-                <div className="wiki-overlay-strip-grid">
-                  <div className="wiki-overlay-card">
-                    <div className="wiki-overlay-card-title">
-                      <Clock3 size={14} />
-                      <span>Recent Position</span>
-                    </div>
-                    <div className="wiki-overlay-chip-list">
-                      {recentOverlayItems.length > 0 ? recentOverlayItems.map((item) => (
-                        <button
-                          key={item.overlay_id}
-                          type="button"
-                          className="wiki-overlay-chip"
-                          onClick={() => { void handleOverlayJump(item); }}
-                        >
-                          {item.resolved_target?.title || item.title || item.target_ref}
-                        </button>
-                      )) : <span className="wiki-overlay-empty">아직 기록이 없습니다.</span>}
-                    </div>
-                  </div>
-                  <div className="wiki-overlay-card">
-                    <div className="wiki-overlay-card-title">
-                      <Star size={14} />
-                      <span>Favorites</span>
-                    </div>
-                    <div className="wiki-overlay-chip-list">
-                      {favoriteOverlayItems.length > 0 ? favoriteOverlayItems.map((item) => (
-                        <button
-                          key={item.overlay_id}
-                          type="button"
-                          className="wiki-overlay-chip"
-                          onClick={() => { void handleOverlayJump(item); }}
-                        >
-                          {item.resolved_target?.title || item.title || item.target_ref}
-                        </button>
-                      )) : <span className="wiki-overlay-empty">즐겨찾기가 없습니다.</span>}
-                    </div>
-                  </div>
-                  <div className="wiki-overlay-card">
-                    <div className="wiki-overlay-card-title">
-                      <ArrowRight size={14} />
-                      <span>Next Reads</span>
-                    </div>
-                    <div className="wiki-overlay-chip-list">
-                      {nextPlayItems.length > 0 ? nextPlayItems.map((item, index) => (
-                        <button
-                          key={`${item.source_target_ref}-${item.href}-${index}`}
-                          type="button"
-                          className="wiki-overlay-chip"
-                          title={item.reason}
-                          onClick={() => { void handleRelatedLinkClick(item); }}
-                        >
-                          {item.label}
-                        </button>
-                      )) : <span className="wiki-overlay-empty">행동 신호가 쌓이면 다음 읽기 경로가 제안됩니다.</span>}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="source-viewer-content">
+              <div className="source-viewer-content viewer-surface">
                 {preview.kind === 'empty' && (
                   <div className="empty-state">
                     <div className="empty-icon"><BookOpen size={48} className="text-dim" /></div>
-                    <h4>선택된 문서가 없습니다</h4>
-                    <p>채팅의 참조 태그를 눌러 원문을 확인하세요.</p>
+                    <h4>문서를 선택하세요</h4>
                   </div>
                 )}
 
@@ -2392,7 +2975,7 @@ export default function WorkspacePage() {
                   <div className="empty-state">
                     <div className="loading-spinner-small"></div>
                     <h4>{preview.title}</h4>
-                    <p>콘텐츠를 불러오는 중입니다.</p>
+                    <p>Loading</p>
                   </div>
                 )}
 
@@ -2400,9 +2983,43 @@ export default function WorkspacePage() {
                   const previewTruth = truthSurfaceCopy(preview.meta);
                   return (
                     <div className="document-page animate-in">
-                      <div className="doc-header">
-                        <span className="doc-kicker">{previewTruth.label || preview.meta?.pack_label || 'Source Viewer'}</span>
-                        <h2>{preview.title}</h2>
+                      <div className="doc-header doc-header-with-actions">
+                        <div className="doc-header-text">
+                          <span className="doc-kicker">{previewTruth.label || preview.meta?.pack_label || 'Source Viewer'}</span>
+                          <h2>{preview.title}</h2>
+                        </div>
+                        {currentOverlayTarget && (
+                          <div className="wiki-overlay-toolbar inline">
+                            <button
+                              type="button"
+                              className={`wiki-overlay-action ${currentFavorite ? 'active' : ''}`}
+                              onClick={() => { void handleToggleFavoriteCurrent(); }}
+                              disabled={isOverlaySaving}
+                              title={currentFavorite ? 'Saved' : 'Save'}
+                            >
+                              <Star size={14} />
+                            </button>
+                            {currentOverlayTarget.kind === 'section' && (
+                              <button
+                                type="button"
+                                className={`wiki-overlay-action ${currentSectionCheck ? 'active' : ''}`}
+                                onClick={() => { void handleToggleSectionCheckCurrent(); }}
+                                disabled={isOverlaySaving}
+                                title={currentSectionCheck ? 'Done' : 'Mark Done'}
+                              >
+                                <Check size={14} />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className={`wiki-overlay-action ${noteOpen ? 'active' : ''}`}
+                              onClick={() => setNoteOpen((value) => !value)}
+                              title="Note"
+                            >
+                              <NotebookPen size={14} />
+                            </button>
+                          </div>
+                        )}
                       </div>
                       {preview.subtitle && <p className="doc-summary">{preview.subtitle}</p>}
                       {previewTruth.meta.length > 0 && (
@@ -2412,45 +3029,13 @@ export default function WorkspacePage() {
                           ))}
                         </div>
                       )}
-                      {currentOverlayTarget && (
-                        <div className="wiki-overlay-toolbar">
-                          <button
-                            type="button"
-                            className={`wiki-overlay-action ${currentFavorite ? 'active' : ''}`}
-                            onClick={() => { void handleToggleFavoriteCurrent(); }}
-                            disabled={isOverlaySaving}
-                          >
-                            <Star size={14} />
-                            <span>{currentFavorite ? 'Saved' : 'Save'}</span>
-                          </button>
-                          {currentOverlayTarget.kind === 'section' && (
-                            <button
-                              type="button"
-                              className={`wiki-overlay-action ${currentSectionCheck ? 'active' : ''}`}
-                              onClick={() => { void handleToggleSectionCheckCurrent(); }}
-                              disabled={isOverlaySaving}
-                            >
-                              <Check size={14} />
-                              <span>{currentSectionCheck ? 'Done' : 'Mark Done'}</span>
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            className={`wiki-overlay-action ${noteOpen ? 'active' : ''}`}
-                            onClick={() => setNoteOpen((value) => !value)}
-                          >
-                            <NotebookPen size={14} />
-                            <span>Note</span>
-                          </button>
-                        </div>
-                      )}
                       {currentOverlayTarget && noteOpen && (
                         <div className="wiki-note-panel">
                           <textarea
                             className="wiki-note-input"
                             value={noteDraft}
                             onChange={(event) => setNoteDraft(event.target.value)}
-                            placeholder="이 문서, 엔터티, 섹션에 대한 개인 메모를 남기세요."
+                            placeholder="메모"
                           />
                           <div className="wiki-note-actions">
                             <button
@@ -2459,7 +3044,7 @@ export default function WorkspacePage() {
                               onClick={() => { void handleSaveCurrentNote(); }}
                               disabled={isOverlaySaving}
                             >
-                              {currentNote ? '노트 업데이트' : '노트 저장'}
+                              {currentNote ? 'Update Note' : 'Save Note'}
                             </button>
                           </div>
                         </div>
@@ -2487,10 +3072,64 @@ export default function WorkspacePage() {
                   const draftTruth = truthSurfaceCopy(preview.book ?? preview.draft);
                   return (
                     <div className="document-page animate-in">
-                      <div className="doc-header">
-                        <span className="doc-kicker">{draftTruth.label}</span>
-                        <h2>{preview.title}</h2>
+                      <div className="doc-header doc-header-with-actions">
+                        <div className="doc-header-text">
+                          <span className="doc-kicker">{draftTruth.label}</span>
+                          <h2>{preview.title}</h2>
+                        </div>
+                        {currentOverlayTarget && (
+                          <div className="wiki-overlay-toolbar inline">
+                            <button
+                              type="button"
+                              className={`wiki-overlay-action ${currentFavorite ? 'active' : ''}`}
+                              onClick={() => { void handleToggleFavoriteCurrent(); }}
+                              disabled={isOverlaySaving}
+                              title={currentFavorite ? 'Saved' : 'Save'}
+                            >
+                              <Star size={14} />
+                            </button>
+                            {currentOverlayTarget.kind === 'section' && (
+                              <button
+                                type="button"
+                                className={`wiki-overlay-action ${currentSectionCheck ? 'active' : ''}`}
+                                onClick={() => { void handleToggleSectionCheckCurrent(); }}
+                                disabled={isOverlaySaving}
+                                title={currentSectionCheck ? 'Done' : 'Mark Done'}
+                              >
+                                <Check size={14} />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className={`wiki-overlay-action ${noteOpen ? 'active' : ''}`}
+                              onClick={() => setNoteOpen((value) => !value)}
+                              title="Note"
+                            >
+                              <NotebookPen size={14} />
+                            </button>
+                          </div>
+                        )}
                       </div>
+                      {currentOverlayTarget && noteOpen && (
+                        <div className="wiki-note-panel">
+                          <textarea
+                            className="wiki-note-input"
+                            value={noteDraft}
+                            onChange={(event) => setNoteDraft(event.target.value)}
+                            placeholder="메모"
+                          />
+                          <div className="wiki-note-actions">
+                            <button
+                              type="button"
+                              className="outline-btn"
+                              onClick={() => { void handleSaveCurrentNote(); }}
+                              disabled={isOverlaySaving}
+                            >
+                              {currentNote ? 'Update Note' : 'Save Note'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       <p className="doc-summary">{preview.subtitle}</p>
                       <div className="doc-metadata">
                         <span>Quality {preview.draft.quality_score}</span>
@@ -2527,7 +3166,7 @@ export default function WorkspacePage() {
                         />
                       ) : (
                         <div className="doc-section">
-                          <h4>Pack Status</h4>
+                          <h4>Status</h4>
                           <p>{preview.draft.status}</p>
                         </div>
                       )}
@@ -2536,21 +3175,20 @@ export default function WorkspacePage() {
                 })()}
               </div>
 
-              <div className="panel-footer">
-                {!activeDraft && (
-                  <p className="footer-hint">문서를 업로드하면 검사와 북 생성을 시작합니다</p>
-                )}
-                <div className="footer-actions">
-                  <button className="outline-btn" onClick={() => { void handleCapture(); }} type="button" disabled={!canCapture}>
-                    <Cpu size={14} />
-                    <span>{isCapturing ? 'Inspecting...' : 'Inspect Source'}</span>
-                  </button>
-                  <button className="primary-btn" onClick={() => { void handleNormalize(); }} type="button" disabled={!canNormalize}>
-                    <span>{isNormalizing ? 'Building...' : 'Build Book'}</span>
-                    <ArrowRight size={14} />
-                  </button>
+              {activeDraft && (
+                <div className="panel-footer viewer-build-actions">
+                  <div className="footer-actions">
+                    <button className="outline-btn" onClick={() => { void handleCapture(); }} type="button" disabled={!canCapture}>
+                      <Cpu size={14} />
+                      <span>{isCapturing ? 'Preparing...' : 'Prepare Pack'}</span>
+                    </button>
+                    <button className="primary-btn" onClick={() => { void handleNormalize(); }} type="button" disabled={!canNormalize}>
+                      <span>{isNormalizing ? 'Saving...' : 'Save to Wiki'}</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </Panel>
         </Group>

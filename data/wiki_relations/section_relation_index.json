@@ -1,7 +1,7 @@
 {
-  "generated_at_utc": "2026-04-15T00:56:33+00:00",
+  "generated_at_utc": "2026-04-15T05:53:51+00:00",
   "book_count": 29,
-  "entity_count": 13,
+  "entity_count": 14,
   "by_book": {
     "advanced_networking": [
       {
@@ -114,6 +114,38 @@
         "label": "2.8.1. 한 번 빌드하여 어디에나 배포",
         "href": "/playbooks/wiki-runtime/active/security_and_compliance/index.html#281-한-번-빌드하여-어디에나-배포",
         "summary": "보안 및 컴플라이언스 · 보안 및 컴플라이언스 > OpenShift Container Platform의 보안 학습 및 관리 > 2.8. 빌드 프로세스 보안 > 2.8.1. 한 번 빌드하여 어디에나 배포",
+        "source": "related_doc_section"
+      }
+    ],
+    "backup_and_restore": [
+      {
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
+        "source": "figure_section"
+      },
+      {
+        "label": "5.26.12.2. Creating OADP service monitor",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#526122-creating-oadp-service-monitor",
+        "summary": "... > 5.26.12.2. Creating OADP service monitor",
+        "source": "figure_section"
+      },
+      {
+        "label": "5.26.12.3. Creating an alerting rule",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#526123-creating-an-alerting-rule",
+        "summary": "... > 5.26.12.2. Creating OADP service monitor > 5.26.12.3. Creating an alerting rule",
+        "source": "figure_section"
+      },
+      {
+        "label": "5.26.12.5. Viewing metrics using the Observe UI",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#526125-viewing-metrics-using-the-observe-ui",
+        "summary": "... > 5.26.12.2. Creating OADP service monitor > 5.26.12.3. Creating an alerting rule > 5.26.12.5. Viewing metrics using the Observe UI",
+        "source": "figure_section"
+      },
+      {
+        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
+        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
         "source": "related_doc_section"
       }
     ],
@@ -239,9 +271,9 @@
         "source": "related_doc_section"
       },
       {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
         "source": "related_doc_section"
       }
     ],
@@ -253,9 +285,15 @@
         "source": "figure_section"
       },
       {
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
+        "source": "related_doc_section"
+      },
+      {
         "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
         "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
         "source": "related_doc_section"
       }
     ],
@@ -267,9 +305,15 @@
         "source": "figure_section"
       },
       {
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
+        "source": "related_doc_section"
+      },
+      {
         "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
         "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
         "source": "related_doc_section"
       }
     ],
@@ -369,9 +413,9 @@
         "source": "related_doc_section"
       },
       {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "Machine configuration · Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "Machine configuration · Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
         "source": "related_doc_section"
       }
     ],
@@ -457,6 +501,12 @@
         "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
         "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
         "source": "related_doc_section"
+      },
+      {
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
+        "source": "related_doc_section"
       }
     ],
     "updating_clusters": [
@@ -489,6 +539,12 @@
         "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
         "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
         "source": "related_doc_section"
+      },
+      {
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
+        "source": "related_doc_section"
       }
     ],
     "validation_and_troubleshooting": [
@@ -497,6 +553,12 @@
         "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
         "summary": "검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
         "source": "figure_section"
+      },
+      {
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "Monitoring · 로깅 · Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
+        "source": "related_doc_section"
       }
     ],
     "web_console": [
@@ -537,19 +599,17 @@
         "source": "figure_section"
       }
     ],
-    "backup_and_restore": [
+    "etcd": [
+      {
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
+        "source": "related_doc_section"
+      },
       {
         "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
         "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
         "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "source": "related_doc_section"
-      }
-    ],
-    "etcd": [
-      {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
         "source": "related_doc_section"
       }
     ],
@@ -587,33 +647,39 @@
         "source": "related_doc_section"
       },
       {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
         "source": "related_doc_section"
       }
     ],
     "logging": [
       {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
         "source": "related_doc_section"
       }
     ],
     "machine_configuration": [
       {
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
+        "source": "related_doc_section"
+      },
+      {
         "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
         "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
         "source": "related_doc_section"
       }
     ],
     "monitoring": [
       {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "로깅 · Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "로깅 · Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
         "source": "related_doc_section"
       }
     ],
@@ -645,9 +711,9 @@
     ],
     "observability_overview": [
       {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "Monitoring · 로깅 · Backup and restore · 검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "Monitoring · 로깅 · Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
         "source": "related_doc_section"
       }
     ],
@@ -688,6 +754,12 @@
         "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
         "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
         "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "source": "related_doc_section"
+      },
+      {
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
         "source": "related_doc_section"
       }
     ]
@@ -883,6 +955,70 @@
         "source": "entity_figure_section"
       }
     ],
+    "etcd": [
+      {
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "5.26.12.2. Creating OADP service monitor",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#526122-creating-oadp-service-monitor",
+        "summary": "Backup and restore · ... > 5.26.12.2. Creating OADP service monitor",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "5.26.12.3. Creating an alerting rule",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#526123-creating-an-alerting-rule",
+        "summary": "Backup and restore · ... > 5.26.12.2. Creating OADP service monitor > 5.26.12.3. Creating an alerting rule",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "5.26.12.5. Viewing metrics using the Observe UI",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#526125-viewing-metrics-using-the-observe-ui",
+        "summary": "Backup and restore · ... > 5.26.12.2. Creating OADP service monitor > 5.26.12.3. Creating an alerting rule > 5.26.12.5. Viewing metrics using the Observe UI",
+        "source": "entity_figure_section"
+      }
+    ],
+    "control-plane-ops": [
+      {
+        "label": "5.26.11. Using the must-gather tool",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
+        "summary": "Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "5.26.12.2. Creating OADP service monitor",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#526122-creating-oadp-service-monitor",
+        "summary": "Backup and restore · ... > 5.26.12.2. Creating OADP service monitor",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "5.26.12.3. Creating an alerting rule",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#526123-creating-an-alerting-rule",
+        "summary": "Backup and restore · ... > 5.26.12.2. Creating OADP service monitor > 5.26.12.3. Creating an alerting rule",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "5.26.12.5. Viewing metrics using the Observe UI",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#526125-viewing-metrics-using-the-observe-ui",
+        "summary": "Backup and restore · ... > 5.26.12.2. Creating OADP service monitor > 5.26.12.3. Creating an alerting rule > 5.26.12.5. Viewing metrics using the Observe UI",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "6.2.2. 머신 삭제 처리 순서",
+        "href": "/playbooks/wiki-runtime/active/machine_management/index.html#622-머신-삭제-처리-순서",
+        "summary": "머신 관리 · ... > 6장. 머신 삭제 > 6.2. 머신 삭제 단계에 대한 라이프사이클 후크 > 6.2.2. 머신 삭제 처리 순서",
+        "source": "entity_figure_section"
+      },
+      {
+        "label": "1.1. 노드 정보",
+        "href": "/playbooks/wiki-runtime/active/nodes/index.html#11-노드-정보",
+        "summary": "노드 · 노드 > OpenShift Container Platform에서 노드 구성 및 관리 > 1.1. 노드 정보",
+        "source": "entity_figure_section"
+      }
+    ],
     "operators-and-tooling": [
       {
         "label": "2.1.2.2.1. 웹 콘솔을 사용하여 Linux에 OpenShift CLI 설치",
@@ -996,20 +1132,6 @@
         "label": "9.2.1.1. 기본 클러스터 역할",
         "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#9211-기본-클러스터-역할",
         "summary": "설치 후 구성 · ... > 9장. 사용자를 위한 준비 > 9.2. RBAC를 사용하여 권한 정의 및 적용 > 9.2.1.1. 기본 클러스터 역할",
-        "source": "entity_figure_section"
-      }
-    ],
-    "control-plane-ops": [
-      {
-        "label": "6.2.2. 머신 삭제 처리 순서",
-        "href": "/playbooks/wiki-runtime/active/machine_management/index.html#622-머신-삭제-처리-순서",
-        "summary": "머신 관리 · ... > 6장. 머신 삭제 > 6.2. 머신 삭제 단계에 대한 라이프사이클 후크 > 6.2.2. 머신 삭제 처리 순서",
-        "source": "entity_figure_section"
-      },
-      {
-        "label": "1.1. 노드 정보",
-        "href": "/playbooks/wiki-runtime/active/nodes/index.html#11-노드-정보",
-        "summary": "노드 · 노드 > OpenShift Container Platform에서 노드 구성 및 관리 > 1.1. 노드 정보",
         "source": "entity_figure_section"
       }
     ],

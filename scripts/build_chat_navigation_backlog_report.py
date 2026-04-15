@@ -20,6 +20,26 @@ if str(SRC) not in sys.path:
 from play_book_studio.config.settings import load_settings
 
 
+LEGACY_BOOK_PREFIXES = (
+    "/playbooks/gold-candidates/wave1/",
+    "/playbooks/wiki-runtime/wave1/",
+)
+
+
+def _is_active_surface_href(href: str) -> bool:
+    normalized = str(href or "").strip()
+    if not normalized:
+        return False
+    if any(normalized.startswith(prefix) for prefix in LEGACY_BOOK_PREFIXES):
+        return False
+    return (
+        normalized.startswith("/playbooks/wiki-runtime/active/")
+        or normalized.startswith("/wiki/entities/")
+        or normalized.startswith("/wiki/figures/")
+        or normalized.startswith("/docs/ocp/")
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Aggregate suggested queries and related links from chat audit logs into a navigation backlog report.",
@@ -226,7 +246,7 @@ def main() -> int:
             title = str(link.get("title") or link.get("label") or "").strip()
             href = str(link.get("href") or "").strip()
             kind = str(link.get("kind") or "").strip() or "unknown"
-            if not title or not href:
+            if not title or not href or not _is_active_surface_href(href):
                 continue
             related_counter[(title, href, kind)] += 1
             if "/wiki/entities/" in href:

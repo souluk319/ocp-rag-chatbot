@@ -1,0 +1,35 @@
+{
+  "task_id": "W6-E2-T7-LATEST-ONLY-SURFACE-GATE",
+  "lane_id": "main",
+  "role": "main",
+  "status": "ok",
+  "code_paths": [
+    "src/play_book_studio/app/server.py",
+    "src/play_book_studio/app/source_books.py",
+    "src/play_book_studio/app/data_control_room.py",
+    "presentation-ui/src/pages/PlaybookLibraryPage.tsx",
+    "TASK_BOARD.yaml"
+  ],
+  "artifacts": [
+    "reports/build_logs/latest_only_surface_gate_report.json",
+    "reports/build_logs/latest_only_surface_gate_verification_report.json"
+  ],
+  "validation": [
+    {
+      "name": "py_compile latest-only targets",
+      "status": "ok"
+    },
+    {
+      "name": "npm --prefix presentation-ui run build",
+      "status": "ok"
+    },
+    {
+      "name": "latest-only surface smoke",
+      "status": "ok"
+    },
+    {
+      "name": "TASK_BOARD yaml parse",
+      "status": "ok"
+    }
+  ]
+}

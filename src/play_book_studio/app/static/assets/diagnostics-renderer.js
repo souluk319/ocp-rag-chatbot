@@ -153,20 +153,20 @@ window.createDiagnosticsRenderer = function createDiagnosticsRenderer(deps) {
     if (!container) return;
 
     if (!traceEvents || !traceEvents.length) {
-      container.innerHTML = '<div class="trace-empty" style="text-align: center; color: var(--muted); padding-top: 40px; font-size: 14px;">질문을 보내거나 말풍선을 클릭하면<br>상황실 모니터가 켜집니다.</div>';
+      container.innerHTML = '<div class="trace-empty" style="text-align: center; color: var(--muted); padding-top: 40px; font-size: 14px;">대기 중</div>';
       return;
     }
 
     const friendlyMap = {
-      route_query: { title: "요청 접수", desc: "질문의 종류를 판별하고 있습니다." },
-      rewrite_query: { title: "질문 분석", desc: "질문의 숨은 의도와 핵심 키워드를 파악합니다." },
-      bm25_search: { title: "키워드 매칭", desc: "단어 단위로 흩어진 관련 문서를 긁어옵니다." },
-      vector_search: { title: "의미 탐색", desc: "문맥상 비슷한 의미를 가진 공식 문서를 찾습니다." },
-      fusion: { title: "하이브리드 병합", desc: "BM25와 Vector 결과를 수학적으로 결합합니다." },
-      rerank: { title: "문맥 재정렬 (AI 리랭킹)", desc: "AI 모델이 문서 문맥을 분석해 정답 우선순위를 조정합니다." },
-      query_reranking: { title: "문맥 재정렬 (AI 리랭킹)", desc: "AI 모델이 문서 문맥을 분석해 정답 우선순위를 조정합니다." },
-      llm_generate: { title: "답변 작성 중", desc: "선정된 근거를 바탕으로 답변을 구성합니다." },
-      pipeline_complete: { title: "임무 완료", desc: "검색과 답변 생성을 마쳤습니다." },
+      route_query: { title: "Request", desc: "" },
+      rewrite_query: { title: "Query", desc: "" },
+      bm25_search: { title: "BM25", desc: "" },
+      vector_search: { title: "Vector", desc: "" },
+      fusion: { title: "Hybrid", desc: "" },
+      rerank: { title: "Rerank", desc: "" },
+      query_reranking: { title: "Rerank", desc: "" },
+      llm_generate: { title: "Answer", desc: "" },
+      pipeline_complete: { title: "Complete", desc: "" },
     };
 
     let html = "";
@@ -205,9 +205,14 @@ window.createDiagnosticsRenderer = function createDiagnosticsRenderer(deps) {
         });
       }
 
-      let detail = event.detail || friendlyMap[key].desc;
+      let detail = "";
+      if (event.detail) {
+        detail = event.detail;
+      } else if (friendlyMap[key].desc) {
+        detail = friendlyMap[key].desc;
+      }
       if (metaParts.length) {
-        detail += `<br><span class="stepper-meta-chip">📊 ${metaParts.join(" | ")}</span>`;
+        detail += `${detail ? "<br>" : ""}<span class="stepper-meta-chip">📊 ${metaParts.join(" | ")}</span>`;
       }
 
       stepMap.set(key, {

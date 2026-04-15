@@ -10,7 +10,7 @@
   - etcd 허브 related books 확장
   - etcd 관련 troubleshooting book 연결
   - etcd 허브 backlink 보강
-- primary_signal: `entity:etcd` · count=`40`
+- primary_signal: `entity:etcd` · count=`45`
 
 ## P2. Machine Configuration Recovery Bridge
 
@@ -20,8 +20,8 @@
   - 복원 후 MCO 확인 경로 정리
   - machine_configuration 허브/문서 backlink 강화
   - chat related links에 복구 후속 점검 경로 고정
-- primary_signal: `query:복원-후-machine-configuration은-왜-같이-봐야-하는지-알려줘` · count=`45`
-- supporting_signal: `book:machine-configuration` · count=`7`
+- primary_signal: `query:복원-후-machine-configuration은-왜-같이-봐야-하는지-알려줘` · count=`50`
+- supporting_signal: `book:machine-configuration` · count=`11`
 
 ## P3. Post-Action Verification Path
 
@@ -31,5 +31,5 @@
   - Monitoring verification path relation 추가
   - post-action verify 중심 북 후보 정의
   - 추천질문을 verification path로 재고정
-- primary_signal: `query:백업-후-monitoring에서는-어떤-신호를-먼저-확인해야-해?` · count=`45`
-- supporting_signal: `entity:cluster-wide-proxy` · count=`38`
+- primary_signal: `query:백업-후-monitoring에서는-어떤-신호를-먼저-확인해야-해?` · count=`50`
+- supporting_signal: `entity:cluster-wide-proxy` · count=`39`

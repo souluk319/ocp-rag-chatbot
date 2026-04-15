@@ -13,6 +13,9 @@ from pathlib import Path
 from play_book_studio.config.settings import Settings
 from play_book_studio.retrieval import ChatRetriever, SessionContext
 from play_book_studio.retrieval.query import (
+    has_backup_restore_intent,
+    has_command_request,
+    has_corrective_follow_up,
     has_follow_up_entity_ambiguity,
     has_follow_up_reference,
 )
@@ -20,6 +23,7 @@ from play_book_studio.retrieval.query import (
 from .answer_text_commands import (
     build_deployment_scaling_answer,
     build_grounded_command_guide_answer,
+    has_sufficient_command_grounding,
 )
 from .answer_text_formatting import summarize_session_context
 from .citations import (
@@ -38,6 +42,54 @@ from .pipeline_helpers import (
 )
 from .prompt import build_messages
 from .router import route_non_rag
+
+
+def _looks_like_missing_coverage_answer(answer: str) -> bool:
+    normalized = " ".join(str(answer or "").split()).lower()
+    missing_patterns = (
+        "제공된 근거에 포함되어 있지 않습니다",
+        "제공된 문서는",
+        "포함되어 있지 않습니다",
+        "직접 제공하지 않습니다",
+        "제공되지 않습니다",
+        "근거에 없습니다",
+    )
+    if not any(pattern in normalized for pattern in missing_patterns):
+        return False
+    return any(
+        anchor in normalized
+        for anchor in (
+            "예시는 제공",
+            "설명하고 있습니다",
+            "방식만 설명",
+            "대신",
+            "만 설명",
+        )
+    )
+
+
+def _citation_matches_keywords(citations: list, keywords: tuple[str, ...]) -> bool:
+    normalized_keywords = tuple(str(keyword or "").strip().lower() for keyword in keywords if str(keyword or "").strip())
+    if not normalized_keywords:
+        return False
+    for citation in citations:
+        haystack = " ".join(
+            [
+                str(getattr(citation, "book_slug", "") or ""),
+                str(getattr(citation, "section", "") or ""),
+                str(getattr(citation, "source_label", "") or ""),
+                str(getattr(citation, "book_title", "") or ""),
+            ]
+        ).lower()
+        if any(keyword in haystack for keyword in normalized_keywords):
+            return True
+    return False
+
+
+def _requires_monitoring_backup_grounding(query: str) -> bool:
+    lowered = str(query or "").lower()
+    return has_backup_restore_intent(query) and any(token in lowered for token in ("monitoring", "모니터링"))
+
 
 class ChatAnswerer:
     """CLI, UI, eval 파이프라인이 공통으로 쓰는 최상위 answer 서비스."""
@@ -327,8 +379,8 @@ class ChatAnswerer:
                 mode=mode,
                 rewritten_query=retrieval.rewritten_query,
                 answer=(
-                    "답변: 현재 선택된 근거가 없어 답변을 생성하지 않습니다. "
-                    "질문 범위를 더 구체화하거나 코퍼스 상태를 점검해야 합니다."
+                    "답변: 현재 Playbook Library에 해당 자료가 없습니다. "
+                    "자료 추가가 필요합니다."
                 ),
                 warnings=warnings,
                 retrieval_trace=retrieval.trace,
@@ -339,6 +391,87 @@ class ChatAnswerer:
             context_bundle.citations,
             retrieval.hits,
         )
+        actionable_command_query = has_command_request(query) or has_corrective_follow_up(query)
+        if actionable_command_query and not has_sufficient_command_grounding(
+            query=query,
+            citations=context_bundle.citations,
+        ):
+            warnings.append("insufficient command grounding coverage")
+            emit(
+                {
+                    "step": "grounding_guard",
+                    "label": "근거 검증 차단",
+                    "status": "error",
+                    "detail": "명령형 질문을 뒷받침하는 근거 범위가 부족합니다",
+                }
+            )
+            pipeline_timings_ms["total"] = round(
+                (time.perf_counter() - answer_started_at) * 1000,
+                1,
+            )
+            emit(
+                {
+                    "step": "pipeline_complete",
+                    "label": "답변 생성 중단",
+                    "status": "done",
+                    "detail": f"총 {pipeline_timings_ms['total']}ms",
+                    "duration_ms": pipeline_timings_ms["total"],
+                }
+            )
+            return self._build_grounding_blocked_result(
+                query=query,
+                mode=mode,
+                rewritten_query=retrieval.rewritten_query,
+                answer=(
+                    "답변: 현재 Playbook Library에 해당 자료가 없습니다. "
+                    "자료 추가가 필요합니다."
+                ),
+                warnings=warnings,
+                retrieval_trace=retrieval.trace,
+                pipeline_events=pipeline_events,
+                pipeline_timings_ms=pipeline_timings_ms,
+                selected_hits=selected_hits,
+            )
+        if _requires_monitoring_backup_grounding(query) and not _citation_matches_keywords(
+            context_bundle.citations,
+            ("monitoring", "모니터링", "backup_and_restore", "백업", "복원"),
+        ):
+            warnings.append("insufficient monitoring/backup grounding coverage")
+            emit(
+                {
+                    "step": "grounding_guard",
+                    "label": "근거 검증 차단",
+                    "status": "error",
+                    "detail": "비교형 질문을 뒷받침하는 monitoring/backup 근거가 부족합니다",
+                }
+            )
+            pipeline_timings_ms["total"] = round(
+                (time.perf_counter() - answer_started_at) * 1000,
+                1,
+            )
+            emit(
+                {
+                    "step": "pipeline_complete",
+                    "label": "답변 생성 중단",
+                    "status": "done",
+                    "detail": f"총 {pipeline_timings_ms['total']}ms",
+                    "duration_ms": pipeline_timings_ms["total"],
+                }
+            )
+            return self._build_grounding_blocked_result(
+                query=query,
+                mode=mode,
+                rewritten_query=retrieval.rewritten_query,
+                answer=(
+                    "답변: 현재 Playbook Library에 해당 자료가 없습니다. "
+                    "자료 추가가 필요합니다."
+                ),
+                warnings=warnings,
+                retrieval_trace=retrieval.trace,
+                pipeline_events=pipeline_events,
+                pipeline_timings_ms=pipeline_timings_ms,
+                selected_hits=selected_hits,
+            )
 
         deployment_scaling_answer = build_deployment_scaling_answer(
             query=query,
@@ -545,8 +678,47 @@ class ChatAnswerer:
                 mode=mode,
                 rewritten_query=retrieval.rewritten_query,
                 answer=(
-                    "답변: 생성된 답변에 근거 번호가 없어 결과를 폐기했습니다. "
-                    "질문을 더 구체화하거나 코퍼스와 검색 상태를 점검해야 합니다."
+                    "답변: 현재 Playbook Library에 해당 자료가 없습니다. "
+                    "자료 추가가 필요합니다."
+                ),
+                warnings=warnings,
+                retrieval_trace=retrieval.trace,
+                pipeline_events=pipeline_events,
+                pipeline_timings_ms=pipeline_timings_ms,
+                selected_hits=selected_hits,
+                llm_runtime_meta=llm_runtime_meta,
+            )
+
+        if _looks_like_missing_coverage_answer(answer_text):
+            warnings.append("answer indicates missing corpus coverage")
+            emit(
+                {
+                    "step": "grounding_guard",
+                    "label": "근거 범위 차단",
+                    "status": "error",
+                    "detail": "생성 답변이 코퍼스 부재를 직접 인정했습니다",
+                }
+            )
+            pipeline_timings_ms["total"] = round(
+                (time.perf_counter() - answer_started_at) * 1000,
+                1,
+            )
+            emit(
+                {
+                    "step": "pipeline_complete",
+                    "label": "답변 생성 중단",
+                    "status": "done",
+                    "detail": f"총 {pipeline_timings_ms['total']}ms",
+                    "duration_ms": pipeline_timings_ms["total"],
+                }
+            )
+            return self._build_grounding_blocked_result(
+                query=query,
+                mode=mode,
+                rewritten_query=retrieval.rewritten_query,
+                answer=(
+                    "답변: 현재 Playbook Library에 해당 자료가 없습니다. "
+                    "자료 추가가 필요합니다."
                 ),
                 warnings=warnings,
                 retrieval_trace=retrieval.trace,

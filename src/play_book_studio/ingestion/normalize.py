@@ -147,8 +147,43 @@ def _normalize_non_code_whitespace(text: str) -> str:
         cleaned = re.sub(r"\s+([,.:;!?%)\]])", r"\1", cleaned)
         cleaned = re.sub(r"([(\[])\s+", r"\1", cleaned)
         if cleaned:
-            paragraphs.append(cleaned)
+            paragraphs.extend(_split_reader_grade_paragraphs(cleaned))
     return "\n\n".join(paragraphs).strip()
+
+
+def _split_reader_grade_paragraphs(text: str) -> list[str]:
+    cleaned = " ".join(str(text or "").split()).strip()
+    if not cleaned:
+        return []
+    if len(cleaned) < 210:
+        return [cleaned]
+
+    sentences = [
+        sentence.strip()
+        for sentence in re.split(r"(?<=[.!?])\s+|(?<=다\.)\s+|(?<=니다\.)\s+", cleaned)
+        if sentence.strip()
+    ]
+    if len(sentences) < 2:
+        return [cleaned]
+
+    paragraphs: list[str] = []
+    bucket: list[str] = []
+    bucket_length = 0
+    for sentence in sentences:
+        sentence_length = len(sentence)
+        if bucket and (
+            bucket_length + sentence_length > 200
+            or len(bucket) >= 2
+        ):
+            paragraphs.append(" ".join(bucket).strip())
+            bucket = []
+            bucket_length = 0
+        bucket.append(sentence)
+        bucket_length += sentence_length + 1
+    if bucket:
+        paragraphs.append(" ".join(bucket).strip())
+
+    return paragraphs or [cleaned]
 
 
 def _normalize_text_preserving_blocks(text: str) -> str:

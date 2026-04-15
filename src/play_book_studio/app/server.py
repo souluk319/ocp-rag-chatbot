@@ -41,6 +41,7 @@ from play_book_studio.app.server_routes import (
     handle_repository_favorites_remove as _handle_repository_favorites_remove_request,
     handle_repository_favorites_save as _handle_repository_favorites_save_request,
     handle_repository_search as _handle_repository_search_request,
+    handle_repository_unanswered as _handle_repository_unanswered_request,
     handle_source_meta as _handle_source_meta_request,
     handle_wiki_overlay_signals as _handle_wiki_overlay_signals_request,
     handle_wiki_user_overlay_remove as _handle_wiki_user_overlay_remove_request,
@@ -48,6 +49,7 @@ from play_book_studio.app.server_routes import (
     handle_wiki_user_overlays as _handle_wiki_user_overlays_request,
 )
 from play_book_studio.app.chat_debug import (
+    append_unanswered_question_log as _append_unanswered_question_log,
     append_chat_turn_log as _append_chat_turn_log,
     build_session_debug_payload as _build_session_debug_payload,
     build_turn_diagnosis as _build_turn_diagnosis,
@@ -86,6 +88,10 @@ DATA_SITUATION_ROOM_HTML_PATH = STATIC_DIR / "data-situation-room.html"
 DEFAULT_RUNTIME_TOP_K = 8
 DEFAULT_RUNTIME_CANDIDATE_K = 20
 DEFAULT_RUNTIME_MAX_CONTEXT_CHUNKS = 6
+BLOCKED_LEGACY_VIEWER_PREFIXES = (
+    "/playbooks/gold-candidates/",
+    "/playbooks/wiki-runtime/wave1/",
+)
 def _build_chat_payload(
     *,
     root_dir: Path,
@@ -123,6 +129,15 @@ def _build_chat_payload(
         "retrieval_trace": dict(result.retrieval_trace),
         "pipeline_trace": dict(result.pipeline_trace),
     }
+    if result.response_kind == "no_answer":
+        payload["acquisition"] = {
+            "kind": "repository_search",
+            "title": "현재 Playbook Library에 해당 자료가 없습니다.",
+            "body": "자료 추가를 원하시면 체크 후 확인을 눌러주세요.",
+            "checkbox_label": "Repository에서 우선순위로 필요한 데이터 찾기",
+            "confirm_label": "확인",
+            "repository_query": (result.rewritten_query or result.query or "").strip(),
+        }
     if answerer is not None:
         payload["runtime"] = _build_health_payload(answerer)["runtime"]
     return payload
@@ -209,10 +224,14 @@ def _build_handler(
             parsed_request = urlparse(self.path)
             request_path = parsed_request.path
 
+            if any(request_path.startswith(prefix) for prefix in BLOCKED_LEGACY_VIEWER_PREFIXES):
+                self.send_error(HTTPStatus.NOT_FOUND, "Not found")
+                return
+
             if request_path in {"/", "/index.html"}:
                 self._send_html(INDEX_HTML_PATH.read_text(encoding="utf-8"))
                 return
-            if request_path in {"/workspace", "/workspace.html"}:
+            if request_path in {"/studio", "/studio.html"}:
                 self._send_html(WORKSPACE_HTML_PATH.read_text(encoding="utf-8"))
                 return
             if request_path in {"/data-situation-room", "/data-situation-room.html"}:
@@ -267,6 +286,9 @@ def _build_handler(
                 return
             if request_path == "/api/repositories/search":
                 self._handle_repository_search(parsed_request.query)
+                return
+            if request_path == "/api/repositories/unanswered":
+                self._handle_repository_unanswered(parsed_request.query)
                 return
             if request_path == "/api/repositories/favorites":
                 self._handle_repository_favorites(parsed_request.query)
@@ -391,6 +413,13 @@ def _build_handler(
 
         def _handle_repository_favorites(self, query: str) -> None:
             _handle_repository_favorites_request(
+                self,
+                query,
+                root_dir=root_dir,
+            )
+
+        def _handle_repository_unanswered(self, query: str) -> None:
+            _handle_repository_unanswered_request(
                 self,
                 query,
                 root_dir=root_dir,
@@ -563,6 +592,7 @@ def _build_handler(
                 context_with_request_overrides=_context_with_request_overrides,
                 derive_next_context=_derive_next_context,
                 append_chat_turn_log=_append_chat_turn_log,
+                append_unanswered_question_log=_append_unanswered_question_log,
                 write_recent_chat_session_snapshot=_write_recent_chat_session_snapshot,
                 build_turn_stages=_build_turn_stages,
                 build_turn_diagnosis=_build_turn_diagnosis,
@@ -579,6 +609,7 @@ def _build_handler(
                 context_with_request_overrides=_context_with_request_overrides,
                 derive_next_context=_derive_next_context,
                 append_chat_turn_log=_append_chat_turn_log,
+                append_unanswered_question_log=_append_unanswered_question_log,
                 write_recent_chat_session_snapshot=_write_recent_chat_session_snapshot,
                 build_turn_stages=_build_turn_stages,
                 build_turn_diagnosis=_build_turn_diagnosis,

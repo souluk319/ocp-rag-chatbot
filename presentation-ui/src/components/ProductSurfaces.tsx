@@ -90,7 +90,7 @@ export default function ProductSurfaces() {
       <div className="surfaces-grid">
         
         <Link 
-          to="/workspace" 
+          to="/studio" 
           className="surface-card glass-panel" 
           ref={el => { cardsRef.current[0] = el; }}
         >
@@ -106,7 +106,7 @@ export default function ProductSurfaces() {
 
         {/* Using standard anchor for external/manual pages if needed, but here we point to the same workspace demo */}
         <Link 
-          to="/workspace" 
+          to="/studio" 
           className="surface-card glass-panel" 
           ref={el => { cardsRef.current[1] = el; }}
         >

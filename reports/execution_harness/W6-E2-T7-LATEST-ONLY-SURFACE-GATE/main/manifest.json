@@ -1,0 +1,23 @@
+{
+  "task_id": "W6-E2-T7-LATEST-ONLY-SURFACE-GATE",
+  "created_at": "2026-04-15T05:32:21.897989+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": ".venv\\Scripts\\python.exe",
+  "worktree_path": ".",
+  "lane_id": "main",
+  "role": "main",
+  "write_scope": "src/play_book_studio/app/server.py; src/play_book_studio/app/source_books.py; src/play_book_studio/app/data_control_room.py; src/play_book_studio/app/wiki_user_overlay.py; presentation-ui/src/pages/WorkspacePage.tsx; presentation-ui/src/pages/PlaybookLibraryPage.tsx; reports/build_logs; reports/execution_harness; TASK_BOARD.yaml",
+  "target_outputs": [
+    "reports/build_logs/latest_only_surface_gate_report.json",
+    "reports/build_logs/latest_only_surface_gate_verification_report.json",
+    "reports/execution_harness/W6-E2-T7-LATEST-ONLY-SURFACE-GATE/main/final_report.json"
+  ],
+  "validation_commands": [
+    "python py_compile latest-only targets",
+    "npm --prefix presentation-ui run build",
+    "python latest-only surface smoke",
+    "python yaml parse TASK_BOARD.yaml"
+  ],
+  "status": "prepared"
+}

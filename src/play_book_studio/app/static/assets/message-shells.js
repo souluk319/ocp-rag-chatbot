@@ -36,8 +36,7 @@ window.createMessageShells = function createMessageShells(deps) {
         <section class="empty-state">
           <div class="empty-state-header">
             <div class="eyebrow">Play Book Studio</div>
-            <h3>바로 질문해보세요</h3>
-            <p>문서를 붙이고 바로 물어보면 됩니다.</p>
+            <h3>질문을 시작하세요</h3>
           </div>
           <div class="sample-grid">
             ${sampleMarkup}
@@ -145,7 +144,7 @@ window.createMessageShells = function createMessageShells(deps) {
     if (suggestedQueries.length && canRenderSuggestedQueries) {
       const title = document.createElement("div");
       title.className = "suggestion-list-title";
-      title.textContent = "추천 질문";
+      title.textContent = "Follow-ups";
 
       const followupGrid = document.createElement("div");
       followupGrid.className = "followup-grid";
@@ -256,7 +255,7 @@ window.createMessageShells = function createMessageShells(deps) {
     detail.className = "pending-detail";
     detail.textContent = event.detail
       || helpers.summarizeTraceMeta(event.meta)
-      || "질문을 정리하고 관련 문서를 찾은 뒤 답을 만들고 있습니다.";
+      || "";
 
     panel.append(kicker, stage, stageStrip, detail);
     element.appendChild(panel);

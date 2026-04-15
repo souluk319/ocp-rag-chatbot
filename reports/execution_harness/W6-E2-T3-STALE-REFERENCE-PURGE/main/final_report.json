@@ -1,0 +1,24 @@
+{
+  "task_id": "W6-E2-T3-STALE-REFERENCE-PURGE",
+  "lane_id": "main",
+  "role": "main",
+  "status": "ok",
+  "code_paths": [
+    "presentation-ui/src/pages/WorkspacePage.tsx",
+    "src/play_book_studio/app/source_books.py",
+    "src/play_book_studio/app/wiki_user_overlay.py",
+    "TASK_BOARD.yaml"
+  ],
+  "artifacts": [
+    "reports/build_logs/stale_reference_purge_report.json",
+    "reports/build_logs/stale_reference_verification_report.json"
+  ],
+  "validation": [
+    "PY_COMPILE_PURGE_OK",
+    "npm --prefix presentation-ui run build",
+    "LEGACY_VIEWER_BLOCK_OK",
+    "WORKSPACE_ACTIVE_ONLY_OK",
+    "YAML_OK"
+  ],
+  "summary": "Blocked legacy wave1 and gold-candidate viewer paths from active reader and overlay flows without destructive deletion of historical reference assets."
+}

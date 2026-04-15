@@ -96,9 +96,10 @@ customer lane 은 아래를 기본선으로 추가한다.
 1. `위키 정보 구조 정리`
 2. `full runtime relation quality`
 3. `figure/diagram coverage`
-4. `overlay 를 개인화 플레이와 운영 신호로 연결`
-5. `buyer/demo/release packet surface 정리`
-6. `customer document lane 계약 고정`
+4. `reader-grade paragraph and figure contract 고정`
+5. `overlay 를 개인화 플레이와 운영 신호로 연결`
+6. `buyer/demo/release packet surface 정리`
+7. `customer document lane 계약 고정`
 
 ## Customer Pack Lane
 
