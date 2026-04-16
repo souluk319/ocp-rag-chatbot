@@ -10,7 +10,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from play_book_studio.app.source_books import internal_gold_candidate_markdown_viewer_html
+from play_book_studio.app.source_books import internal_active_runtime_markdown_viewer_html
 
 
 def _utc_now() -> str:
@@ -21,8 +21,17 @@ def _active_manifest_path() -> Path:
     return ROOT / "data" / "wiki_runtime_books" / "active_manifest.json"
 
 
-def _translation_lane_report_path() -> Path:
-    return ROOT / "reports" / "build_logs" / "foundry_runs" / "translation_lane_report" / "2026-04-15T08-31-00.json"
+def _translation_lane_report_dir() -> Path:
+    return ROOT / "reports" / "build_logs" / "foundry_runs" / "translation_lane_report"
+
+
+def _translation_lane_report_path() -> Path | None:
+    report_dir = _translation_lane_report_dir()
+    latest_path = report_dir / "latest.json"
+    if latest_path.exists():
+        return latest_path
+    candidates = sorted(report_dir.glob("*.json"), key=lambda path: path.stat().st_mtime, reverse=True)
+    return candidates[0] if candidates else None
 
 
 def _served_root() -> Path:
@@ -38,7 +47,10 @@ def _load_json(path: Path) -> dict:
 
 
 def _runtime_eligible_slugs() -> set[str]:
-    payload = _load_json(_translation_lane_report_path())
+    report_path = _translation_lane_report_path()
+    if report_path is None or not report_path.exists():
+        return set()
+    payload = _load_json(report_path)
     allowed: set[str] = set()
     for book in payload.get("books", []):
         if not isinstance(book, dict):
@@ -75,10 +87,8 @@ def main() -> int:
     materialized: list[dict[str, str | int]] = []
 
     for slug in active_slugs:
-        if slug not in eligible:
-            continue
         viewer_path = f"/playbooks/wiki-runtime/active/{slug}/index.html"
-        html = internal_gold_candidate_markdown_viewer_html(ROOT, viewer_path)
+        html = internal_active_runtime_markdown_viewer_html(ROOT, viewer_path)
         if not html:
             continue
 
@@ -103,7 +113,9 @@ def main() -> int:
     report = {
         "generated_at_utc": _utc_now(),
         "active_manifest_path": str(_active_manifest_path()),
-        "translation_lane_report_path": str(_translation_lane_report_path()),
+        "translation_lane_report_path": str(_translation_lane_report_path()) if _translation_lane_report_path() else "",
+        "active_manifest_count": len(active_slugs),
+        "runtime_eligible_count": len(eligible),
         "served_root": str(served_root),
         "materialized_count": len(materialized),
         "books": materialized,
@@ -115,4 +127,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    from play_book_studio.execution_guard import run_guarded_script
+
+    raise SystemExit(run_guarded_script(main, __file__, launcher_hint="scripts/codex_python.ps1"))

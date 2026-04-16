@@ -1,62 +1,9 @@
 {
-  "etcd": {
-    "title": "etcd",
-    "eyebrow": "Entity Hub",
-    "summary": "OpenShift control plane 상태를 보존하는 핵심 key-value store다. 백업, 수동 복구, quorum 이상, static pod health와 직접 연결된다.",
-    "overview": [
-      "etcd 는 control plane 의 사실상 상태 저장소다.",
-      "운영 관점에서는 백업, 수동 복구, member health, snapshot 검증, static pod 상태를 함께 본다.",
-      "이 허브는 관련 운영 북, 장애 대응 경로, 후속 읽기 경로를 하나로 묶는다."
-    ],
-    "related_books": [
-      {
-        "label": "Backup and restore",
-        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Backup and restore 문서로 바로 이동한다."
-      },
-      {
-        "label": "etcd 백업 및 복구 플레이북",
-        "href": "/playbooks/wiki-runtime/active/etcd/index.html",
-        "summary": "etcd 백업 및 복구 플레이북 문서로 바로 이동한다."
-      },
-      {
-        "label": "Machine configuration",
-        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Machine configuration 문서로 바로 이동한다."
-      },
-      {
-        "label": "Monitoring",
-        "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Monitoring 문서로 바로 이동한다."
-      }
-    ],
-    "next_reading_path": [
-      {
-        "label": "1. Backup and restore",
-        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Backup and restore 문서로 이어서 탐색한다."
-      },
-      {
-        "label": "2. Machine configuration",
-        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Machine configuration 문서로 이어서 탐색한다."
-      },
-      {
-        "label": "3. Monitoring",
-        "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Monitoring 문서로 이어서 탐색한다."
-      }
-    ]
-  },
   "cluster-wide-proxy": {
-    "title": "Cluster-Wide Proxy",
+    "title": "Cluster Wide Proxy",
     "eyebrow": "Entity Hub",
-    "summary": "클러스터 전역 egress 경로를 제어하는 공통 프록시 설정이다. 설치 준비, debug shell, 백업/복구 전 네트워크 접근성 확인과 직접 연결된다.",
-    "overview": [
-      "Cluster-wide proxy 는 외부 registry, API, mirror, 패키지 접근이 프록시를 거쳐야 하는 환경에서 핵심 전역 설정이다.",
-      "운영 관점에서는 설치 전 준비, debug shell 환경 변수 주입, egress 차단 원인 분석, 복구 절차 중 외부 접근성 확인을 함께 본다.",
-      "이 허브는 설치 준비, 백업/복구, 후속 네트워크 구성을 하나의 탐색 축으로 묶는다."
-    ],
+    "summary": "",
+    "overview": [],
     "related_books": [
       {
         "label": "설치 후 구성",
@@ -100,12 +47,8 @@
   "prometheus": {
     "title": "Prometheus",
     "eyebrow": "Entity Hub",
-    "summary": "OpenShift monitoring stack 의 핵심 메트릭 수집/질의 컴포넌트다. 경보, 지표 확인, troubleshooting 의 중심점이다.",
-    "overview": [
-      "Prometheus 는 cluster signal 을 수집하고 query 하는 핵심 monitoring 컴포넌트다.",
-      "운영 관점에서는 메트릭 확인, alert 연계, scrape target 이상, operator 문제를 함께 본다.",
-      "이 허브는 metrics, alerts, troubleshooting 문서를 하나의 관측 허브로 연결한다."
-    ],
+    "summary": "",
+    "overview": [],
     "related_books": [
       {
         "label": "Monitoring",
@@ -146,64 +89,11 @@
       }
     ]
   },
-  "machine-config-operator": {
-    "title": "Machine Config Operator",
-    "eyebrow": "Entity Hub",
-    "summary": "노드 설정, MCP rollout, 재부팅, kubelet 구성 반영을 조율하는 핵심 운영 컴포넌트다.",
-    "overview": [
-      "Machine Config Operator 는 node 설정 변경을 클러스터 전체에 안전하게 반영하는 control loop 다.",
-      "운영 관점에서는 MCP 상태, degraded 원인, paused 여부, node rollout, reboot 흐름을 함께 본다.",
-      "이 허브는 구성 변경, 설치 직후 안정화, monitoring 연계 추적을 한 곳에 묶는다."
-    ],
-    "related_books": [
-      {
-        "label": "Machine configuration",
-        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Machine configuration 문서로 바로 이동한다."
-      },
-      {
-        "label": "머신 관리",
-        "href": "/playbooks/wiki-runtime/active/machine_management/index.html",
-        "summary": "머신 관리 문서로 바로 이동한다."
-      },
-      {
-        "label": "노드",
-        "href": "/playbooks/wiki-runtime/active/nodes/index.html",
-        "summary": "노드 문서로 바로 이동한다."
-      },
-      {
-        "label": "Installing on any platform",
-        "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-        "summary": "Installing on any platform 문서로 바로 이동한다."
-      }
-    ],
-    "next_reading_path": [
-      {
-        "label": "1. Machine configuration",
-        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Machine configuration 문서로 이어서 탐색한다."
-      },
-      {
-        "label": "2. Installing on any platform",
-        "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-        "summary": "Installing on any platform 문서로 이어서 탐색한다."
-      },
-      {
-        "label": "3. Monitoring",
-        "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Monitoring 문서로 이어서 탐색한다."
-      }
-    ]
-  },
   "control-plane-nodes": {
     "title": "Control Plane Nodes",
     "eyebrow": "Entity Hub",
-    "summary": "OpenShift control plane 을 실제로 호스팅하는 핵심 노드 집합이다. etcd, static pod, MCO rollout, 복구 후 검증이 모두 여기로 수렴한다.",
-    "overview": [
-      "Control plane node 는 cluster 의 API, scheduler, controller-manager, etcd 같은 핵심 구성요소가 실제로 돌아가는 운영 표면이다.",
-      "운영 관점에서는 SSH 접근, debug shell, static pod 상태, kubelet 상태, MCO rollout, 복구 직후 health check 를 함께 본다.",
-      "이 허브는 backup and restore, machine configuration, monitoring 신호를 node 관점으로 묶는다."
-    ],
+    "summary": "",
+    "overview": [],
     "related_books": [
       {
         "label": "노드",
@@ -241,6 +131,96 @@
         "label": "3. 노드",
         "href": "/playbooks/wiki-runtime/active/nodes/index.html",
         "summary": "노드 문서로 이어서 탐색한다."
+      }
+    ]
+  },
+  "etcd": {
+    "title": "Etcd",
+    "eyebrow": "Entity Hub",
+    "summary": "",
+    "overview": [],
+    "related_books": [
+      {
+        "label": "Backup and restore",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
+        "summary": "Backup and restore 문서로 바로 이동한다."
+      },
+      {
+        "label": "etcd 백업 및 복구 플레이북",
+        "href": "/playbooks/wiki-runtime/active/etcd/index.html",
+        "summary": "etcd 백업 및 복구 플레이북 문서로 바로 이동한다."
+      },
+      {
+        "label": "Machine configuration",
+        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
+        "summary": "Machine configuration 문서로 바로 이동한다."
+      },
+      {
+        "label": "Monitoring",
+        "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
+        "summary": "Monitoring 문서로 바로 이동한다."
+      }
+    ],
+    "next_reading_path": [
+      {
+        "label": "1. Backup and restore",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
+        "summary": "Backup and restore 문서로 이어서 탐색한다."
+      },
+      {
+        "label": "2. Machine configuration",
+        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
+        "summary": "Machine configuration 문서로 이어서 탐색한다."
+      },
+      {
+        "label": "3. Monitoring",
+        "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
+        "summary": "Monitoring 문서로 이어서 탐색한다."
+      }
+    ]
+  },
+  "machine-config-operator": {
+    "title": "Machine Config Operator",
+    "eyebrow": "Entity Hub",
+    "summary": "",
+    "overview": [],
+    "related_books": [
+      {
+        "label": "Machine configuration",
+        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
+        "summary": "Machine configuration 문서로 바로 이동한다."
+      },
+      {
+        "label": "머신 관리",
+        "href": "/playbooks/wiki-runtime/active/machine_management/index.html",
+        "summary": "머신 관리 문서로 바로 이동한다."
+      },
+      {
+        "label": "노드",
+        "href": "/playbooks/wiki-runtime/active/nodes/index.html",
+        "summary": "노드 문서로 바로 이동한다."
+      },
+      {
+        "label": "Installing on any platform",
+        "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
+        "summary": "Installing on any platform 문서로 바로 이동한다."
+      }
+    ],
+    "next_reading_path": [
+      {
+        "label": "1. Machine configuration",
+        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
+        "summary": "Machine configuration 문서로 이어서 탐색한다."
+      },
+      {
+        "label": "2. Installing on any platform",
+        "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
+        "summary": "Installing on any platform 문서로 이어서 탐색한다."
+      },
+      {
+        "label": "3. Monitoring",
+        "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
+        "summary": "Monitoring 문서로 이어서 탐색한다."
       }
     ]
   },

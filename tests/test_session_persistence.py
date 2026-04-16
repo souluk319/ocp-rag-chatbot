@@ -238,6 +238,14 @@ class SessionPersistenceTests(unittest.TestCase):
             self.assertTrue(envelope["recent_session_path"].endswith("recent_chat_session.json"))
             self.assertEqual("replicas 조정", row["context_after"]["user_goal"])
             self.assertEqual("답변: `oc scale`을 사용하세요.", row["answer"])
+            markdown_target = root / "artifacts" / "runtime" / "chat_turns.md"
+            markdown = markdown_target.read_text(encoding="utf-8")
+            self.assertIn("## ", markdown)
+            self.assertIn("### Answer", markdown)
+            self.assertIn("### Audit", markdown)
+            self.assertIn("- response_kind: grounded", markdown)
+            self.assertIn("- diagnosis: risk", markdown)
+            self.assertIn("답변: `oc scale`을 사용하세요.", markdown)
 
 
 if __name__ == "__main__":

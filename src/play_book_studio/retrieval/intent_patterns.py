@@ -7,7 +7,7 @@ import re
 OCP_RE = re.compile(r"(?<![a-z0-9])ocp(?![a-z0-9])", re.IGNORECASE)
 OPENSHIFT_RE = re.compile(r"(오픈\s*시프트|오픈시프트|openshift)", re.IGNORECASE)
 KUBERNETES_RE = re.compile(r"(쿠버네티스|kubernetes)", re.IGNORECASE)
-COMPARE_RE = re.compile(r"(차이|다른 점|비교|vs|versus|유사점)", re.IGNORECASE)
+COMPARE_RE = re.compile(r"(차이|다른 점|비교|vs|versus|유사점|달라|다를까|다름|구분)", re.IGNORECASE)
 ROUTE_RE = re.compile(r"(route|routes|루트)", re.IGNORECASE)
 INGRESS_RE = re.compile(r"(ingress|ingresses|인그레스)", re.IGNORECASE)
 ARCHITECTURE_RE = re.compile(r"(아키텍처|architecture)", re.IGNORECASE)
@@ -24,6 +24,7 @@ POD_LIFECYCLE_RE = re.compile(
 OC_LOGIN_RE = re.compile(r"\boc\s+login\b|(로그인).*(\boc\b)", re.IGNORECASE)
 INFRA_RE = re.compile(r"(인프라|infra|노드|node|컨트롤 플레인|control plane)", re.IGNORECASE)
 MONITORING_RE = re.compile(r"(모니터링|monitoring)", re.IGNORECASE)
+OBSERVABILITY_RE = re.compile(r"(observability|관찰 기능|관측|옵저버빌리티)", re.IGNORECASE)
 SECURITY_RE = re.compile(r"(보안|security)", re.IGNORECASE)
 AUTH_RE = re.compile(r"(인증|authentication)", re.IGNORECASE)
 AUTHZ_RE = re.compile(r"(권한|authorization)", re.IGNORECASE)
@@ -138,6 +139,7 @@ __all__ = [
     "OC_LOGIN_RE",
     "INFRA_RE",
     "MONITORING_RE",
+    "OBSERVABILITY_RE",
     "SECURITY_RE",
     "AUTH_RE",
     "AUTHZ_RE",

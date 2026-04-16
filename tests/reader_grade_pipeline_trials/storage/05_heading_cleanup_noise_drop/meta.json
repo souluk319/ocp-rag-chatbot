@@ -1,7 +1,0 @@
-{
-  "source_slug": "storage",
-  "title": "스토리지",
-  "label": "05_heading_cleanup_noise_drop",
-  "description": "Heading cleanup + noise drop",
-  "input_path": "data\\gold_manualbook_ko\\playbooks\\storage.json"
-}

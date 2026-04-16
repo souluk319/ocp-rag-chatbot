@@ -1,13 +1,13 @@
 # OCP 4.20 Full Rebuild Wiki Relations
 
-- generated_at_utc: `2026-04-15T05:53:51+00:00`
+- generated_at_utc: `2026-04-16T06:55:29+00:00`
 - entity_hub_count: `14`
 - candidate_relation_count: `29`
 
 ## `advanced_networking`
 
 - title: `고급 네트워킹`
-- entities: Cluster-Wide Proxy, Networking and Connectivity
+- entities: Cluster Wide Proxy, Networking and Connectivity
 - related_docs: 네트워킹 개요, Ingress 및 로드 밸런싱, 설치 후 구성, 설치 개요
 
 ## `architecture`
@@ -25,7 +25,7 @@
 ## `backup_and_restore`
 
 - title: `Backup and restore`
-- entities: etcd, Control Plane Nodes, Cluster-Wide Proxy, Control Plane and Node Operations
+- entities: Etcd, Control Plane Nodes, Cluster Wide Proxy, Control Plane and Node Operations
 - related_docs: etcd 백업 및 복구 플레이북, Machine configuration, Monitoring, 검증 및 문제 해결
 
 ## `cli_tools`
@@ -37,13 +37,13 @@
 ## `disconnected_environments`
 
 - title: `연결이 끊긴 환경`
-- entities: Cluster-Wide Proxy, Networking and Connectivity, Storage, Registry, and Images
+- entities: Cluster Wide Proxy, Networking and Connectivity, Storage, Registry, and Images
 - related_docs: 네트워킹 개요, 고급 네트워킹, 설치 후 구성, 설치 개요
 
 ## `etcd`
 
 - title: `etcd 백업 및 복구 플레이북`
-- entities: etcd, Control Plane Nodes, Control Plane and Node Operations
+- entities: Etcd, Control Plane Nodes, Control Plane and Node Operations
 - related_docs: Backup and restore, Machine configuration, Monitoring, 검증 및 문제 해결
 
 ## `images`
@@ -55,7 +55,7 @@
 ## `ingress_and_load_balancing`
 
 - title: `Ingress 및 로드 밸런싱`
-- entities: Cluster-Wide Proxy, Networking and Connectivity
+- entities: Cluster Wide Proxy, Networking and Connectivity
 - related_docs: 네트워킹 개요, 고급 네트워킹, 설치 후 구성, 설치 개요
 
 ## `installation_overview`
@@ -67,7 +67,7 @@
 ## `installing_on_any_platform`
 
 - title: `Installing on any platform`
-- entities: Cluster-Wide Proxy, Machine Config Operator, Installation and Day-2
+- entities: Cluster Wide Proxy, Machine Config Operator, Installation and Day-2
 - related_docs: 설치 개요, 설치 후 구성, Machine configuration, Backup and restore
 
 ## `logging`
@@ -97,7 +97,7 @@
 ## `networking_overview`
 
 - title: `네트워킹 개요`
-- entities: Cluster-Wide Proxy, Networking and Connectivity
+- entities: Cluster Wide Proxy, Networking and Connectivity
 - related_docs: 고급 네트워킹, Ingress 및 로드 밸런싱, 설치 후 구성, 설치 개요
 
 ## `nodes`
@@ -127,7 +127,7 @@
 ## `postinstallation_configuration`
 
 - title: `설치 후 구성`
-- entities: Cluster-Wide Proxy, Machine Config Operator, Installation and Day-2
+- entities: Cluster Wide Proxy, Machine Config Operator, Installation and Day-2
 - related_docs: 설치 개요, Installing on any platform, Machine configuration, Backup and restore
 
 ## `registry`

@@ -1,7 +1,0 @@
-{
-  "source_slug": "machine_configuration",
-  "title": "Machine configuration",
-  "label": "06_full_manual_reshape",
-  "description": "Full-manual summary reshape",
-  "input_path": "data\\gold_manualbook_ko\\playbooks\\machine_configuration.json"
-}

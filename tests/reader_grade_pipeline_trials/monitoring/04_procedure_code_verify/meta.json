@@ -1,7 +1,0 @@
-{
-  "source_slug": "monitoring",
-  "title": "Monitoring",
-  "label": "04_procedure_code_verify",
-  "description": "Procedure/code/verify first",
-  "input_path": "data\\gold_manualbook_ko\\playbooks\\monitoring.json"
-}

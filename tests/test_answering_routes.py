@@ -17,6 +17,8 @@ from _support_answering import (
     Settings,
     _CertificateMonitorRetriever,
     _CertificateOverclaimLLMClient,
+    _DuplicateCitationLLMClient,
+    _DuplicateCitationRetriever,
     _DeploymentScaleRetriever,
     _EtcdBackupOverclaimLLMClient,
     _EtcdBackupRetriever,
@@ -322,6 +324,23 @@ class TestAnsweringRoutes(unittest.TestCase):
         )
         self.assertNotIn("실시간으로 감시", result.answer)
         self.assertNotIn("경고를 제공", result.answer)
+
+    def test_answerer_prefers_grounded_node_usage_command_over_doc_locator_copy(self) -> None:
+        settings = Settings(root_dir=ROOT)
+        answerer = ChatAnswerer(
+            settings=settings,
+            retriever=_DuplicateCitationRetriever(),
+            llm_client=_DuplicateCitationLLMClient(),
+        )
+
+        result = answerer.answer(
+            "지금 클러스터 전체 노드 CPU랑 메모리 사용량 한 번에 보려면 어떤 명령 써?",
+            mode="ops",
+        )
+
+        self.assertIn("oc adm top nodes", result.answer)
+        self.assertNotIn("문서를 여는 것이 맞습니다", result.answer)
+        self.assertEqual("support", result.citations[0].book_slug)
 
     def test_answerer_returns_deterministic_deployment_scale_command_when_grounded(self) -> None:
         settings = Settings(root_dir=ROOT)

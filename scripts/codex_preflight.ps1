@@ -22,7 +22,8 @@ function Write-PreflightReport {
   )
 
   New-Item -ItemType Directory -Force -Path $RuntimeDir | Out-Null
-  $Payload | ConvertTo-Json -Depth 8 | Set-Content -Path $ReportPath -Encoding utf8
+  $json = $Payload | ConvertTo-Json -Depth 8
+  [System.IO.File]::WriteAllText($ReportPath, $json, [System.Text.UTF8Encoding]::new($false))
 }
 
 function Get-UiPort {

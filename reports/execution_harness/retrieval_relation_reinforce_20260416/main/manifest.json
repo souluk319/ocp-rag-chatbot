@@ -1,0 +1,19 @@
+{
+  "task_id": "retrieval_relation_reinforce_20260416",
+  "created_at": "2026-04-16T07:10:05.536332+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "write_scope": "src/play_book_studio/retrieval/*",
+  "target_outputs": [
+    "artifacts/retrieval/retrieval_eval_report.json",
+    "reports/execution_harness/retrieval_relation_reinforce_20260416/main/final_report.json"
+  ],
+  "validation_commands": [
+    "retrieval_eval"
+  ],
+  "status": "prepared"
+}

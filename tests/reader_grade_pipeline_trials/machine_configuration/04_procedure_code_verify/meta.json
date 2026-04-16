@@ -1,7 +1,0 @@
-{
-  "source_slug": "machine_configuration",
-  "title": "Machine configuration",
-  "label": "04_procedure_code_verify",
-  "description": "Procedure/code/verify first",
-  "input_path": "data\\gold_manualbook_ko\\playbooks\\machine_configuration.json"
-}

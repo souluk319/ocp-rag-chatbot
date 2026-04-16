@@ -19,6 +19,7 @@ from .intent_patterns import (
     OC_LOGIN_RE,
     INFRA_RE,
     MONITORING_RE,
+    OBSERVABILITY_RE,
     SECURITY_RE,
     AUTH_RE,
     AUTHZ_RE,

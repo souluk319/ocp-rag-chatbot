@@ -10,7 +10,9 @@ Use metrics and customized alerts provided by the monitoring stack to track the 
 
 OpenShift Container Platform includes a preconfigured, preinstalled, and self-updating monitoring stack that provides monitoring for core platform components.
 
-After installing OpenShift Container Platform, cluster administrators can optionally enable monitoring for user-defined projects. By using this feature, cluster administrators, developers, and other users can specify how services and pods are monitored in their own projects.
+After installing OpenShift Container Platform, cluster administrators can optionally enable monitoring for user-defined projects.
+
+By using this feature, cluster administrators, developers, and other users can specify how services and pods are monitored in their own projects.
 
 Note
 

@@ -4,7 +4,7 @@
 
 이 카탈로그는 현재 서비스 viewer 와 chatbot runtime 이 직접 읽는 active wiki runtime md만 모아둔 것이다.
 
-- generated_at_utc: `2026-04-15T05:53:51+00:00`
+- generated_at_utc: `2026-04-16T06:55:28+00:00`
 - active_group: `full_rebuild`
 
 ## Entries

@@ -1,0 +1,21 @@
+{
+  "task_id": "ui_identity_fix_20260416",
+  "lane_id": "explorer",
+  "role": "explorer",
+  "status": "done",
+  "code_paths": [
+    "src/play_book_studio/app/server.py",
+    "presentation-ui/src/App.tsx",
+    "presentation-ui/src/components/Hero.tsx",
+    "presentation-ui/src/components/ProductSurfaces.tsx",
+    "presentation-ui/src/pages/PlaybookLibraryPage.tsx",
+    "presentation-ui/src/pages/ProjectDetailsPage.tsx"
+  ],
+  "artifacts": [
+    "_quarantine/legacy_ui/app_static",
+    "_quarantine/presentation-ui"
+  ],
+  "validation": [
+    "legacy ui drift isolated to redirect aliases and active frontend route/copy references"
+  ]
+}

@@ -8,15 +8,23 @@ This document provides instructions for backing up your cluster's data and for r
 
 ### 1.1. Control plane backup and restore operations
 
-As a cluster administrator, you might need to stop an OpenShift Container Platform cluster for a period and restart it later. Some reasons for restarting a cluster are that you need to perform maintenance on a cluster or want to reduce resource costs. In OpenShift Container Platform, you can perform a graceful shutdown of a cluster so that you can easily restart the cluster later.
+As a cluster administrator, you might need to stop an OpenShift Container Platform cluster for a period and restart it later.
 
-You must back up etcd data before shutting down a cluster; etcd is the key-value store for OpenShift Container Platform, which persists the state of all resource objects. An etcd backup plays a crucial role in disaster recovery. In OpenShift Container Platform, you can also replace an unhealthy etcd member.
+Some reasons for restarting a cluster are that you need to perform maintenance on a cluster or want to reduce resource costs.
+
+In OpenShift Container Platform, you can perform a graceful shutdown of a cluster so that you can easily restart the cluster later.
+
+You must back up etcd data before shutting down a cluster; etcd is the key-value store for OpenShift Container Platform, which persists the state of all resource objects.
+
+An etcd backup plays a crucial role in disaster recovery. In OpenShift Container Platform, you can also replace an unhealthy etcd member.
 
 When you want to get your cluster running again, restart the cluster gracefully.
 
 Note
 
-A cluster’s certificates expire one year after the installation date. You can shut down a cluster and expect it to restart gracefully while the certificates are still valid. Although the cluster automatically retrieves the expired control plane certificates, you must still approve the certificate signing requests (CSRs).
+A cluster’s certificates expire one year after the installation date. You can shut down a cluster and expect it to restart gracefully while the certificates are still valid.
+
+Although the cluster automatically retrieves the expired control plane certificates, you must still approve the certificate signing requests (CSRs).
 
 You might run into several situations where OpenShift Container Platform does not work as expected, such as:
 
@@ -36,7 +44,9 @@ Quorum protection with machine lifecycle hooks
 
 As a cluster administrator, you can back up and restore applications running on OpenShift Container Platform by using the OpenShift API for Data Protection (OADP).
 
-OADP backs up and restores Kubernetes resources and internal images, at the granularity of a namespace, by using the version of Velero that is appropriate for the version of OADP you install, according to the table in Downloading the Velero CLI tool. OADP backs up and restores persistent volumes (PVs) by using snapshots or Restic. For details, see OADP features.
+OADP backs up and restores Kubernetes resources and internal images, at the granularity of a namespace, by using the version of Velero that is appropriate for the version of OADP you install, according to the table in Downloading the Velero CLI tool.
+
+OADP backs up and restores persistent volumes (PVs) by using snapshots or Restic. For details, see OADP features.
 
 #### 1.2.1. OADP requirements
 
@@ -120,7 +130,9 @@ You can shut down your cluster in a graceful manner so that it can be restarted 
 
 Note
 
-You can shut down a cluster until a year from the installation date and expect it to restart gracefully. After a year from the installation date, the cluster certificates expire. However, you might need to manually approve the pending certificate signing requests (CSRs) to recover kubelet certificates when the cluster restarts.
+You can shut down a cluster until a year from the installation date and expect it to restart gracefully. After a year from the installation date, the cluster certificates expire.
+
+However, you might need to manually approve the pending certificate signing requests (CSRs) to recover kubelet certificates when the cluster restarts.
 
 Prerequisites
 
@@ -142,7 +154,9 @@ $ oc -n openshift-kube-apiserver-operator get secret kube-apiserver-to-kubelet-s
 2022-08-05T14:37:50Zuser@user:~ $
 ```
 
-1. To ensure that the cluster can restart gracefully, plan to restart it on or before the specified date. As the cluster restarts, the process might require you to manually approve the pending certificate signing requests (CSRs) to recover kubelet certificates.
+1. To ensure that the cluster can restart gracefully, plan to restart it on or before the specified date.
+
+As the cluster restarts, the process might require you to manually approve the pending certificate signing requests (CSRs) to recover kubelet certificates.
 
 Mark all the nodes in the cluster as unschedulable. You can do this from your cloud provider’s web console, or by running the following loop:
 
@@ -169,7 +183,9 @@ node/ci-ln-mgdnf4b-72292-n547t-worker-c-vcmtn cordoned
 $ for node in $(oc get nodes -l node-role.kubernetes.io/worker -o jsonpath='{.items[*].metadata.name}'); do echo ${node} ; oc adm drain ${node} --delete-emptydir-data --ignore-daemonsets=true --timeout=15s --force ; done
 ```
 
-Shut down all of the nodes in the cluster. You can do this from the web console for your cloud provider web console, or by running the following loop. Shutting down the nodes by using one of these methods allows pods to terminate gracefully, which reduces the chance for data corruption.
+Shut down all of the nodes in the cluster. You can do this from the web console for your cloud provider web console, or by running the following loop.
+
+Shutting down the nodes by using one of these methods allows pods to terminate gracefully, which reduces the chance for data corruption.
 
 Note
 
@@ -179,7 +195,9 @@ Ensure that the control plane node with the API VIP assigned is the last node pr
 $ for node in $(oc get nodes -o jsonpath='{.items[*].metadata.name}'); do oc debug node/${node} -- chroot /host shutdown -h 1; done
 ```
 
-1. `-h 1` indicates how long, in minutes, this process lasts before the control plane nodes are shut down. For large-scale clusters with 10 nodes or more, set to `-h 10` or longer to make sure all the compute nodes have time to shut down first.
+1. `-h 1` indicates how long, in minutes, this process lasts before the control plane nodes are shut down.
+
+For large-scale clusters with 10 nodes or more, set to `-h 10` or longer to make sure all the compute nodes have time to shut down first.
 
 ```shell-session
 Starting pod/ip-10-0-130-169us-east-2computeinternal-debug ...
@@ -193,13 +211,19 @@ Shutdown scheduled for Mon 2021-09-13 09:36:29 UTC, use 'shutdown -c' to cancel.
 
 Note
 
-It is not necessary to drain control plane nodes of the standard pods that ship with OpenShift Container Platform prior to shutdown. Cluster administrators are responsible for ensuring a clean restart of their own workloads after the cluster is restarted. If you drained control plane nodes prior to shutdown because of custom workloads, you must mark the control plane nodes as schedulable before the cluster will be functional again after restart.
+It is not necessary to drain control plane nodes of the standard pods that ship with OpenShift Container Platform prior to shutdown.
+
+Cluster administrators are responsible for ensuring a clean restart of their own workloads after the cluster is restarted.
+
+If you drained control plane nodes prior to shutdown because of custom workloads, you must mark the control plane nodes as schedulable before the cluster will be functional again after restart.
 
 Shut off any cluster dependencies that are no longer needed, such as external storage or an LDAP server. Be sure to consult your vendor’s documentation before doing so.
 
 Important
 
-If you deployed your cluster on a cloud-provider platform, do not shut down, suspend, or delete the associated cloud resources. If you delete the cloud resources of a suspended virtual machine, OpenShift Container Platform might not restore successfully.
+If you deployed your cluster on a cloud-provider platform, do not shut down, suspend, or delete the associated cloud resources.
+
+If you delete the cloud resources of a suspended virtual machine, OpenShift Container Platform might not restore successfully.
 
 ### 2.3. Additional resources
 
@@ -386,7 +410,9 @@ You can hibernate your OpenShift Container Platform cluster for up to 90 days.
 
 ### 4.1. About cluster hibernation
 
-OpenShift Container Platform clusters can be hibernated in order to save money on cloud hosting costs. You can hibernate your OpenShift Container Platform cluster for up to 90 days and expect it to resume successfully.
+OpenShift Container Platform clusters can be hibernated in order to save money on cloud hosting costs.
+
+You can hibernate your OpenShift Container Platform cluster for up to 90 days and expect it to resume successfully.
 
 You must wait at least 24 hours after cluster installation before hibernating your cluster to allow for the first certification rotation.
 
@@ -600,7 +626,11 @@ All cluster Operators should show `AVAILABLE` = `True`, `PROGRESSING` = `False`,
 
 ### 5.1. Introduction to OpenShift API for Data Protection
 
-The OpenShift API for Data Protection (OADP) product safeguards customer applications on OpenShift Container Platform. It offers comprehensive disaster recovery protection, covering OpenShift Container Platform applications, application-related cluster resources, persistent volumes, and internal images. OADP is also capable of backing up both containerized applications and virtual machines (VMs).
+The OpenShift API for Data Protection (OADP) product safeguards customer applications on OpenShift Container Platform.
+
+It offers comprehensive disaster recovery protection, covering OpenShift Container Platform applications, application-related cluster resources, persistent volumes, and internal images.
+
+OADP is also capable of backing up both containerized applications and virtual machines (VMs).
 
 However, OADP does not serve as a disaster recovery solution for `etcd` or OpenShift Operators.
 
@@ -676,19 +706,29 @@ CVE-2025-68121
 
 Single-node OpenShift clusters no longer crash due to premature CRD sync before API initialization
 
-Before this update, the controller crashed during image-based upgrade (IBU) due to missing OpenShift Container Platform custom resource definitions (CRDs) before they were fully initialized. As a consequence, this failure delayed `DataProtectionApplication` (DPA) reconciliation during IBU upgrade by 8 minutes. This release resolves this issue by requiring the controller to wait for OpenShift Container Platform CRDs to load before starting in the IBU environment on single-node OpenShift, while also disabling leader election. This change shortens the DPA reconciliation window and improves the overall upgrade duration for single-node OpenShift clusters.
+Before this update, the controller crashed during image-based upgrade (IBU) due to missing OpenShift Container Platform custom resource definitions (CRDs) before they were fully initialized.
+
+As a consequence, this failure delayed `DataProtectionApplication` (DPA) reconciliation during IBU upgrade by 8 minutes.
+
+This release resolves this issue by requiring the controller to wait for OpenShift Container Platform CRDs to load before starting in the IBU environment on single-node OpenShift, while also disabling leader election.
+
+This change shortens the DPA reconciliation window and improves the overall upgrade duration for single-node OpenShift clusters.
 
 OADP-7508
 
 #### 5.2.1.2. OADP 1.5.4 release notes
 
-OpenShift API for Data Protection (OADP) 1.5.4 is a Container Grade Only (CGO) release, which is released to refresh the health grades of the containers. No code was changed in the product itself compared to that of OADP 1.5.3. OADP 1.5.4 introduces a known issue and fixes several Common Vulnerabilities and Exposures (CVEs).
+OpenShift API for Data Protection (OADP) 1.5.4 is a Container Grade Only (CGO) release, which is released to refresh the health grades of the containers.
+
+No code was changed in the product itself compared to that of OADP 1.5.3. OADP 1.5.4 introduces a known issue and fixes several Common Vulnerabilities and Exposures (CVEs).
 
 #### 5.2.1.2.1. Known issues
 
 Simultaneous updates to the same `NonAdminBackupStorageLocationRequest` objects cause resource conflicts
 
-Simultaneous updates by several controllers or processes to the same `NonAdminBackupStorageLocationRequest` objects cause resource conflicts during backup creation in OADP self-service. As a consequence, reconciliation attempts fail with `object has been modified` errors. No known workaround exists.
+Simultaneous updates by several controllers or processes to the same `NonAdminBackupStorageLocationRequest` objects cause resource conflicts during backup creation in OADP self-service.
+
+As a consequence, reconciliation attempts fail with `object has been modified` errors. No known workaround exists.
 
 OADP-6700
 
@@ -706,7 +746,9 @@ CVE-2025-58183
 
 #### 5.2.1.3. OADP 1.5.3 release notes
 
-OpenShift API for Data Protection (OADP) 1.5.3 is a Container Grade Only (CGO) release, which is released to refresh the health grades of the containers. No code was changed in the product itself compared to that of OADP 1.5.2.
+OpenShift API for Data Protection (OADP) 1.5.3 is a Container Grade Only (CGO) release, which is released to refresh the health grades of the containers.
+
+No code was changed in the product itself compared to that of OADP 1.5.2.
 
 #### 5.2.1.4. OADP 1.5.2 release notes
 
@@ -716,7 +758,11 @@ The OpenShift API for Data Protection (OADP) 1.5.2 release notes list resolved i
 
 Self-signed certificate for internal image backup should not break other BSLs
 
-Before this update, OADP would only process the first custom CA certificate found among all backup storage locations (BSLs) and apply it globally. This behavior prevented multiple BSLs with different CA certificates from working correctly. Additionally, system-trusted certificates were not included, causing failures when connecting to standard services.
+Before this update, OADP would only process the first custom CA certificate found among all backup storage locations (BSLs) and apply it globally.
+
+This behavior prevented multiple BSLs with different CA certificates from working correctly.
+
+Additionally, system-trusted certificates were not included, causing failures when connecting to standard services.
 
 With this update, OADP now:
 
@@ -764,59 +810,91 @@ OADP-6300
 
 New node agent load affinity configurations are available
 
-Node agent load affinity: You can schedule the node agent pods on specific nodes by using the `spec.podConfig.nodeSelector` object of the `DataProtectionApplication` (DPA) custom resource (CR). You can add more restrictions on the node agent pods scheduling by using the `nodeagent.loadAffinity` object in the DPA spec.
+Node agent load affinity: You can schedule the node agent pods on specific nodes by using the `spec.podConfig.nodeSelector` object of the `DataProtectionApplication` (DPA) custom resource (CR).
+
+You can add more restrictions on the node agent pods scheduling by using the `nodeagent.loadAffinity` object in the DPA spec.
 
 Repository maintenance job affinity configurations: You can use the repository maintenance job affinity configurations in the `DataProtectionApplication` (DPA) custom resource (CR) only if you use Kopia as the backup repository.
 
 You have the option to configure the load affinity at the global level affecting all repositories, or for each repository. You can also use a combination of global and per-repository configuration.
 
-Velero load affinity: You can use the `podConfig.nodeSelector` object to assign the Velero pod to specific nodes. You can also configure the `velero.loadAffinity` object for pod-level affinity and anti-affinity.
+Velero load affinity: You can use the `podConfig.nodeSelector` object to assign the Velero pod to specific nodes.
+
+You can also configure the `velero.loadAffinity` object for pod-level affinity and anti-affinity.
 
 OADP-5832
 
 Node agent load concurrency is available
 
-With this update, users can control the maximum number of node agent operations that can run simultaneously on each node within their cluster. It also enables better resource management, optimizing backup and restore workflows for improved performance and a more streamlined experience.
+With this update, users can control the maximum number of node agent operations that can run simultaneously on each node within their cluster.
+
+It also enables better resource management, optimizing backup and restore workflows for improved performance and a more streamlined experience.
 
 #### 5.2.1.5.2. Resolved issues
 
 `DataProtectionApplicationSpec` overflowed annotation limit, causing potential misconfiguration in deployments
 
-Before this update, the `DataProtectionApplicationSpec` used deprecated `PodAnnotations`, which led to an annotation limit overflow. This caused potential misconfigurations in deployments. In this release, we have added `PodConfig` for annotations in pods deployed by the Operator, ensuring consistent annotations and improved manageability for end users. As a result, deployments should now be more reliable and easier to manage.
+Before this update, the `DataProtectionApplicationSpec` used deprecated `PodAnnotations`, which led to an annotation limit overflow. This caused potential misconfigurations in deployments.
+
+In this release, we have added `PodConfig` for annotations in pods deployed by the Operator, ensuring consistent annotations and improved manageability for end users.
+
+As a result, deployments should now be more reliable and easier to manage.
 
 OADP-6454
 
 Root file system for OADP controller manager is now read-only
 
-Before this update, the `manager` container of the `openshift-adp-controller-manager-*` pod was configured to run with a writable root file system. As a consequence, this could allow for tampering with the container’s file system or the writing of foreign executables. With this release, the container’s security context has been updated to set the root file system to read-only while ensuring necessary functions that require write access, such as the Kopia cache, continue to operate correctly. As a result, the container is hardened against potential threats.
+Before this update, the `manager` container of the `openshift-adp-controller-manager-*` pod was configured to run with a writable root file system.
+
+As a consequence, this could allow for tampering with the container’s file system or the writing of foreign executables.
+
+With this release, the container’s security context has been updated to set the root file system to read-only while ensuring necessary functions that require write access, such as the Kopia cache, continue to operate correctly.
+
+As a result, the container is hardened against potential threats.
 
 `nonAdmin.enable: false` in multiple DPAs no longer causes reconcile issues
 
-Before this update, when a user attempted to create a second non-admin `DataProtectionApplication` (DPA) on a cluster where one already existed, the new DPA failed to reconcile. With this release, the restriction on Non-Admin Controller installation to one per cluster has been removed. As a result, users can install multiple Non-Admin Controllers across the cluster without encountering errors.
+Before this update, when a user attempted to create a second non-admin `DataProtectionApplication` (DPA) on a cluster where one already existed, the new DPA failed to reconcile.
+
+With this release, the restriction on Non-Admin Controller installation to one per cluster has been removed.
+
+As a result, users can install multiple Non-Admin Controllers across the cluster without encountering errors.
 
 OADP-6500
 
 OADP supports self-signed certificates
 
-Before this update, using a self-signed certificate for backup images with a storage provider such as Minio resulted in an `x509: certificate signed by unknown authority` error during the backup process. With this release, certificate validation has been updated to support self-signed certificates in OADP, ensuring successful backups.
+Before this update, using a self-signed certificate for backup images with a storage provider such as Minio resulted in an `x509: certificate signed by unknown authority` error during the backup process.
+
+With this release, certificate validation has been updated to support self-signed certificates in OADP, ensuring successful backups.
 
 OADP-641
 
 `velero describe` includes `defaultVolumesToFsBackup`
 
-Before this update, the `velero describe` output command omitted the `defaultVolumesToFsBackup` flag. This affected the visibility of backup configuration details for users. With this release, the `velero describe` output includes the `defaultVolumesToFsBackup` flag information, improving the visibility of backup settings.
+Before this update, the `velero describe` output command omitted the `defaultVolumesToFsBackup` flag. This affected the visibility of backup configuration details for users.
+
+With this release, the `velero describe` output includes the `defaultVolumesToFsBackup` flag information, improving the visibility of backup settings.
 
 OADP-5762
 
 DPT CR no longer fail when `s3Url` is secured
 
-Before this update, `DataProtectionTest` (DPT) failed to run when `s3Url` was secured due to an unverified certificate because the DPT CR lacked the ability to skip or add the caCert in the spec field. As a consequence, data upload failure occurred due to an unverified certificate. With this release, DPT CR has been updated to accept and skip CA cert in spec field, resolving SSL verification errors. As a result, DPT no longer fails when using secured `s3Url`.
+Before this update, `DataProtectionTest` (DPT) failed to run when `s3Url` was secured due to an unverified certificate because the DPT CR lacked the ability to skip or add the caCert in the spec field.
+
+As a consequence, data upload failure occurred due to an unverified certificate. With this release, DPT CR has been updated to accept and skip CA cert in spec field, resolving SSL verification errors.
+
+As a result, DPT no longer fails when using secured `s3Url`.
 
 OADP-6235
 
 Adding a backupLocation to DPA with an existing backupLocation name is not rejected
 
-Before this update, adding a second `backupLocation` with the same name in `DataProtectionApplication` (DPA) caused OADP to enter an invalid state, leading to Backup and Restore failures due to Velero’s inability to read Secret credentials. As a consequence, Backup and Restore operations failed. With this release, the duplicate `backupLocation` names in DPA are no longer allowed, preventing Backup and Restore failures. As a result, duplicate `backupLocation` names are rejected, ensuring seamless data protection.
+Before this update, adding a second `backupLocation` with the same name in `DataProtectionApplication` (DPA) caused OADP to enter an invalid state, leading to Backup and Restore failures due to Velero’s inability to read Secret credentials.
+
+As a consequence, Backup and Restore operations failed. With this release, the duplicate `backupLocation` names in DPA are no longer allowed, preventing Backup and Restore failures.
+
+As a result, duplicate `backupLocation` names are rejected, ensuring seamless data protection.
 
 OADP-6459
 
@@ -824,63 +902,93 @@ OADP-6459
 
 The restore fails for backups created on OpenStack using the Cinder CSI driver
 
-When you start a restore operation for a backup that was created on an OpenStack platform using the Cinder Container Storage Interface (CSI) driver, the initial backup only succeeds after the source application is manually scaled down. The restore job fails, preventing you from successfully recovering your application’s data and state from the backup. No known workaround exists.
+When you start a restore operation for a backup that was created on an OpenStack platform using the Cinder Container Storage Interface (CSI) driver, the initial backup only succeeds after the source application is manually scaled down.
+
+The restore job fails, preventing you from successfully recovering your application’s data and state from the backup. No known workaround exists.
 
 OADP-5552
 
 Datamover pods scheduled on unexpected nodes during backup if the `nodeAgent.loadAffinity` parameter has many elements
 
-Due to an issue in Velero 1.14 and later, the OADP node-agent only processes the first `nodeSelector` element within the `loadAffinity` array. As a consequence, if you define multiple `nodeSelector` objects, all objects except the first are ignored, potentially causing datamover pods to be scheduled on unexpected nodes during a backup.
+Due to an issue in Velero 1.14 and later, the OADP node-agent only processes the first `nodeSelector` element within the `loadAffinity` array.
 
-To work around this problem, consolidate all required `matchExpressions` from multiple `nodeSelector` objects into the first `nodeSelector` object. As a result, all node affinity rules are correctly applied, ensuring datamover pods are scheduled to the appropriate nodes.
+As a consequence, if you define multiple `nodeSelector` objects, all objects except the first are ignored, potentially causing datamover pods to be scheduled on unexpected nodes during a backup.
+
+To work around this problem, consolidate all required `matchExpressions` from multiple `nodeSelector` objects into the first `nodeSelector` object.
+
+As a result, all node affinity rules are correctly applied, ensuring datamover pods are scheduled to the appropriate nodes.
 
 OADP-6469
 
 OADP Backup fails when using CA certificates with aliased command
 
-The CA certificate is not stored as a file on the running Velero container. As a consequence, the user experience degraded due to missing `caCert` in Velero container, requiring manual setup and downloads. To work around this problem, manually add cert to the Velero deployment. For instructions, see Using cacert with velero command aliased via velero deployment.
+The CA certificate is not stored as a file on the running Velero container.
+
+As a consequence, the user experience degraded due to missing `caCert` in Velero container, requiring manual setup and downloads.
+
+To work around this problem, manually add cert to the Velero deployment. For instructions, see Using cacert with velero command aliased via velero deployment.
 
 OADP-4668
 
 The `nodeSelector` spec is not supported for the Data Mover restore action
 
-When a Data Protection Application (DPA) is created with the `nodeSelector` field set in the `nodeAgent` parameter, Data Mover restore partially fails instead of completing the restore operation. No known workaround exists.
+When a Data Protection Application (DPA) is created with the `nodeSelector` field set in the `nodeAgent` parameter, Data Mover restore partially fails instead of completing the restore operation.
+
+No known workaround exists.
 
 OADP-4743
 
 Image streams backups are partially failing when the DPA is configured with `caCert`
 
-An unverified certificate in the S3 connection during backups with `caCert` in `DataProtectionApplication` (DPA) causes the `ocp-django` application’s backup to partially fail and result in data loss. No known workaround exists.
+An unverified certificate in the S3 connection during backups with `caCert` in `DataProtectionApplication` (DPA) causes the `ocp-django` application’s backup to partially fail and result in data loss.
+
+No known workaround exists.
 
 OADP-4817
 
 Kopia does not delete cache on worker node
 
-When the `ephemeral-storage` parameter is configured and running file system restore, the cache is not automatically deleted from the worker node. As a consequence, the `/var` partition overflows during backup restore, causing increased storage usage and potential resource exhaustion. To work around this problem, restart the node agent pod, which clears the cache. As a result, cache is deleted.
+When the `ephemeral-storage` parameter is configured and running file system restore, the cache is not automatically deleted from the worker node.
+
+As a consequence, the `/var` partition overflows during backup restore, causing increased storage usage and potential resource exhaustion.
+
+To work around this problem, restart the node agent pod, which clears the cache. As a result, cache is deleted.
 
 OADP-4855
 
 Google Cloud VSL backups fail with Workload Identity because of invalid project configuration
 
-When performing a `volumeSnapshotLocation` (VSL) backup on Google Cloud Workload Identity, the Velero Google Cloud plugin creates an invalid API request if the Google Cloud project is also specified in the `snapshotLocations` configuration of `DataProtectionApplication` (DPA). As a consequence, the Google Cloud API returns a `RESOURCE_PROJECT_INVALID` error, and the backup job finishes with a `PartiallyFailed` status. No known workaround exists.
+When performing a `volumeSnapshotLocation` (VSL) backup on Google Cloud Workload Identity, the Velero Google Cloud plugin creates an invalid API request if the Google Cloud project is also specified in the `snapshotLocations` configuration of `DataProtectionApplication` (DPA).
+
+As a consequence, the Google Cloud API returns a `RESOURCE_PROJECT_INVALID` error, and the backup job finishes with a `PartiallyFailed` status. No known workaround exists.
 
 OADP-6697
 
 VSL backups fail for `CloudStorage` API on AWS with STS
 
-The `volumeSnapshotLocation` (VSL) backup fails because of missing the `AZURE_RESOURCE_GROUP` parameter in the credentials file, even if `AZURE_RESOURCE_GROUP` is already mentioned in the `DataProtectionApplication` (DPA) config for VSL. No known workaround exists.
+The `volumeSnapshotLocation` (VSL) backup fails because of missing the `AZURE_RESOURCE_GROUP` parameter in the credentials file, even if `AZURE_RESOURCE_GROUP` is already mentioned in the `DataProtectionApplication` (DPA) config for VSL.
+
+No known workaround exists.
 
 OADP-6676
 
 Backups of applications with `ImageStreams` fail on Azure with STS
 
-When backing up applications that include image stream resources on an Azure cluster using STS, the OADP plugin incorrectly attempts to locate a secret-based credential for the container registry. As a consequence, the required secret is not found in the STS environment, causing the `ImageStream` custom backup action to fail. This results in the overall backup status marked as `PartiallyFailed`. No known workaround exists.
+When backing up applications that include image stream resources on an Azure cluster using STS, the OADP plugin incorrectly attempts to locate a secret-based credential for the container registry.
+
+As a consequence, the required secret is not found in the STS environment, causing the `ImageStream` custom backup action to fail.
+
+This results in the overall backup status marked as `PartiallyFailed`. No known workaround exists.
 
 OADP-6675
 
 DPA reconciliation fails for `CloudStorageRef` configuration
 
-When a user creates a bucket and uses the `backupLocations.bucket.cloudStorageRef` configuration, bucket credentials are not present in the `DataProtectionApplication` (DPA) custom resource (CR). As a result, the DPA reconciliation fails even if bucket credentials are present in the `CloudStorage` CR. To work around this problem, add the same credentials to the `backupLocations` section of the DPA CR.
+When a user creates a bucket and uses the `backupLocations.bucket.cloudStorageRef` configuration, bucket credentials are not present in the `DataProtectionApplication` (DPA) custom resource (CR).
+
+As a result, the DPA reconciliation fails even if bucket credentials are present in the `CloudStorage` CR.
+
+To work around this problem, add the same credentials to the `backupLocations` section of the DPA CR.
 
 OADP-6669
 
@@ -888,7 +996,9 @@ OADP-6669
 
 The `configuration.restic` specification field has been deprecated
 
-With OADP 1.5.0, the `configuration.restic` specification field has been deprecated. Use the `nodeAgent` section with the `uploaderType` field for selecting `kopia` or `restic` as a `uploaderType`. Note that Restic is deprecated in OADP 1.5.0.
+With OADP 1.5.0, the `configuration.restic` specification field has been deprecated. Use the `nodeAgent` section with the `uploaderType` field for selecting `kopia` or `restic` as a `uploaderType`.
+
+Note that Restic is deprecated in OADP 1.5.0.
 
 OADP-5158
 
@@ -900,15 +1010,23 @@ The OpenShift API for Data Protection (OADP) 1.5.0 release notes list new featur
 
 OADP 1.5.0 introduces a new Self-Service feature
 
-OADP 1.5.0 introduces a new feature named OADP Self-Service, enabling namespace admin users to back up and restore applications on the OpenShift Container Platform. In the earlier versions of OADP, you needed the cluster-admin role to perform OADP operations such as backing up and restoring an application, creating a backup storage location, and so on.
+OADP 1.5.0 introduces a new feature named OADP Self-Service, enabling namespace admin users to back up and restore applications on the OpenShift Container Platform.
 
-From OADP 1.5.0 onward, you do not need the cluster-admin role to perform the backup and restore operations. You can use OADP with the namespace admin role. The namespace admin role has administrator access only to the namespace the user is assigned to. You can use the Self-Service feature only after the cluster administrator installs the OADP Operator and provides the necessary permissions.
+In the earlier versions of OADP, you needed the cluster-admin role to perform OADP operations such as backing up and restoring an application, creating a backup storage location, and so on.
+
+From OADP 1.5.0 onward, you do not need the cluster-admin role to perform the backup and restore operations. You can use OADP with the namespace admin role.
+
+The namespace admin role has administrator access only to the namespace the user is assigned to.
+
+You can use the Self-Service feature only after the cluster administrator installs the OADP Operator and provides the necessary permissions.
 
 OADP-4001
 
 Collecting logs with the `must-gather` tool has been improved with a Markdown summary
 
-You can collect logs, and information about OpenShift API for Data Protection (OADP) custom resources by using the `must-gather` tool. The `must-gather` data must be attached to all customer cases. This tool generates a Markdown output file with the collected information, which is located in the `must-gather` logs clusters directory.
+You can collect logs, and information about OpenShift API for Data Protection (OADP) custom resources by using the `must-gather` tool. The `must-gather` data must be attached to all customer cases.
+
+This tool generates a Markdown output file with the collected information, which is located in the `must-gather` logs clusters directory.
 
 OADP-5384
 
@@ -924,13 +1042,17 @@ OADP-3736
 
 Use the `spec.configuration.nodeAgent` parameter in DPA for configuring `nodeAgent` daemon set
 
-Velero no longer uses the `node-agent-config` config map for configuring the `nodeAgent` daemon set. With this update, you must use the new `spec.configuration.nodeAgent` parameter in a Data Protection Application (DPA) for configuring the `nodeAgent` daemon set.
+Velero no longer uses the `node-agent-config` config map for configuring the `nodeAgent` daemon set.
+
+With this update, you must use the new `spec.configuration.nodeAgent` parameter in a Data Protection Application (DPA) for configuring the `nodeAgent` daemon set.
 
 OADP-5042
 
 Configuring DPA with the backup repository configuration config map is now possible
 
-With Velero 1.15 and later, you can now configure the total size of a cache per repository. This prevents pods from being removed due to running out of ephemeral storage. See the following new parameters added to the `NodeAgentConfig` field in DPA:
+With Velero 1.15 and later, you can now configure the total size of a cache per repository. This prevents pods from being removed due to running out of ephemeral storage.
+
+See the following new parameters added to the `NodeAgentConfig` field in DPA:
 
 `cacheLimitMB`: Sets the local data cache size limit in megabytes.
 
@@ -980,7 +1102,9 @@ Adds DPA support for parallel item backup
 
 By default, only one thread processes an item block. Velero 1.16 supports a parallel item backup, where multiple items within a backup can be processed in parallel.
 
-You can use the optional Velero server parameter `--item-block-worker-count` to run additional worker threads to process items in parallel. To enable this in OADP, set the `dpa.Spec.Configuration.Velero.ItemBlockWorkerCount` parameter to an integer value greater than zero.
+You can use the optional Velero server parameter `--item-block-worker-count` to run additional worker threads to process items in parallel.
+
+To enable this in OADP, set the `dpa.Spec.Configuration.Velero.ItemBlockWorkerCount` parameter to an integer value greater than zero.
 
 Note
 
@@ -1054,7 +1178,9 @@ OADP-5968
 
 Restore is now successful with `excludedClusterScopedResources`
 
-Previously, on performing the backup of an application with the `excludedClusterScopedResources` field set to `storageclasses`, `Namespace` parameter, the backup was successful but the restore partially failed. With this update, the restore is successful.
+Previously, on performing the backup of an application with the `excludedClusterScopedResources` field set to `storageclasses`, `Namespace` parameter, the backup was successful but the restore partially failed.
+
+With this update, the restore is successful.
 
 OADP-5239
 
@@ -1073,7 +1199,9 @@ Error messages are now more informative when the` disableFsbackup` parameter is 
 
 Previously, when the `spec.configuration.velero.disableFsBackup` field from a Data Protection Application (DPA) was set to `true`, the backup partially failed with an error, which was not informative.
 
-This update makes error messages more useful for troubleshooting issues. For example, error messages indicating that `disableFsBackup: true` is the issue in a DPA or not having access to a DPA if it is for non-administrator users.
+This update makes error messages more useful for troubleshooting issues.
+
+For example, error messages indicating that `disableFsBackup: true` is the issue in a DPA or not having access to a DPA if it is for non-administrator users.
 
 OADP-5952
 
@@ -1095,7 +1223,9 @@ OADP-6134
 
 The `ValidationErrors` field fades away once the CR specification is correct
 
-Previously, when a schedule CR was created with a wrong `spec.schedule` value and the same was later patched with a correct value, the `ValidationErrors` field still existed. Consequently, the `ValidationErrors` field was displaying incorrect information even though the spec was correct.
+Previously, when a schedule CR was created with a wrong `spec.schedule` value and the same was later patched with a correct value, the `ValidationErrors` field still existed.
+
+Consequently, the `ValidationErrors` field was displaying incorrect information even though the spec was correct.
 
 With this update, the `ValidationErrors` field fades away once the CR specification is correct.
 
@@ -1111,7 +1241,9 @@ OADP-5939
 
 OADP Operator successfully creates bucket on top of AWS
 
-Previously, the container was configured with the `readOnlyRootFilesystem: true` setting for security, but the code attempted to create temporary files in the `/tmp` directory using the `os.CreateTemp()` function. Consequently, while using the AWS STS authentication with the Cloud Credential Operator (CCO) flow, OADP failed to create temporary files that were required for AWS credential handling with the following error:
+Previously, the container was configured with the `readOnlyRootFilesystem: true` setting for security, but the code attempted to create temporary files in the `/tmp` directory using the `os.CreateTemp()` function.
+
+Consequently, while using the AWS STS authentication with the Cloud Credential Operator (CCO) flow, OADP failed to create temporary files that were required for AWS credential handling with the following error:
 
 ```shell-session
 ERROR unable to determine if bucket exists. {"error": "open /tmp/aws-shared-credentials1211864681: read-only file system"}
@@ -1137,7 +1269,9 @@ For a complete list of all issues resolved in this release, see the list of OADP
 
 Kopia does not delete all the artifacts after backup expiration
 
-Even after deleting a backup, Kopia does not delete the volume artifacts from the `${bucket_name}/kopia/$openshift-adp` on the S3 location after the backup expired. Information related to the expired and removed data files remains in the metadata.
+Even after deleting a backup, Kopia does not delete the volume artifacts from the `${bucket_name}/kopia/$openshift-adp` on the S3 location after the backup expired.
+
+Information related to the expired and removed data files remains in the metadata.
 
 To ensure that OpenShift API for Data Protection (OADP) functions properly, the data is not deleted, and it exists in the `/kopia/` directory, for example:
 
@@ -1157,7 +1291,9 @@ For a complete list of all known issues in this release, see the list of OADP 1.
 
 The `configuration.restic` specification field has been deprecated
 
-With OpenShift API for Data Protection (OADP) 1.5.0, the `configuration.restic` specification field has been deprecated. Use the `nodeAgent` section with the `uploaderType` field for selecting `kopia` or `restic` as a `uploaderType`. Note that Restic is deprecated in OpenShift API for Data Protection (OADP) 1.5.0.
+With OpenShift API for Data Protection (OADP) 1.5.0, the `configuration.restic` specification field has been deprecated.
+
+Use the `nodeAgent` section with the `uploaderType` field for selecting `kopia` or `restic` as a `uploaderType`. Note that Restic is deprecated in OpenShift API for Data Protection (OADP) 1.5.0.
 
 OADP-5158
 
@@ -1165,7 +1301,9 @@ OADP-5158
 
 Support for HyperShift hosted OpenShift clusters is available as a Technology Preview
 
-OADP can support and facilitate application migrations within HyperShift hosted OpenShift clusters as a Technology Preview. It ensures a seamless backup and restore operation for applications in hosted clusters.
+OADP can support and facilitate application migrations within HyperShift hosted OpenShift clusters as a Technology Preview.
+
+It ensures a seamless backup and restore operation for applications in hosted clusters.
 
 For more information about the support scope of Red Hat Technology Preview features, see Technology Preview Features Support Scope.
 
@@ -1181,7 +1319,9 @@ Learn how to upgrade your existing OADP 1.4 installation to OADP 1.5.
 
 Note
 
-Always upgrade to the next minor version. Do not skip versions. To update to a later version, upgrade only one channel at a time. For example, to upgrade from OADP 1.1 to 1.3, upgrade first to 1.2, and then to 1.3.
+Always upgrade to the next minor version. Do not skip versions.
+
+To update to a later version, upgrade only one channel at a time. For example, to upgrade from OADP 1.1 to 1.3, upgrade first to 1.2, and then to 1.3.
 
 #### 5.2.2.1. Changes from OADP 1.4 to 1.5
 
@@ -1191,17 +1331,29 @@ This changes the following:
 
 Version Support changes
 
-OpenShift API for Data Protection implements a streamlined version support policy. Red Hat supports only one version of OpenShift API for Data Protection (OADP) on one OpenShift version to ensure better stability and maintainability. OADP 1.5.0 is only supported on OpenShift 4.19 version.
+OpenShift API for Data Protection implements a streamlined version support policy.
+
+Red Hat supports only one version of OpenShift API for Data Protection (OADP) on one OpenShift version to ensure better stability and maintainability.
+
+OADP 1.5.0 is only supported on OpenShift 4.19 version.
 
 OADP Self-Service
 
-OADP 1.5.0 introduces a new feature named OADP Self-Service, enabling namespace admin users to back up and restore applications on the OpenShift Container Platform. In the earlier versions of OADP, you needed the cluster-admin role to perform OADP operations such as backing up and restoring an application, creating a backup storage location, and so on.
+OADP 1.5.0 introduces a new feature named OADP Self-Service, enabling namespace admin users to back up and restore applications on the OpenShift Container Platform.
 
-From OADP 1.5.0 onward, you do not need the cluster-admin role to perform the backup and restore operations. You can use OADP with the namespace admin role. The namespace admin role has administrator access only to the namespace the user is assigned to. You can use the Self-Service feature only after the cluster administrator installs the OADP Operator and provides the necessary permissions.
+In the earlier versions of OADP, you needed the cluster-admin role to perform OADP operations such as backing up and restoring an application, creating a backup storage location, and so on.
+
+From OADP 1.5.0 onward, you do not need the cluster-admin role to perform the backup and restore operations. You can use OADP with the namespace admin role.
+
+The namespace admin role has administrator access only to the namespace the user is assigned to.
+
+You can use the Self-Service feature only after the cluster administrator installs the OADP Operator and provides the necessary permissions.
 
 `backupPVC` and `restorePVC` configurations
 
-A `backupPVC` resource is an intermediate persistent volume claim (PVC) to access data during the data movement backup operation. You create a `readonly` backup PVC by using the `nodeAgent.backupPVC` section of the `DataProtectionApplication` (DPA) custom resource.
+A `backupPVC` resource is an intermediate persistent volume claim (PVC) to access data during the data movement backup operation.
+
+You create a `readonly` backup PVC by using the `nodeAgent.backupPVC` section of the `DataProtectionApplication` (DPA) custom resource.
 
 A `restorePVC` resource is an intermediate PVC that is used to write data during the Data Mover restore operation.
 
@@ -1247,7 +1399,9 @@ Wait for the Operator and containers to update and restart.
 
 #### 5.2.2.4. Converting DPA to the new version for OADP 1.5.0
 
-The OpenShift API for Data Protection (OADP) 1.4 is not supported on OpenShift 4.19. You can convert Data Protection Application (DPA) to the new OADP 1.5 version by using the new `spec.configuration.nodeAgent` field and its sub-fields.
+The OpenShift API for Data Protection (OADP) 1.4 is not supported on OpenShift 4.19.
+
+You can convert Data Protection Application (DPA) to the new OADP 1.5 version by using the new `spec.configuration.nodeAgent` field and its sub-fields.
 
 Procedure
 
@@ -1372,19 +1526,25 @@ Although Red Hat provides supports for standard backup and restore failures, it 
 
 ### 5.4. OADP features and plugins
 
-OpenShift API for Data Protection (OADP) features provide options for backing up and restoring applications.
+Review OpenShift API for Data Protection (OADP) features and default plugins that integrate Velero with cloud providers to back up and restore OpenShift Container Platform resources.
 
-The default plugins enable Velero to integrate with certain cloud providers and to back up and restore OpenShift Container Platform resources.
+This helps you to select the right plugins and features for your backup and restore environment.
 
 #### 5.4.1. OADP features
 
-OpenShift API for Data Protection (OADP) supports the following features:
+Review the backup, restore, and scheduling features of OpenShift API for Data Protection (OADP) for protecting applications on OpenShift Container Platform.
+
+This helps you to understand the available capabilities for your data protection strategy.
 
 Backup
 
 You can use OADP to back up all applications on the OpenShift Platform, or you can filter the resources by type, namespace, or label.
 
-OADP backs up Kubernetes objects and internal images by saving them as an archive file on object storage. OADP backs up persistent volumes (PVs) by creating snapshots with the native cloud snapshot API or with the Container Storage Interface (CSI). For cloud providers that do not support snapshots, OADP backs up resources and PV data with Restic.
+OADP backs up Kubernetes objects and internal images by saving them as an archive file on object storage.
+
+OADP backs up persistent volumes (PVs) by creating snapshots with the native cloud snapshot API or with the Container Storage Interface (CSI).
+
+For cloud providers that do not support snapshots, OADP backs up resources and PV data with Restic.
 
 Note
 
@@ -1404,11 +1564,15 @@ You can schedule backups at specified intervals.
 
 Hooks
 
-You can use hooks to run commands in a container on a pod, for example, `fsfreeze` to freeze a file system. You can configure a hook to run before or after a backup or restore. Restore hooks can run in an init container or in the application container.
+You can use hooks to run commands in a container on a pod, for example, `fsfreeze` to freeze a file system. You can configure a hook to run before or after a backup or restore.
+
+Restore hooks can run in an init container or in the application container.
 
 #### 5.4.2. OADP plugins
 
-The OpenShift API for Data Protection (OADP) provides default Velero plugins that are integrated with storage providers to support backup and snapshot operations. You can create custom plugins based on the Velero plugins.
+Review the default Velero plugins provided by OpenShift API for Data Protection (OADP) that integrate with storage providers to support backup and snapshot operations.
+
+This helps you to select and configure the right plugins for your cloud environment.
 
 OADP also provides plugins for OpenShift Container Platform resource backups, OpenShift Virtualization resource backups, and Container Storage Interface (CSI) snapshots.
 
@@ -1437,15 +1601,15 @@ OADP 1.0 uses `snapshot.storage.k8s.io/v1beta1`
 
 Do not add the `hypershift` plugin in the `DataProtectionApplication` custom resource if the cluster is not a HyperShift hosted cluster.
 
-#### 5.4.3. About OADP Velero plugins
-
-You can configure two types of plugins when you install Velero:
-
-Default cloud provider plugins
+Additional resources
 
 Custom plugins
 
-Configure default cloud provider plugins or install custom plugins during deployment to connect your specific storage solutions. Although both types of plugin are optional, setting up at least one helps you successfully back up and restore resources across your environments.
+#### 5.4.3. About OADP Velero plugins
+
+Review how to configure default cloud provider plugins or install custom plugins during the OADP deployment to connect your specific storage solutions.
+
+This helps you to successfully back up and restore resources across your environments.
 
 #### 5.4.3.1. Default Velero cloud provider plugins
 
@@ -1509,7 +1673,7 @@ spec:
 
 #### 5.4.4. Supported architectures for OADP
 
-OpenShift API for Data Protection (OADP) supports the following architectures:
+Review the architectures supported by OpenShift API for Data Protection (OADP). This helps you to verify compatibility with your cluster infrastructure.
 
 AMD64
 
@@ -1525,45 +1689,81 @@ OADP 1.2.0 and later versions support the ARM64 architecture.
 
 #### 5.4.5. OADP support for IBM Power and IBM Z
 
-OpenShift API for Data Protection (OADP) is platform neutral. The information that follows relates only to IBM Power® and to IBM Z®.
+Review OpenShift API for Data Protection (OADP) support and tested backup locations for IBM Power® and IBM Z®.
 
-OADP 1.3.6 was tested successfully against OpenShift Container Platform 4.12, 4.13, 4.14, and 4.15 for both IBM Power® and IBM Z®. The sections that follow give testing and support information for OADP 1.3.6 in terms of backup locations for these systems.
+This helps you to verify compatibility and supported configurations for your IBM Power® or IBM Z® environment.
 
-OADP 1.4.6 was tested successfully against OpenShift Container Platform 4.14, 4.15, 4.16, and 4.17 for both IBM Power® and IBM Z®. The sections that follow give testing and support information for OADP 1.4.6 in terms of backup locations for these systems.
+OADP 1.3.6 was tested successfully against OpenShift Container Platform 4.12, 4.13, 4.14, and 4.15 for both IBM Power® and IBM Z®.
 
-OADP 1.5.5 was tested successfully against OpenShift Container Platform 4.19 for both IBM Power® and IBM Z®. The sections that follow give testing and support information for OADP 1.5.5 in terms of backup locations for these systems.
+The sections that follow give testing and support information for OADP 1.3.6 in terms of backup locations for these systems.
+
+OADP 1.4.6 was tested successfully against OpenShift Container Platform 4.14, 4.15, 4.16, and 4.17 for both IBM Power® and IBM Z®.
+
+The sections that follow give testing and support information for OADP 1.4.6 in terms of backup locations for these systems.
+
+OADP 1.5.5 was tested successfully against OpenShift Container Platform 4.19 for both IBM Power® and IBM Z®.
+
+The sections that follow give testing and support information for OADP 1.5.5 in terms of backup locations for these systems.
 
 #### 5.4.5.1. OADP support for target backup locations using IBM Power
 
-IBM Power® running with OpenShift Container Platform 4.12, 4.13, 4.14, and 4.15, and OADP 1.3.6 was tested successfully against an AWS S3 backup location target. Although the test involved only an AWS S3 target, Red Hat supports running IBM Power® with OpenShift Container Platform 4.13, 4.14, and 4.15, and OADP 1.3.6 against all S3 backup location targets, which are not AWS, as well.
+Review the tested and supported configurations for running OADP on IBM Power® with various OpenShift Container Platform versions and S3-compatible backup locations.
 
-IBM Power® running with OpenShift Container Platform 4.14, 4.15, 4.16, and 4.17, and OADP 1.4.6 was tested successfully against an AWS S3 backup location target. Although the test involved only an AWS S3 target, Red Hat supports running IBM Power® with OpenShift Container Platform 4.14, 4.15, 4.16, and 4.17, and OADP 1.4.6 against all S3 backup location targets, which are not AWS, as well.
+This helps you to verify that your IBM Power® environment is supported before configuring backups.
 
-IBM Power® running with OpenShift Container Platform 4.19 and OADP 1.5.5 was tested successfully against an AWS S3 backup location target. Although the test involved only an AWS S3 target, Red Hat supports running IBM Power® with OpenShift Container Platform 4.19 and OADP 1.5.5 against all S3 backup location targets, which are not AWS, as well.
+IBM Power® running with OpenShift Container Platform 4.12, 4.13, 4.14, and 4.15, and OADP 1.3.6 was tested successfully against an AWS S3 backup location target.
+
+Although the test involved only an AWS S3 target, Red Hat supports running IBM Power® with OpenShift Container Platform 4.13, 4.14, and 4.15, and OADP 1.3.6 against all S3 backup location targets, which are not AWS, as well.
+
+IBM Power® running with OpenShift Container Platform 4.14, 4.15, 4.16, and 4.17, and OADP 1.4.6 was tested successfully against an AWS S3 backup location target.
+
+Although the test involved only an AWS S3 target, Red Hat supports running IBM Power® with OpenShift Container Platform 4.14, 4.15, 4.16, and 4.17, and OADP 1.4.6 against all S3 backup location targets, which are not AWS, as well.
+
+IBM Power® running with OpenShift Container Platform 4.19 and OADP 1.5.5 was tested successfully against an AWS S3 backup location target.
+
+Although the test involved only an AWS S3 target, Red Hat supports running IBM Power® with OpenShift Container Platform 4.19 and OADP 1.5.5 against all S3 backup location targets, which are not AWS, as well.
 
 #### 5.4.5.2. OADP testing and support for target backup locations using IBM Z
 
-IBM Z® running with OpenShift Container Platform 4.12, 4.13, 4.14, and 4.15, and 1.3.6 was tested successfully against an AWS S3 backup location target. Although the test involved only an AWS S3 target, Red Hat supports running IBM Z® with OpenShift Container Platform 4.13 4.14, and 4.15, and 1.3.6 against all S3 backup location targets, which are not AWS, as well.
+Review the tested and supported OADP and OpenShift Container Platform version combinations for IBM Z® against S3 backup location targets.
 
-IBM Z® running with OpenShift Container Platform 4.14, 4.15, 4.16, and 4.17, and 1.4.6 was tested successfully against an AWS S3 backup location target. Although the test involved only an AWS S3 target, Red Hat supports running IBM Z® with OpenShift Container Platform 4.14, 4.15, 4.16, and 4.17, and 1.4.6 against all S3 backup location targets, which are not AWS, as well.
+This helps you verify that your IBM Z® environment and OADP version are supported for backup operations.
 
-IBM Z® running with OpenShift Container Platform 4.19 and OADP 1.5.5 was tested successfully against an AWS S3 backup location target. Although the test involved only an AWS S3 target, Red Hat supports running IBM Z® with OpenShift Container Platform 4.19 and OADP 1.5.5 against all S3 backup location targets, which are not AWS, as well.
+IBM Z® running with OpenShift Container Platform 4.12, 4.13, 4.14, and 4.15, and 1.3.6 was tested successfully against an AWS S3 backup location target.
+
+Although the test involved only an AWS S3 target, Red Hat supports running IBM Z® with OpenShift Container Platform 4.13 4.14, and 4.15, and 1.3.6 against all S3 backup location targets, which are not AWS, as well.
+
+IBM Z® running with OpenShift Container Platform 4.14, 4.15, 4.16, and 4.17, and 1.4.6 was tested successfully against an AWS S3 backup location target.
+
+Although the test involved only an AWS S3 target, Red Hat supports running IBM Z® with OpenShift Container Platform 4.14, 4.15, 4.16, and 4.17, and 1.4.6 against all S3 backup location targets, which are not AWS, as well.
+
+IBM Z® running with OpenShift Container Platform 4.19 and OADP 1.5.5 was tested successfully against an AWS S3 backup location target.
+
+Although the test involved only an AWS S3 target, Red Hat supports running IBM Z® with OpenShift Container Platform 4.19 and OADP 1.5.5 against all S3 backup location targets, which are not AWS, as well.
 
 #### 5.4.5.2.1. Known issue of OADP using IBM Power(R) and IBM Z(R) platforms
 
-Currently, there are backup method restrictions for Single-node OpenShift clusters deployed on IBM Power® and IBM Z® platforms. Only NFS storage is currently compatible with Single-node OpenShift clusters on these platforms. In addition, only the File System Backup (FSB) methods such as Kopia and Restic are supported for backup and restore operations. There is currently no workaround for this issue.
+Use only NFS storage with File System Backup (FSB) methods such as Kopia or Restic for Single-node OpenShift clusters on IBM Power® and IBM Z® platforms.
+
+This helps you to avoid unsupported backup configurations on these platforms.
+
+There is currently no workaround for this restriction.
 
 #### 5.4.6. OADP and FIPS
 
-Federal Information Processing Standards (FIPS) are a set of computer security standards developed by the United States federal government in line with the Federal Information Security Management Act (FISMA).
+Federal Information Processing Standards (FIPS) are a set of computer security standards developed by the United States federal government inline with the Federal Information Security Management Act (FISMA).
 
 OpenShift API for Data Protection (OADP) has been tested and works on FIPS-enabled OpenShift Container Platform clusters.
 
 #### 5.4.7. Avoiding the Velero plugin panic error
 
-Label a custom Backup Storage Location (BSL) to resolve Velero plugin panic errors during `imagestream` backups. This action prompts the OADP controller to create the required registry secret when you manage the BSL outside the `DataProtectionApplication` (DPA) custom resource (CR).
+Label a custom Backup Storage Location (BSL) to resolve Velero plugin panic errors during `imagestream` backups.
 
-A missing secret can cause a panic error for the Velero plugin during image stream backups. When the backup and the BSL are managed outside the scope of the DPA, the OADP controller does not create the relevant `oadp-<bsl_name>-<bsl_provider>-registry-secret` parameter.
+This helps you to ensure the OADP controller creates the required registry secret when you manage the BSL outside the `DataProtectionApplication` (DPA) CR.
+
+A missing secret can cause a panic error for the Velero plugin during image stream backups.
+
+When the backup and the BSL are managed outside the scope of the DPA, the OADP controller does not create the relevant `oadp-<bsl_name>-<bsl_provider>-registry-secret` parameter.
 
 During the backup operation, the OpenShift Velero plugin panics on the `imagestream` backup, with the following panic error:
 
@@ -1596,15 +1796,21 @@ $ oc -n openshift-adp get secret/oadp-<bsl_name>-<bsl_provider>-registry-secret 
 
 #### 5.4.8. Workaround for OpenShift ADP Controller segmentation fault
 
-Define either `velero` or `cloudstorage` in your Data Protection Application (DPA) configuration to prevent indefinite pod crashes. This configuration resolves a segmentation fault in the `openshift-adp-controller-manager` pod that occurs when both components are enabled.
+Define either `velero` or `cloudstorage` in your Data Protection Application (DPA) configuration to prevent indefinite pod crashes.
 
-Define either `velero` or `cloudstorage` when you configure a DPA. Otherwise, the `openshift-adp-controller-manager` pod fails with a crash loop segmentation fault due to the following settings:
+This configuration resolves a segmentation fault in the `openshift-adp-controller-manager` pod that occurs when both components are enabled.
+
+The `openshift-adp-controller-manager` pod fails with a crash loop segmentation fault due to the following settings:
 
 If you define both `velero` and `cloudstorage`, the `openshift-adp-controller-manager` fails.
 
 If you do not define both `velero` and `cloudstorage`, the `openshift-adp-controller-manager` fails.
 
-For more information about this issue, see OADP-1054.
+See OADP-1054 for more information.
+
+Additional resources
+
+OADP-1054
 
 #### 5.5.1. Backup using OpenShift API for Data Protection and Red Hat OpenShift Data Foundation (ODF)
 
@@ -1614,7 +1820,11 @@ Following is a use case for using OADP and ODF to back up an application.
 
 In this use case, you back up an application by using OADP and store the backup in an object storage provided by Red Hat OpenShift Data Foundation (ODF).
 
-You create an object bucket claim (OBC) to configure the backup storage location. You use ODF to configure an Amazon S3-compatible object storage bucket. ODF provides MultiCloud Object Gateway (NooBaa MCG) and Ceph Object Gateway, also known as RADOS Gateway (RGW), object storage service. In this use case, you use NooBaa MCG as the backup storage location.
+You create an object bucket claim (OBC) to configure the backup storage location. You use ODF to configure an Amazon S3-compatible object storage bucket.
+
+ODF provides MultiCloud Object Gateway (NooBaa MCG) and Ceph Object Gateway, also known as RADOS Gateway (RGW), object storage service.
+
+In this use case, you use NooBaa MCG as the backup storage location.
 
 You use the NooBaa MCG service with OADP by using the `aws` provider plugin.
 
@@ -1667,7 +1877,9 @@ where:
 
 Specifies the file name of the object bucket claim manifest.
 
-When you create an OBC, ODF creates a `secret` and a `config map` with the same name as the object bucket claim. The `secret` has the bucket credentials, and the `config map` has information to access the bucket. To get the bucket name and bucket host from the generated config map, run the following command:
+When you create an OBC, ODF creates a `secret` and a `config map` with the same name as the object bucket claim.
+
+The `secret` has the bucket credentials, and the `config map` has information to access the bucket. To get the bucket name and bucket host from the generated config map, run the following command:
 
 ```shell-session
 $ oc extract --to=- cm/test-obc
@@ -1779,7 +1991,9 @@ Specifies the bucket name.
 $ oc apply -f <dpa_filename>
 ```
 
-Verify that the DPA is created successfully by running the following command. In the example output, you can see the `status` object has `type` field set to `Reconciled`. This means, the DPA is successfully created.
+Verify that the DPA is created successfully by running the following command. In the example output, you can see the `status` object has `type` field set to `Reconciled`.
+
+This means, the DPA is successfully created.
 
 ```shell-session
 $ oc get dpa -o yaml
@@ -1876,7 +2090,13 @@ Following is a use case for using OADP to restore a backup to a different namesp
 
 #### 5.5.2.1. Restoring an application to a different namespace using OADP
 
-Restore a backup of an application by using OADP to a new target namespace, `test-restore-application`. To restore a backup, you create a restore custom resource (CR) as shown in the following example. In the restore CR, the source namespace refers to the application namespace that you included in the backup. You then verify the restore by changing your project to the new restored namespace and verifying the resources.
+Restore a backup of an application by using OADP to a new target namespace, `test-restore-application`.
+
+To restore a backup, you create a restore custom resource (CR) as shown in the following example.
+
+In the restore CR, the source namespace refers to the application namespace that you included in the backup.
+
+You then verify the restore by changing your project to the new restored namespace and verifying the resources.
 
 Prerequisites
 
@@ -1911,7 +2131,9 @@ Specifies the name of the backup.
 
 `<application_namespace>`
 
-Specifies the target namespace to restore to. `namespaceMapping` maps the source application namespace to the target application namespace. `test-restore-application` is the name of target namespace where you want to restore the backup.
+Specifies the target namespace to restore to. `namespaceMapping` maps the source application namespace to the target application namespace.
+
+`test-restore-application` is the name of target namespace where you want to restore the backup.
 
 ```shell-session
 $ oc apply -f <restore_cr_filename>
@@ -1961,13 +2183,17 @@ configmap/openshift-service-ca.crt   1      2m57s
 
 #### 5.5.3. Including a self-signed CA certificate during backup
 
-You can include a self-signed Certificate Authority (CA) certificate in the Data Protection Application (DPA) and then back up an application. You store the backup in a NooBaa bucket provided by Red Hat OpenShift Data Foundation (ODF).
+You can include a self-signed Certificate Authority (CA) certificate in the Data Protection Application (DPA) and then back up an application.
+
+You store the backup in a NooBaa bucket provided by Red Hat OpenShift Data Foundation (ODF).
 
 #### 5.5.3.1. Backing up an application and its self-signed CA certificate
 
 The `s3.openshift-storage.svc` service, provided by ODF, uses a Transport Layer Security protocol (TLS) certificate that is signed with the self-signed service CA.
 
-To prevent a `certificate signed by unknown authority` error, you must include a self-signed CA certificate in the backup storage location (BSL) section of `DataProtectionApplication` custom resource (CR). For this situation, you must complete the following tasks:
+To prevent a `certificate signed by unknown authority` error, you must include a self-signed CA certificate in the backup storage location (BSL) section of `DataProtectionApplication` custom resource (CR).
+
+For this situation, you must complete the following tasks:
 
 Request a NooBaa bucket by creating an object bucket claim (OBC).
 
@@ -2014,7 +2240,11 @@ Specifies the name of the bucket.
 $ oc create -f <obc_file_name>
 ```
 
-When you create an OBC, ODF creates a `secret` and a `ConfigMap` with the same name as the object bucket claim. The `secret` object contains the bucket credentials, and the `ConfigMap` object contains information to access the bucket. To get the bucket name and bucket host from the generated config map, run the following command:
+When you create an OBC, ODF creates a `secret` and a `ConfigMap` with the same name as the object bucket claim.
+
+The `secret` object contains the bucket credentials, and the `ConfigMap` object contains information to access the bucket.
+
+To get the bucket name and bucket host from the generated config map, run the following command:
 
 ```shell-session
 $ oc extract --to=- cm/test-obc
@@ -2065,7 +2295,9 @@ $ oc create secret generic \
   --from-file cloud=cloud-credentials
 ```
 
-Extract the service CA certificate from the `openshift-service-ca.crt` config map by running the following command. Ensure that you encode the certificate in `Base64` format and note the value to use in the next step.
+Extract the service CA certificate from the `openshift-service-ca.crt` config map by running the following command.
+
+Ensure that you encode the certificate in `Base64` format and note the value to use in the next step.
 
 ```shell-session
 $ oc get cm/openshift-service-ca.crt \
@@ -2226,7 +2458,13 @@ Events:               <none>
 
 #### 5.5.4. Using the legacy-aws Velero plugin
 
-If you are using an AWS S3-compatible backup storage location, you might get a `SignatureDoesNotMatch` error while backing up your application. This error occurs because some backup storage locations still use the older versions of the S3 APIs, which are incompatible with the newer AWS SDK for Go V2. To resolve this issue, you can use the `legacy-aws` Velero plugin in the `DataProtectionApplication` custom resource (CR). The `legacy-aws` Velero plugin uses the older AWS SDK for Go V1, which is compatible with the legacy S3 APIs, ensuring successful backups.
+If you are using an AWS S3-compatible backup storage location, you might get a `SignatureDoesNotMatch` error while backing up your application.
+
+This error occurs because some backup storage locations still use the older versions of the S3 APIs, which are incompatible with the newer AWS SDK for Go V2.
+
+To resolve this issue, you can use the `legacy-aws` Velero plugin in the `DataProtectionApplication` custom resource (CR).
+
+The `legacy-aws` Velero plugin uses the older AWS SDK for Go V1, which is compatible with the legacy S3 APIs, ensuring successful backups.
 
 #### 5.5.4.1. Using the legacy-aws Velero plugin in the DataProtectionApplication CR
 
@@ -2234,7 +2472,9 @@ In the following use case, you configure the `DataProtectionApplication` CR with
 
 Note
 
-Depending on the backup storage location you choose, you can use either the `legacy-aws` or the `aws` plugin in your `DataProtectionApplication` CR. If you use both of the plugins in the `DataProtectionApplication` CR, the following error occurs: `aws and legacy-aws can not be both specified in DPA spec.configuration.velero.defaultPlugins`.
+Depending on the backup storage location you choose, you can use either the `legacy-aws` or the `aws` plugin in your `DataProtectionApplication` CR.
+
+If you use both of the plugins in the `DataProtectionApplication` CR, the following error occurs: `aws and legacy-aws can not be both specified in DPA spec.configuration.velero.defaultPlugins`.
 
 Prerequisites
 
@@ -2297,7 +2537,11 @@ Specifies the bucket name.
 $ oc apply -f <dpa_filename>
 ```
 
-Verify that the `DataProtectionApplication` CR is created successfully by running the following command. In the example output, you can see the `status` object has the `type` field set to `Reconciled` and the `status` field set to `"True"`. That status indicates that the `DataProtectionApplication` CR is successfully created.
+Verify that the `DataProtectionApplication` CR is created successfully by running the following command.
+
+In the example output, you can see the `status` object has the `type` field set to `Reconciled` and the `status` field set to `"True"`.
+
+That status indicates that the `DataProtectionApplication` CR is successfully created.
 
 ```shell-session
 $ oc get dpa -o yaml
@@ -2390,7 +2634,9 @@ Events:               <none>
 
 #### 5.5.5. Backing up workloads on OADP with OpenShift Container Platform
 
-To back up and restore workloads on ROSA, you can use OADP. You can create a backup of a workload, restore it from the backup, and verify the restoration. You can also clean up the OADP Operator, backup storage, and AWS resources when they are no longer needed.
+To back up and restore workloads on ROSA, you can use OADP. You can create a backup of a workload, restore it from the backup, and verify the restoration.
+
+You can also clean up the OADP Operator, backup storage, and AWS resources when they are no longer needed.
 
 #### 5.5.5.1. Example: Performing a backup with OADP and OpenShift Container Platform
 
@@ -2638,7 +2884,11 @@ You create a default `Secret` and then you install the Data Protection Applicati
 
 #### 5.6.1.1. AWS S3 compatible backup storage providers
 
-OADP works with many S3-compatible object storage providers. Several object storage providers are certified and tested with every release of OADP. Various S3 providers are known to work with OADP but are not specifically tested and certified. These providers will be supported on a best-effort basis. Additionally, there are a few S3 object storage providers with known issues and limitations that are listed in this documentation.
+OADP works with many S3-compatible object storage providers. Several object storage providers are certified and tested with every release of OADP.
+
+Various S3 providers are known to work with OADP but are not specifically tested and certified. These providers will be supported on a best-effort basis.
+
+Additionally, there are a few S3 object storage providers with known issues and limitations that are listed in this documentation.
 
 Note
 
@@ -2748,11 +2998,17 @@ Choose the stable-1.y update channel to install OADP 1.y and to continue receivi
 
 When must you switch update channels?
 
-If you have OADP 1.y installed, and you want to receive patches only for that y-stream, you must switch from the stable update channel to the stable-1.y update channel. You will then receive all z-stream patches for version 1.y.z.
+If you have OADP 1.y installed, and you want to receive patches only for that y-stream, you must switch from the stable update channel to the stable-1.y update channel.
 
-If you have OADP 1.0 installed, want to upgrade to OADP 1.1, and then receive patches only for OADP 1.1, you must switch from the stable-1.0 update channel to the stable-1.1 update channel. You will then receive all z-stream patches for version 1.1.z.
+You will then receive all z-stream patches for version 1.y.z.
 
-If you have OADP 1.y installed, with y greater than 0, and want to switch to OADP 1.0, you must uninstall your OADP Operator and then reinstall it using the stable-1.0 update channel. You will then receive all z-stream patches for version 1.0.z.
+If you have OADP 1.0 installed, want to upgrade to OADP 1.1, and then receive patches only for OADP 1.1, you must switch from the stable-1.0 update channel to the stable-1.1 update channel.
+
+You will then receive all z-stream patches for version 1.1.z.
+
+If you have OADP 1.y installed, with y greater than 0, and want to switch to OADP 1.0, you must uninstall your OADP Operator and then reinstall it using the stable-1.0 update channel.
+
+You will then receive all z-stream patches for version 1.0.z.
 
 Note
 
@@ -2760,15 +3016,21 @@ You cannot switch from OADP 1.y to OADP 1.0 by switching update channels. You mu
 
 #### 5.6.1.4. Installation of OADP on multiple namespaces
 
-You can install OpenShift API for Data Protection into multiple namespaces on the same cluster so that multiple project owners can manage their own OADP instance. This use case has been validated with File System Backup (FSB) and Container Storage Interface (CSI).
+You can install OpenShift API for Data Protection into multiple namespaces on the same cluster so that multiple project owners can manage their own OADP instance.
+
+This use case has been validated with File System Backup (FSB) and Container Storage Interface (CSI).
 
 You install each instance of OADP as specified by the per-platform procedures contained in this document with the following additional requirements:
 
 All deployments of OADP on the same cluster must be the same version, for example, 1.4.0. Installing different versions of OADP on the same cluster is not supported.
 
-Each individual deployment of OADP must have a unique set of credentials and at least one `BackupStorageLocation` configuration. You can also use multiple `BackupStorageLocation` configurations within the same namespace.
+Each individual deployment of OADP must have a unique set of credentials and at least one `BackupStorageLocation` configuration.
 
-By default, each OADP deployment has cluster-level access across namespaces. OpenShift Container Platform administrators need to carefully review potential impacts, such as not backing up and restoring to and from the same namespace concurrently.
+You can also use multiple `BackupStorageLocation` configurations within the same namespace.
+
+By default, each OADP deployment has cluster-level access across namespaces.
+
+OpenShift Container Platform administrators need to carefully review potential impacts, such as not backing up and restoring to and from the same namespace concurrently.
 
 #### 5.6.1.5. OADP support for backup data immutability
 
@@ -2776,7 +3038,9 @@ Starting with OADP 1.4, you can store OADP backups in an AWS S3 bucket with enab
 
 See the following list for specific cloud provider limitations:
 
-AWS S3 service supports backups because an S3 object lock applies only to versioned buckets. You can still update the object data for the new version. However, when backups are deleted, old versions of the objects are not deleted.
+AWS S3 service supports backups because an S3 object lock applies only to versioned buckets. You can still update the object data for the new version.
+
+However, when backups are deleted, old versions of the objects are not deleted.
 
 OADP backups are not supported and might not work as expected when you enable immutability on Azure Storage Blob.
 
@@ -2800,7 +3064,9 @@ Cluster service version
 
 #### 5.6.1.6. Velero CPU and memory requirements based on collected data
 
-The following recommendations are based on observations of performance made in the scale and performance lab. The backup and restore resources can be impacted by the type of plugin, the amount of resources required by that backup or restore, and the respective data contained in the persistent volumes (PVs) related to those resources.
+The following recommendations are based on observations of performance made in the scale and performance lab.
+
+The backup and restore resources can be impacted by the type of plugin, the amount of resources required by that backup or restore, and the respective data contained in the persistent volumes (PVs) related to those resources.
 
 #### 5.6.1.6.1. CPU and memory requirement for configurations
 
@@ -2814,7 +3080,11 @@ Average usage - use these settings for most usage situations.
 
 Large usage - use these settings for large usage situations, such as a large PV (500GB Usage), multiple namespaces (100+), or many pods within a single namespace (2000 pods+), and for optimal performance for backup and restore involving large datasets.
 
-Restic resource usage corresponds to the amount of data, and type of data. For example, many small files or large amounts of data can cause Restic to use large amounts of resources. The Velero documentation references 500m as a supplied default, for most of our testing we found a 200m request suitable with 1000m limit. As cited in the Velero documentation, exact CPU and memory usage is dependent on the scale of files and directories, in addition to environmental limitations.
+Restic resource usage corresponds to the amount of data, and type of data. For example, many small files or large amounts of data can cause Restic to use large amounts of resources.
+
+The Velero documentation references 500m as a supplied default, for most of our testing we found a 200m request suitable with 1000m limit.
+
+As cited in the Velero documentation, exact CPU and memory usage is dependent on the scale of files and directories, in addition to environmental limitations.
 
 Increasing the CPU has a significant impact on improving backup and restore times.
 
@@ -2832,11 +3102,15 @@ Important
 
 You can tune your OpenShift Container Platform environment based on your performance analysis and preference. Use CPU limits in the workloads when you use Kopia for file system backups.
 
-If you do not use CPU limits on the pods, the pods can use excess CPU when it is available. If you specify CPU limits, the pods might be throttled if they exceed their limits. Therefore, the use of CPU limits on the pods is considered an anti-pattern.
+If you do not use CPU limits on the pods, the pods can use excess CPU when it is available. If you specify CPU limits, the pods might be throttled if they exceed their limits.
+
+Therefore, the use of CPU limits on the pods is considered an anti-pattern.
 
 Ensure that you are accurately specifying CPU requests so that pods can take advantage of excess CPU. Resource allocation is guaranteed based on CPU requests rather than CPU limits.
 
-Testing showed that running Kopia with 20 cores and 32 Gi memory supported backup and restore operations of over 100 GB of data, multiple namespaces, or over 2000 pods in a single namespace. Testing detected no CPU limiting or memory saturation with these resource specifications.
+Testing showed that running Kopia with 20 cores and 32 Gi memory supported backup and restore operations of over 100 GB of data, multiple namespaces, or over 2000 pods in a single namespace.
+
+Testing detected no CPU limiting or memory saturation with these resource specifications.
 
 In some environments, you might need to adjust Ceph MDS pod resources to avoid pod restarts, which occur when default settings cause resource saturation.
 
@@ -2870,7 +3144,9 @@ Click Ecosystem → Installed Operators to verify the installation.
 
 #### 5.6.2.2. OADP-Velero-OpenShift Container Platform version relationship
 
-Review the version relationship between OADP, Velero, and OpenShift Container Platform to decide compatible version combinations. This helps you select the appropriate OADP version for your cluster environment.
+Review the version relationship between OADP, Velero, and OpenShift Container Platform to decide compatible version combinations.
+
+This helps you select the appropriate OADP version for your cluster environment.
 
 | OADP version | Velero version | OpenShift Container Platform version |
 | --- | --- | --- |
@@ -2896,25 +3172,35 @@ Starting from OADP 1.0.4, all OADP 1.0. z versions can only be used as a depende
 
 You configure AWS for Velero, create a default `Secret`, and then install the Data Protection Application. For more details, see Installing the OADP Operator.
 
-To install the OADP Operator in a restricted network environment, you must first disable the default software catalog sources and mirror the Operator catalog. See Using Operator Lifecycle Manager in disconnected environments for details.
+To install the OADP Operator in a restricted network environment, you must first disable the default software catalog sources and mirror the Operator catalog.
+
+See Using Operator Lifecycle Manager in disconnected environments for details.
 
 #### 5.7.1.1. About Amazon Simple Storage Service, Identity and Access Management, and GovCloud
 
-Review Amazon Simple Storage Service (S3), Identity and Access Management (IAM), and AWS GovCloud requirements to configure backup storage with appropriate security controls. This helps you meet federal data security requirements and use correct endpoints.
+Review Amazon Simple Storage Service (S3), Identity and Access Management (IAM), and AWS GovCloud requirements to configure backup storage with appropriate security controls.
+
+This helps you meet federal data security requirements and use correct endpoints.
 
 AWS S3 is a storage solution of Amazon for the internet. As an authorized user, you can use this service to store and retrieve any amount of data whenever you want, from anywhere on the web.
 
 You securely control access to Amazon S3 and other Amazon services by using the AWS Identity and Access Management (IAM) web service.
 
-You can use IAM to manage permissions that control which AWS resources users can access. You use IAM to both authenticate, or verify that a user is who they claim to be, and to authorize, or grant permissions to use resources.
+You can use IAM to manage permissions that control which AWS resources users can access.
 
-AWS GovCloud (US) is an Amazon storage solution developed to meet the stringent and specific data security requirements of the United States Federal Government. AWS GovCloud (US) works the same as Amazon S3 except for the following:
+You use IAM to both authenticate, or verify that a user is who they claim to be, and to authorize, or grant permissions to use resources.
+
+AWS GovCloud (US) is an Amazon storage solution developed to meet the stringent and specific data security requirements of the United States Federal Government.
+
+AWS GovCloud (US) works the same as Amazon S3 except for the following:
 
 You cannot copy the contents of an Amazon S3 bucket in the AWS GovCloud (US) regions directly to or from another AWS region.
 
 If you use Amazon S3 policies, use the AWS GovCloud (US) Amazon Resource Name (ARN) identifier to unambiguously specify a resource across all of AWS, such as in IAM policies, Amazon S3 bucket names, and API calls.
 
-In AWS GovCloud (US) regions, ARNs have an identifier that is different from the one in other standard AWS regions, `arn:aws-us-gov`. If you need to specify the US-West or US-East region, use one the following ARNs:
+In AWS GovCloud (US) regions, ARNs have an identifier that is different from the one in other standard AWS regions, `arn:aws-us-gov`.
+
+If you need to specify the US-West or US-East region, use one the following ARNs:
 
 For US-West, use `us-gov-west-1`.
 
@@ -2922,13 +3208,19 @@ For US-East, use `us-gov-east-1`.
 
 For all other standard regions, ARNs begin with: `arn:aws`.
 
-In AWS GovCloud (US) regions, use the endpoints listed in the AWS GovCloud (US-East) and AWS GovCloud (US-West) rows of the "Amazon S3 endpoints" table on Amazon Simple Storage Service endpoints and quotas. If you are processing export-controlled data, use one of the SSL/TLS endpoints. If you have FIPS requirements, use a FIPS 140-2 endpoint such as https://s3-fips.us-gov-west-1.amazonaws.com or https://s3-fips.us-gov-east-1.amazonaws.com.
+In AWS GovCloud (US) regions, use the endpoints listed in the AWS GovCloud (US-East) and AWS GovCloud (US-West) rows of the "Amazon S3 endpoints" table on Amazon Simple Storage Service endpoints and quotas.
+
+If you are processing export-controlled data, use one of the SSL/TLS endpoints.
+
+If you have FIPS requirements, use a FIPS 140-2 endpoint such as https://s3-fips.us-gov-west-1.amazonaws.com or https://s3-fips.us-gov-east-1.amazonaws.com.
 
 To find the other AWS-imposed restrictions, see How Amazon Simple Storage Service Differs for AWS GovCloud (US).
 
 #### 5.7.1.2. Configuring Amazon Web Services
 
-Configure Amazon Web Services (AWS) S3 storage and Identity and Access Management (IAM) credentials for backup storage with OADP. This provides the necessary permissions and storage infrastructure for data protection operations.
+Configure Amazon Web Services (AWS) S3 storage and Identity and Access Management (IAM) credentials for backup storage with OADP.
+
+This provides the necessary permissions and storage infrastructure for data protection operations.
 
 Prerequisites
 
@@ -3048,7 +3340,9 @@ You use the `credentials-velero` file to create a `Secret` object for AWS before
 
 #### 5.7.1.3. About backup and snapshot locations and their secrets
 
-Review backup location, snapshot location, and secret configuration requirements for the `DataProtectionApplication` custom resource (CR). This helps you understand storage options and credential management for data protection operations.
+Review backup location, snapshot location, and secret configuration requirements for the `DataProtectionApplication` custom resource (CR).
+
+This helps you understand storage options and credential management for data protection operations.
 
 #### 5.7.1.3.1. Backup locations
 
@@ -3182,11 +3476,15 @@ spec:
 
 #### 5.7.1.3.6. Creating an OADP SSE-C encryption key for additional data security
 
-Configure server-side encryption with customer-provided keys (SSE-C) to add an additional layer of encryption for backup data stored in Amazon Web Services (AWS) S3. This protects backup data if AWS credentials become exposed.
+Configure server-side encryption with customer-provided keys (SSE-C) to add an additional layer of encryption for backup data stored in Amazon Web Services (AWS) S3.
+
+This protects backup data if AWS credentials become exposed.
 
 Amazon Web Services (AWS) S3 applies server-side encryption with AWS S3 managed keys (SSE-S3) as the base level of encryption for every bucket in Amazon S3.
 
-OpenShift API for Data Protection (OADP) encrypts data by using SSL/TLS, HTTPS, and the `velero-repo-credentials` secret when transferring the data from a cluster to storage. To protect backup data in case of lost or stolen AWS credentials, apply an additional layer of encryption.
+OpenShift API for Data Protection (OADP) encrypts data by using SSL/TLS, HTTPS, and the `velero-repo-credentials` secret when transferring the data from a cluster to storage.
+
+To protect backup data in case of lost or stolen AWS credentials, apply an additional layer of encryption.
 
 The velero-plugin-for-aws plugin provides several additional encryption methods. You should review its configuration options and consider implementing additional encryption.
 
@@ -3210,7 +3508,9 @@ Note
 
 The following procedure contains an example of a `spec:backupLocations` block that does not specify credentials. This example would trigger an OADP secret mounting.
 
-If you need the backup location to have credentials with a different name than `cloud-credentials`, you must add a snapshot location, such as the one in the following example, that does not contain a credential name. Because the following example does not contain a credential name, the snapshot location will use `cloud-credentials` as its secret for taking snapshots.
+If you need the backup location to have credentials with a different name than `cloud-credentials`, you must add a snapshot location, such as the one in the following example, that does not contain a credential name.
+
+Because the following example does not contain a credential name, the snapshot location will use `cloud-credentials` as its secret for taking snapshots.
 
 ```yaml
 snapshotLocations:
@@ -3269,7 +3569,9 @@ Warning
 
 You must restart the Velero pod to remount the secret credentials properly on an existing installation.
 
-The installation is complete, and you can back up and restore OpenShift Container Platform resources. The data saved in AWS S3 storage is encrypted with the new key, and you cannot download it from the AWS S3 console or API without the additional encryption key.
+The installation is complete, and you can back up and restore OpenShift Container Platform resources.
+
+The data saved in AWS S3 storage is encrypted with the new key, and you cannot download it from the AWS S3 console or API without the additional encryption key.
 
 Verification
 
@@ -3351,7 +3653,9 @@ If the backup and snapshot locations use different credentials, you must create 
 
 Note
 
-If you do not want to specify backup or snapshot locations during the installation, you can create a default `Secret` with an empty `credentials-velero` file. If there is no default `Secret`, the installation will fail.
+If you do not want to specify backup or snapshot locations during the installation, you can create a default `Secret` with an empty `credentials-velero` file.
+
+If there is no default `Secret`, the installation will fail.
 
 Procedure
 
@@ -3431,7 +3735,13 @@ Set this value to `true` if you want to enable `nodeAgent` and perform File Syst
 
 `uploaderType`
 
-Specifies the uploader type. Enter `kopia` or `restic` as your uploader. You cannot change the selection after the installation. For the Built-in DataMover you must use Kopia. The `nodeAgent` deploys a daemon set, which means that the `nodeAgent` pods run on each working node. You can configure File System Backup by adding `spec.defaultVolumesToFsBackup: true` to the `Backup` CR.
+Specifies the uploader type. Enter `kopia` or `restic` as your uploader.
+
+You cannot change the selection after the installation. For the Built-in DataMover you must use Kopia.
+
+The `nodeAgent` deploys a daemon set, which means that the `nodeAgent` pods run on each working node.
+
+You can configure File System Backup by adding `spec.defaultVolumesToFsBackup: true` to the `Backup` CR.
 
 `nodeSelector`
 
@@ -3455,7 +3765,9 @@ Specifies the URL of the object store that you are using to store backups. Not r
 
 `name`
 
-Specifies the name of the `Secret` object that you created. If you do not specify this value, the default name, `cloud-credentials`, is used. If you specify a custom name, the custom name is used for the backup location.
+Specifies the name of the `Secret` object that you created. If you do not specify this value, the default name, `cloud-credentials`, is used.
+
+If you specify a custom name, the custom name is used for the backup location.
 
 `snapshotLocations`
 
@@ -3467,7 +3779,11 @@ Specifies that the snapshot location must be in the same region as the PVs.
 
 `name`
 
-Specifies the name of the `Secret` object that you created. If you do not specify this value, the default name, `cloud-credentials`, is used. If you specify a custom name, the custom name is used for the snapshot location. If your backup and snapshot locations use different credentials, create separate profiles in the `credentials-velero` file.
+Specifies the name of the `Secret` object that you created. If you do not specify this value, the default name, `cloud-credentials`, is used.
+
+If you specify a custom name, the custom name is used for the snapshot location.
+
+If your backup and snapshot locations use different credentials, create separate profiles in the `credentials-velero` file.
 
 Click Create.
 
@@ -3574,7 +3890,9 @@ Kopia is an option in OADP 1.3 and later releases. You can use Kopia for file sy
 
 Kopia is more resource intensive than Restic, and you might need to adjust the CPU and memory requirements accordingly.
 
-Use the `nodeSelector` field to select which nodes can run the node agent. The `nodeSelector` field is the simplest recommended form of node selection constraint. Any label specified must match the labels on each node.
+Use the `nodeSelector` field to select which nodes can run the node agent. The `nodeSelector` field is the simplest recommended form of node selection constraint.
+
+Any label specified must match the labels on each node.
 
 #### 5.7.1.4.2. Enabling self-signed CA certificates
 
@@ -3617,7 +3935,9 @@ Specifies the Base64-encoded CA certificate string.
 
 `insecureSkipTLSVerify`
 
-Specifies the `insecureSkipTLSVerify` configuration. The configuration can be set to either `"true"` or `"false"`. If set to `"true"`, SSL/TLS security is disabled. If set to `"false"`, SSL/TLS security is enabled.
+Specifies the `insecureSkipTLSVerify` configuration. The configuration can be set to either `"true"` or `"false"`.
+
+If set to `"true"`, SSL/TLS security is disabled. If set to `"false"`, SSL/TLS security is enabled.
 
 #### 5.7.1.4.3. Using CA certificates with the velero command aliased for Velero deployment
 
@@ -3723,7 +4043,11 @@ configuration:
 
 #### 5.7.1.5. Configuring the backup storage location with a MD5 checksum algorithm
 
-You can configure the Backup Storage Location (BSL) in the Data Protection Application (DPA) to use a MD5 checksum algorithm for both Amazon Simple Storage Service (Amazon S3) and S3-compatible storage providers. The checksum algorithm calculates the checksum for uploading and downloading objects to Amazon S3. You can use one of the following options to set the `checksumAlgorithm` field in the `spec.backupLocations.velero.config.checksumAlgorithm` section of the DPA.
+You can configure the Backup Storage Location (BSL) in the Data Protection Application (DPA) to use a MD5 checksum algorithm for both Amazon Simple Storage Service (Amazon S3) and S3-compatible storage providers.
+
+The checksum algorithm calculates the checksum for uploading and downloading objects to Amazon S3.
+
+You can use one of the following options to set the `checksumAlgorithm` field in the `spec.backupLocations.velero.config.checksumAlgorithm` section of the DPA.
 
 `CRC32`
 
@@ -3792,9 +4116,13 @@ The empty value is only added for BSLs that are created using the DPA. This valu
 
 #### 5.7.1.6. Configuring the DPA with client burst and QPS settings
 
-The burst setting determines how many requests can be sent to the `velero` server before the limit is applied. After the burst limit is reached, the queries per second (QPS) setting determines how many additional requests can be sent per second.
+The burst setting determines how many requests can be sent to the `velero` server before the limit is applied.
 
-You can set the burst and QPS values of the `velero` server by configuring the Data Protection Application (DPA) with the burst and QPS values. You can use the `dpa.configuration.velero.client-burst` and `dpa.configuration.velero.client-qps` fields of the DPA to set the burst and QPS values.
+After the burst limit is reached, the queries per second (QPS) setting determines how many additional requests can be sent per second.
+
+You can set the burst and QPS values of the `velero` server by configuring the Data Protection Application (DPA) with the burst and QPS values.
+
+You can use the `dpa.configuration.velero.client-burst` and `dpa.configuration.velero.client-qps` fields of the DPA to set the burst and QPS values.
 
 Prerequisites
 
@@ -3924,7 +4252,9 @@ Use the `spec.nodeagent.podConfig.nodeSelector` object for simple node matching.
 
 Use the `loadAffinity.nodeSelector` object without the `podConfig.nodeSelector` object for more complex scenarios.
 
-You can use both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects, but the `loadAffinity` object must be equal or more restrictive as compared to the `podConfig` object. In this scenario, the `podConfig.nodeSelector` labels must be a subset of the labels used in the `loadAffinity.nodeSelector` object.
+You can use both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects, but the `loadAffinity` object must be equal or more restrictive as compared to the `podConfig` object.
+
+In this scenario, the `podConfig.nodeSelector` labels must be a subset of the labels used in the `loadAffinity.nodeSelector` object.
 
 You cannot use the `matchExpressions` and `matchLabels` fields if you have configured both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects in the DPA.
 
@@ -3955,7 +4285,9 @@ You can configure it using one of the following fields of the Data Protection Ap
 
 `globalConfig`: Defines a default concurrency limit for the node agent across all nodes.
 
-`perNodeConfig`: Specifies different concurrency limits for specific nodes based on `nodeSelector` labels. This provides flexibility for environments where certain nodes might have different resource capacities or roles.
+`perNodeConfig`: Specifies different concurrency limits for specific nodes based on `nodeSelector` labels.
+
+This provides flexibility for environments where certain nodes might have different resource capacities or roles.
 
 Prerequisites
 
@@ -3995,7 +4327,11 @@ Specifies the label for per-node concurrency.
 
 `number`
 
-Specifies the per-node concurrent number. You can specify many per-node concurrent numbers, for example, based on the instance type and size. The range of per-node concurrent number is the same as the global concurrent number. If the configuration file contains a per-node concurrent number and a global concurrent number, the per-node concurrent number takes precedence.
+Specifies the per-node concurrent number. You can specify many per-node concurrent numbers, for example, based on the instance type and size.
+
+The range of per-node concurrent number is the same as the global concurrent number.
+
+If the configuration file contains a per-node concurrent number and a global concurrent number, the per-node concurrent number takes precedence.
 
 #### 5.7.1.10. Configuring the node agent as a non-root and non-privileged user
 
@@ -4007,7 +4343,9 @@ Note
 
 Setting `spec.configuration.velero.disableFsBackup` to `true` enhances the node agent security by removing the need for privileged containers and enforcing a read-only root file system.
 
-However, it also disables File System Backup (FSB) with Kopia. If your workloads rely on FSB for backing up volumes that do not support native snapshots, then you should evaluate whether the `disableFsBackup` configuration fits your use case.
+However, it also disables File System Backup (FSB) with Kopia.
+
+If your workloads rely on FSB for backing up volumes that do not support native snapshots, then you should evaluate whether the `disableFsBackup` configuration fits your use case.
 
 Prerequisites
 
@@ -4123,11 +4461,15 @@ Specifies that the node agent is run as a non-root user.
 
 #### 5.7.1.11. Configuring repository maintenance
 
-OADP repository maintenance is a background job, you can configure it independently of the node agent pods. This means that you can schedule the repository maintenance pod on a node where the node agent is or is not running.
+OADP repository maintenance is a background job, you can configure it independently of the node agent pods.
+
+This means that you can schedule the repository maintenance pod on a node where the node agent is or is not running.
 
 You can use the repository maintenance job affinity configurations in the `DataProtectionApplication` (DPA) custom resource (CR) only if you use Kopia as the backup repository.
 
-You have the option to configure the load affinity at the global level affecting all repositories. Or you can configure the load affinity for each repository. You can also use a combination of global and per-repository configuration.
+You have the option to configure the load affinity at the global level affecting all repositories. Or you can configure the load affinity for each repository.
+
+You can also use a combination of global and per-repository configuration.
 
 Prerequisites
 
@@ -4198,7 +4540,9 @@ Specifies the `repositoryMaintenance` object for each repository.
 
 #### 5.7.1.12. Configuring Velero load affinity
 
-With each OADP deployment, there is one Velero pod and its main purpose is to schedule Velero workloads. To schedule the Velero pod, you can use the `velero.podConfig.nodeSelector` and the `velero.loadAffinity` objects in the `DataProtectionApplication` (DPA) custom resource (CR) spec.
+With each OADP deployment, there is one Velero pod and its main purpose is to schedule Velero workloads.
+
+To schedule the Velero pod, you can use the `velero.podConfig.nodeSelector` and the `velero.loadAffinity` objects in the `DataProtectionApplication` (DPA) custom resource (CR) spec.
 
 Use the `podConfig.nodeSelector` object to assign the Velero pod to specific nodes. You can also configure the `velero.loadAffinity` object for pod-level affinity and anti-affinity.
 
@@ -4336,7 +4680,9 @@ Specifies the `csi` default plugin.
 
 #### 5.7.1.15. Disabling the node agent in DataProtectionApplication
 
-If you are not using `Restic`, `Kopia`, or `DataMover` for your backups, you can disable the `nodeAgent` field in the `DataProtectionApplication` custom resource (CR). Before you disable `nodeAgent`, ensure the OADP Operator is idle and not running any backups.
+If you are not using `Restic`, `Kopia`, or `DataMover` for your backups, you can disable the `nodeAgent` field in the `DataProtectionApplication` custom resource (CR).
+
+Before you disable `nodeAgent`, ensure the OADP Operator is idle and not running any backups.
 
 Procedure
 
@@ -4518,7 +4864,9 @@ Create `HMAC` credentials by running the following command.
 $ ibmcloud resource service-key-create test-key Writer --instance-name test-service-instance --parameters {\"HMAC\":true}
 ```
 
-Extract the access key ID and the secret access key from the `HMAC` credentials and save them in the `credentials-velero` file. You can use the `credentials-velero` file to create a `secret` for the backup storage location. Run the following command:
+Extract the access key ID and the secret access key from the `HMAC` credentials and save them in the `credentials-velero` file.
+
+You can use the `credentials-velero` file to create a `secret` for the backup storage location. Run the following command:
 
 ```shell-session
 $ cat > credentials-velero << __EOF__
@@ -4556,7 +4904,9 @@ The `Secret` is referenced in the `spec.backupLocations.credential` block of the
 
 #### 5.8.1.3. Creating secrets for different credentials
 
-Create separate `Secret` objects when your backup and snapshot locations require different credentials. This allows you to configure distinct authentication for each storage location while maintaining secure credential management.
+Create separate `Secret` objects when your backup and snapshot locations require different credentials.
+
+This allows you to configure distinct authentication for each storage location while maintaining secure credential management.
 
 Procedure
 
@@ -4616,7 +4966,9 @@ If the backup and snapshot locations use the same credentials, you must create a
 
 Note
 
-If you do not want to specify backup or snapshot locations during the installation, you can create a default `Secret` with an empty `credentials-velero` file. If there is no default `Secret`, the installation will fail.
+If you do not want to specify backup or snapshot locations during the installation, you can create a default `Secret` with an empty `credentials-velero` file.
+
+If there is no default `Secret`, the installation will fail.
 
 Procedure
 
@@ -4823,9 +5175,13 @@ configuration:
 
 #### 5.8.1.7. Configuring the DPA with client burst and QPS settings
 
-The burst setting determines how many requests can be sent to the `velero` server before the limit is applied. After the burst limit is reached, the queries per second (QPS) setting determines how many additional requests can be sent per second.
+The burst setting determines how many requests can be sent to the `velero` server before the limit is applied.
 
-You can set the burst and QPS values of the `velero` server by configuring the Data Protection Application (DPA) with the burst and QPS values. You can use the `dpa.configuration.velero.client-burst` and `dpa.configuration.velero.client-qps` fields of the DPA to set the burst and QPS values.
+After the burst limit is reached, the queries per second (QPS) setting determines how many additional requests can be sent per second.
+
+You can set the burst and QPS values of the `velero` server by configuring the Data Protection Application (DPA) with the burst and QPS values.
+
+You can use the `dpa.configuration.velero.client-burst` and `dpa.configuration.velero.client-qps` fields of the DPA to set the burst and QPS values.
 
 Prerequisites
 
@@ -4955,7 +5311,9 @@ Use the `spec.nodeagent.podConfig.nodeSelector` object for simple node matching.
 
 Use the `loadAffinity.nodeSelector` object without the `podConfig.nodeSelector` object for more complex scenarios.
 
-You can use both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects, but the `loadAffinity` object must be equal or more restrictive as compared to the `podConfig` object. In this scenario, the `podConfig.nodeSelector` labels must be a subset of the labels used in the `loadAffinity.nodeSelector` object.
+You can use both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects, but the `loadAffinity` object must be equal or more restrictive as compared to the `podConfig` object.
+
+In this scenario, the `podConfig.nodeSelector` labels must be a subset of the labels used in the `loadAffinity.nodeSelector` object.
 
 You cannot use the `matchExpressions` and `matchLabels` fields if you have configured both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects in the DPA.
 
@@ -4986,7 +5344,9 @@ You can configure it using one of the following fields of the Data Protection Ap
 
 `globalConfig`: Defines a default concurrency limit for the node agent across all nodes.
 
-`perNodeConfig`: Specifies different concurrency limits for specific nodes based on `nodeSelector` labels. This provides flexibility for environments where certain nodes might have different resource capacities or roles.
+`perNodeConfig`: Specifies different concurrency limits for specific nodes based on `nodeSelector` labels.
+
+This provides flexibility for environments where certain nodes might have different resource capacities or roles.
 
 Prerequisites
 
@@ -5026,15 +5386,23 @@ Specifies the label for per-node concurrency.
 
 `number`
 
-Specifies the per-node concurrent number. You can specify many per-node concurrent numbers, for example, based on the instance type and size. The range of per-node concurrent number is the same as the global concurrent number. If the configuration file contains a per-node concurrent number and a global concurrent number, the per-node concurrent number takes precedence.
+Specifies the per-node concurrent number. You can specify many per-node concurrent numbers, for example, based on the instance type and size.
+
+The range of per-node concurrent number is the same as the global concurrent number.
+
+If the configuration file contains a per-node concurrent number and a global concurrent number, the per-node concurrent number takes precedence.
 
 #### 5.8.1.11. Configuring repository maintenance
 
-OADP repository maintenance is a background job, you can configure it independently of the node agent pods. This means that you can schedule the repository maintenance pod on a node where the node agent is or is not running.
+OADP repository maintenance is a background job, you can configure it independently of the node agent pods.
+
+This means that you can schedule the repository maintenance pod on a node where the node agent is or is not running.
 
 You can use the repository maintenance job affinity configurations in the `DataProtectionApplication` (DPA) custom resource (CR) only if you use Kopia as the backup repository.
 
-You have the option to configure the load affinity at the global level affecting all repositories. Or you can configure the load affinity for each repository. You can also use a combination of global and per-repository configuration.
+You have the option to configure the load affinity at the global level affecting all repositories. Or you can configure the load affinity for each repository.
+
+You can also use a combination of global and per-repository configuration.
 
 Prerequisites
 
@@ -5105,7 +5473,9 @@ Specifies the `repositoryMaintenance` object for each repository.
 
 #### 5.8.1.12. Configuring Velero load affinity
 
-With each OADP deployment, there is one Velero pod and its main purpose is to schedule Velero workloads. To schedule the Velero pod, you can use the `velero.podConfig.nodeSelector` and the `velero.loadAffinity` objects in the `DataProtectionApplication` (DPA) custom resource (CR) spec.
+With each OADP deployment, there is one Velero pod and its main purpose is to schedule Velero workloads.
+
+To schedule the Velero pod, you can use the `velero.podConfig.nodeSelector` and the `velero.loadAffinity` objects in the `DataProtectionApplication` (DPA) custom resource (CR) spec.
 
 Use the `podConfig.nodeSelector` object to assign the Velero pod to specific nodes. You can also configure the `velero.loadAffinity` object for pod-level affinity and anti-affinity.
 
@@ -5215,7 +5585,9 @@ Specifies the value for `imagePullPolicy`. In this example, the `imagePullPolicy
 
 #### 5.8.1.14. Configuring the DPA with more than one BSL
 
-Configure the `DataProtectionApplication` (DPA) custom resource (CR) with multiple `BackupStorageLocation` (BSL) resources to store backups across different locations using provider-specific credentials. This provides backup distribution and location-specific restore capabilities.
+Configure the `DataProtectionApplication` (DPA) custom resource (CR) with multiple `BackupStorageLocation` (BSL) resources to store backups across different locations using provider-specific credentials.
+
+This provides backup distribution and location-specific restore capabilities.
 
 For example, you have configured the following two BSLs:
 
@@ -5223,7 +5595,9 @@ Configured one BSL in the DPA and set it as the default BSL.
 
 Created another BSL independently by using the `BackupStorageLocation` CR.
 
-As you have already set the BSL created through the DPA as the default, you cannot set the independently created BSL again as the default. This means, at any given time, you can set only one BSL as the default BSL.
+As you have already set the BSL created through the DPA as the default, you cannot set the independently created BSL again as the default.
+
+This means, at any given time, you can set only one BSL as the default BSL.
 
 Prerequisites
 
@@ -5335,7 +5709,9 @@ Specifies the storage location.
 
 #### 5.8.1.15. Disabling the node agent in DataProtectionApplication
 
-If you are not using `Restic`, `Kopia`, or `DataMover` for your backups, you can disable the `nodeAgent` field in the `DataProtectionApplication` custom resource (CR). Before you disable `nodeAgent`, ensure the OADP Operator is idle and not running any backups.
+If you are not using `Restic`, `Kopia`, or `DataMover` for your backups, you can disable the `nodeAgent` field in the `DataProtectionApplication` custom resource (CR).
+
+Before you disable `nodeAgent`, ensure the OADP Operator is idle and not running any backups.
 
 Procedure
 
@@ -5377,7 +5753,9 @@ You can set up a job to enable and disable the `nodeAgent` field in the `DataPro
 
 #### 5.9.1. Configuring the OpenShift API for Data Protection with Microsoft Azure
 
-Configure the OpenShift API for Data Protection (OADP) with Microsoft Azure to back up and restore cluster resources by using Azure storage. This provides data protection capabilities for your OpenShift Container Platform clusters.
+Configure the OpenShift API for Data Protection (OADP) with Microsoft Azure to back up and restore cluster resources by using Azure storage.
+
+This provides data protection capabilities for your OpenShift Container Platform clusters.
 
 The OADP Operator installs Velero 1.16.
 
@@ -5387,7 +5765,9 @@ Starting from OADP 1.0.4, all OADP 1.0. z versions can only be used as a depende
 
 You configure Azure for Velero, create a default `Secret`, and then install the Data Protection Application. For more details, see Installing the OADP Operator.
 
-To install the OADP Operator in a restricted network environment, you must first disable the default software catalog sources and mirror the Operator catalog. See Using Operator Lifecycle Manager in disconnected environments for details.
+To install the OADP Operator in a restricted network environment, you must first disable the default software catalog sources and mirror the Operator catalog.
+
+See Using Operator Lifecycle Manager in disconnected environments for details.
 
 #### 5.9.1.1. Configuring Microsoft Azure
 
@@ -5397,7 +5777,11 @@ Prerequisites
 
 You must have the Azure CLI installed.
 
-Tools that use Azure services should always have restricted permissions to make sure that Azure resources are safe. Therefore, instead of having applications sign in as a fully privileged user, Azure offers service principals. An Azure service principal is a name that can be used with applications, hosted services, or automated tools.
+Tools that use Azure services should always have restricted permissions to make sure that Azure resources are safe.
+
+Therefore, instead of having applications sign in as a fully privileged user, Azure offers service principals.
+
+An Azure service principal is a name that can be used with applications, hosted services, or automated tools.
 
 This identity is used for access to resources.
 
@@ -5502,7 +5886,9 @@ You use the `credentials-velero` file to add Azure as a replication repository.
 
 #### 5.9.1.2. About backup and snapshot locations and their secrets
 
-Review backup location, snapshot location, and secret configuration requirements for the `DataProtectionApplication` custom resource (CR). This helps you understand storage options and credential management for data protection operations.
+Review backup location, snapshot location, and secret configuration requirements for the `DataProtectionApplication` custom resource (CR).
+
+This helps you understand storage options and credential management for data protection operations.
 
 #### 5.9.1.2.1. Backup locations
 
@@ -5558,7 +5944,9 @@ Azure Security Token Service.
 
 #### 5.9.1.4. Using a service principal or a storage account access key
 
-You create a default `Secret` object and reference it in the backup storage location custom resource. The credentials file for the `Secret` object can contain information about the Azure service principal or a storage account access key.
+You create a default `Secret` object and reference it in the backup storage location custom resource.
+
+The credentials file for the `Secret` object can contain information about the Azure service principal or a storage account access key.
 
 The default name of the `Secret` is `cloud-credentials-azure`.
 
@@ -5647,9 +6035,13 @@ Specifies the backup location `Secret` with custom name.
 
 #### 5.9.1.5. Using OADP with Azure Security Token Service authentication
 
-You can use Microsoft Entra Workload ID to access Azure storage for OADP backup and restore operations. This approach uses the signed Kubernetes service account tokens of the OpenShift cluster. These token are automatically rotated every hour and exchanged with the Azure Active Directory (AD) access tokens, eliminating the need for long-term client secrets.
+You can use Microsoft Entra Workload ID to access Azure storage for OADP backup and restore operations. This approach uses the signed Kubernetes service account tokens of the OpenShift cluster.
 
-To use the Azure Security Token Service (STS) configuration, you need the `credentialsMode` field set to `Manual` during cluster installation. This approach uses the Cloud Credential Operator (`ccoctl`) to set up the workload identity infrastructure, including the OpenID Connect (OIDC) provider, issuer configuration, and user-assigned managed identities.
+These token are automatically rotated every hour and exchanged with the Azure Active Directory (AD) access tokens, eliminating the need for long-term client secrets.
+
+To use the Azure Security Token Service (STS) configuration, you need the `credentialsMode` field set to `Manual` during cluster installation.
+
+This approach uses the Cloud Credential Operator (`ccoctl`) to set up the workload identity infrastructure, including the OpenID Connect (OIDC) provider, issuer configuration, and user-assigned managed identities.
 
 Note
 
@@ -5667,11 +6059,15 @@ You have an Azure subscription with appropriate permissions.
 
 Note
 
-If your OpenShift cluster was not originally installed with Microsoft Entra Workload ID, you can enable short-term credentials after installation. This post-installation configuration is supported specifically for Azure clusters.
+If your OpenShift cluster was not originally installed with Microsoft Entra Workload ID, you can enable short-term credentials after installation.
+
+This post-installation configuration is supported specifically for Azure clusters.
 
 Procedure
 
-If your cluster was installed with long-term credentials, you can switch to Microsoft Entra Workload ID authentication after installation. For more details, see Enabling Microsoft Entra Workload ID on an existing cluster.
+If your cluster was installed with long-term credentials, you can switch to Microsoft Entra Workload ID authentication after installation.
+
+For more details, see Enabling Microsoft Entra Workload ID on an existing cluster.
 
 Important
 
@@ -5930,7 +6326,9 @@ Kopia is an option in OADP 1.3 and later releases. You can use Kopia for file sy
 
 Kopia is more resource intensive than Restic, and you might need to adjust the CPU and memory requirements accordingly.
 
-Use the `nodeSelector` field to select which nodes can run the node agent. The `nodeSelector` field is the simplest recommended form of node selection constraint. Any label specified must match the labels on each node.
+Use the `nodeSelector` field to select which nodes can run the node agent. The `nodeSelector` field is the simplest recommended form of node selection constraint.
+
+Any label specified must match the labels on each node.
 
 #### 5.9.1.7. Enabling self-signed CA certificates
 
@@ -5973,7 +6371,9 @@ Specifies the Base64-encoded CA certificate string.
 
 `insecureSkipTLSVerify`
 
-Specifies the `insecureSkipTLSVerify` configuration. The configuration can be set to either `"true"` or `"false"`. If set to `"true"`, SSL/TLS security is disabled. If set to `"false"`, SSL/TLS security is enabled.
+Specifies the `insecureSkipTLSVerify` configuration. The configuration can be set to either `"true"` or `"false"`.
+
+If set to `"true"`, SSL/TLS security is disabled. If set to `"false"`, SSL/TLS security is enabled.
 
 #### 5.9.1.8. Using CA certificates with the velero command aliased for Velero deployment
 
@@ -6062,7 +6462,9 @@ If the backup and snapshot locations use different credentials, you must create 
 
 Note
 
-If you do not want to specify backup or snapshot locations during the installation, you can create a default `Secret` with an empty `credentials-velero` file. If there is no default `Secret`, the installation will fail.
+If you do not want to specify backup or snapshot locations during the installation, you can create a default `Secret` with an empty `credentials-velero` file.
+
+If there is no default `Secret`, the installation will fail.
 
 Procedure
 
@@ -6141,7 +6543,13 @@ Set this value to `true` if you want to enable `nodeAgent` and perform File Syst
 
 `uploaderType`
 
-Specifies the uploader type. Enter `kopia` or `restic` as your uploader. You cannot change the selection after the installation. For the Built-in DataMover you must use Kopia. The `nodeAgent` deploys a daemon set, which means that the `nodeAgent` pods run on each working node. You can configure File System Backup by adding `spec.defaultVolumesToFsBackup: true` to the `Backup` CR.
+Specifies the uploader type. Enter `kopia` or `restic` as your uploader.
+
+You cannot change the selection after the installation. For the Built-in DataMover you must use Kopia.
+
+The `nodeAgent` deploys a daemon set, which means that the `nodeAgent` pods run on each working node.
+
+You can configure File System Backup by adding `spec.defaultVolumesToFsBackup: true` to the `Backup` CR.
 
 `nodeSelector`
 
@@ -6177,7 +6585,9 @@ Specifies the snapshot location. You do not need to specify a snapshot location 
 
 `name`
 
-Specifies the name of the `Secret` object that you created. If you do not specify this value, the default name, `cloud-credentials-azure`, is used. If you specify a custom name, the custom name is used for the backup location.
+Specifies the name of the `Secret` object that you created. If you do not specify this value, the default name, `cloud-credentials-azure`, is used.
+
+If you specify a custom name, the custom name is used for the backup location.
 
 Click Create.
 
@@ -6238,9 +6648,13 @@ dpa-sample-1   Available   1s               3d16h   true
 
 #### 5.9.1.10. Configuring the DPA with client burst and QPS settings
 
-The burst setting determines how many requests can be sent to the `velero` server before the limit is applied. After the burst limit is reached, the queries per second (QPS) setting determines how many additional requests can be sent per second.
+The burst setting determines how many requests can be sent to the `velero` server before the limit is applied.
 
-You can set the burst and QPS values of the `velero` server by configuring the Data Protection Application (DPA) with the burst and QPS values. You can use the `dpa.configuration.velero.client-burst` and `dpa.configuration.velero.client-qps` fields of the DPA to set the burst and QPS values.
+After the burst limit is reached, the queries per second (QPS) setting determines how many additional requests can be sent per second.
+
+You can set the burst and QPS values of the `velero` server by configuring the Data Protection Application (DPA) with the burst and QPS values.
+
+You can use the `dpa.configuration.velero.client-burst` and `dpa.configuration.velero.client-qps` fields of the DPA to set the burst and QPS values.
 
 Prerequisites
 
@@ -6407,7 +6821,9 @@ Use the `spec.nodeagent.podConfig.nodeSelector` object for simple node matching.
 
 Use the `loadAffinity.nodeSelector` object without the `podConfig.nodeSelector` object for more complex scenarios.
 
-You can use both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects, but the `loadAffinity` object must be equal or more restrictive as compared to the `podConfig` object. In this scenario, the `podConfig.nodeSelector` labels must be a subset of the labels used in the `loadAffinity.nodeSelector` object.
+You can use both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects, but the `loadAffinity` object must be equal or more restrictive as compared to the `podConfig` object.
+
+In this scenario, the `podConfig.nodeSelector` labels must be a subset of the labels used in the `loadAffinity.nodeSelector` object.
 
 You cannot use the `matchExpressions` and `matchLabels` fields if you have configured both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects in the DPA.
 
@@ -6438,7 +6854,9 @@ You can configure it using one of the following fields of the Data Protection Ap
 
 `globalConfig`: Defines a default concurrency limit for the node agent across all nodes.
 
-`perNodeConfig`: Specifies different concurrency limits for specific nodes based on `nodeSelector` labels. This provides flexibility for environments where certain nodes might have different resource capacities or roles.
+`perNodeConfig`: Specifies different concurrency limits for specific nodes based on `nodeSelector` labels.
+
+This provides flexibility for environments where certain nodes might have different resource capacities or roles.
 
 Prerequisites
 
@@ -6478,7 +6896,11 @@ Specifies the label for per-node concurrency.
 
 `number`
 
-Specifies the per-node concurrent number. You can specify many per-node concurrent numbers, for example, based on the instance type and size. The range of per-node concurrent number is the same as the global concurrent number. If the configuration file contains a per-node concurrent number and a global concurrent number, the per-node concurrent number takes precedence.
+Specifies the per-node concurrent number. You can specify many per-node concurrent numbers, for example, based on the instance type and size.
+
+The range of per-node concurrent number is the same as the global concurrent number.
+
+If the configuration file contains a per-node concurrent number and a global concurrent number, the per-node concurrent number takes precedence.
 
 #### 5.9.1.15. Configuring the node agent as a non-root and non-privileged user
 
@@ -6490,7 +6912,9 @@ Note
 
 Setting `spec.configuration.velero.disableFsBackup` to `true` enhances the node agent security by removing the need for privileged containers and enforcing a read-only root file system.
 
-However, it also disables File System Backup (FSB) with Kopia. If your workloads rely on FSB for backing up volumes that do not support native snapshots, then you should evaluate whether the `disableFsBackup` configuration fits your use case.
+However, it also disables File System Backup (FSB) with Kopia.
+
+If your workloads rely on FSB for backing up volumes that do not support native snapshots, then you should evaluate whether the `disableFsBackup` configuration fits your use case.
 
 Prerequisites
 
@@ -6606,11 +7030,15 @@ Specifies that the node agent is run as a non-root user.
 
 #### 5.9.1.16. Configuring repository maintenance
 
-OADP repository maintenance is a background job, you can configure it independently of the node agent pods. This means that you can schedule the repository maintenance pod on a node where the node agent is or is not running.
+OADP repository maintenance is a background job, you can configure it independently of the node agent pods.
+
+This means that you can schedule the repository maintenance pod on a node where the node agent is or is not running.
 
 You can use the repository maintenance job affinity configurations in the `DataProtectionApplication` (DPA) custom resource (CR) only if you use Kopia as the backup repository.
 
-You have the option to configure the load affinity at the global level affecting all repositories. Or you can configure the load affinity for each repository. You can also use a combination of global and per-repository configuration.
+You have the option to configure the load affinity at the global level affecting all repositories. Or you can configure the load affinity for each repository.
+
+You can also use a combination of global and per-repository configuration.
 
 Prerequisites
 
@@ -6681,7 +7109,9 @@ Specifies the `repositoryMaintenance` object for each repository.
 
 #### 5.9.1.17. Configuring Velero load affinity
 
-With each OADP deployment, there is one Velero pod and its main purpose is to schedule Velero workloads. To schedule the Velero pod, you can use the `velero.podConfig.nodeSelector` and the `velero.loadAffinity` objects in the `DataProtectionApplication` (DPA) custom resource (CR) spec.
+With each OADP deployment, there is one Velero pod and its main purpose is to schedule Velero workloads.
+
+To schedule the Velero pod, you can use the `velero.podConfig.nodeSelector` and the `velero.loadAffinity` objects in the `DataProtectionApplication` (DPA) custom resource (CR) spec.
 
 Use the `podConfig.nodeSelector` object to assign the Velero pod to specific nodes. You can also configure the `velero.loadAffinity` object for pod-level affinity and anti-affinity.
 
@@ -6819,7 +7249,9 @@ Specifies the `csi` default plugin.
 
 #### 5.9.1.18.2. Disabling the node agent in DataProtectionApplication
 
-If you are not using `Restic`, `Kopia`, or `DataMover` for your backups, you can disable the `nodeAgent` field in the `DataProtectionApplication` custom resource (CR). Before you disable `nodeAgent`, ensure the OADP Operator is idle and not running any backups.
+If you are not using `Restic`, `Kopia`, or `DataMover` for your backups, you can disable the `nodeAgent` field in the `DataProtectionApplication` custom resource (CR).
+
+Before you disable `nodeAgent`, ensure the OADP Operator is idle and not running any backups.
 
 Procedure
 
@@ -6877,7 +7309,9 @@ Starting from OADP 1.0.4, all OADP 1.0. z versions can only be used as a depende
 
 You configure Google Cloud for Velero, create a default `Secret`, and then install the Data Protection Application. For more details, see Installing the OADP Operator.
 
-To install the OADP Operator in a restricted network environment, you must first disable the default software catalog sources and mirror the Operator catalog. See Using Operator Lifecycle Manager in disconnected environments for details.
+To install the OADP Operator in a restricted network environment, you must first disable the default software catalog sources and mirror the Operator catalog.
+
+See Using Operator Lifecycle Manager in disconnected environments for details.
 
 #### 5.10.1.1. Configuring Google Cloud
 
@@ -6972,7 +7406,9 @@ You use the `credentials-velero` file to create a `Secret` object for Google Clo
 
 #### 5.10.1.2. About backup and snapshot locations and their secrets
 
-Review backup location, snapshot location, and secret configuration requirements for the `DataProtectionApplication` custom resource (CR). This helps you understand storage options and credential management for data protection operations.
+Review backup location, snapshot location, and secret configuration requirements for the `DataProtectionApplication` custom resource (CR).
+
+This helps you understand storage options and credential management for data protection operations.
 
 #### 5.10.1.2.1. Backup locations
 
@@ -7044,7 +7480,9 @@ The `Secret` is referenced in the `spec.backupLocations.credential` block of the
 
 #### 5.10.1.2.5. Creating secrets for different credentials
 
-Create separate `Secret` objects when your backup and snapshot locations require different credentials. This allows you to configure distinct authentication for each storage location while maintaining secure credential management.
+Create separate `Secret` objects when your backup and snapshot locations require different credentials.
+
+This allows you to configure distinct authentication for each storage location while maintaining secure credential management.
 
 Procedure
 
@@ -7143,7 +7581,9 @@ Kopia is an option in OADP 1.3 and later releases. You can use Kopia for file sy
 
 Kopia is more resource intensive than Restic, and you might need to adjust the CPU and memory requirements accordingly.
 
-Use the `nodeSelector` field to select which nodes can run the node agent. The `nodeSelector` field is the simplest recommended form of node selection constraint. Any label specified must match the labels on each node.
+Use the `nodeSelector` field to select which nodes can run the node agent. The `nodeSelector` field is the simplest recommended form of node selection constraint.
+
+Any label specified must match the labels on each node.
 
 #### 5.10.1.2.7. Enabling self-signed CA certificates
 
@@ -7186,7 +7626,9 @@ Specifies the Base64-encoded CA certificate string.
 
 `insecureSkipTLSVerify`
 
-Specifies the `insecureSkipTLSVerify` configuration. The configuration can be set to either `"true"` or `"false"`. If set to `"true"`, SSL/TLS security is disabled. If set to `"false"`, SSL/TLS security is enabled.
+Specifies the `insecureSkipTLSVerify` configuration. The configuration can be set to either `"true"` or `"false"`.
+
+If set to `"true"`, SSL/TLS security is disabled. If set to `"false"`, SSL/TLS security is enabled.
 
 #### 5.10.1.2.8. Using CA certificates with the velero command aliased for Velero deployment
 
@@ -7255,11 +7697,19 @@ In a future release of OpenShift API for Data Protection (OADP), we plan to moun
 
 #### 5.10.1.3. Google workload identity federation cloud authentication
 
-Applications running outside Google Cloud use service account keys, such as usernames and passwords, to gain access to Google Cloud resources. These service account keys might become a security risk if they are not properly managed.
+Applications running outside Google Cloud use service account keys, such as usernames and passwords, to gain access to Google Cloud resources.
 
-With Google’s workload identity federation, you can use Identity and Access Management (IAM) to offer IAM roles, including the ability to impersonate service accounts, to external identities. This eliminates the maintenance and security risks associated with service account keys.
+These service account keys might become a security risk if they are not properly managed.
 
-Workload identity federation handles encrypting and decrypting certificates, extracting user attributes, and validation. Identity federation externalizes authentication, passing it over to Security Token Services (STS), and reduces the demands on individual developers. Authorization and controlling access to resources remain the responsibility of the application.
+With Google’s workload identity federation, you can use Identity and Access Management (IAM) to offer IAM roles, including the ability to impersonate service accounts, to external identities.
+
+This eliminates the maintenance and security risks associated with service account keys.
+
+Workload identity federation handles encrypting and decrypting certificates, extracting user attributes, and validation.
+
+Identity federation externalizes authentication, passing it over to Security Token Services (STS), and reduces the demands on individual developers.
+
+Authorization and controlling access to resources remain the responsibility of the application.
 
 Note
 
@@ -7267,7 +7717,9 @@ Google workload identity federation is available for OADP 1.3.x and later.
 
 When backing up volumes, OADP on Google Cloud with Google workload identity federation authentication only supports CSI snapshots.
 
-OADP on Google Cloud with Google workload identity federation authentication does not support Volume Snapshot Locations (VSL) backups. VSL backups finish with a `PartiallyFailed` phase when Google Cloud workload identity federation is configured.
+OADP on Google Cloud with Google workload identity federation authentication does not support Volume Snapshot Locations (VSL) backups.
+
+VSL backups finish with a `PartiallyFailed` phase when Google Cloud workload identity federation is configured.
 
 If you do not use Google workload identity federation cloud authentication, continue to Installing the Data Protection Application.
 
@@ -7359,7 +7811,9 @@ If the backup and snapshot locations use different credentials, you must create 
 
 Note
 
-If you do not want to specify backup or snapshot locations during the installation, you can create a default `Secret` with an empty `credentials-velero` file. If there is no default `Secret`, the installation will fail.
+If you do not want to specify backup or snapshot locations during the installation, you can create a default `Secret` with an empty `credentials-velero` file.
+
+If there is no default `Secret`, the installation will fail.
 
 Procedure
 
@@ -7434,7 +7888,13 @@ Set this value to `true` if you want to enable `nodeAgent` and perform File Syst
 
 `uploaderType`
 
-Specifies the uploader type. Enter `kopia` or `restic` as your uploader. You cannot change the selection after the installation. For the Built-in DataMover you must use Kopia. The `nodeAgent` deploys a daemon set, which means that the `nodeAgent` pods run on each working node. You can configure File System Backup by adding `spec.defaultVolumesToFsBackup: true` to the `Backup` CR.
+Specifies the uploader type. Enter `kopia` or `restic` as your uploader.
+
+You cannot change the selection after the installation. For the Built-in DataMover you must use Kopia.
+
+The `nodeAgent` deploys a daemon set, which means that the `nodeAgent` pods run on each working node.
+
+You can configure File System Backup by adding `spec.defaultVolumesToFsBackup: true` to the `Backup` CR.
 
 `nodeSelector`
 
@@ -7466,7 +7926,9 @@ Specifies that the snapshot location must be in the same region as the PVs.
 
 `name`
 
-Specifies the name of the `Secret` object that you created. If you do not specify this value, the default name, `cloud-credentials-gcp`, is used. If you specify a custom name, the custom name is used for the backup location.
+Specifies the name of the `Secret` object that you created. If you do not specify this value, the default name, `cloud-credentials-gcp`, is used.
+
+If you specify a custom name, the custom name is used for the backup location.
 
 `backupImages`
 
@@ -7531,9 +7993,13 @@ dpa-sample-1   Available   1s               3d16h   true
 
 #### 5.10.1.5. Configuring the DPA with client burst and QPS settings
 
-The burst setting determines how many requests can be sent to the `velero` server before the limit is applied. After the burst limit is reached, the queries per second (QPS) setting determines how many additional requests can be sent per second.
+The burst setting determines how many requests can be sent to the `velero` server before the limit is applied.
 
-You can set the burst and QPS values of the `velero` server by configuring the Data Protection Application (DPA) with the burst and QPS values. You can use the `dpa.configuration.velero.client-burst` and `dpa.configuration.velero.client-qps` fields of the DPA to set the burst and QPS values.
+After the burst limit is reached, the queries per second (QPS) setting determines how many additional requests can be sent per second.
+
+You can set the burst and QPS values of the `velero` server by configuring the Data Protection Application (DPA) with the burst and QPS values.
+
+You can use the `dpa.configuration.velero.client-burst` and `dpa.configuration.velero.client-qps` fields of the DPA to set the burst and QPS values.
 
 Prerequisites
 
@@ -7700,7 +8166,9 @@ Use the `spec.nodeagent.podConfig.nodeSelector` object for simple node matching.
 
 Use the `loadAffinity.nodeSelector` object without the `podConfig.nodeSelector` object for more complex scenarios.
 
-You can use both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects, but the `loadAffinity` object must be equal or more restrictive as compared to the `podConfig` object. In this scenario, the `podConfig.nodeSelector` labels must be a subset of the labels used in the `loadAffinity.nodeSelector` object.
+You can use both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects, but the `loadAffinity` object must be equal or more restrictive as compared to the `podConfig` object.
+
+In this scenario, the `podConfig.nodeSelector` labels must be a subset of the labels used in the `loadAffinity.nodeSelector` object.
 
 You cannot use the `matchExpressions` and `matchLabels` fields if you have configured both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects in the DPA.
 
@@ -7731,7 +8199,9 @@ You can configure it using one of the following fields of the Data Protection Ap
 
 `globalConfig`: Defines a default concurrency limit for the node agent across all nodes.
 
-`perNodeConfig`: Specifies different concurrency limits for specific nodes based on `nodeSelector` labels. This provides flexibility for environments where certain nodes might have different resource capacities or roles.
+`perNodeConfig`: Specifies different concurrency limits for specific nodes based on `nodeSelector` labels.
+
+This provides flexibility for environments where certain nodes might have different resource capacities or roles.
 
 Prerequisites
 
@@ -7771,7 +8241,11 @@ Specifies the label for per-node concurrency.
 
 `number`
 
-Specifies the per-node concurrent number. You can specify many per-node concurrent numbers, for example, based on the instance type and size. The range of per-node concurrent number is the same as the global concurrent number. If the configuration file contains a per-node concurrent number and a global concurrent number, the per-node concurrent number takes precedence.
+Specifies the per-node concurrent number. You can specify many per-node concurrent numbers, for example, based on the instance type and size.
+
+The range of per-node concurrent number is the same as the global concurrent number.
+
+If the configuration file contains a per-node concurrent number and a global concurrent number, the per-node concurrent number takes precedence.
 
 #### 5.10.1.10. Configuring the node agent as a non-root and non-privileged user
 
@@ -7783,7 +8257,9 @@ Note
 
 Setting `spec.configuration.velero.disableFsBackup` to `true` enhances the node agent security by removing the need for privileged containers and enforcing a read-only root file system.
 
-However, it also disables File System Backup (FSB) with Kopia. If your workloads rely on FSB for backing up volumes that do not support native snapshots, then you should evaluate whether the `disableFsBackup` configuration fits your use case.
+However, it also disables File System Backup (FSB) with Kopia.
+
+If your workloads rely on FSB for backing up volumes that do not support native snapshots, then you should evaluate whether the `disableFsBackup` configuration fits your use case.
 
 Prerequisites
 
@@ -7899,11 +8375,15 @@ Specifies that the node agent is run as a non-root user.
 
 #### 5.10.1.11. Configuring repository maintenance
 
-OADP repository maintenance is a background job, you can configure it independently of the node agent pods. This means that you can schedule the repository maintenance pod on a node where the node agent is or is not running.
+OADP repository maintenance is a background job, you can configure it independently of the node agent pods.
+
+This means that you can schedule the repository maintenance pod on a node where the node agent is or is not running.
 
 You can use the repository maintenance job affinity configurations in the `DataProtectionApplication` (DPA) custom resource (CR) only if you use Kopia as the backup repository.
 
-You have the option to configure the load affinity at the global level affecting all repositories. Or you can configure the load affinity for each repository. You can also use a combination of global and per-repository configuration.
+You have the option to configure the load affinity at the global level affecting all repositories. Or you can configure the load affinity for each repository.
+
+You can also use a combination of global and per-repository configuration.
 
 Prerequisites
 
@@ -7974,7 +8454,9 @@ Specifies the `repositoryMaintenance` object for each repository.
 
 #### 5.10.1.12. Configuring Velero load affinity
 
-With each OADP deployment, there is one Velero pod and its main purpose is to schedule Velero workloads. To schedule the Velero pod, you can use the `velero.podConfig.nodeSelector` and the `velero.loadAffinity` objects in the `DataProtectionApplication` (DPA) custom resource (CR) spec.
+With each OADP deployment, there is one Velero pod and its main purpose is to schedule Velero workloads.
+
+To schedule the Velero pod, you can use the `velero.podConfig.nodeSelector` and the `velero.loadAffinity` objects in the `DataProtectionApplication` (DPA) custom resource (CR) spec.
 
 Use the `podConfig.nodeSelector` object to assign the Velero pod to specific nodes. You can also configure the `velero.loadAffinity` object for pod-level affinity and anti-affinity.
 
@@ -8112,7 +8594,9 @@ Specifies the `csi` default plugin.
 
 #### 5.10.1.13.2. Disabling the node agent in DataProtectionApplication
 
-If you are not using `Restic`, `Kopia`, or `DataMover` for your backups, you can disable the `nodeAgent` field in the `DataProtectionApplication` custom resource (CR). Before you disable `nodeAgent`, ensure the OADP Operator is idle and not running any backups.
+If you are not using `Restic`, `Kopia`, or `DataMover` for your backups, you can disable the `nodeAgent` field in the `DataProtectionApplication` custom resource (CR).
+
+Before you disable `nodeAgent`, ensure the OADP Operator is idle and not running any backups.
 
 Procedure
 
@@ -8172,7 +8656,9 @@ Starting from OADP 1.0.4, all OADP 1.0. z versions can only be used as a depende
 
 You can create a `Secret` CR for the backup location and install the Data Protection Application. For more details, see Installing the OADP Operator.
 
-To install the OADP Operator in a restricted network environment, you must first disable the default software catalog sources and mirror the Operator catalog. For details, see Using Operator Lifecycle Manager in disconnected environments.
+To install the OADP Operator in a restricted network environment, you must first disable the default software catalog sources and mirror the Operator catalog.
+
+For details, see Using Operator Lifecycle Manager in disconnected environments.
 
 #### 5.11.1.1. Retrieving Multicloud Object Gateway credentials
 
@@ -8180,7 +8666,9 @@ Retrieve the Multicloud Object Gateway (MCG) bucket credentials to create a `Sec
 
 Note
 
-Although the MCG Operator is deprecated, the MCG plugin is still available for OpenShift Data Foundation. To download the plugin, browse to Download Red Hat OpenShift Data Foundation and download the appropriate MCG plugin for your operating system.
+Although the MCG Operator is deprecated, the MCG plugin is still available for OpenShift Data Foundation.
+
+To download the plugin, browse to Download Red Hat OpenShift Data Foundation and download the appropriate MCG plugin for your operating system.
 
 Prerequisites
 
@@ -8208,7 +8696,9 @@ You can use the `credentials-velero` file to create a `Secret` object when you i
 
 #### 5.11.1.2. About backup and snapshot locations and their secrets
 
-Review backup location, snapshot location, and secret configuration requirements for the `DataProtectionApplication` custom resource (CR). This helps you understand storage options and credential management for data protection operations.
+Review backup location, snapshot location, and secret configuration requirements for the `DataProtectionApplication` custom resource (CR).
+
+This helps you understand storage options and credential management for data protection operations.
 
 #### 5.11.1.2.1. Backup locations
 
@@ -8286,7 +8776,9 @@ The `Secret` is referenced in the `spec.backupLocations.credential` block of the
 
 #### 5.11.1.2.5. Creating secrets for different credentials
 
-Create separate `Secret` objects when your backup and snapshot locations require different credentials. This allows you to configure distinct authentication for each storage location while maintaining secure credential management.
+Create separate `Secret` objects when your backup and snapshot locations require different credentials.
+
+This allows you to configure distinct authentication for each storage location while maintaining secure credential management.
 
 Procedure
 
@@ -8388,7 +8880,9 @@ Kopia is an option in OADP 1.3 and later releases. You can use Kopia for file sy
 
 Kopia is more resource intensive than Restic, and you might need to adjust the CPU and memory requirements accordingly.
 
-Use the `nodeSelector` field to select which nodes can run the node agent. The `nodeSelector` field is the simplest recommended form of node selection constraint. Any label specified must match the labels on each node.
+Use the `nodeSelector` field to select which nodes can run the node agent. The `nodeSelector` field is the simplest recommended form of node selection constraint.
+
+Any label specified must match the labels on each node.
 
 #### 5.11.1.2.7. Enabling self-signed CA certificates
 
@@ -8431,7 +8925,9 @@ Specifies the Base64-encoded CA certificate string.
 
 `insecureSkipTLSVerify`
 
-Specifies the `insecureSkipTLSVerify` configuration. The configuration can be set to either `"true"` or `"false"`. If set to `"true"`, SSL/TLS security is disabled. If set to `"false"`, SSL/TLS security is enabled.
+Specifies the `insecureSkipTLSVerify` configuration. The configuration can be set to either `"true"` or `"false"`.
+
+If set to `"true"`, SSL/TLS security is disabled. If set to `"false"`, SSL/TLS security is enabled.
 
 #### 5.11.1.2.8. Using CA certificates with the velero command aliased for Velero deployment
 
@@ -8520,7 +9016,9 @@ If the backup and snapshot locations use different credentials, you must create 
 
 Note
 
-If you do not want to specify backup or snapshot locations during the installation, you can create a default `Secret` with an empty `credentials-velero` file. If there is no default `Secret`, the installation will fail.
+If you do not want to specify backup or snapshot locations during the installation, you can create a default `Secret` with an empty `credentials-velero` file.
+
+If there is no default `Secret`, the installation will fail.
 
 Procedure
 
@@ -8574,7 +9072,9 @@ Specifies the default namespace for OADP which is `openshift-adp`. The namespace
 
 `aws`
 
-Specifies that an object store plugin corresponding to your storage locations is required. For all S3 providers, the required plugin is `aws`. For Azure and Google Cloud object stores, the `azure` or `gcp` plugin is required.
+Specifies that an object store plugin corresponding to your storage locations is required. For all S3 providers, the required plugin is `aws`.
+
+For Azure and Google Cloud object stores, the `azure` or `gcp` plugin is required.
 
 `openshift`
 
@@ -8594,7 +9094,13 @@ Set this value to `true` if you want to enable `nodeAgent` and perform File Syst
 
 `uploaderType`
 
-Specifies the uploader type. Enter `kopia` or `restic` as your uploader. You cannot change the selection after the installation. For the Built-in DataMover you must use Kopia. The `nodeAgent` deploys a daemon set, which means that the `nodeAgent` pods run on each working node. You can configure File System Backup by adding `spec.defaultVolumesToFsBackup: true` to the `Backup` CR.
+Specifies the uploader type. Enter `kopia` or `restic` as your uploader.
+
+You cannot change the selection after the installation. For the Built-in DataMover you must use Kopia.
+
+The `nodeAgent` deploys a daemon set, which means that the `nodeAgent` pods run on each working node.
+
+You can configure File System Backup by adding `spec.defaultVolumesToFsBackup: true` to the `Backup` CR.
 
 `nodeSelector`
 
@@ -8610,7 +9116,9 @@ Specifies the URL of the S3 endpoint.
 
 `name`
 
-Specifies the name of the `Secret` object that you created. If you do not specify this value, the default name, `cloud-credentials`, is used. If you specify a custom name, the custom name is used for the backup location.
+Specifies the name of the `Secret` object that you created. If you do not specify this value, the default name, `cloud-credentials`, is used.
+
+If you specify a custom name, the custom name is used for the backup location.
 
 `bucket`
 
@@ -8679,9 +9187,13 @@ dpa-sample-1   Available   1s               3d16h   true
 
 #### 5.11.1.4. Configuring the DPA with client burst and QPS settings
 
-The burst setting determines how many requests can be sent to the `velero` server before the limit is applied. After the burst limit is reached, the queries per second (QPS) setting determines how many additional requests can be sent per second.
+The burst setting determines how many requests can be sent to the `velero` server before the limit is applied.
 
-You can set the burst and QPS values of the `velero` server by configuring the Data Protection Application (DPA) with the burst and QPS values. You can use the `dpa.configuration.velero.client-burst` and `dpa.configuration.velero.client-qps` fields of the DPA to set the burst and QPS values.
+After the burst limit is reached, the queries per second (QPS) setting determines how many additional requests can be sent per second.
+
+You can set the burst and QPS values of the `velero` server by configuring the Data Protection Application (DPA) with the burst and QPS values.
+
+You can use the `dpa.configuration.velero.client-burst` and `dpa.configuration.velero.client-qps` fields of the DPA to set the burst and QPS values.
 
 Prerequisites
 
@@ -8848,7 +9360,9 @@ Use the `spec.nodeagent.podConfig.nodeSelector` object for simple node matching.
 
 Use the `loadAffinity.nodeSelector` object without the `podConfig.nodeSelector` object for more complex scenarios.
 
-You can use both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects, but the `loadAffinity` object must be equal or more restrictive as compared to the `podConfig` object. In this scenario, the `podConfig.nodeSelector` labels must be a subset of the labels used in the `loadAffinity.nodeSelector` object.
+You can use both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects, but the `loadAffinity` object must be equal or more restrictive as compared to the `podConfig` object.
+
+In this scenario, the `podConfig.nodeSelector` labels must be a subset of the labels used in the `loadAffinity.nodeSelector` object.
 
 You cannot use the `matchExpressions` and `matchLabels` fields if you have configured both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects in the DPA.
 
@@ -8879,7 +9393,9 @@ You can configure it using one of the following fields of the Data Protection Ap
 
 `globalConfig`: Defines a default concurrency limit for the node agent across all nodes.
 
-`perNodeConfig`: Specifies different concurrency limits for specific nodes based on `nodeSelector` labels. This provides flexibility for environments where certain nodes might have different resource capacities or roles.
+`perNodeConfig`: Specifies different concurrency limits for specific nodes based on `nodeSelector` labels.
+
+This provides flexibility for environments where certain nodes might have different resource capacities or roles.
 
 Prerequisites
 
@@ -8919,7 +9435,11 @@ Specifies the label for per-node concurrency.
 
 `number`
 
-Specifies the per-node concurrent number. You can specify many per-node concurrent numbers, for example, based on the instance type and size. The range of per-node concurrent number is the same as the global concurrent number. If the configuration file contains a per-node concurrent number and a global concurrent number, the per-node concurrent number takes precedence.
+Specifies the per-node concurrent number. You can specify many per-node concurrent numbers, for example, based on the instance type and size.
+
+The range of per-node concurrent number is the same as the global concurrent number.
+
+If the configuration file contains a per-node concurrent number and a global concurrent number, the per-node concurrent number takes precedence.
 
 #### 5.11.1.9. Configuring the node agent as a non-root and non-privileged user
 
@@ -8931,7 +9451,9 @@ Note
 
 Setting `spec.configuration.velero.disableFsBackup` to `true` enhances the node agent security by removing the need for privileged containers and enforcing a read-only root file system.
 
-However, it also disables File System Backup (FSB) with Kopia. If your workloads rely on FSB for backing up volumes that do not support native snapshots, then you should evaluate whether the `disableFsBackup` configuration fits your use case.
+However, it also disables File System Backup (FSB) with Kopia.
+
+If your workloads rely on FSB for backing up volumes that do not support native snapshots, then you should evaluate whether the `disableFsBackup` configuration fits your use case.
 
 Prerequisites
 
@@ -9047,11 +9569,15 @@ Specifies that the node agent is run as a non-root user.
 
 #### 5.11.1.10. Configuring repository maintenance
 
-OADP repository maintenance is a background job, you can configure it independently of the node agent pods. This means that you can schedule the repository maintenance pod on a node where the node agent is or is not running.
+OADP repository maintenance is a background job, you can configure it independently of the node agent pods.
+
+This means that you can schedule the repository maintenance pod on a node where the node agent is or is not running.
 
 You can use the repository maintenance job affinity configurations in the `DataProtectionApplication` (DPA) custom resource (CR) only if you use Kopia as the backup repository.
 
-You have the option to configure the load affinity at the global level affecting all repositories. Or you can configure the load affinity for each repository. You can also use a combination of global and per-repository configuration.
+You have the option to configure the load affinity at the global level affecting all repositories. Or you can configure the load affinity for each repository.
+
+You can also use a combination of global and per-repository configuration.
 
 Prerequisites
 
@@ -9122,7 +9648,9 @@ Specifies the `repositoryMaintenance` object for each repository.
 
 #### 5.11.1.11. Configuring Velero load affinity
 
-With each OADP deployment, there is one Velero pod and its main purpose is to schedule Velero workloads. To schedule the Velero pod, you can use the `velero.podConfig.nodeSelector` and the `velero.loadAffinity` objects in the `DataProtectionApplication` (DPA) custom resource (CR) spec.
+With each OADP deployment, there is one Velero pod and its main purpose is to schedule Velero workloads.
+
+To schedule the Velero pod, you can use the `velero.podConfig.nodeSelector` and the `velero.loadAffinity` objects in the `DataProtectionApplication` (DPA) custom resource (CR) spec.
 
 Use the `podConfig.nodeSelector` object to assign the Velero pod to specific nodes. You can also configure the `velero.loadAffinity` object for pod-level affinity and anti-affinity.
 
@@ -9260,7 +9788,9 @@ Specifies the `csi` default plugin.
 
 #### 5.11.1.12.2. Disabling the node agent in DataProtectionApplication
 
-If you are not using `Restic`, `Kopia`, or `DataMover` for your backups, you can disable the `nodeAgent` field in the `DataProtectionApplication` custom resource (CR). Before you disable `nodeAgent`, ensure the OADP Operator is idle and not running any backups.
+If you are not using `Restic`, `Kopia`, or `DataMover` for your backups, you can disable the `nodeAgent` field in the `DataProtectionApplication` custom resource (CR).
+
+Before you disable `nodeAgent`, ensure the OADP Operator is idle and not running any backups.
 
 Procedure
 
@@ -9314,7 +9844,9 @@ Configuring node agents and node labels
 
 #### 5.12.1. Configuring the OpenShift API for Data Protection with OpenShift Data Foundation
 
-Install the OpenShift API for Data Protection (OADP) with OpenShift Data Foundation by installing the OADP Operator and configuring a backup location and a snapshot location. You then install the Data Protection Application.
+Install the OpenShift API for Data Protection (OADP) with OpenShift Data Foundation by installing the OADP Operator and configuring a backup location and a snapshot location.
+
+You then install the Data Protection Application.
 
 Note
 
@@ -9324,11 +9856,15 @@ You can configure Multicloud Object Gateway or any AWS S3-compatible object stor
 
 You can create a `Secret` CR for the backup location and install the Data Protection Application. For more details, see Installing the OADP Operator.
 
-To install the OADP Operator in a restricted network environment, you must first disable the default software catalog sources and mirror the Operator catalog. For details, see Using Operator Lifecycle Manager in disconnected environments.
+To install the OADP Operator in a restricted network environment, you must first disable the default software catalog sources and mirror the Operator catalog.
+
+For details, see Using Operator Lifecycle Manager in disconnected environments.
 
 #### 5.12.1.1. About backup and snapshot locations and their secrets
 
-Review backup location, snapshot location, and secret configuration requirements for the `DataProtectionApplication` custom resource (CR). This helps you understand storage options and credential management for data protection operations.
+Review backup location, snapshot location, and secret configuration requirements for the `DataProtectionApplication` custom resource (CR).
+
+This helps you understand storage options and credential management for data protection operations.
 
 #### 5.12.1.1.1. Backup locations
 
@@ -9374,7 +9910,9 @@ If you do not want to specify backup or snapshot locations during the installati
 
 You create a default `Secret` if your backup and snapshot locations use the same credentials or if you do not require a snapshot location.
 
-The default name of the `Secret` is `cloud-credentials`, unless your backup storage provider has a default plugin, such as `aws`, `azure`, or `gcp`. In that case, the default name is specified in the provider-specific OADP installation procedure.
+The default name of the `Secret` is `cloud-credentials`, unless your backup storage provider has a default plugin, such as `aws`, `azure`, or `gcp`.
+
+In that case, the default name is specified in the provider-specific OADP installation procedure.
 
 Note
 
@@ -9406,7 +9944,9 @@ The `Secret` is referenced in the `spec.backupLocations.credential` block of the
 
 #### 5.12.1.1.5. Creating secrets for different credentials
 
-Create separate `Secret` objects when your backup and snapshot locations require different credentials. This allows you to configure distinct authentication for each storage location while maintaining secure credential management.
+Create separate `Secret` objects when your backup and snapshot locations require different credentials.
+
+This allows you to configure distinct authentication for each storage location while maintaining secure credential management.
 
 Procedure
 
@@ -9498,11 +10038,15 @@ Kopia is an option in OADP 1.3 and later releases. You can use Kopia for file sy
 
 Kopia is more resource intensive than Restic, and you might need to adjust the CPU and memory requirements accordingly.
 
-Use the `nodeSelector` field to select which nodes can run the node agent. The `nodeSelector` field is the simplest recommended form of node selection constraint. Any label specified must match the labels on each node.
+Use the `nodeSelector` field to select which nodes can run the node agent. The `nodeSelector` field is the simplest recommended form of node selection constraint.
+
+Any label specified must match the labels on each node.
 
 #### 5.12.1.1.6.1. Adjusting Ceph CPU and memory requirements based on collected data
 
-The following recommendations are based on observations of performance made in the scale and performance lab. The changes are specifically related to Red Hat OpenShift Data Foundation (ODF). If working with ODF, consult the appropriate tuning guides for official recommendations.
+The following recommendations are based on observations of performance made in the scale and performance lab. The changes are specifically related to Red Hat OpenShift Data Foundation (ODF).
+
+If working with ODF, consult the appropriate tuning guides for official recommendations.
 
 #### 5.12.1.1.6.1.1. CPU and memory requirement for configurations
 
@@ -9554,7 +10098,9 @@ Specifies the Base64-encoded CA certificate string.
 
 `insecureSkipTLSVerify`
 
-Specifies the `insecureSkipTLSVerify` configuration. The configuration can be set to either `"true"` or `"false"`. If set to `"true"`, SSL/TLS security is disabled. If set to `"false"`, SSL/TLS security is enabled.
+Specifies the `insecureSkipTLSVerify` configuration. The configuration can be set to either `"true"` or `"false"`.
+
+If set to `"true"`, SSL/TLS security is disabled. If set to `"false"`, SSL/TLS security is enabled.
 
 #### 5.12.1.1.8. Using CA certificates with the velero command aliased for Velero deployment
 
@@ -9643,7 +10189,9 @@ If the backup and snapshot locations use different credentials, you must create 
 
 Note
 
-If you do not want to specify backup or snapshot locations during the installation, you can create a default `Secret` with an empty `credentials-velero` file. If there is no default `Secret`, the installation will fail.
+If you do not want to specify backup or snapshot locations during the installation, you can create a default `Secret` with an empty `credentials-velero` file.
+
+If there is no default `Secret`, the installation will fail.
 
 Procedure
 
@@ -9693,7 +10241,9 @@ Specifies the default namespace for OADP which is `openshift-adp`. The namespace
 
 `aws`
 
-Specifies that an object store plugin corresponding to your storage locations is required. For all S3 providers, the required plugin is `aws`. For Azure and Google Cloud object stores, the `azure` or `gcp` plugin is required.
+Specifies that an object store plugin corresponding to your storage locations is required. For all S3 providers, the required plugin is `aws`.
+
+For Azure and Google Cloud object stores, the `azure` or `gcp` plugin is required.
 
 `kubevirt`
 
@@ -9721,7 +10271,13 @@ Set this value to `true` if you want to enable `nodeAgent` and perform File Syst
 
 `uploaderType`
 
-Specifies the uploader type. Enter `kopia` or `restic` as your uploader. You cannot change the selection after the installation. For the Built-in DataMover you must use Kopia. The `nodeAgent` deploys a daemon set, which means that the `nodeAgent` pods run on each working node. You can configure File System Backup by adding `spec.defaultVolumesToFsBackup: true` to the `Backup` CR.
+Specifies the uploader type. Enter `kopia` or `restic` as your uploader.
+
+You cannot change the selection after the installation. For the Built-in DataMover you must use Kopia.
+
+The `nodeAgent` deploys a daemon set, which means that the `nodeAgent` pods run on each working node.
+
+You can configure File System Backup by adding `spec.defaultVolumesToFsBackup: true` to the `Backup` CR.
 
 `nodeSelector`
 
@@ -9733,7 +10289,9 @@ Specifies the backup provider.
 
 `name`
 
-Specifies the correct default name for the `Secret`, for example, `cloud-credentials-gcp`, if you use a default plugin for the backup provider. If specifying a custom name, then the custom name is used for the backup location. If you do not specify a `Secret` name, the default name is used.
+Specifies the correct default name for the `Secret`, for example, `cloud-credentials-gcp`, if you use a default plugin for the backup provider.
+
+If specifying a custom name, then the custom name is used for the backup location. If you do not specify a `Secret` name, the default name is used.
 
 `bucket`
 
@@ -9802,9 +10360,13 @@ dpa-sample-1   Available   1s               3d16h   true
 
 #### 5.12.1.3. Configuring the DPA with client burst and QPS settings
 
-The burst setting determines how many requests can be sent to the `velero` server before the limit is applied. After the burst limit is reached, the queries per second (QPS) setting determines how many additional requests can be sent per second.
+The burst setting determines how many requests can be sent to the `velero` server before the limit is applied.
 
-You can set the burst and QPS values of the `velero` server by configuring the Data Protection Application (DPA) with the burst and QPS values. You can use the `dpa.configuration.velero.client-burst` and `dpa.configuration.velero.client-qps` fields of the DPA to set the burst and QPS values.
+After the burst limit is reached, the queries per second (QPS) setting determines how many additional requests can be sent per second.
+
+You can set the burst and QPS values of the `velero` server by configuring the Data Protection Application (DPA) with the burst and QPS values.
+
+You can use the `dpa.configuration.velero.client-burst` and `dpa.configuration.velero.client-qps` fields of the DPA to set the burst and QPS values.
 
 Prerequisites
 
@@ -9971,7 +10533,9 @@ Use the `spec.nodeagent.podConfig.nodeSelector` object for simple node matching.
 
 Use the `loadAffinity.nodeSelector` object without the `podConfig.nodeSelector` object for more complex scenarios.
 
-You can use both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects, but the `loadAffinity` object must be equal or more restrictive as compared to the `podConfig` object. In this scenario, the `podConfig.nodeSelector` labels must be a subset of the labels used in the `loadAffinity.nodeSelector` object.
+You can use both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects, but the `loadAffinity` object must be equal or more restrictive as compared to the `podConfig` object.
+
+In this scenario, the `podConfig.nodeSelector` labels must be a subset of the labels used in the `loadAffinity.nodeSelector` object.
 
 You cannot use the `matchExpressions` and `matchLabels` fields if you have configured both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects in the DPA.
 
@@ -10002,7 +10566,9 @@ You can configure it using one of the following fields of the Data Protection Ap
 
 `globalConfig`: Defines a default concurrency limit for the node agent across all nodes.
 
-`perNodeConfig`: Specifies different concurrency limits for specific nodes based on `nodeSelector` labels. This provides flexibility for environments where certain nodes might have different resource capacities or roles.
+`perNodeConfig`: Specifies different concurrency limits for specific nodes based on `nodeSelector` labels.
+
+This provides flexibility for environments where certain nodes might have different resource capacities or roles.
 
 Prerequisites
 
@@ -10042,7 +10608,11 @@ Specifies the label for per-node concurrency.
 
 `number`
 
-Specifies the per-node concurrent number. You can specify many per-node concurrent numbers, for example, based on the instance type and size. The range of per-node concurrent number is the same as the global concurrent number. If the configuration file contains a per-node concurrent number and a global concurrent number, the per-node concurrent number takes precedence.
+Specifies the per-node concurrent number. You can specify many per-node concurrent numbers, for example, based on the instance type and size.
+
+The range of per-node concurrent number is the same as the global concurrent number.
+
+If the configuration file contains a per-node concurrent number and a global concurrent number, the per-node concurrent number takes precedence.
 
 #### 5.12.1.8. Configuring the node agent as a non-root and non-privileged user
 
@@ -10054,7 +10624,9 @@ Note
 
 Setting `spec.configuration.velero.disableFsBackup` to `true` enhances the node agent security by removing the need for privileged containers and enforcing a read-only root file system.
 
-However, it also disables File System Backup (FSB) with Kopia. If your workloads rely on FSB for backing up volumes that do not support native snapshots, then you should evaluate whether the `disableFsBackup` configuration fits your use case.
+However, it also disables File System Backup (FSB) with Kopia.
+
+If your workloads rely on FSB for backing up volumes that do not support native snapshots, then you should evaluate whether the `disableFsBackup` configuration fits your use case.
 
 Prerequisites
 
@@ -10170,11 +10742,15 @@ Specifies that the node agent is run as a non-root user.
 
 #### 5.12.1.9. Configuring repository maintenance
 
-OADP repository maintenance is a background job, you can configure it independently of the node agent pods. This means that you can schedule the repository maintenance pod on a node where the node agent is or is not running.
+OADP repository maintenance is a background job, you can configure it independently of the node agent pods.
+
+This means that you can schedule the repository maintenance pod on a node where the node agent is or is not running.
 
 You can use the repository maintenance job affinity configurations in the `DataProtectionApplication` (DPA) custom resource (CR) only if you use Kopia as the backup repository.
 
-You have the option to configure the load affinity at the global level affecting all repositories. Or you can configure the load affinity for each repository. You can also use a combination of global and per-repository configuration.
+You have the option to configure the load affinity at the global level affecting all repositories. Or you can configure the load affinity for each repository.
+
+You can also use a combination of global and per-repository configuration.
 
 Prerequisites
 
@@ -10245,7 +10821,9 @@ Specifies the `repositoryMaintenance` object for each repository.
 
 #### 5.12.1.10. Configuring Velero load affinity
 
-With each OADP deployment, there is one Velero pod and its main purpose is to schedule Velero workloads. To schedule the Velero pod, you can use the `velero.podConfig.nodeSelector` and the `velero.loadAffinity` objects in the `DataProtectionApplication` (DPA) custom resource (CR) spec.
+With each OADP deployment, there is one Velero pod and its main purpose is to schedule Velero workloads.
+
+To schedule the Velero pod, you can use the `velero.podConfig.nodeSelector` and the `velero.loadAffinity` objects in the `DataProtectionApplication` (DPA) custom resource (CR) spec.
 
 Use the `podConfig.nodeSelector` object to assign the Velero pod to specific nodes. You can also configure the `velero.loadAffinity` object for pod-level affinity and anti-affinity.
 
@@ -10401,7 +10979,9 @@ Specifies the `csi` default plugin.
 
 #### 5.12.1.11.3. Disabling the node agent in DataProtectionApplication
 
-If you are not using `Restic`, `Kopia`, or `DataMover` for your backups, you can disable the `nodeAgent` field in the `DataProtectionApplication` custom resource (CR). Before you disable `nodeAgent`, ensure the OADP Operator is idle and not running any backups.
+If you are not using `Restic`, `Kopia`, or `DataMover` for your backups, you can disable the `nodeAgent` field in the `DataProtectionApplication` custom resource (CR).
+
+Before you disable `nodeAgent`, ensure the OADP Operator is idle and not running any backups.
 
 Procedure
 
@@ -10455,7 +11035,9 @@ Configuring node agents and node labels
 
 #### 5.13.1. Configuring the OpenShift API for Data Protection with OpenShift Virtualization
 
-You can install the OpenShift API for Data Protection (OADP) with OpenShift Virtualization by installing the OADP Operator and configuring a backup location. Then, you can install the Data Protection Application.
+You can install the OpenShift API for Data Protection (OADP) with OpenShift Virtualization by installing the OADP Operator and configuring a backup location.
+
+Then, you can install the Data Protection Application.
 
 Back up and restore virtual machines by using the OpenShift API for Data Protection.
 
@@ -10473,7 +11055,9 @@ Volume snapshot backups and restores
 
 For more information, see Backing up applications with File System Backup: Kopia or Restic.
 
-To install the OADP Operator in a restricted network environment, you must first disable the default software catalog sources and mirror the Operator catalog. See Using Operator Lifecycle Manager in disconnected environments for details.
+To install the OADP Operator in a restricted network environment, you must first disable the default software catalog sources and mirror the Operator catalog.
+
+See Using Operator Lifecycle Manager in disconnected environments for details.
 
 Important
 
@@ -10525,7 +11109,9 @@ If the backup and snapshot locations use the same credentials, you must create a
 
 Note
 
-If you do not want to specify backup or snapshot locations during the installation, you can create a default `Secret` with an empty `credentials-velero` file. If there is no default `Secret`, the installation will fail.
+If you do not want to specify backup or snapshot locations during the installation, you can create a default `Secret` with an empty `credentials-velero` file.
+
+If there is no default `Secret`, the installation will fail.
 
 Procedure
 
@@ -10603,7 +11189,11 @@ Set this value to `true` if you want to enable `nodeAgent` and perform File Syst
 
 `uploaderType`
 
-Specifies the uploader type. Enter `kopia` as your uploader to use the Built-in DataMover. The `nodeAgent` deploys a daemon set, which means that the `nodeAgent` pods run on each working node. You can configure File System Backup by adding `spec.defaultVolumesToFsBackup: true` to the `Backup` CR.
+Specifies the uploader type. Enter `kopia` as your uploader to use the Built-in DataMover.
+
+The `nodeAgent` deploys a daemon set, which means that the `nodeAgent` pods run on each working node.
+
+You can configure File System Backup by adding `spec.defaultVolumesToFsBackup: true` to the `Backup` CR.
 
 `nodeSelector`
 
@@ -10615,7 +11205,9 @@ Specifies the backup provider.
 
 `name`
 
-Specifies the correct default name for the `Secret`, for example, `cloud-credentials-gcp`, if you use a default plugin for the backup provider. If specifying a custom name, then the custom name is used for the backup location. If you do not specify a `Secret` name, the default name is used.
+Specifies the correct default name for the `Secret`, for example, `cloud-credentials-gcp`, if you use a default plugin for the backup provider.
+
+If specifying a custom name, then the custom name is used for the backup location. If you do not specify a `Secret` name, the default name is used.
 
 `bucket`
 
@@ -10684,11 +11276,17 @@ dpa-sample-1   Available   1s               3d16h   true
 
 Warning
 
-If you run a backup of a Microsoft Windows virtual machine (VM) immediately after the VM reboots, the backup might fail with a `PartiallyFailed` error. This is because, immediately after a VM boots, the Microsoft Windows Volume Shadow Copy Service (VSS) and Guest Agent (GA) service are not ready. The VSS and GA service being unready causes the backup to fail. In such a case, retry the backup a few minutes after the VM boots.
+If you run a backup of a Microsoft Windows virtual machine (VM) immediately after the VM reboots, the backup might fail with a `PartiallyFailed` error.
+
+This is because, immediately after a VM boots, the Microsoft Windows Volume Shadow Copy Service (VSS) and Guest Agent (GA) service are not ready.
+
+The VSS and GA service being unready causes the backup to fail. In such a case, retry the backup a few minutes after the VM boots.
 
 #### 5.13.1.3. Backing up a single VM
 
-If you have a namespace with multiple virtual machines (VMs), and want to back up only one of them, you can use the label selector to filter the VM that needs to be included in the backup. You can filter the VM by using the `app: vmname` label.
+If you have a namespace with multiple virtual machines (VMs), and want to back up only one of them, you can use the label selector to filter the VM that needs to be included in the backup.
+
+You can filter the VM by using the `app: vmname` label.
 
 Prerequisites
 
@@ -10746,7 +11344,9 @@ Specifies the name of the `Backup` CR file.
 
 #### 5.13.1.4. Restoring a single VM
 
-After you have backed up a single virtual machine (VM) by using the label selector in the `Backup` custom resource (CR), you can create a `Restore` CR and point it to the backup. This restore operation restores a single VM.
+After you have backed up a single virtual machine (VM) by using the label selector in the `Backup` custom resource (CR), you can create a `Restore` CR and point it to the backup.
+
+This restore operation restores a single VM.
 
 Prerequisites
 
@@ -10787,17 +11387,23 @@ Specifies the name of the `Restore` CR file.
 
 Note
 
-When you restore a backup of VMs, you might notice that the Ceph storage capacity allocated for the restore is higher than expected. This behavior is observed only during the `kubevirt` restore and if the volume type of the VM is `block`.
+When you restore a backup of VMs, you might notice that the Ceph storage capacity allocated for the restore is higher than expected.
+
+This behavior is observed only during the `kubevirt` restore and if the volume type of the VM is `block`.
 
 Use the `rbd sparsify` tool to reclaim space on target volumes. For more details, see Reclaiming space on target volumes.
 
 #### 5.13.1.5. Restoring a single VM from a backup of multiple VMs
 
-If you have a backup containing multiple virtual machines (VMs), and you want to restore only one VM, you can use the `LabelSelectors` section in the `Restore` CR to select the VM to restore. To ensure that the persistent volume claim (PVC) attached to the VM is correctly restored, and the restored VM is not stuck in a `Provisioning` status, use both the and the `kubevirt.io/created-by` labels. To match the `kubevirt.io/created-by` label, use the UID of `DataVolume` of the VM.
+If you have a backup containing multiple virtual machines (VMs), and you want to restore only one VM, you can use the `LabelSelectors` section in the `Restore` CR to select the VM to restore.
+
+To ensure that the persistent volume claim (PVC) attached to the VM is correctly restored, and the restored VM is not stuck in a `Provisioning` status, use both the and the `kubevirt.io/created-by` labels.
 
 ```shell
 app: <vm_name>
 ```
+
+To match the `kubevirt.io/created-by` label, use the UID of `DataVolume` of the VM.
 
 Prerequisites
 
@@ -10855,9 +11461,13 @@ Specifies the name of the `Restore` CR file.
 
 #### 5.13.1.6. Configuring the DPA with client burst and QPS settings
 
-The burst setting determines how many requests can be sent to the `velero` server before the limit is applied. After the burst limit is reached, the queries per second (QPS) setting determines how many additional requests can be sent per second.
+The burst setting determines how many requests can be sent to the `velero` server before the limit is applied.
 
-You can set the burst and QPS values of the `velero` server by configuring the Data Protection Application (DPA) with the burst and QPS values. You can use the `dpa.configuration.velero.client-burst` and `dpa.configuration.velero.client-qps` fields of the DPA to set the burst and QPS values.
+After the burst limit is reached, the queries per second (QPS) setting determines how many additional requests can be sent per second.
+
+You can set the burst and QPS values of the `velero` server by configuring the Data Protection Application (DPA) with the burst and QPS values.
+
+You can use the `dpa.configuration.velero.client-burst` and `dpa.configuration.velero.client-qps` fields of the DPA to set the burst and QPS values.
 
 Prerequisites
 
@@ -10924,7 +11534,9 @@ Note
 
 Setting `spec.configuration.velero.disableFsBackup` to `true` enhances the node agent security by removing the need for privileged containers and enforcing a read-only root file system.
 
-However, it also disables File System Backup (FSB) with Kopia. If your workloads rely on FSB for backing up volumes that do not support native snapshots, then you should evaluate whether the `disableFsBackup` configuration fits your use case.
+However, it also disables File System Backup (FSB) with Kopia.
+
+If your workloads rely on FSB for backing up volumes that do not support native snapshots, then you should evaluate whether the `disableFsBackup` configuration fits your use case.
 
 Prerequisites
 
@@ -11148,7 +11760,9 @@ Use the `spec.nodeagent.podConfig.nodeSelector` object for simple node matching.
 
 Use the `loadAffinity.nodeSelector` object without the `podConfig.nodeSelector` object for more complex scenarios.
 
-You can use both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects, but the `loadAffinity` object must be equal or more restrictive as compared to the `podConfig` object. In this scenario, the `podConfig.nodeSelector` labels must be a subset of the labels used in the `loadAffinity.nodeSelector` object.
+You can use both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects, but the `loadAffinity` object must be equal or more restrictive as compared to the `podConfig` object.
+
+In this scenario, the `podConfig.nodeSelector` labels must be a subset of the labels used in the `loadAffinity.nodeSelector` object.
 
 You cannot use the `matchExpressions` and `matchLabels` fields if you have configured both `podConfig.nodeSelector` and `loadAffinity.nodeSelector` objects in the DPA.
 
@@ -11179,7 +11793,9 @@ You can configure it using one of the following fields of the Data Protection Ap
 
 `globalConfig`: Defines a default concurrency limit for the node agent across all nodes.
 
-`perNodeConfig`: Specifies different concurrency limits for specific nodes based on `nodeSelector` labels. This provides flexibility for environments where certain nodes might have different resource capacities or roles.
+`perNodeConfig`: Specifies different concurrency limits for specific nodes based on `nodeSelector` labels.
+
+This provides flexibility for environments where certain nodes might have different resource capacities or roles.
 
 Prerequisites
 
@@ -11219,15 +11835,23 @@ Specifies the label for per-node concurrency.
 
 `number`
 
-Specifies the per-node concurrent number. You can specify many per-node concurrent numbers, for example, based on the instance type and size. The range of per-node concurrent number is the same as the global concurrent number. If the configuration file contains a per-node concurrent number and a global concurrent number, the per-node concurrent number takes precedence.
+Specifies the per-node concurrent number. You can specify many per-node concurrent numbers, for example, based on the instance type and size.
+
+The range of per-node concurrent number is the same as the global concurrent number.
+
+If the configuration file contains a per-node concurrent number and a global concurrent number, the per-node concurrent number takes precedence.
 
 #### 5.13.1.12. Configuring repository maintenance
 
-OADP repository maintenance is a background job, you can configure it independently of the node agent pods. This means that you can schedule the repository maintenance pod on a node where the node agent is or is not running.
+OADP repository maintenance is a background job, you can configure it independently of the node agent pods.
+
+This means that you can schedule the repository maintenance pod on a node where the node agent is or is not running.
 
 You can use the repository maintenance job affinity configurations in the `DataProtectionApplication` (DPA) custom resource (CR) only if you use Kopia as the backup repository.
 
-You have the option to configure the load affinity at the global level affecting all repositories. Or you can configure the load affinity for each repository. You can also use a combination of global and per-repository configuration.
+You have the option to configure the load affinity at the global level affecting all repositories. Or you can configure the load affinity for each repository.
+
+You can also use a combination of global and per-repository configuration.
 
 Prerequisites
 
@@ -11298,7 +11922,9 @@ Specifies the `repositoryMaintenance` object for each repository.
 
 #### 5.13.1.13. Configuring Velero load affinity
 
-With each OADP deployment, there is one Velero pod and its main purpose is to schedule Velero workloads. To schedule the Velero pod, you can use the `velero.podConfig.nodeSelector` and the `velero.loadAffinity` objects in the `DataProtectionApplication` (DPA) custom resource (CR) spec.
+With each OADP deployment, there is one Velero pod and its main purpose is to schedule Velero workloads.
+
+To schedule the Velero pod, you can use the `velero.podConfig.nodeSelector` and the `velero.loadAffinity` objects in the `DataProtectionApplication` (DPA) custom resource (CR) spec.
 
 Use the `podConfig.nodeSelector` object to assign the Velero pod to specific nodes. You can also configure the `velero.loadAffinity` object for pod-level affinity and anti-affinity.
 
@@ -11408,7 +12034,9 @@ Specifies the value for `imagePullPolicy`. In this example, the `imagePullPolicy
 
 #### 5.13.1.15. About incremental back up support
 
-OADP supports incremental backups of `block` and `Filesystem` persistent volumes for both containerized, and OpenShift Virtualization workloads. The following table summarizes the support for File System Backup (FSB), Container Storage Interface (CSI), and CSI Data Mover:
+OADP supports incremental backups of `block` and `Filesystem` persistent volumes for both containerized, and OpenShift Virtualization workloads.
+
+The following table summarizes the support for File System Backup (FSB), Container Storage Interface (CSI), and CSI Data Mover:
 
 | Volume mode | FSB - Restic | FSB - Kopia | CSI | CSI Data Mover |
 | --- | --- | --- | --- | --- |
@@ -11442,13 +12070,17 @@ Using Operator Lifecycle Manager in disconnected environments
 
 #### 5.14.1. Configuring the OpenShift API for Data Protection (OADP) with more than one Backup Storage Location
 
-Configure multiple backup storage locations (BSLs) in the Data Protection Application (DPA) to store backups across different regions or storage providers. This provides flexibility and redundancy for your backup strategy.
+Configure multiple backup storage locations (BSLs) in the Data Protection Application (DPA) to store backups across different regions or storage providers.
+
+This provides flexibility and redundancy for your backup strategy.
 
 OADP supports multiple credentials for configuring more than one BSL, so that you can specify the credentials to use with any BSL.
 
 #### 5.14.1.1. Configuring the DPA with more than one BSL
 
-Configure the `DataProtectionApplication` (DPA) custom resource (CR) with multiple `BackupStorageLocation` (BSL) resources to store backups across different locations using provider-specific credentials. This provides backup distribution and location-specific restore capabilities.
+Configure the `DataProtectionApplication` (DPA) custom resource (CR) with multiple `BackupStorageLocation` (BSL) resources to store backups across different locations using provider-specific credentials.
+
+This provides backup distribution and location-specific restore capabilities.
 
 For example, you have configured the following two BSLs:
 
@@ -11456,7 +12088,9 @@ Configured one BSL in the DPA and set it as the default BSL.
 
 Created another BSL independently by using the `BackupStorageLocation` CR.
 
-As you have already set the BSL created through the DPA as the default, you cannot set the independently created BSL again as the default. This means, at any given time, you can set only one BSL as the default BSL.
+As you have already set the BSL created through the DPA as the default, you cannot set the independently created BSL again as the default.
+
+This means, at any given time, you can set only one BSL as the default BSL.
 
 Prerequisites
 
@@ -11568,7 +12202,9 @@ Specifies the storage location.
 
 #### 5.14.1.2. Configuring two backup BSLs with different cloud credentials
 
-Configure two backup storage locations with different cloud credentials to back up applications to multiple storage targets. With this setup, you can distribute backups across different storage providers for redundancy.
+Configure two backup storage locations with different cloud credentials to back up applications to multiple storage targets.
+
+With this setup, you can distribute backups across different storage providers for redundancy.
 
 Prerequisites
 
@@ -11807,11 +12443,15 @@ Creating profiles for different credentials
 
 #### 5.15.1. Configuring the OpenShift API for Data Protection (OADP) with more than one Volume Snapshot Location
 
-Configure multiple Volume Snapshot Locations (VSLs) in the Data Protection Application (DPA) to store volume snapshots across different cloud provider regions. This provides geographic redundancy and regional disaster recovery capabilities.
+Configure multiple Volume Snapshot Locations (VSLs) in the Data Protection Application (DPA) to store volume snapshots across different cloud provider regions.
+
+This provides geographic redundancy and regional disaster recovery capabilities.
 
 #### 5.15.1.1. Configuring the DPA with more than one VSL
 
-Configure the `DataProtectionApplication` (DPA) custom resource (CR) with multiple Volume Snapshot Locations (VSLs) using provider-specific credentials in the same region as your persistent volumes. This provides volume snapshot distribution across different storage targets.
+Configure the `DataProtectionApplication` (DPA) custom resource (CR) with multiple Volume Snapshot Locations (VSLs) using provider-specific credentials in the same region as your persistent volumes.
+
+This provides volume snapshot distribution across different storage targets.
 
 Procedure
 
@@ -11855,41 +12495,59 @@ You uninstall the OpenShift API for Data Protection (OADP) by deleting the OADP 
 
 #### 5.17.1. Backing up applications
 
-Frequent backups might consume storage on the backup storage location. Check the frequency of backups, retention time, and the amount of data of the persistent volumes (PVs) if using non-local backups, for example, S3 buckets. Because all taken backup remains until expired, also check the time to live (TTL) setting of the schedule.
+Back up applications by creating a `Backup` custom resource (CR) using snapshots, CSI, or File System Backup with Kopia or Restic.
 
-You can back up applications by creating a `Backup` custom resource (CR). For more information, see Creating a Backup CR. The following are the different backup types for a `Backup` CR:
+Frequent backups might consume storage on the backup storage location.
+
+Check the frequency of backups, retention time, and the amount of data of the persistent volumes (PVs) if using non-local backups, for example, S3 buckets.
+
+Because all backups are retained until they expire, check the time to live (TTL) setting of the schedule.
+
+Review the following information regarding backing up applications by using OADP:
 
 The `Backup` CR creates backup files for Kubernetes resources and internal images on S3 object storage.
 
-If you use Velero’s snapshot feature to back up data stored on the persistent volume, only snapshot related information is stored in the S3 bucket along with the Openshift object data.
+If you use Velero’s snapshot feature to back up data stored on the persistent volume, only snapshot related information is stored in the S3 bucket along with the OpenShift object data.
 
-If your cloud provider has a native snapshot API or supports CSI snapshots, the `Backup` CR backs up persistent volumes (PVs) by creating snapshots. For more information about working with CSI snapshots, see Backing up persistent volumes with CSI snapshots.
+If your cloud provider has a native snapshot API or supports CSI snapshots, the `Backup` CR backs up persistent volumes (PVs) by creating snapshots.
 
-If the underlying storage or the backup bucket are part of the same cluster, then the data might be lost in case of disaster.
+For more information about working with CSI snapshots, see Backing up persistent volumes with CSI snapshots. For more information about CSI volume snapshots, see CSI volume snapshots.
 
-For more information about CSI volume snapshots, see CSI volume snapshots.
+If the underlying storage or the backup bucket are part of the same cluster, then the data might be lost in case of disaster. Ensure you configure your backup storage off-cluster.
 
-If your cloud provider does not support snapshots or if your applications are on NFS data volumes, you can create backups by using Kopia or Restic. See Backing up applications with File System Backup: Kopia or Restic.
+If your cloud provider does not support snapshots or if your applications are on NFS data volumes, you can create backups by using Kopia or Restic.
 
-PodVolumeRestore fails with a `…​/.snapshot: read-only file system` error
+See Backing up applications with File System Backup: Kopia or Restic.
 
-The `…​/.snapshot` directory is a snapshot copy directory, which is used by several NFS servers. This directory has read-only access by default, so Velero cannot restore to this directory.
+You can create backup hooks to run commands before or after the backup operation. See Creating backup hooks.
 
-Do not give Velero write access to the `.snapshot` directory, and disable client access to this directory.
+You can schedule backups by creating a `Schedule` CR instead of a `Backup` CR. See Scheduling backups using Schedule CR.
 
-Additional resources
+OpenShift Container Platform 4.20 enforces a pod security admission (PSA) policy that can hinder the readiness of pods during a Restic restore process.
 
-Enable or disable client access to Snapshot copy directory by editing a share
+This issue has been resolved in the OADP 1.1.6 and OADP 1.2.2 releases, therefore it is recommended that users upgrade to these releases.
 
-- for backup and restore with FlashBlade
+For more information, see Restic restore partially failing on Red Hat OpenShift Container Platform 4.15 due to changed PSA policy.
 
 Important
 
 The OpenShift API for Data Protection (OADP) does not support backing up volume snapshots that were created by other software.
 
+Important
+
+The `…​/.snapshot` directory is a snapshot copy directory, which is used by several NFS servers. This directory has read-only access by default, so Velero cannot restore to this directory.
+
+Do not give Velero write access to the `.snapshot` directory, and disable client access to this directory.
+
 #### 5.17.1.1. Previewing resources before running backup and restore
 
-OADP backs up application resources based on the type, namespace, or label. This means that you can view the resources after the backup is complete. Similarly, you can view the restored objects based on the namespace, persistent volume (PV), or label after a restore operation is complete. To preview the resources in advance, you can do a dry run of the backup and restore operations.
+Preview the backup and restore resources in advance by doing a dry run of the backup and restore operations.
+
+This helps you to verify which resources will be included before committing to a full backup or restore.
+
+OADP backs up application resources based on the type, namespace, or label. This means that you can view the resources after the backup is complete.
+
+Similarly, you can view the restored objects based on the namespace, persistent volume (PV), or label after a restore operation is complete.
 
 Prerequisites
 
@@ -11903,23 +12561,21 @@ To preview the resources included in the backup before running the actual backup
 $ velero backup create <backup-name> --snapshot-volumes false
 ```
 
-1. 1
-
 Specify the value of `--snapshot-volumes` parameter as `false`.
 
 ```shell-session
 $ velero describe backup <backup_name> --details
 ```
 
-1. Specify the name of the backup.
+Replace `<backup_name>` with the name of the backup.
 
 To preview the resources included in the restore before running the actual restore, run the following command:
 
 ```shell-session
-$ velero restore create --from-backup <backup-name>
+$ velero restore create --from-backup <backup_name>
 ```
 
-1. Specify the name of the backup created to review the backup resources.
+Replace `<backup_name>` with the name of the backup.
 
 Important
 
@@ -11929,29 +12585,31 @@ The `velero restore create` command creates restore resources in the cluster. Yo
 $ velero describe restore <restore_name> --details
 ```
 
-1. Specify the name of the restore.
-
-You can create backup hooks to run commands before or after the backup operation. See Creating backup hooks.
-
-You can schedule backups by creating a `Schedule` CR instead of a `Backup` CR. See Scheduling backups using Schedule CR.
-
-#### 5.17.1.2. Known issues
-
-OpenShift Container Platform 4.20 enforces a pod security admission (PSA) policy that can hinder the readiness of pods during a Restic restore process.
-
-This issue has been resolved in the OADP 1.1.6 and OADP 1.2.2 releases, therefore it is recommended that users upgrade to these releases.
-
-For more information, see Restic restore partially failing on OCP 4.15 due to changed PSA policy.
+Replace `<restore_name>` with the name of the restore.
 
 Additional resources
 
+Creating a Backup CR
+
+Creating backup hooks
+
+Scheduling backups using Schedule CR
+
 Installing Operators on clusters for administrators
+
+Backing up persistent volumes with CSI snapshots
+
+CSI volume snapshots
+
+Backing up applications with File System Backup: Kopia or Restic
 
 Installing Operators in namespaces for non-administrators
 
+Restic restore partially failing on OCP 4.15 due to changed PSA policy
+
 #### 5.17.2. Creating a Backup CR
 
-You back up Kubernetes resources, internal images, and persistent volumes (PVs) by creating a `Backup` custom resource (CR).
+Back up Kubernetes resources, internal images, and persistent volumes (PVs) by creating a `Backup` custom resource (CR). This helps you to protect your application data and configuration for disaster recovery.
 
 Prerequisites
 
@@ -12012,17 +12670,31 @@ spec:
       app: <label_3>
 ```
 
-1. Specify an array of namespaces to back up.
+where:
 
-2. Optional: Specify an array of resources to include in the backup. Resources might be shortcuts (for example, 'po' for 'pods') or fully-qualified. If unspecified, all resources are included.
+`<namespace>`
 
-3. Optional: Specify an array of resources to exclude from the backup. Resources might be shortcuts (for example, 'po' for 'pods') or fully-qualified.
+Specifies an array of namespaces to back up.
 
-4. Specify the name of the `backupStorageLocations` CR.
+`includedResources`
 
-5. Map of {key,value} pairs of backup resources that have all the specified labels.
+Optional: Specifies an array of resources to include in the backup. Resources might be shortcuts (for example, `po` for `pods`) or fully-qualified. If unspecified, all resources are included.
 
-6. Map of {key,value} pairs of backup resources that have one or more of the specified labels.
+`excludedResources`
+
+Optional: Specifies an array of resources to exclude from the backup. Resources might be shortcuts (for example, `po` for `pods`) or fully-qualified.
+
+`<velero-sample-1>`
+
+Specifies the name of the `backupStorageLocations` CR.
+
+`labelSelector`
+
+Specifies a map of {key,value} pairs of backup resources that have all the specified labels.
+
+`orLabelSelectors`
+
+Specifies a map of {key,value} pairs of backup resources that have one or more of the specified labels.
 
 Verify that the status of the `Backup` CR is `Completed`:
 
@@ -12032,11 +12704,17 @@ $ oc get backups.velero.io -n openshift-adp <backup> -o jsonpath='{.status.phase
 
 #### 5.17.3. Backing up persistent volumes with CSI snapshots
 
-You back up persistent volumes with Container Storage Interface (CSI) snapshots by editing the `VolumeSnapshotClass` custom resource (CR) of the cloud storage before you create the `Backup` CR, see CSI volume snapshots.
+Back up persistent volumes with Container Storage Interface (CSI) snapshots by editing the `VolumeSnapshotClass` custom resource (CR) before you create the `Backup` CR.
 
-For more information, see Creating a Backup CR.
+This helps you to leverage cloud-native snapshot capabilities for faster and more efficient backups.
+
+For more information, see CSI volume snapshots and Creating a Backup CR.
 
 #### 5.17.3.1. Backing up persistent volumes with CSI snapshots
+
+Configure the `VolumeSnapshotClass` custom resource (CR) to back up persistent volumes with Container Storage Interface (CSI) snapshots.
+
+This helps you to prepare your cloud storage for CSI-based backup operations.
 
 Prerequisites
 
@@ -12061,27 +12739,43 @@ driver: <csi_driver>
 deletionPolicy: <deletion_policy_type>
 ```
 
-1. Must be set to `true`.
+where:
 
-2. If you are restoring this volume in another cluster with the same driver, make sure that you set the `snapshot.storage.kubernetes.io/is-default-class` parameter to `false` instead of setting it to `true`. Otherwise, the restore will partially fail.
+`velero.io/csi-volumesnapshot-class: "true"`
 
-3. OADP supports the `Retain` and `Delete` deletion policy types for CSI and Data Mover backup and restore.
+Must be set to `true`.
+
+`snapshot.storage.kubernetes.io/is-default-class: true`
+
+If you are restoring this volume in another cluster with the same driver, make sure that you set the `snapshot.storage.kubernetes.io/is-default-class` parameter to `false` instead of setting it to `true`.
+
+Otherwise, the restore will partially fail.
+
+`<deletion_policy_type>`
+
+Specifies the deletion policy type. OADP supports the `Retain` and `Delete` deletion policy types for CSI and Data Mover backup and restore.
 
 Next steps
 
 You can now create a `Backup` CR.
 
+Additional resources
+
+CSI volume snapshots
+
+Creating a Backup CR
+
 #### 5.17.4. Backing up applications with File System Backup: Kopia or Restic
 
-You can use OADP to back up and restore Kubernetes volumes attached to pods from the file system of the volumes. This process is called File System Backup (FSB) or Pod Volume Backup (PVB). It is accomplished by using modules from the open source backup tools Restic or Kopia.
+Use OADP File System Backup (FSB) with Kopia or Restic to back up and restore Kubernetes volumes attached to pods when snapshots are not available.
+
+This helps you to protect application data on NFS or other non-snapshot storage.
 
 If your cloud provider does not support snapshots or if your applications are on NFS data volumes, you can create backups by using FSB.
 
-Note
+FSB integration with OADP provides a solution for backing up and restoring almost any type of Kubernetes volumes.
 
-Restic is installed by the OADP Operator by default. If you prefer, you can install Kopia instead.
-
-FSB integration with OADP provides a solution for backing up and restoring almost any type of Kubernetes volumes. This integration is an additional capability of OADP and is not a replacement for existing functionality.
+This integration is an additional capability of OADP and is not a replacement for existing functionality.
 
 You back up Kubernetes resources, internal images, and persistent volumes with Kopia or Restic by editing the `Backup` custom resource (CR).
 
@@ -12099,19 +12793,17 @@ Important
 
 FSB does not support backing up `hostPath` volumes. For more information, see FSB limitations.
 
-PodVolumeRestore fails with a `…​/.snapshot: read-only file system` error
+Important
 
 The `…​/.snapshot` directory is a snapshot copy directory, which is used by several NFS servers. This directory has read-only access by default, so Velero cannot restore to this directory.
 
 Do not give Velero write access to the `.snapshot` directory, and disable client access to this directory.
 
-Additional resources
-
-Enable or disable client access to Snapshot copy directory by editing a share
-
-- for backup and restore with FlashBlade
-
 #### 5.17.4.1. Backing up applications with File System Backup
+
+Create a `Backup` custom resource (CR) to back up applications by using File System Backup (FSB) with Kopia as the uploader.
+
+This helps you to protect Kubernetes volumes attached to pods when snapshots are not available or when using NFS data volumes.
 
 Prerequisites
 
@@ -12138,15 +12830,23 @@ spec:
 ...
 ```
 
-1. In OADP version 1.2 and later, add the `defaultVolumesToFsBackup: true` setting within the `spec` block. In OADP version 1.1, add `defaultVolumesToRestic: true`.
+where:
+
+`defaultVolumesToFsBackup: true`
+
+Specifies the FSB setting within the `spec` block for OADP version 1.2 and later. In OADP version 1.1, add `defaultVolumesToRestic: true` instead.
+
+Additional resources
+
+FSB limitations
 
 #### 5.17.5. Creating backup hooks
 
-When performing a backup, it is possible to specify one or more commands to execute in a container within a pod, based on the pod being backed up.
+Create backup hooks to run commands in a container in a pod by editing the `Backup` custom resource (CR).
+
+This helps you to run pre-backup and post-backup actions such as quiescing a database or flushing data to disk.
 
 The commands can be configured to performed before any custom action processing (Pre hooks), or after all custom actions have been completed and any additional items specified by the custom action have been backed up (Post hooks).
-
-You create backup hooks to run commands in a container in a pod by editing the `Backup` custom resource (CR).
 
 Procedure
 
@@ -12185,31 +12885,55 @@ spec:
 ...
 ```
 
-1. Optional: You can specify namespaces to which the hook applies. If this value is not specified, the hook applies to all namespaces.
+where:
 
-2. Optional: You can specify namespaces to which the hook does not apply.
+`<namespace>`
 
-3. Currently, pods are the only supported resource that hooks can apply to.
+Optional: Specifies the namespaces to which the hook applies. If this value is not specified, the hook applies to all namespaces.
 
-4. Optional: You can specify resources to which the hook does not apply.
+`excludedNamespaces`
 
-5. Optional: This hook only applies to objects matching the label. If this value is not specified, the hook applies to all objects.
+Optional: Specifies the namespaces to which the hook does not apply.
 
-6. Array of hooks to run before the backup.
+`pods`
 
-7. Optional: If the container is not specified, the command runs in the first container in the pod.
+Currently, pods are the only supported resource that hooks can apply to.
 
-8. This is the entry point for the `init` container being added.
+`excludedResources`
 
-9. Allowed values for error handling are `Fail` and `Continue`. The default is `Fail`.
+Optional: Specifies the resources to which the hook does not apply.
 
-10. Optional: How long to wait for the commands to run. The default is `30s`.
+`labelSelector`
 
-11. This block defines an array of hooks to run after the backup, with the same parameters as the pre-backup hooks.
+Optional: This hook only applies to objects matching the label. If this value is not specified, the hook applies to all objects.
+
+`pre`
+
+Specifies an array of hooks to run before the backup.
+
+`<container>`
+
+Optional: Specifies the container in which the command runs. If the container is not specified, the command runs in the first container in the pod.
+
+`/bin/uname`
+
+Specifies the entry point for the `init` container being added.
+
+`onError: Fail`
+
+Specifies the error handling behavior. Allowed values are `Fail` and `Continue`. The default is `Fail`.
+
+`timeout: 30s`
+
+Optional: Specifies how long to wait for the commands to run. The default is `30s`.
+
+`post`
+
+Specifies an array of hooks to run after the backup, with the same parameters as the pre-backup hooks.
 
 #### 5.17.6. Scheduling backups using Schedule CR
 
-The schedule operation allows you to create a backup of your data at a particular time, specified by a Cron expression.
+Schedule backup operations by creating a `Schedule` custom resource (CR) with a Cron expression. This helps you to automate recurring backups of your application data at regular intervals.
 
 You schedule backups by creating a `Schedule` custom resource (CR) instead of a `Backup` CR.
 
@@ -12255,7 +12979,11 @@ spec:
 EOF
 ```
 
-1. `cron` expression to schedule the backup, for example, `0 7 * * *` to perform a backup every day at 7:00.
+where:
+
+`schedule: 0 7 * * *`
+
+Specifies the `cron` expression to schedule the backup, for example, `0 7 * * *` to perform a backup every day at 7:00.
 
 Note
 
@@ -12267,11 +12995,19 @@ schedule: "*/10 * * * *"
 
 Enter the minutes value between quotation marks (`" "`).
 
-2. Array of namespaces to back up.
+`<namespace>`
 
-3. Name of the `backupStorageLocations` CR.
+Specifies an array of namespaces to back up.
 
-4. Optional: In OADP version 1.2 and later, add the `defaultVolumesToFsBackup: true` key-value pair to your configuration when performing backups of volumes with Restic. In OADP version 1.1, add the `defaultVolumesToRestic: true` key-value pair when you back up volumes with Restic.
+`<velero-sample-1>`
+
+Specifies the name of the `backupStorageLocations` CR.
+
+`defaultVolumesToFsBackup: true`
+
+Optional: In OADP version 1.2 and later, add the `defaultVolumesToFsBackup: true` key-value pair to your configuration when performing backups of volumes with Restic.
+
+In OADP version 1.1, add the `defaultVolumesToRestic: true` key-value pair when you back up volumes with Restic.
 
 Verification
 
@@ -12283,7 +13019,7 @@ $ oc get schedule -n openshift-adp <schedule> -o jsonpath='{.status.phase}'
 
 #### 5.17.7. Deleting backups
 
-You can delete a backup by creating the `DeleteBackupRequest` custom resource (CR) or by running the `velero backup delete` command as explained in the following procedures.
+Delete a backup by creating the `DeleteBackupRequest` custom resource (CR) or by running the `velero backup delete` command. This helps you to free up storage space and remove outdated backup artifacts.
 
 The volume backup artifacts are deleted at different times depending on the backup method:
 
@@ -12295,7 +13031,7 @@ Kopia: The artifacts are deleted after three full maintenance cycles of the Kopi
 
 #### 5.17.7.1. Deleting a backup by creating a DeleteBackupRequest CR
 
-You can delete a backup by creating a `DeleteBackupRequest` custom resource (CR).
+Delete a backup by creating a `DeleteBackupRequest` custom resource (CR). This helps you to remove specific backups and their associated volume artifacts from storage.
 
 Prerequisites
 
@@ -12313,7 +13049,7 @@ spec:
   backupName: <backup_name>
 ```
 
-1. Specify the name of the backup.
+Replace `<backup_name>` with the name of the backup.
 
 ```shell-session
 $ oc apply -f <deletebackuprequest_cr_filename>
@@ -12321,7 +13057,7 @@ $ oc apply -f <deletebackuprequest_cr_filename>
 
 #### 5.17.7.2. Deleting a backup by using the Velero CLI
 
-You can delete a backup by using the Velero CLI.
+Delete a backup by using the Velero CLI to run the `velero backup delete` command. This helps you to quickly remove backups and their associated volume artifacts from storage.
 
 Prerequisites
 
@@ -12335,11 +13071,13 @@ Procedure
 $ velero backup delete <backup_name> -n openshift-adp
 ```
 
-1. Specify the name of the backup.
+Replace `<backup_name>` with the name of the backup.
 
 #### 5.17.7.3. About Kopia repository maintenance
 
-There are two types of Kopia repository maintenance:
+Kopia repository maintenance has two types, quick and full, that run automatically to optimize index performance and perform garbage collection.
+
+Knowing the two types helps you understand the maintenance cycle and how long it takes for backup artifacts to be deleted.
 
 Quick maintenance
 
@@ -12365,7 +13103,9 @@ pod/repo-maintain-job-173....536-fl9tm                             0/1     Compl
 pod/repo-maintain-job-173...2545-55ggx                             0/1     Completed   0          48m
 ```
 
-You can check the logs of the `repo-maintain-job` for more details about the cleanup and the removal of artifacts in the backup object storage. You can find a note, as shown in the following example, in the `repo-maintain-job` when the next full cycle maintenance is due:
+You can check the logs of the `repo-maintain-job` for more details about the cleanup and the removal of artifacts in the backup object storage.
+
+You can find a note, as shown in the following example, in the `repo-maintain-job` when the next full cycle maintenance is due:
 
 ```shell-session
 not due for full maintenance cycle until 2024-00-00 18:29:4
@@ -12373,11 +13113,15 @@ not due for full maintenance cycle until 2024-00-00 18:29:4
 
 Important
 
-Three successful executions of a full maintenance cycle are required for the objects to be deleted from the backup object storage. This means you can expect up to 72 hours for all the artifacts in the backup object storage to be deleted.
+Three successful executions of a full maintenance cycle are required for the objects to be deleted from the backup object storage.
+
+This means you can expect up to 72 hours for all the artifacts in the backup object storage to be deleted.
 
 #### 5.17.7.4. Deleting a backup repository
 
-After you delete the backup, and after the Kopia repository maintenance cycles to delete the related artifacts are complete, the backup is no longer referenced by any metadata or manifest objects. You can then delete the `backuprepository` custom resource (CR) to complete the backup deletion process.
+Delete the `backuprepository` custom resource (CR) to complete the backup deletion process. This helps you to ensure that all backup metadata and artifacts are fully removed from storage.
+
+After you delete the backup, and after the Kopia repository maintenance cycles to delete the related artifacts are complete, the backup is no longer referenced by any metadata or manifest objects.
 
 Prerequisites
 
@@ -12397,11 +13141,11 @@ $ oc get backuprepositories.velero.io -n openshift-adp
 $ oc delete backuprepository <backup_repository_name> -n openshift-adp
 ```
 
-1. Specify the name of the backup repository from the earlier step.
+Replace `<backup_repository_name>` with the name of the backup repository.
 
 #### 5.17.8. About Kopia
 
-Kopia is a fast and secure open-source backup and restore tool that allows you to create encrypted snapshots of your data and save the snapshots to remote or cloud storage of your choice.
+Kopia is an open-source backup and restore tool, which creates encrypted snapshots of your data and saves them to remote or cloud storage.
 
 Kopia supports network and local storage locations, and many cloud or remote storage locations, including:
 
@@ -12421,11 +13165,17 @@ If files are moved or renamed, Kopia can recognize that they have the same conte
 
 #### 5.17.8.1. OADP integration with Kopia
 
-OADP 1.3 supports Kopia as the backup mechanism for pod volume backup in addition to Restic. You must choose one or the other at installation by setting the `uploaderType` field in the `DataProtectionApplication` custom resource (CR). The possible values are `restic` or `kopia`. If you do not specify an `uploaderType`, OADP 1.3 defaults to using Kopia as the backup mechanism. The data is written to and read from a unified repository.
+OADP 1.3 supports Kopia as the backup mechanism for pod volume backup in addition to Restic.
+
+You must choose one or the other at installation by setting the `uploaderType` field in the `DataProtectionApplication` custom resource (CR). The possible values are `restic` or `kopia`.
+
+If you do not specify an `uploaderType`, OADP 1.3 defaults to using Kopia as the backup mechanism. The data is written to and read from a unified repository.
 
 Important
 
-Using the Kopia client to modify the Kopia backup repositories is not supported and can affect the integrity of Kopia backups. OADP does not support directly connecting to the Kopia repository and can offer support only on a best-effort basis.
+Using the Kopia client to modify the Kopia backup repositories is not supported and can affect the integrity of Kopia backups.
+
+OADP does not support directly connecting to the Kopia repository and can offer support only on a best-effort basis.
 
 The following example shows a `DataProtectionApplication` CR configured for using Kopia:
 
@@ -12444,13 +13194,19 @@ spec:
 
 #### 5.18.1. Restoring applications
 
-You restore application backups by creating a `Restore` custom resource (CR). See Creating a Restore CR.
+Restore application backups by previewing resources before running the restore, creating a `Restore` custom resource (CR), and configuring restore hooks to run commands in restored pods.
 
-You can create restore hooks to run commands in a container in a pod by editing the `Restore` CR. See Creating restore hooks.
+This helps you to recover your application data and configuration while controlling the restore process.
 
 #### 5.18.1.1. Previewing resources before running backup and restore
 
-OADP backs up application resources based on the type, namespace, or label. This means that you can view the resources after the backup is complete. Similarly, you can view the restored objects based on the namespace, persistent volume (PV), or label after a restore operation is complete. To preview the resources in advance, you can do a dry run of the backup and restore operations.
+Preview the backup and restore resources in advance by doing a dry run of the backup and restore operations.
+
+This helps you to verify which resources will be included before committing to a full backup or restore.
+
+OADP backs up application resources based on the type, namespace, or label. This means that you can view the resources after the backup is complete.
+
+Similarly, you can view the restored objects based on the namespace, persistent volume (PV), or label after a restore operation is complete.
 
 Prerequisites
 
@@ -12464,21 +13220,21 @@ To preview the resources included in the backup before running the actual backup
 $ velero backup create <backup-name> --snapshot-volumes false
 ```
 
-1. Specify the value of `--snapshot-volumes` parameter as `false`.
+Specify the value of `--snapshot-volumes` parameter as `false`.
 
 ```shell-session
 $ velero describe backup <backup_name> --details
 ```
 
-1. Specify the name of the backup.
+Replace `<backup_name>` with the name of the backup.
 
 To preview the resources included in the restore before running the actual restore, run the following command:
 
 ```shell-session
-$ velero restore create --from-backup <backup-name>
+$ velero restore create --from-backup <backup_name>
 ```
 
-1. Specify the name of the backup created to review the backup resources.
+Replace `<backup_name>` with the name of the backup.
 
 Important
 
@@ -12488,11 +13244,11 @@ The `velero restore create` command creates restore resources in the cluster. Yo
 $ velero describe restore <restore_name> --details
 ```
 
-1. Specify the name of the restore.
+Replace `<restore_name>` with the name of the restore.
 
 #### 5.18.1.2. Creating a Restore CR
 
-You restore a `Backup` custom resource (CR) by creating a `Restore` CR.
+Restore a `Backup` custom resource (CR) by creating a `Restore` CR.
 
 When you restore a stateful application that uses the `azurefile-csi` storage class, the restore operation remains in the `Finalizing` phase.
 
@@ -12527,11 +13283,19 @@ spec:
   restorePVs: true
 ```
 
-1. Name of the `Backup` CR.
+where:
 
-2. Optional: Specify an array of resources to include in the restore process. Resources might be shortcuts (for example, `po` for `pods`) or fully-qualified. If unspecified, all resources are included.
+`<backup>`
 
-3. Optional: The `restorePVs` parameter can be set to `false` to turn off restore of `PersistentVolumes` from `VolumeSnapshot` of Container Storage Interface (CSI) snapshots or from native snapshots when `VolumeSnapshotLocation` is configured.
+Specifies the name of the `Backup` CR.
+
+`includedResources`
+
+Optional: Specifies an array of resources to include in the restore process. Resources might be shortcuts (for example, `po` for `pods`) or fully-qualified. If unspecified, all resources are included.
+
+`restorePVs: true`
+
+Optional: The `restorePVs` parameter can be set to `false` to turn off restore of `PersistentVolumes` from `VolumeSnapshot` of Container Storage Interface (CSI) snapshots or from native snapshots when `VolumeSnapshotLocation` is configured.
 
 Verify that the status of the `Restore` CR is `Completed` by entering the following command:
 
@@ -12545,7 +13309,11 @@ Verify that the backup resources have been restored by entering the following co
 $ oc get all -n <namespace>
 ```
 
-1. Namespace that you backed up.
+where:
+
+`<namespace>`
+
+Specifies the namespace that you backed up.
 
 If you restore `DeploymentConfig` with volumes or if you use post-restore hooks, run the cleanup script by entering the following command:
 
@@ -12559,11 +13327,11 @@ $ bash dc-restic-post-restore.sh -> dc-post-restore.sh
 
 Note
 
-During the restore process, the OADP Velero plug-ins scale down the `DeploymentConfig` objects and restore the pods as standalone pods. This is done to prevent the cluster from deleting the restored `DeploymentConfig` pods immediately on restore and to allow the restore and post-restore hooks to complete their actions on the restored pods. The cleanup script shown below removes these disconnected pods and scales any `DeploymentConfig` objects back up to the appropriate number of replicas.
+During the restore process, the OADP Velero plug-ins scale down the `DeploymentConfig` objects and restore the pods as standalone pods.
 
-```shell
-dc-restic-post-restore.sh → dc-post-restore.sh
-```
+This is done to prevent the cluster from deleting the restored `DeploymentConfig` pods immediately on restore and to allow the restore and post-restore hooks to complete their actions on the restored pods.
+
+The cleanup script shown below removes these disconnected pods and scales any `DeploymentConfig` objects back up to the appropriate number of replicas.
 
 ```bash
 #!/bin/bash
@@ -12614,7 +13382,7 @@ done
 
 #### 5.18.1.3. Creating restore hooks
 
-You create restore hooks to run commands in a container in a pod by editing the `Restore` custom resource (CR).
+Create restore hooks to run commands in a container in a pod by editing the `Restore` custom resource (CR).
 
 You can create two types of restore hooks:
 
@@ -12672,33 +13440,59 @@ spec:
             onError: Continue
 ```
 
-1. Optional: Array of namespaces to which the hook applies. If this value is not specified, the hook applies to all namespaces.
+where:
 
-2. Currently, pods are the only supported resource that hooks can apply to.
+`<namespace>`
 
-3. Optional: This hook only applies to objects matching the label selector.
+Optional: Specifies an array of namespaces to which the hook applies. If this value is not specified, the hook applies to all namespaces.
 
-4. Optional: Timeout specifies the maximum length of time Velero waits for `initContainers` to complete.
+`pods`
 
-5. Optional: If the container is not specified, the command runs in the first container in the pod.
+Currently, pods are the only supported resource that hooks can apply to.
 
-6. This is the entrypoint for the init container being added.
+`labelSelector`
 
-7. Optional: How long to wait for a container to become ready. This should be long enough for the container to start and for any preceding hooks in the same container to complete. If not set, the restore process waits indefinitely.
+Optional: This hook only applies to objects matching the label selector.
 
-8. Optional: How long to wait for the commands to run. The default is `30s`.
+`timeout`
 
-9. Allowed values for error handling are `Fail` and `Continue`:
+Optional: Specifies the maximum length of time Velero waits for `initContainers` to complete.
+
+`<container>`
+
+Optional: Specifies the container in which the command runs. If the container is not specified, the command runs in the first container in the pod.
+
+`/bin/bash`
+
+Specifies the entrypoint for the init container being added.
+
+`waitTimeout: 5m`
+
+Optional: Specifies how long to wait for a container to become ready. This should be long enough for the container to start and for any preceding hooks in the same container to complete.
+
+If not set, the restore process waits indefinitely.
+
+`execTimeout: 1m`
+
+Optional: Specifies how long to wait for the commands to run. The default is `30s`.
+
+`onError: Continue`
+
+Specifies the error handling behavior. Allowed values are `Fail` and `Continue`:
 
 `Continue`: Only command failures are logged.
 
 `Fail`: No more restore hooks run in any container in any pod. The status of the `Restore` CR will be `PartiallyFailed`.
 
-Important
+During a File System Backup (FSB) restore operation, a `Deployment` resource referencing an `ImageStream` is not restored properly.
 
-During a File System Backup (FSB) restore operation, a `Deployment` resource referencing an `ImageStream` is not restored properly. The restored pod that runs the FSB, and the `postHook` is terminated prematurely.
+The restored pod that runs the FSB, and the `postHook` is terminated prematurely.
 
-This happens because, during the restore operation, OpenShift controller updates the `spec.template.spec.containers[0].image` field in the `Deployment` resource with an updated `ImageStreamTag` hash. The update triggers the rollout of a new pod, terminating the pod on which `velero` runs the FSB and the post restore hook. For more information about image stream trigger, see "Triggering updates on image stream changes".
+This happens because, during the restore operation, OpenShift controller updates the `spec.template.spec.containers[0].image` field in the `Deployment` resource with an updated `ImageStreamTag` hash.
+
+The update triggers the rollout of a new pod, terminating the pod on which `velero` runs the FSB and the post restore hook.
+
+For more information about image stream trigger, see "Triggering updates on image stream changes".
 
 The workaround for this behavior is a two-step restore process:
 
@@ -12722,17 +13516,23 @@ Triggering updates on image stream changes
 
 #### 5.19.1. OADP Self-Service
 
-Use OADP Self-Service to enable namespace administrators to back up and restore their applications without cluster admin privileges. This helps you delegate backup operations while maintaining administrative control.
+Use OADP Self-Service to enable namespace administrators to back up and restore their applications without cluster admin privileges.
+
+This helps you delegate backup operations while maintaining administrative control.
 
 #### 5.19.1.1. About OADP Self-Service
 
-From OADP 1.5.0 onward, you do not need the `cluster-admin` role to perform the backup and restore operations. You can use OADP with the namespace `admin` role. The namespace `admin` role has administrator access only to the namespace the user is assigned to.
+From OADP 1.5.0 onward, you do not need the `cluster-admin` role to perform the backup and restore operations. You can use OADP with the namespace `admin` role.
+
+The namespace `admin` role has administrator access only to the namespace the user is assigned to.
 
 You can use the Self-Service feature only after the cluster administrator installs the OADP Operator and provides the necessary permissions.
 
 The OADP Self-Service feature provides secure self-service data protection capabilities for users without `cluster-admin` privileges while maintaining proper access controls.
 
-The OADP cluster administrator creates a user with the namespace `admin` role and provides the necessary Role Based Access Controls (RBAC) to the user to perform OADP Self-Service actions. As this user has limited access compared to the `cluster-admin` role, this user is referred to as a namespace admin user.
+The OADP cluster administrator creates a user with the namespace `admin` role and provides the necessary Role Based Access Controls (RBAC) to the user to perform OADP Self-Service actions.
+
+As this user has limited access compared to the `cluster-admin` role, this user is referred to as a namespace admin user.
 
 As a namespace admin user, you can back up and restore applications deployed in your authorized namespace on the cluster.
 
@@ -12754,7 +13554,9 @@ You have secure access to backup logs and status information.
 
 #### 5.19.1.2. What namespace-scoped backup and restore means
 
-OADP Self-Service ensures that namespace admin users can only operate within their authorized namespace. For example, if you do not have access to a namespace, as a namespace admin user, you cannot back up that namespace.
+OADP Self-Service ensures that namespace admin users can only operate within their authorized namespace.
+
+For example, if you do not have access to a namespace, as a namespace admin user, you cannot back up that namespace.
 
 A namespace admin user cannot access backup and restore data of other users.
 
@@ -12780,7 +13582,9 @@ Configuring an htpasswd identity provider
 
 #### 5.19.1.3. OADP Self-Service custom resources
 
-Use OADP Self-Service custom resources to control backup, restore, storage location, and download operations for namespace-scoped applications. This provides namespace administrators with self-service data protection tools.
+Use OADP Self-Service custom resources to control backup, restore, storage location, and download operations for namespace-scoped applications.
+
+This provides namespace administrators with self-service data protection tools.
 
 The OADP Self-Service feature has the following new custom resources (CRs) to perform the backup and restore operations for a namespace admin user:
 
@@ -12812,7 +13616,9 @@ Figure 5.1. How OADP Self-Service works
 
 #### 5.19.1.5. OADP Self-Service prerequisites
 
-Configure your cluster environment to enable OADP Self-Service backup and restore operations by meeting the following prerequisites. This helps namespace administrators perform data protection tasks in their assigned namespaces.
+Configure your cluster environment to enable OADP Self-Service backup and restore operations by meeting the following prerequisites.
+
+This helps namespace administrators perform data protection tasks in their assigned namespaces.
 
 The cluster administrator has configured the OADP `DataProtectionApplication` (DPA) CR to enable Self-Service.
 
@@ -12822,13 +13628,17 @@ Created a namespace `admin` user account.
 
 Created a namespace for the namespace `admin` user.
 
-Assigned appropriate privileges for the namespace admin user’s namespace. This ensures that the namespace admin user is authorized to access and perform backup and restore operations in their assigned namespace.
+Assigned appropriate privileges for the namespace admin user’s namespace.
+
+This ensures that the namespace admin user is authorized to access and perform backup and restore operations in their assigned namespace.
 
 Optionally, the cluster administrator can create a `NonAdminBackupStorageLocation` (NABSL) CR for the namespace `admin` user.
 
 #### 5.19.1.6. OADP Self-Service namespace permissions
 
-Assign namespace permissions to namespace administrators to create and manage backup, restore, and storage location resources in their assigned namespaces. This grants namespace administrators the required access for Self-Service data protection operations.
+Assign namespace permissions to namespace administrators to create and manage backup, restore, and storage location resources in their assigned namespaces.
+
+This grants namespace administrators the required access for Self-Service data protection operations.
 
 As a cluster administrator, ensure that a namespace admin user has editor roles assigned for the following list of objects in their namespace.
 
@@ -12876,7 +13686,9 @@ See the following role-based access control (RBAC) YAML file example with namesp
 
 #### 5.19.1.7. OADP Self-Service limitations
 
-Review the limitations and unsupported features of OADP Self-Service to understand which operations are restricted for namespace administrators. This helps you plan appropriate backup and restore strategies within the supported functionality.
+Review the limitations and unsupported features of OADP Self-Service to understand which operations are restricted for namespace administrators.
+
+This helps you plan appropriate backup and restore strategies within the supported functionality.
 
 The following features are not supported by OADP Self-Service:
 
@@ -12914,7 +13726,9 @@ To ensure secure backup and restore, OADP Self-Service automatically excludes th
 
 #### 5.19.1.8. OADP Self-Service backup and restore phases
 
-Review the status phases of `NonAdminBackup` (NAB) and `NonAdminRestore` (NAR) custom resources to track the progress and state of backup and restore operations. This helps you monitor and troubleshoot Self-Service backup and restore requests.
+Review the status phases of `NonAdminBackup` (NAB) and `NonAdminRestore` (NAR) custom resources to track the progress and state of backup and restore operations.
+
+This helps you monitor and troubleshoot Self-Service backup and restore requests.
 
 The phase of the CRs only progress forward. Once a phase transitions to the next phase, it cannot revert to a previous phase.
 
@@ -12927,7 +13741,9 @@ The phase of the CRs only progress forward. Once a phase transitions to the next
 
 #### 5.19.1.9. About NonAdminBackupStorageLocation CR
 
-Review the `NonAdminBackupStorageLocation` (NABSL) custom resource (CR) workflows to understand how namespace administrators define backup storage locations through administrator creation, approval, or automatic processes. This helps you choose the appropriate workflow based on security requirements.
+Review the `NonAdminBackupStorageLocation` (NABSL) custom resource (CR) workflows to understand how namespace administrators define backup storage locations through administrator creation, approval, or automatic processes.
+
+This helps you choose the appropriate workflow based on security requirements.
 
 To ensure that the NABSL CR is created and used securely, use cluster administrator controls. The cluster administrator manages the NABSL CR to comply with company policies, and compliance requirements.
 
@@ -12935,9 +13751,13 @@ You can create a NABSL CR by using one of the following workflows:
 
 Administrator creation workflow: In this workflow, the cluster administrator creates the NABSL CR for the namespace admin user. The namespace admin user then references the NABSL in the `NonAdminBackup` CR.
 
-Administrator approval workflow: The cluster administrator must explicitly enable this opt-in feature in the DPA by setting the `nonAdmin.requireApprovalForBSL` field to `true`. The cluster administrator approval process works as follows:
+Administrator approval workflow: The cluster administrator must explicitly enable this opt-in feature in the DPA by setting the `nonAdmin.requireApprovalForBSL` field to `true`.
 
-A namespace admin user creates a NABSL CR. Because the administrator has enforced an approval process in the DPA, it triggers the creation of a `NonAdminBackupStorageLocationRequest` CR in the `openshift-adp` namespace.
+The cluster administrator approval process works as follows:
+
+A namespace admin user creates a NABSL CR.
+
+Because the administrator has enforced an approval process in the DPA, it triggers the creation of a `NonAdminBackupStorageLocationRequest` CR in the `openshift-adp` namespace.
 
 The cluster administrator reviews the request and either approves or rejects the request.
 
@@ -12947,9 +13767,15 @@ If approved, a `Velero`
 
 If rejected, the status of the NABSL CR is updated to reflect the rejection.
 
-The cluster administrator can also revoke a previously approved NABSL CR. The `approve` field is set back to `pending` or `reject`. This results in the deletion of the `Velero` BSL, and the namespace admin user is notified of the rejection.
+The cluster administrator can also revoke a previously approved NABSL CR. The `approve` field is set back to `pending` or `reject`.
 
-Automatic approval workflow: In this workflow, the cluster administrator does not enforce an approval process for the NABSL CR by setting the `nonAdmin.requireApprovalForBSL` field in the DPA to `false`. The default value of this field is `false`. Not setting the field results in an automatic approval of the NABSL. Therefore, the namespace admin user can create the NABSL CR from their authorized namespace.
+This results in the deletion of the `Velero` BSL, and the namespace admin user is notified of the rejection.
+
+Automatic approval workflow: In this workflow, the cluster administrator does not enforce an approval process for the NABSL CR by setting the `nonAdmin.requireApprovalForBSL` field in the DPA to `false`.
+
+The default value of this field is `false`. Not setting the field results in an automatic approval of the NABSL.
+
+Therefore, the namespace admin user can create the NABSL CR from their authorized namespace.
 
 Important
 
@@ -12957,11 +13783,15 @@ For security purposes, use either the administrator creation or the administrato
 
 #### 5.19.2. OADP Self-Service cluster admin use cases
 
-Configure and manage OADP Self-Service by enabling the feature, reviewing backup storage location requests, and enforcing policy templates. This helps you provide Self-Service backup capabilities while maintaining administrative control.
+Configure and manage OADP Self-Service by enabling the feature, reviewing backup storage location requests, and enforcing policy templates.
+
+This helps you provide Self-Service backup capabilities while maintaining administrative control.
 
 #### 5.19.2.1. Enabling and disabling OADP Self-Service
 
-Enable or disable the OADP Self-Service feature to allow namespace administrators to manage their own backup and restore operations without cluster admin privileges. This helps you delegate backup responsibilities while maintaining administrative control.
+Enable or disable the OADP Self-Service feature to allow namespace administrators to manage their own backup and restore operations without cluster admin privileges.
+
+This helps you delegate backup responsibilities while maintaining administrative control.
 
 Note
 
@@ -13045,7 +13875,9 @@ non-admin-controller-5d....f5-p..9p   1/1     Running   0          99m
 
 #### 5.19.2.2. Enabling NonAdminBackupStorageLocation administrator approval workflow
 
-Enable the administrator approval workflow for `NonAdminBackupStorageLocation` custom resource to review backup storage location requests from namespace administrators before they are applied. This helps you maintain control over backup storage configurations.
+Enable the administrator approval workflow for `NonAdminBackupStorageLocation` custom resource to review backup storage location requests from namespace administrators before they are applied.
+
+This helps you maintain control over backup storage configurations.
 
 Prerequisites
 
@@ -13093,7 +13925,9 @@ Specifies whether the NABSL administrator approval workflow is enabled. Set to `
 
 #### 5.19.2.3. Approving a NonAdminBackupStorageLocation request
 
-Approve `NonAdminBackupStorageLocation` (NABSL) custom resource requests from namespace administrators to grant access to their specified backup storage locations. This enables self-service backup and restore operations for namespace resources.
+Approve `NonAdminBackupStorageLocation` (NABSL) custom resource requests from namespace administrators to grant access to their specified backup storage locations.
+
+This enables self-service backup and restore operations for namespace resources.
 
 Prerequisites
 
@@ -13144,7 +13978,9 @@ test-nac-test-bsl-cd...930   Available   62s              62s
 
 #### 5.19.2.4. Rejecting a NonAdminBackupStorageLocation request
 
-Reject `NonAdminBackupStorageLocation` (NABSL) custom resource (CR) requests from namespace administrators to deny access to backup storage locations that do not meet requirements. This helps you maintain security and compliance standards.
+Reject `NonAdminBackupStorageLocation` (NABSL) custom resource (CR) requests from namespace administrators to deny access to backup storage locations that do not meet requirements.
+
+This helps you maintain security and compliance standards.
 
 Prerequisites
 
@@ -13183,7 +14019,9 @@ Replace `<nabsl_name>` with the name of the `NonAdminBackupStorageLocationReques
 
 #### 5.19.2.5. OADP Self-Service administrator DPA spec enforcement
 
-Enforce policy templates in the `DataProtectionApplication` (DPA) custom resource (CR) to control `NonAdminBackup`, `NonAdminRestore`, and `NonAdminBackupStorageLocation` custom resources created by namespace administrators. This helps you maintain compliance standards.
+Enforce policy templates in the `DataProtectionApplication` (DPA) custom resource (CR) to control `NonAdminBackup`, `NonAdminRestore`, and `NonAdminBackupStorageLocation` custom resources created by namespace administrators.
+
+This helps you maintain compliance standards.
 
 The cluster administrator can enforce a company, or a compliance policy by using the following fields in the `DataProtectionApplication` (DPA) CR:
 
@@ -13203,7 +14041,9 @@ By using the enforceable fields, administrators can ensure that the NABSL, NAB, 
 
 #### 5.19.2.6. Self-Service administrator spec enforcement for NABSL
 
-Enforce specific fields in `NonAdminBackupStorageLocation` (NABSL) custom resource (CR) to control storage bucket, credentials, configuration, access mode, and validation settings used by namespace administrators. This helps you maintain organizational policies.
+Enforce specific fields in `NonAdminBackupStorageLocation` (NABSL) custom resource (CR) to control storage bucket, credentials, configuration, access mode, and validation settings used by namespace administrators.
+
+This helps you maintain organizational policies.
 
 You can enforce the following fields for a NABSL:
 
@@ -13255,7 +14095,9 @@ When a namespace admin user creates a NABSL, they must follow the template set u
 
 #### 5.19.2.7. Self-Service administrator spec enforcement for NAB
 
-Enforce specific fields in `NonAdminBackup` (NAB) custom resource (CR) to control timeout settings, resource policies, label selectors, snapshot configurations, and time-to-live values used by namespace administrators. This helps you maintain backup standards.
+Enforce specific fields in `NonAdminBackup` (NAB) custom resource (CR) to control timeout settings, resource policies, label selectors, snapshot configurations, and time-to-live values used by namespace administrators.
+
+This helps you maintain backup standards.
 
 You can enforce the following fields for a NAB CR:
 
@@ -13323,7 +14165,9 @@ When a namespace admin user creates a NAB CR, they must follow the template set 
 
 #### 5.19.2.8. Self-Service administrator spec enforcement for NAR
 
-Enforce specific fields in `NonAdminRestore` (NAR) custom resource (CR) to control timeout settings, resource policies, label selectors, persistent volume restoration, and node port configurations used by namespace administrators. This helps you maintain restore standards.
+Enforce specific fields in `NonAdminRestore` (NAR) custom resource (CR) to control timeout settings, resource policies, label selectors, persistent volume restoration, and node port configurations used by namespace administrators.
+
+This helps you maintain restore standards.
 
 You can enforce the following fields for a NAR CR:
 
@@ -13349,11 +14193,15 @@ You can enforce the following fields for a NAR CR:
 
 #### 5.19.3. OADP Self-Service namespace admin use cases
 
-Use OADP Self-Service as a namespace administrator to create backup storage locations, perform backup and restore operations, and review operation logs for your authorized namespaces. This helps you to manage data protection independently without cluster admin access.
+Use OADP Self-Service as a namespace administrator to create backup storage locations, perform backup and restore operations, and review operation logs for your authorized namespaces.
+
+This helps you to manage data protection independently without cluster admin access.
 
 #### 5.19.3.1. Creating a NonAdminBackupStorageLocation CR
 
-Create a `NonAdminBackupStorageLocation` (NABSL) custom resource (CR) to define backup storage locations in your authorized namespace. With this feature, you can store backups in a cloud storage that meets your application requirements.
+Create a `NonAdminBackupStorageLocation` (NABSL) custom resource (CR) to define backup storage locations in your authorized namespace.
+
+With this feature, you can store backups in a cloud storage that meets your application requirements.
 
 Prerequisites
 
@@ -13551,7 +14399,9 @@ Specifies that the NABSL is ready for use.
 
 #### 5.19.3.2. Creating a NonAdminBackup CR
 
-Create a `NonAdminBackup` (NAB) custom resource (CR) to back up application resources in your authorized namespace. This helps you to protect your application data and configuration without requiring cluster administrator privileges.
+Create a `NonAdminBackup` (NAB) custom resource (CR) to back up application resources in your authorized namespace.
+
+This helps you to protect your application data and configuration without requiring cluster administrator privileges.
 
 After you create a NAB CR, the CR undergoes the following phases:
 
@@ -13577,7 +14427,9 @@ The cluster administrator has configured the `DataProtectionApplication` (DPA) C
 
 The cluster administrator has created a namespace for you and has authorized you to operate from that namespace.
 
-Optional: You can create and use a `NonAdminBackupStorageLocation` (NABSL) CR to store the backup data. If you do not use a NABSL CR, then the backup is stored in the default backup storage location configured in the DPA.
+Optional: You can create and use a `NonAdminBackupStorageLocation` (NABSL) CR to store the backup data.
+
+If you do not use a NABSL CR, then the backup is stored in the default backup storage location configured in the DPA.
 
 Procedure
 
@@ -13821,7 +14673,9 @@ Error from server (NotFound): nonadminbackups.oadp.openshift.io "test-nab" not f
 
 #### 5.19.3.4. Creating a NonAdminRestore CR
 
-Create a `NonAdminRestore` (NAR) custom resource (CR) to restore application resources from a backup to your authorized namespace. This provides an ability to recover your application data and configuration without requiring cluster administrator privileges.
+Create a `NonAdminRestore` (NAR) custom resource (CR) to restore application resources from a backup to your authorized namespace.
+
+This provides an ability to recover your application data and configuration without requiring cluster administrator privileges.
 
 Prerequisites
 
@@ -13974,7 +14828,9 @@ You can download the following NADR resources:
 
 #### 5.19.3.6. Reviewing NAB and NAR logs
 
-Create a `NonAdminDownloadRequest` (NADR) custom resource (CR) to access and review detailed logs for `NonAdminBackup` (NAB) and `NonAdminRestore` (NAR) operations. This helps you troubleshoot backup and restore issues independently.
+Create a `NonAdminDownloadRequest` (NADR) custom resource (CR) to access and review detailed logs for `NonAdminBackup` (NAB) and `NonAdminRestore` (NAR) operations.
+
+This helps you troubleshoot backup and restore issues independently.
 
 Note
 
@@ -14138,11 +14994,15 @@ Download and analyze the restore information by using the `status.downloadURL` U
 
 #### 5.19.4. OADP Self-Service troubleshooting
 
-Resolve common errors and issues when using OADP Self-Service by following troubleshooting procedures for backup storage locations and backup operations. This helps you quickly identify and fix problems independently.
+Resolve common errors and issues when using OADP Self-Service by following troubleshooting procedures for backup storage locations and backup operations.
+
+This helps you quickly identify and fix problems independently.
 
 #### 5.19.4.1. Resolving error NonAdminBackupStorageLocation not found in the namespace
 
-Resolve the `NonAdminBackupStorageLocation not found in the namespace` error by using a backup storage location that belongs to the same namespace as your backup. This helps ensure successful backup operations.
+Resolve the `NonAdminBackupStorageLocation not found in the namespace` error by using a backup storage location that belongs to the same namespace as your backup.
+
+This helps ensure successful backup operations.
 
 Consider the following scenario of a namespace `admin` backup:
 
@@ -14175,7 +15035,9 @@ In this scenario, you must use `nabsl-1` in the NAB CR to back up `namespace-1`.
 
 #### 5.19.4.2. Resolving error NonAdminBackupStorageLocation cannot be set as default
 
-Resolve the error that occurs when you set a `NonAdminBackupStorageLocation` (NABSL) custom resource (CR) as the default backup storage location. This helps you resolve validation errors and configure backup storage locations correctly.
+Resolve the error that occurs when you set a `NonAdminBackupStorageLocation` (NABSL) custom resource (CR) as the default backup storage location.
+
+This helps you resolve validation errors and configure backup storage locations correctly.
 
 As a non-admin user, if you have created a NABSL CR in your authorized namespace, you cannot set the NABSL CR as the default backup storage location.
 
@@ -14221,7 +15083,9 @@ ROSA provides seamless integration with a wide range of Amazon Web Services (AWS
 
 You can subscribe to the service directly from your AWS account.
 
-After you create your clusters, you can operate your clusters with the OpenShift Container Platform web console or through Red Hat OpenShift Cluster Manager. You can also use ROSA with OpenShift APIs and command-line interface (CLI) tools.
+After you create your clusters, you can operate your clusters with the OpenShift Container Platform web console or through Red Hat OpenShift Cluster Manager.
+
+You can also use ROSA with OpenShift APIs and command-line interface (CLI) tools.
 
 For additional information about ROSA installation, see Installing Red Hat OpenShift Service on AWS (ROSA) interactive walk-through.
 
@@ -14404,7 +15268,9 @@ $ aws iam attach-role-policy --role-name "${ROLE_NAME}" \
 
 #### 5.20.1.2. Installing the OADP Operator and providing the IAM role
 
-Install OpenShift API for Data Protection (OADP) on clusters with AWS STS. AWS Security Token Service (AWS STS) is a global web service that provides short-term credentials for IAM or federated users. OpenShift Container Platform with STS is the recommended credential mode.
+Install OpenShift API for Data Protection (OADP) on clusters with AWS STS. AWS Security Token Service (AWS STS) is a global web service that provides short-term credentials for IAM or federated users.
+
+OpenShift Container Platform with STS is the recommended credential mode.
 
 Important
 
@@ -14428,7 +15294,9 @@ In an Amazon ROSA cluster that uses STS authentication, restoring backed-up data
 
 Prerequisites
 
-An OpenShift Container Platform cluster with the required access and tokens. For instructions, see the previous procedure Preparing AWS credentials for OADP. If you plan to use two different clusters for backing up and restoring, you must prepare AWS credentials, including `ROLE_ARN`, for each cluster.
+An OpenShift Container Platform cluster with the required access and tokens. For instructions, see the previous procedure Preparing AWS credentials for OADP.
+
+If you plan to use two different clusters for backing up and restoring, you must prepare AWS credentials, including `ROLE_ARN`, for each cluster.
 
 Procedure
 
@@ -14456,7 +15324,9 @@ $ oc -n openshift-adp create secret generic cloud-credentials \
 
 Note
 
-In OpenShift Container Platform versions 4.15 and later, the OADP Operator supports a new standardized STS workflow through the Operator Lifecycle Manager (OLM) and Cloud Credentials Operator (CCO). In this workflow, you do not need to create the above secret, you only need to supply the role ARN during the installation of OLM-managed operators using the OpenShift Container Platform web console, for more information see Installing from software catalog using the web console.
+In OpenShift Container Platform versions 4.15 and later, the OADP Operator supports a new standardized STS workflow through the Operator Lifecycle Manager (OLM) and Cloud Credentials Operator (CCO).
+
+In this workflow, you do not need to create the above secret, you only need to supply the role ARN during the installation of OLM-managed operators using the OpenShift Container Platform web console, for more information see Installing from software catalog using the web console.
 
 The preceding secret is created automatically by CCO.
 
@@ -14658,7 +15528,13 @@ If you want to use two different clusters for backing up and restoring, the two 
 
 Update the OADP Operator subscription to fix an installation error due to incorrect IAM role Amazon Resource Name (ARN).
 
-While installing the OADP Operator on a ROSA Security Token Service (STS) cluster, if you provide an incorrect IAM role Amazon Resource Name (ARN), the `openshift-adp-controller` pod gives an error. The credential requests that are generated contain the wrong IAM role ARN. To update the credential requests object with the correct IAM role ARN, you can edit the OADP Operator subscription and patch the IAM role ARN with the correct value. By editing the OADP Operator subscription, you do not have to uninstall and reinstall OADP to update the IAM role ARN.
+While installing the OADP Operator on a ROSA Security Token Service (STS) cluster, if you provide an incorrect IAM role Amazon Resource Name (ARN), the `openshift-adp-controller` pod gives an error.
+
+The credential requests that are generated contain the wrong IAM role ARN.
+
+To update the credential requests object with the correct IAM role ARN, you can edit the OADP Operator subscription and patch the IAM role ARN with the correct value.
+
+By editing the OADP Operator subscription, you do not have to uninstall and reinstall OADP to update the IAM role ARN.
 
 Prerequisites
 
@@ -15010,9 +15886,15 @@ Starting from OADP 1.0.4, all OADP 1.0. z versions can only be used as a depende
 
 You configure AWS for Velero, create a default `Secret`, and then install the Data Protection Application. For more details, see Installing the OADP Operator.
 
-To install the OADP Operator in a restricted network environment, you must first disable the default software catalog sources and mirror the Operator catalog. See Using Operator Lifecycle Manager in disconnected environments.
+To install the OADP Operator in a restricted network environment, you must first disable the default software catalog sources and mirror the Operator catalog.
 
-You can install OADP on an AWS Security Token Service (STS) (AWS STS) cluster manually. Amazon AWS provides AWS STS as a web service that enables you to request temporary, limited-privilege credentials for users. You use STS to provide trusted users with temporary access to resources via API calls, your AWS console, or the AWS command-line interface (CLI).
+See Using Operator Lifecycle Manager in disconnected environments.
+
+You can install OADP on an AWS Security Token Service (STS) (AWS STS) cluster manually.
+
+Amazon AWS provides AWS STS as a web service that enables you to request temporary, limited-privilege credentials for users.
+
+You use STS to provide trusted users with temporary access to resources via API calls, your AWS console, or the AWS command-line interface (CLI).
 
 Before installing OpenShift API for Data Protection (OADP), you must set up role and policy credentials for OADP so that it can use the Amazon Web Services API.
 
@@ -15212,7 +16094,9 @@ In an AWS cluster that uses STS authentication, restoring backed-up data in a di
 
 Prerequisites
 
-An OpenShift Container Platform AWS STS cluster with the required access and tokens. For instructions, see the previous procedure Preparing AWS credentials for OADP. If you plan to use two different clusters for backing up and restoring, you must prepare AWS credentials, including `ROLE_ARN`, for each cluster.
+An OpenShift Container Platform AWS STS cluster with the required access and tokens. For instructions, see the previous procedure Preparing AWS credentials for OADP.
+
+If you plan to use two different clusters for backing up and restoring, you must prepare AWS credentials, including `ROLE_ARN`, for each cluster.
 
 Procedure
 
@@ -15240,7 +16124,9 @@ $ oc -n openshift-adp create secret generic cloud-credentials \
 
 Note
 
-In OpenShift Container Platform versions 4.14 and later, the OADP Operator supports a new standardized STS workflow through the Operator Lifecycle Manager (OLM) and Cloud Credentials Operator (CCO). In this workflow, you do not need to create the above secret, you only need to supply the role ARN during the installation of OLM-managed operators using the OpenShift Container Platform web console, for more information see Installing from the software catalog using the web console.
+In OpenShift Container Platform versions 4.14 and later, the OADP Operator supports a new standardized STS workflow through the Operator Lifecycle Manager (OLM) and Cloud Credentials Operator (CCO).
+
+In this workflow, you do not need to create the above secret, you only need to supply the role ARN during the installation of OLM-managed operators using the OpenShift Container Platform web console, for more information see Installing from the software catalog using the web console.
 
 The preceding secret is created automatically by CCO.
 
@@ -15654,7 +16540,9 @@ $ aws iam delete-role --role-name "${ROLE_NAME}"
 
 #### 5.22.1. Backing up and restoring 3scale API Management by using OADP
 
-Back up and restore Red Hat 3scale API Management deployments by using OpenShift API for Data Protection (OADP) to protect application resources, persistent volumes, and configurations. This helps you to safeguard your 3scale components for disaster recovery.
+Back up and restore Red Hat 3scale API Management deployments by using OpenShift API for Data Protection (OADP) to protect application resources, persistent volumes, and configurations.
+
+This helps you to safeguard your 3scale components for disaster recovery.
 
 You can deploy 3scale components on-premise, in the cloud, as a managed service, or in any combination based on your requirements.
 
@@ -15678,13 +16566,17 @@ Restoring 3scale API Management
 
 #### 5.22.2. Backing up 3scale API Management by using OADP
 
-Back up Red Hat 3scale API Management components, including the 3scale Operator, MySQL database, and Redis database, by using OpenShift API for Data Protection (OADP). This helps you protect your API management infrastructure and provides recovery in case of data loss.
+Back up Red Hat 3scale API Management components, including the 3scale Operator, MySQL database, and Redis database, by using OpenShift API for Data Protection (OADP).
+
+This helps you protect your API management infrastructure and provides recovery in case of data loss.
 
 For more information about installing and configuring Red Hat 3scale API Management, see Installing 3scale API Management on OpenShift and Red Hat 3scale API Management.
 
 #### 5.22.2.1. Creating the Data Protection Application
 
-Create a Data Protection Application (DPA) custom resource (CR) to configure backup storage and Velero settings for Red Hat 3scale API Management. This helps you set up the backup infrastructure required for protecting your 3scale components.
+Create a Data Protection Application (DPA) custom resource (CR) to configure backup storage and Velero settings for Red Hat 3scale API Management.
+
+This helps you set up the backup infrastructure required for protecting your 3scale components.
 
 Procedure
 
@@ -15747,7 +16639,9 @@ $ oc create -f dpa.yaml
 
 #### 5.22.2.2. Backing up the 3scale API Management operator, secret, and APIManager
 
-Back up the Red Hat 3scale API Management operator resources, including the `Secret` and APIManager custom resources (CRs), by creating backup CRs. This helps you preserve your 3scale operator configuration for recovery scenarios.
+Back up the Red Hat 3scale API Management operator resources, including the `Secret` and APIManager custom resources (CRs), by creating backup CRs.
+
+This helps you preserve your 3scale operator configuration for recovery scenarios.
 
 Prerequisites
 
@@ -16119,13 +17013,17 @@ Creating a Backup CR
 
 #### 5.22.3. Restoring 3scale API Management by using OADP
 
-Restore Red Hat 3scale API Management components by restoring the backed up 3scale operator resources, MySQL database, and Redis database. This helps you to recover your 3scale deployment and resume API management services.
+Restore Red Hat 3scale API Management components by restoring the backed up 3scale operator resources, MySQL database, and Redis database.
+
+This helps you to recover your 3scale deployment and resume API management services.
 
 After the data has been restored, you can scale up the 3scale operator and deployment.
 
 #### 5.22.3.1. Restoring the 3scale API Management operator, secrets, and APIManager
 
-Restore the Red Hat 3scale API Management operator resources, including the `Secret` and APIManager custom resources (CRs). This helps you to recover your 3scale operator configuration on the same or a different cluster.
+Restore the Red Hat 3scale API Management operator resources, including the `Secret` and APIManager custom resources (CRs).
+
+This helps you to recover your 3scale operator configuration on the same or a different cluster.
 
 Prerequisites
 
@@ -16135,7 +17033,9 @@ You backed up the MySQL and Redis databases.
 
 You are restoring the database on the same cluster, where it was backed up.
 
-If you are restoring the operator to a different cluster that you backed up from, install and configure OADP with `nodeAgent` enabled on the destination cluster. Ensure that the OADP configuration is same as it was on the source cluster.
+If you are restoring the operator to a different cluster that you backed up from, install and configure OADP with `nodeAgent` enabled on the destination cluster.
+
+Ensure that the OADP configuration is same as it was on the source cluster.
 
 Procedure
 
@@ -16317,7 +17217,9 @@ deployment.apps/threescale-operator-controller-manager-v2 scaled
 
 #### 5.22.3.2. Restoring a MySQL database
 
-Restore a MySQL database by scaling down Red Hat 3scale API Management components and creating a Velero `Restore` custom resource (CR). This helps you to recover your 3scale MySQL data, persistent volumes, and associated resources.
+Restore a MySQL database by scaling down Red Hat 3scale API Management components and creating a Velero `Restore` custom resource (CR).
+
+This helps you to recover your 3scale MySQL data, persistent volumes, and associated resources.
 
 Warning
 
@@ -16473,7 +17375,9 @@ system-searchd          Bound    pvc-afbf606c-d4a8-4041-8ec6-54c5baf1a3b9   1Gi 
 
 #### 5.22.3.3. Restoring the back-end Redis database
 
-Restore the back-end Redis database by creating a `Restore` custom resource (CR) that excludes non-essential cluster resources. This helps you to recover the Redis data store as part of the Red Hat 3scale API Management restoration process.
+Restore the back-end Redis database by creating a `Restore` custom resource (CR) that excludes non-essential cluster resources.
+
+This helps you to recover the Redis data store as part of the Red Hat 3scale API Management restoration process.
 
 Prerequisites
 
@@ -16546,7 +17450,9 @@ restore-backend-jmrwx   threescale   backend-redis-1-bsfmv   kopia           bac
 
 #### 5.22.3.4. Scaling up the 3scale API Management operator and deployment
 
-Scale up the Red Hat 3scale API Management operator and any deployment that was manually scaled down during the restore process. This helps you to bring your 3scale installation back to a fully functional state matching the backed-up configuration.
+Scale up the Red Hat 3scale API Management operator and any deployment that was manually scaled down during the restore process.
+
+This helps you to bring your 3scale installation back to a fully functional state matching the backed-up configuration.
 
 Prerequisites
 
@@ -16554,7 +17460,9 @@ You restored the 3scale operator resources, and both the `Secret` and APIManager
 
 You restored the MySQL and back-end Redis databases.
 
-Ensure that there are no scaled up deployments or no extra pods running. There might be some `system-mysql` or `backend-redis` pods running detached from deployments after restoration, which can be removed after the restoration is successful.
+Ensure that there are no scaled up deployments or no extra pods running.
+
+There might be some `system-mysql` or `backend-redis` pods running detached from deployments after restoration, which can be removed after the restoration is successful.
 
 Procedure
 
@@ -16631,7 +17539,9 @@ Use the URL from this output to log in to the 3scale operator as an administrato
 
 #### 5.23.1. About the OADP Data Mover
 
-Use the OpenShift API for Data Protection (OADP) built-in Data Mover to move Container Storage Interface (CSI) volume snapshots to remote object storage and restore stateful applications after cluster failures. This provides disaster recovery capabilities for both containerized and virtual machine workloads.
+Use the OpenShift API for Data Protection (OADP) built-in Data Mover to move Container Storage Interface (CSI) volume snapshots to remote object storage and restore stateful applications after cluster failures.
+
+This provides disaster recovery capabilities for both containerized and virtual machine workloads.
 
 The Data Mover uses Kopia as the uploader mechanism to read the snapshot data and write to the unified repository.
 
@@ -16655,11 +17565,15 @@ Not supported
 
 Backups taken with OADP 1.1 or OADP 1.2 using the Data Mover feature cannot be restored using OADP 1.3 and later.
 
-OADP 1.1 and OADP 1.2 are no longer supported. The DataMover feature in OADP 1.1 or OADP 1.2 was a Technology Preview and was never supported. DataMover backups taken with OADP 1.1 or OADP 1.2 cannot be restored on later versions of OADP.
+OADP 1.1 and OADP 1.2 are no longer supported. The DataMover feature in OADP 1.1 or OADP 1.2 was a Technology Preview and was never supported.
+
+DataMover backups taken with OADP 1.1 or OADP 1.2 cannot be restored on later versions of OADP.
 
 #### 5.23.1.2. Enabling the built-in Data Mover
 
-Enable the built-in Data Mover by configuring the CSI plugin and node agent in the `DataProtectionApplication` custom resource (CR). This provides volume-level backup and restore operations by using the Kopia uploader.
+Enable the built-in Data Mover by configuring the CSI plugin and node agent in the `DataProtectionApplication` custom resource (CR).
+
+This provides volume-level backup and restore operations by using the Kopia uploader.
 
 Procedure
 
@@ -16703,23 +17617,33 @@ Specifies the CSI plugin included in the list of default plugins.
 
 `defaultVolumesToFSBackup`
 
-Specifies the default behavior for volumes. In OADP 1.3.1 and later, set to `true` if you use Data Mover only for volumes that opt out of `fs-backup`. Set to `false` if you use Data Mover by default for volumes.
+Specifies the default behavior for volumes. In OADP 1.3.1 and later, set to `true` if you use Data Mover only for volumes that opt out of `fs-backup`.
+
+Set to `false` if you use Data Mover by default for volumes.
 
 #### 5.23.1.3. Built-in Data Mover controller and custom resource definitions (CRDs)
 
-Review the custom resource definitions (CRDs) that the built-in Data Mover uses to manage volume snapshot backup and restore operations. This helps you understand how Data Mover handles data upload, download, and repository management.
+Review the custom resource definitions (CRDs) that the built-in Data Mover uses to manage volume snapshot backup and restore operations.
+
+This helps you understand how Data Mover handles data upload, download, and repository management.
 
 The built-in Data Mover feature introduces three new API objects defined as CRDs for managing backup and restore:
 
-`DataDownload`: Represents a data download of a volume snapshot. The CSI plugin creates one `DataDownload` object per volume to be restored. The `DataDownload` CR includes information about the target volume, the specified Data Mover, the progress of the current data download, the specified backup repository, and the result of the current data download after the process is complete.
+`DataDownload`: Represents a data download of a volume snapshot. The CSI plugin creates one `DataDownload` object per volume to be restored.
 
-`DataUpload`: Represents a data upload of a volume snapshot. The CSI plugin creates one `DataUpload` object per CSI snapshot. The `DataUpload` CR includes information about the specified snapshot, the specified Data Mover, the specified backup repository, the progress of the current data upload, and the result of the current data upload after the process is complete.
+The `DataDownload` CR includes information about the target volume, the specified Data Mover, the progress of the current data download, the specified backup repository, and the result of the current data download after the process is complete.
+
+`DataUpload`: Represents a data upload of a volume snapshot. The CSI plugin creates one `DataUpload` object per CSI snapshot.
+
+The `DataUpload` CR includes information about the specified snapshot, the specified Data Mover, the specified backup repository, the progress of the current data upload, and the result of the current data upload after the process is complete.
 
 `BackupRepository`: Represents and manages the lifecycle of the backup repositories. OADP creates a backup repository per namespace when the first CSI snapshot backup or restore for a namespace is requested.
 
 #### 5.23.1.4. About incremental back up support
 
-OADP supports incremental backups of `block` and `Filesystem` persistent volumes for both containerized, and OpenShift Virtualization workloads. The following table summarizes the support for File System Backup (FSB), Container Storage Interface (CSI), and CSI Data Mover:
+OADP supports incremental backups of `block` and `Filesystem` persistent volumes for both containerized, and OpenShift Virtualization workloads.
+
+The following table summarizes the support for File System Backup (FSB), Container Storage Interface (CSI), and CSI Data Mover:
 
 | Volume mode | FSB - Restic | FSB - Kopia | CSI | CSI Data Mover |
 | --- | --- | --- | --- | --- |
@@ -16814,7 +17738,9 @@ In this scenario, consider resizing the volume or using a different filesystem t
 
 Verification
 
-Verify that the snapshot data is successfully transferred to the remote object store by monitoring the `status.phase` field of the `DataUpload` CR. Possible values are `In Progress`, `Completed`, `Failed`, or `Canceled`. The object store is configured in the `backupLocations` stanza of the `DataProtectionApplication` CR.
+Verify that the snapshot data is successfully transferred to the remote object store by monitoring the `status.phase` field of the `DataUpload` CR.
+
+Possible values are `In Progress`, `Completed`, `Failed`, or `Canceled`. The object store is configured in the `backupLocations` stanza of the `DataProtectionApplication` CR.
 
 ```shell-session
 $ oc get datauploads -A
@@ -16953,7 +17879,9 @@ Indicates that the CSI snapshot data is successfully restored.
 
 #### 5.23.2.3. Deletion policy for OADP 1.3
 
-The deletion policy determines rules for removing data from a system, specifying when and how deletion occurs based on factors such as retention periods, data sensitivity, and compliance requirements. It manages data removal effectively while meeting regulations and preserving valuable information.
+The deletion policy determines rules for removing data from a system, specifying when and how deletion occurs based on factors such as retention periods, data sensitivity, and compliance requirements.
+
+It manages data removal effectively while meeting regulations and preserving valuable information.
 
 #### 5.23.2.3.1. Deletion policy guidelines for OADP 1.3
 
@@ -16963,7 +17891,9 @@ In OADP 1.3.x, when using any type of backup and restore methods, you can set th
 
 #### 5.23.3. Configuring backup and restore PVCs for Data Mover
 
-Configure backup and restore persistent volume claims (PVCs) to optimize Data Mover operations. For storage classes like CephFS, these intermediate PVCs allow the system to create read-only volumes from snapshots, resulting in significantly faster backups.
+Configure backup and restore persistent volume claims (PVCs) to optimize Data Mover operations.
+
+For storage classes like CephFS, these intermediate PVCs allow the system to create read-only volumes from snapshots, resulting in significantly faster backups.
 
 You create a `readonly` backup PVC by using the `nodeAgent.backupPVC` section of the `DataProtectionApplication` (DPA) and setting the `readOnly` access mode to `true`.
 
@@ -16973,11 +17903,17 @@ You can use the following fields in the `nodeAgent.backupPVC` section of the DPA
 
 `readOnly`: Indicates if the backup PVC should be mounted as read-only. Setting this field to `true` also requires you to set the `spcNoRelabeling` field to `true`.
 
-`spcNoRelabeling`: Disables automatic relabeling of the volume if set to `true`. You can set this field to `true` only when `readOnly` is `true`. When the `readOnly` flag is `true`, SELinux relabeling of the volume is not possible. This causes the Data Mover backup to fail. Therefore, when you are using the `readOnly` access mode for the CephFS storage class, you must disable relabeling.
+`spcNoRelabeling`: Disables automatic relabeling of the volume if set to `true`. You can set this field to `true` only when `readOnly` is `true`.
+
+When the `readOnly` flag is `true`, SELinux relabeling of the volume is not possible. This causes the Data Mover backup to fail.
+
+Therefore, when you are using the `readOnly` access mode for the CephFS storage class, you must disable relabeling.
 
 #### 5.23.3.1. Configuring a backup PVC for a Data Mover backup
 
-Configure backup persistent volume claim (PVC) settings in the `DataProtectionApplication` (DPA) to optimize Data Mover backup performance for different storage classes. The feature gives you read-only access modes for faster data movement.
+Configure backup persistent volume claim (PVC) settings in the `DataProtectionApplication` (DPA) to optimize Data Mover backup performance for different storage classes.
+
+The feature gives you read-only access modes for faster data movement.
 
 Prerequisites
 
@@ -17071,13 +18007,21 @@ test-backup1-l..d   Bound   pvc-1298....022f8   2Gi        ROX            standa
 
 #### 5.23.3.2. Configuring a restorePVC for a Data Mover restore
 
-Configure restore persistent volume claim (PVC) settings in the `DataProtectionApplication` (DPA) to optimize Data Mover restore operations and enable parallel volume restores. This improves restore performance by distributing restore pods across nodes.
+Configure restore persistent volume claim (PVC) settings in the `DataProtectionApplication` (DPA) to optimize Data Mover restore operations and enable parallel volume restores.
+
+This improves restore performance by distributing restore pods across nodes.
 
 A `restorePVC` is an intermediate PVC that is used to write data during the Data Mover restore operation.
 
-You can configure the `restorePVC` in the `DataProtectionApplication` (DPA) object by using the `ignoreDelayBinding` field. Setting the `ignoreDelayBinding` field to `true` allows the restore operation to ignore the `WaitForFirstConsumer` binding mode. The data movement restore operation then creates the restore pod and provisions the associated volume to an arbitrary node.
+You can configure the `restorePVC` in the `DataProtectionApplication` (DPA) object by using the `ignoreDelayBinding` field.
 
-The `ignoreDelayBinding` setting is helpful in scenarios where multiple volume restores are happening in parallel. With the `ignoreDelayBinding` field set to `true`, the restore pods can be spread evenly to all nodes.
+Setting the `ignoreDelayBinding` field to `true` allows the restore operation to ignore the `WaitForFirstConsumer` binding mode.
+
+The data movement restore operation then creates the restore pod and provisions the associated volume to an arbitrary node.
+
+The `ignoreDelayBinding` setting is helpful in scenarios where multiple volume restores are happening in parallel.
+
+With the `ignoreDelayBinding` field set to `true`, the restore pods can be spread evenly to all nodes.
 
 Prerequisites
 
@@ -17121,13 +18065,17 @@ Override the default values of Kopia hashing, encryption, and splitter algorithm
 
 #### 5.23.4.1. Configuring the DPA to override Kopia hashing, encryption, and splitter algorithms
 
-Configure the Data Protection Application (DPA) to override the default Kopia hashing, encryption, and splitter algorithms by setting environment variables in the Velero pod configuration. This helps you improve Kopia performance and compare performance metrics for your backup operations.
+Configure the Data Protection Application (DPA) to override the default Kopia hashing, encryption, and splitter algorithms by setting environment variables in the Velero pod configuration.
+
+This helps you improve Kopia performance and compare performance metrics for your backup operations.
 
 Note
 
 The configuration of the Kopia algorithms for splitting, hashing, and encryption in the Data Protection Application (DPA) apply only during the initial Kopia repository creation, and cannot be changed later.
 
-To use different Kopia algorithms, ensure that the object storage does not contain any previous Kopia repositories of backups. Configure a new object storage in the Backup Storage Location (BSL) or specify a unique prefix for the object storage in the BSL configuration.
+To use different Kopia algorithms, ensure that the object storage does not contain any previous Kopia repositories of backups.
+
+Configure a new object storage in the Backup Storage Location (BSL) or specify a unique prefix for the object storage in the BSL configuration.
 
 Prerequisites
 
@@ -17191,7 +18139,9 @@ Specifies a splitter algorithm. For example, `DYNAMIC-8M-RABINKARP`.
 
 #### 5.23.4.2. Use case for overriding Kopia hashing, encryption, and splitter algorithms
 
-Back up an application by using Kopia environment variables for hashing, encryption, and splitter. Store the backup in an AWS S3 bucket and verify the environment variables by connecting to the Kopia repository.
+Back up an application by using Kopia environment variables for hashing, encryption, and splitter.
+
+Store the backup in an AWS S3 bucket and verify the environment variables by connecting to the Kopia repository.
 
 Prerequisites
 
@@ -17374,13 +18324,17 @@ Format version:      3
 
 #### 5.23.4.3. Benchmarking Kopia hashing, encryption, and splitter algorithms
 
-Run Kopia commands to benchmark the hashing, encryption, and splitter algorithms. Based on the benchmarking results, you can select the most suitable algorithm for your workload. You run the Kopia benchmarking commands from a pod on the cluster. The benchmarking results can vary depending on CPU speed, available RAM, disk speed, current I/O load, and so on.
+Run Kopia commands to benchmark the hashing, encryption, and splitter algorithms. Based on the benchmarking results, you can select the most suitable algorithm for your workload.
+
+You run the Kopia benchmarking commands from a pod on the cluster. The benchmarking results can vary depending on CPU speed, available RAM, disk speed, current I/O load, and so on.
 
 Note
 
 The configuration of the Kopia algorithms for splitting, hashing, and encryption in the Data Protection Application (DPA) apply only during the initial Kopia repository creation, and cannot be changed later.
 
-To use different Kopia algorithms, ensure that the object storage does not contain any previous Kopia repositories of backups. Configure a new object storage in the Backup Storage Location (BSL) or specify a unique prefix for the object storage in the BSL configuration.
+To use different Kopia algorithms, ensure that the object storage does not contain any previous Kopia repositories of backups.
+
+Configure a new object storage in the Backup Storage Location (BSL) or specify a unique prefix for the object storage in the BSL configuration.
 
 Prerequisites
 
@@ -17568,7 +18522,11 @@ The following are `BackupLocation` OADP APIs:
 
 Important
 
-The `bucket` parameter is a Technology Preview feature only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs) and might not be functionally complete. Red Hat does not recommend using them in production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
+The `bucket` parameter is a Technology Preview feature only.
+
+Technology Preview features are not supported with Red Hat production service level agreements (SLAs) and might not be functionally complete. Red Hat does not recommend using them in production.
+
+These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
 
 For more information about the support scope of Red Hat Technology Preview features, see Technology Preview Features Support Scope.
 
@@ -17688,17 +18646,23 @@ The following are `DataMover` OADP APIs:
 
 #### 5.25.1. Working with different Kubernetes API versions on the same cluster
 
-Manage different Kubernetes API versions on your cluster during backup and restore operations. Enabling Velero to back up all supported API group versions helps you maintain compatibility when moving resources to a new destination cluster.
+Manage different Kubernetes API versions on your cluster during backup and restore operations.
+
+Enabling Velero to back up all supported API group versions helps you maintain compatibility when moving resources to a new destination cluster.
 
 #### 5.25.1.1. Listing the Kubernetes API group versions on a cluster
 
 Identify the preferred Kubernetes API group versions on your source cluster. This helps you select the correct API version when multiple API versions are available for a single API.
 
-A source cluster might offer multiple versions of an API, where one of these versions is the preferred API version. For example, a source cluster with an API named `Example` might be available in the `example.com/v1` and `example.com/v1beta2` API groups.
+A source cluster might offer multiple versions of an API, where one of these versions is the preferred API version.
+
+For example, a source cluster with an API named `Example` might be available in the `example.com/v1` and `example.com/v1beta2` API groups.
 
 If you use Velero to back up and restore such a source cluster, Velero backs up only the version of that resource that uses the preferred version of its Kubernetes API.
 
-To return to the above example, if `example.com/v1` is the preferred API, then Velero only backs up the version of a resource that uses `example.com/v1`. Moreover, the target cluster needs to have `example.com/v1` registered in its set of available API resources in order for Velero to restore the resource on the target cluster.
+To return to the above example, if `example.com/v1` is the preferred API, then Velero only backs up the version of a resource that uses `example.com/v1`.
+
+Moreover, the target cluster needs to have `example.com/v1` registered in its set of available API resources in order for Velero to restore the resource on the target cluster.
 
 Therefore, you need to generate a list of the Kubernetes API group versions on your target cluster to be sure the preferred API version is registered in its set of available API resources.
 
@@ -17710,13 +18674,21 @@ $ oc api-resources
 
 #### 5.25.1.2. About Enable API Group Versions
 
-Enable the API Group Versions feature to back up all supported Kubernetes API versions on your cluster, rather than just the preferred one. This helps you maintain complete API compatibility when restoring data to a destination cluster.
+Enable the API Group Versions feature to back up all supported Kubernetes API versions on your cluster, rather than just the preferred one.
 
-By default, Velero only backs up resources that use the preferred version of the Kubernetes API. However, Velero also includes the Enable API Group Versions feature that overcomes this limitation. When enabled on the source cluster, this feature causes Velero to back up all Kubernetes API group versions that are supported on the cluster, not only the preferred one. After the versions are stored in the backup.tar file, they are available to be restored on the destination cluster.
+This helps you maintain complete API compatibility when restoring data to a destination cluster.
+
+By default, Velero only backs up resources that use the preferred version of the Kubernetes API. However, Velero also includes the Enable API Group Versions feature that overcomes this limitation.
+
+When enabled on the source cluster, this feature causes Velero to back up all Kubernetes API group versions that are supported on the cluster, not only the preferred one.
+
+After the versions are stored in the backup.tar file, they are available to be restored on the destination cluster.
 
 For example, a source cluster with an API named `Example` might be available in the `example.com/v1` and `example.com/v1beta2` API groups, with `example.com/v1` being the preferred API.
 
-Without the Enable API Group Versions feature enabled, Velero backs up only the preferred API group version for `Example`, which is `example.com/v1`. With the feature enabled, Velero also backs up `example.com/v1beta2`.
+Without the Enable API Group Versions feature enabled, Velero backs up only the preferred API group version for `Example`, which is `example.com/v1`.
+
+With the feature enabled, Velero also backs up `example.com/v1beta2`.
 
 When the Enable API Group Versions feature is enabled on the destination cluster, Velero selects the version to restore on the basis of the order of priority of API group versions.
 
@@ -17738,7 +18710,9 @@ Enable API Group Versions Feature
 
 #### 5.25.1.3. Using Enable API Group Versions
 
-Configure the `EnableAPIGroupVersions` feature flag to back up all Kubernetes API group versions that are supported on a cluster, not only the preferred one. This helps you maintain compatibility across different API groups in your cluster.
+Configure the `EnableAPIGroupVersions` feature flag to back up all Kubernetes API group versions that are supported on a cluster, not only the preferred one.
+
+This helps you maintain compatibility across different API groups in your cluster.
 
 Note
 
@@ -17763,15 +18737,21 @@ Enable API Group Versions Feature
 
 #### 5.25.2. Backing up data from one cluster and restoring it to another cluster
 
-Explore how to back up application data from one OpenShift Container Platform cluster and restore it to another cluster. While more complex than single-cluster operations, OpenShift API for Data Protection provides the tools to manage this cross-cluster data recovery.
+Explore how to back up application data from one OpenShift Container Platform cluster and restore it to another cluster.
+
+While more complex than single-cluster operations, OpenShift API for Data Protection provides the tools to manage this cross-cluster data recovery.
 
 #### 5.25.2.1. About backing up data from one cluster and restoring it on another cluster
 
 Back up application data from one OpenShift Container Platform cluster and restore it to another using OADP.
 
-OpenShift API for Data Protection (OADP) is designed to back up and restore application data in the same OpenShift Container Platform cluster. Migration Toolkit for Containers (MTC) is designed to migrate containers, including application data, from one OpenShift Container Platform cluster to another cluster.
+OpenShift API for Data Protection (OADP) is designed to back up and restore application data in the same OpenShift Container Platform cluster.
 
-You can use OADP to back up application data from one OpenShift Container Platform cluster and restore it on another cluster. However, doing so is more complicated than using MTC or using OADP to back up and restore on the same cluster.
+Migration Toolkit for Containers (MTC) is designed to migrate containers, including application data, from one OpenShift Container Platform cluster to another cluster.
+
+You can use OADP to back up application data from one OpenShift Container Platform cluster and restore it on another cluster.
+
+However, doing so is more complicated than using MTC or using OADP to back up and restore on the same cluster.
 
 To successfully use OADP to back up data from one cluster and restore it to another cluster, you must take into account the following factors, in addition to the prerequisites and procedures that apply to using OADP to back up and restore data on the same cluster:
 
@@ -17787,7 +18767,9 @@ You must exclude Operators from the backup of an application for backup and rest
 
 #### 5.25.2.1.2. Use of Velero
 
-Velero, which OADP is built upon, does not natively support migrating persistent volume snapshots across cloud providers. To migrate volume snapshot data between cloud platforms, you must either enable the Velero Restic file system backup option, which backs up volume contents at the file system level, or use the OADP Data Mover for CSI snapshots.
+Velero, which OADP is built upon, does not natively support migrating persistent volume snapshots across cloud providers.
+
+To migrate volume snapshot data between cloud platforms, you must either enable the Velero Restic file system backup option, which backs up volume contents at the file system level, or use the OADP Data Mover for CSI snapshots.
 
 Note
 
@@ -17797,7 +18779,9 @@ You must also use Velero’s File System Backup to migrate data between AWS regi
 
 Velero does not support restoring data to a cluster with an earlier Kubernetes version than the source cluster.
 
-It is theoretically possible to migrate workloads to a destination with a later Kubernetes version than the source, but you must consider the compatibility of API groups between clusters for each custom resource. If a Kubernetes version upgrade breaks the compatibility of core or native API groups, you must first update the impacted custom resources.
+It is theoretically possible to migrate workloads to a destination with a later Kubernetes version than the source, but you must consider the compatibility of API groups between clusters for each custom resource.
+
+If a Kubernetes version upgrade breaks the compatibility of core or native API groups, you must first update the impacted custom resources.
 
 Additional resources
 
@@ -17805,7 +18789,9 @@ File System Backup
 
 #### 5.25.2.2. About determining which pod volumes to back up
 
-Before starting a File System Backup (FSB), you must specify which pod volumes to back up. Velero calls this process discovering volumes. You can use either the opt-in or opt-out approach to help Velero choose between an FSB, a volume snapshot, or a Data Mover backup.
+Before starting a File System Backup (FSB), you must specify which pod volumes to back up. Velero calls this process discovering volumes.
+
+You can use either the opt-in or opt-out approach to help Velero choose between an FSB, a volume snapshot, or a Data Mover backup.
 
 Opt-in approach: With the opt-in approach, volumes are backed up using snapshot or Data Mover by default. FSB is used on specific volumes that are opted-in by annotations.
 
@@ -17815,21 +18801,31 @@ Opt-out approach: With the opt-out approach, volumes are backed up using FSB by 
 
 FSB does not support backing up and restoring `hostpath` volumes. However, FSB does support backing up and restoring local volumes.
 
-Velero uses a static, common encryption key for all backup repositories it creates. This static key means that anyone who can access your backup storage can also decrypt your backup data. It is essential that you limit access to backup storage.
+Velero uses a static, common encryption key for all backup repositories it creates. This static key means that anyone who can access your backup storage can also decrypt your backup data.
+
+It is essential that you limit access to backup storage.
 
 For PVCs, every incremental backup chain is maintained across pod reschedules.
 
-For pod volumes that are not PVCs, such as `emptyDir` volumes, if a pod is deleted or recreated, for example, by a `ReplicaSet` or a deployment, the next backup of those volumes will be a full backup and not an incremental backup. It is assumed that the lifecycle of a pod volume is defined by its pod.
+For pod volumes that are not PVCs, such as `emptyDir` volumes, if a pod is deleted or recreated, for example, by a `ReplicaSet` or a deployment, the next backup of those volumes will be a full backup and not an incremental backup.
+
+It is assumed that the lifecycle of a pod volume is defined by its pod.
 
 Even though backup data can be kept incrementally, backing up large files, such as a database, can take a long time. This is because FSB uses deduplication to find the difference that needs to be backed up.
 
-FSB reads and writes data from volumes by accessing the file system of the node on which the pod is running. For this reason, FSB can only back up volumes that are mounted from a pod and not directly from a PVC. Some Velero users have overcome this limitation by running a staging pod, such as a BusyBox or Alpine container with an infinite sleep, to mount these PVC and PV pairs before performing a Velero backup..
+FSB reads and writes data from volumes by accessing the file system of the node on which the pod is running.
 
-FSB expects volumes to be mounted under, with `<hostPath>` being configurable. Some Kubernetes systems, for example, vCluster, do not mount volumes under the subdirectory, and VFSB does not work with them as expected.
+For this reason, FSB can only back up volumes that are mounted from a pod and not directly from a PVC.
+
+Some Velero users have overcome this limitation by running a staging pod, such as a BusyBox or Alpine container with an infinite sleep, to mount these PVC and PV pairs before performing a Velero backup..
+
+FSB expects volumes to be mounted under, with `<hostPath>` being configurable.
 
 ```shell
 <hostPath>/<pod UID>
 ```
+
+Some Kubernetes systems, for example, vCluster, do not mount volumes under the subdirectory, and VFSB does not work with them as expected.
 
 ```shell
 <pod UID>
@@ -17837,7 +18833,9 @@ FSB expects volumes to be mounted under, with `<hostPath>` being configurable. S
 
 #### 5.25.2.2.2. Backing up pod volumes by using the opt-in method
 
-Use the opt-in method to specify the exact pod volumes you want to back up using File System Backup (FSB). By applying specific annotations, you can selectively include only the volumes you need, which helps you to manage storage and backup efficiency.
+Use the opt-in method to specify the exact pod volumes you want to back up using File System Backup (FSB).
+
+By applying specific annotations, you can selectively include only the volumes you need, which helps you to manage storage and backup efficiency.
 
 Procedure
 
@@ -17856,7 +18854,9 @@ specifies the name of the xth volume in the pod specification.
 
 #### 5.25.2.2.3. Backing up pod volumes by using the opt-out method
 
-Use the opt-out method to exclude specific pod volumes from your default File System Backup (FSB). While this approach automatically backs up all pod volumes, to customize your backup operations you can use annotations to skip specific ones.
+Use the opt-out method to exclude specific pod volumes from your default File System Backup (FSB).
+
+While this approach automatically backs up all pod volumes, to customize your backup operations you can use annotations to skip specific ones.
 
 When using the opt-out approach, all pod volumes are backed up by using File System Backup (FSB), although there are some exceptions:
 
@@ -17891,15 +18891,21 @@ Address potential User ID (UID) and Group ID (GID) range conflicts when moving d
 
 Summary of the issues
 
-The namespace UID and GID ranges might change depending on the destination cluster. OADP does not back up and restore OpenShift UID range metadata. If the backed up application requires a specific UID, ensure the range is available upon restore. For more information about OpenShift’s UID and GID ranges, see A Guide to OpenShift and UIDs.
+The namespace UID and GID ranges might change depending on the destination cluster. OADP does not back up and restore OpenShift UID range metadata.
+
+If the backed up application requires a specific UID, ensure the range is available upon restore. For more information about OpenShift’s UID and GID ranges, see A Guide to OpenShift and UIDs.
 
 Detailed description of the issues
 
-When you create a namespace in OpenShift Container Platform by using the shell command, OpenShift Container Platform assigns the namespace a unique User ID (UID) range from its available pool of UIDs, a Supplemental Group (GID) range, and unique SELinux MCS labels. This information is stored in the `metadata.annotations` field of the cluster. This information is part of the Security Context Constraints (SCC) annotations, which comprise of the following components:
+When you create a namespace in OpenShift Container Platform by using the shell command, OpenShift Container Platform assigns the namespace a unique User ID (UID) range from its available pool of UIDs, a Supplemental Group (GID) range, and unique SELinux MCS labels.
 
 ```shell
 oc create namespace
 ```
+
+This information is stored in the `metadata.annotations` field of the cluster.
+
+This information is part of the Security Context Constraints (SCC) annotations, which comprise of the following components:
 
 `openshift.io/sa.scc.mcs`
 
@@ -17907,17 +18913,25 @@ oc create namespace
 
 `openshift.io/sa.scc.uid-range`
 
-When you use OADP to restore the namespace, it automatically uses the information in `metadata.annotations` without resetting it for the destination cluster. As a result, the workload might not have access to the backed up data if any of the following is true:
+When you use OADP to restore the namespace, it automatically uses the information in `metadata.annotations` without resetting it for the destination cluster.
+
+As a result, the workload might not have access to the backed up data if any of the following is true:
 
 There is an existing namespace with other SCC annotations, for example, on another cluster. In this case, OADP uses the existing namespace during the backup instead of the namespace you want to restore.
 
-A label selector was used during the backup, but the namespace in which the workloads are executed does not have the label. In this case, OADP does not back up the namespace, but creates a new namespace during the restore that does not contain the annotations of the backed up namespace. This results in a new UID range being assigned to the namespace.
+A label selector was used during the backup, but the namespace in which the workloads are executed does not have the label.
+
+In this case, OADP does not back up the namespace, but creates a new namespace during the restore that does not contain the annotations of the backed up namespace.
+
+This results in a new UID range being assigned to the namespace.
 
 This can be an issue for customer workloads if OpenShift Container Platform assigns a pod a `securityContext` UID to a pod based on namespace annotations that have changed since the persistent volume data was backed up.
 
 The UID of the container no longer matches the UID of the file owner.
 
-An error occurs because OpenShift Container Platform has not changed the UID range of the destination cluster to match the backup cluster data. As a result, the backup cluster has a different UID than the destination cluster, which means that the application cannot read or write data on the destination cluster.
+An error occurs because OpenShift Container Platform has not changed the UID range of the destination cluster to match the backup cluster data.
+
+As a result, the backup cluster has a different UID than the destination cluster, which means that the application cannot read or write data on the destination cluster.
 
 Mitigations
 
@@ -17971,27 +18985,41 @@ In OADP 1.2 and later, the Velero Restic option is called `file-system-backup`.
 
 Important
 
-Before restoring a CSI back up, edit the `VolumeSnapshotClass` custom resource (CR), and set the `snapshot.storage.kubernetes.io/is-default-class parameter` to false. Otherwise, the restore will partially fail due to the same value in the `VolumeSnapshotClass` in the target cluster for the same drive.
+Before restoring a CSI back up, edit the `VolumeSnapshotClass` custom resource (CR), and set the `snapshot.storage.kubernetes.io/is-default-class parameter` to false.
+
+Otherwise, the restore will partially fail due to the same value in the `VolumeSnapshotClass` in the target cluster for the same drive.
 
 #### 5.25.3. OADP storage class mapping
 
-Map your storage classes with OpenShift API for Data Protection to define rules for how different data types are stored. This helps you automate storage assignments to optimize cost and efficiency during backup and restore operations.
+Map your storage classes with OpenShift API for Data Protection to define rules for how different data types are stored.
+
+This helps you automate storage assignments to optimize cost and efficiency during backup and restore operations.
 
 #### 5.25.3.1. Storage class mapping
 
-Define rules for your storage classes to automate how different data types are stored. Mapping your storage classes helps optimize your storage efficiency and lower costs based on access frequency and data importance.
+Define rules for your storage classes to automate how different data types are stored.
 
-Storage class mapping allows you to define rules or policies specifying which storage class should be applied to different types of data. This feature automates the process of determining storage classes based on access frequency, data importance, and cost considerations. It optimizes storage efficiency and cost-effectiveness by ensuring that data is stored in the most suitable storage class for its characteristics and usage patterns.
+Mapping your storage classes helps optimize your storage efficiency and lower costs based on access frequency and data importance.
+
+Storage class mapping allows you to define rules or policies specifying which storage class should be applied to different types of data.
+
+This feature automates the process of determining storage classes based on access frequency, data importance, and cost considerations.
+
+It optimizes storage efficiency and cost-effectiveness by ensuring that data is stored in the most suitable storage class for its characteristics and usage patterns.
 
 You can use the `change-storage-class-config` field to change the storage class of your data objects, which lets you optimize costs and performance by moving data between different storage tiers, such as from standard to archival storage, based on your needs and access patterns.
 
 #### 5.25.3.1.1. Storage class mapping with Migration Toolkit for Containers
 
-You can use the Migration Toolkit for Containers (MTC) to migrate containers, including application data, from one OpenShift Container Platform cluster to another cluster and for storage class mapping and conversion. You can convert the storage class of a persistent volume (PV) by migrating it within the same cluster. To do so, you must create and run a migration plan in the MTC web console.
+You can use the Migration Toolkit for Containers (MTC) to migrate containers, including application data, from one OpenShift Container Platform cluster to another cluster and for storage class mapping and conversion.
+
+You can convert the storage class of a persistent volume (PV) by migrating it within the same cluster. To do so, you must create and run a migration plan in the MTC web console.
 
 #### 5.25.3.1.2. Mapping storage classes with OADP
 
-Change the storage class of a persistent volume (PV) during a restore by configuring a storage class mapping in the Velero namespace. This helps you customize storage destinations when recovering applications with OADP.
+Change the storage class of a persistent volume (PV) during a restore by configuring a storage class mapping in the Velero namespace.
+
+This helps you customize storage destinations when recovering applications with OADP.
 
 To deploy ConfigMap with OADP, use the `change-storage-class-config` field. You must change the storage class mapping based on your cloud provider.
 
@@ -18022,7 +19050,9 @@ $ oc create -f change-storage-class-config
 
 #### 5.26.1. Troubleshooting
 
-Troubleshoot OpenShift API for Data Protection (OADP) issues by using diagnostic tools such as the Velero CLI, webhooks, `must-gather` custom resource, and other methods. This helps you identify and resolve problems with backup and restore operations.
+Troubleshoot OpenShift API for Data Protection (OADP) issues by using diagnostic tools such as the Velero CLI, webhooks, `must-gather` custom resource, and other methods.
+
+This helps you identify and resolve problems with backup and restore operations.
 
 You can troubleshoot OADP issues by using the following methods:
 
@@ -18044,11 +19074,15 @@ Monitor and analyze the workload performance with the help of OADP monitoring.
 
 #### 5.26.2. Velero CLI tool
 
-Download the `velero` CLI tool or access the `velero` binary in your cluster to debug `Backup` and `Restore` custom resources (CRs) and retrieve logs. This helps you to troubleshoot failed backup and restore operations.
+Download the `velero` CLI tool or access the `velero` binary in your cluster to debug `Backup` and `Restore` custom resources (CRs) and retrieve logs.
+
+This helps you to troubleshoot failed backup and restore operations.
 
 #### 5.26.2.1. Downloading the Velero CLI tool
 
-Download and install the `velero` CLI tool from the Velero documentation page, which provides instructions for macOS by using Homebrew, GitHub, and Windows by using Chocolatey. This helps you to access the `velero` CLI for debugging backup and restore operations.
+Download and install the `velero` CLI tool from the Velero documentation page, which provides instructions for macOS by using Homebrew, GitHub, and Windows by using Chocolatey.
+
+This helps you to access the `velero` CLI for debugging backup and restore operations.
 
 Prerequisites
 
@@ -18070,7 +19104,9 @@ Download the Velero version appropriate for your version of OADP and OpenShift C
 
 #### 5.26.2.1.1. OADP-Velero-OpenShift Container Platform version relationship
 
-Review the version relationship between OADP, Velero, and OpenShift Container Platform to decide compatible version combinations. This helps you select the appropriate OADP version for your cluster environment.
+Review the version relationship between OADP, Velero, and OpenShift Container Platform to decide compatible version combinations.
+
+This helps you select the appropriate OADP version for your cluster environment.
 
 | OADP version | Velero version | OpenShift Container Platform version |
 | --- | --- | --- |
@@ -18226,17 +19262,27 @@ One or more errors in one of these categories results in a `Restore` operation r
 
 Consider the following points for these restore errors:
 
-For resource-specific errors, that is, `Cluster` and `Namespaces` errors, the `restore describe --details` output includes a resource list that includes all resources that Velero restored. For any resource that has such an error, check if the resource is actually in the cluster.
+For resource-specific errors, that is, `Cluster` and `Namespaces` errors, the `restore describe --details` output includes a resource list that includes all resources that Velero restored.
 
-For resource-specific errors, that is, `Cluster` and `Namespaces` errors, the `restore describe --details` output includes a resource list that includes all resources that Velero restored. For any resource that has such an error, check if the resource is actually in the cluster.
+For any resource that has such an error, check if the resource is actually in the cluster.
 
-If there are `Velero` errors but no resource-specific errors in the output of a `describe` command, it is possible that the restore completed without any actual problems in restoring workloads. In this case, carefully validate post-restore applications.
+For resource-specific errors, that is, `Cluster` and `Namespaces` errors, the `restore describe --details` output includes a resource list that includes all resources that Velero restored.
 
-For example, if the output contains `PodVolumeRestore` or node agent-related errors, check the status of `PodVolumeRestores` and `DataDownloads`. If none of these are failed or still running, then volume data might have been fully restored.
+For any resource that has such an error, check if the resource is actually in the cluster.
+
+If there are `Velero` errors but no resource-specific errors in the output of a `describe` command, it is possible that the restore completed without any actual problems in restoring workloads.
+
+In this case, carefully validate post-restore applications.
+
+For example, if the output contains `PodVolumeRestore` or node agent-related errors, check the status of `PodVolumeRestores` and `DataDownloads`.
+
+If none of these are failed or still running, then volume data might have been fully restored.
 
 #### 5.26.3. Pods crash or restart due to lack of memory or CPU
 
-Resolve Velero or Restic pod crashes caused by insufficient memory or CPU by configuring resource requests in the `DataProtectionApplication` custom resource (CR). This helps you allocate adequate CPU and memory resources to prevent pod restarts and ensure stable backup and restore operations.
+Resolve Velero or Restic pod crashes caused by insufficient memory or CPU by configuring resource requests in the `DataProtectionApplication` custom resource (CR).
+
+This helps you allocate adequate CPU and memory resources to prevent pod restarts and ensure stable backup and restore operations.
 
 Ensure that the values for the resource request fields follow the same format as Kubernetes resource requirements.
 
@@ -18279,7 +19325,9 @@ Use the `configuration.restic.podConfig.resourceAllocations` specification field
 
 Note
 
-With OADP 1.5.0, the `configuration.restic.podConfig.resourceAllocations` specification field is removed from Data Protection Application (DPA). Use the `nodeAgent` section with the `uploaderType` field set to `Kopia` instead of `Restic`.
+With OADP 1.5.0, the `configuration.restic.podConfig.resourceAllocations` specification field is removed from Data Protection Application (DPA).
+
+Use the `nodeAgent` section with the `uploaderType` field set to `Kopia` instead of `Restic`.
 
 Procedure
 
@@ -18304,7 +19352,9 @@ Use the `configuration.nodeAgent.podConfig.resourceAllocations` specification fi
 
 Note
 
-With OADP 1.5.0, the `configuration.restic.podConfig.resourceAllocations` specification field is removed from Data Protection Application (DPA). Use the `nodeAgent` section with the `uploaderType` field set to `Kopia` instead of `Restic`.
+With OADP 1.5.0, the `configuration.restic.podConfig.resourceAllocations` specification field is removed from Data Protection Application (DPA).
+
+Use the `nodeAgent` section with the `uploaderType` field set to `Kopia` instead of `Restic`.
 
 Procedure
 
@@ -18393,19 +19443,33 @@ $ oc describe pod node-agent-hbj9l | grep -C 5 Requests
 
 #### 5.26.4. Restoring workarounds for Velero backups that use admission webhooks
 
-Resolve restore failures caused by admission webhooks by applying workarounds for workloads such as Knative and IBM AppConnect resources. This helps you to successfully restore workloads that have mutating or validating admission webhooks.
+Resolve restore failures caused by admission webhooks by applying workarounds for workloads such as Knative and IBM AppConnect resources.
 
-Velero has limited abilities to resolve admission webhook issues during a restore. If you have workloads with admission webhooks, you might need to use an additional Velero plugin or make changes to how you restore the workload. Typically, workloads with admission webhooks require you to create a resource of a specific kind first. This is especially true if your workload has child resources because admission webhooks typically block child resources.
+This helps you to successfully restore workloads that have mutating or validating admission webhooks.
 
-For example, creating or restoring a top-level object such as `service.serving.knative.dev` typically creates child resources automatically. If you do this first, you will not need to use Velero to create and restore these resources. This avoids the problem of child resources being blocked by an admission webhook that Velero might use.
+Velero has limited abilities to resolve admission webhook issues during a restore.
+
+If you have workloads with admission webhooks, you might need to use an additional Velero plugin or make changes to how you restore the workload.
+
+Typically, workloads with admission webhooks require you to create a resource of a specific kind first.
+
+This is especially true if your workload has child resources because admission webhooks typically block child resources.
+
+For example, creating or restoring a top-level object such as `service.serving.knative.dev` typically creates child resources automatically.
+
+If you do this first, you will not need to use Velero to create and restore these resources. This avoids the problem of child resources being blocked by an admission webhook that Velero might use.
 
 Note
 
-Velero plugins are started as separate processes. After a Velero operation has completed, either successfully or not, it exits. Receiving a `received EOF, stopping recv loop` message in the debug logs indicates that a plugin operation has completed. It does not mean that an error has occurred.
+Velero plugins are started as separate processes. After a Velero operation has completed, either successfully or not, it exits.
+
+Receiving a `received EOF, stopping recv loop` message in the debug logs indicates that a plugin operation has completed. It does not mean that an error has occurred.
 
 #### 5.26.4.1. Restoring Knative resources
 
-Resolve issues with restoring Knative resources that use admission webhooks by restoring the top-level `service.serving.knative.dev` service resource with Velero. This helps you to ensure that Knative resources are restored successfully without admission webhook errors.
+Resolve issues with restoring Knative resources that use admission webhooks by restoring the top-level `service.serving.knative.dev` service resource with Velero.
+
+This helps you to ensure that Knative resources are restored successfully without admission webhook errors.
 
 Procedure
 
@@ -18419,7 +19483,9 @@ $ velero restore <restore_name> \
 
 #### 5.26.4.2. Restoring IBM AppConnect resources
 
-Troubleshoot Velero restore failures for IBM® AppConnect resources that use admission webhooks. Verify your webhook rules and check that the installed Operator supports the backup’s version to successfully complete the restore.
+Troubleshoot Velero restore failures for IBM® AppConnect resources that use admission webhooks.
+
+Verify your webhook rules and check that the installed Operator supports the backup’s version to successfully complete the restore.
 
 Procedure
 
@@ -18429,15 +19495,21 @@ Check if you have any mutating admission plugins of `kind: MutatingWebhookConfig
 $ oc get mutatingwebhookconfigurations
 ```
 
-Examine the YAML file of each `kind: MutatingWebhookConfiguration` to ensure that none of its rules block creation of the objects that are experiencing issues. For more information, see the official Kubernetes documentation.
+Examine the YAML file of each `kind: MutatingWebhookConfiguration` to ensure that none of its rules block creation of the objects that are experiencing issues.
+
+For more information, see the official Kubernetes documentation.
 
 Check that any `spec.version` in `type: Configuration.appconnect.ibm.com/v1beta1` used at backup time is supported by the installed Operator.
 
 #### 5.26.4.3. Avoiding the Velero plugin panic error
 
-Label a custom Backup Storage Location (BSL) to resolve Velero plugin panic errors during `imagestream` backups. This action prompts the OADP controller to create the required registry secret when you manage the BSL outside the `DataProtectionApplication` (DPA) custom resource (CR).
+Label a custom Backup Storage Location (BSL) to resolve Velero plugin panic errors during `imagestream` backups.
 
-A missing secret can cause a panic error for the Velero plugin during image stream backups. When the backup and the BSL are managed outside the scope of the DPA, the OADP controller does not create the relevant `oadp-<bsl_name>-<bsl_provider>-registry-secret` parameter.
+This helps you to ensure the OADP controller creates the required registry secret when you manage the BSL outside the `DataProtectionApplication` (DPA) CR.
+
+A missing secret can cause a panic error for the Velero plugin during image stream backups.
+
+When the backup and the BSL are managed outside the scope of the DPA, the OADP controller does not create the relevant `oadp-<bsl_name>-<bsl_provider>-registry-secret` parameter.
 
 During the backup operation, the OpenShift Velero plugin panics on the `imagestream` backup, with the following panic error:
 
@@ -18470,15 +19542,21 @@ $ oc -n openshift-adp get secret/oadp-<bsl_name>-<bsl_provider>-registry-secret 
 
 #### 5.26.4.4. Workaround for OpenShift ADP Controller segmentation fault
 
-Define either `velero` or `cloudstorage` in your Data Protection Application (DPA) configuration to prevent indefinite pod crashes. This configuration resolves a segmentation fault in the `openshift-adp-controller-manager` pod that occurs when both components are enabled.
+Define either `velero` or `cloudstorage` in your Data Protection Application (DPA) configuration to prevent indefinite pod crashes.
 
-Define either `velero` or `cloudstorage` when you configure a DPA. Otherwise, the `openshift-adp-controller-manager` pod fails with a crash loop segmentation fault due to the following settings:
+This configuration resolves a segmentation fault in the `openshift-adp-controller-manager` pod that occurs when both components are enabled.
+
+The `openshift-adp-controller-manager` pod fails with a crash loop segmentation fault due to the following settings:
 
 If you define both `velero` and `cloudstorage`, the `openshift-adp-controller-manager` fails.
 
 If you do not define both `velero` and `cloudstorage`, the `openshift-adp-controller-manager` fails.
 
-For more information about this issue, see OADP-1054.
+See OADP-1054 for more information.
+
+Additional resources
+
+OADP-1054
 
 Additional resources
 
@@ -18490,11 +19568,15 @@ Types of webhook admission plugins
 
 #### 5.26.5. OADP installation issues
 
-Resolve common installation issues with the Data Protection Application (DPA), such as invalid backup storage directories and incorrect cloud provider credentials. This helps you successfully install and configure OADP in your environment.
+Resolve common installation issues with the Data Protection Application (DPA), such as invalid backup storage directories and incorrect cloud provider credentials.
+
+This helps you successfully install and configure OADP in your environment.
 
 #### 5.26.5.1. Resolving invalid directories in backup storage
 
-Resolve the `Backup storage contains invalid top-level directories` error that occurs when object storage contains non-Velero directories. This helps you configure the correct bucket prefix for shared object storage.
+Resolve the `Backup storage contains invalid top-level directories` error that occurs when object storage contains non-Velero directories.
+
+This helps you configure the correct bucket prefix for shared object storage.
 
 Procedure
 
@@ -18502,7 +19584,9 @@ If the object storage is not dedicated to Velero, you must specify a prefix for 
 
 #### 5.26.5.2. Resolving incorrect AWS credentials
 
-Resolve credential errors such as `InvalidAccessKeyId` or `NoCredentialProviders` that occur when the `credentials-velero` file is incorrectly formatted. This helps you configure valid AWS credentials for OADP backup operations.
+Resolve credential errors such as `InvalidAccessKeyId` or `NoCredentialProviders` that occur when the `credentials-velero` file is incorrectly formatted.
+
+This helps you configure valid AWS credentials for OADP backup operations.
 
 If you incorrectly format the `credentials-velero` file used for creating the `Secret` object, multiple errors might occur, including the following examples:
 
@@ -18536,11 +19620,15 @@ Do not enclose the values with quotation marks (`"`, `'`).
 
 #### 5.26.6. OADP Operator issues
 
-Resolve issues with the OpenShift API for Data Protection (OADP) Operator, such as silent failures that prevent proper operation. This helps you restore normal Operator functionality and ensure successful backup and restore operations.
+Resolve issues with the OpenShift API for Data Protection (OADP) Operator, such as silent failures that prevent proper operation.
+
+This helps you restore normal Operator functionality and ensure successful backup and restore operations.
 
 #### 5.26.6.1. Resolving silent failure of the OADP Operator
 
-Resolve the silent failure issue where the OADP Operator reports a `Running` status but the AWS S3 buckets remain empty due to incorrect cloud credentials permissions. This helps you identify and fix credential permission problems in your backup storage locations.
+Resolve the silent failure issue where the OADP Operator reports a `Running` status but the AWS S3 buckets remain empty due to incorrect cloud credentials permissions.
+
+This helps you identify and fix credential permission problems in your backup storage locations.
 
 To fix this issue, retrieve a list of backup storage locations (BSLs) and check the manifest of each BSL for credential issues.
 
@@ -18611,9 +19699,13 @@ metadata:
 
 #### 5.26.7. OADP timeouts
 
-Configure OADP timeout parameters for Restic, Velero, Data Mover, CSI snapshots, and item operations to allow complex or resource-intensive processes to complete successfully. This helps you reduce errors, retries, and failures caused by premature termination of backup and restore operations.
+Configure OADP timeout parameters for Restic, Velero, Data Mover, CSI snapshots, and item operations to allow complex or resource-intensive processes to complete successfully.
 
-Ensure that you balance timeout extensions in a logical manner so that you do not configure excessively long timeouts that might hide underlying issues in the process. Consider and monitor an appropriate timeout value that meets the needs of the process and the overall system performance.
+This helps you reduce errors, retries, and failures caused by premature termination of backup and restore operations.
+
+Ensure that you balance timeout extensions in a logical manner so that you do not configure excessively long timeouts that might hide underlying issues in the process.
+
+Consider and monitor an appropriate timeout value that meets the needs of the process and the overall system performance.
 
 Review the following OADP timeout instructions:
 
@@ -18631,7 +19723,9 @@ Item operation timeout - restore
 
 #### 5.26.7.1. Implementing restic timeout
 
-Configure the Restic timeout parameter to prevent backup failures for large persistent volumes or long-running backup operations. This helps you avoid timeout errors when backing up data greater than 500GB or when backups exceed the default one-hour limit.
+Configure the Restic timeout parameter to prevent backup failures for large persistent volumes or long-running backup operations.
+
+This helps you avoid timeout errors when backing up data greater than 500GB or when backups exceed the default one-hour limit.
 
 Use the `spec.configuration.nodeAgent.timeout` parameter to set the Restic timeout. The default value is `1h`.
 
@@ -18663,11 +19757,15 @@ spec:
 
 #### 5.26.7.2. Implementing velero resource timeout
 
-Configure the `resourceTimeout` parameter in the `DataProtectionApplication` custom resource (CR) to define how long Velero waits for resource availability. Adjusting this timeout helps you prevent errors during large backups, repository readiness checks, and restore operations.
+Configure the `resourceTimeout` parameter in the `DataProtectionApplication` custom resource (CR) to define how long Velero waits for resource availability.
+
+Adjusting this timeout helps you prevent errors during large backups, repository readiness checks, and restore operations.
 
 Use the `resourceTimeout` for the following scenarios:
 
-For backups with total PV data usage that is greater than 1 TB. Use the parameter as a timeout value when Velero tries to clean up or delete the Container Storage Interface (CSI) snapshots, before marking the backup as complete.
+For backups with total PV data usage that is greater than 1 TB.
+
+Use the parameter as a timeout value when Velero tries to clean up or delete the Container Storage Interface (CSI) snapshots, before marking the backup as complete.
 
 A sub-task of this cleanup tries to patch VSC, and this timeout can be used for that task.
 
@@ -18693,7 +19791,9 @@ spec:
 
 #### 5.26.7.2.1. Implementing velero default item operation timeout
 
-Configure the `defaultItemOperationTimeout` parameter in the `DataProtectionApplication`ccustom resource (CR) to define how long Velero waits for backup and restore operations to finish. Adjusting this timeout helps you prevent errors during Container Storage Interface (CSI) Data Mover tasks.
+Configure the `defaultItemOperationTimeout` parameter in the `DataProtectionApplication`ccustom resource (CR) to define how long Velero waits for backup and restore operations to finish.
+
+Adjusting this timeout helps you prevent errors during Container Storage Interface (CSI) Data Mover tasks.
 
 The default value is `1h`.
 
@@ -18701,7 +19801,9 @@ Use the `defaultItemOperationTimeout` for the following scenarios:
 
 Only with Data Mover 1.2.x.
 
-When `defaultItemOperationTimeout` is defined in the Data Protection Application (DPA) using the `defaultItemOperationTimeout`, it applies to both backup and restore operations. You can use `itemOperationTimeout` to define only the backup or only the restore of those CRs, as described in the following "Item operation timeout - restore", and "Item operation timeout - backup" sections.
+When `defaultItemOperationTimeout` is defined in the Data Protection Application (DPA) using the `defaultItemOperationTimeout`, it applies to both backup and restore operations.
+
+You can use `itemOperationTimeout` to define only the backup or only the restore of those CRs, as described in the following "Item operation timeout - restore", and "Item operation timeout - backup" sections.
 
 Procedure
 
@@ -18721,7 +19823,9 @@ spec:
 
 #### 5.26.7.3. Implementing Data Mover timeout
 
-Configure the Data Mover `timeout` parameter in the `DataProtectionApplication` custom resource (CR) to define how long backup and restore operations run. Adjusting this value helps prevent timeouts in large environments over 500GB or when using the `VolumeSnapshotMover` plugin. The default value is `10m`.
+Configure the Data Mover `timeout` parameter in the `DataProtectionApplication` custom resource (CR) to define how long backup and restore operations run.
+
+Adjusting this value helps prevent timeouts in large environments over 500GB or when using the `VolumeSnapshotMover` plugin. The default value is `10m`.
 
 Use the Data Mover `timeout` for the following scenarios:
 
@@ -18749,7 +19853,9 @@ spec:
 
 #### 5.26.7.4. Implementing CSI snapshot timeout
 
-Configure the `CSISnapshotTimeout` parameter in the `Backup` custom resource (CR) to define how long to wait for a CSI snapshot to become ready. Adjusting this timeout prevents errors when using the CSI plugin to take snapshots of large storage volumes that require more time. The default value is `10m`.
+Configure the `CSISnapshotTimeout` parameter in the `Backup` custom resource (CR) to define how long to wait for a CSI snapshot to become ready.
+
+Adjusting this timeout prevents errors when using the CSI plugin to take snapshots of large storage volumes that require more time. The default value is `10m`.
 
 Note
 
@@ -18771,7 +19877,9 @@ spec:
 
 #### 5.26.7.5. Implementing item operation timeout - restore
 
-Configure the `ItemOperationTimeout` parameter in the `Restore` custom resource (CR) to define how long restore operations wait to complete. Adjusting this timeout prevents failures when Data Mover needs more time to download large storage volumes. The default value is `1h`.
+Configure the `ItemOperationTimeout` parameter in the `Restore` custom resource (CR) to define how long restore operations wait to complete.
+
+Adjusting this timeout prevents failures when Data Mover needs more time to download large storage volumes. The default value is `1h`.
 
 Procedure
 
@@ -18789,7 +19897,9 @@ spec:
 
 #### 5.26.7.6. Implementing item operation timeout - backup
 
-Configure the `ItemOperationTimeout` parameter in the `Backup` custom resource (CR) to define how long asynchronous `BackupItemAction` operations wait to complete. Adjusting this timeout prevents failures when Data Mover needs more time to upload large storage volumes. The default value is `1h`.
+Configure the `ItemOperationTimeout` parameter in the `Backup` custom resource (CR) to define how long asynchronous `BackupItemAction` operations wait to complete.
+
+Adjusting this timeout prevents failures when Data Mover needs more time to upload large storage volumes. The default value is `1h`.
 
 Procedure
 
@@ -18807,7 +19917,9 @@ spec:
 
 #### 5.26.8. Backup and Restore CR issues
 
-Resolve common issues with `Backup` and `Restore` custom resources (CRs), such as volume retrieval failures, and backups remaining in progress or partially failed states. This helps you ensure successful backup and restore operations in OADP.
+Resolve common issues with `Backup` and `Restore` custom resources (CRs), such as volume retrieval failures, and backups remaining in progress or partially failed states.
+
+This helps you ensure successful backup and restore operations in OADP.
 
 #### 5.26.8.1. Troubleshooting issue where backup CR cannot retrieve volume
 
@@ -18850,7 +19962,9 @@ $ velero backup describe <backup_name> --details
 
 #### 5.26.8.3. Troubleshooting issue where backup CR status remains partially failed
 
-Resolve the `PartiallyFailed` status that occurs when a `Backup` CR cannot create a CSI snapshot due to a missing label on the `VolumeSnapshotClass`. This helps you ensure successful backups by properly labeling the snapshot class.
+Resolve the `PartiallyFailed` status that occurs when a `Backup` CR cannot create a CSI snapshot due to a missing label on the `VolumeSnapshotClass`.
+
+This helps you ensure successful backups by properly labeling the snapshot class.
 
 If the backup created based on the CSI snapshot class is missing a label, the CSI snapshot plugin fails to create a snapshot. As a result, the `Velero` pod logs an error similar to the following message:
 
@@ -18876,11 +19990,15 @@ Create a new `Backup` CR.
 
 #### 5.26.9. Restic issues
 
-Troubleshoot common Restic issues during application backups and restores to maintain reliable data protection. Common Restic issues include NFS permission errors, backup custom resource re-creation failures, and restore failures caused by pod security admission policy changes.
+Troubleshoot common Restic issues during application backups and restores to maintain reliable data protection.
+
+Common Restic issues include NFS permission errors, backup custom resource re-creation failures, and restore failures caused by pod security admission policy changes.
 
 #### 5.26.9.1. Troubleshooting Restic permission errors for NFS data volumes
 
-Create a supplemental group and add its group ID to the `DataProtectionApplication` customer resource CR to resolve `Restic` permission errors on NFS data volumes with `root_squash` enabled. This helps you to restore backup functionality for NFS volumes without disabling root squash.
+Create a supplemental group and add its group ID to the `DataProtectionApplication` customer resource CR to resolve `Restic` permission errors on NFS data volumes with `root_squash` enabled.
+
+This helps you to restore backup functionality for NFS volumes without disabling root squash.
 
 If your NFS data volumes have the `root_squash` parameter enabled, `Restic` maps set to the `nfsnobody` value, and do not have permission to create backups, the `Restic` pod log displays the following error message:
 
@@ -18920,7 +20038,9 @@ Wait for the `Restic` pods to restart so that the changes are applied.
 
 #### 5.26.9.2. Troubleshooting Restic Backup CR issue that cannot be re-created after bucket is emptied
 
-Resolve the `Backup` custom resource (CR) re-creation failure that occurs after you empty the object storage bucket. This failure occurs because Velero does not automatically re-create the Restic repository from the `ResticRepository` manifest.
+Resolve the `Backup` custom resource (CR) re-creation failure that occurs after you empty the object storage bucket.
+
+This failure occurs because Velero does not automatically re-create the Restic repository from the `ResticRepository` manifest.
 
 For more information, see Velero issue 4421.
 
@@ -18957,9 +20077,15 @@ time="2021-12-29T18:29:14Z" level=info msg="1 errors
 
 #### 5.26.9.3. Troubleshooting restic restore partially failed issue on OpenShift Container Platform 4.14 onward due to changed PSA policy
 
-Resolve a partial failure of Restic restore on OpenShift Container Platform 4.14 onward caused by Pod Security Admission (PSA) policy enforcement by adjusting the `restore-resource-priorities` field in your `DataProtectionApplication` (DPA) custom resource (CR). By doing so, you ensure that `SecurityContextConstraints` (SCC) resources are restored before pods. This helps you to complete restore operations successfully when PSA policies deny pod admission due to Velero resource restore order.
+Resolve a partial failure of Restic restore on OpenShift Container Platform 4.14 onward caused by Pod Security Admission (PSA) policy enforcement by adjusting the `restore-resource-priorities` field in your `DataProtectionApplication` (DPA) custom resource (CR).
 
-From 4.14 onward, OpenShift Container Platform enforces a PSA policy that can hinder the readiness of pods during a Restic restore process. If an SCC resource is not found when a pod is created, and the PSA policy on the pod is not set up to meet the required standards, pod admission is denied.
+By doing so, you ensure that `SecurityContextConstraints` (SCC) resources are restored before pods.
+
+This helps you to complete restore operations successfully when PSA policies deny pod admission due to Velero resource restore order.
+
+From 4.14 onward, OpenShift Container Platform enforces a PSA policy that can hinder the readiness of pods during a Restic restore process.
+
+If an SCC resource is not found when a pod is created, and the PSA policy on the pod is not set up to meet the required standards, pod admission is denied.
 
 ```plaintext
 \"level=error\" in line#2273: time=\"2023-06-12T06:50:04Z\"
@@ -19013,7 +20139,9 @@ where:
 
 If you have an existing restore resource priority list, ensure you combine that existing list with the complete list.
 
-Ensure that the security standards for the application pods are aligned, as provided in Fixing PodSecurity Admission warnings for deployments, to prevent deployment warnings. If the application is not aligned with security standards, an error can occur regardless of the SCC.
+Ensure that the security standards for the application pods are aligned, as provided in Fixing PodSecurity Admission warnings for deployments, to prevent deployment warnings.
+
+If the application is not aligned with security standards, an error can occur regardless of the SCC.
 
 Note
 
@@ -19025,13 +20153,17 @@ Fixing PodSecurity Admission warnings for deployments
 
 #### 5.26.10. OADP Data protection test
 
-Validate your OADP configuration by using the `DataProtectionTest` (DPT) custom resource (CR). This helps you ensure your data protection environment is properly configured and performing according to your requirements before performing backups.
+Validate your OADP configuration by using the `DataProtectionTest` (DPT) custom resource (CR).
+
+This helps you ensure your data protection environment is properly configured and performing according to your requirements before performing backups.
 
 The DPT checks the upload performance of backups to object storage, CSI snapshot readiness for persistent volume claims, and storage bucket configuration such as encryption and versioning.
 
 #### 5.26.10.1. OADP DataProtectionTest CR specification fields
 
-Review the specification fields available in the `DataProtectionTest` (DPT) custom resource (CR) to configure backup location, upload speed tests, CSI volume snapshot tests, and other options. This helps you customize the DPT CR to validate your specific OADP configuration requirements.
+Review the specification fields available in the `DataProtectionTest` (DPT) custom resource (CR) to configure backup location, upload speed tests, CSI volume snapshot tests, and other options.
+
+This helps you customize the DPT CR to validate your specific OADP configuration requirements.
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -19044,7 +20176,9 @@ Review the specification fields available in the `DataProtectionTest` (DPT) cust
 
 #### 5.26.10.2. OADP DataProtectionTest CR status fields
 
-Review the status fields in the `DataProtectionTest` (DPT) custom resource (CR) to monitor test progress, upload speed results, bucket metadata, and snapshot test outcomes. This helps you interpret the DPT CR results and identify any issues with your OADP configuration.
+Review the status fields in the `DataProtectionTest` (DPT) custom resource (CR) to monitor test progress, upload speed results, bucket metadata, and snapshot test outcomes.
+
+This helps you interpret the DPT CR results and identify any issues with your OADP configuration.
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -19059,7 +20193,9 @@ Review the status fields in the `DataProtectionTest` (DPT) custom resource (CR) 
 
 #### 5.26.10.3. Using the DataProtectionTest custom resource
 
-Configure and run the `DataProtectionTest` (DPT) custom resource (CR) to verify Container Storage Interface (CSI) snapshot readiness and data upload performance to your storage bucket. This helps you validate your OADP environment before performing backup and restore operations.
+Configure and run the `DataProtectionTest` (DPT) custom resource (CR) to verify Container Storage Interface (CSI) snapshot readiness and data upload performance to your storage bucket.
+
+This helps you validate your OADP environment before performing backup and restore operations.
 
 Prerequisites
 
@@ -19208,7 +20344,9 @@ Specifies the upload test details.
 
 #### 5.26.10.4. Running a data protection test by configuring a backup storage location specification
 
-Configure and run the `DataProtectionTest` (DPT) custom resource (CR) by specifying an inline backup storage location (BSL) specification instead of referencing an existing BSL name. This helps you test data upload performance and CSI snapshot readiness without creating a separate BSL resource.
+Configure and run the `DataProtectionTest` (DPT) custom resource (CR) by specifying an inline backup storage location (BSL) specification instead of referencing an existing BSL name.
+
+This helps you test data upload performance and CSI snapshot readiness without creating a separate BSL resource.
 
 Prerequisites
 
@@ -19317,7 +20455,9 @@ dpt-sample   Complete   17m          546                 AES256       Enabled   
 
 #### 5.26.10.5. Running a data protection test on an Azure object storage
 
-Run the `DataProtectionTest` (DPT) custom resource (CR) on Azure object storage by configuring the required Azure credentials, including the `STORAGE_ACCOUNT_ID` parameter in the secret object. This helps you validate your OADP configuration and verify CSI snapshot readiness on Azure clusters.
+Run the `DataProtectionTest` (DPT) custom resource (CR) on Azure object storage by configuring the required Azure credentials, including the `STORAGE_ACCOUNT_ID` parameter in the secret object.
+
+This helps you validate your OADP configuration and verify CSI snapshot readiness on Azure clusters.
 
 Prerequisites
 
@@ -19443,7 +20583,9 @@ Run the DPT CR to verify the snapshot readiness.
 
 #### 5.26.10.6. Troubleshooting the DataProtectionTest custom resource
 
-Troubleshoot common `DataProtectionTest` (DPT) custom resource (CR) issues, such as stuck progress states, upload test failures, and snapshot test failures. This helps you identify and resolve problems with your DPT configuration.
+Troubleshoot common `DataProtectionTest` (DPT) custom resource (CR) issues, such as stuck progress states, upload test failures, and snapshot test failures.
+
+This helps you identify and resolve problems with your DPT configuration.
 
 | Error | Reason | Solution |
 | --- | --- | --- |
@@ -19537,7 +20679,9 @@ Verification
 
 Verify that the Markdown output file is generated at the following location: `must-gather.local.89…​054550/registry.redhat.io/oadp/oadp-mustgather-rhel9:v1.5-sha256-0…​84/clusters/a4…​86/oadp-must-gather-summary.md`
 
-Review the `must-gather` data in the Markdown file by opening the file in a Markdown previewer. For an example output, refer to the following image. You can upload this output file to a support case on the Red Hat Customer Portal.
+Review the `must-gather` data in the Markdown file by opening the file in a Markdown previewer. For an example output, refer to the following image.
+
+You can upload this output file to a support case on the Red Hat Customer Portal.
 
 Figure 5.2. Example markdown output of must-gather tool
 
@@ -19547,11 +20691,15 @@ Gathering cluster data
 
 #### 5.26.12. OADP monitoring
 
-Monitor OADP operations by using the OpenShift Container Platform monitoring stack to create service monitors, configure alerting rules, and view metrics. This helps you track backup and restore performance, manage clusters, and receive alerts for important events.
+Monitor OADP operations by using the OpenShift Container Platform monitoring stack to create service monitors, configure alerting rules, and view metrics.
+
+This helps you track backup and restore performance, manage clusters, and receive alerts for important events.
 
 #### 5.26.12.1. OADP monitoring setup
 
-Set up OADP monitoring by enabling User Workload Monitoring and configuring the OpenShift Container Platform monitoring stack to retrieve Velero metrics. This helps you create alerting rules, query metrics, and optionally visualize data by using Prometheus-compatible tools such as Grafana.
+Set up OADP monitoring by enabling User Workload Monitoring and configuring the OpenShift Container Platform monitoring stack to retrieve Velero metrics.
+
+This helps you create alerting rules, query metrics, and optionally visualize data by using Prometheus-compatible tools such as Grafana.
 
 Monitoring metrics requires enabling monitoring for the user-defined projects and creating a `ServiceMonitor` resource to scrape those metrics from the already enabled OADP service endpoint in the `openshift-adp` namespace.
 
@@ -19650,7 +20798,9 @@ OADP metrics targets
 _Source: `backup_and_restore.html` · asset `https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Backup_and_restore-en-US/images/47240306a8c205165d320ea66e151979/oadp-metrics-targets.png`_
 
 
-Create a `ServiceMonitor` resource to scrape Velero metrics from the OADP service endpoint. This helps you collect metrics for monitoring backup and restore operations in the OpenShift Container Platform monitoring stack.
+Create a `ServiceMonitor` resource to scrape Velero metrics from the OADP service endpoint.
+
+This helps you collect metrics for monitoring backup and restore operations in the OpenShift Container Platform monitoring stack.
 
 OADP provides an `openshift-adp-velero-metrics-svc` service. The user workload monitoring service monitor must use the `openshift-adp-velero-metrics-svc` service.
 
@@ -19667,7 +20817,9 @@ NAME                               TYPE        CLUSTER-IP      EXTERNAL-IP   POR
 openshift-adp-velero-metrics-svc   ClusterIP   172.30.38.244   <none>        8085/TCP   1h
 ```
 
-Create a `ServiceMonitor` YAML file that matches the existing service label, and save the file as `3_create_oadp_service_monitor.yaml`. The service monitor is created in the `openshift-adp` namespace which has the `openshift-adp-velero-metrics-svc` service.
+Create a `ServiceMonitor` YAML file that matches the existing service label, and save the file as `3_create_oadp_service_monitor.yaml`.
+
+The service monitor is created in the `openshift-adp` namespace which has the `openshift-adp-velero-metrics-svc` service.
 
 ```yaml
 apiVersion: monitoring.coreos.com/v1
@@ -19719,7 +20871,9 @@ _Source: `backup_and_restore.html` · asset `https://access.redhat.com/webassets
 
 Create a `PrometheusRule` resource to configure alerting rules for OADP backup operations. This helps you receive notifications when backup failures or other issues occur in your environment.
 
-The OpenShift Container Platform monitoring stack receives alerts configured by using alerting rules. To create an alerting rule for the OADP project, use one of the metrics scraped with the user workload monitoring.
+The OpenShift Container Platform monitoring stack receives alerts configured by using alerting rules.
+
+To create an alerting rule for the OADP project, use one of the metrics scraped with the user workload monitoring.
 
 Procedure
 
@@ -19845,9 +20999,17 @@ Managing alerts as an Administrator
 
 etcd is the key-value store for OpenShift Container Platform, which persists the state of all resource objects.
 
-Back up your cluster’s etcd data regularly and store in a secure location ideally outside the OpenShift Container Platform environment. Do not take an etcd backup before the first certificate rotation completes, which occurs 24 hours after installation, otherwise the backup will contain expired certificates. It is also recommended to take etcd backups during non-peak usage hours because the etcd snapshot has a high I/O cost.
+Back up your cluster’s etcd data regularly and store in a secure location ideally outside the OpenShift Container Platform environment.
 
-Be sure to take an etcd backup before you update your cluster. Taking a backup before you update is important because when you restore your cluster, you must use an etcd backup that was taken from the same z-stream release. For example, an OpenShift Container Platform 4.17.5 cluster must use an etcd backup that was taken from 4.17.5.
+Do not take an etcd backup before the first certificate rotation completes, which occurs 24 hours after installation, otherwise the backup will contain expired certificates.
+
+It is also recommended to take etcd backups during non-peak usage hours because the etcd snapshot has a high I/O cost.
+
+Be sure to take an etcd backup before you update your cluster.
+
+Taking a backup before you update is important because when you restore your cluster, you must use an etcd backup that was taken from the same z-stream release.
+
+For example, an OpenShift Container Platform 4.17.5 cluster must use an etcd backup that was taken from 4.17.5.
 
 Important
 
@@ -19964,7 +21126,11 @@ The automated backup feature for etcd supports both recurring and single backups
 
 Important
 
-Automating etcd backups is a Technology Preview feature only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs) and might not be functionally complete. Red Hat does not recommend using them in production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
+Automating etcd backups is a Technology Preview feature only.
+
+Technology Preview features are not supported with Red Hat production service level agreements (SLAs) and might not be functionally complete. Red Hat does not recommend using them in production.
+
+These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
 
 For more information about the support scope of Red Hat Technology Preview features, see Technology Preview Features Support Scope.
 
@@ -20047,7 +21213,9 @@ spec:
   volumeMode: Filesystem
 ```
 
-1. The amount of storage available to the PVC. Adjust this value for your requirements.
+1. 1
+
+The amount of storage available to the PVC. Adjust this value for your requirements.
 
 ```shell-session
 $ oc apply -f etcd-backup-pvc.yaml
@@ -20190,7 +21358,9 @@ $ oc apply -f etcd-single-backup.yaml
 
 Follow these steps to create automated recurring backups of etcd.
 
-Use dynamically-provisioned storage to keep the created etcd backup data in a safe, external location if possible. If dynamically-provisioned storage is not available, consider storing the backup data on an NFS share to make backup recovery more accessible.
+Use dynamically-provisioned storage to keep the created etcd backup data in a safe, external location if possible.
+
+If dynamically-provisioned storage is not available, consider storing the backup data on an NFS share to make backup recovery more accessible.
 
 Prerequisites
 
@@ -20461,7 +21631,9 @@ This procedure determines which state your etcd member is in. This enables you t
 
 Note
 
-If you are aware that the machine is not running or the node is not ready, but you expect it to return to a healthy state soon, then you do not need to perform a procedure to replace the etcd member. The etcd cluster Operator will automatically sync when the machine or node returns to a healthy state.
+If you are aware that the machine is not running or the node is not ready, but you expect it to return to a healthy state soon, then you do not need to perform a procedure to replace the etcd member.
+
+The etcd cluster Operator will automatically sync when the machine or node returns to a healthy state.
 
 Prerequisites
 
@@ -20622,7 +21794,9 @@ sh-4.2# etcdctl member list -w table
 +------------------+---------+------------------------------+---------------------------+---------------------------+
 ```
 
-Take note of the ID and the name of the unhealthy etcd member because these values are needed later in the procedure. The `$ etcdctl endpoint health` command will list the removed member until the procedure of replacement is finished and a new member is added.
+Take note of the ID and the name of the unhealthy etcd member because these values are needed later in the procedure.
+
+The `$ etcdctl endpoint health` command will list the removed member until the procedure of replacement is finished and a new member is added.
 
 Remove the unhealthy etcd member by providing the ID to the `etcdctl member remove` command:
 
@@ -20661,7 +21835,9 @@ After you turn off the quorum guard, the cluster might be unreachable for a shor
 
 Note
 
-etcd cannot tolerate any additional member failure when running with two members. Restarting either remaining member breaks the quorum and causes downtime in your cluster. The quorum guard protects etcd from restarts due to configuration changes that could cause downtime, so it must be disabled to complete this procedure.
+etcd cannot tolerate any additional member failure when running with two members. Restarting either remaining member breaks the quorum and causes downtime in your cluster.
+
+The quorum guard protects etcd from restarts due to configuration changes that could cause downtime, so it must be disabled to complete this procedure.
 
 ```shell-session
 $ oc delete node <node_name>
@@ -20709,9 +21885,13 @@ Check whether a control plane machine set exists by entering the following comma
 $ oc -n openshift-machine-api get controlplanemachineset
 ```
 
-If the control plane machine set exists, delete and re-create the control plane machine. After this machine is re-created, a new revision is forced and etcd scales up automatically. For more information, see "Replacing an unhealthy etcd member whose machine is not running or whose node is not ready".
+If the control plane machine set exists, delete and re-create the control plane machine. After this machine is re-created, a new revision is forced and etcd scales up automatically.
 
-If you are running installer-provisioned infrastructure, or you used the Machine API to create your machines, follow these steps. Otherwise, you must create the new control plane by using the same method that was used to originally create it.
+For more information, see "Replacing an unhealthy etcd member whose machine is not running or whose node is not ready".
+
+If you are running installer-provisioned infrastructure, or you used the Machine API to create your machines, follow these steps.
+
+Otherwise, you must create the new control plane by using the same method that was used to originally create it.
 
 Obtain the machine for the unhealthy member.
 
@@ -20767,7 +21947,9 @@ Verify the subnet IDs that you are using for your machine sets to ensure that th
 
 If the control plane machine set does not exist, delete and re-create the control plane machine. After this machine is re-created, a new revision is forced and etcd scales up automatically.
 
-If you are running installer-provisioned infrastructure, or you used the Machine API to create your machines, follow these steps. Otherwise, you must create the new control plane by using the same method that was used to originally create it.
+If you are running installer-provisioned infrastructure, or you used the Machine API to create your machines, follow these steps.
+
+Otherwise, you must create the new control plane by using the same method that was used to originally create it.
 
 Obtain the machine for the unhealthy member.
 
@@ -21176,7 +22358,9 @@ https://10.0.164.97:2379 is healthy: successfully committed proposal: took = 16.
 
 This procedure details the steps to replace a bare metal etcd member that is unhealthy either because the machine is not running or because the node is not ready.
 
-If you are running installer-provisioned infrastructure or you used the Machine API to create your machines, follow these steps. Otherwise you must create the new control plane node using the same method that was used to originally create it.
+If you are running installer-provisioned infrastructure or you used the Machine API to create your machines, follow these steps.
+
+Otherwise you must create the new control plane node using the same method that was used to originally create it.
 
 Prerequisites
 
@@ -21232,7 +22416,9 @@ sh-4.2# etcdctl member list -w table
 +------------------+---------+--------------------+---------------------------+---------------------------+---------------------+
 ```
 
-Take note of the ID and the name of the unhealthy etcd member, because these values are required later in the procedure. The `etcdctl endpoint health` command will list the removed member until the replacement procedure is completed and the new member is added.
+Take note of the ID and the name of the unhealthy etcd member, because these values are required later in the procedure.
+
+The `etcdctl endpoint health` command will list the removed member until the replacement procedure is completed and the new member is added.
 
 Remove the unhealthy etcd member by providing the ID to the `etcdctl member remove` command:
 
@@ -21555,7 +22741,9 @@ $ oc patch etcd cluster -p='{"spec": {"forceRedeploymentReason": "recovery-'"$( 
 
 1. The `forceRedeploymentReason` value must be unique, which is why a timestamp is appended.
 
-To verify there are exactly three etcd members, connect to the running etcd container, passing in the name of a pod that was not on the affected node. In a terminal that has access to the cluster as a `cluster-admin` user, run the following command:
+To verify there are exactly three etcd members, connect to the running etcd container, passing in the name of a pod that was not on the affected node.
+
+In a terminal that has access to the cluster as a `cluster-admin` user, run the following command:
 
 ```shell-session
 $ oc rsh -n openshift-etcd etcd-openshift-control-plane-0
@@ -21607,7 +22795,9 @@ Quorum protection with machine lifecycle hooks
 
 #### 6.3.1. About disaster recovery
 
-The disaster recovery documentation provides information for administrators on how to recover from several disaster situations that might occur with their OpenShift Container Platform cluster. As an administrator, you might need to follow one or more of the following procedures to return your cluster to a working state.
+The disaster recovery documentation provides information for administrators on how to recover from several disaster situations that might occur with their OpenShift Container Platform cluster.
+
+As an administrator, you might need to follow one or more of the following procedures to return your cluster to a working state.
 
 Important
 
@@ -21623,7 +22813,9 @@ If you have a majority of your control plane nodes still available and have an e
 
 Restoring to a previous cluster state
 
-This solution handles situations where you want to restore your cluster to a previous state, for example, if an administrator deletes something critical. If you have taken an etcd backup, you can restore your cluster to a previous state.
+This solution handles situations where you want to restore your cluster to a previous state, for example, if an administrator deletes something critical.
+
+If you have taken an etcd backup, you can restore your cluster to a previous state.
 
 If applicable, you might also need to recover from expired control plane certificates.
 
@@ -21635,11 +22827,17 @@ Prior to performing a restore, see About restoring cluster state for more inform
 
 Recovering from expired control plane certificates
 
-This solution handles situations where your control plane certificates have expired. For example, if you shut down your cluster before the first certificate rotation, which occurs 24 hours after installation, your certificates will not be rotated and will expire. You can follow this procedure to recover from expired control plane certificates.
+This solution handles situations where your control plane certificates have expired.
+
+For example, if you shut down your cluster before the first certificate rotation, which occurs 24 hours after installation, your certificates will not be rotated and will expire.
+
+You can follow this procedure to recover from expired control plane certificates.
 
 #### 6.3.1.1. Testing restore procedures
 
-Testing the restore procedure is important to ensure that your automation and workload handle the new cluster state gracefully. Due to the complex nature of etcd quorum and the etcd Operator attempting to mend automatically, it is often difficult to correctly bring your cluster into a broken enough state that it can be restored.
+Testing the restore procedure is important to ensure that your automation and workload handle the new cluster state gracefully.
+
+Due to the complex nature of etcd quorum and the etcd Operator attempting to mend automatically, it is often difficult to correctly bring your cluster into a broken enough state that it can be restored.
 
 Warning
 
@@ -21705,27 +22903,39 @@ Restoring to a previous cluster state
 
 #### 6.3.2. Quorum restoration
 
-You can use the script to restore etcd quorum on clusters that are offline due to quorum loss. When quorum is lost, the OpenShift Container Platform API becomes read-only. After quorum is restored, the OpenShift Container Platform API returns to read/write mode.
+You can use the script to restore etcd quorum on clusters that are offline due to quorum loss. When quorum is lost, the OpenShift Container Platform API becomes read-only.
 
 ```shell
 quorum-restore.sh
 ```
+
+After quorum is restored, the OpenShift Container Platform API returns to read/write mode.
 
 #### 6.3.2.1. Restoring etcd quorum for high availability clusters
 
-You can use the script to restore etcd quorum on clusters that are offline due to quorum loss. When quorum is lost, the OpenShift Container Platform API becomes read-only. After quorum is restored, the OpenShift Container Platform API returns to read/write mode.
+You can use the script to restore etcd quorum on clusters that are offline due to quorum loss. When quorum is lost, the OpenShift Container Platform API becomes read-only.
 
 ```shell
 quorum-restore.sh
 ```
 
-The script instantly brings back a new single-member etcd cluster based on its local data directory and marks all other members as invalid by retiring the previous cluster identifier. No prior backup is required to restore the control plane from.
+After quorum is restored, the OpenShift Container Platform API returns to read/write mode.
+
+The script instantly brings back a new single-member etcd cluster based on its local data directory and marks all other members as invalid by retiring the previous cluster identifier.
 
 ```shell
 quorum-restore.sh
 ```
 
-For high availability (HA) clusters, a three-node HA cluster requires you to shut down etcd on two hosts to avoid a cluster split. On four-node and five-node HA clusters, you must shut down three hosts. Quorum requires a simple majority of nodes. The minimum number of nodes required for quorum on a three-node HA cluster is two. On four-node and five-node HA clusters, the minimum number of nodes required for quorum is three. If you start a new cluster from backup on your recovery host, the other etcd members might still be able to form quorum and continue service.
+No prior backup is required to restore the control plane from.
+
+For high availability (HA) clusters, a three-node HA cluster requires you to shut down etcd on two hosts to avoid a cluster split.
+
+On four-node and five-node HA clusters, you must shut down three hosts. Quorum requires a simple majority of nodes.
+
+The minimum number of nodes required for quorum on a three-node HA cluster is two. On four-node and five-node HA clusters, the minimum number of nodes required for quorum is three.
+
+If you start a new cluster from backup on your recovery host, the other etcd members might still be able to form quorum and continue service.
 
 Warning
 
@@ -21765,7 +22975,9 @@ Using SSH, connect to the chosen recovery node and run the following command to 
 $ sudo -E /usr/local/bin/quorum-restore.sh
 ```
 
-After a few minutes, the nodes that went down are automatically synchronized with the node that the recovery script was run on. Any remaining online nodes automatically rejoin the new etcd cluster created by the script. This process takes a few minutes.
+After a few minutes, the nodes that went down are automatically synchronized with the node that the recovery script was run on.
+
+Any remaining online nodes automatically rejoin the new etcd cluster created by the script. This process takes a few minutes.
 
 ```shell
 quorum-restore.sh
@@ -21773,9 +22985,13 @@ quorum-restore.sh
 
 Exit the SSH session.
 
-Return to a three-node configuration if any nodes are offline. Repeat the following steps for each node that is offline to delete and re-create them. After the machines are re-created, a new revision is forced and etcd automatically scales up.
+Return to a three-node configuration if any nodes are offline. Repeat the following steps for each node that is offline to delete and re-create them.
 
-If you use a user-provisioned bare-metal installation, you can re-create a control plane machine by using the same method that you used to originally create it. For more information, see "Installing a user-provisioned cluster on bare metal".
+After the machines are re-created, a new revision is forced and etcd automatically scales up.
+
+If you use a user-provisioned bare-metal installation, you can re-create a control plane machine by using the same method that you used to originally create it.
+
+For more information, see "Installing a user-provisioned cluster on bare metal".
 
 Warning
 
@@ -21863,11 +23079,15 @@ Replacing a bare-metal control plane node
 
 #### 6.3.3. Restoring to a previous cluster state
 
-To restore the cluster to a previous state, you must have previously backed up the `etcd` data by creating a snapshot. You will use this snapshot to restore the cluster state. For more information, see "Backing up etcd data".
+To restore the cluster to a previous state, you must have previously backed up the `etcd` data by creating a snapshot. You will use this snapshot to restore the cluster state.
+
+For more information, see "Backing up etcd data".
 
 #### 6.3.3.1. About restoring to a previous cluster state
 
-To restore the cluster to a previous state, you must have previously backed up the `etcd` data by creating a snapshot. You will use this snapshot to restore the cluster state. For more information, see "Backing up etcd data".
+To restore the cluster to a previous state, you must have previously backed up the `etcd` data by creating a snapshot. You will use this snapshot to restore the cluster state.
+
+For more information, see "Backing up etcd data".
 
 You can use an etcd backup to restore your cluster to a previous state. This can be used to recover from the following situations:
 
@@ -21881,9 +23101,13 @@ Restoring to a previous cluster state is a destructive and destablizing action t
 
 If you are able to retrieve data using the Kubernetes API server, then etcd is available and you should not restore using an etcd backup.
 
-Restoring etcd effectively takes a cluster back in time and all clients will experience a conflicting, parallel history. This can impact the behavior of watching components like kubelets, Kubernetes controller managers, persistent volume controllers, and OpenShift Container Platform Operators, including the network Operator.
+Restoring etcd effectively takes a cluster back in time and all clients will experience a conflicting, parallel history.
 
-It can cause Operator churn when the content in etcd does not match the actual content on disk, causing Operators for the Kubernetes API server, Kubernetes controller manager, Kubernetes scheduler, and etcd to get stuck when files on disk conflict with content in etcd. This can require manual actions to resolve the issues.
+This can impact the behavior of watching components like kubelets, Kubernetes controller managers, persistent volume controllers, and OpenShift Container Platform Operators, including the network Operator.
+
+It can cause Operator churn when the content in etcd does not match the actual content on disk, causing Operators for the Kubernetes API server, Kubernetes controller manager, Kubernetes scheduler, and etcd to get stuck when files on disk conflict with content in etcd.
+
+This can require manual actions to resolve the issues.
 
 In extreme cases, the cluster can lose track of persistent volumes, delete critical workloads that no longer exist, reimage machines, and rewrite CA bundles with expired certificates.
 
@@ -21893,7 +23117,9 @@ You can use a saved etcd backup to restore a previous cluster state on a single 
 
 Important
 
-When you restore your cluster, you must use an etcd backup that was taken from the same z-stream release. For example, an OpenShift Container Platform 4.20.2 cluster must use an etcd backup that was taken from 4.20.2.
+When you restore your cluster, you must use an etcd backup that was taken from the same z-stream release.
+
+For example, an OpenShift Container Platform 4.20.2 cluster must use an etcd backup that was taken from 4.20.2.
 
 Prerequisites
 
@@ -21901,7 +23127,9 @@ Access to the cluster as a user with the `cluster-admin` role through a certific
 
 You have SSH access to control plane hosts.
 
-A backup directory containing both the etcd snapshot and the resources for the static pods, which were from the same backup. The file names in the directory must be in the following formats: `snapshot_<datetimestamp>.db` and `static_kuberesources_<datetimestamp>.tar.gz`.
+A backup directory containing both the etcd snapshot and the resources for the static pods, which were from the same backup.
+
+The file names in the directory must be in the following formats: `snapshot_<datetimestamp>.db` and `static_kuberesources_<datetimestamp>.tar.gz`.
 
 Procedure
 
@@ -21933,15 +23161,25 @@ It can take up to 15 minutes for the control plane to recover.
 
 You can use a saved etcd backup to restore a previous cluster state or restore a cluster that has lost the majority of control plane hosts.
 
-For high availability (HA) clusters, a three-node HA cluster requires you to shut down etcd on two hosts to avoid a cluster split. On four-node and five-node HA clusters, you must shut down three hosts. Quorum requires a simple majority of nodes. The minimum number of nodes required for quorum on a three-node HA cluster is two. On four-node and five-node HA clusters, the minimum number of nodes required for quorum is three. If you start a new cluster from backup on your recovery host, the other etcd members might still be able to form quorum and continue service.
+For high availability (HA) clusters, a three-node HA cluster requires you to shut down etcd on two hosts to avoid a cluster split.
+
+On four-node and five-node HA clusters, you must shut down three hosts. Quorum requires a simple majority of nodes.
+
+The minimum number of nodes required for quorum on a three-node HA cluster is two. On four-node and five-node HA clusters, the minimum number of nodes required for quorum is three.
+
+If you start a new cluster from backup on your recovery host, the other etcd members might still be able to form quorum and continue service.
 
 Note
 
-If your cluster uses a control plane machine set, see "Recovering a degraded etcd Operator" in "Troubleshooting the control plane machine set" for an etcd recovery procedure. For OpenShift Container Platform on a single node, see "Restoring to a previous cluster state for a single node".
+If your cluster uses a control plane machine set, see "Recovering a degraded etcd Operator" in "Troubleshooting the control plane machine set" for an etcd recovery procedure.
+
+For OpenShift Container Platform on a single node, see "Restoring to a previous cluster state for a single node".
 
 Important
 
-When you restore your cluster, you must use an etcd backup that was taken from the same z-stream release. For example, an OpenShift Container Platform 4.20.2 cluster must use an etcd backup that was taken from 4.20.2.
+When you restore your cluster, you must use an etcd backup that was taken from the same z-stream release.
+
+For example, an OpenShift Container Platform 4.20.2 cluster must use an etcd backup that was taken from 4.20.2.
 
 Prerequisites
 
@@ -21951,7 +23189,9 @@ A healthy control plane host to use as the recovery host.
 
 You have SSH access to control plane hosts.
 
-A backup directory containing both the `etcd` snapshot and the resources for the static pods, which were from the same backup. The file names in the directory must be in the following formats: `snapshot_<datetimestamp>.db` and `static_kuberesources_<datetimestamp>.tar.gz`.
+A backup directory containing both the `etcd` snapshot and the resources for the static pods, which were from the same backup.
+
+The file names in the directory must be in the following formats: `snapshot_<datetimestamp>.db` and `static_kuberesources_<datetimestamp>.tar.gz`.
 
 Nodes must be accessible or bootable.
 
@@ -21965,7 +23205,9 @@ Select a control plane host to use as the recovery host. This is the host that y
 
 Establish SSH connectivity to each of the control plane nodes, including the recovery host.
 
-`kube-apiserver` becomes inaccessible after the restore process starts, so you cannot access the control plane nodes. For this reason, it is recommended to establish SSH connectivity to each control plane host in a separate terminal.
+`kube-apiserver` becomes inaccessible after the restore process starts, so you cannot access the control plane nodes.
+
+For this reason, it is recommended to establish SSH connectivity to each control plane host in a separate terminal.
 
 Important
 
@@ -22037,7 +23279,9 @@ Directly starts a three-member etcd cluster.
 
 If the cluster uses a `MachineSet` for the control plane, it is suggested to use the "Restoring to a previous cluster state" for a simpler etcd recovery procedure.
 
-When you restore your cluster, you must use an etcd backup that was taken from the same z-stream release. For example, an OpenShift Container Platform 4.7.2 cluster must use an etcd backup that was taken from 4.7.2.
+When you restore your cluster, you must use an etcd backup that was taken from the same z-stream release.
+
+For example, an OpenShift Container Platform 4.7.2 cluster must use an etcd backup that was taken from 4.7.2.
 
 Prerequisites
 
@@ -22045,13 +23289,17 @@ Access to the cluster as a user with the `cluster-admin` role; for example, the 
 
 SSH access to all control plane hosts, with a host user allowed to become `root`; for example, the default `core` host user.
 
-A backup directory containing both a previous etcd snapshot and the resources for the static pods from the same backup. The file names in the directory must be in the following formats: `snapshot_<datetimestamp>.db` and `static_kuberesources_<datetimestamp>.tar.gz`.
+A backup directory containing both a previous etcd snapshot and the resources for the static pods from the same backup.
+
+The file names in the directory must be in the following formats: `snapshot_<datetimestamp>.db` and `static_kuberesources_<datetimestamp>.tar.gz`.
 
 Procedure
 
 Use SSH to connect to each of the control plane nodes.
 
-The Kubernetes API server becomes inaccessible after the restore process starts, so you cannot access the control plane nodes. For this reason, it is recommended to use a SSH connection for each control plane host you are accessing in a separate terminal.
+The Kubernetes API server becomes inaccessible after the restore process starts, so you cannot access the control plane nodes.
+
+For this reason, it is recommended to use a SSH connection for each control plane host you are accessing in a separate terminal.
 
 Important
 
@@ -22059,7 +23307,9 @@ If you do not complete this step, you will not be able to access the control pla
 
 Copy the etcd backup directory to each control plane host.
 
-This procedure assumes that you copied the `backup` directory containing the etcd snapshot and the resources for the static pods to the `/home/core/assets` directory of each control plane host. You might need to create such `assets` folder if it does not exist yet.
+This procedure assumes that you copied the `backup` directory containing the etcd snapshot and the resources for the static pods to the `/home/core/assets` directory of each control plane host.
+
+You might need to create such `assets` folder if it does not exist yet.
 
 Stop the static pods on all the control plane nodes; one host at a time.
 
@@ -22135,7 +23385,7 @@ This data will be useful in case the `etcd` backup restore does not work and the
 
 Find the correct etcd parameters for each control plane host.
 
-The value for `<ETCD_NAME>` is unique for the each control plane host, and it is equal to the value of the `ETCD_NAME` variable in the manifest `/etc/kubernetes/static-pod-resources/etcd-certs/configmaps/restore-etcd-pod/pod.yaml` file in the specific control plane host. It can be found with the command:
+The value for `<ETCD_NAME>` is unique for the each control plane host, and it is equal to the value of the `ETCD_NAME` variable in the manifest `/etc/kubernetes/static-pod-resources/etcd-certs/configmaps/restore-etcd-pod/pod.yaml` file in the specific control plane host.
 
 ```shell-session
 RESTORE_ETCD_POD_YAML="/etc/kubernetes/static-pod-resources/etcd-certs/configmaps/restore-etcd-pod/pod.yaml"
@@ -22152,7 +23402,9 @@ $ uuidgen
 
 Note
 
-The value for `<UUID>` must be generated only once. After generating `UUID` on one control plane host, do not generate it again on the others. The same `UUID` will be used in the next steps on all control plane hosts.
+The value for `<UUID>` must be generated only once. After generating `UUID` on one control plane host, do not generate it again on the others.
+
+The same `UUID` will be used in the next steps on all control plane hosts.
 
 ```shell-session
 https://<IP_CURRENT_HOST>:2380
@@ -22363,21 +23615,39 @@ Replacing a bare-metal control plane node
 
 #### 6.3.3.6. Issues and workarounds for restoring a persistent storage state
 
-If your OpenShift Container Platform cluster uses persistent storage of any form, a state of the cluster is typically stored outside etcd. When you restore from an etcd backup, the status of the workloads in OpenShift Container Platform is also restored. However, if the etcd snapshot is old, the status might be invalid or outdated.
+If your OpenShift Container Platform cluster uses persistent storage of any form, a state of the cluster is typically stored outside etcd.
+
+When you restore from an etcd backup, the status of the workloads in OpenShift Container Platform is also restored. However, if the etcd snapshot is old, the status might be invalid or outdated.
 
 Important
 
-The contents of persistent volumes (PVs) are never part of the etcd snapshot. When you restore an OpenShift Container Platform cluster from an etcd snapshot, non-critical workloads might gain access to critical data, or vice-versa.
+The contents of persistent volumes (PVs) are never part of the etcd snapshot.
+
+When you restore an OpenShift Container Platform cluster from an etcd snapshot, non-critical workloads might gain access to critical data, or vice-versa.
 
 The following are some example scenarios that produce an out-of-date status:
 
-MySQL database is running in a pod backed up by a PV object. Restoring OpenShift Container Platform from an etcd snapshot does not bring back the volume on the storage provider, and does not produce a running MySQL pod, despite the pod repeatedly attempting to start. You must manually restore this pod by restoring the volume on the storage provider, and then editing the PV to point to the new volume.
+MySQL database is running in a pod backed up by a PV object.
 
-Pod P1 is using volume A, which is attached to node X. If the etcd snapshot is taken while another pod uses the same volume on node Y, then when the etcd restore is performed, pod P1 might not be able to start correctly due to the volume still being attached to node Y. OpenShift Container Platform is not aware of the attachment, and does not automatically detach it. When this occurs, the volume must be manually detached from node Y so that the volume can attach on node X, and then pod P1 can start.
+Restoring OpenShift Container Platform from an etcd snapshot does not bring back the volume on the storage provider, and does not produce a running MySQL pod, despite the pod repeatedly attempting to start.
 
-Cloud provider or storage provider credentials were updated after the etcd snapshot was taken. This causes any CSI drivers or Operators that depend on the those credentials to not work. You might have to manually update the credentials required by those drivers or Operators.
+You must manually restore this pod by restoring the volume on the storage provider, and then editing the PV to point to the new volume.
 
-A device is removed or renamed from OpenShift Container Platform nodes after the etcd snapshot is taken. The Local Storage Operator creates symlinks for each PV that it manages from `/dev/disk/by-id` or `/dev` directories. This situation might cause the local PVs to refer to devices that no longer exist.
+Pod P1 is using volume A, which is attached to node X.
+
+If the etcd snapshot is taken while another pod uses the same volume on node Y, then when the etcd restore is performed, pod P1 might not be able to start correctly due to the volume still being attached to node Y.
+
+OpenShift Container Platform is not aware of the attachment, and does not automatically detach it.
+
+When this occurs, the volume must be manually detached from node Y so that the volume can attach on node X, and then pod P1 can start.
+
+Cloud provider or storage provider credentials were updated after the etcd snapshot was taken. This causes any CSI drivers or Operators that depend on the those credentials to not work.
+
+You might have to manually update the credentials required by those drivers or Operators.
+
+A device is removed or renamed from OpenShift Container Platform nodes after the etcd snapshot is taken.
+
+The Local Storage Operator creates symlinks for each PV that it manages from `/dev/disk/by-id` or `/dev` directories. This situation might cause the local PVs to refer to devices that no longer exist.
 
 To fix this problem, an administrator must:
 
@@ -22391,7 +23661,9 @@ Delete `LocalVolume` or `LocalVolumeSet` objects (see Storage → Configuring pe
 
 The cluster can automatically recover from expired control plane certificates.
 
-However, you must manually approve the pending `node-bootstrapper` certificate signing requests (CSRs) to recover kubelet certificates. For user-provisioned installations, you might also need to approve pending kubelet serving CSRs.
+However, you must manually approve the pending `node-bootstrapper` certificate signing requests (CSRs) to recover kubelet certificates.
+
+For user-provisioned installations, you might also need to approve pending kubelet serving CSRs.
 
 Use the following steps to approve the pending CSRs:
 

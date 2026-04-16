@@ -3,7 +3,6 @@ import gsap from 'gsap';
 import { Link } from 'react-router-dom';
 import { MessageSquare, BookOpen, MonitorPlay } from 'lucide-react';
 import './ProductSurfaces.css';
-import { RUNTIME_EXTERNAL_ORIGIN } from '../lib/runtimeApi';
 
 export default function ProductSurfaces() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -90,7 +89,7 @@ export default function ProductSurfaces() {
       <div className="surfaces-grid">
         
         <Link 
-          to="/studio" 
+          to="/workspace" 
           className="surface-card glass-panel" 
           ref={el => { cardsRef.current[0] = el; }}
         >
@@ -99,14 +98,13 @@ export default function ProductSurfaces() {
             <div className="surface-icon">
               <MessageSquare size={48} color="var(--accent-cyan)" />
             </div>
-            <h3>Chat UI</h3>
+            <h3>Chat Workspace</h3>
             <p>어디서 답을 찾았는지 추적 가능한 질의응답 창구</p>
           </div>
         </Link>
 
-        {/* Using standard anchor for external/manual pages if needed, but here we point to the same workspace demo */}
         <Link 
-          to="/studio" 
+          to="/playbook-library" 
           className="surface-card glass-panel" 
           ref={el => { cardsRef.current[1] = el; }}
         >
@@ -115,16 +113,14 @@ export default function ProductSurfaces() {
             <div className="surface-icon">
               <BookOpen size={48} color="var(--text-main)" />
             </div>
-            <h3>Manualbook Viewer</h3>
+            <h3>Playbook Library</h3>
             <p>Citation을 클릭하면 펼쳐지는 정확한 섹션 이동</p>
           </div>
         </Link>
 
-        <a 
-          href={`${RUNTIME_EXTERNAL_ORIGIN}/data-situation-room`}
+        <Link
+          to="/playbook-library"
           className="surface-card glass-panel" 
-          target="_blank" 
-          rel="noreferrer"
           ref={el => { cardsRef.current[2] = el; }}
         >
           <div className="glow-orb"></div>
@@ -132,10 +128,10 @@ export default function ProductSurfaces() {
             <div className="surface-icon">
               <MonitorPlay size={48} color="var(--accent-purple)" />
             </div>
-            <h3>Runtime Control Room</h3>
+            <h3>Control Tower</h3>
             <p>현황과 품질, 평가 리포트를 한 눈에 점검하는 상황실</p>
           </div>
-        </a>
+        </Link>
 
       </div>
     </section>

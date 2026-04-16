@@ -151,6 +151,17 @@ class TestAppChatApiMultiturn(unittest.TestCase):
         with request.urlopen(req, timeout=10) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
+    def _post_chat_stream(self, *, session_id: str, query: str) -> list[dict[str, object]]:
+        req = request.Request(
+            f"http://127.0.0.1:{self.port}/api/chat/stream",
+            data=json.dumps({"session_id": session_id, "query": query}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with request.urlopen(req, timeout=10) as resp:
+            lines = [line.strip() for line in resp.read().decode("utf-8").splitlines() if line.strip()]
+        return [json.loads(line) for line in lines]
+
     def _post_json(self, path: str, payload: dict[str, object]) -> tuple[int, dict[str, object]]:
         req = request.Request(
             f"http://127.0.0.1:{self.port}{path}",
@@ -217,6 +228,21 @@ class TestAppChatApiMultiturn(unittest.TestCase):
                 self.assertEqual("Route와 Ingress 비교", observed_topics[2], scenario["id"])
                 self.assertEqual("클러스터의 모든 심각한 경고 해결", observed_topics[4], scenario["id"])
                 self.assertGreater(len(set(observed_topics)), 1, scenario["id"])
+
+    def test_chat_stream_emits_runtime_trace_then_final_result(self) -> None:
+        query = str(self.scenarios[0]["turns"][0]["query"])
+        events = self._post_chat_stream(session_id="stream-smoke", query=query)
+
+        self.assertGreaterEqual(len(events), 3)
+        self.assertEqual("trace", events[0]["type"])
+        self.assertEqual("request_received", events[0]["step"])
+        self.assertTrue(any(event.get("type") == "trace" and event.get("step") == "retrieval_complete" for event in events))
+        self.assertEqual("result", events[-1]["type"])
+        payload = events[-1]["payload"]
+        self.assertIn("retrieval_trace", payload)
+        self.assertIn("pipeline_trace", payload)
+        self.assertIn("rewritten_query", payload)
+        self.assertEqual("rag", payload["response_kind"])
 
     def test_session_delete_endpoint_removes_saved_history(self) -> None:
         session_id = "delete-me"

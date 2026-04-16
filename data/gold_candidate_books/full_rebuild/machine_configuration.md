@@ -4,13 +4,19 @@
 
 Red Hat OpenShift Documentation Team Legal Notice Abstract
 
-This document provides instructions for managing changes to systemd, CRI-O, Kubelet, the kernel, and other system features by using MachineConfig, KubeletConfig, and ContainerRuntimeConfig objects. In addition, image layering allows you to easily customize the underlying node operating system by layering additional images onto the base image of any of your cluster worker nodes.
+This document provides instructions for managing changes to systemd, CRI-O, Kubelet, the kernel, and other system features by using MachineConfig, KubeletConfig, and ContainerRuntimeConfig objects.
+
+In addition, image layering allows you to easily customize the underlying node operating system by layering additional images onto the base image of any of your cluster worker nodes.
 
 ## Chapter 1. Machine configuration overview
 
-There are times when you need to make changes to the operating systems running on OpenShift Container Platform nodes. This can include changing settings for network time service, adding kernel arguments, or configuring journaling in a specific way.
+There are times when you need to make changes to the operating systems running on OpenShift Container Platform nodes.
 
-Aside from a few specialized features, most changes to operating systems on OpenShift Container Platform nodes can be done by creating what are referred to as `MachineConfig` objects that are managed by the Machine Config Operator. For example, you can use the Machine Config Operator (MCO) and machine configs to manage update to systemd, CRI-O and kubelet, the kernel, Network Manager and other system features.
+This can include changing settings for network time service, adding kernel arguments, or configuring journaling in a specific way.
+
+Aside from a few specialized features, most changes to operating systems on OpenShift Container Platform nodes can be done by creating what are referred to as `MachineConfig` objects that are managed by the Machine Config Operator.
+
+For example, you can use the Machine Config Operator (MCO) and machine configs to manage update to systemd, CRI-O and kubelet, the kernel, Network Manager and other system features.
 
 Tasks in this section describe how to use features of the Machine Config Operator to configure operating system features on OpenShift Container Platform nodes.
 
@@ -18,21 +24,37 @@ Important
 
 NetworkManager stores new network configurations to `/etc/NetworkManager/system-connections/` in a key file format.
 
-Previously, NetworkManager stored new network configurations to `/etc/sysconfig/network-scripts/` in the `ifcfg` format. Starting with RHEL 9.0, RHEL stores new network configurations at `/etc/NetworkManager/system-connections/` in a key file format. The connections configurations stored to `/etc/sysconfig/network-scripts/` in the old format still work uninterrupted. Modifications in existing profiles continue updating the older files.
+Previously, NetworkManager stored new network configurations to `/etc/sysconfig/network-scripts/` in the `ifcfg` format.
+
+Starting with RHEL 9.0, RHEL stores new network configurations at `/etc/NetworkManager/system-connections/` in a key file format.
+
+The connections configurations stored to `/etc/sysconfig/network-scripts/` in the old format still work uninterrupted. Modifications in existing profiles continue updating the older files.
 
 ### 1.1. About the Machine Config Operator
 
-OpenShift Container Platform 4.20 integrates both operating system and cluster management. Because the cluster manages its own updates, including updates to Red Hat Enterprise Linux CoreOS (RHCOS) on cluster nodes, OpenShift Container Platform provides an opinionated lifecycle management experience that simplifies the orchestration of node upgrades.
+OpenShift Container Platform 4.20 integrates both operating system and cluster management.
 
-OpenShift Container Platform employs three daemon sets and controllers to simplify node management. These daemon sets orchestrate operating system updates and configuration changes to the hosts by using standard Kubernetes-style constructs. They include:
+Because the cluster manages its own updates, including updates to Red Hat Enterprise Linux CoreOS (RHCOS) on cluster nodes, OpenShift Container Platform provides an opinionated lifecycle management experience that simplifies the orchestration of node upgrades.
+
+OpenShift Container Platform employs three daemon sets and controllers to simplify node management.
+
+These daemon sets orchestrate operating system updates and configuration changes to the hosts by using standard Kubernetes-style constructs. They include:
 
 The `machine-config-controller`, which coordinates machine upgrades from the control plane. It monitors all of the cluster nodes and orchestrates their configuration updates.
 
-The `machine-config-daemon` daemon set, which runs on each node in the cluster and updates a machine to configuration as defined by machine config and as instructed by the MachineConfigController. When the node detects a change, it drains off its pods, applies the update, and reboots. These changes come in the form of Ignition configuration files that apply the specified machine configuration and control kubelet configuration. The update itself is delivered in a container. This process is key to the success of managing OpenShift Container Platform and RHCOS updates together.
+The `machine-config-daemon` daemon set, which runs on each node in the cluster and updates a machine to configuration as defined by machine config and as instructed by the MachineConfigController.
+
+When the node detects a change, it drains off its pods, applies the update, and reboots.
+
+These changes come in the form of Ignition configuration files that apply the specified machine configuration and control kubelet configuration. The update itself is delivered in a container.
+
+This process is key to the success of managing OpenShift Container Platform and RHCOS updates together.
 
 The `machine-config-server` daemon set, which provides the Ignition config files to control plane nodes as they join the cluster.
 
-The machine configuration is a subset of the Ignition configuration. The `machine-config-daemon` reads the machine configuration to see if it needs to do an OSTree update or if it must apply a series of systemd kubelet file changes, configuration changes, or other changes to the operating system or OpenShift Container Platform configuration.
+The machine configuration is a subset of the Ignition configuration.
+
+The `machine-config-daemon` reads the machine configuration to see if it needs to do an OSTree update or if it must apply a series of systemd kubelet file changes, configuration changes, or other changes to the operating system or OpenShift Container Platform configuration.
 
 When you perform node management operations, you create or modify a `KubeletConfig` custom resource (CR).
 
@@ -42,7 +64,11 @@ When changes are made to a machine configuration, the Machine Config Operator (M
 
 You can mitigate the disruption caused by some machine config changes by using a node disruption policy. See Understanding node restart behaviors after machine config changes.
 
-Alternatively, you can prevent the nodes from automatically rebooting after machine configuration changes before making the changes. Pause the autoreboot process by setting the `spec.paused` field to `true` in the corresponding machine config pool. When paused, machine configuration changes are not applied until you set the `spec.paused` field to `false` and the nodes have rebooted into the new configuration.
+Alternatively, you can prevent the nodes from automatically rebooting after machine configuration changes before making the changes.
+
+Pause the autoreboot process by setting the `spec.paused` field to `true` in the corresponding machine config pool.
+
+When paused, machine configuration changes are not applied until you set the `spec.paused` field to `false` and the nodes have rebooted into the new configuration.
 
 When the MCO detects any of the following changes, it applies the update without draining or rebooting the node:
 
@@ -52,7 +78,9 @@ Changes to the global pull secret or pull secret in the `openshift-config` names
 
 Automatic rotation of the `/etc/kubernetes/kubelet-ca.crt` certificate authority (CA) by the Kubernetes API Server Operator.
 
-When the MCO detects changes to the `/etc/containers/registries.conf` file, such as editing an `ImageDigestMirrorSet`, `ImageTagMirrorSet`, or `ImageContentSourcePolicy` object, it drains the corresponding nodes, applies the changes, and uncordons the nodes. The node drain does not happen for the following changes:
+When the MCO detects changes to the `/etc/containers/registries.conf` file, such as editing an `ImageDigestMirrorSet`, `ImageTagMirrorSet`, or `ImageContentSourcePolicy` object, it drains the corresponding nodes, applies the changes, and uncordons the nodes.
+
+The node drain does not happen for the following changes:
 
 The addition of a registry with the `pull-from-mirror = "digest-only"` parameter set for each mirror.
 
@@ -60,7 +88,11 @@ The addition of a mirror with the `pull-from-mirror = "digest-only"` parameter s
 
 The addition of items to the `unqualified-search-registries` list.
 
-There might be situations where the configuration on a node does not fully match what the currently-applied machine config specifies. This state is called configuration drift. The Machine Config Daemon (MCD) regularly checks the nodes for configuration drift. If the MCD detects configuration drift, the MCO marks the node `degraded` until an administrator corrects the node configuration. A degraded node is online and operational, but, it cannot be updated.
+There might be situations where the configuration on a node does not fully match what the currently-applied machine config specifies. This state is called configuration drift.
+
+The Machine Config Daemon (MCD) regularly checks the nodes for configuration drift.
+
+If the MCD detects configuration drift, the MCO marks the node `degraded` until an administrator corrects the node configuration. A degraded node is online and operational, but, it cannot be updated.
 
 Additional resources
 
@@ -68,39 +100,71 @@ About the OVN-Kubernetes network plugin
 
 ### 1.2. Machine config overview
 
-The Machine Config Operator (MCO) manages updates to systemd, CRI-O and Kubelet, the kernel, Network Manager and other system features. It also offers a `MachineConfig` CRD that can write configuration files onto the host (see machine-config-operator). Understanding what MCO does and how it interacts with other components is critical to making advanced, system-level changes to an OpenShift Container Platform cluster. Here are some things you should know about MCO, machine configs, and how they are used:
+The Machine Config Operator (MCO) manages updates to systemd, CRI-O and Kubelet, the kernel, Network Manager and other system features.
+
+It also offers a `MachineConfig` CRD that can write configuration files onto the host (see machine-config-operator).
+
+Understanding what MCO does and how it interacts with other components is critical to making advanced, system-level changes to an OpenShift Container Platform cluster.
+
+Here are some things you should know about MCO, machine configs, and how they are used:
 
 A machine config can make a specific change to a file or service on the operating system of each system representing a pool of OpenShift Container Platform nodes.
 
-MCO applies changes to operating systems in pools of machines. All OpenShift Container Platform clusters start with worker and control plane node pools. By adding more role labels, you can configure custom pools of nodes. For example, you can set up a custom pool of worker nodes that includes particular hardware features needed by an application. However, examples in this section focus on changes to the default pool types.
+MCO applies changes to operating systems in pools of machines. All OpenShift Container Platform clusters start with worker and control plane node pools.
+
+By adding more role labels, you can configure custom pools of nodes. For example, you can set up a custom pool of worker nodes that includes particular hardware features needed by an application.
+
+However, examples in this section focus on changes to the default pool types.
 
 Important
 
 A node can have multiple labels applied that indicate its type, such as `master` or `worker`, however it can be a member of only a single machine config pool.
 
-Machine configs are processed alphabetically, in lexicographically increasing order, by their name. The render controller uses the first machine config in the list as the base and appends the rest to the base machine config into a rendered machine config, which is then applied to the appropriate nodes.
+Machine configs are processed alphabetically, in lexicographically increasing order, by their name.
+
+The render controller uses the first machine config in the list as the base and appends the rest to the base machine config into a rendered machine config, which is then applied to the appropriate nodes.
 
 When you create a machine config for the worker nodes, the changes are also applied to the nodes in all custom pools.
 
 However, as of OpenShift Container Platform 4.15, any machine configs that target custom pools always override worker machine configs if the worker machine configs contain definitions for the same fields.
 
-After a machine config change, the MCO updates the affected nodes alphabetically by zone, based on the `topology.kubernetes.io/zone` label. If a zone has more than one node, the oldest nodes are updated first. For nodes that do not use zones, such as in bare metal deployments, the nodes are upgraded by age, with the oldest nodes updated first. The MCO updates the number of nodes as specified by the `maxUnavailable` field on the machine configuration pool at a time.
+After a machine config change, the MCO updates the affected nodes alphabetically by zone, based on the `topology.kubernetes.io/zone` label.
 
-Some machine configuration must be in place before OpenShift Container Platform is installed to disk. In most cases, this can be accomplished by creating a machine config that is injected directly into the OpenShift Container Platform installer process, instead of running as a postinstallation machine config. In other cases, you might need to do bare metal installation where you pass kernel arguments at OpenShift Container Platform installer startup, to do such things as setting per-node individual IP addresses or advanced disk partitioning.
+If a zone has more than one node, the oldest nodes are updated first.
 
-MCO manages items that are set in machine configs. Manual changes you do to your systems will not be overwritten by MCO, unless MCO is explicitly told to manage a conflicting file. In other words, MCO only makes specific updates you request, it does not claim control over the whole node.
+For nodes that do not use zones, such as in bare metal deployments, the nodes are upgraded by age, with the oldest nodes updated first.
+
+The MCO updates the number of nodes as specified by the `maxUnavailable` field on the machine configuration pool at a time.
+
+Some machine configuration must be in place before OpenShift Container Platform is installed to disk.
+
+In most cases, this can be accomplished by creating a machine config that is injected directly into the OpenShift Container Platform installer process, instead of running as a postinstallation machine config.
+
+In other cases, you might need to do bare metal installation where you pass kernel arguments at OpenShift Container Platform installer startup, to do such things as setting per-node individual IP addresses or advanced disk partitioning.
+
+MCO manages items that are set in machine configs. Manual changes you do to your systems will not be overwritten by MCO, unless MCO is explicitly told to manage a conflicting file.
+
+In other words, MCO only makes specific updates you request, it does not claim control over the whole node.
 
 Manual changes to nodes are strongly discouraged. If you need to decommission a node and start a new one, those direct changes would be lost.
 
-MCO is only supported for writing to files in `/etc` and `/var` directories, although there are symbolic links to some directories that can be writeable by being symbolically linked to one of those areas. The `/opt` and `/usr/local` directories are examples.
+MCO is only supported for writing to files in `/etc` and `/var` directories, although there are symbolic links to some directories that can be writeable by being symbolically linked to one of those areas.
+
+The `/opt` and `/usr/local` directories are examples.
 
 Ignition is the configuration format used in MachineConfigs. See the Ignition Configuration Specification v3.5.0 for details.
 
-Although Ignition config settings can be delivered directly at OpenShift Container Platform installation time, and are formatted in the same way that MCO delivers Ignition configs, MCO has no way of seeing what those original Ignition configs are. Therefore, you should wrap Ignition config settings into a machine config before deploying them.
+Although Ignition config settings can be delivered directly at OpenShift Container Platform installation time, and are formatted in the same way that MCO delivers Ignition configs, MCO has no way of seeing what those original Ignition configs are.
 
-When a file managed by MCO changes outside of MCO, the Machine Config Daemon (MCD) sets the node as `degraded`. It will not overwrite the offending file, however, and should continue to operate in a `degraded` state.
+Therefore, you should wrap Ignition config settings into a machine config before deploying them.
 
-A key reason for using a machine config is that it will be applied when you spin up new nodes for a pool in your OpenShift Container Platform cluster. The `machine-api-operator` provisions a new machine and MCO configures it.
+When a file managed by MCO changes outside of MCO, the Machine Config Daemon (MCD) sets the node as `degraded`.
+
+It will not overwrite the offending file, however, and should continue to operate in a `degraded` state.
+
+A key reason for using a machine config is that it will be applied when you spin up new nodes for a pool in your OpenShift Container Platform cluster.
+
+The `machine-api-operator` provisions a new machine and MCO configures it.
 
 MCO uses Ignition as the configuration format. OpenShift Container Platform 4.6 moved from Ignition config specification version 2 to version 3.
 
@@ -124,13 +188,19 @@ Adding new users by using a machine config is not supported.
 
 kernelArguments: Add arguments to the kernel command line when OpenShift Container Platform nodes boot.
 
-kernelType: Optionally identify a non-standard kernel to use instead of the standard kernel. Use `realtime` to use the RT kernel (for RAN). This is only supported on select platforms. Use the `64k-pages` parameter to enable the 64k page size kernel. This setting is exclusive to machines with 64-bit ARM architectures.
+kernelType: Optionally identify a non-standard kernel to use instead of the standard kernel. Use `realtime` to use the RT kernel (for RAN).
+
+This is only supported on select platforms. Use the `64k-pages` parameter to enable the 64k page size kernel.
+
+This setting is exclusive to machines with 64-bit ARM architectures.
 
 fips: Enable FIPS mode. FIPS should be set at installation-time setting and not a postinstallation procedure.
 
 Important
 
-To enable FIPS mode for your cluster, you must run the installation program from a Red Hat Enterprise Linux (RHEL) computer configured to operate in FIPS mode. For more information about configuring FIPS mode on RHEL, see Switching RHEL to FIPS mode.
+To enable FIPS mode for your cluster, you must run the installation program from a Red Hat Enterprise Linux (RHEL) computer configured to operate in FIPS mode.
+
+For more information about configuring FIPS mode on RHEL, see Switching RHEL to FIPS mode.
 
 When running Red Hat Enterprise Linux (RHEL) or Red Hat Enterprise Linux CoreOS (RHCOS) booted in FIPS mode, OpenShift Container Platform core components use the RHEL cryptographic libraries that have been submitted to NIST for FIPS 140-2/140-3 Validation on only the x86_64, ppc64le, and s390x architectures.
 
@@ -138,9 +208,15 @@ extensions: Extend RHCOS features by adding selected pre-packaged software. For 
 
 Custom resources (for `ContainerRuntime` and `Kubelet`): Outside of machine configs, MCO manages two special custom resources for modifying CRI-O container runtime settings (`ContainerRuntime` CR) and the Kubelet service (`Kubelet` CR).
 
-The MCO is not the only Operator that can change operating system components on OpenShift Container Platform nodes. Other Operators can modify operating system-level features as well. One example is the Node Tuning Operator, which allows you to do node-level tuning through Tuned daemon profiles.
+The MCO is not the only Operator that can change operating system components on OpenShift Container Platform nodes. Other Operators can modify operating system-level features as well.
 
-Tasks for the MCO configuration that can be done after installation are included in the following procedures. See descriptions of RHCOS bare metal installation for system configuration tasks that must be done during or before OpenShift Container Platform installation. By default, many of the changes you make with the MCO require a reboot.
+One example is the Node Tuning Operator, which allows you to do node-level tuning through Tuned daemon profiles.
+
+Tasks for the MCO configuration that can be done after installation are included in the following procedures.
+
+See descriptions of RHCOS bare metal installation for system configuration tasks that must be done during or before OpenShift Container Platform installation.
+
+By default, many of the changes you make with the MCO require a reboot.
 
 When the MCO detects any of the following changes, it applies the update without draining or rebooting the node:
 
@@ -150,7 +226,9 @@ Changes to the global pull secret or pull secret in the `openshift-config` names
 
 Automatic rotation of the `/etc/kubernetes/kubelet-ca.crt` certificate authority (CA) by the Kubernetes API Server Operator.
 
-When the MCO detects changes to the `/etc/containers/registries.conf` file, such as editing an `ImageDigestMirrorSet`, `ImageTagMirrorSet`, or `ImageContentSourcePolicy` object, it drains the corresponding nodes, applies the changes, and uncordons the nodes. The node drain does not happen for the following changes:
+When the MCO detects changes to the `/etc/containers/registries.conf` file, such as editing an `ImageDigestMirrorSet`, `ImageTagMirrorSet`, or `ImageContentSourcePolicy` object, it drains the corresponding nodes, applies the changes, and uncordons the nodes.
+
+The node drain does not happen for the following changes:
 
 The addition of a registry with the `pull-from-mirror = "digest-only"` parameter set for each mirror.
 
@@ -158,39 +236,79 @@ The addition of a mirror with the `pull-from-mirror = "digest-only"` parameter s
 
 The addition of items to the `unqualified-search-registries` list.
 
-In other cases, you can mitigate the disruption to your workload when the MCO makes changes by using node disruption policies. For information, see Understanding node restart behaviors after machine config changes.
+In other cases, you can mitigate the disruption to your workload when the MCO makes changes by using node disruption policies.
 
-There might be situations where the configuration on a node does not fully match what the currently-applied machine config specifies. This state is called configuration drift. The Machine Config Daemon (MCD) regularly checks the nodes for configuration drift. If the MCD detects configuration drift, the MCO marks the node `degraded` until an administrator corrects the node configuration. A degraded node is online and operational, but, it cannot be updated. For more information on configuration drift, see Understanding configuration drift detection.
+For information, see Understanding node restart behaviors after machine config changes.
+
+There might be situations where the configuration on a node does not fully match what the currently-applied machine config specifies. This state is called configuration drift.
+
+The Machine Config Daemon (MCD) regularly checks the nodes for configuration drift.
+
+If the MCD detects configuration drift, the MCO marks the node `degraded` until an administrator corrects the node configuration. A degraded node is online and operational, but, it cannot be updated.
+
+For more information on configuration drift, see Understanding configuration drift detection.
 
 #### 1.2.2. Node configuration management with machine config pools
 
-Machines that run control plane components or user workloads are divided into groups based on the types of resources they handle. These groups of machines are called machine config pools (MCP). Each MCP manages a set of nodes and its corresponding machine configs. The role of the node determines which MCP it belongs to; the MCP governs nodes based on its assigned node role label. Nodes in an MCP have the same configuration; this means nodes can be scaled up and torn down in response to increased or decreased workloads.
+Machines that run control plane components or user workloads are divided into groups based on the types of resources they handle. These groups of machines are called machine config pools (MCP).
 
-By default, there are two MCPs created by the cluster when it is installed: `master` and `worker`. Each default MCP has a defined configuration applied by the Machine Config Operator (MCO), which is responsible for managing MCPs and facilitating MCP updates.
+Each MCP manages a set of nodes and its corresponding machine configs. The role of the node determines which MCP it belongs to; the MCP governs nodes based on its assigned node role label.
 
-For worker nodes, you can create additional MCPs, or custom pools, to manage nodes with custom use cases that extend outside of the default node types. Custom MCPs for the control plane nodes are not supported.
+Nodes in an MCP have the same configuration; this means nodes can be scaled up and torn down in response to increased or decreased workloads.
 
-Custom pools are pools that inherit their configurations from the worker pool. They use any machine config targeted for the worker pool, but add the ability to deploy changes only targeted at the custom pool. Since a custom pool inherits its configuration from the worker pool, any change to the worker pool is applied to the custom pool as well. Custom pools that do not inherit their configurations from the worker pool are not supported by the MCO.
+By default, there are two MCPs created by the cluster when it is installed: `master` and `worker`.
+
+Each default MCP has a defined configuration applied by the Machine Config Operator (MCO), which is responsible for managing MCPs and facilitating MCP updates.
+
+For worker nodes, you can create additional MCPs, or custom pools, to manage nodes with custom use cases that extend outside of the default node types.
+
+Custom MCPs for the control plane nodes are not supported.
+
+Custom pools are pools that inherit their configurations from the worker pool.
+
+They use any machine config targeted for the worker pool, but add the ability to deploy changes only targeted at the custom pool.
+
+Since a custom pool inherits its configuration from the worker pool, any change to the worker pool is applied to the custom pool as well.
+
+Custom pools that do not inherit their configurations from the worker pool are not supported by the MCO.
 
 Note
 
-A node can only be included in one MCP. If a node has multiple labels that correspond to several MCPs, like `worker,infra`, it is managed by the infra custom pool, not the worker pool. Custom pools take priority on selecting nodes to manage based on node labels; nodes that do not belong to a custom pool are managed by the worker pool.
+A node can only be included in one MCP. If a node has multiple labels that correspond to several MCPs, like `worker,infra`, it is managed by the infra custom pool, not the worker pool.
 
-It is recommended to have a custom pool for every node role you want to manage in your cluster. For example, if you create infra nodes to handle infra workloads, it is recommended to create a custom infra MCP to group those nodes together. If you apply an `infra` role label to a worker node so it has the `worker,infra` dual label, but do not have a custom infra MCP, the MCO considers it a worker node. If you remove the `worker` label from a node and apply the `infra` label without grouping it in a custom pool, the node is not recognized by the MCO and is unmanaged by the cluster.
+Custom pools take priority on selecting nodes to manage based on node labels; nodes that do not belong to a custom pool are managed by the worker pool.
+
+It is recommended to have a custom pool for every node role you want to manage in your cluster.
+
+For example, if you create infra nodes to handle infra workloads, it is recommended to create a custom infra MCP to group those nodes together.
+
+If you apply an `infra` role label to a worker node so it has the `worker,infra` dual label, but do not have a custom infra MCP, the MCO considers it a worker node.
+
+If you remove the `worker` label from a node and apply the `infra` label without grouping it in a custom pool, the node is not recognized by the MCO and is unmanaged by the cluster.
 
 Important
 
-Any node labeled with the `infra` role that is only running infra workloads is not counted toward the total number of subscriptions. The MCP managing an infra node is mutually exclusive from how the cluster determines subscription charges; tagging a node with the appropriate `infra` role and using taints to prevent user workloads from being scheduled on that node are the only requirements for avoiding subscription charges for infra workloads.
+Any node labeled with the `infra` role that is only running infra workloads is not counted toward the total number of subscriptions.
 
-The MCO applies updates for pools independently; for example, if there is an update that affects all pools, nodes from each pool update in parallel with each other. If you add a custom pool, nodes from that pool also attempt to update concurrently with the master and worker nodes.
+The MCP managing an infra node is mutually exclusive from how the cluster determines subscription charges; tagging a node with the appropriate `infra` role and using taints to prevent user workloads from being scheduled on that node are the only requirements for avoiding subscription charges for infra workloads.
 
-There might be situations where the configuration on a node does not fully match what the currently-applied machine config specifies. This state is called configuration drift. The Machine Config Daemon (MCD) regularly checks the nodes for configuration drift. If the MCD detects configuration drift, the MCO marks the node `degraded` until an administrator corrects the node configuration. A degraded node is online and operational, but, it cannot be updated.
+The MCO applies updates for pools independently; for example, if there is an update that affects all pools, nodes from each pool update in parallel with each other.
+
+If you add a custom pool, nodes from that pool also attempt to update concurrently with the master and worker nodes.
+
+There might be situations where the configuration on a node does not fully match what the currently-applied machine config specifies. This state is called configuration drift.
+
+The Machine Config Daemon (MCD) regularly checks the nodes for configuration drift.
+
+If the MCD detects configuration drift, the MCO marks the node `degraded` until an administrator corrects the node configuration. A degraded node is online and operational, but, it cannot be updated.
 
 ### 1.3. Understanding the Machine Config Operator node drain behavior
 
 When you use a machine config to change a system feature, such as adding new config files, modifying systemd units or kernel arguments, or updating SSH keys, the Machine Config Operator (MCO) applies those changes and ensures that each node is in the desired configuration state.
 
-After you make the changes, the MCO generates a new rendered machine config. In the majority of cases, when applying the new rendered machine config, the Operator performs the following steps on each affected node until all of the affected nodes have the updated configuration:
+After you make the changes, the MCO generates a new rendered machine config.
+
+In the majority of cases, when applying the new rendered machine config, the Operator performs the following steps on each affected node until all of the affected nodes have the updated configuration:
 
 Cordon. The MCO marks the node as not schedulable for additional workloads.
 
@@ -206,7 +324,11 @@ Throughout this process, the MCO maintains the required number of pods based on 
 
 Note
 
-There are conditions which can prevent the MCO from draining a node. If the MCO fails to drain a node, the Operator will be unable to reboot the node, preventing any changes made to the node through a machine config. For more information and mitigation steps, see the MCCDrainError runbook.
+There are conditions which can prevent the MCO from draining a node.
+
+If the MCO fails to drain a node, the Operator will be unable to reboot the node, preventing any changes made to the node through a machine config.
+
+For more information and mitigation steps, see the MCCDrainError runbook.
 
 If the MCO drains pods on the master node, note the following conditions:
 
@@ -218,7 +340,9 @@ Note
 
 In certain cases the nodes are not drained. For more information, see "About the Machine Config Operator."
 
-There are ways to mitigate the disruption caused by drain and reboot cycles by using node disruption policies or disabling control plane reboots. For more information, see "Understanding node restart behaviors after machine config changes" and "Disabling the Machine Config Operator from automatically rebooting."
+There are ways to mitigate the disruption caused by drain and reboot cycles by using node disruption policies or disabling control plane reboots.
+
+For more information, see "Understanding node restart behaviors after machine config changes" and "Disabling the Machine Config Operator from automatically rebooting."
 
 Additional resources
 
@@ -230,9 +354,15 @@ Disabling the Machine Config Operator from automatically rebooting
 
 ### 1.4. Understanding configuration drift detection
 
-There might be situations when the on-disk state of a node differs from what is configured in the machine config. This is known as configuration drift. For example, a cluster admin might manually modify a file, a systemd unit file, or a file permission that was configured through a machine config. This causes configuration drift. Configuration drift can cause problems between nodes in a Machine Config Pool or when the machine configs are updated.
+There might be situations when the on-disk state of a node differs from what is configured in the machine config. This is known as configuration drift.
 
-The Machine Config Operator (MCO) uses the Machine Config Daemon (MCD) to check nodes for configuration drift on a regular basis. If detected, the MCO sets the node and the machine config pool (MCP) to `Degraded` and reports the error. A degraded node is online and operational, but, it cannot be updated.
+For example, a cluster admin might manually modify a file, a systemd unit file, or a file permission that was configured through a machine config. This causes configuration drift.
+
+Configuration drift can cause problems between nodes in a Machine Config Pool or when the machine configs are updated.
+
+The Machine Config Operator (MCO) uses the Machine Config Daemon (MCD) to check nodes for configuration drift on a regular basis.
+
+If detected, the MCO sets the node and the machine config pool (MCP) to `Degraded` and reports the error. A degraded node is online and operational, but, it cannot be updated.
 
 The MCD performs configuration drift detection upon each of the following conditions:
 
@@ -244,9 +374,15 @@ Before a new machine config is applied.
 
 Note
 
-If you apply a new machine config to the nodes, the MCD temporarily shuts down configuration drift detection. This shutdown is needed because the new machine config necessarily differs from the machine config on the nodes. After the new machine config is applied, the MCD restarts detecting configuration drift using the new machine config.
+If you apply a new machine config to the nodes, the MCD temporarily shuts down configuration drift detection.
 
-When performing configuration drift detection, the MCD validates that the file contents and permissions fully match what the currently-applied machine config specifies. Typically, the MCD detects configuration drift in less than a second after the detection is triggered.
+This shutdown is needed because the new machine config necessarily differs from the machine config on the nodes.
+
+After the new machine config is applied, the MCD restarts detecting configuration drift using the new machine config.
+
+When performing configuration drift detection, the MCD validates that the file contents and permissions fully match what the currently-applied machine config specifies.
+
+Typically, the MCD detects configuration drift in less than a second after the detection is triggered.
 
 If the MCD detects configuration drift, the MCD performs the following tasks:
 
@@ -308,7 +444,9 @@ Annotations:        cloud.network.openshift.io/egress-ipconfig: [{"interface":"n
  ...
 ```
 
-1. The error message indicating that configuration drift was detected between the node and the listed machine config. Here the error message indicates that the contents of the `/etc/mco-test-file`, which was added by the machine config, has changed outside of the machine config.
+1. The error message indicating that configuration drift was detected between the node and the listed machine config.
+
+Here the error message indicates that the contents of the `/etc/mco-test-file`, which was added by the machine config, has changed outside of the machine config.
 
 2. The state of the node is `Degraded`.
 
@@ -348,19 +486,27 @@ where:
 
 UPDATED
 
-The `True` status indicates that the MCO has applied the current machine config to the nodes in that MCP. The current machine config is specified in the `STATUS` field in the output. The `False` status indicates a node in the MCP is updating.
+The `True` status indicates that the MCO has applied the current machine config to the nodes in that MCP. The current machine config is specified in the `STATUS` field in the output.
 
 ```shell
 oc get mcp
 ```
 
+The `False` status indicates a node in the MCP is updating.
+
 UPDATING
 
-The `True` status indicates that the MCO is applying the desired machine config, as specified in the `MachineConfigPool` custom resource, to at least one of the nodes in that MCP. The desired machine config is the new, edited machine config. Nodes that are updating might not be available for scheduling. The `False` status indicates that all nodes in the MCP are updated.
+The `True` status indicates that the MCO is applying the desired machine config, as specified in the `MachineConfigPool` custom resource, to at least one of the nodes in that MCP.
+
+The desired machine config is the new, edited machine config. Nodes that are updating might not be available for scheduling.
+
+The `False` status indicates that all nodes in the MCP are updated.
 
 DEGRADED
 
-A `True` status indicates the MCO is blocked from applying the current or desired machine config to at least one of the nodes in that MCP, or the configuration is failing. Nodes that are degraded might not be available for scheduling. A `False` status indicates that all nodes in the MCP are ready.
+A `True` status indicates the MCO is blocked from applying the current or desired machine config to at least one of the nodes in that MCP, or the configuration is failing.
+
+Nodes that are degraded might not be available for scheduling. A `False` status indicates that all nodes in the MCP are ready.
 
 MACHINECOUNT
 
@@ -378,13 +524,23 @@ DEGRADEDMACHINECOUNT
 
 Indicates the total number of machines in that MCP that are marked as degraded or unreconcilable.
 
-In the previous output, there are three control plane (master) nodes and three worker nodes. The control plane MCP and the associated nodes are updated to the current machine config. The nodes in the worker MCP are being updated to the desired machine config. Two of the nodes in the worker MCP are updated and one is still updating, as indicated by the `UPDATEDMACHINECOUNT` being `2`. There are no issues, as indicated by the `DEGRADEDMACHINECOUNT` being `0` and `DEGRADED` being `False`.
+In the previous output, there are three control plane (master) nodes and three worker nodes. The control plane MCP and the associated nodes are updated to the current machine config.
 
-While the nodes in the MCP are updating, the machine config listed under `CONFIG` is the current machine config, which the MCP is being updated from. When the update is complete, the listed machine config is the desired machine config, which the MCP was updated to.
+The nodes in the worker MCP are being updated to the desired machine config.
+
+Two of the nodes in the worker MCP are updated and one is still updating, as indicated by the `UPDATEDMACHINECOUNT` being `2`.
+
+There are no issues, as indicated by the `DEGRADEDMACHINECOUNT` being `0` and `DEGRADED` being `False`.
+
+While the nodes in the MCP are updating, the machine config listed under `CONFIG` is the current machine config, which the MCP is being updated from.
+
+When the update is complete, the listed machine config is the desired machine config, which the MCP was updated to.
 
 Note
 
-If a node is being cordoned, that node is not included in the `READYMACHINECOUNT`, but is included in the `MACHINECOUNT`. Also, the MCP status is set to `UPDATING`. Because the node has the current machine config, it is counted in the `UPDATEDMACHINECOUNT` total:
+If a node is being cordoned, that node is not included in the `READYMACHINECOUNT`, but is included in the `MACHINECOUNT`. Also, the MCP status is set to `UPDATING`.
+
+Because the node has the current machine config, it is counted in the `UPDATEDMACHINECOUNT` total:
 
 ```shell-session
 NAME      CONFIG                    UPDATED  UPDATING   DEGRADED  MACHINECOUNT  READYMACHINECOUNT  UPDATEDMACHINECOUNT DEGRADEDMACHINECOUNT  AGE
@@ -479,7 +635,9 @@ ExecStart=/usr/bin/hyperkube \
       --config=/etc/kubernetes/kubelet.conf \ ...
 ```
 
-If something goes wrong with a machine config that you apply, you can always back out that change. For example, if you had run to apply a machine config, you could remove that machine config by running the following command:
+If something goes wrong with a machine config that you apply, you can always back out that change.
+
+For example, if you had run to apply a machine config, you could remove that machine config by running the following command:
 
 ```shell
 oc create -f./myconfig.yaml
@@ -495,9 +653,15 @@ If you add your own machine configs to your cluster, you can use the commands sh
 
 ### 1.6. About node status during updates
 
-If you make changes to a machine config pool (MCP) that results in a new machine config, for example by using a `MachineConfig` or `KubeletConfig` object, you can get detailed information about the progress of the node updates by using the machine config nodes custom resource. This information can be helpful if issues arise during the update and you need to troubleshoot a node.
+If you make changes to a machine config pool (MCP) that results in a new machine config, for example by using a `MachineConfig` or `KubeletConfig` object, you can get detailed information about the progress of the node updates by using the machine config nodes custom resource.
 
-The `MachineConfigNode` custom resource allows you to monitor the progress of individual node updates as they move through the update phases. This information can be helpful with troubleshooting if one of the nodes has an issue during the update. The custom resource reports where in the update process the node is at the moment, the phases that have completed, and the phases that are remaining.
+This information can be helpful if issues arise during the update and you need to troubleshoot a node.
+
+The `MachineConfigNode` custom resource allows you to monitor the progress of individual node updates as they move through the update phases.
+
+This information can be helpful with troubleshooting if one of the nodes has an issue during the update.
+
+The custom resource reports where in the update process the node is at the moment, the phases that have completed, and the phases that are remaining.
 
 The node update process consists of the following phases and subphases that are tracked by the machine config node custom resource, explained with more detail later in this section:
 
@@ -543,7 +707,9 @@ As the update moves through these phases, you can query the `MachineConfigNode` 
 
 `False`. The phase has not yet started or will not be executed on that node.
 
-`Unknown`. The phase is either being executed on that node or has an error. If the phase has an error, you can use the command for more information, as described later in this section.
+`Unknown`. The phase is either being executed on that node or has an error.
+
+If the phase has an error, you can use the command for more information, as described later in this section.
 
 ```shell
 oc describe machineconfignodes
@@ -742,7 +908,7 @@ Enabling features using feature gates
 
 #### 1.6.1. Checking node status during updates
 
-During the update of a machine config pool (MCP), you can monitor the progress of all of the nodes in your cluster by using the and commands. These commands provide information that can be helpful if issues arise during the update and you need to troubleshoot a node.
+During the update of a machine config pool (MCP), you can monitor the progress of all of the nodes in your cluster by using the and commands.
 
 ```shell
 oc get machineconfignodes
@@ -751,6 +917,8 @@ oc get machineconfignodes
 ```shell
 oc describe machineconfignodes
 ```
+
+These commands provide information that can be helpful if issues arise during the update and you need to troubleshoot a node.
 
 For more information on the meaning of these fields, see "About checking machine config node status."
 
@@ -874,7 +1042,9 @@ status:
 
 ### 1.7. Understanding Machine Config Operator certificates
 
-Machine Config Operator certificates are used to secure connections between the Red Hat Enterprise Linux CoreOS (RHCOS) nodes and the Machine Config Server. For more information, see Machine Config Operator certificates.
+Machine Config Operator certificates are used to secure connections between the Red Hat Enterprise Linux CoreOS (RHCOS) nodes and the Machine Config Server.
+
+For more information, see Machine Config Operator certificates.
 
 #### 1.7.1. Viewing and interacting with certificates
 
@@ -964,11 +1134,21 @@ image-registry.openshift-image-registry.svc:5000
 
 ## Chapter 2. Using machine config objects to configure nodes
 
-You can use the tasks in this section to create `MachineConfig` objects that modify files, systemd unit files, and other operating system features running on OpenShift Container Platform nodes. For more ideas on working with machine configs, see content related to updating SSH authorized keys, verifying image signatures, enabling SCTP, and configuring iSCSI initiatornames for OpenShift Container Platform.
+You can use the tasks in this section to create `MachineConfig` objects that modify files, systemd unit files, and other operating system features running on OpenShift Container Platform nodes.
 
-OpenShift Container Platform supports Ignition specification version 3.5. You should base all new machine configs you create going forward on Ignition specification version 3.5. If you are upgrading your OpenShift Container Platform cluster, any existing machine configs with a previous Ignition specification will be translated automatically to specification version 3.5.
+For more ideas on working with machine configs, see content related to updating SSH authorized keys, verifying image signatures, enabling SCTP, and configuring iSCSI initiatornames for OpenShift Container Platform.
 
-There might be situations where the configuration on a node does not fully match what the currently-applied machine config specifies. This state is called configuration drift. The Machine Config Daemon (MCD) regularly checks the nodes for configuration drift. If the MCD detects configuration drift, the MCO marks the node `degraded` until an administrator corrects the node configuration. A degraded node is online and operational, but, it cannot be updated. For more information on configuration drift, see Understanding configuration drift detection.
+OpenShift Container Platform supports Ignition specification version 3.5. You should base all new machine configs you create going forward on Ignition specification version 3.5.
+
+If you are upgrading your OpenShift Container Platform cluster, any existing machine configs with a previous Ignition specification will be translated automatically to specification version 3.5.
+
+There might be situations where the configuration on a node does not fully match what the currently-applied machine config specifies. This state is called configuration drift.
+
+The Machine Config Daemon (MCD) regularly checks the nodes for configuration drift.
+
+If the MCD detects configuration drift, the MCO marks the node `degraded` until an administrator corrects the node configuration. A degraded node is online and operational, but, it cannot be updated.
+
+For more information on configuration drift, see Understanding configuration drift detection.
 
 Tip
 
@@ -984,7 +1164,9 @@ Create a Butane config including the contents of the `chrony.conf` file. For exa
 
 Note
 
-The Butane version you specify in the config file should match the OpenShift Container Platform version and always ends in `0`. For example, `4.20.0`. See "Creating machine configs with Butane" for information about Butane.
+The Butane version you specify in the config file should match the OpenShift Container Platform version and always ends in `0`. For example, `4.20.0`.
+
+See "Creating machine configs with Butane" for information about Butane.
 
 ```yaml
 variant: openshift
@@ -1015,7 +1197,9 @@ On control plane nodes, substitute `master` for `worker` in both of these locati
 
 2. 3
 
-Specify an octal value mode for the `mode` field in the machine config file. After creating the file and applying the changes, the `mode` is converted to a decimal value. You can check the YAML file with the command.
+Specify an octal value mode for the `mode` field in the machine config file. After creating the file and applying the changes, the `mode` is converted to a decimal value.
+
+You can check the YAML file with the command.
 
 ```shell
 oc get mc <mc-name> -o yaml
@@ -1029,7 +1213,9 @@ Note
 
 For all-machine to all-machine communication, the Network Time Protocol (NTP) on UDP is port `123`. If an external NTP time server is configured, you must open UDP port `123`.
 
-Alternatively, you can specify any of the following NTP servers: `1.rhel.pool.ntp.org`, `2.rhel.pool.ntp.org`, or `3.rhel.pool.ntp.org`. When you use NTP with your DHCP server, you must set the `sourcedir /run/chrony-dhcp` parameter in the `chrony.conf` file.
+Alternatively, you can specify any of the following NTP servers: `1.rhel.pool.ntp.org`, `2.rhel.pool.ntp.org`, or `3.rhel.pool.ntp.org`.
+
+When you use NTP with your DHCP server, you must set the `sourcedir /run/chrony-dhcp` parameter in the `chrony.conf` file.
 
 Use Butane to generate a `MachineConfig` object file, `99-worker-chrony.yaml`, containing the configuration to be delivered to the nodes:
 
@@ -1128,9 +1314,15 @@ Improper use of kernel arguments can result in your systems becoming unbootable.
 
 Examples of kernel arguments you could set include:
 
-nosmt: Disables symmetric multithreading (SMT) in the kernel. Multithreading allows multiple logical threads for each CPU. You could consider `nosmt` in multi-tenant environments to reduce risks from potential cross-thread attacks. By disabling SMT, you essentially choose security over performance.
+nosmt: Disables symmetric multithreading (SMT) in the kernel. Multithreading allows multiple logical threads for each CPU.
 
-enforcing=0: Configures Security Enhanced Linux (SELinux) to run in permissive mode. In permissive mode, the system acts as if SELinux is enforcing the loaded security policy, including labeling objects and emitting access denial entries in the logs, but it does not actually deny any operations. While not supported for production systems, permissive mode can be helpful for debugging.
+You could consider `nosmt` in multi-tenant environments to reduce risks from potential cross-thread attacks. By disabling SMT, you essentially choose security over performance.
+
+enforcing=0: Configures Security Enhanced Linux (SELinux) to run in permissive mode.
+
+In permissive mode, the system acts as if SELinux is enforcing the loaded security policy, including labeling objects and emitting access denial entries in the logs, but it does not actually deny any operations.
+
+While not supported for production systems, permissive mode can be helpful for debugging.
 
 Warning
 
@@ -1273,17 +1465,27 @@ You should see the `enforcing=0` argument added to the other kernel arguments.
 
 Important
 
-Enabling multipathing during installation is supported and recommended for nodes provisioned in OpenShift Container Platform. In setups where any I/O to non-optimized paths results in I/O system errors, you must enable multipathing at installation time. For more information about enabling multipathing during installation time, see "Enabling multipathing post installation" in the Installing on bare metal documentation.
+Enabling multipathing during installation is supported and recommended for nodes provisioned in OpenShift Container Platform.
 
-Red Hat Enterprise Linux CoreOS (RHCOS) supports multipathing on the primary disk, allowing stronger resilience to hardware failure to achieve higher host availability. Postinstallation support is available by activating multipathing via the machine config.
+In setups where any I/O to non-optimized paths results in I/O system errors, you must enable multipathing at installation time.
+
+For more information about enabling multipathing during installation time, see "Enabling multipathing post installation" in the Installing on bare metal documentation.
+
+Red Hat Enterprise Linux CoreOS (RHCOS) supports multipathing on the primary disk, allowing stronger resilience to hardware failure to achieve higher host availability.
+
+Postinstallation support is available by activating multipathing via the machine config.
 
 Important
 
-On IBM Z® and IBM® LinuxONE, you can enable multipathing only if you configured your cluster for it during installation. For more information, see "Installing RHCOS and starting the OpenShift Container Platform bootstrap process" in Installing a cluster with z/VM on IBM Z® and IBM® LinuxONE.
+On IBM Z® and IBM® LinuxONE, you can enable multipathing only if you configured your cluster for it during installation.
+
+For more information, see "Installing RHCOS and starting the OpenShift Container Platform bootstrap process" in Installing a cluster with z/VM on IBM Z® and IBM® LinuxONE.
 
 Important
 
-When an OpenShift Container Platform cluster is installed or configured as a postinstallation activity on a single VIOS host with "vSCSI" storage on IBM Power® with multipath configured, the CoreOS nodes with multipath enabled fail to boot. This behavior is expected, as only one path is available to the node.
+When an OpenShift Container Platform cluster is installed or configured as a postinstallation activity on a single VIOS host with "vSCSI" storage on IBM Power® with multipath configured, the CoreOS nodes with multipath enabled fail to boot.
+
+This behavior is expected, as only one path is available to the node.
 
 Prerequisites
 
@@ -1402,9 +1604,13 @@ See Enabling multipathing with kernel arguments on RHCOS for more information ab
 
 ### 2.5. Adding a real-time kernel to nodes
 
-If your OpenShift Container Platform workloads require real-time operating system characteristics, you can switch your machines to the Linux real-time kernel. Switching to the real-time kernel provides a higher degree of determinism for your OpenShift Container Platform workloads.
+If your OpenShift Container Platform workloads require real-time operating system characteristics, you can switch your machines to the Linux real-time kernel.
 
-Even though Linux is not a real-time operating system, the Linux real-time kernel includes a preemptive scheduler that provides the operating system with real-time characteristics. For OpenShift Container Platform, 4.20 you can make the switch to real-time kernel by using a `MachineConfig` object.
+Switching to the real-time kernel provides a higher degree of determinism for your OpenShift Container Platform workloads.
+
+Even though Linux is not a real-time operating system, the Linux real-time kernel includes a preemptive scheduler that provides the operating system with real-time characteristics.
+
+For OpenShift Container Platform, 4.20 you can make the switch to real-time kernel by using a `MachineConfig` object.
 
 Although making the change is as simple as changing a machine config `kernelType` setting to `realtime`, there are a few other considerations before making the change:
 
@@ -1424,7 +1630,7 @@ Log in to the cluster as a user with administrative privileges.
 
 Procedure
 
-Create a machine config for the real-time kernel: Create a YAML file (for example, `99-worker-realtime.yaml`) that contains a `MachineConfig` object for the `realtime` kernel type. This example tells the cluster to use a real-time kernel for all worker nodes:
+Create a machine config for the real-time kernel: Create a YAML file (for example, `99-worker-realtime.yaml`) that contains a `MachineConfig` object for the `realtime` kernel type.
 
 ```shell-session
 $ cat << EOF > 99-worker-realtime.yaml
@@ -1481,7 +1687,9 @@ $ oc delete -f 99-worker-realtime.yaml
 
 If you need to configure settings for the `journald` service on OpenShift Container Platform nodes, you can do that by modifying the appropriate configuration file and passing the file to the appropriate pool of nodes as a machine config.
 
-This procedure describes how to modify `journald` rate limiting settings in the `/etc/systemd/journald.conf` file and apply them to worker nodes. See the `journald.conf` man page for information on how to use that file.
+This procedure describes how to modify `journald` rate limiting settings in the `/etc/systemd/journald.conf` file and apply them to worker nodes.
+
+See the `journald.conf` man page for information on how to use that file.
 
 Prerequisites
 
@@ -1495,7 +1703,9 @@ Create a Butane config file, `40-worker-custom-journald.bu`, that includes an `/
 
 Note
 
-The Butane version you specify in the config file should match the OpenShift Container Platform version and always ends in `0`. For example, `4.20.0`. See "Creating machine configs with Butane" for information about Butane.
+The Butane version you specify in the config file should match the OpenShift Container Platform version and always ends in `0`. For example, `4.20.0`.
+
+See "Creating machine configs with Butane" for information about Butane.
 
 ```yaml
 variant: openshift
@@ -1529,7 +1739,9 @@ $ butane 40-worker-custom-journald.bu -o 40-worker-custom-journald.yaml
 $ oc apply -f 40-worker-custom-journald.yaml
 ```
 
-Check that the new machine config is applied and that the nodes are not in a degraded state. It might take a few minutes. The worker pool will show the updates in progress, as each node successfully has the new machine config applied:
+Check that the new machine config is applied and that the nodes are not in a degraded state. It might take a few minutes.
+
+The worker pool will show the updates in progress, as each node successfully has the new machine config applied:
 
 ```shell-session
 $ oc get machineconfigpool
@@ -1573,13 +1785,17 @@ Creating machine configs with Butane
 
 ### 2.7. Adding extensions to RHCOS
 
-RHCOS is a minimal container-oriented RHEL operating system, designed to provide a common set of capabilities to OpenShift Container Platform clusters across all platforms. Although adding software packages to RHCOS systems is generally discouraged, the MCO provides an `extensions` feature you can use to add a minimal set of features to RHCOS nodes.
+RHCOS is a minimal container-oriented RHEL operating system, designed to provide a common set of capabilities to OpenShift Container Platform clusters across all platforms.
+
+Although adding software packages to RHCOS systems is generally discouraged, the MCO provides an `extensions` feature you can use to add a minimal set of features to RHCOS nodes.
 
 Currently, the following extensions are available:
 
 usbguard: The `usbguard` extension protects RHCOS systems from attacks by intrusive USB devices. For more information, see USBGuard for details.
 
-kerberos: The `kerberos` extension provides a mechanism that allows both users and machines to identify themselves to the network to receive defined, limited access to the areas and services that an administrator has configured. For more information, see Using Kerberos for details, including how to set up a Kerberos client and mount a Kerberized NFS share.
+kerberos: The `kerberos` extension provides a mechanism that allows both users and machines to identify themselves to the network to receive defined, limited access to the areas and services that an administrator has configured.
+
+For more information, see Using Kerberos for details, including how to set up a Kerberos client and mount a Kerberized NFS share.
 
 sandboxed-containers: The `sandboxed-containers` extension contains RPMs for Kata, QEMU, and its dependencies. For more information, see OpenShift Sandboxed Containers.
 
@@ -1641,7 +1857,9 @@ NAME                 GENERATEDBYCONTROLLER IGNITIONVERSION AGE
 80-worker-extensions                       3.5.0           57s
 ```
 
-Check that the new machine config is now applied and that the nodes are not in a degraded state. It may take a few minutes. The worker pool will show the updates in progress, as each machine successfully has the new machine config applied:
+Check that the new machine config is now applied and that the nodes are not in a degraded state. It may take a few minutes.
+
+The worker pool will show the updates in progress, as each machine successfully has the new machine config applied:
 
 ```shell-session
 $ oc get machineconfigpool
@@ -1678,15 +1896,21 @@ usbguard-0.7.4-4.el8.x86_64.rpm
 
 ### 2.8. Loading custom firmware blobs in the machine config manifest
 
-Because the default location for firmware blobs in `/usr/lib` is read-only, you can locate a custom firmware blob by updating the search path. This enables you to load local firmware blobs in the machine config manifest when the blobs are not managed by RHCOS.
+Because the default location for firmware blobs in `/usr/lib` is read-only, you can locate a custom firmware blob by updating the search path.
+
+This enables you to load local firmware blobs in the machine config manifest when the blobs are not managed by RHCOS.
 
 Procedure
 
-Create a Butane config file, `98-worker-firmware-blob.bu`, that updates the search path so that it is root-owned and writable to local storage. The following example places the custom blob file from your local workstation onto nodes under `/var/lib/firmware`.
+Create a Butane config file, `98-worker-firmware-blob.bu`, that updates the search path so that it is root-owned and writable to local storage.
+
+The following example places the custom blob file from your local workstation onto nodes under `/var/lib/firmware`.
 
 Note
 
-The Butane version you specify in the config file should match the OpenShift Container Platform version and always ends in `0`. For example, `4.20.0`. See "Creating machine configs with Butane" for information about Butane.
+The Butane version you specify in the config file should match the OpenShift Container Platform version and always ends in `0`. For example, `4.20.0`.
+
+See "Creating machine configs with Butane" for information about Butane.
 
 ```yaml
 variant: openshift
@@ -1708,13 +1932,21 @@ openshift:
 
 1. Sets the path on the node where the firmware package is copied to.
 
-2. Specifies a file with contents that are read from a local file directory on the system running Butane. The path of the local file is relative to a `files-dir` directory, which must be specified by using the `--files-dir` option with Butane in the following step.
+2. Specifies a file with contents that are read from a local file directory on the system running Butane.
+
+The path of the local file is relative to a `files-dir` directory, which must be specified by using the `--files-dir` option with Butane in the following step.
 
 3. Sets the permissions for the file on the RHCOS node. It is recommended to set `0644` permissions.
 
-4. The `firmware_class.path` parameter customizes the kernel search path of where to look for the custom firmware blob that was copied from your local workstation onto the root file system of the node. This example uses `/var/lib/firmware` as the customized path.
+4. The `firmware_class.path` parameter customizes the kernel search path of where to look for the custom firmware blob that was copied from your local workstation onto the root file system of the node.
 
-Run Butane to generate a `MachineConfig` object file that uses a copy of the firmware blob on your local workstation named `98-worker-firmware-blob.yaml`. The firmware blob contains the configuration to be delivered to the nodes. The following example uses the `--files-dir` option to specify the directory on your workstation where the local file or files are located:
+This example uses `/var/lib/firmware` as the customized path.
+
+Run Butane to generate a `MachineConfig` object file that uses a copy of the firmware blob on your local workstation named `98-worker-firmware-blob.yaml`.
+
+The firmware blob contains the configuration to be delivered to the nodes.
+
+The following example uses the `--files-dir` option to specify the directory on your workstation where the local file or files are located:
 
 ```shell-session
 $ butane 98-worker-firmware-blob.bu -o 98-worker-firmware-blob.yaml --files-dir <directory_including_package_name>
@@ -1738,13 +1970,23 @@ Creating machine configs with Butane
 
 ### 2.9. Changing the core user password for node access
 
-By default, Red Hat Enterprise Linux CoreOS (RHCOS) creates a user named `core` on the nodes in your cluster. You can use the `core` user to access the node through a cloud provider serial console or a bare metal baseboard controller manager (BMC). This can be helpful, for example, if a node is down and you cannot access that node by using SSH or the command. However, by default, there is no password for this user, so you cannot log in without creating one.
+By default, Red Hat Enterprise Linux CoreOS (RHCOS) creates a user named `core` on the nodes in your cluster.
+
+You can use the `core` user to access the node through a cloud provider serial console or a bare metal baseboard controller manager (BMC).
+
+This can be helpful, for example, if a node is down and you cannot access that node by using SSH or the command.
 
 ```shell
 oc debug node
 ```
 
-You can create a password for the `core` user by using a machine config. The Machine Config Operator (MCO) assigns the password and injects the password into the `/etc/shadow` file, allowing you to log in with the `core` user. The MCO does not examine the password hash. As such, the MCO cannot report if there is a problem with the password.
+However, by default, there is no password for this user, so you cannot log in without creating one.
+
+You can create a password for the `core` user by using a machine config.
+
+The Machine Config Operator (MCO) assigns the password and injects the password into the `/etc/shadow` file, allowing you to log in with the `core` user. The MCO does not examine the password hash.
+
+As such, the MCO cannot report if there is a problem with the password.
 
 Note
 
@@ -1752,7 +1994,9 @@ The password works only through a cloud provider serial console or a BMC. It doe
 
 If you have a machine config that includes an `/etc/shadow` file or a systemd unit that sets a password, it takes precedence over the password hash.
 
-You can change the password, if needed, by editing the machine config you used to create the password. Also, you can remove the password by deleting the machine config. Deleting the machine config does not remove the user account.
+You can change the password, if needed, by editing the machine config you used to create the password. Also, you can remove the password by deleting the machine config.
+
+Deleting the machine config does not remove the user account.
 
 Procedure
 
@@ -1831,29 +2075,45 @@ The hashed password is assigned to the `core` user.
 
 ## Chapter 3. Using node disruption policies to minimize disruption from machine config changes
 
-By default, when you make certain changes to the fields in a `MachineConfig` object, the Machine Config Operator (MCO) drains and reboots the nodes associated with that machine config. However, you can create a node disruption policy that defines a set of changes to some Ignition config objects that would require little or no disruption to your workloads.
+By default, when you make certain changes to the fields in a `MachineConfig` object, the Machine Config Operator (MCO) drains and reboots the nodes associated with that machine config.
+
+However, you can create a node disruption policy that defines a set of changes to some Ignition config objects that would require little or no disruption to your workloads.
 
 Note
 
 Node disruption policies are not supported for on-cluster custom layered images.
 
-A node disruption policy allows you to define the configuration changes that cause a disruption to your cluster, and which changes do not. This allows you to reduce node downtime when making small machine configuration changes in your cluster. To configure the policy, you modify the `MachineConfiguration` object, which is in the `openshift-machine-config-operator` namespace. See the example node disruption policies in the `MachineConfiguration` objects that follow.
+A node disruption policy allows you to define the configuration changes that cause a disruption to your cluster, and which changes do not.
+
+This allows you to reduce node downtime when making small machine configuration changes in your cluster.
+
+To configure the policy, you modify the `MachineConfiguration` object, which is in the `openshift-machine-config-operator` namespace.
+
+See the example node disruption policies in the `MachineConfiguration` objects that follow.
 
 Note
 
 There are machine configuration changes that always require a reboot, regardless of any node disruption policies. For more information, see About the Machine Config Operator.
 
-After you create the node disruption policy, the MCO validates the policy to search for potential issues in the file, such as problems with formatting. The MCO then merges the policy with the cluster defaults and populates the `status.nodeDisruptionPolicyStatus` fields in the machine config with the actions to be performed upon future changes to the machine config. The configurations in your policy always overwrite the cluster defaults.
+After you create the node disruption policy, the MCO validates the policy to search for potential issues in the file, such as problems with formatting.
+
+The MCO then merges the policy with the cluster defaults and populates the `status.nodeDisruptionPolicyStatus` fields in the machine config with the actions to be performed upon future changes to the machine config.
+
+The configurations in your policy always overwrite the cluster defaults.
 
 Important
 
 The MCO does not validate whether a change can be successfully applied by your node disruption policy. Therefore, you are responsible to ensure the accuracy of your node disruption policies.
 
-For example, you can configure a node disruption policy so that sudo configurations do not require a node drain and reboot. Or, you can configure your cluster so that updates to `sshd` are applied with only a reload of that one service.
+For example, you can configure a node disruption policy so that sudo configurations do not require a node drain and reboot.
+
+Or, you can configure your cluster so that updates to `sshd` are applied with only a reload of that one service.
 
 You can control the behavior of the MCO when making the changes to the following Ignition configuration objects:
 
-configuration files: You add to or update the files in the `/var` or `/etc` directory. You can configure a policy for a specific file anywhere in the directory or for a path to a specific directory. For a path, a change or addition to any file in that directory triggers the policy.
+configuration files: You add to or update the files in the `/var` or `/etc` directory. You can configure a policy for a specific file anywhere in the directory or for a path to a specific directory.
+
+For a path, a change or addition to any file in that directory triggers the policy.
 
 Note
 
@@ -1881,7 +2141,11 @@ Restart: For services, the MCO fully restarts the specified services.
 
 DaemonReload: The MCO reloads the systemd manager configuration.
 
-Special: This is an internal MCO-only action that is set by default for changes to the `/etc/containers/registries.conf` file. When this action is set, the MCO determines if a node cordon and drain is required, based on the changed content in the `registries.conf` file. You can override this setting. However, this is not recommended. You cannot set this action for another path or service.
+Special: This is an internal MCO-only action that is set by default for changes to the `/etc/containers/registries.conf` file.
+
+When this action is set, the MCO determines if a node cordon and drain is required, based on the changed content in the `registries.conf` file. You can override this setting.
+
+However, this is not recommended. You cannot set this action for another path or service.
 
 Note
 
@@ -1897,7 +2161,11 @@ You can use the following example `MachineConfiguration` objects to help you cre
 
 Tip
 
-A `MachineConfiguration` object and a `MachineConfig` object are different objects. A `MachineConfiguration` object is a singleton object in the MCO namespace that contains configuration parameters for the MCO operator. A `MachineConfig` object defines changes that are applied to a machine config pool.
+A `MachineConfiguration` object and a `MachineConfig` object are different objects.
+
+A `MachineConfiguration` object is a singleton object in the MCO namespace that contains configuration parameters for the MCO operator.
+
+A `MachineConfig` object defines changes that are applied to a machine config pool.
 
 The following example `MachineConfiguration` object shows no user defined policies. The default node disruption policy values are shown in the `status` stanza.
 
@@ -1955,7 +2223,15 @@ status:
   observedGeneration: 9
 ```
 
-The default node disruption policy does not contain a policy for changes to the `/etc/containers/registries.conf.d` file. This is because both OpenShift Container Platform and Red Hat Enterprise Linux (RHEL) use the `registries.conf.d` file to specify aliases for image short names. It is recommended that you always pull an image by its fully-qualified name. This is particularly important with public registries, because the image might not deploy if the public registry requires authentication. You can create a user-defined policy to use with the `/etc/containers/registries.conf.d` file, if you need to use image short names.
+The default node disruption policy does not contain a policy for changes to the `/etc/containers/registries.conf.d` file.
+
+This is because both OpenShift Container Platform and Red Hat Enterprise Linux (RHEL) use the `registries.conf.d` file to specify aliases for image short names.
+
+It is recommended that you always pull an image by its fully-qualified name.
+
+This is particularly important with public registries, because the image might not deploy if the public registry requires authentication.
+
+You can create a user-defined policy to use with the `/etc/containers/registries.conf.d` file, if you need to use image short names.
 
 In the following example, when changes are made to the `registries.conf.d` file, the MCO restarts the `crio-service`.
 
@@ -1995,7 +2271,9 @@ spec:
 # ...
 ```
 
-In the following example, when changes are made to the `/etc/chrony.conf` file, the MCO restarts the `chronyd.service` on the cluster nodes. If files are added to or modified in the `/var/run` directory, the MCO applies the changes with no further action.
+In the following example, when changes are made to the `/etc/chrony.conf` file, the MCO restarts the `chronyd.service` on the cluster nodes.
+
+If files are added to or modified in the `/var/run` directory, the MCO applies the changes with no further action.
 
 ```yaml
 apiVersion: operator.openshift.io/v1
@@ -2059,7 +2337,11 @@ Restart: For services, the MCO fully restarts the specified services.
 
 DaemonReload: The MCO reloads the systemd manager configuration.
 
-Special: This is an internal MCO-only action that is set by default for changes to the `/etc/containers/registries.conf` file. When this action is set, the MCO determines if a node cordon and drain is required, based on the changed content in the `registries.conf` file. You can override this setting. However, this is not recommended. You cannot set this action for another path or service.
+Special: This is an internal MCO-only action that is set by default for changes to the `/etc/containers/registries.conf` file.
+
+When this action is set, the MCO determines if a node cordon and drain is required, based on the changed content in the `registries.conf` file. You can override this setting.
+
+However, this is not recommended. You cannot set this action for another path or service.
 
 Note
 
@@ -2182,23 +2464,35 @@ status:
 
 ## Chapter 4. Configuring MCO-related custom resources
 
-Besides managing `MachineConfig` objects, the MCO manages two custom resources (CRs): `KubeletConfig` and `ContainerRuntimeConfig`. Those CRs let you change node-level settings impacting how the kubelet and CRI-O container runtime services behave.
+Besides managing `MachineConfig` objects, the MCO manages two custom resources (CRs): `KubeletConfig` and `ContainerRuntimeConfig`.
+
+Those CRs let you change node-level settings impacting how the kubelet and CRI-O container runtime services behave.
 
 ### 4.1. Creating a KubeletConfig CR to edit kubelet parameters
 
-The kubelet configuration is currently serialized as an Ignition configuration, so it can be directly edited. However, there is also a new `kubelet-config-controller` added to the Machine Config Controller (MCC). This lets you use a `KubeletConfig` custom resource (CR) to edit the kubelet parameters.
+The kubelet configuration is currently serialized as an Ignition configuration, so it can be directly edited.
+
+However, there is also a new `kubelet-config-controller` added to the Machine Config Controller (MCC). This lets you use a `KubeletConfig` custom resource (CR) to edit the kubelet parameters.
 
 Note
 
-As the fields in the `kubeletConfig` object are passed directly to the kubelet from upstream Kubernetes, the kubelet validates those values directly. Invalid values in the `kubeletConfig` object might cause cluster nodes to become unavailable. For valid values, see the Kubernetes documentation.
+As the fields in the `kubeletConfig` object are passed directly to the kubelet from upstream Kubernetes, the kubelet validates those values directly.
+
+Invalid values in the `kubeletConfig` object might cause cluster nodes to become unavailable. For valid values, see the Kubernetes documentation.
 
 Consider the following guidance:
 
-Edit an existing `KubeletConfig` CR to modify existing settings or add new settings, instead of creating a CR for each change. It is recommended that you create a CR only to modify a different machine config pool, or for changes that are intended to be temporary, so that you can revert the changes.
+Edit an existing `KubeletConfig` CR to modify existing settings or add new settings, instead of creating a CR for each change.
+
+It is recommended that you create a CR only to modify a different machine config pool, or for changes that are intended to be temporary, so that you can revert the changes.
 
 Create one `KubeletConfig` CR for each machine config pool with all the config changes you want for that pool.
 
-As needed, create multiple `KubeletConfig` CRs with a limit of 10 per cluster. For the first `KubeletConfig` CR, the Machine Config Operator (MCO) creates a machine config appended with `kubelet`. With each subsequent CR, the controller creates another `kubelet` machine config with a numeric suffix. For example, if you have a `kubelet` machine config with a `-2` suffix, the next `kubelet` machine config is appended with `-3`.
+As needed, create multiple `KubeletConfig` CRs with a limit of 10 per cluster. For the first `KubeletConfig` CR, the Machine Config Operator (MCO) creates a machine config appended with `kubelet`.
+
+With each subsequent CR, the controller creates another `kubelet` machine config with a numeric suffix.
+
+For example, if you have a `kubelet` machine config with a `-2` suffix, the next `kubelet` machine config is appended with `-3`.
 
 Note
 
@@ -2311,7 +2605,11 @@ Create a YAML file similar to the following that contains the kubelet configurat
 
 Important
 
-Kubelet configurations that target a specific machine config pool also affect any dependent pools. For example, creating a kubelet configuration for the pool containing worker nodes will also apply to any subset pools, including the pool containing infrastructure nodes. To avoid this, you must create a new machine config pool with a selection expression that only includes worker nodes, and have your kubelet configuration target this new pool.
+Kubelet configurations that target a specific machine config pool also affect any dependent pools.
+
+For example, creating a kubelet configuration for the pool containing worker nodes will also apply to any subset pools, including the pool containing infrastructure nodes.
+
+To avoid this, you must create a new machine config pool with a selection expression that only includes worker nodes, and have your kubelet configuration target this new pool.
 
 ```yaml
 apiVersion: machineconfiguration.openshift.io/v1
@@ -2340,7 +2638,11 @@ Use `maxPods` to set the maximum pods per node.
 
 Note
 
-The rate at which the kubelet talks to the API server depends on queries per second (QPS) and burst values. The default values, `50` for `kubeAPIQPS` and `100` for `kubeAPIBurst`, are sufficient if there are limited pods running on each node. It is recommended to update the kubelet QPS and burst rates if there are enough CPU and memory resources on the node.
+The rate at which the kubelet talks to the API server depends on queries per second (QPS) and burst values.
+
+The default values, `50` for `kubeAPIQPS` and `100` for `kubeAPIBurst`, are sufficient if there are limited pods running on each node.
+
+It is recommended to update the kubelet QPS and burst rates if there are enough CPU and memory resources on the node.
 
 ```yaml
 apiVersion: machineconfiguration.openshift.io/v1
@@ -2430,7 +2732,11 @@ status:
 
 ### 4.2. Creating a ContainerRuntimeConfig CR to edit CRI-O parameters
 
-You can change some of the settings associated with the OpenShift Container Platform CRI-O runtime for the nodes associated with a specific machine config pool (MCP). Using a `ContainerRuntimeConfig` custom resource (CR), you set the configuration values and add a label to match the MCP. The MCO then rebuilds the `crio.conf` and `storage.conf` configuration files on the associated nodes with the updated values.
+You can change some of the settings associated with the OpenShift Container Platform CRI-O runtime for the nodes associated with a specific machine config pool (MCP).
+
+Using a `ContainerRuntimeConfig` custom resource (CR), you set the configuration values and add a label to match the MCP.
+
+The MCO then rebuilds the `crio.conf` and `storage.conf` configuration files on the associated nodes with the updated values.
 
 Note
 
@@ -2438,19 +2744,33 @@ To revert the changes implemented by using a `ContainerRuntimeConfig` CR, you mu
 
 You can modify the following settings by using a `ContainerRuntimeConfig` CR:
 
-Log level: The `logLevel` parameter sets the CRI-O `log_level` parameter, which is the level of verbosity for log messages. The default is `info` (`log_level = info`). Other options include `fatal`, `panic`, `error`, `warn`, `debug`, and `trace`.
+Log level: The `logLevel` parameter sets the CRI-O `log_level` parameter, which is the level of verbosity for log messages. The default is `info` (`log_level = info`).
+
+Other options include `fatal`, `panic`, `error`, `warn`, `debug`, and `trace`.
 
 Overlay size: The `overlaySize` parameter sets the CRI-O Overlay storage driver `size` parameter, which is the maximum size of a container image.
 
 Container runtime: The `defaultRuntime` parameter sets the container runtime to either `crun` or `runc`. The default is `crun`.
 
-You should have one `ContainerRuntimeConfig` CR for each machine config pool with all the config changes you want for that pool. If you are applying the same content to all the pools, you only need one `ContainerRuntimeConfig` CR for all the pools.
+You should have one `ContainerRuntimeConfig` CR for each machine config pool with all the config changes you want for that pool.
 
-You should edit an existing `ContainerRuntimeConfig` CR to modify existing settings or add new settings instead of creating a new CR for each change. It is recommended to create a new `ContainerRuntimeConfig` CR only to modify a different machine config pool, or for changes that are intended to be temporary so that you can revert the changes.
+If you are applying the same content to all the pools, you only need one `ContainerRuntimeConfig` CR for all the pools.
 
-You can create multiple `ContainerRuntimeConfig` CRs, as needed, with a limit of 10 per cluster. For the first `ContainerRuntimeConfig` CR, the MCO creates a machine config appended with `containerruntime`. With each subsequent CR, the controller creates a new `containerruntime` machine config with a numeric suffix. For example, if you have a `containerruntime` machine config with a `-2` suffix, the next `containerruntime` machine config is appended with `-3`.
+You should edit an existing `ContainerRuntimeConfig` CR to modify existing settings or add new settings instead of creating a new CR for each change.
 
-If you want to delete the machine configs, you should delete them in reverse order to avoid exceeding the limit. For example, you should delete the `containerruntime-3` machine config before deleting the `containerruntime-2` machine config.
+It is recommended to create a new `ContainerRuntimeConfig` CR only to modify a different machine config pool, or for changes that are intended to be temporary so that you can revert the changes.
+
+You can create multiple `ContainerRuntimeConfig` CRs, as needed, with a limit of 10 per cluster.
+
+For the first `ContainerRuntimeConfig` CR, the MCO creates a machine config appended with `containerruntime`.
+
+With each subsequent CR, the controller creates a new `containerruntime` machine config with a numeric suffix.
+
+For example, if you have a `containerruntime` machine config with a `-2` suffix, the next `containerruntime` machine config is appended with `-3`.
+
+If you want to delete the machine configs, you should delete them in reverse order to avoid exceeding the limit.
+
+For example, you should delete the `containerruntime-3` machine config before deleting the `containerruntime-2` machine config.
 
 Note
 
@@ -2624,13 +2944,23 @@ sh-5.1# cat /etc/crio/crio.conf.d/01-ctrcfg-defaultRuntime
 
 ### 4.3. Configuring the container runtime
 
-You can configure the container runtime used with new workloads on your nodes, based on which runtime you or your organization prefers. You can use either crun, which is considered a faster and more lightweight runtime, or runc, which is more widely used than crun.
+You can configure the container runtime used with new workloads on your nodes, based on which runtime you or your organization prefers.
+
+You can use either crun, which is considered a faster and more lightweight runtime, or runc, which is more widely used than crun.
 
 For information on crun and runc, see "About the container engine and container runtime".
 
-Starting in OpenShift Container Platform 4.18, crun is the default container runtime for new installations. You can change between the runtimes by using a `ContainerRuntimeConfig` object, as described in the following procedure. Changing the container runtime affects new workloads only. Existing workloads continue to use their existing container runtime.
+Starting in OpenShift Container Platform 4.18, crun is the default container runtime for new installations.
 
-If you updated your cluster from OpenShift Container Platform 4.17, the runc container runtime remains unchanged as the default. During the upgrade, two `MachineConfig` objects, one for the control plane nodes and one for the worker nodes, were created to override the new default runtime. You can migrate the container runtime to crun, on a schedule of your choosing, by removing either or both of the `MachineConfig` objects.
+You can change between the runtimes by using a `ContainerRuntimeConfig` object, as described in the following procedure. Changing the container runtime affects new workloads only.
+
+Existing workloads continue to use their existing container runtime.
+
+If you updated your cluster from OpenShift Container Platform 4.17, the runc container runtime remains unchanged as the default.
+
+During the upgrade, two `MachineConfig` objects, one for the control plane nodes and one for the worker nodes, were created to override the new default runtime.
+
+You can migrate the container runtime to crun, on a schedule of your choosing, by removing either or both of the `MachineConfig` objects.
 
 Procedure
 
@@ -2799,13 +3129,27 @@ overlay                   8.0G      8.0K      8.0G   0% /
 
 ### 4.5. Creating a drop-in file for the default CRI-O capabilities
 
-You can change some of the settings associated with the OpenShift Container Platform CRI-O runtime for the nodes associated with a specific machine config pool (MCP). By using a controller custom resource (CR), you set the configuration values and add a label to match the MCP. The Machine Config Operator (MCO) then rebuilds the `crio.conf` and `default.conf` configuration files on the associated nodes with the updated values.
+You can change some of the settings associated with the OpenShift Container Platform CRI-O runtime for the nodes associated with a specific machine config pool (MCP).
 
-Earlier versions of OpenShift Container Platform included specific machine configs by default. If you updated to a later version of OpenShift Container Platform, those machine configs were retained to ensure that clusters running on the same OpenShift Container Platform version have the same machine configs.
+By using a controller custom resource (CR), you set the configuration values and add a label to match the MCP.
 
-You can create multiple `ContainerRuntimeConfig` CRs, as needed, with a limit of 10 per cluster. For the first `ContainerRuntimeConfig` CR, the MCO creates a machine config appended with `containerruntime`. With each subsequent CR, the controller creates a `containerruntime` machine config with a numeric suffix. For example, if you have a `containerruntime` machine config with a `-2` suffix, the next `containerruntime` machine config is appended with `-3`.
+The Machine Config Operator (MCO) then rebuilds the `crio.conf` and `default.conf` configuration files on the associated nodes with the updated values.
 
-If you want to delete the machine configs, delete them in reverse order to avoid exceeding the limit. For example, delete the `containerruntime-3` machine config before you delete the `containerruntime-2` machine config.
+Earlier versions of OpenShift Container Platform included specific machine configs by default.
+
+If you updated to a later version of OpenShift Container Platform, those machine configs were retained to ensure that clusters running on the same OpenShift Container Platform version have the same machine configs.
+
+You can create multiple `ContainerRuntimeConfig` CRs, as needed, with a limit of 10 per cluster.
+
+For the first `ContainerRuntimeConfig` CR, the MCO creates a machine config appended with `containerruntime`.
+
+With each subsequent CR, the controller creates a `containerruntime` machine config with a numeric suffix.
+
+For example, if you have a `containerruntime` machine config with a `-2` suffix, the next `containerruntime` machine config is appended with `-3`.
+
+If you want to delete the machine configs, delete them in reverse order to avoid exceeding the limit.
+
+For example, delete the `containerruntime-3` machine config before you delete the `containerruntime-2` machine config.
 
 Note
 
@@ -2837,13 +3181,23 @@ About the container engine and container runtime
 
 ## Chapter 5. Pinning images to nodes
 
-A slow, unreliable connection to an image registry can interfere with operations that require pulling images, such as updating a cluster or deploying an application. This can include clusters that have low bandwidth, clusters with unreliable internet connectivity, or clusters in a disconnected environment. For example, a cluster update might require pulling more than one hundred images. Failure to pull those images could cause retries that can interfere with the update process and might cause the update to fail.
+A slow, unreliable connection to an image registry can interfere with operations that require pulling images, such as updating a cluster or deploying an application.
 
-One way to prevent this is to pull the required images in advance, before they are actually needed, and pinning those images to a specific machine config pool (MCP). This ensures that the images are available to your nodes when needed. Pinned images can provide a more consistent update, which is important when scheduling updates into maintenance windows.
+This can include clusters that have low bandwidth, clusters with unreliable internet connectivity, or clusters in a disconnected environment.
+
+For example, a cluster update might require pulling more than one hundred images.
+
+Failure to pull those images could cause retries that can interfere with the update process and might cause the update to fail.
+
+One way to prevent this is to pull the required images in advance, before they are actually needed, and pinning those images to a specific machine config pool (MCP).
+
+This ensures that the images are available to your nodes when needed. Pinned images can provide a more consistent update, which is important when scheduling updates into maintenance windows.
 
 Pinned images also ensures that the images are available when deploying applications, so that you can deploy in a more reliable manner.
 
-You can pin images to specific nodes by using a `PinnedImageSet` custom resource (CR), as described in Pinning images. Pinned images are stored on the nodes in the `/etc/crio/crio.conf.d/50-pinned-images` file on those nodes. The contents of the file appear similar to the following example:
+You can pin images to specific nodes by using a `PinnedImageSet` custom resource (CR), as described in Pinning images.
+
+Pinned images are stored on the nodes in the `/etc/crio/crio.conf.d/50-pinned-images` file on those nodes. The contents of the file appear similar to the following example:
 
 ```shell-session
 [crio]
@@ -2853,7 +3207,11 @@ You can pin images to specific nodes by using a `PinnedImageSet` custom resource
 
 Another benefit to pinned images is that image garbage collection does not remove the pinned images.
 
-Before pulling the images, the Machine Config Operator (MCO) verifies that there is enough storage space available on each affected node. If the node has sufficient space, the MCO creates the pinned image file, pulls the images, and reloads CRI-O. If there is not sufficient space, the MCO does not pull the images and presents an error message.
+Before pulling the images, the Machine Config Operator (MCO) verifies that there is enough storage space available on each affected node.
+
+If the node has sufficient space, the MCO creates the pinned image file, pulls the images, and reloads CRI-O.
+
+If there is not sufficient space, the MCO does not pull the images and presents an error message.
 
 ### 5.1. Pinning images
 
@@ -2863,11 +3221,13 @@ The images are stored in the `/etc/crio/crio.conf.d/50-pinned-images` file on th
 
 Note
 
-Only images that you can successfully inspect with the command can be used with a pinned image set. Image inspections could fail due to unsupported manifest formats, registry authorization issues, invalid schemas, network connectivity issues, or other issues.
+Only images that you can successfully inspect with the command can be used with a pinned image set.
 
 ```shell
 podman manifest inspect <IMAGE_URL>
 ```
+
+Image inspections could fail due to unsupported manifest formats, registry authorization issues, invalid schemas, network connectivity issues, or other issues.
 
 Procedure
 
@@ -2995,7 +3355,9 @@ About checking machine config node status
 
 ## Chapter 6. Boot image management
 
-For Google Cloud and Amazon Web Services (AWS) clusters, by default the Machine Config Operator (MCO) manages and updates the boot image that is used to scale up your nodes. This means that by default, the MCO updates the boot images whenever you upgrade your cluster.
+For Google Cloud and Amazon Web Services (AWS) clusters, by default the Machine Config Operator (MCO) manages and updates the boot image that is used to scale up your nodes.
+
+This means that by default, the MCO updates the boot images whenever you upgrade your cluster.
 
 For VMware vSphere, you can enable boot image management as a Technology Preview feature.
 
@@ -3003,7 +3365,11 @@ For all other platforms, the MCO does not update the boot image with each cluste
 
 Important
 
-Boot image management on vSphere is a Technology Preview feature only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs) and might not be functionally complete. Red Hat does not recommend using them in production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
+Boot image management on vSphere is a Technology Preview feature only.
+
+Technology Preview features are not supported with Red Hat production service level agreements (SLAs) and might not be functionally complete. Red Hat does not recommend using them in production.
+
+These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
 
 For more information about the support scope of Red Hat Technology Preview features, see Technology Preview Features Support Scope.
 
@@ -3019,11 +3385,17 @@ For VMware vSphere, you can enable boot image management as a Technology Preview
 
 Important
 
-Boot image management on vSphere is a Technology Preview feature only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs) and might not be functionally complete. Red Hat does not recommend using them in production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
+Boot image management on vSphere is a Technology Preview feature only.
+
+Technology Preview features are not supported with Red Hat production service level agreements (SLAs) and might not be functionally complete. Red Hat does not recommend using them in production.
+
+These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
 
 For more information about the support scope of Red Hat Technology Preview features, see Technology Preview Features Support Scope.
 
-You can disable the boot image management feature, if needed. When the feature is disabled, the boot image no longer updates with the cluster. For example, with the feature disabled, if your cluster was originally created with OpenShift Container Platform 4.16, the boot image that the MCO would use to create nodes is the same 4.16 version, even if your cluster is at a later version.
+You can disable the boot image management feature, if needed. When the feature is disabled, the boot image no longer updates with the cluster.
+
+For example, with the feature disabled, if your cluster was originally created with OpenShift Container Platform 4.16, the boot image that the MCO would use to create nodes is the same 4.16 version, even if your cluster is at a later version.
 
 However, using an older boot image could cause the following issues:
 
@@ -3033,7 +3405,9 @@ Certificate expiration issues
 
 Version skew issues
 
-For information on how to disable this feature, see "Disabling boot image management". If you disable this feature, you can re-enable the feature at any time. For information, see "Enabling boot image management".
+For information on how to disable this feature, see "Disabling boot image management". If you disable this feature, you can re-enable the feature at any time.
+
+For information, see "Enabling boot image management".
 
 Note
 
@@ -3095,7 +3469,9 @@ spec:
 # ...
 ```
 
-1. This boot image is the same as the originally-installed OpenShift Container Platform version, in this example OpenShift Container Platform 4.12, regardless of the current version of the cluster. The way that the boot image is represented in the machine set depends on the platform, as the structure of the `providerSpec` field differs from platform to platform.
+1. This boot image is the same as the originally-installed OpenShift Container Platform version, in this example OpenShift Container Platform 4.12, regardless of the current version of the cluster.
+
+The way that the boot image is represented in the machine set depends on the platform, as the structure of the `providerSpec` field differs from platform to platform.
 
 ```yaml
 apiVersion: machine.openshift.io/v1beta1
@@ -3135,11 +3511,17 @@ Deployments:
 
 Important
 
-If any of the machine sets for which you want to enable boot image management use a `*-user-data` secret that is based on Ignition version 2.2.0, the Machine Config Operator converts the Ignition version to 3.4.0 when you enable the feature. OpenShift Container Platform versions 4.5 and lower use Ignition version 2.2.0. If this conversion fails, the MCO or your cluster could degrade. An error message that includes err: converting ignition stub failed: failed to parse Ignition config is added to the output of the command. You can use the following general steps to correct the problem:
+If any of the machine sets for which you want to enable boot image management use a `*-user-data` secret that is based on Ignition version 2.2.0, the Machine Config Operator converts the Ignition version to 3.4.0 when you enable the feature.
+
+OpenShift Container Platform versions 4.5 and lower use Ignition version 2.2.0. If this conversion fails, the MCO or your cluster could degrade.
+
+An error message that includes err: converting ignition stub failed: failed to parse Ignition config is added to the output of the command.
 
 ```shell
 oc get ClusterOperator machine-config
 ```
+
+You can use the following general steps to correct the problem:
 
 Disable the boot image management feature. For information, see "Disabling boot image management".
 
@@ -3155,11 +3537,19 @@ Enabling boot image management
 
 ### 6.2. Disabling boot image management
 
-You can disable the boot image management feature so that the Machine Config Operator (MCO) no longer manages or updates the boot image in the affected machine sets. For example, you could disable this feature for the worker nodes in order to use a custom boot image that you do not want changed.
+You can disable the boot image management feature so that the Machine Config Operator (MCO) no longer manages or updates the boot image in the affected machine sets.
 
-You can disable the boot image management feature for your cluster by editing the `MachineConfiguration` object. When disabled, the Machine Config Operator (MCO) no longer manages the boot image in your cluster and no longer updates the boot image with each cluster update.
+For example, you could disable this feature for the worker nodes in order to use a custom boot image that you do not want changed.
 
-Disabling this feature does not rollback the nodes or machine sets to the originally-installed boot image. The machine sets retain the boot image version that was present when the feature was disabled and is not updated if the cluster is upgraded to a new OpenShift Container Platform version in the future. This feature has no effect on existing nodes.
+You can disable the boot image management feature for your cluster by editing the `MachineConfiguration` object.
+
+When disabled, the Machine Config Operator (MCO) no longer manages the boot image in your cluster and no longer updates the boot image with each cluster update.
+
+Disabling this feature does not rollback the nodes or machine sets to the originally-installed boot image.
+
+The machine sets retain the boot image version that was present when the feature was disabled and is not updated if the cluster is upgraded to a new OpenShift Container Platform version in the future.
+
+This feature has no effect on existing nodes.
 
 After disabling the feature, you can re-enable the feature at any time. For more information, see "Enabling updated boot images".
 
@@ -3230,7 +3620,9 @@ status:
 
 When the affected nodes return to the `READY` state, check the current boot image by using one of the following methods:
 
-For Google Cloud and AWS, get the boot image version by running the following command. The location and format of the boot image within the machine set differs, based on the platform. However, the boot image is always listed in the `spec.template.spec.providerSpec.` parameter.
+For Google Cloud and AWS, get the boot image version by running the following command. The location and format of the boot image within the machine set differs, based on the platform.
+
+However, the boot image is always listed in the `spec.template.spec.providerSpec.` parameter.
 
 ```shell-session
 $ oc get machinesets <machineset_name> -n openshift-machine-api -o yaml
@@ -3306,11 +3698,19 @@ For VMware vSphere, you can enable boot image management as a Technology Preview
 
 Important
 
-Boot image management on vSphere is a Technology Preview feature only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs) and might not be functionally complete. Red Hat does not recommend using them in production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
+Boot image management on vSphere is a Technology Preview feature only.
+
+Technology Preview features are not supported with Red Hat production service level agreements (SLAs) and might not be functionally complete. Red Hat does not recommend using them in production.
+
+These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
 
 For more information about the support scope of Red Hat Technology Preview features, see Technology Preview Features Support Scope.
 
-Enabling the feature updates the boot image to the current OpenShift Container Platform version. If the cluster is again updated to a new OpenShift Container Platform version in the future, the boot image is updated again. New nodes created after enabling the feature use the updated boot image. This feature has no effect on existing nodes.
+Enabling the feature updates the boot image to the current OpenShift Container Platform version.
+
+If the cluster is again updated to a new OpenShift Container Platform version in the future, the boot image is updated again. New nodes created after enabling the feature use the updated boot image.
+
+This feature has no effect on existing nodes.
 
 Prerequisites
 
@@ -3422,7 +3822,9 @@ status:
 
 When the affected nodes return to the `READY` state, check the current boot image by using one of the following methods:
 
-For Google Cloud and AWS, get the boot image version by running the following command. The location and format of the boot image within the machine set differs, based on the platform. However, the boot image is always listed in the `spec.template.spec.providerSpec.` parameter.
+For Google Cloud and AWS, get the boot image version by running the following command. The location and format of the boot image within the machine set differs, based on the platform.
+
+However, the boot image is always listed in the `spec.template.spec.providerSpec.` parameter.
 
 ```shell-session
 $ oc get machinesets <machineset_name> -n openshift-machine-api -o yaml
@@ -3486,13 +3888,23 @@ Deployments:
 
 ## Chapter 7. Managing unused rendered machine configs
 
-The Machine Config Operator (MCO) does not perform any garbage collection activities. This means that all rendered machine configs remain in the cluster. Each time a user or controller applies a new machine config, the MCO creates new rendered configs for each affected machine config pool. Over time, this can lead to a large number of rendered machine configs, which can make working with machine configs confusing. Having too many rendered machine configs can also contribute to disk space issues and performance issues with etcd.
+The Machine Config Operator (MCO) does not perform any garbage collection activities. This means that all rendered machine configs remain in the cluster.
 
-You can remove old, unused rendered machine configs by using the command with the `--confirm` flag. With this command, you can remove all unused rendered machine configs or only those in a specific machine config pool. You can also remove a specified number of unused rendered machine configs in order to keep some older machine configs, in case you want to check older configurations.
+Each time a user or controller applies a new machine config, the MCO creates new rendered configs for each affected machine config pool.
+
+Over time, this can lead to a large number of rendered machine configs, which can make working with machine configs confusing.
+
+Having too many rendered machine configs can also contribute to disk space issues and performance issues with etcd.
+
+You can remove old, unused rendered machine configs by using the command with the `--confirm` flag.
 
 ```shell
 oc adm prune renderedmachineconfigs
 ```
+
+With this command, you can remove all unused rendered machine configs or only those in a specific machine config pool.
+
+You can also remove a specified number of unused rendered machine configs in order to keep some older machine configs, in case you want to check older configurations.
 
 You can use the command without the `--confirm` flag to see which rendered machine configs would be removed.
 
@@ -3504,11 +3916,15 @@ Use the `list` subcommand to display all the rendered machine configs in the clu
 
 Note
 
-The command deletes only rendered machine configs that are not in use. If a rendered machine configs are in use by a machine config pool, the rendered machine config is not deleted. In this case, the command output specifies the reason that the rendered machine config was not deleted.
+The command deletes only rendered machine configs that are not in use.
 
 ```shell
 oc adm prune renderedmachineconfigs
 ```
+
+If a rendered machine configs are in use by a machine config pool, the rendered machine config is not deleted.
+
+In this case, the command output specifies the reason that the rendered machine config was not deleted.
 
 ### 7.1. Viewing rendered machine configs
 
@@ -3534,7 +3950,11 @@ Displays a list of rendered machine configs in your cluster.
 
 `--in-use`
 
-Optional: Specifies whether to display only the used machine configs or all machine configs from the specified pool. If `true`, the output lists the rendered machine configs that are being used by a machine config pool. If `false`, the output lists all rendered machine configs in the cluster. The default value is `false`.
+Optional: Specifies whether to display only the used machine configs or all machine configs from the specified pool.
+
+If `true`, the output lists the rendered machine configs that are being used by a machine config pool. If `false`, the output lists all rendered machine configs in the cluster.
+
+The default value is `false`.
 
 `--pool-name`
 
@@ -3548,7 +3968,9 @@ rendered-worker-fc94397dc7c43808c7014683c208956e-- 2025-01-30 17:20:53 +0000 UTC
 rendered-worker-708c652868f7597eaa1e2622edc366ef -- 2025-01-31 18:01:16 +0000 UTC (Currently in use: true)
 ```
 
-List the rendered machine configs that you can remove automatically by running the following command. Any rendered machine config marked with the `as it’s currently in use` message in the command output cannot be removed.
+List the rendered machine configs that you can remove automatically by running the following command.
+
+Any rendered machine config marked with the `as it’s currently in use` message in the command output cannot be removed.
 
 ```shell-session
 $ oc adm prune renderedmachineconfigs --pool-name=worker
@@ -3571,15 +3993,19 @@ Skip dry-run deleting rendered MachineConfig rendered-worker-708c652868f7597eaa1
 
 ### 7.2. Removing unused rendered machine configs
 
-You can remove unused rendered machine configs by using the command with the `--confirm` command. If any rendered machine config is not deleted, the command output indicates which was not deleted and lists the reason for skipping the deletion.
+You can remove unused rendered machine configs by using the command with the `--confirm` command.
 
 ```shell
 oc adm prune renderedmachineconfigs
 ```
 
+If any rendered machine config is not deleted, the command output indicates which was not deleted and lists the reason for skipping the deletion.
+
 Procedure
 
-Optional: List the rendered machine configs that you can remove automatically by running the following command. Any rendered machine config marked with the `as it’s currently in use` message in the command output cannot be removed.
+Optional: List the rendered machine configs that you can remove automatically by running the following command.
+
+Any rendered machine config marked with the `as it’s currently in use` message in the command output cannot be removed.
 
 ```shell-session
 $ oc adm prune renderedmachineconfigs --pool-name=worker
@@ -3598,7 +4024,9 @@ pool-name
 
 Optional: Specifies the machine config pool where you want to delete the machine configs from.
 
-Remove the unused rendered machine configs by running the following command. The command in the following procedure would delete the two oldest unused rendered machine configs in the `worker` machine config pool.
+Remove the unused rendered machine configs by running the following command.
+
+The command in the following procedure would delete the two oldest unused rendered machine configs in the `worker` machine config pool.
 
 ```shell-session
 $ oc adm prune renderedmachineconfigs --pool-name=worker --count=2 --confirm
@@ -3626,21 +4054,33 @@ Skip deleting rendered MachineConfig rendered-worker-708c652868f7597eaa1e2622edc
 
 ## Chapter 8. Image mode for OpenShift
 
-Image mode for OpenShift allows you to easily extend the functionality of your base RHCOS image by layering additional images onto the base image. This layering does not modify the base RHCOS image. Instead, it creates a custom layered image that includes all RHCOS functionality and adds additional functionality to specific nodes in the cluster.
+Image mode for OpenShift allows you to easily extend the functionality of your base RHCOS image by layering additional images onto the base image. This layering does not modify the base RHCOS image.
 
-Image mode is a cloud-native approach to operating system management that treats your OS like a container image. You define your operating system configuration as code, build it as a unified image, and deploy it consistently across your entire fleet.
+Instead, it creates a custom layered image that includes all RHCOS functionality and adds additional functionality to specific nodes in the cluster.
+
+Image mode is a cloud-native approach to operating system management that treats your OS like a container image.
+
+You define your operating system configuration as code, build it as a unified image, and deploy it consistently across your entire fleet.
 
 ### 8.1. About image mode for OpenShift
 
-Image mode for OpenShift allows you to customize the underlying node operating system on any of your cluster nodes. This helps keep everything up-to-date, including the node operating system and any added customizations such as specialized software.
+Image mode for OpenShift allows you to customize the underlying node operating system on any of your cluster nodes.
+
+This helps keep everything up-to-date, including the node operating system and any added customizations such as specialized software.
 
 You create a custom layered image by using a Containerfile and applying it to nodes by using a custom object. At any time, you can remove the custom layered image by deleting that custom object.
 
-With image mode for OpenShift, you can install RPMs into your base image, and your custom content will be booted alongside RHCOS. The Machine Config Operator (MCO) can roll out these custom layered images and monitor these custom containers in the same way it does for the default RHCOS image. Image mode for OpenShift gives you greater flexibility in how you manage your RHCOS nodes.
+With image mode for OpenShift, you can install RPMs into your base image, and your custom content will be booted alongside RHCOS.
+
+The Machine Config Operator (MCO) can roll out these custom layered images and monitor these custom containers in the same way it does for the default RHCOS image.
+
+Image mode for OpenShift gives you greater flexibility in how you manage your RHCOS nodes.
 
 Important
 
-Installing realtime kernel and extensions RPMs as custom layered content is not recommended. This is because these RPMs can conflict with RPMs installed by using a machine config. If there is a conflict, the MCO enters a `degraded` state when it tries to install the machine config RPM. You need to remove the conflicting extension from your machine config before proceeding.
+Installing realtime kernel and extensions RPMs as custom layered content is not recommended. This is because these RPMs can conflict with RPMs installed by using a machine config.
+
+If there is a conflict, the MCO enters a `degraded` state when it tries to install the machine config RPM. You need to remove the conflicting extension from your machine config before proceeding.
 
 When you apply the custom layered image to your cluster, you assume the responsibility for the package you applied with the custom layered image and any issues that might arise with the package.
 
@@ -3648,11 +4088,19 @@ There are two methods for deploying a custom layered image onto your nodes:
 
 On-cluster image mode
 
-With on-cluster image mode, you create a `MachineOSConfig` object where you include the Containerfile and other parameters. The build is performed on your cluster and the resulting custom layered image is automatically pushed to your repository and applied to the machine config pool that you specified in the `MachineOSConfig` object. The entire process is performed completely within your cluster.
+With on-cluster image mode, you create a `MachineOSConfig` object where you include the Containerfile and other parameters.
+
+The build is performed on your cluster and the resulting custom layered image is automatically pushed to your repository and applied to the machine config pool that you specified in the `MachineOSConfig` object.
+
+The entire process is performed completely within your cluster.
 
 Out-of-cluster image mode
 
-With out-of-cluster image mode, you create a Containerfile that references an OpenShift Container Platform image and the RPM that you want to apply, build the layered image in your own environment, and push the image to your repository. Then, in your cluster, create a `MachineConfig` object for the targeted node pool that points to the new image. The Machine Config Operator overrides the base RHCOS image, as specified by the `osImageURL` value in the associated machine config, and boots the new image.
+With out-of-cluster image mode, you create a Containerfile that references an OpenShift Container Platform image and the RPM that you want to apply, build the layered image in your own environment, and push the image to your repository.
+
+Then, in your cluster, create a `MachineConfig` object for the targeted node pool that points to the new image.
+
+The Machine Config Operator overrides the base RHCOS image, as specified by the `osImageURL` value in the associated machine config, and boots the new image.
 
 Important
 
@@ -3666,13 +4114,21 @@ oc adm release info --image-for rhel-coreos
 
 Image mode for OpenShift allows you to use the following types of images to create custom layered images:
 
-OpenShift Container Platform Hotfixes. You can work with Customer Experience and Engagement (CEE) to obtain and apply Hotfix packages on top of your RHCOS image. In some instances, you might want a bug fix or enhancement before it is included in an official OpenShift Container Platform release. Image mode for OpenShift allows you to easily add the Hotfix before it is officially released and remove the Hotfix when the underlying RHCOS image incorporates the fix.
+OpenShift Container Platform Hotfixes. You can work with Customer Experience and Engagement (CEE) to obtain and apply Hotfix packages on top of your RHCOS image.
+
+In some instances, you might want a bug fix or enhancement before it is included in an official OpenShift Container Platform release.
+
+Image mode for OpenShift allows you to easily add the Hotfix before it is officially released and remove the Hotfix when the underlying RHCOS image incorporates the fix.
 
 Important
 
 Some Hotfixes require a Red Hat Support Exception and are outside of the normal scope of OpenShift Container Platform support coverage or life cycle policies.
 
-Hotfixes are provided to you based on Red Hat Hotfix policy. Apply it on top of the base image and test that new custom layered image in a non-production environment. When you are satisfied that the custom layered image is safe to use in production, you can roll it out on your own schedule to specific node pools. For any reason, you can easily roll back the custom layered image and return to using the default RHCOS.
+Hotfixes are provided to you based on Red Hat Hotfix policy. Apply it on top of the base image and test that new custom layered image in a non-production environment.
+
+When you are satisfied that the custom layered image is safe to use in production, you can roll it out on your own schedule to specific node pools.
+
+For any reason, you can easily roll back the custom layered image and return to using the default RHCOS.
 
 ```yaml
 containerfileArch: noarch
@@ -3747,7 +4203,9 @@ RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.n
     bootc container lint
 ```
 
-This Containerfile installs the RHEL fish program. Because fish requires additional RHEL packages, the image must be built on an entitled RHEL host. For RHEL entitlements to work, you must copy the `etc-pki-entitlement` secret into the `openshift-machine-config-operator` namespace.
+This Containerfile installs the RHEL fish program. Because fish requires additional RHEL packages, the image must be built on an entitled RHEL host.
+
+For RHEL entitlements to work, you must copy the `etc-pki-entitlement` secret into the `openshift-machine-config-operator` namespace.
 
 Example on-cluster Containerfile to apply a third-party package that has RHEL dependencies
 
@@ -3794,7 +4252,11 @@ It is strongly recommended that you test your images outside of your production 
 
 You can use the image mode for OpenShift on-cluster build process to apply a custom layered image to your nodes by creating a `MachineOSConfig` custom resource (CR), as described in "Using On-cluster image mode to apply a custom layered image".
 
-When you create the object, the Machine Config Operator (MCO) creates a `MachineOSBuild` object and a builder pod. The process also creates transient objects, such as config maps, which are cleaned up after the build is complete. The `MachineOSBuild` object and the associated `builder-*` pod use the same naming scheme, `<MachineOSConfig_CR_name>-<hash>`, for example:
+When you create the object, the Machine Config Operator (MCO) creates a `MachineOSBuild` object and a builder pod.
+
+The process also creates transient objects, such as config maps, which are cleaned up after the build is complete.
+
+The `MachineOSBuild` object and the associated `builder-*` pod use the same naming scheme, `<MachineOSConfig_CR_name>-<hash>`, for example:
 
 ```shell-session
 NAME                                             PREPARED   BUILDING   SUCCEEDED   INTERRUPTED   FAILED
@@ -3808,7 +4270,9 @@ build-layered-image-c8765e26ebc87e1e17a7d6e0a78e8bae      2/2     Running     0 
 
 You should not need to interact with these new objects or the `machine-os-builder` pod. However, you can use all of these resources for troubleshooting, if necessary.
 
-When the build is complete, the MCO pushes the new custom layered image to your repository and rolls the image out to the nodes in the associated machine config pool. You can see the digested image pull spec for the new custom layered image in the `MachineOSConfig` object. This is now the active image pull spec for this `MachineOSConfig`.
+When the build is complete, the MCO pushes the new custom layered image to your repository and rolls the image out to the nodes in the associated machine config pool.
+
+You can see the digested image pull spec for the new custom layered image in the `MachineOSConfig` object. This is now the active image pull spec for this `MachineOSConfig`.
 
 ```shell-session
 apiVersion: machineconfiguration.openshift.io/v1
@@ -3826,7 +4290,9 @@ status:
 
 Tip
 
-You can test a `MachineOSBuild` object to make sure it builds correctly without rolling out the custom layered image to active nodes by using a custom machine config pool that contains non-production nodes. Alternatively, you can use a custom machine config pool that has no nodes. The `MachineOSBuild` object builds even if there are no nodes for the MCO to deploy the custom layered image onto.
+You can test a `MachineOSBuild` object to make sure it builds correctly without rolling out the custom layered image to active nodes by using a custom machine config pool that contains non-production nodes.
+
+Alternatively, you can use a custom machine config pool that has no nodes. The `MachineOSBuild` object builds even if there are no nodes for the MCO to deploy the custom layered image onto.
 
 You can apply a custom layered image to any machine config pool in your cluster, including the control plane, worker, or custom pools.
 
@@ -3834,7 +4300,13 @@ Note
 
 For single-node OpenShift clusters, you can apply a custom layered image to the control plane node only.
 
-Making certain changes to a `MachineOSConfig` object triggers an automatic rebuild of the associated custom layered image. You can mitigate the effects of the rebuild by pausing the machine config pool where the custom layered image is applied as described in "Pausing the machine config pools". While the pools are paused, the MCO does not roll out the newly built image to the nodes after the build is complete. However, the build runs regardless of whether the pool is paused or not. For example, if you want to remove and replace a `MachineOSCOnfig` object, pausing the machine config pools before making the change prevents the MCO from reverting the associated nodes to the base image, reducing the number of reboots needed.
+Making certain changes to a `MachineOSConfig` object triggers an automatic rebuild of the associated custom layered image.
+
+You can mitigate the effects of the rebuild by pausing the machine config pool where the custom layered image is applied as described in "Pausing the machine config pools".
+
+While the pools are paused, the MCO does not roll out the newly built image to the nodes after the build is complete. However, the build runs regardless of whether the pool is paused or not.
+
+For example, if you want to remove and replace a `MachineOSCOnfig` object, pausing the machine config pools before making the change prevents the MCO from reverting the associated nodes to the base image, reducing the number of reboots needed.
 
 ```shell
 oc get machineconfigpools
@@ -3850,18 +4322,28 @@ worker    rendered-worker-221507009cbcdec0eec8ab3ccd789d18    False     False   
 
 After the changes have been rolled out, you can unpause the machine config pool.
 
-In the case of a build failure, for example due to network issues or an invalid secret, the MCO retries the build three additional times before the job fails. The MCO creates a different build pod for each build attempt. Note that the MCO automatically removes these build pods after a short period of time. Also, the affected machine config pool reports a build failure through the `ImageBuildDegraded` status condition. You can use the build pod logs to troubleshoot any build failures.
+In the case of a build failure, for example due to network issues or an invalid secret, the MCO retries the build three additional times before the job fails.
+
+The MCO creates a different build pod for each build attempt. Note that the MCO automatically removes these build pods after a short period of time.
+
+Also, the affected machine config pool reports a build failure through the `ImageBuildDegraded` status condition. You can use the build pod logs to troubleshoot any build failures.
 
 ```shell-session
 NAME                                             PREPARED   BUILDING   SUCCEEDED   INTERRUPTED   FAILED   AGE
 layered-image-c8765e26ebc87e1e17a7d6e0a78e8bae   False      False      False        False        True     12m
 ```
 
-You can manually rebuild your custom layered image by either modifying your `MachineOSConfig` object or applying an annotation to the `MachineOSConfig` object. For more information, see "Rebuilding an on-cluster custom layered image".
+You can manually rebuild your custom layered image by either modifying your `MachineOSConfig` object or applying an annotation to the `MachineOSConfig` object.
 
-If you used a custom machine config pool to apply an on-cluster layered image to a node, you can remove the custom layered image from the node and revert to the base image. For more information, see "Reverting an on-cluster layered node".
+For more information, see "Rebuilding an on-cluster custom layered image".
 
-You can modify an on-custom layered image as needed, to install additional packages, remove existing packages, change repositories, update secrets, or other similar changes, by editing the MachineOSConfig object. For more information, see "Modifying a custom layered image".
+If you used a custom machine config pool to apply an on-cluster layered image to a node, you can remove the custom layered image from the node and revert to the base image.
+
+For more information, see "Reverting an on-cluster layered node".
+
+You can modify an on-custom layered image as needed, to install additional packages, remove existing packages, change repositories, update secrets, or other similar changes, by editing the MachineOSConfig object.
+
+For more information, see "Modifying a custom layered image".
 
 #### 8.3.1. On-cluster image mode known limitations
 
@@ -3869,11 +4351,17 @@ Note the following limitations when working with the on-cluster layering feature
 
 On-cluster image mode is not supported on multi-architecture compute machines.
 
-Using multiple `MachineOSConfig` objects on the same machine config pool is not supported. You need a separate `MachineOSConfig` CR for each machine config pool where you want to use a distinct custom layered image.
+Using multiple `MachineOSConfig` objects on the same machine config pool is not supported.
 
-If you scale up a machine set that uses a custom layered image, the nodes reboot two times. The first, when the node is initially created with the base image and a second time when the custom layered image is applied.
+You need a separate `MachineOSConfig` CR for each machine config pool where you want to use a distinct custom layered image.
 
-Node disruption policies are not supported on nodes with a custom layered image. However, the following machine configuration changes do not cause a new image build or the reboot of a node with an on-cluster custom layered image:
+If you scale up a machine set that uses a custom layered image, the nodes reboot two times.
+
+The first, when the node is initially created with the base image and a second time when the custom layered image is applied.
+
+Node disruption policies are not supported on nodes with a custom layered image.
+
+However, the following machine configuration changes do not cause a new image build or the reboot of a node with an on-cluster custom layered image:
 
 Modifying the configuration files in the `/var` or `/etc` directory
 
@@ -3893,7 +4381,11 @@ Changing the `OSImageURL` parameter
 
 Adding or removing extensions
 
-The images used in creating custom layered images take up space in your push registry. Always be aware of the free space in your registry and prune the images as needed. You can automatically remove an on-cluster custom layered image from the repository by deleting the `MachineOSBuild` object that created the image. Note that the credentials provided by the registry push secret must also grant permission to delete an image from the registry. For more information, see "Removing an on-cluster custom layered image".
+The images used in creating custom layered images take up space in your push registry. Always be aware of the free space in your registry and prune the images as needed.
+
+You can automatically remove an on-cluster custom layered image from the repository by deleting the `MachineOSBuild` object that created the image.
+
+Note that the credentials provided by the registry push secret must also grant permission to delete an image from the registry. For more information, see "Removing an on-cluster custom layered image".
 
 Additional resources
 
@@ -3925,7 +4417,13 @@ You can create only one `MachineOSConfig` CR for each machine config pool.
 
 Prerequisites
 
-You have the pull secret in the `openshift-machine-config-operator` namespace that the Machine Config Operator (MCO) needs in order to pull the base operating system image from your repository. By default, the MCO uses the cluster global pull secret, which it synchronizes into the `openshift-machine-config-operator` namespace. You can add your pull secret to the OpenShift Container Platform global pull secret or you can use a different pull secret. For information on modifying the global pull secret, see "Updating the global cluster pull secret".
+You have the pull secret in the `openshift-machine-config-operator` namespace that the Machine Config Operator (MCO) needs in order to pull the base operating system image from your repository.
+
+By default, the MCO uses the cluster global pull secret, which it synchronizes into the `openshift-machine-config-operator` namespace.
+
+You can add your pull secret to the OpenShift Container Platform global pull secret or you can use a different pull secret.
+
+For information on modifying the global pull secret, see "Updating the global cluster pull secret".
 
 You have the push secret of the registry that the MCO needs to push the new custom layered image to. The credentials provided by the secret must also grant permission to delete an image from the registry.
 
@@ -3937,7 +4435,9 @@ You have the pull secret that your nodes need to pull the new custom layered ima
 
 You are familiar with how to configure a Containerfile. Instructions on how to create a Containerfile are beyond the scope of this documentation.
 
-Optional: You have a separate machine config pool for the nodes where you want to apply the custom layered image. One benefit to having a custom machine config pool for the nodes it that you can easily revert to the base image, if needed. For more information, see "Reverting an on-cluster layered node".
+Optional: You have a separate machine config pool for the nodes where you want to apply the custom layered image.
+
+One benefit to having a custom machine config pool for the nodes it that you can easily revert to the base image, if needed. For more information, see "Reverting an on-cluster layered node".
 
 Procedure
 
@@ -3969,19 +4469,27 @@ spec:
 
 1. Specifies the `machineconfiguration.openshift.io/v1` API that is required for `MachineConfig` CRs.
 
-2. Specifies a name for the `MachineOSConfig` object. The name must match the name of the associated machine config pool. This name is used with other on-cluster image mode resources. The examples in this documentation use the name `layered-image`.
+2. Specifies a name for the `MachineOSConfig` object. The name must match the name of the associated machine config pool.
+
+This name is used with other on-cluster image mode resources. The examples in this documentation use the name `layered-image`.
 
 3. Specifies the name of the machine config pool associated with the nodes where you want to deploy the custom layered image. The examples in this documentation use the `layered-image` machine config pool.
 
 4. Specifies the Containerfile to configure the custom layered image.
 
-5. Specifies the architecture this containerfile is to be built for: `ARM64`, `AMD64`, `PPC64LE`, `S390X`, or `NoArch`. The default is `NoArch`, which defines a Containerfile that can be applied to any architecture.
+5. Specifies the architecture this containerfile is to be built for: `ARM64`, `AMD64`, `PPC64LE`, `S390X`, or `NoArch`.
+
+The default is `NoArch`, which defines a Containerfile that can be applied to any architecture.
 
 6. Specifies the name of the image builder to use. This must be `Job`, which is a reference to the `job` object that is managing the image build.
 
 7. Optional: Specifies the name of the pull secret that the MCO needs to pull the base operating system image from the registry. By default, the global pull secret is used.
 
-8. Specifies the image registry to push the newly-built custom layered image to. This can be any registry that your cluster has access to in the `host[:port][/namespace]/name` or `svc_name.namespace.svc[:port]/repository/name:<tag>` format. This example uses the internal OpenShift Container Platform registry. You can specify a mirror registry if you cluster is properly configured to use a mirror registry.
+8. Specifies the image registry to push the newly-built custom layered image to.
+
+This can be any registry that your cluster has access to in the `host[:port][/namespace]/name` or `svc_name.namespace.svc[:port]/repository/name:<tag>` format.
+
+This example uses the internal OpenShift Container Platform registry. You can specify a mirror registry if you cluster is properly configured to use a mirror registry.
 
 9. Specifies the name of the push secret that the MCO needs to push the newly-built custom layered image to that registry.
 
@@ -4139,11 +4647,21 @@ Enabling features using feature gates
 
 #### 8.3.3. Modifying an on-cluster custom layered image
 
-You can modify an on-cluster custom layered image, as needed. This allows you to install additional packages, remove existing packages, change the pull or push repositories, update secrets, or other similar changes. You can edit the `MachineOSConfig` object, apply changes to the YAML file that created the `MachineOSConfig` object, or create a new YAML file for that purpose.
+You can modify an on-cluster custom layered image, as needed.
+
+This allows you to install additional packages, remove existing packages, change the pull or push repositories, update secrets, or other similar changes.
+
+You can edit the `MachineOSConfig` object, apply changes to the YAML file that created the `MachineOSConfig` object, or create a new YAML file for that purpose.
 
 If you modify and apply the `MachineOSConfig` object YAML or create a new YAML file, the YAML overwrites any changes you made directly to the `MachineOSConfig` object itself.
 
-Making certain changes to a `MachineOSConfig` object triggers an automatic rebuild of the associated custom layered image. You can mitigate the effects of the rebuild by pausing the machine config pool where the custom layered image is applied as described in "Pausing the machine config pools". While the pools are paused, the MCO does not roll out the newly built image to the nodes after the build is complete. However, the build runs regardless of whether the pool is paused or not. For example, if you want to remove and replace a `MachineOSCOnfig` object, pausing the machine config pools before making the change prevents the MCO from reverting the associated nodes to the base image, reducing the number of reboots needed.
+Making certain changes to a `MachineOSConfig` object triggers an automatic rebuild of the associated custom layered image.
+
+You can mitigate the effects of the rebuild by pausing the machine config pool where the custom layered image is applied as described in "Pausing the machine config pools".
+
+While the pools are paused, the MCO does not roll out the newly built image to the nodes after the build is complete. However, the build runs regardless of whether the pool is paused or not.
+
+For example, if you want to remove and replace a `MachineOSCOnfig` object, pausing the machine config pools before making the change prevents the MCO from reverting the associated nodes to the base image, reducing the number of reboots needed.
 
 ```shell
 oc get machineconfigpools
@@ -4206,7 +4724,9 @@ spec:
 
 4. Optional: Update the secret needed to push the newly built custom layered image to the registry.
 
-When you save the changes, the MCO drains, cordons, and reboots the nodes. After the reboot, the node uses the cluster base Red Hat Enterprise Linux CoreOS (RHCOS) image. If your changes modify a secret only, no new build is triggered and no reboot is performed.
+When you save the changes, the MCO drains, cordons, and reboots the nodes. After the reboot, the node uses the cluster base Red Hat Enterprise Linux CoreOS (RHCOS) image.
+
+If your changes modify a secret only, no new build is triggered and no reboot is performed.
 
 Verification
 
@@ -4278,9 +4798,15 @@ Pausing the machine config pools
 
 #### 8.3.4. Rebuilding an on-cluster custom layered image
 
-In situations where you want to rebuild an on-cluster custom layered image, you can either modify your `MachineOSConfig` object or add an annotation to the `MachineOSConfig` object. Both of these actions trigger an automatic rebuild of the object. For example, you could perform a rebuild if the you change the Containerfile or need to update the `osimageurl` location in a machine config.
+In situations where you want to rebuild an on-cluster custom layered image, you can either modify your `MachineOSConfig` object or add an annotation to the `MachineOSConfig` object.
 
-After you add the annotation, the Machine Config Operator (MCO) deletes the current `MachineOSBuild` object and creates a new one in its place. When the build process is complete, the MCO automatically removes the annotation.
+Both of these actions trigger an automatic rebuild of the object.
+
+For example, you could perform a rebuild if the you change the Containerfile or need to update the `osimageurl` location in a machine config.
+
+After you add the annotation, the Machine Config Operator (MCO) deletes the current `MachineOSBuild` object and creates a new one in its place.
+
+When the build process is complete, the MCO automatically removes the annotation.
 
 Prerequisites
 
@@ -4344,7 +4870,9 @@ metadata:
 
 If you applied an on-cluster layered image to a node in a custom machine config pool (MCP), you can remove the custom layered image from the node and revert to the base image.
 
-To revert the node, remove the node from the custom MCP by removing the custom machine config pool label from the node. After you remove the label, the Machine Config Operator (MCO) reboots the node with the cluster base Red Hat Enterprise Linux CoreOS (RHCOS) image, overriding the custom layered image.
+To revert the node, remove the node from the custom MCP by removing the custom machine config pool label from the node.
+
+After you remove the label, the Machine Config Operator (MCO) reboots the node with the cluster base Red Hat Enterprise Linux CoreOS (RHCOS) image, overriding the custom layered image.
 
 Important
 
@@ -4383,7 +4911,9 @@ worker    rendered-worker-e8c8bc1de69777325003e80bc0c04b82    True      False   
 
 1. The custom machine config pool no longer has any nodes.
 
-2. When the `UPDATING` field is `True`, the machine config pool is updating with the previous machine config. When the field becomes `False`, the worker machine config pool has rolled out to the previous machine config.
+2. When the `UPDATING` field is `True`, the machine config pool is updating with the previous machine config.
+
+When the field becomes `False`, the worker machine config pool has rolled out to the previous machine config.
 
 Check the nodes to see that scheduling on the nodes is disabled. This indicates that the change is being applied:
 
@@ -4431,7 +4961,9 @@ Deployments:
 
 To prevent the custom layered images from taking up excessive space in your registry, you can automatically remove an on-cluster custom layered image from the repository by deleting the `MachineOSBuild` object that created the image.
 
-The credentials provided by the registry push secret that you added to the `MachineOSBuild` object must grant the permission for deleting an image from the registry. If the delete permission is not provided, the image is not removed when you delete the `MachineOSBuild` object.
+The credentials provided by the registry push secret that you added to the `MachineOSBuild` object must grant the permission for deleting an image from the registry.
+
+If the delete permission is not provided, the image is not removed when you delete the `MachineOSBuild` object.
 
 The custom layered image is not deleted if the image is either currently in use on a node or is desired by the nodes, as indicated by the `machineconfiguration.openshift.io/currentImage` or `machineconfiguration.openshift.io/desiredImage` annotations on the node, which are added to the node when you create the `MachineOSConfig` object.
 
@@ -4441,11 +4973,19 @@ You can use the image mode for OpenShift out-of-cluster build process to apply a
 
 When you create the object, the Machine Config Operator (MCO) reboots those nodes with the new custom layered image, overriding the base Red Hat Enterprise Linux CoreOS (RHCOS) image.
 
-To apply a custom layered image to your cluster, you must have the custom layered image in a repository that your cluster can access. Then, create a `MachineConfig` object that points to the custom layered image. You need a separate `MachineConfig` object for each machine config pool that you want to configure.
+To apply a custom layered image to your cluster, you must have the custom layered image in a repository that your cluster can access.
+
+Then, create a `MachineConfig` object that points to the custom layered image. You need a separate `MachineConfig` object for each machine config pool that you want to configure.
 
 Important
 
-As soon as you apply an out-of-cluster custom image to your cluster, you effectively take ownership of your custom layered images and those nodes. OpenShift Container Platform no longer automatically updates any node that uses the custom layered image. You become responsible for maintaining and updating your nodes as appropriate. If you roll back the custom layer, OpenShift Container Platform resumes automatically updating the node. See the "Updating with a RHCOS custom layered image" for important information about updating nodes that use a custom layered image.
+As soon as you apply an out-of-cluster custom image to your cluster, you effectively take ownership of your custom layered images and those nodes.
+
+OpenShift Container Platform no longer automatically updates any node that uses the custom layered image. You become responsible for maintaining and updating your nodes as appropriate.
+
+If you roll back the custom layer, OpenShift Container Platform resumes automatically updating the node.
+
+See the "Updating with a RHCOS custom layered image" for important information about updating nodes that use a custom layered image.
 
 Prerequisites
 
@@ -4478,7 +5018,11 @@ Note
 
 Instructions on how to create a Containerfile are beyond the scope of this documentation.
 
-Because the process for building a custom layered image is performed outside of the cluster, you must use the `--authfile /path/to/pull-secret` option with Podman or Buildah. Alternatively, to have the pull secret read by these tools automatically, you can add it to one of the default file locations: `~/.docker/config.json`, `$XDG_RUNTIME_DIR/containers/auth.json`, `~/.docker/config.json`, or `~/.dockercfg`. Refer to the `containers-auth.json` man page for more information.
+Because the process for building a custom layered image is performed outside of the cluster, you must use the `--authfile /path/to/pull-secret` option with Podman or Buildah.
+
+Alternatively, to have the pull secret read by these tools automatically, you can add it to one of the default file locations: `~/.docker/config.json`, `$XDG_RUNTIME_DIR/containers/auth.json`, `~/.docker/config.json`, or `~/.dockercfg`.
+
+Refer to the `containers-auth.json` man page for more information.
 
 You must push the custom layered image to a repository that your cluster can access.
 
@@ -4573,7 +5117,9 @@ master   rendered-master-15961f1da260f7be141006404d17d39b   True      False     
 worker   rendered-worker-5de4837625b1cbc237de6b22bc0bc873   True      False      False      3              0                   0                     0                      39m
 ```
 
-1. When the `UPDATING` field is `True`, the machine config pool is updating with the new machine config. In this case, you will not see the new machine config listed in the output. When the field becomes `False`, the worker machine config pool has rolled out to the new machine config.
+1. When the `UPDATING` field is `True`, the machine config pool is updating with the new machine config. In this case, you will not see the new machine config listed in the output.
+
+When the field becomes `False`, the worker machine config pool has rolled out to the new machine config.
 
 Check the nodes to see that scheduling on the nodes is disabled. This indicates that the change is being applied:
 
@@ -4624,7 +5170,9 @@ Updating with a RHCOS custom layered image
 
 #### 8.4.1. Reverting an out-of-cluster node
 
-You can revert an out-of-cluster custom layered image from the nodes in specific machine config pools. The Machine Config Operator (MCO) reboots those nodes with the cluster base Red Hat Enterprise Linux CoreOS (RHCOS) image, overriding the custom layered image.
+You can revert an out-of-cluster custom layered image from the nodes in specific machine config pools.
+
+The Machine Config Operator (MCO) reboots those nodes with the cluster base Red Hat Enterprise Linux CoreOS (RHCOS) image, overriding the custom layered image.
 
 To remove a Red Hat Enterprise Linux CoreOS (RHCOS) custom layered image from your cluster, you need to delete the machine config that applied the image.
 
@@ -4654,7 +5202,9 @@ master   rendered-master-6faecdfa1b25c114a58cf178fbaa45e2   True      False     
 worker   rendered-worker-6b000dbc31aaee63c6a2d56d04cd4c1b   False     True       False      3              0                   0                     0                      39m
 ```
 
-1. When the `UPDATING` field is `True`, the machine config pool is updating with the previous machine config. When the field becomes `False`, the worker machine config pool has rolled out to the previous machine config.
+1. When the `UPDATING` field is `True`, the machine config pool is updating with the previous machine config.
+
+When the field becomes `False`, the worker machine config pool has rolled out to the previous machine config.
 
 Check the nodes to see that scheduling on the nodes is disabled. This indicates that the change is being applied:
 
@@ -4703,7 +5253,9 @@ Deployments:
 
 ### 8.5. Updating with a RHCOS custom layered image
 
-When you configure image mode for OpenShift, OpenShift Container Platform no longer automatically updates the node pool that uses the custom layered image. You become responsible to manually update your nodes as appropriate.
+When you configure image mode for OpenShift, OpenShift Container Platform no longer automatically updates the node pool that uses the custom layered image.
+
+You become responsible to manually update your nodes as appropriate.
 
 To update a node that uses a custom layered image, follow these general steps:
 

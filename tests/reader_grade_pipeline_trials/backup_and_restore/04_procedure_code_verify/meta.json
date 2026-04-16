@@ -1,7 +1,0 @@
-{
-  "source_slug": "backup_and_restore",
-  "title": "Backup and restore",
-  "label": "04_procedure_code_verify",
-  "description": "Procedure/code/verify first",
-  "input_path": "data\\gold_manualbook_ko\\playbooks\\backup_and_restore.json"
-}

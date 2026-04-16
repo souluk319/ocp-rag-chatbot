@@ -16,7 +16,7 @@ from play_book_studio.app.runtime_report import write_runtime_report
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Write the runtime readiness report")
     parser.add_argument("--output", type=Path, default=None)
-    parser.add_argument("--ui-base-url", default="http://127.0.0.1:8765")
+    parser.add_argument("--ui-base-url", default="http://127.0.0.1:5173")
     parser.add_argument("--recent-turns", type=int, default=3)
     return parser
 

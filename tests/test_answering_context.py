@@ -205,6 +205,7 @@ class ContextAssemblyTests(unittest.TestCase):
 
         self.assertNotEqual([], bundle.citations)
         self.assertIn(bundle.citations[0].book_slug, {"overview", "architecture"})
+        self.assertNotIn("security_and_compliance", [citation.book_slug for citation in bundle.citations])
 
     def test_generic_intro_prefers_intro_over_glossary_and_deep_architecture(self) -> None:
         bundle = assemble_context(
@@ -479,8 +480,26 @@ class ContextAssemblyTests(unittest.TestCase):
         )
 
         self.assertNotEqual([], bundle.citations)
-        self.assertIn(bundle.citations[0].book_slug, {"extensions", "overview", "architecture"})
+        self.assertIn(bundle.citations[0].book_slug, {"extensions", "overview"})
         self.assertNotIn("support", [citation.book_slug for citation in bundle.citations])
+
+    def test_operator_concept_locks_context_to_operator_family_when_present(self) -> None:
+        hits = [
+            _hit("chunk-1", "operators", "2.4.1.2.6. Operator 상태", "Operator 상태와 관리", score=1.2319),
+            _hit("chunk-2", "architecture", "1.1. OpenShift Container Platform 아키텍처의 일반 용어집", "Operator 정의", score=0.4559),
+            _hit("chunk-3", "installation_overview", "3.2.16. OLM(Operator Lifecycle Manager) 클래식 기능", "OLM 기능 설명", score=0.3735),
+            _hit("chunk-4", "operators", "2.4.4.5.1. 카탈로그 우선순위", "카탈로그 우선순위 설명", score=0.352),
+        ]
+
+        bundle = assemble_context(
+            hits,
+            query="Operator가 왜 필요한지 예시까지 설명해줘",
+            max_chunks=4,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertEqual("operators", bundle.citations[0].book_slug)
+        self.assertEqual(["operators"], [citation.book_slug for citation in bundle.citations])
 
     def test_mco_concept_prefers_architecture_family_over_support(self) -> None:
         hits = [

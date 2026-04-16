@@ -10,6 +10,32 @@ def hit_at_k(top_book_slugs: list[str], expected_book_slugs: list[str], k: int) 
     return any(book_slug in expected for book_slug in top_book_slugs[:k])
 
 
+def landing_hit_at_k(
+    top_hits: list[dict],
+    expected_book_slugs: list[str],
+    expected_landing_terms: list[str],
+    k: int,
+) -> bool:
+    expected_books = {str(book_slug).strip() for book_slug in expected_book_slugs if str(book_slug).strip()}
+    expected_terms = [str(term).strip().lower() for term in expected_landing_terms if str(term).strip()]
+    if not expected_books or not expected_terms:
+        return False
+
+    for hit in top_hits[:k]:
+        if str(hit.get("book_slug", "")).strip() not in expected_books:
+            continue
+        haystack = " ".join(
+            [
+                str(hit.get("anchor", "")),
+                str(hit.get("section", "")),
+                str(hit.get("viewer_path", "")),
+            ]
+        ).lower()
+        if any(term in haystack for term in expected_terms):
+            return True
+    return False
+
+
 def _score_group(case_results: list[dict], ks: Iterable[int]) -> dict[str, float]:
     total = len(case_results)
     if total == 0:
@@ -38,6 +64,28 @@ def _score_group(case_results: list[dict], ks: Iterable[int]) -> dict[str, float
         sum(int(case.get("graph_signal_tag") == "relation-aware-retrieval") for case in case_results) / total,
         4,
     )
+    landing_cases = [
+        case
+        for case in case_results
+        if case.get("expected_landing_terms")
+    ]
+    scores["landing_case_count"] = len(landing_cases)
+    for k in ks:
+        key = f"landing_hit@{k}"
+        if not landing_cases:
+            scores[key] = 0.0
+            continue
+        hits = sum(
+            1
+            for case in landing_cases
+            if landing_hit_at_k(
+                list(case.get("top_hits", [])),
+                list(case.get("expected_book_slugs", [])),
+                list(case.get("expected_landing_terms", [])),
+                k,
+            )
+        )
+        scores[key] = round(hits / len(landing_cases), 4)
     return scores
 
 

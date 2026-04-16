@@ -12,9 +12,33 @@ if str(SRC) not in sys.path:
 from play_book_studio.evals.retrieval_eval import summarize_case_results
 from play_book_studio.evals.retrieval_eval import build_graph_sidecar_evidence_packet
 from play_book_studio.evals.retrieval_eval import classify_graph_signal
+from play_book_studio.evals.retrieval_eval import landing_hit_at_k
 
 
 class RetrievalEvalTests(unittest.TestCase):
+    def test_landing_hit_at_k_requires_expected_book_and_anchor_term(self) -> None:
+        hits = [
+            {
+                "book_slug": "support",
+                "section": "7.2.1. 노드 상태, 리소스 사용량 및 구성 확인",
+                "anchor": "checking-node-resource-usage",
+                "viewer_path": "/docs/support.html#checking-node-resource-usage",
+            },
+            {
+                "book_slug": "nodes",
+                "section": "6.1.3. 노드의 메모리 및 CPU 사용량 통계 보기",
+                "anchor": "node-resource-usage",
+                "viewer_path": "/docs/nodes.html#node-resource-usage",
+            },
+        ]
+
+        self.assertTrue(
+            landing_hit_at_k(hits, ["nodes", "support"], ["resource-usage"], 1)
+        )
+        self.assertFalse(
+            landing_hit_at_k(hits, ["machine_management"], ["resource-usage"], 2)
+        )
+
     def test_classify_graph_signal_marks_clean_when_expected_family_is_ranked_first(self) -> None:
         signal, reason = classify_graph_signal(
             {
@@ -50,7 +74,16 @@ class RetrievalEvalTests(unittest.TestCase):
                 "query_type": "ops",
                 "query": "q1",
                 "expected_book_slugs": ["a"],
+                "expected_landing_terms": ["anchor-a"],
                 "top_book_slugs": ["a", "b", "c"],
+                "top_hits": [
+                    {
+                        "book_slug": "a",
+                        "section": "alpha",
+                        "anchor": "anchor-a",
+                        "viewer_path": "/docs/a.html#anchor-a",
+                    }
+                ],
                 "warnings": [],
             },
             {
@@ -58,7 +91,22 @@ class RetrievalEvalTests(unittest.TestCase):
                 "query_type": "follow_up",
                 "query": "q2",
                 "expected_book_slugs": ["z"],
+                "expected_landing_terms": ["anchor-z"],
                 "top_book_slugs": ["x", "z", "y"],
+                "top_hits": [
+                    {
+                        "book_slug": "x",
+                        "section": "wrong",
+                        "anchor": "anchor-x",
+                        "viewer_path": "/docs/x.html#anchor-x",
+                    },
+                    {
+                        "book_slug": "z",
+                        "section": "right",
+                        "anchor": "anchor-z",
+                        "viewer_path": "/docs/z.html#anchor-z",
+                    },
+                ],
                 "warnings": ["vector warning"],
             },
         ]
@@ -70,6 +118,9 @@ class RetrievalEvalTests(unittest.TestCase):
         self.assertEqual(1.0, summary["overall"]["hit@3"])
         self.assertEqual(0.5, summary["overall"]["warning_free_rate"])
         self.assertEqual(0.5, summary["overall"]["similar_document_risk_rate"])
+        self.assertEqual(2, summary["overall"]["landing_case_count"])
+        self.assertEqual(0.5, summary["overall"]["landing_hit@1"])
+        self.assertEqual(1.0, summary["overall"]["landing_hit@3"])
         self.assertEqual(1, summary["graph_signal_counts"]["similar-document"])
         self.assertEqual(0, len(summary["misses"]))
 

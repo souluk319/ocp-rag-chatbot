@@ -10,6 +10,7 @@ from .followups import has_follow_up_reference
 from .models import RetrievalHit, SessionContext
 from .query import (
     has_backup_restore_intent,
+    has_certificate_monitor_intent,
     has_cluster_node_usage_intent,
     has_mco_concept_intent,
     is_generic_intro_query,
@@ -262,6 +263,53 @@ def _rebalance_cluster_node_usage_hits(
     reordered.sort(
         key=lambda hit: (
             0 if hit.book_slug == "support" else 1 if hit.book_slug == "nodes" else 2,
+            hybrid_rank.get(hit.chunk_id, 999),
+            -hit.component_scores.get("pre_rerank_fused_score", 0.0),
+            -hit.component_scores.get("reranker_score", hit.fused_score),
+            hit.book_slug,
+            hit.chunk_id,
+        )
+    )
+    return reordered
+
+
+def _rebalance_certificate_monitor_hits(
+    query: str,
+    *,
+    hybrid_hits: list[RetrievalHit],
+    reranked_hits: list[RetrievalHit],
+) -> list[RetrievalHit]:
+    if not has_certificate_monitor_intent(query):
+        return reranked_hits
+    preferred_books = {"cli_tools", "security_and_compliance"}
+    if not hybrid_hits or not any(hit.book_slug in preferred_books for hit in hybrid_hits[:5]):
+        return reranked_hits
+    if not reranked_hits or reranked_hits[0].book_slug in preferred_books:
+        return reranked_hits
+
+    hybrid_rank = {hit.chunk_id: index for index, hit in enumerate(hybrid_hits)}
+
+    def _priority(hit: RetrievalHit) -> tuple[int, int]:
+        lowered_section = (hit.section or "").lower()
+        lowered_anchor = (hit.anchor or "").lower()
+        if hit.book_slug == "cli_tools" and "monitor-certificates" in lowered_anchor:
+            return (0, 0)
+        if hit.book_slug == "security_and_compliance" and any(
+            token in lowered_section for token in ("만료", "expiration", "expiry")
+        ):
+            return (1, 0)
+        if hit.book_slug == "cli_tools":
+            return (2, 0)
+        if hit.book_slug == "security_and_compliance":
+            return (3, 0)
+        if hit.book_slug == "support":
+            return (4, 0)
+        return (9, 0)
+
+    reordered = list(reranked_hits)
+    reordered.sort(
+        key=lambda hit: (
+            *_priority(hit),
             hybrid_rank.get(hit.chunk_id, 999),
             -hit.component_scores.get("pre_rerank_fused_score", 0.0),
             -hit.component_scores.get("reranker_score", hit.fused_score),
@@ -728,6 +776,14 @@ def maybe_rerank_hits(
             hybrid_hits=hybrid_hits,
             reranked_hits=reranked_hits,
             rule_fn=_rebalance_cluster_node_usage_hits,
+            rebalance_reasons=rebalance_reasons,
+        )
+        reranked_hits = _apply_rebalance_rule(
+            rule_name="certificate_monitor_intent",
+            query=query,
+            hybrid_hits=hybrid_hits,
+            reranked_hits=reranked_hits,
+            rule_fn=_rebalance_certificate_monitor_hits,
             rebalance_reasons=rebalance_reasons,
         )
         reranked_hits = _apply_rebalance_rule(

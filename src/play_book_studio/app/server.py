@@ -1,8 +1,11 @@
 """Play Book Studio의 HTTP 런타임 진입점."""
 from __future__ import annotations
 
+import cgi
+import io
 import json
 import mimetypes
+import os
 import threading
 import time
 import uuid
@@ -69,10 +72,10 @@ from play_book_studio.app.source_books import (
     build_chat_navigation_links as _build_chat_navigation_links,
     internal_buyer_packet_viewer_html as _internal_buyer_packet_viewer_html,
     build_chat_section_links as _build_chat_section_links,
+    internal_active_runtime_markdown_viewer_html as _internal_active_runtime_markdown_viewer_html,
     internal_customer_pack_viewer_html as _internal_customer_pack_viewer_html,
     internal_entity_hub_viewer_html as _internal_entity_hub_viewer_html,
     internal_figure_viewer_html as _internal_figure_viewer_html,
-    internal_gold_candidate_markdown_viewer_html as _internal_gold_candidate_markdown_viewer_html,
     internal_viewer_html as _internal_viewer_html,
 )
 from play_book_studio.app.session_flow import (
@@ -83,11 +86,16 @@ from play_book_studio.app.session_flow import (
 from play_book_studio.app.sessions import ChatSession, SessionStore
 from play_book_studio.app.viewers import _viewer_path_to_local_html
 
-
-STATIC_DIR = Path(__file__).resolve().parent / "static"
-INDEX_HTML_PATH = STATIC_DIR / "index.html"
-WORKSPACE_HTML_PATH = STATIC_DIR / "workspace.html"
-DATA_SITUATION_ROOM_HTML_PATH = STATIC_DIR / "data-situation-room.html"
+DEFAULT_PLAYBOOK_UI_ORIGIN = "http://127.0.0.1:5173"
+PRESENTATION_UI_ORIGIN = (os.getenv("PRESENTATION_UI_ORIGIN") or DEFAULT_PLAYBOOK_UI_ORIGIN).rstrip("/")
+LEGACY_UI_ROUTE_REDIRECTS = {
+    "/": "/",
+    "/index.html": "/",
+    "/studio": "/workspace",
+    "/studio.html": "/workspace",
+    "/data-situation-room": "/playbook-library",
+    "/data-situation-room.html": "/playbook-library",
+}
 DEFAULT_RUNTIME_TOP_K = 8
 DEFAULT_RUNTIME_CANDIDATE_K = 20
 DEFAULT_RUNTIME_MAX_CONTEXT_CHUNKS = 6
@@ -227,6 +235,13 @@ def _build_handler(
             self.end_headers()
             self.wfile.write(body)
 
+        def _send_redirect(self, location: str, status: HTTPStatus = HTTPStatus.TEMPORARY_REDIRECT) -> None:
+            self.send_response(status)
+            self.send_header("Location", location)
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Pragma", "no-cache")
+            self.end_headers()
+
         def _send_bytes(
             self,
             body: bytes,
@@ -257,6 +272,53 @@ def _build_handler(
             except (BrokenPipeError, ConnectionResetError):
                 return
 
+        def _parse_request_payload(self) -> dict[str, Any] | None:
+            content_type = str(self.headers.get("Content-Type") or "").strip().lower()
+            content_length = int(self.headers.get("Content-Length", "0"))
+            raw_body = self.rfile.read(content_length) if content_length else b""
+
+            if content_type.startswith("multipart/form-data"):
+                environ = {
+                    "REQUEST_METHOD": "POST",
+                    "CONTENT_TYPE": str(self.headers.get("Content-Type") or ""),
+                    "CONTENT_LENGTH": str(content_length),
+                }
+                form = cgi.FieldStorage(
+                    fp=io.BytesIO(raw_body),
+                    headers=self.headers,
+                    environ=environ,
+                    keep_blank_values=True,
+                )
+                payload: dict[str, Any] = {}
+                for key in form.keys():
+                    field = form[key]
+                    if isinstance(field, list):
+                        field = field[0]
+                    if getattr(field, "filename", None):
+                        payload[key] = field.file.read()
+                        payload[f"{key}_name"] = str(field.filename or "")
+                    else:
+                        payload[key] = str(field.value or "")
+                if "file" in payload:
+                    payload["file_bytes"] = payload.pop("file")
+                if "file_name" not in payload and "file_name_name" in payload:
+                    payload["file_name"] = payload.pop("file_name_name")
+                elif "file_name" not in payload and "file_name" in payload:
+                    payload["file_name"] = str(payload["file_name"] or "")
+                elif "file_name" not in payload and "file_name_name" not in payload and "file_name" not in payload and "file_bytes" in payload:
+                    payload["file_name"] = str(payload.get("file_name") or "")
+                if not payload.get("file_name") and "file_name_name" in payload:
+                    payload["file_name"] = str(payload.pop("file_name_name") or "")
+                if not payload.get("file_name") and "file_name" not in payload and "file_bytes" in payload:
+                    payload["file_name"] = str(form["file"].filename or "") if "file" in form else ""
+                return payload
+
+            try:
+                return json.loads(raw_body.decode("utf-8") or "{}")
+            except json.JSONDecodeError:
+                self._send_json({"error": "잘못된 JSON 요청입니다."}, HTTPStatus.BAD_REQUEST)
+                return None
+
         def do_GET(self) -> None:  # noqa: N802
             parsed_request = urlparse(self.path)
             request_path = parsed_request.path
@@ -266,24 +328,8 @@ def _build_handler(
                 self.send_error(HTTPStatus.NOT_FOUND, "Not found")
                 return
 
-            if request_path in {"/", "/index.html"}:
-                self._send_html(INDEX_HTML_PATH.read_text(encoding="utf-8"))
-                return
-            if request_path in {"/studio", "/studio.html"}:
-                self._send_html(WORKSPACE_HTML_PATH.read_text(encoding="utf-8"))
-                return
-            if request_path in {"/data-situation-room", "/data-situation-room.html"}:
-                self._send_html(DATA_SITUATION_ROOM_HTML_PATH.read_text(encoding="utf-8"))
-                return
-            if request_path.startswith("/assets/"):
-                relative = request_path.removeprefix("/assets/").strip("/")
-                asset_path = (STATIC_DIR / "assets" / relative).resolve()
-                assets_root = (STATIC_DIR / "assets").resolve()
-                if assets_root in asset_path.parents and asset_path.is_file():
-                    content_type = mimetypes.guess_type(str(asset_path))[0] or "application/octet-stream"
-                    self._send_bytes(asset_path.read_bytes(), content_type=content_type)
-                    return
-                self.send_error(HTTPStatus.NOT_FOUND, "Not found")
+            if request_path in LEGACY_UI_ROUTE_REDIRECTS:
+                self._send_redirect(f"{PRESENTATION_UI_ORIGIN}{LEGACY_UI_ROUTE_REDIRECTS[request_path]}")
                 return
             if request_path.startswith("/playbooks/wiki-assets/"):
                 relative = request_path.removeprefix("/playbooks/wiki-assets/").strip("/")
@@ -371,9 +417,9 @@ def _build_handler(
             if internal_customer_pack_viewer is not None:
                 self._send_html(viewer_html_cache.set(viewer_cache_key, internal_customer_pack_viewer))
                 return
-            internal_gold_candidate_markdown_viewer = _internal_gold_candidate_markdown_viewer_html(root_dir, self.path)
-            if internal_gold_candidate_markdown_viewer is not None:
-                self._send_html(viewer_html_cache.set(viewer_cache_key, internal_gold_candidate_markdown_viewer))
+            internal_active_runtime_viewer = _internal_active_runtime_markdown_viewer_html(root_dir, self.path)
+            if internal_active_runtime_viewer is not None:
+                self._send_html(viewer_html_cache.set(viewer_cache_key, internal_active_runtime_viewer))
                 self._debug_timing(f"viewer:{request_path}", started_at)
                 return
             internal_entity_hub_viewer = _internal_entity_hub_viewer_html(root_dir, self.path)
@@ -391,12 +437,8 @@ def _build_handler(
             self.send_error(HTTPStatus.NOT_FOUND, "Not found")
 
         def do_POST(self) -> None:  # noqa: N802
-            content_length = int(self.headers.get("Content-Length", "0"))
-            raw_body = self.rfile.read(content_length) if content_length else b"{}"
-            try:
-                payload = json.loads(raw_body.decode("utf-8") or "{}")
-            except json.JSONDecodeError:
-                self._send_json({"error": "잘못된 JSON 요청입니다."}, HTTPStatus.BAD_REQUEST)
+            payload = self._parse_request_payload()
+            if payload is None:
                 return
 
             if self.path == "/api/chat":
@@ -708,7 +750,7 @@ def serve(
     handler = _build_handler(answerer=answerer, store=store, root_dir=root_dir)
     server = ThreadingHTTPServer((host, port), handler)
     url = f"http://{host}:{port}"
-    print(f"Play Book Studio UI running at {url}")
+    print(f"Play Book Studio runtime/API server running at {url}")
     if open_browser:
         webbrowser.open(url)
     try:

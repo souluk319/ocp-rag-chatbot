@@ -84,6 +84,7 @@ class SettingsPathTests(unittest.TestCase):
                 self.assertEqual(root / "data" / "gold_manualbook_ko" / "playbooks", settings.playbook_books_dir)
                 self.assertEqual(root / "artifacts" / "corpus" / "translation_lane_report.json", settings.translation_lane_report_path)
                 self.assertEqual(root / "artifacts" / "runtime" / "recent_chat_session.json", settings.recent_chat_session_path)
+                self.assertEqual(root / "artifacts" / "runtime" / "chat_turns.md", settings.chat_markdown_log_path)
                 self.assertEqual(root / "artifacts" / "runtime" / "sessions", settings.runtime_sessions_dir)
                 self.assertEqual(
                     root / "artifacts" / "runtime" / "sessions" / "session-123.json",
@@ -369,6 +370,7 @@ class SettingsPathTests(unittest.TestCase):
                 self.assertEqual((external / "runtime").resolve(), settings.runtime_dir)
                 self.assertEqual((root / "data" / "bronze" / "raw_html").resolve(), settings.raw_html_dir)
                 self.assertEqual((external / "runtime" / "recent_chat_session.json").resolve(), settings.recent_chat_session_path)
+                self.assertEqual((external / "runtime" / "chat_turns.md").resolve(), settings.chat_markdown_log_path)
                 self.assertEqual((external / "runtime" / "sessions").resolve(), settings.runtime_sessions_dir)
                 self.assertEqual(
                     (external / "runtime" / "sessions" / "session-456.json").resolve(),
@@ -546,4 +548,3 @@ class SettingsPathTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

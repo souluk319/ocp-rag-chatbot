@@ -11,7 +11,10 @@ import json
 from pathlib import Path
 
 from play_book_studio.answering.answerer import ChatAnswerer
-from play_book_studio.app.runtime_report import write_runtime_report
+from play_book_studio.app.runtime_report import (
+    DEFAULT_PLAYBOOK_UI_BASE_URL,
+    write_runtime_report,
+)
 from play_book_studio.app.server import serve
 from play_book_studio.config.settings import load_effective_env, load_settings
 from play_book_studio.evals.answer_eval import evaluate_case, summarize_case_results
@@ -41,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    ui_parser = subparsers.add_parser("ui", help="Run the local chat UI")
+    ui_parser = subparsers.add_parser("ui", help="Run the local runtime/API server")
     ui_parser.add_argument("--host", default="127.0.0.1")
     ui_parser.add_argument("--port", type=int, default=8765)
     ui_parser.add_argument("--no-browser", action="store_true")
@@ -80,7 +83,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     runtime_parser = subparsers.add_parser("runtime", help="Write a runtime readiness report")
     runtime_parser.add_argument("--output", type=Path, default=None)
-    runtime_parser.add_argument("--ui-base-url", default="http://127.0.0.1:8765")
+    runtime_parser.add_argument("--ui-base-url", default=DEFAULT_PLAYBOOK_UI_BASE_URL)
     runtime_parser.add_argument("--recent-turns", type=int, default=3)
     runtime_parser.add_argument("--skip-samples", action="store_true")
 

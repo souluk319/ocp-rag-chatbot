@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 import re
 import uuid
 from pathlib import Path
@@ -98,16 +97,13 @@ def create_customer_pack_draft(root_dir: Path, payload: dict[str, Any]) -> dict[
 def upload_customer_pack_draft(root_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
     request = customer_pack_request_from_payload(payload)
     file_name = str(payload.get("file_name") or "").strip()
-    content_base64 = str(payload.get("content_base64") or "").strip()
+    file_bytes = payload.get("file_bytes")
     if not file_name:
         raise ValueError("업로드할 file_name이 필요합니다.")
-    if not content_base64:
-        raise ValueError("업로드할 content_base64가 필요합니다.")
+    if not isinstance(file_bytes, (bytes, bytearray)):
+        raise ValueError("업로드할 file_bytes가 필요합니다.")
 
-    try:
-        content = base64.b64decode(content_base64.encode("utf-8"), validate=True)
-    except Exception as exc:  # noqa: BLE001
-        raise ValueError(f"업로드 파일 디코딩에 실패했습니다: {exc}") from exc
+    content = bytes(file_bytes)
     if not content:
         raise ValueError("빈 파일은 업로드할 수 없습니다.")
 
@@ -202,7 +198,7 @@ def ingest_customer_pack(root_dir: Path, payload: dict[str, Any]) -> dict[str, A
     draft_id = str(payload.get("draft_id") or "").strip()
     if draft_id:
         captured = capture_customer_pack_draft(root_dir, {"draft_id": draft_id})
-    elif str(payload.get("content_base64") or "").strip():
+    elif isinstance(payload.get("file_bytes"), (bytes, bytearray)):
         uploaded = upload_customer_pack_draft(root_dir, payload)
         captured = capture_customer_pack_draft(root_dir, {"draft_id": str(uploaded["draft_id"])})
     else:

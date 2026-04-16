@@ -5,6 +5,7 @@ from pathlib import Path
 
 from play_book_studio.app.data_control_room import build_data_control_room_payload
 from play_book_studio.config.settings import load_settings
+from play_book_studio.execution_guard import run_guarded_script
 from play_book_studio.intake import CustomerPackDraftStore, DocSourceRequest
 
 
@@ -88,4 +89,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(run_guarded_script(main, __file__, launcher_hint="scripts/codex_python.ps1"))

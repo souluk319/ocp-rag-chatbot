@@ -4,51 +4,29 @@ import json
 from pathlib import Path
 
 import yaml
+from play_book_studio.execution_guard import run_guarded_script
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 DOCS = {
-    "customer_contract": REPO_ROOT / "archive" / "root_contracts" / "CUSTOMER_SOURCE_FIRST_PACK_CONTRACT.md",
-    "parsed_contract": REPO_ROOT / "PARSED_ARTIFACT_CONTRACT.md",
-    "security_contract": REPO_ROOT / "SECURITY_BOUNDARY_CONTRACT.md",
     "project": REPO_ROOT / "PROJECT.md",
-    "product_contract": REPO_ROOT / "Q1_8_PRODUCT_CONTRACT.md",
-    "architecture": REPO_ROOT / "P0_ARCHITECTURE_FREEZE_ADDENDUM.md",
+    "scorecard": REPO_ROOT / "OWNER_SCENARIO_SCORECARD.yaml",
     "task_board": REPO_ROOT / "TASK_BOARD.yaml",
 }
 
 
 REQUIRED_TERMS = {
-    "customer_source_first_pack": [
-        "customer_contract",
-        "parsed_contract",
-        "security_contract",
-        "product_contract",
-        "architecture",
-    ],
-    "pack runtime": [
-        "customer_contract",
-        "parsed_contract",
-        "project",
-    ],
-    "pack boundary": [
-        "customer_contract",
-        "security_contract",
-        "project",
-        "product_contract",
-    ],
-    "official / private / mixed": [
-        "customer_contract",
-        "security_contract",
-        "product_contract",
-    ],
+    "customer document PoC": ["project"],
+    "pack boundary labeled runtime": ["project"],
+    "같은 security boundary": ["project"],
+    "paid_poc_candidate": ["scorecard"],
 }
 
 
 def main() -> int:
-    contents = {name: path.read_text(encoding="utf-8") for name, path in DOCS.items() if path.suffix != ".yaml"}
+    contents = {name: path.read_text(encoding="utf-8") for name, path in DOCS.items()}
     task_board = yaml.safe_load(DOCS["task_board"].read_text(encoding="utf-8"))
 
     phase = next(phase for phase in task_board["phases"] if phase["id"] == "W4")
@@ -70,7 +48,8 @@ def main() -> int:
         "task_status": task["status"],
         "task_test": task["tests"][0],
         "term_checks": term_checks,
-        "customer_contract_exists": DOCS["customer_contract"].exists(),
+        "project_exists": DOCS["project"].exists(),
+        "scorecard_exists": DOCS["scorecard"].exists(),
         "yaml_ok": True,
     }
 
@@ -86,7 +65,8 @@ def main() -> int:
         f"- status: `{report['status']}`",
         f"- task_status: `{report['task_status']}`",
         f"- task_test: `{report['task_test']}`",
-        f"- customer_contract_exists: `{report['customer_contract_exists']}`",
+        f"- project_exists: `{report['project_exists']}`",
+        f"- scorecard_exists: `{report['scorecard_exists']}`",
         f"- yaml_ok: `{report['yaml_ok']}`",
         "",
         "## Term Checks",
@@ -104,4 +84,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(run_guarded_script(main, __file__, launcher_hint="scripts/codex_python.ps1"))

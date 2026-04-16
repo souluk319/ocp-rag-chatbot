@@ -181,6 +181,101 @@ def build_turn_diagnosis(result: AnswerResult) -> dict[str, Any]:
     }
 
 
+def _format_markdown_list(items: list[str]) -> list[str]:
+    return [f"- {item}" for item in items if str(item).strip()]
+
+
+def _format_turn_markdown(payload: dict[str, Any], diagnosis: dict[str, Any]) -> str:
+    envelope = payload.get("audit_envelope") or {}
+    citations = payload.get("citations") or []
+    warnings = [str(item) for item in (payload.get("warnings") or []) if str(item).strip()]
+    suggested_queries = [str(item) for item in (payload.get("suggested_queries") or []) if str(item).strip()]
+    runtime = payload.get("runtime") or {}
+    retrieval_trace = payload.get("retrieval_trace") or {}
+    pipeline_trace = payload.get("pipeline_trace") or {}
+    timings = (pipeline_trace.get("timings_ms") or {})
+    selection = ((pipeline_trace.get("selection") or {}).get("selected_hits") or [])
+    llm_runtime = pipeline_trace.get("llm") or {}
+    metrics = (retrieval_trace.get("metrics") or {})
+    hybrid = metrics.get("hybrid") or {}
+    reranker = retrieval_trace.get("reranker") or {}
+
+    lines = [
+        f"## {envelope.get('created_at') or payload.get('timestamp') or ''} | {payload.get('session_id') or ''} | turn {envelope.get('turn_index') or ''}",
+        "",
+        f"- query: {payload.get('query') or ''}",
+        f"- rewritten_query: {payload.get('rewritten_query') or payload.get('query') or ''}",
+        f"- response_kind: {payload.get('response_kind') or ''}",
+        f"- diagnosis: {diagnosis.get('severity') or 'ok'}",
+        f"- diagnosis_summary: {diagnosis.get('summary') or ''}",
+        f"- total_ms: {timings.get('total', '')}",
+        f"- retrieval_candidates: {hybrid.get('count', 0) if isinstance(hybrid, dict) else 0}",
+        f"- reranker_applied: {bool(reranker.get('applied', False))}",
+        f"- llm_provider: {llm_runtime.get('last_provider') or llm_runtime.get('preferred_provider') or 'skipped'}",
+        f"- llm_fallback_used: {bool(llm_runtime.get('last_fallback_used', False))}",
+        f"- citation_count: {len(citations)}",
+        "",
+        "### Answer",
+        "",
+        payload.get("answer") or "",
+        "",
+        "### Audit",
+        "",
+    ]
+
+    audit_lines = [
+        f"record_id: {envelope.get('record_id') or ''}",
+        f"turn_id: {envelope.get('turn_id') or ''}",
+        f"parent_turn_id: {envelope.get('parent_turn_id') or ''}",
+        f"snapshot_path: {envelope.get('snapshot_path') or ''}",
+        f"recent_session_path: {envelope.get('recent_session_path') or ''}",
+        f"runtime_llm_endpoint: {runtime.get('llm_endpoint') or ''}",
+        f"runtime_embedding_base_url: {runtime.get('embedding_base_url') or ''}",
+        f"runtime_qdrant_collection: {runtime.get('qdrant_collection') or ''}",
+    ]
+    lines.extend(_format_markdown_list(audit_lines))
+
+    if selection:
+        lines.extend(["", "### Selected Evidence", ""])
+        lines.extend(
+            _format_markdown_list(
+                [
+                    f"{row.get('book_slug') or ''} :: {row.get('section') or ''} :: score={row.get('fused_score', row.get('score', ''))}"
+                    for row in selection
+                    if isinstance(row, dict)
+                ]
+            )
+        )
+
+    if citations:
+        lines.extend(["", "### Citations", ""])
+        lines.extend(
+            _format_markdown_list(
+                [
+                    f"[{index}] {citation.get('book_slug') or ''} :: {citation.get('section') or ''} :: {citation.get('source_label') or citation.get('book_title') or ''}"
+                    for index, citation in enumerate(citations, start=1)
+                    if isinstance(citation, dict)
+                ]
+            )
+        )
+
+    if warnings:
+        lines.extend(["", "### Warnings", ""])
+        lines.extend(_format_markdown_list(warnings))
+
+    diagnosis_signals = [str(item) for item in (diagnosis.get("signals") or []) if str(item).strip()]
+    if diagnosis_signals:
+        lines.extend(["", "### Signals", ""])
+        lines.extend(_format_markdown_list(diagnosis_signals))
+
+    if suggested_queries:
+        lines.extend(["", "### Suggested Queries", ""])
+        lines.extend(_format_markdown_list(suggested_queries))
+
+    lines.extend(["", "---", ""])
+    return "\n".join(lines)
+
+
 def append_chat_turn_log(
     root_dir: Path,
     *,
@@ -196,9 +291,12 @@ def append_chat_turn_log(
 ) -> Path:
     settings = load_settings(root_dir)
     target = settings.chat_log_path
+    markdown_target = settings.chat_markdown_log_path
     target.parent.mkdir(parents=True, exist_ok=True)
+    markdown_target.parent.mkdir(parents=True, exist_ok=True)
     turn_index = len(session.history)
     latest_turn = session.history[-1] if session.history else None
+    diagnosis = build_turn_diagnosis(result)
     payload = {
         "record_kind": "chat_turn_audit",
         "audit_envelope": {
@@ -239,6 +337,8 @@ def append_chat_turn_log(
         payload["runtime"] = _build_health_payload(answerer)["runtime"]
     with target.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    with markdown_target.open("a", encoding="utf-8") as handle:
+        handle.write(_format_turn_markdown(payload, diagnosis))
     return target
 
 

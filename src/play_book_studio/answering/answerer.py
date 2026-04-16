@@ -14,11 +14,16 @@ from play_book_studio.config.settings import Settings
 from play_book_studio.retrieval import ChatRetriever, SessionContext
 from play_book_studio.retrieval.query import (
     has_backup_restore_intent,
+    has_cluster_node_usage_intent,
     has_command_request,
     has_corrective_follow_up,
+    has_deployment_scaling_intent,
     has_doc_locator_intent,
     has_follow_up_entity_ambiguity,
     has_follow_up_reference,
+    has_node_drain_intent,
+    has_openshift_kubernetes_compare_intent,
+    has_rbac_intent,
 )
 
 from .answer_text_commands import (
@@ -135,6 +140,19 @@ def _citations_match_console_intent(citations: list) -> bool:
 
 def _build_doc_locator_answer(*, query: str, citations: list) -> str | None:
     if not citations or not has_doc_locator_intent(query):
+        return None
+    if any(
+        (
+            has_command_request(query),
+            has_corrective_follow_up(query),
+            has_backup_restore_intent(query),
+            has_cluster_node_usage_intent(query),
+            has_node_drain_intent(query),
+            has_rbac_intent(query),
+            has_deployment_scaling_intent(query),
+            has_openshift_kubernetes_compare_intent(query),
+        )
+    ):
         return None
     if _requires_console_grounding(query) and not _citations_match_console_intent(citations):
         return None

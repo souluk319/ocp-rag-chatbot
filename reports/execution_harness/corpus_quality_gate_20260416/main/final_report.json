@@ -1,0 +1,58 @@
+{
+  "task_id": "corpus_quality_gate_20260416",
+  "lane_id": "main",
+  "role": "main",
+  "status": "done",
+  "code_paths": [
+    "RUNTIME_ARCHITECTURE_CONTRACT.md",
+    "src/play_book_studio/evals/retrieval_eval.py",
+    "scripts/run_retrieval_eval.py",
+    "manifests/retrieval_eval_cases.jsonl",
+    "src/play_book_studio/retrieval/retriever_rerank.py",
+    "tests/test_retrieval_eval.py",
+    "tests/test_retrieval_runtime.py",
+    "TASK_BOARD.yaml"
+  ],
+  "artifacts": [
+    "artifacts/retrieval/retrieval_eval_report.json",
+    "reports/execution_harness/corpus_quality_gate_20260416/main/manifest.json",
+    "reports/execution_harness/corpus_quality_gate_20260416/main/worklog.md",
+    "reports/execution_harness/corpus_quality_gate_20260416/main/final_report.json"
+  ],
+  "validation": [
+    {
+      "command": "& .\\.venv\\Scripts\\python.exe -m py_compile src/play_book_studio/evals/retrieval_eval.py scripts/run_retrieval_eval.py src/play_book_studio/retrieval/retriever_rerank.py tests/test_retrieval_eval.py tests/test_retrieval_runtime.py",
+      "result": "passed"
+    },
+    {
+      "command": "& .\\.venv\\Scripts\\python.exe -m unittest tests.test_retrieval_eval",
+      "result": "passed"
+    },
+    {
+      "command": "& .\\.venv\\Scripts\\python.exe -m unittest tests.test_retrieval_runtime.TestRetrievalRuntime.test_reranker_rebalances_cluster_node_usage_back_to_support_family tests.test_retrieval_runtime.TestRetrievalRuntime.test_reranker_rebalances_generic_intro_back_to_intro_overview tests.test_retrieval_runtime.TestRetrievalRuntime.test_reranker_rebalances_etcd_backup_hits_toward_backup_procedure tests.test_retrieval_runtime.TestRetrievalRuntime.test_reranker_rescues_uploaded_customer_pack_for_explicit_customer_doc_query tests.test_retrieval_runtime.TestRetrievalRuntime.test_reranker_rebalances_certificate_monitor_query_back_to_cli_or_security",
+      "result": "passed"
+    },
+    {
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\codex_python.ps1 scripts\\run_retrieval_eval.py \"src/play_book_studio/evals/retrieval_eval.py;src/play_book_studio/retrieval/retriever_rerank.py;scripts/run_retrieval_eval.py;manifests/retrieval_eval_cases.jsonl\" \"artifacts/retrieval/retrieval_eval_report.json updated\" --output artifacts/retrieval/retrieval_eval_report.json",
+      "result": "passed"
+    }
+  ],
+  "summary": {
+    "overall_case_count": 18,
+    "book_hit_at_5": 1.0,
+    "landing_case_count": 4,
+    "landing_hit_at_5": 1.0,
+    "warning_free_rate": 1.0,
+    "rerank_reason_counts": {
+      "certificate_monitor_intent": 1,
+      "cluster_node_usage_intent": 1,
+      "etcd_backup_restore_intent": 2,
+      "generic_intro_intent": 1,
+      "registry_storage_intent": 1
+    }
+  },
+  "notes": [
+    "Corpus quality gate now requires landing precision and context coverage; book-slug-only eval is no longer treated as sufficient.",
+    "tests.test_retrieval_runtime full file currently contains unrelated graph/runtime failures and was not used as the packet closeout gate."
+  ]
+}

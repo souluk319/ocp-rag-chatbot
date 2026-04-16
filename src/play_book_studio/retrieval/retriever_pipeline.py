@@ -111,9 +111,6 @@ def _is_latest_only_hit(hit: RetrievalHit, *, active_slugs: frozenset[str]) -> b
         return False
     if str(hit.source_collection or "").strip() != "core":
         return False
-    allowed_lanes = {"official_ko"}
-    if str(hit.source_lane or "").strip() not in allowed_lanes:
-        return False
     return True
 
 

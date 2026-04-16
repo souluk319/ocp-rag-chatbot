@@ -5,6 +5,7 @@ import tempfile
 from pathlib import Path
 
 from play_book_studio.app.intake_api import create_customer_pack_draft, delete_customer_pack_draft
+from play_book_studio.execution_guard import run_guarded_script
 from play_book_studio.intake.books.store import CustomerPackDraftStore
 from play_book_studio.intake.normalization.service import CustomerPackNormalizeService
 from play_book_studio.intake.capture.service import CustomerPackCaptureService
@@ -93,4 +94,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(run_guarded_script(main, __file__, launcher_hint="scripts/codex_python.ps1"))

@@ -249,6 +249,10 @@ class SettingsPathMixin:
         return self.runtime_dir / "chat_turns.jsonl"
 
     @property
+    def chat_markdown_log_path(self) -> Path:
+        return self.runtime_dir / "chat_turns.md"
+
+    @property
     def runtime_sessions_dir(self) -> Path:
         return self.runtime_dir / "sessions"
 

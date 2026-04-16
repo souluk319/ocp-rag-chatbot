@@ -16,6 +16,7 @@ if str(SRC) not in sys.path:
 from play_book_studio.config.settings import load_settings
 from play_book_studio.evals.retrieval_eval import (
     build_graph_sidecar_evidence_packet,
+    landing_hit_at_k,
     summarize_case_results,
 )
 from play_book_studio.retrieval.models import SessionContext
@@ -97,7 +98,17 @@ def main() -> int:
         ablation_trace = trace.get("ablation") or {}
         vector_runtime = trace.get("vector_runtime") or {}
         top_books = [hit.book_slug for hit in result.hits]
+        top_hits = [
+            {
+                "book_slug": hit.book_slug,
+                "section": hit.section,
+                "anchor": hit.anchor,
+                "viewer_path": hit.viewer_path,
+            }
+            for hit in result.hits
+        ]
         expected_books = set(case.get("expected_book_slugs", []))
+        expected_landing_terms = [str(item) for item in case.get("expected_landing_terms", []) if str(item).strip()]
         detail = {
             "id": case["id"],
             "category": case["category"],
@@ -105,8 +116,10 @@ def main() -> int:
             "query_type": str(case.get("query_type", case["category"])),
             "query": case["query"],
             "expected_book_slugs": sorted(expected_books),
+            "expected_landing_terms": expected_landing_terms,
             "rewritten_query": result.rewritten_query,
             "top_book_slugs": top_books,
+            "top_hits": top_hits,
             "bm25_top_book_slugs": [str(item) for item in ablation_trace.get("bm25_top_book_slugs", [])],
             "vector_top_book_slugs": [str(item) for item in ablation_trace.get("vector_top_book_slugs", [])],
             "hybrid_top_book_slugs": [str(item) for item in ablation_trace.get("hybrid_top_book_slugs", [])],
@@ -114,6 +127,9 @@ def main() -> int:
             "book_hit_at_1": _hit_at(top_books, expected_books, 1),
             "book_hit_at_3": _hit_at(top_books, expected_books, 3),
             "book_hit_at_5": _hit_at(top_books, expected_books, 5),
+            "landing_hit_at_1": landing_hit_at_k(top_hits, sorted(expected_books), expected_landing_terms, 1),
+            "landing_hit_at_3": landing_hit_at_k(top_hits, sorted(expected_books), expected_landing_terms, 3),
+            "landing_hit_at_5": landing_hit_at_k(top_hits, sorted(expected_books), expected_landing_terms, 5),
             "warnings": trace.get("warnings", []),
             "reranker_applied": bool(trace.get("reranker", {}).get("applied", False)),
             "rewrite_applied": bool(plan_trace.get("rewrite_applied", False)),
@@ -144,6 +160,10 @@ def main() -> int:
             "book_hit_at_1": summary["overall"]["hit@1"],
             "book_hit_at_3": summary["overall"]["hit@3"],
             "book_hit_at_5": summary["overall"]["hit@5"],
+            "landing_case_count": summary["overall"]["landing_case_count"],
+            "landing_hit_at_1": summary["overall"]["landing_hit@1"],
+            "landing_hit_at_3": summary["overall"]["landing_hit@3"],
+            "landing_hit_at_5": summary["overall"]["landing_hit@5"],
             "warning_free_rate": summary["overall"]["warning_free_rate"],
             "similar_document_risk_rate": summary["overall"]["similar_document_risk_rate"],
             "policy_overlay_warning_rate": summary["overall"]["policy_overlay_warning_rate"],
@@ -156,6 +176,10 @@ def main() -> int:
                 "book_hit_at_1": category_summary["overall"]["hit@1"],
                 "book_hit_at_3": category_summary["overall"]["hit@3"],
                 "book_hit_at_5": category_summary["overall"]["hit@5"],
+                "landing_case_count": category_summary["overall"]["landing_case_count"],
+                "landing_hit_at_1": category_summary["overall"]["landing_hit@1"],
+                "landing_hit_at_3": category_summary["overall"]["landing_hit@3"],
+                "landing_hit_at_5": category_summary["overall"]["landing_hit@5"],
                 "warning_free_rate": category_summary["overall"]["warning_free_rate"],
                 "similar_document_risk_rate": category_summary["overall"]["similar_document_risk_rate"],
                 "policy_overlay_warning_rate": category_summary["overall"]["policy_overlay_warning_rate"],

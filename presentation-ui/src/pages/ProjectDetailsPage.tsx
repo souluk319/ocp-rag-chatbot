@@ -23,7 +23,7 @@ export default function ProjectDetailsPage() {
         <div className="sidebar-header">
           <Link to="/" className="back-link">
             <ArrowLeft size={20} />
-            <span>Back to Presentation</span>
+            <span>Back to Home</span>
           </Link>
           <h2 className="sidebar-title gradient-text">Project Contracts</h2>
         </div>

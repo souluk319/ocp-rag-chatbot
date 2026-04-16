@@ -826,21 +826,6 @@ def _active_wiki_runtime_manifest(root_dir: Path) -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
-def _legacy_wiki_runtime_manifest_path(root_dir: Path, group: str) -> Path:
-    return root_dir / "data" / "wiki_runtime_books" / f"{group}_manifest.json"
-
-
-def _legacy_wiki_runtime_manifest(root_dir: Path, group: str) -> dict[str, Any]:
-    manifest_path = _legacy_wiki_runtime_manifest_path(root_dir, group)
-    if not manifest_path.exists() or not manifest_path.is_file():
-        return {}
-    try:
-        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except Exception:  # noqa: BLE001
-        return {}
-    return payload if isinstance(payload, dict) else {}
-
-
 def _runtime_markdown_path_from_entries(entries: list[Any], slug: str) -> Path | None:
     normalized_slug = str(slug or "").strip()
     if not normalized_slug:
@@ -859,12 +844,6 @@ def _runtime_markdown_path_from_entries(entries: list[Any], slug: str) -> Path |
 
 def _active_runtime_markdown_path(root_dir: Path, slug: str) -> Path | None:
     payload = _active_wiki_runtime_manifest(root_dir)
-    entries = payload.get("entries") if isinstance(payload.get("entries"), list) else []
-    return _runtime_markdown_path_from_entries(entries, slug)
-
-
-def _legacy_runtime_markdown_path(root_dir: Path, group: str, slug: str) -> Path | None:
-    payload = _legacy_wiki_runtime_manifest(root_dir, group)
     entries = payload.get("entries") if isinstance(payload.get("entries"), list) else []
     return _runtime_markdown_path_from_entries(entries, slug)
 
@@ -1798,11 +1777,11 @@ def _build_wiki_supplementary_blocks(root_dir: Path, slug: str) -> list[str]:
     ]
 
 
-def parse_gold_candidate_markdown_viewer_path(viewer_path: str) -> tuple[str, str, str | None] | None:
+def parse_active_runtime_markdown_viewer_path(viewer_path: str) -> str | None:
     parsed = urlparse((viewer_path or "").strip())
     active_runtime_match = ACTIVE_RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE.fullmatch(parsed.path.strip())
     if active_runtime_match is not None:
-        return ("runtime", active_runtime_match.group(1), "active")
+        return str(active_runtime_match.group(1) or "").strip()
     return None
 
 
@@ -2071,20 +2050,13 @@ def _build_figure_supplementary_blocks(root_dir: Path, slug: str, asset_name: st
     ]
 
 
-def internal_gold_candidate_markdown_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
-    parsed = parse_gold_candidate_markdown_viewer_path(viewer_path)
-    if parsed is None:
+def internal_active_runtime_markdown_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
+    slug = parse_active_runtime_markdown_viewer_path(viewer_path)
+    if not slug:
         return None
-    viewer_kind, slug, runtime_group = parsed
     request = urlparse((viewer_path or "").strip())
     embedded = "embed=1" in request.query
-    if viewer_kind == "runtime":
-        if runtime_group == "active":
-            markdown_path = _active_runtime_markdown_path(root_dir, slug)
-        else:
-            markdown_path = _legacy_runtime_markdown_path(root_dir, str(runtime_group or "").strip(), slug)
-    else:
-        markdown_path = root_dir / "data" / "gold_candidate_books" / "wave1" / f"{slug}.md"
+    markdown_path = _active_runtime_markdown_path(root_dir, slug)
     if markdown_path is None:
         return None
     if not markdown_path.exists() or not markdown_path.is_file():
@@ -2102,13 +2074,7 @@ def internal_gold_candidate_markdown_viewer_html(root_dir: Path, viewer_path: st
         cards=cards,
         supplementary_blocks=_build_wiki_supplementary_blocks(root_dir, slug),
         section_count=len(content_sections),
-        eyebrow=(
-            "Approved Wiki Runtime Book"
-            if viewer_kind == "runtime" and runtime_group == "active"
-            else "Archived Wiki Runtime Reference"
-            if viewer_kind == "runtime"
-            else "Archived Gold Candidate Reference"
-        ),
+        eyebrow="Approved Wiki Runtime Book",
         summary=summary,
         embedded=embedded,
         page_overlay_toolbar=_render_page_overlay_toolbar(
@@ -2387,11 +2353,11 @@ __all__ = [
     "build_chat_navigation_links",
     "internal_customer_pack_viewer_html",
     "internal_entity_hub_viewer_html",
-    "internal_gold_candidate_markdown_viewer_html",
+    "internal_active_runtime_markdown_viewer_html",
     "internal_viewer_html",
     "list_customer_pack_drafts",
     "load_customer_pack_book",
     "parse_customer_pack_viewer_path",
     "parse_entity_hub_viewer_path",
-    "parse_gold_candidate_markdown_viewer_path",
+    "parse_active_runtime_markdown_viewer_path",
 ]

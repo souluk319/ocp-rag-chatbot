@@ -1,6 +1,0 @@
-{
-  "task_id": "W6-E3-T3-REAL-DATA-VIEWER-VALIDATION",
-  "status": "in_progress",
-  "summary": "Test plan locked. Representative 5 active books selected for real data viewer validation.",
-  "next_step": "Run book-by-book quality scoring and record pass/fail by axis."
-}

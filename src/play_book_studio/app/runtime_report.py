@@ -18,6 +18,8 @@ from play_book_studio.answering.llm import LLMClient
 from play_book_studio.config.settings import Settings, load_settings
 from play_book_studio.ingestion.embedding import EmbeddingClient
 
+DEFAULT_PLAYBOOK_UI_BASE_URL = "http://127.0.0.1:5173"
+
 
 def _auth_headers(token: str) -> dict[str, str]:
     normalized = (token or "").strip()
@@ -218,6 +220,7 @@ def _probe_local_ui(ui_base_url: str | None) -> dict[str, Any]:
         return {"enabled": False}
     report: dict[str, Any] = {
         "enabled": True,
+        "surface": "playbook_ui",
         "base_url": ui_base_url.rstrip("/"),
     }
     try:
@@ -232,7 +235,7 @@ def _probe_local_ui(ui_base_url: str | None) -> dict[str, Any]:
 def build_runtime_report(
     root_dir: str | Path,
     *,
-    ui_base_url: str | None = "http://127.0.0.1:8765",
+    ui_base_url: str | None = DEFAULT_PLAYBOOK_UI_BASE_URL,
     recent_turns: int = 3,
     sample: bool = True,
 ) -> dict[str, Any]:
@@ -303,7 +306,7 @@ def write_runtime_report(
     root_dir: str | Path,
     *,
     output_path: str | Path | None = None,
-    ui_base_url: str | None = "http://127.0.0.1:8765",
+    ui_base_url: str | None = DEFAULT_PLAYBOOK_UI_BASE_URL,
     recent_turns: int = 3,
     sample: bool = True,
 ) -> tuple[Path, dict[str, Any]]:

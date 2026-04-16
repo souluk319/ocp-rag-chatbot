@@ -2,7 +2,7 @@
   "advanced_networking": {
     "entities": [
       {
-        "label": "Cluster-Wide Proxy",
+        "label": "Cluster Wide Proxy",
         "href": "/wiki/entities/cluster-wide-proxy/index.html"
       },
       {
@@ -197,7 +197,7 @@
   "backup_and_restore": {
     "entities": [
       {
-        "label": "etcd",
+        "label": "Etcd",
         "href": "/wiki/entities/etcd/index.html"
       },
       {
@@ -205,7 +205,7 @@
         "href": "/wiki/entities/control-plane-nodes/index.html"
       },
       {
-        "label": "Cluster-Wide Proxy",
+        "label": "Cluster Wide Proxy",
         "href": "/wiki/entities/cluster-wide-proxy/index.html"
       },
       {
@@ -342,7 +342,7 @@
   "disconnected_environments": {
     "entities": [
       {
-        "label": "Cluster-Wide Proxy",
+        "label": "Cluster Wide Proxy",
         "href": "/wiki/entities/cluster-wide-proxy/index.html"
       },
       {
@@ -419,7 +419,7 @@
   "etcd": {
     "entities": [
       {
-        "label": "etcd",
+        "label": "Etcd",
         "href": "/wiki/entities/etcd/index.html"
       },
       {
@@ -564,7 +564,7 @@
   "ingress_and_load_balancing": {
     "entities": [
       {
-        "label": "Cluster-Wide Proxy",
+        "label": "Cluster Wide Proxy",
         "href": "/wiki/entities/cluster-wide-proxy/index.html"
       },
       {
@@ -710,7 +710,7 @@
   "installing_on_any_platform": {
     "entities": [
       {
-        "label": "Cluster-Wide Proxy",
+        "label": "Cluster Wide Proxy",
         "href": "/wiki/entities/cluster-wide-proxy/index.html"
       },
       {
@@ -1087,7 +1087,7 @@
   "networking_overview": {
     "entities": [
       {
-        "label": "Cluster-Wide Proxy",
+        "label": "Cluster Wide Proxy",
         "href": "/wiki/entities/cluster-wide-proxy/index.html"
       },
       {
@@ -1438,7 +1438,7 @@
   "postinstallation_configuration": {
     "entities": [
       {
-        "label": "Cluster-Wide Proxy",
+        "label": "Cluster Wide Proxy",
         "href": "/wiki/entities/cluster-wide-proxy/index.html"
       },
       {

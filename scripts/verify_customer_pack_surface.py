@@ -5,6 +5,7 @@ from pathlib import Path
 
 from play_book_studio.answering.models import Citation
 from play_book_studio.config.settings import load_settings
+from play_book_studio.execution_guard import run_guarded_script
 from play_book_studio.app.presenters import _customer_pack_meta_for_viewer_path, _serialize_citation
 from play_book_studio.app.source_books import internal_customer_pack_viewer_html, load_customer_pack_book
 
@@ -154,4 +155,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(run_guarded_script(main, __file__, launcher_hint="scripts/codex_python.ps1"))

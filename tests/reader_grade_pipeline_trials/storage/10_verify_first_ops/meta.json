@@ -1,7 +1,0 @@
-{
-  "source_slug": "storage",
-  "title": "스토리지",
-  "label": "10_verify_first_ops",
-  "description": "Verify-first ops book",
-  "input_path": "data\\gold_manualbook_ko\\playbooks\\storage.json"
-}

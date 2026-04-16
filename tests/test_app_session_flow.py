@@ -672,7 +672,7 @@ class TestAppSessionFlow(unittest.TestCase):
             suggestions,
         )
 
-    def test_suggest_follow_up_questions_for_no_answer_returns_empty(self) -> None:
+    def test_suggest_follow_up_questions_for_no_answer_returns_fallback_triplet(self) -> None:
         session = type(
             "SessionStub",
             (),
@@ -689,7 +689,14 @@ class TestAppSessionFlow(unittest.TestCase):
 
         suggestions = _suggest_follow_up_questions(session=session, result=result)
 
-        self.assertEqual([], suggestions)
+        self.assertEqual(
+            [
+                "이미지 레지스트리를 초보자 기준으로 단계별로 설명해줘",
+                "이미지 레지스트리 관련 실행 예시도 같이 보여줘",
+                "이미지 레지스트리 상태 확인 방법도 같이 알려줘",
+            ],
+            suggestions,
+        )
 
     def test_suggest_follow_up_questions_with_warnings_returns_empty(self) -> None:
         session = type(

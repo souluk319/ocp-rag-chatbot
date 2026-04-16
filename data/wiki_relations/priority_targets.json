@@ -12,7 +12,7 @@
         "signal_id": "entity:etcd",
         "label": "etcd",
         "signal_type": "entity_hub",
-        "count": 45,
+        "count": 46,
         "href": "/wiki/entities/etcd/index.html",
         "kind": "entity"
       },
@@ -32,7 +32,7 @@
         "signal_id": "query:복원-후-machine-configuration은-왜-같이-봐야-하는지-알려줘",
         "label": "복원 후 Machine Configuration은 왜 같이 봐야 하는지 알려줘",
         "signal_type": "suggested_query",
-        "count": 50,
+        "count": 56,
         "href": "",
         "kind": "query"
       },
@@ -40,7 +40,7 @@
         "signal_id": "book:machine-configuration",
         "label": "Machine configuration",
         "signal_type": "related_book",
-        "count": 11,
+        "count": 14,
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
         "kind": "book"
       },
@@ -60,7 +60,7 @@
         "signal_id": "query:백업-후-monitoring에서는-어떤-신호를-먼저-확인해야-해?",
         "label": "백업 후 Monitoring에서는 어떤 신호를 먼저 확인해야 해?",
         "signal_type": "suggested_query",
-        "count": 50,
+        "count": 56,
         "href": "",
         "kind": "query"
       },
@@ -68,7 +68,7 @@
         "signal_id": "entity:cluster-wide-proxy",
         "label": "Cluster-Wide Proxy",
         "signal_type": "entity_hub",
-        "count": 39,
+        "count": 40,
         "href": "/wiki/entities/cluster-wide-proxy/index.html",
         "kind": "entity"
       },

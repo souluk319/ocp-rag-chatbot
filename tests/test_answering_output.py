@@ -133,8 +133,8 @@ class TestAnsweringOutput(unittest.TestCase):
             "원하면 아키텍처와 운영 관점 차이도 이어서 설명하겠습니다 [3]."
         )
 
-        self.assertIn("[1].\n\n실무에서는", updated)
         self.assertIn("[2].\n\n원하면", updated)
+        self.assertIn("실무에서는 애플리케이션 배포와 운영 자동화에 사용합니다 [2].", updated)
 
     def test_strip_intro_offtopic_noise_removes_etcd_backup_sentence(self) -> None:
         updated = strip_intro_offtopic_noise(
@@ -291,7 +291,7 @@ class TestAnsweringOutput(unittest.TestCase):
         )
 
         self.assertEqual("no_answer", result.response_kind)
-        self.assertIn("근거 번호가 없어 결과를 폐기", result.answer)
+        self.assertIn("현재 Playbook Library에 해당 자료가 없습니다", result.answer)
         self.assertEqual([], result.cited_indices)
         self.assertEqual(0, len(result.citations))
         self.assertIn("answer has no inline citations", result.warnings)
@@ -351,7 +351,10 @@ class TestAnsweringOutput(unittest.TestCase):
 
         self.assertEqual("no_answer", result.response_kind)
         self.assertEqual([], result.citations)
-        self.assertIn("근거 번호가 없어 결과를 폐기", result.answer)
+        self.assertEqual(
+            "답변: 현재 Playbook Library에 해당 자료가 없습니다. 자료 추가가 필요합니다.",
+            result.answer,
+        )
         self.assertIn("answer has no inline citations", result.warnings)
 
     def test_answerer_shapes_english_mixed_etcd_backup_query_into_code_block(self) -> None:
@@ -1013,10 +1016,36 @@ class TestAnsweringOutput(unittest.TestCase):
         self.assertEqual(1, len(result.citations))
 
     def test_answerer_reshapes_bare_ops_command_response(self) -> None:
+        class _RbacCommandRetriever:
+            def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
+                hit = RetrievalHit(
+                    chunk_id="rbac-admin-command",
+                    book_slug="authentication_and_authorization",
+                    chapter="authentication_and_authorization",
+                    section="9.6. 사용자 역할 추가",
+                    anchor="adding-user-role",
+                    source_url="https://example.com/auth",
+                    viewer_path="/docs/auth.html#adding-user-role",
+                    text="oc adm policy add-role-to-user admin <사용자명> -n <namespace>",
+                    source="hybrid",
+                    raw_score=1.0,
+                    fused_score=1.0,
+                )
+                return RetrievalResult(
+                    query=query,
+                    normalized_query=query,
+                    rewritten_query=query,
+                    top_k=top_k,
+                    candidate_k=candidate_k,
+                    context=(context or SessionContext()).to_dict(),
+                    hits=[hit],
+                    trace={"warnings": [], "timings_ms": {"bm25_search": 1.0}},
+                )
+
         settings = Settings(root_dir=ROOT)
         answerer = ChatAnswerer(
             settings=settings,
-            retriever=_FakeRetriever(),
+            retriever=_RbacCommandRetriever(),
             llm_client=_BareCommandLLMClient(),
         )
 
@@ -1025,6 +1054,7 @@ class TestAnsweringOutput(unittest.TestCase):
             mode="ops",
         )
 
-        self.assertTrue(result.answer.startswith("답변: 아래 명령을 사용하세요 [1]."))
+        self.assertIn("`admin` 권한", result.answer)
         self.assertIn("```bash", result.answer)
-        self.assertIn("oc adm policy add-role-to-user admin <사용자명> -n <namespace>", result.answer)
+        self.assertIn("oc adm policy add-role-to-user admin <user> -n <project>", result.answer)
+        self.assertEqual([1], result.cited_indices)

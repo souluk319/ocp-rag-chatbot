@@ -1,7 +1,0 @@
-{
-  "source_slug": "machine_configuration",
-  "title": "Machine configuration",
-  "label": "08_operator_first",
-  "description": "Operator-first shaping",
-  "input_path": "data\\gold_manualbook_ko\\playbooks\\machine_configuration.json"
-}

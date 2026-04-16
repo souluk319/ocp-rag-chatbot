@@ -28,6 +28,7 @@ from scripts import run_gold_foundry
 from scripts import run_ingestion
 from scripts import run_ragas_eval
 from scripts import validate_ingestion_outputs
+from play_book_studio.app.runtime_report import DEFAULT_PLAYBOOK_UI_BASE_URL
 from play_book_studio.execution_guard import run_guarded_script
 
 
@@ -403,7 +404,7 @@ class CleanupBypassRemovalTests(unittest.TestCase):
         writer.assert_called_once_with(
             ROOT,
             output_path=None,
-            ui_base_url="http://127.0.0.1:8765",
+            ui_base_url=DEFAULT_PLAYBOOK_UI_BASE_URL,
             recent_turns=3,
             sample=True,
         )

@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-04-15T05:53:51+00:00",
+  "generated_at_utc": "2026-04-16T06:55:28+00:00",
   "entity_count": 14,
   "book_count": 19,
   "by_entity": {
@@ -11,7 +11,7 @@
         "viewer_path": "/wiki/figures/advanced_networking/524-openshift-bgp-ovn-k8s-no-vpn-0325.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/524-openshift-bgp-ovn-k8s-no-vpn-0325.png",
         "section_hint": "6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "advanced_networking",
@@ -20,7 +20,7 @@
         "viewer_path": "/wiki/figures/advanced_networking/524-openshift-bgp-ovn-k8s-vrf-lite-0325.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/524-openshift-bgp-ovn-k8s-vrf-lite-0325.png",
         "section_hint": "6.1.3.3. VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "advanced_networking",
@@ -29,7 +29,7 @@
         "viewer_path": "/wiki/figures/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1123_PTP_network.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1123_PTP_network.png",
         "section_hint": "7.1.1. PTP 도메인의 요소 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "advanced_networking",
@@ -38,7 +38,7 @@
         "viewer_path": "/wiki/figures/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1023_PTP.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1023_PTP.png",
         "section_hint": "7.1.3. PTP 할 마스터 클록에 대한 GNSS 타이밍 개요 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "advanced_networking",
@@ -47,7 +47,7 @@
         "viewer_path": "/wiki/figures/advanced_networking/openshift-ptp-using-dual-nic-ptp.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/openshift-ptp-using-dual-nic-ptp.png",
         "section_hint": "7.1.5. 2 카드 E810 NIC 구성 참조 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "advanced_networking",
@@ -56,7 +56,7 @@
         "viewer_path": "/wiki/figures/advanced_networking/openshift-ptp-3-card-grandmaster.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/openshift-ptp-3-card-grandmaster.png",
         "section_hint": "7.1.7. 3-card Intel E810 PTP grandmaster 클록 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "advanced_networking",
@@ -65,7 +65,7 @@
         "viewer_path": "/wiki/figures/advanced_networking/openshift-ptp-holdover-tgm-clock-with-gnss.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/openshift-ptp-holdover-tgm-clock-with-gnss.png",
         "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "advanced_networking",
@@ -74,7 +74,7 @@
         "viewer_path": "/wiki/figures/advanced_networking/darkcircle-1.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-1.png",
         "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "advanced_networking",
@@ -83,7 +83,7 @@
         "viewer_path": "/wiki/figures/advanced_networking/darkcircle-2.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-2.png",
         "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "advanced_networking",
@@ -92,7 +92,7 @@
         "viewer_path": "/wiki/figures/advanced_networking/darkcircle-3.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-3.png",
         "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "advanced_networking",
@@ -101,7 +101,7 @@
         "viewer_path": "/wiki/figures/advanced_networking/darkcircle-4.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-4.png",
         "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "advanced_networking",
@@ -110,7 +110,7 @@
         "viewer_path": "/wiki/figures/advanced_networking/darkcircle-5.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-5.png",
         "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "advanced_networking",
@@ -119,7 +119,7 @@
         "viewer_path": "/wiki/figures/advanced_networking/darkcircle-6.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-6.png",
         "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "advanced_networking",
@@ -128,7 +128,7 @@
         "viewer_path": "/wiki/figures/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_0323_4.17.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_0323_4.17.png",
         "section_hint": "7.3.2. PTP 이벤트 REST API v2를 사용하여 PTP 이벤트 검색 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "backup_and_restore",
@@ -137,7 +137,7 @@
         "viewer_path": "/wiki/figures/backup_and_restore/oadp-must-gather-markdown-output.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-must-gather-markdown-output.png",
         "section_hint": "5.26.11.1. Using the must-gather tool 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "backup_and_restore",
@@ -146,7 +146,7 @@
         "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-targets.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-targets.png",
         "section_hint": "5.26.12.2. Creating OADP service monitor 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "backup_and_restore",
@@ -155,7 +155,7 @@
         "viewer_path": "/wiki/figures/backup_and_restore/oadp-backup-failing-alert.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-backup-failing-alert.png",
         "section_hint": "5.26.12.3. Creating an alerting rule 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "backup_and_restore",
@@ -164,7 +164,7 @@
         "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-query.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-query.png",
         "section_hint": "5.26.12.5. Viewing metrics using the Observe UI 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "disconnected_environments",
@@ -173,7 +173,7 @@
         "viewer_path": "/wiki/figures/disconnected_environments/445_OpenShift_Enclave_support_0724.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/disconnected_environments/445_OpenShift_Enclave_support_0724.png",
         "section_hint": "5.8.1. Enclave 미러링 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "ingress_and_load_balancing",
@@ -182,7 +182,7 @@
         "viewer_path": "/wiki/figures/ingress_and_load_balancing/nw-sharding-route-labels.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/nw-sharding-route-labels.png",
         "section_hint": "2.3.6.5. 경로 라벨을 사용하여 Ingress 컨트롤러 분할 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "ingress_and_load_balancing",
@@ -191,7 +191,7 @@
         "viewer_path": "/wiki/figures/ingress_and_load_balancing/nw-sharding-namespace-labels.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/nw-sharding-namespace-labels.png",
         "section_hint": "2.3.6.6. 네임스페이스 라벨을 사용하여 Ingress 컨트롤러 분할 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "ingress_and_load_balancing",
@@ -200,7 +200,7 @@
         "viewer_path": "/wiki/figures/ingress_and_load_balancing/202_OpenShift_Ingress_0222_node_port.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/202_OpenShift_Ingress_0222_node_port.png",
         "section_hint": "2.4.1. Ingress 컨트롤러 끝점 게시 전략 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "ingress_and_load_balancing",
@@ -209,7 +209,7 @@
         "viewer_path": "/wiki/figures/ingress_and_load_balancing/external-load-balancer-default.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/external-load-balancer-default.png",
         "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "ingress_and_load_balancing",
@@ -218,7 +218,7 @@
         "viewer_path": "/wiki/figures/ingress_and_load_balancing/external-load-balancer-openshift-api.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/external-load-balancer-openshift-api.png",
         "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "ingress_and_load_balancing",
@@ -227,7 +227,7 @@
         "viewer_path": "/wiki/figures/ingress_and_load_balancing/external-load-balancer-machine-config-api.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/external-load-balancer-machine-config-api.png",
         "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "ingress_and_load_balancing",
@@ -236,7 +236,7 @@
         "viewer_path": "/wiki/figures/ingress_and_load_balancing/357_OpenShift_MetalLB_VRF_0823.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/357_OpenShift_MetalLB_VRF_0823.png",
         "section_hint": "4.7.2. MetalLB와 함께 VRF를 사용하여 대칭 라우팅 관리 개요 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "ingress_and_load_balancing",
@@ -245,7 +245,7 @@
         "viewer_path": "/wiki/figures/ingress_and_load_balancing/695_OpenShift_MetalLB_FRRK8s_integration_0624.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/695_OpenShift_MetalLB_FRRK8s_integration_0624.png",
         "section_hint": "4.8. MetalLB 및 FRR-K8의 통합 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "postinstallation_configuration",
@@ -254,7 +254,7 @@
         "viewer_path": "/wiki/figures/postinstallation_configuration/node-tuning-operator-workflow-revised.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/postinstallation_configuration/node-tuning-operator-workflow-revised.png",
         "section_hint": "5.13.2. 사용자 정의 튜닝 사양 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       },
       {
         "book_slug": "postinstallation_configuration",
@@ -263,7 +263,7 @@
         "viewer_path": "/wiki/figures/postinstallation_configuration/rbac.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/postinstallation_configuration/rbac.png",
         "section_hint": "9.2.1.1. 기본 클러스터 역할 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "Cluster-Wide Proxy"
+        "entity_label": "Cluster Wide Proxy"
       }
     ],
     "networking": [
@@ -1083,7 +1083,7 @@
         "viewer_path": "/wiki/figures/backup_and_restore/oadp-must-gather-markdown-output.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-must-gather-markdown-output.png",
         "section_hint": "5.26.11.1. Using the must-gather tool 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "etcd"
+        "entity_label": "Etcd"
       },
       {
         "book_slug": "backup_and_restore",
@@ -1092,7 +1092,7 @@
         "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-targets.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-targets.png",
         "section_hint": "5.26.12.2. Creating OADP service monitor 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "etcd"
+        "entity_label": "Etcd"
       },
       {
         "book_slug": "backup_and_restore",
@@ -1101,7 +1101,7 @@
         "viewer_path": "/wiki/figures/backup_and_restore/oadp-backup-failing-alert.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-backup-failing-alert.png",
         "section_hint": "5.26.12.3. Creating an alerting rule 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "etcd"
+        "entity_label": "Etcd"
       },
       {
         "book_slug": "backup_and_restore",
@@ -1110,7 +1110,7 @@
         "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-query.png/index.html",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-query.png",
         "section_hint": "5.26.12.5. Viewing metrics using the Observe UI 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "entity_label": "etcd"
+        "entity_label": "Etcd"
       }
     ],
     "control-plane-ops": [

@@ -12,6 +12,7 @@ from .intents import (
     LOGGING_RE,
     MCO_RE,
     MONITORING_RE,
+    OBSERVABILITY_RE,
     OCP_RE,
     OPENSHIFT_RE,
     RESTORE_RE,
@@ -59,6 +60,10 @@ def append_core_query_terms(normalized: str, terms: list[str]) -> None:
         terms.append("모니터링")
         if allow_english:
             terms.append("monitoring")
+    if OBSERVABILITY_RE.search(normalized):
+        terms.append("관찰 기능")
+        if allow_english:
+            terms.extend(["observability", "monitoring"])
     if SECURITY_RE.search(normalized):
         terms.append("보안")
         if allow_english:
@@ -113,12 +118,25 @@ def append_core_query_terms(normalized: str, terms: list[str]) -> None:
                     "RHCOS",
                     "kubelet",
                     "CRI-O",
-                ]
+                    "About the Machine Config Operator",
+                    "Machine configuration overview",
+                    ]
             )
     if has_operator_concept_intent(normalized):
         terms.extend(["오퍼레이터", "운영", "관리"])
         if allow_english:
-            terms.extend(["Operator", "controller", "lifecycle", "automation"])
+            terms.extend(
+                [
+                    "Operator",
+                    "operators",
+                    "controller",
+                    "lifecycle",
+                    "automation",
+                    "Operator Lifecycle Manager",
+                    "OLM",
+                    "operator framework",
+                ]
+            )
     if DISCONNECTED_RE.search(normalized):
         terms.append("연결이 끊긴 환경")
         if allow_english:

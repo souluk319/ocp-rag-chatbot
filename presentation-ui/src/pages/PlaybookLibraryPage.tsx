@@ -126,6 +126,44 @@ const WIKI_VISION_MODES: Array<{
   },
 ];
 
+const VISION_COMPARE_COPY: Record<VisionMode, {
+  title: string;
+  eyebrow: string;
+  bullets: string[];
+  cta: string;
+}> = {
+  atlas_canvas: {
+    title: '읽는 중심형',
+    eyebrow: 'Document first',
+    bullets: [
+      '본문을 먼저 읽고, 옆에서 연결 문서와 절차를 확장합니다.',
+      '대표 figure와 관련 문서를 같은 시야 안에 두되 본문 몰입을 해치지 않습니다.',
+      '문서를 읽다가 자연스럽게 옆으로 퍼져 나가는 백과 경험을 노립니다.',
+    ],
+    cta: '이 방식으로 열기',
+  },
+  guided_tour: {
+    title: '행동 유도형',
+    eyebrow: 'Action next',
+    bullets: [
+      '질문에 답하고 끝나지 않고, 다음에 볼 문서와 절차를 바로 제시합니다.',
+      '운영자가 지금 무엇을 먼저 해야 하는지 route처럼 안내합니다.',
+      '챗봇과 문서가 하나의 업무 흐름으로 이어지는 경험을 노립니다.',
+    ],
+    cta: '투어 방식으로 열기',
+  },
+  encyclopedia_world: {
+    title: '맥락 탐험형',
+    eyebrow: 'Context world',
+    bullets: [
+      '한 문서보다 이 문서가 속한 주제 세계와 연결 고리를 먼저 보여줍니다.',
+      '키워드와 연결 문서를 중심으로 큰 그림을 탐험하게 만듭니다.',
+      '지식의 지형도를 먼저 보고 필요한 문서를 파고드는 경험을 노립니다.',
+    ],
+    cta: '맥락 중심으로 열기',
+  },
+};
+
 function nowTime(): string {
   const d = new Date();
   return [d.getHours(), d.getMinutes(), d.getSeconds()]
@@ -227,6 +265,15 @@ function buildFigureAtlasEntries(figures: RuntimeFigureItem[]): FigureAtlasEntry
     });
 }
 
+function buildWorldKeywords(book: LibraryBook): string[] {
+  const slugBits = book.book_slug.split('_').filter(Boolean);
+  const titleBits = book.title
+    .split(/[·,:()\-\/\s]+/)
+    .map((bit) => bit.trim())
+    .filter((bit) => bit.length >= 2);
+  return [...new Set([...slugBits, ...titleBits])].slice(0, 5);
+}
+
 const PlaybookLibraryPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -249,6 +296,8 @@ const PlaybookLibraryPage: React.FC = () => {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [atlasBookFigures, setAtlasBookFigures] = useState<RuntimeFigureItem[]>([]);
   const atlasBookFigureEntries = useMemo(() => buildFigureAtlasEntries(atlasBookFigures), [atlasBookFigures]);
+  const [comparisonBookSlug, setComparisonBookSlug] = useState('');
+  const [comparisonBookFigures, setComparisonBookFigures] = useState<RuntimeFigureItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [repositoryResults, setRepositoryResults] = useState<RepositorySearchResult[]>([]);
   const [repositoryFavorites, setRepositoryFavorites] = useState<RepositoryFavorite[]>([]);
@@ -683,6 +732,42 @@ const PlaybookLibraryPage: React.FC = () => {
   ) ?? null;
   const derivedPlaybooks = summary?.derived_playbook_count ?? 0;
   const activeVision = WIKI_VISION_MODES.find((mode) => mode.id === visionMode) ?? WIKI_VISION_MODES[0];
+  const comparisonCandidates = useMemo(() => {
+    const preferred = operationalWikiBooks.find((book) => book.book_slug === 'advanced_networking');
+    const others = operationalWikiBooks.filter((book) => book.book_slug !== 'advanced_networking').slice(0, 5);
+    return preferred ? [preferred, ...others] : operationalWikiBooks.slice(0, 6);
+  }, [operationalWikiBooks]);
+  useEffect(() => {
+    if (!comparisonCandidates.length) {
+      setComparisonBookSlug('');
+      return;
+    }
+    if (!comparisonBookSlug || !comparisonCandidates.some((book) => book.book_slug === comparisonBookSlug)) {
+      setComparisonBookSlug(comparisonCandidates[0].book_slug);
+    }
+  }, [comparisonBookSlug, comparisonCandidates]);
+  const comparisonBook = useMemo(
+    () => comparisonCandidates.find((book) => book.book_slug === comparisonBookSlug) ?? comparisonCandidates[0] ?? null,
+    [comparisonBookSlug, comparisonCandidates],
+  );
+  useEffect(() => {
+    if (!comparisonBook?.book_slug) {
+      setComparisonBookFigures([]);
+      return;
+    }
+    loadRuntimeFigures(comparisonBook.book_slug, 4)
+      .then((payload) => setComparisonBookFigures(payload.items ?? []))
+      .catch(() => setComparisonBookFigures([]));
+  }, [comparisonBook]);
+  const comparisonFigureEntries = useMemo(() => buildFigureAtlasEntries(comparisonBookFigures), [comparisonBookFigures]);
+  const comparisonWorldKeywords = useMemo(
+    () => (comparisonBook ? buildWorldKeywords(comparisonBook) : []),
+    [comparisonBook],
+  );
+  const comparisonLinkedDocs = useMemo(
+    () => operationalWikiBooks.filter((book) => book.book_slug !== comparisonBook?.book_slug).slice(0, 2),
+    [comparisonBook, operationalWikiBooks],
+  );
   const guidedTourShelfSteps = useMemo(() => operationalWikiBooks.slice(0, 3), [operationalWikiBooks]);
   const guidedTourShelfDocs = useMemo(() => operationalWikiBooks.slice(3, 5), [operationalWikiBooks]);
   const atlasReadingBooks = useMemo(() => operationalWikiBooks.slice(0, 3), [operationalWikiBooks]);
@@ -718,7 +803,7 @@ const PlaybookLibraryPage: React.FC = () => {
       <header className="library-header">
         <div className="header-container">
           <div className="header-content">
-            <button className="back-btn" onClick={() => navigate('/studio')}>
+            <button className="back-btn" onClick={() => navigate('/')}>
               <ArrowLeft size={20} />
             </button>
             <div className="header-text">
@@ -753,6 +838,117 @@ const PlaybookLibraryPage: React.FC = () => {
       <main className="library-main">
         {viewMode === 'monitoring' ? (
           <div className="monitoring-view">
+            {comparisonBook && (
+              <section className="vision-compare box-container">
+                <div className="vision-compare-header">
+                  <div>
+                    <span className="vision-compare-eyebrow">Viewer Compare</span>
+                    <h2>같은 문서를 3안으로 비교해보기</h2>
+                    <p>
+                      같은 문서 하나를 기준으로, 어떤 viewer가 우리 위키 대백과의 중심이 되어야 하는지 바로 비교합니다.
+                    </p>
+                  </div>
+                  <div className="vision-compare-book-picker" role="tablist" aria-label="comparison document picker">
+                    {comparisonCandidates.map((book) => (
+                      <button
+                        key={book.book_slug}
+                        type="button"
+                        className={`vision-compare-book-chip ${comparisonBook.book_slug === book.book_slug ? 'active' : ''}`}
+                        onClick={() => setComparisonBookSlug(book.book_slug)}
+                      >
+                        {book.title}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="vision-compare-book-meta">
+                  <span>{comparisonBook.title}</span>
+                  <span>{comparisonBook.section_count} sections</span>
+                  <span>{comparisonBook.grade}</span>
+                  <span>{comparisonBook.book_slug.replace(/_/g, ' ')}</span>
+                </div>
+                <div className="vision-compare-grid">
+                  {WIKI_VISION_MODES.map((mode) => {
+                    const copy = VISION_COMPARE_COPY[mode.id];
+                    const isActive = visionMode === mode.id;
+                    return (
+                      <article key={mode.id} className={`vision-compare-card ${isActive ? 'active' : ''}`}>
+                        <div className="vision-compare-card-top">
+                          <span className="vision-compare-card-eyebrow">{copy.eyebrow}</span>
+                          <span className="vision-compare-card-mode">{mode.label}</span>
+                        </div>
+                        <h3>{copy.title}</h3>
+                        <p className="vision-compare-card-summary">{mode.summary}</p>
+                        <ul className="vision-compare-bullets">
+                          {copy.bullets.map((bullet) => (
+                            <li key={bullet}>{bullet}</li>
+                          ))}
+                        </ul>
+                        <div className="vision-compare-signals">
+                          <span>본문 {mode.id === 'atlas_canvas' ? '강조' : mode.id === 'guided_tour' ? '요약 후 이동' : '주제의 일부'}</span>
+                          <span>절차 {mode.id === 'guided_tour' ? '전면' : '보조'}</span>
+                          <span>figure {mode.id === 'atlas_canvas' ? '같은 시야' : mode.id === 'encyclopedia_world' ? '맥락 자산' : '선택 노출'}</span>
+                        </div>
+                        {mode.id === 'atlas_canvas' && (
+                          <div className="vision-compare-mini-preview">
+                            <div className="vision-compare-mini-kicker">Reading core + side context</div>
+                            <strong>{comparisonBook.title}</strong>
+                            <span>본문을 중심으로 연결 문서와 figure를 옆에서 확장합니다.</span>
+                            <div className="vision-compare-inline-list">
+                              {comparisonFigureEntries.slice(0, 2).map((figure) => (
+                                <span key={figure.key}>{figure.kind}</span>
+                              ))}
+                              {comparisonLinkedDocs.slice(0, 1).map((book) => (
+                                <span key={book.book_slug}>{book.title}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {mode.id === 'guided_tour' && (
+                          <div className="vision-compare-mini-preview vision-compare-mini-route">
+                            <div className="vision-compare-mini-kicker">Answer -&gt; next route</div>
+                            <div className="vision-compare-route-step">
+                              <strong>Start Here</strong>
+                              <span>{comparisonBook.title}</span>
+                            </div>
+                            <div className="vision-compare-route-step">
+                              <strong>Then Open</strong>
+                              <span>{comparisonLinkedDocs[0]?.title ?? '연결 문서 1개'}</span>
+                            </div>
+                            <div className="vision-compare-route-step">
+                              <strong>Verify</strong>
+                              <span>{comparisonLinkedDocs[1]?.title ?? '검증 문서 1개'}</span>
+                            </div>
+                          </div>
+                        )}
+                        {mode.id === 'encyclopedia_world' && (
+                          <div className="vision-compare-mini-preview vision-compare-mini-world">
+                            <div className="vision-compare-mini-kicker">Topic world + connected knowledge</div>
+                            <strong>{comparisonBook.title}</strong>
+                            <div className="vision-compare-inline-list">
+                              {comparisonWorldKeywords.map((keyword) => (
+                                <span key={keyword}>{keyword}</span>
+                              ))}
+                            </div>
+                            <span>이 문서를 주제 세계의 한 노드로 보고 연결 키워드를 따라 탐험합니다.</span>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          className="vision-compare-open-btn"
+                          onClick={() => {
+                            setVisionMode(mode.id);
+                            setBookViewer(comparisonBook);
+                          }}
+                        >
+                          {copy.cta}
+                        </button>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
             <section className="wiki-vision-lab box-container">
               <div className="wiki-vision-lab-header">
                 <div>
@@ -1726,70 +1922,84 @@ const PlaybookLibraryPage: React.FC = () => {
                   </div>
                 )}
               </div>
-              <button className="preview-close-btn" onClick={() => setBookViewer(null)}><X size={18} /></button>
-            </div>
-            {visionMode === 'atlas_canvas' && (
-              <div className="book-preview-atlas">
-                <div className="book-preview-atlas-lane">
-                  <div className="book-preview-atlas-label">Reading Spine</div>
-                  <div className="book-preview-atlas-card">
-                    <div className="book-preview-atlas-meta-row">
-                      <span className="book-preview-atlas-kind">Document</span>
-                      <span className="book-preview-atlas-intent">Read</span>
-                    </div>
-                    <strong>{bookViewer.title}</strong>
-                    <span>{bookViewer.book_slug.replace(/_/g, ' ')}</span>
-                  </div>
-                </div>
-                <div className="book-preview-atlas-lane">
-                  <div className="book-preview-atlas-label">Visual Memory</div>
-                  {atlasBookFigureEntries.length > 0 ? (
-                    atlasBookFigureEntries.map((figure, index) => (
-                      <a
-                        key={`${figure.key}-${index}`}
-                        className={`book-preview-atlas-card book-preview-atlas-card-link${figure.isCluster ? ' book-preview-atlas-card-cluster' : ''}`}
-                        href={toRuntimeUrl(figure.href)}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        <div className="book-preview-atlas-meta-row">
-                          <span className="book-preview-atlas-kind">{figure.kind}</span>
-                          <span className="book-preview-atlas-intent">{figure.intent}</span>
-                        </div>
-                        {typeof figure.count === 'number' ? (
-                          <span className="book-preview-atlas-count">{figure.count} linked visuals</span>
-                        ) : null}
-                        {figure.thumbUrl ? (
-                          <div
-                            className="book-preview-atlas-thumb"
-                            style={{ backgroundImage: `url(${figure.thumbUrl})` }}
-                            aria-hidden="true"
-                          />
-                        ) : null}
-                        <strong>{figure.title}</strong>
-                        <span>{figure.subtitle}</span>
-                        <span className="book-preview-atlas-why">{figure.why}</span>
-                      </a>
-                    ))
-                  ) : (
-                    <div className="book-preview-atlas-card book-preview-atlas-card-muted">
-                      <strong>Figure 없음</strong>
-                      <span>현재 book에 연결된 figure asset이 아직 없습니다.</span>
-                    </div>
-                  )}
-                </div>
+              <div className="preview-header-actions">
+                {bookViewer.viewer_path ? (
+                  <a
+                    className="preview-open-full-btn"
+                    href={toRuntimeUrl(bookViewer.viewer_path)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    전체 문서 열기
+                  </a>
+                ) : null}
+                <button className="preview-close-btn" onClick={() => setBookViewer(null)}><X size={18} /></button>
               </div>
-            )}
+            </div>
             <div className="preview-body">
-              {bookViewer.viewer_path ? (
-                <iframe
-                  title={bookViewer.title}
-                  className="preview-viewer-frame"
-                  src={toRuntimeUrl(bookViewer.viewer_path)}
-                />
-              ) : (
-                <div className="preview-no-sections">뷰어 경로가 없는 북입니다.</div>
+              {visionMode === 'atlas_canvas' && (
+                <aside className="book-preview-atlas-sidebar">
+                  <div className="book-preview-atlas-lane">
+                    <div className="book-preview-atlas-label">Reading Spine</div>
+                    <div className="book-preview-atlas-card">
+                      <div className="book-preview-atlas-meta-row">
+                        <span className="book-preview-atlas-kind">Document</span>
+                        <span className="book-preview-atlas-intent">Read</span>
+                      </div>
+                      <strong>{bookViewer.title}</strong>
+                      <span>{bookViewer.book_slug.replace(/_/g, ' ')}</span>
+                    </div>
+                  </div>
+                  <div className="book-preview-atlas-lane">
+                    <div className="book-preview-atlas-label">Visual Memory</div>
+                    {atlasBookFigureEntries.length > 0 ? (
+                      atlasBookFigureEntries.map((figure, index) => (
+                        <a
+                          key={`${figure.key}-${index}`}
+                          className={`book-preview-atlas-card book-preview-atlas-card-link${figure.isCluster ? ' book-preview-atlas-card-cluster' : ''}`}
+                          href={toRuntimeUrl(figure.href)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <div className="book-preview-atlas-meta-row">
+                            <span className="book-preview-atlas-kind">{figure.kind}</span>
+                            <span className="book-preview-atlas-intent">{figure.intent}</span>
+                          </div>
+                          {typeof figure.count === 'number' ? (
+                            <span className="book-preview-atlas-count">{figure.count} linked visuals</span>
+                          ) : null}
+                          {figure.thumbUrl ? (
+                            <div
+                              className="book-preview-atlas-thumb"
+                              style={{ backgroundImage: `url(${figure.thumbUrl})` }}
+                              aria-hidden="true"
+                            />
+                          ) : null}
+                          <strong>{figure.title}</strong>
+                          <span>{figure.subtitle}</span>
+                          <span className="book-preview-atlas-why">{figure.why}</span>
+                        </a>
+                      ))
+                    ) : (
+                      <div className="book-preview-atlas-card book-preview-atlas-card-muted">
+                        <strong>Figure 없음</strong>
+                        <span>현재 book에 연결된 figure asset이 아직 없습니다.</span>
+                      </div>
+                    )}
+                  </div>
+                </aside>
               )}
+              <div className="preview-viewer-shell">
+                {bookViewer.viewer_path ? (
+                  <iframe
+                    title={bookViewer.title}
+                    className="preview-viewer-frame"
+                    src={toRuntimeUrl(bookViewer.viewer_path)}
+                  />
+                ) : (
+                  <div className="preview-no-sections">뷰어 경로가 없는 북입니다.</div>
+                )}
+              </div>
             </div>
           </div>
         </div>

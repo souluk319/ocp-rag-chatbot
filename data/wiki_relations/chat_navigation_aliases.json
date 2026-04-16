@@ -1,7 +1,7 @@
 {
   "advanced_networking": [
     {
-      "label": "Cluster-Wide Proxy",
+      "label": "Cluster Wide Proxy",
       "href": "/wiki/entities/cluster-wide-proxy/index.html",
       "kind": "entity"
     },
@@ -67,7 +67,7 @@
   ],
   "backup_and_restore": [
     {
-      "label": "etcd",
+      "label": "Etcd",
       "href": "/wiki/entities/etcd/index.html",
       "kind": "entity"
     },
@@ -77,7 +77,7 @@
       "kind": "entity"
     },
     {
-      "label": "Cluster-Wide Proxy",
+      "label": "Cluster Wide Proxy",
       "href": "/wiki/entities/cluster-wide-proxy/index.html",
       "kind": "entity"
     },
@@ -111,7 +111,7 @@
   ],
   "disconnected_environments": [
     {
-      "label": "Cluster-Wide Proxy",
+      "label": "Cluster Wide Proxy",
       "href": "/wiki/entities/cluster-wide-proxy/index.html",
       "kind": "entity"
     },
@@ -133,7 +133,7 @@
   ],
   "etcd": [
     {
-      "label": "etcd",
+      "label": "Etcd",
       "href": "/wiki/entities/etcd/index.html",
       "kind": "entity"
     },
@@ -177,7 +177,7 @@
   ],
   "ingress_and_load_balancing": [
     {
-      "label": "Cluster-Wide Proxy",
+      "label": "Cluster Wide Proxy",
       "href": "/wiki/entities/cluster-wide-proxy/index.html",
       "kind": "entity"
     },
@@ -221,7 +221,7 @@
   ],
   "installing_on_any_platform": [
     {
-      "label": "Cluster-Wide Proxy",
+      "label": "Cluster Wide Proxy",
       "href": "/wiki/entities/cluster-wide-proxy/index.html",
       "kind": "entity"
     },
@@ -331,7 +331,7 @@
   ],
   "networking_overview": [
     {
-      "label": "Cluster-Wide Proxy",
+      "label": "Cluster Wide Proxy",
       "href": "/wiki/entities/cluster-wide-proxy/index.html",
       "kind": "entity"
     },
@@ -441,7 +441,7 @@
   ],
   "postinstallation_configuration": [
     {
-      "label": "Cluster-Wide Proxy",
+      "label": "Cluster Wide Proxy",
       "href": "/wiki/entities/cluster-wide-proxy/index.html",
       "kind": "entity"
     },

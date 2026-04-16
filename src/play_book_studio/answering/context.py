@@ -119,6 +119,49 @@ def _procedure_chunk_priority(hit: RetrievalHit) -> int:
     return 3
 
 
+def _compare_context_priority(hit: RetrievalHit) -> tuple[int, int]:
+    book_priority = {
+        "overview": 0,
+        "architecture": 1,
+        "security_and_compliance": 4,
+    }.get(hit.book_slug, 8)
+    lowered_section = (hit.section or "").lower()
+    lowered_anchor = (hit.anchor or "").lower()
+    positive_rank = 0 if any(
+        token in lowered_section or token in lowered_anchor
+        for token in (
+            "유사점",
+            "차이점",
+            "개요",
+            "소개",
+            "similarities",
+            "differences",
+            "overview",
+            "introduction",
+        )
+    ) else 1
+    return (book_priority, positive_rank)
+
+
+def _backup_only_etcd_context_priority(hit: RetrievalHit) -> tuple[int, int]:
+    lowered_section = (hit.section or "").lower()
+    lowered_text = (hit.text or "").lower()
+    is_backup = any(token in lowered_section for token in ("백업", "backup")) or any(
+        token in lowered_text for token in ("cluster-backup.sh", "oc debug --as-root node", "chroot /host")
+    )
+    is_restore = any(token in lowered_section for token in ("복원", "restore")) or any(
+        token in lowered_text for token in ("cluster-restore.sh", "snapshot restore", "이전 클러스터 상태로 복원")
+    )
+    book_priority = {
+        "postinstallation_configuration": 0,
+        "hosted_control_planes": 1,
+        "backup_and_restore": 2,
+        "etcd": 3,
+    }.get(hit.book_slug, 8)
+    phase_priority = 0 if is_backup else 2 if is_restore else 1
+    return (phase_priority, book_priority)
+
+
 def _is_backup_only_etcd_query(query: str) -> bool:
     lowered = (query or "").lower()
     return "etcd" in lowered and "백업" in query and not any(
@@ -381,15 +424,29 @@ def _select_hits(
 
     if has_operator_concept_intent(normalized):
         preferred_order = {
-            "extensions": 0,
-            "overview": 1,
-            "architecture": 2,
-            "operators": 3,
+            "operators": 0,
+            "extensions": 1,
+            "overview": 2,
+            "architecture": 3,
+            "installation_overview": 4,
         }
         ranked_hits = sorted(
             ranked_hits,
             key=lambda hit: (
                 preferred_order.get(hit.book_slug, 9),
+                -_hit_score(hit),
+                hit.book_slug,
+                hit.chunk_id,
+            ),
+        )
+        support_window = ranked_hits[: max(max_chunks * 2, 6)]
+        top_score = _hit_score(support_window[0])
+        top_book = support_window[0].book_slug
+    elif has_openshift_kubernetes_compare_intent(normalized):
+        ranked_hits = sorted(
+            ranked_hits,
+            key=lambda hit: (
+                *_compare_context_priority(hit),
                 -_hit_score(hit),
                 hit.book_slug,
                 hit.chunk_id,
@@ -468,18 +525,11 @@ def _select_hits(
         top_score = _hit_score(support_window[0])
         top_book = support_window[0].book_slug
     elif _is_backup_only_etcd_query(normalized):
-        preferred_order = {
-            "backup_and_restore": 0,
-            "etcd": 1,
-            "postinstallation_configuration": 2,
-            "hosted_control_planes": 3,
-            "updating_clusters": 4,
-        }
         ranked_hits = sorted(
             ranked_hits,
             key=lambda hit: (
+                *_backup_only_etcd_context_priority(hit),
                 _procedure_chunk_priority(hit),
-                preferred_order.get(hit.book_slug, 9),
                 -_hit_score(hit),
                 hit.book_slug,
                 hit.chunk_id,
@@ -635,9 +685,31 @@ def _select_hits(
     allowed_books = {top_book}
     locked_allowed_books = False
     if has_operator_concept_intent(normalized):
-        for book_slug in ("overview", "extensions", "operators", "architecture"):
-            if best_book_scores.get(book_slug, 0.0) >= top_score * 0.62:
-                allowed_books.add(book_slug)
+        operator_family = tuple(
+            book_slug
+            for book_slug in ("operators", "extensions", "overview")
+            if best_book_scores.get(book_slug, 0.0) > 0.0
+        )
+        if operator_family:
+            allowed_books = set(operator_family)
+            locked_allowed_books = True
+        else:
+            for book_slug in ("operators", "extensions", "overview", "architecture", "installation_overview"):
+                if best_book_scores.get(book_slug, 0.0) >= top_score * 0.62:
+                    allowed_books.add(book_slug)
+    if has_openshift_kubernetes_compare_intent(normalized):
+        compare_books = tuple(
+            book_slug
+            for book_slug in ("overview", "architecture")
+            if best_book_scores.get(book_slug, 0.0) > 0.0
+        )
+        if compare_books:
+            allowed_books = set(compare_books)
+            locked_allowed_books = True
+        else:
+            for book_slug in ("overview", "architecture", "security_and_compliance"):
+                if best_book_scores.get(book_slug, 0.0) >= top_score * 0.62:
+                    allowed_books.add(book_slug)
     if is_generic_intro_query(normalized):
         intro_books = tuple(
             book_slug
@@ -693,10 +765,10 @@ def _select_hits(
         operational_books = tuple(
             book_slug
             for book_slug in (
-                "backup_and_restore",
-                "etcd",
                 "postinstallation_configuration",
                 "hosted_control_planes",
+                "backup_and_restore",
+                "etcd",
                 "updating_clusters",
             )
             if best_book_scores.get(book_slug, 0.0) > 0.0
@@ -706,10 +778,10 @@ def _select_hits(
             locked_allowed_books = True
         else:
             for book_slug in (
-                "backup_and_restore",
-                "etcd",
                 "postinstallation_configuration",
                 "hosted_control_planes",
+                "backup_and_restore",
+                "etcd",
                 "updating_clusters",
             ):
                 if best_book_scores.get(book_slug, 0.0) >= top_score * 0.5:
@@ -832,6 +904,19 @@ def _select_hits(
         selected.append(hit)
         per_book_counts[hit.book_slug] += 1
         seen_sections.add(section_signature)
+
+    if _is_backup_only_etcd_query(normalized):
+        standard_books = ("postinstallation_configuration", "hosted_control_planes")
+        if not any(hit.book_slug in standard_books for hit in selected):
+            for hit in ranked_hits:
+                if hit.book_slug not in standard_books:
+                    continue
+                section_signature = (hit.book_slug, _section_core(hit.section))
+                if section_signature in seen_sections:
+                    continue
+                selected.insert(0, hit)
+                selected = selected[:max_chunks]
+                break
 
     if (
         has_project_terminating_intent(normalized) or has_project_finalizer_intent(normalized)

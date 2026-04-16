@@ -1,0 +1,18 @@
+{
+  "task_id": "ui_identity_lock_20260416",
+  "lane_id": "explorer",
+  "role": "explorer",
+  "status": "done",
+  "code_paths": [
+    "src/play_book_studio/cli.py",
+    "src/play_book_studio/app/runtime_report.py",
+    "src/play_book_studio/app/server.py",
+    "tests/test_entrypoint_cleanup.py"
+  ],
+  "artifacts": [],
+  "validation": [],
+  "summary": {
+    "remaining_identity_drift": "shared 5173 default and surface naming were distributed across runtime entrypoints and tests",
+    "resolved_in_main_lane": true
+  }
+}

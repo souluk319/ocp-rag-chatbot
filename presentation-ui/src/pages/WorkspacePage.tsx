@@ -32,8 +32,10 @@ import {
 import gsap from 'gsap';
 import './WorkspacePage.css';
 import {
+  type ChatResponse,
   type ChatCitation,
   type ChatRelatedLink,
+  type ChatTraceEvent,
   type CustomerPackBook,
   type CustomerPackDraft,
   type DerivedAsset,
@@ -63,9 +65,11 @@ import {
   removeWikiOverlay,
   saveWikiOverlay,
   sendChat,
+  sendChatStream,
   toRuntimeUrl,
   uploadCustomerPackDraft,
 } from '../lib/runtimeApi';
+import WorkspaceTracePanel from '../components/WorkspaceTracePanel';
 
 type WorkspaceManualBook = LibraryBook & {
   library_group?: string;
@@ -97,6 +101,17 @@ interface Message {
   primaryBoundaryBadge?: string;
   primaryPublicationState?: string;
   primaryApprovalState?: string;
+  rewrittenQuery?: string;
+  retrievalTrace?: Record<string, unknown>;
+  pipelineTrace?: Record<string, unknown>;
+  traceEvents?: ChatTraceEvent[];
+}
+
+interface WorkspaceTestTrace {
+  query: string;
+  sessionId: string;
+  events: ChatTraceEvent[];
+  result?: ChatResponse | null;
 }
 
 interface SourceEntry {
@@ -1426,6 +1441,8 @@ export default function WorkspacePage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [query, setQuery] = useState('');
   const [sessionId, setSessionId] = useState(() => makeId('ID'));
+  const [testMode, setTestMode] = useState(false);
+  const [activeTestTrace, setActiveTestTrace] = useState<WorkspaceTestTrace | null>(null);
   const [activeSourceId, setActiveSourceId] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewState>({ kind: 'empty' });
   const [atlasFigures, setAtlasFigures] = useState<RuntimeFigureItem[]>([]);
@@ -1747,6 +1764,26 @@ export default function WorkspacePage() {
       });
     }
   }, [messages, userScrolledUp]);
+
+  useEffect(() => {
+    if (!testMode || userScrolledUp) {
+      return;
+    }
+    const container = chatMessagesRef.current;
+    if (!container) {
+      return;
+    }
+    requestAnimationFrame(() => {
+      try {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth',
+        });
+      } catch {
+        container.scrollTop = container.scrollHeight;
+      }
+    });
+  }, [testMode, activeTestTrace?.events.length, activeTestTrace?.result?.answer, userScrolledUp]);
 
   useEffect(() => {
     let animated = false;
@@ -2282,14 +2319,43 @@ export default function WorkspacePage() {
     setIsSending(true);
 
     try {
-      const response = await sendChat({
+      const requestPayload = {
         query: trimmed,
         sessionId,
         mode: 'ops',
         userId: WIKI_OVERLAY_USER_ID,
         selectedDraftIds: activeDraft ? [activeDraft.draft_id] : [],
         restrictUploadedSources: Boolean(activeDraft),
-      });
+      };
+      let response: ChatResponse;
+      if (testMode) {
+        setActiveTestTrace({
+          query: trimmed,
+          sessionId,
+          events: [],
+          result: null,
+        });
+        response = await sendChatStream(requestPayload, (event) => {
+          if (event.type === 'trace') {
+            setActiveTestTrace((current) => ({
+              query: current?.query ?? trimmed,
+              sessionId: current?.sessionId ?? sessionId,
+              events: [...(current?.events ?? []), event],
+              result: current?.result ?? null,
+            }));
+          }
+          if (event.type === 'result') {
+            setActiveTestTrace((current) => ({
+              query: current?.query ?? trimmed,
+              sessionId: event.payload.session_id || current?.sessionId || sessionId,
+              events: current?.events ?? [],
+              result: event.payload,
+            }));
+          }
+        });
+      } else {
+        response = await sendChat(requestPayload);
+      }
       const primaryTruth = primaryCitationTruth(response.citations);
 
       setSessionId(response.session_id || sessionId);
@@ -2311,14 +2377,43 @@ export default function WorkspacePage() {
           primaryBoundaryBadge: primaryTruth?.boundaryBadge,
           primaryPublicationState: primaryTruth?.publicationState,
           primaryApprovalState: primaryTruth?.approvalState,
+          rewrittenQuery: response.rewritten_query,
+          retrievalTrace: response.retrieval_trace,
+          pipelineTrace: response.pipeline_trace,
+          traceEvents: response.pipeline_trace?.events ?? (testMode ? activeTestTrace?.events ?? [] : []),
         },
       ]);
+      if (testMode) {
+        setActiveTestTrace((current) => ({
+          query: current?.query ?? trimmed,
+          sessionId: response.session_id || current?.sessionId || sessionId,
+          events: response.pipeline_trace?.events ?? current?.events ?? [],
+          result: response,
+        }));
+      }
 
       if (response.citations?.[0]) {
         await handleCitationClick(response.citations[0]);
       }
     } catch (error) {
       console.error(error);
+      if (testMode && error instanceof Error) {
+        setActiveTestTrace((current) => ({
+          query: current?.query ?? trimmed,
+          sessionId: current?.sessionId ?? sessionId,
+          events: [
+            ...(current?.events ?? []),
+            {
+              type: 'trace',
+              step: 'stream_error',
+              label: 'Stream Error',
+              status: 'error',
+              detail: error.message,
+            },
+          ],
+          result: current?.result ?? null,
+        }));
+      }
       window.alert(error instanceof Error ? error.message : '질문 처리 중 오류가 발생했습니다.');
     } finally {
       setIsSending(false);
@@ -2569,6 +2664,13 @@ export default function WorkspacePage() {
             <div className="status-dot"></div>
             <span className="session-id-text">{sessionId}</span>
           </div>
+          <button
+            className={`nav-btn test-mode-btn ${testMode ? 'active' : ''}`}
+            onClick={() => setTestMode((current) => !current)}
+            type="button"
+          >
+            TEST
+          </button>
           <button className="nav-btn" onClick={() => navigate('/playbook-library')} type="button">Playbook Library</button>
           <button className="nav-btn lang-btn" type="button">
             <Languages size={18} />
@@ -3174,7 +3276,9 @@ export default function WorkspacePage() {
                   <div className="header-icon"><BookOpen size={18} /></div>
                   <div className="panel-header-copy">
                     <h3>{viewerSurfaceTitle}</h3>
-                    <span className="viewer-vision-badge">{visionMode === 'guided_tour' ? 'Guided Tour Active' : activeVision.label}</span>
+                    <span className={`viewer-vision-badge ${testMode ? 'viewer-vision-badge-test' : ''}`}>
+                      {testMode ? 'TEST' : visionMode === 'guided_tour' ? 'Guided Tour Active' : activeVision.label}
+                    </span>
                   </div>
 
                   <button className="header-action-btn" type="button" onClick={toggleRightPanel} title="Close panel" style={{ marginLeft: 'auto' }}>
@@ -3280,14 +3384,23 @@ export default function WorkspacePage() {
               )}
 
               <div className="source-viewer-content viewer-surface">
-                {preview.kind === 'empty' && (
+                {testMode && (
+                  <WorkspaceTracePanel
+                    query={activeTestTrace?.query ?? query}
+                    events={activeTestTrace?.events ?? []}
+                    result={activeTestTrace?.result}
+                    isSending={isSending}
+                  />
+                )}
+
+                {!testMode && preview.kind === 'empty' && (
                   <div className="empty-state">
                     <div className="empty-icon"><BookOpen size={48} className="text-dim" /></div>
                     <h4>{visionMode === 'guided_tour' ? '투어 문서를 여세요' : '문서를 선택하세요'}</h4>
                   </div>
                 )}
 
-                {preview.kind === 'loading' && (
+                {!testMode && preview.kind === 'loading' && (
                   <div className="empty-state">
                     <div className="loading-spinner-small"></div>
                     <h4>{preview.title}</h4>
@@ -3295,7 +3408,7 @@ export default function WorkspacePage() {
                   </div>
                 )}
 
-                {preview.kind === 'viewer' && (() => {
+                {!testMode && preview.kind === 'viewer' && (() => {
                   const previewTruth = truthSurfaceCopy(preview.meta);
                   const guidedViewerStop = visionMode === 'guided_tour'
                     ? preview.meta?.section_path_label || preview.subtitle || preview.title
@@ -3504,7 +3617,7 @@ export default function WorkspacePage() {
                   );
                 })()}
 
-                {preview.kind === 'draft' && (() => {
+                {!testMode && preview.kind === 'draft' && (() => {
                   const draftTruth = truthSurfaceCopy(preview.book ?? preview.draft);
                   return (
                     <div className="document-page animate-in">

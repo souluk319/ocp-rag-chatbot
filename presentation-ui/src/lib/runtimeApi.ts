@@ -147,6 +147,7 @@ export interface ChatCitation {
   book_slug: string;
   book_title?: string;
   section: string;
+  section_path?: string;
   viewer_path: string;
   source_label?: string;
   source_collection?: string;
@@ -161,11 +162,14 @@ export interface ChatCitation {
 }
 
 export interface ChatTraceEvent {
+  type?: string;
   step: string;
   label: string;
   status: string;
   detail?: string;
   timestamp_ms?: number;
+  duration_ms?: number;
+  meta?: Record<string, unknown>;
 }
 
 export interface ChatRelatedLink {
@@ -278,6 +282,7 @@ export interface WikiOverlaySignalsResponse {
 
 export interface ChatResponse {
   answer: string;
+  rewritten_query?: string;
   citations: ChatCitation[];
   warnings: string[];
   session_id: string;
@@ -293,10 +298,32 @@ export interface ChatResponse {
     confirm_label: string;
     repository_query: string;
   };
+  retrieval_trace?: Record<string, unknown>;
   pipeline_trace?: {
+    timings_ms?: Record<string, number>;
+    selection?: {
+      selected_hits?: Array<Record<string, unknown>>;
+    };
+    llm?: Record<string, unknown>;
     events?: ChatTraceEvent[];
-  };
+  } & Record<string, unknown>;
 }
+
+export interface ChatStreamResultEvent {
+  type: 'result';
+  payload: ChatResponse;
+}
+
+export interface ChatStreamTraceEnvelope extends ChatTraceEvent {
+  type: 'trace';
+}
+
+export interface ChatStreamErrorEvent {
+  type: 'error';
+  error: string;
+}
+
+export type ChatStreamEvent = ChatStreamResultEvent | ChatStreamTraceEnvelope | ChatStreamErrorEvent;
 
 export interface DerivedAsset {
   asset_slug: string;
@@ -526,11 +553,14 @@ export interface SessionSnapshot {
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers ?? {});
+  const hasBody = init?.body !== undefined && init?.body !== null;
+  const isFormData = typeof FormData !== 'undefined' && init?.body instanceof FormData;
+  if (hasBody && !isFormData && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
   const response = await fetch(`${RUNTIME_ORIGIN}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers ?? {}),
-    },
+    headers,
     ...init,
   });
   if (!response.ok) {
@@ -642,6 +672,83 @@ export async function sendChat(payload: {
   });
 }
 
+export async function sendChatStream(
+  payload: {
+    query: string;
+    sessionId: string;
+    mode?: string;
+    userId?: string;
+    selectedDraftIds?: string[];
+    restrictUploadedSources?: boolean;
+  },
+  onEvent: (event: ChatStreamEvent) => void,
+): Promise<ChatResponse> {
+  const response = await fetch(`${RUNTIME_ORIGIN}/api/chat/stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      query: payload.query,
+      session_id: payload.sessionId,
+      mode: payload.mode ?? 'ops',
+      user_id: payload.userId ?? '',
+      selected_draft_ids: payload.selectedDraftIds ?? [],
+      restrict_uploaded_sources: payload.restrictUploadedSources ?? false,
+    }),
+  });
+  if (!response.ok || !response.body) {
+    throw new Error(`${response.status} ${response.statusText}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let resultPayload: ChatResponse | null = null;
+
+  while (true) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
+
+    let newlineIndex = buffer.indexOf('\n');
+    while (newlineIndex >= 0) {
+      const line = buffer.slice(0, newlineIndex).trim();
+      buffer = buffer.slice(newlineIndex + 1);
+      if (line) {
+        const event = JSON.parse(line) as ChatStreamEvent;
+        onEvent(event);
+        if (event.type === 'error') {
+          throw new Error(event.error || 'stream error');
+        }
+        if (event.type === 'result') {
+          resultPayload = event.payload;
+        }
+      }
+      newlineIndex = buffer.indexOf('\n');
+    }
+
+    if (done) {
+      break;
+    }
+  }
+
+  if (buffer.trim()) {
+    const event = JSON.parse(buffer.trim()) as ChatStreamEvent;
+    onEvent(event);
+    if (event.type === 'error') {
+      throw new Error(event.error || 'stream error');
+    }
+    if (event.type === 'result') {
+      resultPayload = event.payload;
+    }
+  }
+
+  if (!resultPayload) {
+    throw new Error('stream completed without final result');
+  }
+  return resultPayload;
+}
+
 export async function loadSourceMeta(viewerPath: string): Promise<SourceMetaResponse> {
   return requestJson<SourceMetaResponse>(`/api/source-meta?viewer_path=${encodeURIComponent(viewerPath)}`);
 }
@@ -691,30 +798,17 @@ function inferSourceType(file: File): string {
   return 'web';
 }
 
-async function fileToBase64(file: File): Promise<string> {
-  const buffer = await file.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  const chunkSize = 0x8000;
-  for (let index = 0; index < bytes.length; index += chunkSize) {
-    const chunk = bytes.subarray(index, index + chunkSize);
-    binary += String.fromCharCode(...chunk);
-  }
-  return btoa(binary);
-}
-
 export async function uploadCustomerPackDraft(file: File): Promise<CustomerPackDraft> {
-  const payload = {
-    source_type: inferSourceType(file),
-    uri: file.name,
-    title: file.name.replace(/\.[^.]+$/, ''),
-    language_hint: 'ko',
-    file_name: file.name,
-    content_base64: await fileToBase64(file),
-  };
+  const payload = new FormData();
+  payload.append('source_type', inferSourceType(file));
+  payload.append('uri', file.name);
+  payload.append('title', file.name.replace(/\.[^.]+$/, ''));
+  payload.append('language_hint', 'ko');
+  payload.append('file_name', file.name);
+  payload.append('file', file, file.name);
   return requestJson<CustomerPackDraft>('/api/customer-packs/upload-draft', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: payload,
   });
 }
 

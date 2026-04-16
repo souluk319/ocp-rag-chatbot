@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-04-15T05:53:36+00:00",
+  "generated_at_utc": "2026-04-16T06:54:52+00:00",
   "book_count": 29,
   "entries": {
     "advanced_networking": [
@@ -15,7 +15,7 @@
         "section_hint": "6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -36,7 +36,7 @@
         "section_hint": "6.1.3.3. VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -57,7 +57,7 @@
         "section_hint": "7.1.1. PTP 도메인의 요소 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -78,7 +78,7 @@
         "section_hint": "7.1.3. PTP 할 마스터 클록에 대한 GNSS 타이밍 개요 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -99,7 +99,7 @@
         "section_hint": "7.1.5. 2 카드 E810 NIC 구성 참조 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -120,7 +120,7 @@
         "section_hint": "7.1.7. 3-card Intel E810 PTP grandmaster 클록 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -141,7 +141,7 @@
         "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -162,7 +162,7 @@
         "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -183,7 +183,7 @@
         "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -204,7 +204,7 @@
         "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -225,7 +225,7 @@
         "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -246,7 +246,7 @@
         "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -267,7 +267,7 @@
         "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -288,7 +288,7 @@
         "section_hint": "7.3.2. PTP 이벤트 REST API v2를 사용하여 PTP 이벤트 검색 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -547,7 +547,7 @@
         "section_hint": "5.26.11.1. Using the must-gather tool 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "etcd",
+            "label": "Etcd",
             "href": "/wiki/entities/etcd/index.html"
           },
           {
@@ -555,7 +555,7 @@
             "href": "/wiki/entities/control-plane-nodes/index.html"
           },
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -576,7 +576,7 @@
         "section_hint": "5.26.12.2. Creating OADP service monitor 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "etcd",
+            "label": "Etcd",
             "href": "/wiki/entities/etcd/index.html"
           },
           {
@@ -584,7 +584,7 @@
             "href": "/wiki/entities/control-plane-nodes/index.html"
           },
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -605,7 +605,7 @@
         "section_hint": "5.26.12.3. Creating an alerting rule 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "etcd",
+            "label": "Etcd",
             "href": "/wiki/entities/etcd/index.html"
           },
           {
@@ -613,7 +613,7 @@
             "href": "/wiki/entities/control-plane-nodes/index.html"
           },
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -634,7 +634,7 @@
         "section_hint": "5.26.12.5. Viewing metrics using the Observe UI 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "etcd",
+            "label": "Etcd",
             "href": "/wiki/entities/etcd/index.html"
           },
           {
@@ -642,7 +642,7 @@
             "href": "/wiki/entities/control-plane-nodes/index.html"
           },
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -752,7 +752,7 @@
         "section_hint": "5.8.1. Enclave 미러링 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -781,7 +781,7 @@
         "section_hint": "2.3.6.5. 경로 라벨을 사용하여 Ingress 컨트롤러 분할 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -802,7 +802,7 @@
         "section_hint": "2.3.6.6. 네임스페이스 라벨을 사용하여 Ingress 컨트롤러 분할 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -823,7 +823,7 @@
         "section_hint": "2.4.1. Ingress 컨트롤러 끝점 게시 전략 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -844,7 +844,7 @@
         "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -865,7 +865,7 @@
         "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -886,7 +886,7 @@
         "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -907,7 +907,7 @@
         "section_hint": "4.7.2. MetalLB와 함께 VRF를 사용하여 대칭 라우팅 관리 개요 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -928,7 +928,7 @@
         "section_hint": "4.8. MetalLB 및 FRR-K8의 통합 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -1246,7 +1246,7 @@
         "section_hint": "5.13.2. 사용자 정의 튜닝 사양 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
@@ -1271,7 +1271,7 @@
         "section_hint": "9.2.1.1. 기본 클러스터 역할 링크 복사 링크가 클립보드에 복사되었습니다!",
         "related_entities": [
           {
-            "label": "Cluster-Wide Proxy",
+            "label": "Cluster Wide Proxy",
             "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {

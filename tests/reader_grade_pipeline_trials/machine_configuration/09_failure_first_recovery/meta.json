@@ -1,7 +1,0 @@
-{
-  "source_slug": "machine_configuration",
-  "title": "Machine configuration",
-  "label": "09_failure_first_recovery",
-  "description": "Failure-first recovery book",
-  "input_path": "data\\gold_manualbook_ko\\playbooks\\machine_configuration.json"
-}

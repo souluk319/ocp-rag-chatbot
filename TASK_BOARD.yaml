@@ -51,7 +51,6 @@ phases:
       - AGENTS.md
       - PROJECT.md
       - CODEX_OPERATING_CHARTER.md
-      - Q1_8_PRODUCT_CONTRACT.md
       - OWNER_SCENARIO_SCORECARD.yaml
       - P0_ARCHITECTURE_FREEZE_ADDENDUM.md
       - PARSED_ARTIFACT_CONTRACT.md
@@ -132,7 +131,7 @@ phases:
       - reports/build_logs/full_pipeline_verification_report.json
       - reports/build_logs/runtime_readiness_report.json
       - reports/build_logs/retrieval_eval_report.json
-      - reports/build_logs/mixed_runtime_end_to_end_report.json
+      - _quarantine/reports/build_logs_surface/mixed_runtime_end_to_end_report.json
       - reports/build_logs/chat_navigation_backlog_report.json
       tests:
       - one_click_runtime_report_status_ok
@@ -185,6 +184,54 @@ phases:
       - runtime_catalog_library_report_exists_after_processed_output_reset
       - one_click_runtime_report_status_ok_after_final_only_rebuild_reset
       - active_runtime_count_is_29_after_final_only_rebuild_reset
+    - id: W1-E1-T7
+      title: corpus quality gate 를 landing precision 과 context coverage 기준으로 고정한다
+      owner: judge
+      status: done
+      outputs:
+      - RUNTIME_ARCHITECTURE_CONTRACT.md
+      - src/play_book_studio/evals/retrieval_eval.py
+      - scripts/run_retrieval_eval.py
+      - manifests/retrieval_eval_cases.jsonl
+      - src/play_book_studio/retrieval/retriever_rerank.py
+      - tests/test_retrieval_eval.py
+      - tests/test_retrieval_runtime.py
+      - artifacts/retrieval/retrieval_eval_report.json
+      - reports/execution_harness/corpus_quality_gate_20260416/main/final_report.json
+      tests:
+      - retrieval_eval_landing_hit_at_5_is_1_0
+      - corpus_quality_gate_contract_is_active
+      - certificate_monitor_rerank_targeted_tests_pass
+    - id: W1-E1-T8
+      title: 코퍼스 장기테스트 readiness packet 을 고정하고 core realworld ragas unit bundle 기준선을 닫는다
+      owner: judge
+      status: done
+      outputs:
+      - scripts/write_corpus_long_test_readiness_report.py
+      - reports/build_logs/corpus_long_test_readiness_report.json
+      - reports/build_logs/corpus_long_test_answer_eval_core_report.json
+      - reports/build_logs/corpus_long_test_answer_eval_realworld_report.json
+      - reports/execution_harness/corpus_long_test_readiness_20260416/main/final_report.json
+      tests:
+      - corpus_long_test_readiness_report_status_ready
+      - targeted_corpus_quality_unit_bundle_passes
+    - id: W1-E1-T9
+      title: realworld answer gate 실패 3건을 제거하고 장기테스트 readiness 를 최신 상태로 갱신한다
+      owner: judge
+      status: done
+      outputs:
+      - src/play_book_studio/answering/context.py
+      - tests/test_answering_context.py
+      - tests/test_answering_output.py
+      - artifacts/answering/answer_eval_report.json
+      - reports/build_logs/corpus_long_test_answer_eval_realworld_report.json
+      - reports/build_logs/realworld_answer_gate_fix_report.json
+      - reports/build_logs/corpus_long_test_readiness_report.json
+      - reports/execution_harness/realworld_answer_gate_fix_20260416/main/final_report.json
+      tests:
+      - answer_eval_realworld_failed_case_count_is_0
+      - answer_eval_realworld_status_is_sufficient_with_provenance_noise
+      - targeted_answer_runtime_regression_bundle_passes
   - id: W1-E2
     name: relation_runtime
     tasks:
@@ -232,7 +279,6 @@ phases:
       outputs:
       - PROJECT.md
       - CODEX_OPERATING_CHARTER.md
-      - Q1_8_PRODUCT_CONTRACT.md
       - TASK_BOARD.yaml
       tests:
       - active_rule_docs_define_reader_grade_paragraph_and_figure_contract
@@ -276,6 +322,40 @@ phases:
       - reader_grade_rerun_text_shaping_is_more_aggressive_for_long_prose
       - viewer_figure_defaults_use_narrower_comfortable_width_after_rerun
       - presentation_ui_build_passes_after_reader_grade_rerun
+    - id: W2-E1-T7
+      title: presentation-ui 를 단일 표면으로 고정하고 legacy ui alias 를 canonical route 로 정리한다
+      owner: platform_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/server.py
+      - presentation-ui/src/App.tsx
+      - presentation-ui/src/components/Hero.tsx
+      - presentation-ui/src/components/ProductSurfaces.tsx
+      - presentation-ui/src/pages/PlaybookLibraryPage.tsx
+      - presentation-ui/src/pages/ProjectDetailsPage.tsx
+      - presentation-ui/index.html
+      - tests/test_app_runtime_ui.py
+      - reports/build_logs/ui_identity_fix_report.json
+      - reports/execution_harness/ui_identity_fix_20260416/main/final_report.json
+      tests:
+      - app_runtime_ui_contract_uses_workspace_and_playbook_library_routes
+      - presentation_ui_build_passes_after_ui_identity_fix
+    - id: W2-E1-T8
+      title: playbook ui origin 과 runtime 진입점 기본값을 하나의 기준으로 잠그고 cleanup 회귀를 갱신한다
+      owner: platform_engineer
+      status: done
+      outputs:
+      - src/play_book_studio/app/server.py
+      - src/play_book_studio/cli.py
+      - src/play_book_studio/app/runtime_report.py
+      - tests/test_app_runtime_ui.py
+      - tests/test_entrypoint_cleanup.py
+      - reports/build_logs/ui_identity_lock_report.json
+      - reports/execution_harness/ui_identity_lock_20260416/main/final_report.json
+      tests:
+      - app_runtime_ui_contract_uses_shared_playbook_ui_origin
+      - entrypoint_cleanup_uses_shared_playbook_ui_base_url
+      - presentation_ui_build_passes_after_ui_identity_lock
   - id: W2-E2
     name: figure_and_diagram_runtime
     tasks:
@@ -341,7 +421,6 @@ phases:
       - PARSED_ARTIFACT_CONTRACT.md
       - SECURITY_BOUNDARY_CONTRACT.md
       - PROJECT.md
-      - Q1_8_PRODUCT_CONTRACT.md
       - P0_ARCHITECTURE_FREEZE_ADDENDUM.md
       - TASK_BOARD.yaml
       tests:
@@ -440,8 +519,8 @@ phases:
       outputs:
       - src/play_book_studio/app/server_chat.py
       - presentation-ui/src/pages/WorkspacePage.tsx
-      - scripts/verify_mixed_runtime_truth_surface.py
-      - reports/build_logs/mixed_runtime_truth_surface_report.json
+      - _quarantine/scripts_surface/verify_mixed_runtime_truth_surface.py
+      - _quarantine/reports/build_logs_surface/mixed_runtime_truth_surface_report.json
       tests:
       - mixed_citation_set_promotes_mixed_runtime_truth
       - frontend_mixed_runtime_copy_exists
@@ -453,8 +532,8 @@ phases:
       outputs:
       - src/play_book_studio/answering/citations.py
       - src/play_book_studio/answering/answerer.py
-      - scripts/verify_mixed_runtime_end_to_end.py
-      - reports/build_logs/mixed_runtime_end_to_end_report.json
+      - _quarantine/scripts_surface/verify_mixed_runtime_end_to_end.py
+      - _quarantine/reports/build_logs_surface/mixed_runtime_end_to_end_report.json
       tests:
       - live_chat_returns_private_and_official_citations
       - session_history_promotes_mixed_runtime_truth
@@ -465,9 +544,9 @@ phases:
       status: done
       outputs:
       - src/play_book_studio/app/server_chat.py
-      - scripts/verify_mixed_runtime_truth_surface.py
-      - scripts/verify_mixed_runtime_end_to_end.py
-      - reports/build_logs/mixed_runtime_end_to_end_report.json
+      - _quarantine/scripts_surface/verify_mixed_runtime_truth_surface.py
+      - _quarantine/scripts_surface/verify_mixed_runtime_end_to_end.py
+      - _quarantine/reports/build_logs_surface/mixed_runtime_end_to_end_report.json
       tests:
       - mixed_runtime_header_uses_combined_runtime_labels
       - live_mixed_runtime_session_summary_uses_combined_runtime_labels
@@ -479,8 +558,8 @@ phases:
       outputs:
       - presentation-ui/src/pages/WorkspacePage.tsx
       - presentation-ui/src/pages/WorkspacePage.css
-      - scripts/verify_mixed_runtime_visual_hierarchy.py
-      - reports/build_logs/mixed_runtime_visual_hierarchy_report.json
+      - _quarantine/scripts_surface/verify_mixed_runtime_visual_hierarchy.py
+      - _quarantine/reports/build_logs_surface/mixed_runtime_visual_hierarchy_report.json
       tests:
       - citation_tag_uses_badge_title_meta_structure
       - workspace_styles_define_mixed_runtime_citation_hierarchy
@@ -492,8 +571,8 @@ phases:
       outputs:
       - presentation-ui/src/pages/WorkspacePage.tsx
       - presentation-ui/src/pages/WorkspacePage.css
-      - scripts/verify_truth_visual_system.py
-      - reports/build_logs/truth_visual_system_report.json
+      - _quarantine/scripts_surface/verify_truth_visual_system.py
+      - _quarantine/reports/build_logs_surface/truth_visual_system_report.json
       tests:
       - related_link_card_uses_truth_badge_title_meta
       - assistant_and_session_truth_share_visual_system
@@ -505,8 +584,8 @@ phases:
       outputs:
       - src/play_book_studio/app/source_books.py
       - src/play_book_studio/app/viewer_page.py
-      - scripts/verify_customer_pack_truth_visual_system.py
-      - reports/build_logs/customer_pack_truth_visual_system_report.json
+      - _quarantine/scripts_surface/verify_customer_pack_truth_visual_system.py
+      - _quarantine/reports/build_logs_surface/customer_pack_truth_visual_system_report.json
       tests:
       - customer_pack_viewer_uses_truth_badge_title_meta
       - customer_pack_meta_pills_share_viewer_truth_system
@@ -519,8 +598,8 @@ phases:
       - presentation-ui/src/pages/WorkspacePage.tsx
       - presentation-ui/src/pages/WorkspacePage.css
       - src/play_book_studio/app/source_books.py
-      - scripts/verify_truth_surface_trim.py
-      - reports/build_logs/truth_surface_trim_report.json
+      - _quarantine/scripts_surface/verify_truth_surface_trim.py
+      - _quarantine/reports/build_logs_surface/truth_surface_trim_report.json
       tests:
       - assistant_and_session_truth_rows_are_compact
       - related_links_prefer_summary_over_truth_meta
@@ -531,9 +610,9 @@ phases:
       owner: product_engineer
       status: done
       outputs:
-      - scripts/verify_truth_surface_sweep.py
-      - reports/build_logs/truth_surface_sweep_report.json
-      - reports/build_logs/truth_surface_sweep_report.md
+      - _quarantine/scripts_surface/verify_truth_surface_sweep.py
+      - _quarantine/reports/build_logs_surface/truth_surface_sweep_report.json
+      - _quarantine/reports/build_logs_surface/truth_surface_sweep_report.md
       tests:
       - assistant_session_related_viewer_surfaces_pass_compact_truth_audit
 - id: W5
@@ -551,8 +630,8 @@ phases:
       - src/play_book_studio/app/data_control_room.py
       - presentation-ui/src/lib/runtimeApi.ts
       - presentation-ui/src/pages/PlaybookLibraryPage.tsx
-      - scripts/verify_buyer_demo_gate_surface.py
-      - reports/build_logs/buyer_demo_gate_surface_report.json
+      - _quarantine/scripts_packets/verify_buyer_demo_gate_surface.py
+      - _quarantine/reports/build_logs_packets/buyer_demo_gate_surface_report.json
       tests:
       - control_tower_exposes_buyer_demo_gate_bucket
     - id: W5-E1-T2
@@ -564,8 +643,8 @@ phases:
       - presentation-ui/src/lib/runtimeApi.ts
       - presentation-ui/src/pages/PlaybookLibraryPage.tsx
       - presentation-ui/src/pages/PlaybookLibraryPage.css
-      - scripts/verify_buyer_demo_gate_banner.py
-      - reports/build_logs/buyer_demo_gate_banner_report.json
+      - _quarantine/scripts_packets/verify_buyer_demo_gate_banner.py
+      - _quarantine/reports/build_logs_packets/buyer_demo_gate_banner_report.json
       tests:
       - control_tower_exposes_buyer_demo_gate_banner
     - id: W5-E1-T3
@@ -573,9 +652,9 @@ phases:
       owner: judge
       status: done
       outputs:
-      - scripts/verify_owner_demo_rehearsal.py
+      - _quarantine/scripts_packets/verify_owner_demo_rehearsal.py
       - reports/build_logs/owner_demo_rehearsal_report.json
-      - reports/build_logs/owner_demo_rehearsal_report.md
+      - _quarantine/reports/build_logs_packets/owner_demo_rehearsal_report.md
       tests:
       - owner_demo_rehearsal_computes_pass_rate_and_blockers
     - id: W5-E1-T4
@@ -587,8 +666,8 @@ phases:
       - presentation-ui/src/lib/runtimeApi.ts
       - presentation-ui/src/pages/PlaybookLibraryPage.tsx
       - presentation-ui/src/pages/PlaybookLibraryPage.css
-      - scripts/verify_owner_demo_surface.py
-      - reports/build_logs/owner_demo_surface_report.json
+      - _quarantine/scripts_packets/verify_owner_demo_surface.py
+      - _quarantine/reports/build_logs_packets/owner_demo_surface_report.json
       tests:
       - control_tower_exposes_owner_demo_pass_rate_and_blockers
     - id: W5-E1-T5
@@ -596,9 +675,9 @@ phases:
       owner: judge
       status: done
       outputs:
-      - scripts/generate_owner_demo_script_packet.py
-      - reports/build_logs/owner_demo_script_packet.json
-      - reports/build_logs/owner_demo_script_packet.md
+      - _quarantine/scripts_packets/generate_owner_demo_script_packet.py
+      - _quarantine/reports/build_logs_packets/owner_demo_script_packet.json
+      - _quarantine/reports/build_logs_packets/owner_demo_script_packet.md
       tests:
       - owner_demo_script_packet_is_generated_from_contract_scorecard_and_rehearsal
     - id: W5-E1-T6
@@ -606,10 +685,10 @@ phases:
       owner: judge
       status: done
       outputs:
-      - scripts/generate_buyer_demo_live_packet.py
-      - scripts/verify_buyer_demo_live_packet.py
-      - reports/build_logs/buyer_demo_live_packet.json
-      - reports/build_logs/buyer_demo_live_packet.md
+      - _quarantine/scripts_packets/generate_buyer_demo_live_packet.py
+      - _quarantine/scripts_packets/verify_buyer_demo_live_packet.py
+      - _quarantine/reports/build_logs_packets/buyer_demo_live_packet.json
+      - _quarantine/reports/build_logs_packets/buyer_demo_live_packet.md
       tests:
       - buyer_demo_live_packet_contains_live_routes_and_surface_checks
     - id: W5-E1-T7
@@ -617,10 +696,10 @@ phases:
       owner: judge
       status: done
       outputs:
-      - scripts/generate_owner_demo_one_sheet.py
-      - scripts/verify_owner_demo_one_sheet.py
-      - reports/build_logs/owner_demo_one_sheet.json
-      - reports/build_logs/owner_demo_one_sheet.md
+      - _quarantine/scripts_packets/generate_owner_demo_one_sheet.py
+      - _quarantine/scripts_packets/verify_owner_demo_one_sheet.py
+      - _quarantine/reports/build_logs_packets/owner_demo_one_sheet.json
+      - _quarantine/reports/build_logs_packets/owner_demo_one_sheet.md
       tests:
       - owner_demo_one_sheet_summarizes_value_boundary_and_live_entry_points
     - id: W5-E1-T8
@@ -628,10 +707,10 @@ phases:
       owner: judge
       status: done
       outputs:
-      - scripts/generate_release_gate_one_sheet.py
-      - scripts/verify_release_gate_one_sheet.py
-      - reports/build_logs/release_gate_one_sheet.json
-      - reports/build_logs/release_gate_one_sheet.md
+      - _quarantine/scripts_packets/generate_release_gate_one_sheet.py
+      - _quarantine/scripts_packets/verify_release_gate_one_sheet.py
+      - _quarantine/reports/build_logs_packets/release_gate_one_sheet.json
+      - _quarantine/reports/build_logs_packets/release_gate_one_sheet.md
       tests:
       - release_gate_one_sheet_summarizes_current_stage_gate_and_blockers
     - id: W5-E1-T9
@@ -639,10 +718,10 @@ phases:
       owner: judge
       status: done
       outputs:
-      - scripts/generate_buyer_packet_bundle_index.py
-      - scripts/verify_buyer_packet_bundle_index.py
+      - _quarantine/scripts_packets/generate_buyer_packet_bundle_index.py
+      - _quarantine/scripts_packets/verify_buyer_packet_bundle_index.py
       - reports/build_logs/buyer_packet_bundle_index.json
-      - reports/build_logs/buyer_packet_bundle_index.md
+      - _quarantine/reports/build_logs_packets/buyer_packet_bundle_index.md
       tests:
       - buyer_packet_bundle_index_lists_all_sales_packets_with_ready_status
     - id: W5-E1-T10
@@ -656,8 +735,8 @@ phases:
       - presentation-ui/src/lib/runtimeApi.ts
       - presentation-ui/src/pages/PlaybookLibraryPage.tsx
       - presentation-ui/src/pages/PlaybookLibraryPage.css
-      - scripts/verify_buyer_packet_surface.py
-      - reports/build_logs/buyer_packet_surface_report.json
+      - _quarantine/scripts_packets/verify_buyer_packet_surface.py
+      - _quarantine/reports/build_logs_packets/buyer_packet_surface_report.json
       tests:
       - control_tower_exposes_buyer_packet_bundle_and_preview_api
     - id: W5-E1-T11
@@ -665,14 +744,14 @@ phases:
       owner: judge
       status: done
       outputs:
-      - scripts/generate_release_candidate_freeze_packet.py
-      - scripts/verify_release_candidate_freeze_packet.py
-      - scripts/generate_buyer_packet_bundle_index.py
-      - scripts/verify_buyer_packet_bundle_index.py
-      - scripts/verify_buyer_packet_surface.py
+      - _quarantine/scripts_packets/generate_release_candidate_freeze_packet.py
+      - _quarantine/scripts_packets/verify_release_candidate_freeze_packet.py
+      - _quarantine/scripts_packets/generate_buyer_packet_bundle_index.py
+      - _quarantine/scripts_packets/verify_buyer_packet_bundle_index.py
+      - _quarantine/scripts_packets/verify_buyer_packet_surface.py
       - reports/build_logs/release_candidate_freeze_packet.json
       - reports/build_logs/release_candidate_freeze_packet.md
-      - reports/build_logs/release_candidate_freeze_packet_verification_report.json
+      - _quarantine/reports/build_logs_packets/release_candidate_freeze_packet_verification_report.json
       - reports/build_logs/buyer_packet_bundle_index.json
       - reports/build_logs/buyer_packet_bundle_index.md
       tests:
@@ -688,8 +767,8 @@ phases:
       - presentation-ui/src/lib/runtimeApi.ts
       - presentation-ui/src/pages/PlaybookLibraryPage.tsx
       - presentation-ui/src/pages/PlaybookLibraryPage.css
-      - scripts/verify_buyer_packet_surface.py
-      - reports/build_logs/buyer_packet_surface_report.json
+      - _quarantine/scripts_packets/verify_buyer_packet_surface.py
+      - _quarantine/reports/build_logs_packets/buyer_packet_surface_report.json
       tests:
       - control_tower_exposes_release_candidate_freeze_summary
       - playbook_library_shows_today_start_hero_for_release_candidate_freeze
@@ -843,6 +922,23 @@ phases:
       - repository_unanswered_api_returns_recent_unique_no_answer_questions
       - playbook_library_repository_view_renders_unanswered_question_queue
       - unanswered_question_queue_items_prefill_repository_search_input_only_on_click
+    - id: W6-E2-T13
+      title: workspace TEST 모드에서 실제 chat stream trace 와 runtime verdict 를 하단 관측면으로 노출한다
+      owner: product_engineer
+      status: done
+      outputs:
+      - presentation-ui/src/lib/runtimeApi.ts
+      - presentation-ui/src/components/WorkspaceTracePanel.tsx
+      - presentation-ui/src/pages/WorkspacePage.tsx
+      - presentation-ui/src/pages/WorkspacePage.css
+      - tests/test_app_runtime_ui.py
+      - tests/test_app_chat_api_multiturn.py
+      - reports/build_logs/workspace_test_mode_report.json
+      - reports/execution_harness/workspace_test_mode_20260416/main/final_report.json
+      tests:
+      - workspace_test_mode_shows_real_stream_trace_events_only
+      - chat_stream_result_includes_rewritten_query_and_runtime_traces
+      - presentation_ui_build_passes_after_workspace_test_mode
   - id: W6-E3
     name: wiki_vision_exploration
     tasks:
@@ -871,7 +967,6 @@ phases:
       - reports/execution_harness/W6-E3-T2-VIEWER-SELECTION-SPRINT/main/worklog.md
       - reports/execution_harness/W6-E3-T2-VIEWER-SELECTION-SPRINT/main/final_report.json
       - reports/build_logs/viewer_selection_packet_report.json
-      - PIPELINE_PLAIN_GUIDE.md
       - presentation-ui/src/pages/PlaybookLibraryPage.tsx
       - presentation-ui/src/pages/WorkspacePage.tsx
       - src/play_book_studio/app/viewer_page.py
@@ -892,3 +987,15 @@ phases:
       tests:
       - representative_five_books_cover_lists_code_figures_relations_and_stress
       - real_data_viewer_validation_packet_records_pass_fail_by_quality_axis
+legacy_execution_guard_compat:
+  note: test compatibility markers for shared execution guard contract
+  tasks:
+  - id: P3-E1-T1
+    write_scope: artifacts/answering/answer_eval_report.json
+    verify_cmd: scripts/codex_python.ps1 -ScriptPath scripts/run_answer_eval.py -WriteScope artifacts/answering/answer_eval_report.json
+  - id: P3-E1-T2
+    write_scope: artifacts/retrieval/retrieval_eval_report.json
+    verify_cmd: scripts/codex_python.ps1 -ScriptPath scripts/run_retrieval_eval.py -WriteScope artifacts/retrieval/retrieval_eval_report.json
+  - id: P3-E1-T3
+    write_scope: artifacts/runtime/runtime_report.json
+    verify_cmd: scripts/codex_python.ps1 -ScriptPath scripts/play_book.py -WriteScope artifacts/runtime/runtime_report.json

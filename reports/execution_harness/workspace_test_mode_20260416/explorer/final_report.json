@@ -1,0 +1,23 @@
+{
+  "task_id": "workspace_test_mode_20260416",
+  "lane_id": "explorer",
+  "role": "explorer",
+  "status": "done",
+  "code_paths": [
+    "presentation-ui/src/pages/WorkspacePage.tsx",
+    "src/play_book_studio/app/server.py",
+    "src/play_book_studio/app/server_chat.py"
+  ],
+  "artifacts": [],
+  "validation": [
+    {
+      "command": "codepath inspection",
+      "status": "passed"
+    }
+  ],
+  "summary": {
+    "test_toggle_insert_point_confirmed": true,
+    "trace_panel_insert_point_confirmed": true,
+    "stream_trace_backend_path_confirmed": true
+  }
+}

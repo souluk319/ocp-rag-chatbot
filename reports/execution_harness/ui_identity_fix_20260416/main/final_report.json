@@ -1,0 +1,30 @@
+{
+  "task_id": "ui_identity_fix_20260416",
+  "lane_id": "main",
+  "role": "main",
+  "status": "done",
+  "code_paths": [
+    "src/play_book_studio/app/server.py",
+    "presentation-ui/src/App.tsx",
+    "presentation-ui/src/components/Hero.tsx",
+    "presentation-ui/src/components/ProductSurfaces.tsx",
+    "presentation-ui/src/pages/PlaybookLibraryPage.tsx",
+    "presentation-ui/src/pages/ProjectDetailsPage.tsx",
+    "presentation-ui/index.html",
+    "tests/test_app_runtime_ui.py",
+    "TASK_BOARD.yaml"
+  ],
+  "artifacts": [
+    "reports/build_logs/ui_identity_fix_report.json",
+    "reports/execution_harness/ui_identity_fix_20260416/main/manifest.json",
+    "reports/execution_harness/ui_identity_fix_20260416/main/worklog.md"
+  ],
+  "validation": [
+    "& .\\.venv\\Scripts\\python.exe -m unittest tests.test_app_runtime_ui",
+    "npm --prefix presentation-ui run build"
+  ],
+  "notes": [
+    "presentation-ui now uses canonical /workspace and /playbook-library links internally",
+    "server.py treats /studio and /data-situation-room as legacy aliases only"
+  ]
+}

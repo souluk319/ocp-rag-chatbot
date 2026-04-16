@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from play_book_studio.app.source_books import build_chat_navigation_links
+from play_book_studio.execution_guard import run_guarded_script
 
 
 def main() -> None:
@@ -51,4 +52,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(run_guarded_script(main, __file__, launcher_hint="scripts/codex_python.ps1"))

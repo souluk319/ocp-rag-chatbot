@@ -230,6 +230,8 @@ class TestRetrievalRuntime(unittest.TestCase):
         class _FakeRetrieverWithReranker:
             def __init__(self, hits: list[RetrievalHit]) -> None:
                 self.reranker = _FakeReranker(hits)
+                self.settings = type("Settings", (), {"root_dir": ROOT})()
+                self.settings = type("Settings", (), {"root_dir": ROOT})()
 
         hybrid_hits = [
             RetrievalHit(
@@ -297,6 +299,7 @@ class TestRetrievalRuntime(unittest.TestCase):
             top_k=2,
             trace_callback=None,
             timings_ms={},
+            context=None,
         )
 
         self.assertTrue(trace["applied"])
@@ -315,6 +318,7 @@ class TestRetrievalRuntime(unittest.TestCase):
         class _FakeRetrieverWithReranker:
             def __init__(self, hits: list[RetrievalHit]) -> None:
                 self.reranker = _FakeReranker(hits)
+                self.settings = type("Settings", (), {"root_dir": ROOT})()
 
         hybrid_hits = [
             RetrievalHit(
@@ -398,6 +402,7 @@ class TestRetrievalRuntime(unittest.TestCase):
             top_k=2,
             trace_callback=None,
             timings_ms={},
+            context=None,
         )
 
         self.assertTrue(trace["applied"])
@@ -418,6 +423,7 @@ class TestRetrievalRuntime(unittest.TestCase):
         class _FakeRetrieverWithReranker:
             def __init__(self, hits: list[RetrievalHit]) -> None:
                 self.reranker = _FakeReranker(hits)
+                self.settings = type("Settings", (), {"root_dir": ROOT})()
 
         hybrid_hits = [
             RetrievalHit(
@@ -485,6 +491,7 @@ class TestRetrievalRuntime(unittest.TestCase):
             top_k=2,
             trace_callback=None,
             timings_ms={},
+            context=None,
         )
 
         self.assertTrue(trace["applied"])
@@ -687,6 +694,7 @@ class TestRetrievalRuntime(unittest.TestCase):
         class _FakeRetrieverWithReranker:
             def __init__(self, hits: list[RetrievalHit]) -> None:
                 self.reranker = _FakeReranker(hits)
+                self.settings = type("Settings", (), {"root_dir": ROOT})()
 
         hybrid_hits = [
             RetrievalHit(
@@ -741,6 +749,7 @@ class TestRetrievalRuntime(unittest.TestCase):
             top_k=2,
             trace_callback=None,
             timings_ms={},
+            context=None,
         )
 
         self.assertTrue(trace["applied"])
@@ -760,6 +769,7 @@ class TestRetrievalRuntime(unittest.TestCase):
         class _FakeRetrieverWithReranker:
             def __init__(self, hits: list[RetrievalHit]) -> None:
                 self.reranker = _FakeReranker(hits)
+                self.settings = type("Settings", (), {"root_dir": ROOT})()
 
         hybrid_hits = [
             RetrievalHit(
@@ -840,6 +850,7 @@ class TestRetrievalRuntime(unittest.TestCase):
             top_k=2,
             trace_callback=None,
             timings_ms={},
+            context=None,
         )
 
         self.assertTrue(trace["applied"])
@@ -859,6 +870,7 @@ class TestRetrievalRuntime(unittest.TestCase):
         class _FakeRetrieverWithReranker:
             def __init__(self, hits: list[RetrievalHit]) -> None:
                 self.reranker = _FakeReranker(hits)
+                self.settings = type("Settings", (), {"root_dir": ROOT})()
 
         hybrid_hits = [
             RetrievalHit(
@@ -939,6 +951,7 @@ class TestRetrievalRuntime(unittest.TestCase):
             top_k=2,
             trace_callback=None,
             timings_ms={},
+            context=None,
         )
 
         self.assertTrue(trace["applied"])
@@ -981,6 +994,121 @@ class TestRetrievalRuntime(unittest.TestCase):
         )
 
         self.assertEqual("cert-command", hits[0].chunk_id)
+
+    def test_reranker_rebalances_certificate_monitor_query_back_to_cli_or_security(self) -> None:
+        class _FakeReranker:
+            def __init__(self, hits: list[RetrievalHit]) -> None:
+                self.hits = hits
+                self.model_name = "fake-reranker"
+                self.top_n = 8
+
+            def rerank(self, query: str, hits: list[RetrievalHit], *, top_k: int) -> list[RetrievalHit]:
+                return list(self.hits)
+
+        class _FakeRetrieverWithReranker:
+            def __init__(self, hits: list[RetrievalHit]) -> None:
+                self.reranker = _FakeReranker(hits)
+                self.settings = type("Settings", (), {"root_dir": ROOT})()
+
+        hybrid_hits = [
+            RetrievalHit(
+                chunk_id="cert-command",
+                book_slug="cli_tools",
+                chapter="cli",
+                section="2.7.1.25. oc adm ocp-certificates monitor-certificates",
+                anchor="oc-adm-ocp-certificates-monitor-certificates",
+                source_url="https://example.com/cli",
+                viewer_path="/docs/cli.html#oc-adm-ocp-certificates-monitor-certificates",
+                text="플랫폼 인증서 감시 [CODE] oc adm ocp-certificates monitor-certificates [/CODE]",
+                source="hybrid",
+                raw_score=0.88,
+                fused_score=0.88,
+            ),
+            RetrievalHit(
+                chunk_id="cert-expiry",
+                book_slug="security_and_compliance",
+                chapter="security",
+                section="4.1.4. 만료",
+                anchor="expiration",
+                source_url="https://example.com/security",
+                viewer_path="/docs/security.html#expiration",
+                text="API 서버 인증서 만료 여부를 확인합니다.",
+                source="hybrid",
+                raw_score=0.84,
+                fused_score=0.84,
+            ),
+            RetrievalHit(
+                chunk_id="support-install",
+                book_slug="support",
+                chapter="support",
+                section="7.1.10. 컨트롤 플레인 노드 kubelet 및 API 서버 문제 조사",
+                anchor="investigating-kubelet-api-installation-issues_troubleshooting-installations",
+                source_url="https://example.com/support",
+                viewer_path="/docs/support.html#investigating-kubelet-api-installation-issues_troubleshooting-installations",
+                text="API 서버 문제 조사 지원 문서입니다.",
+                source="hybrid",
+                raw_score=0.93,
+                fused_score=0.93,
+            ),
+        ]
+        reranked_hits = [
+            RetrievalHit(
+                chunk_id="support-install",
+                book_slug="support",
+                chapter="support",
+                section="7.1.10. 컨트롤 플레인 노드 kubelet 및 API 서버 문제 조사",
+                anchor="investigating-kubelet-api-installation-issues_troubleshooting-installations",
+                source_url="https://example.com/support",
+                viewer_path="/docs/support.html#investigating-kubelet-api-installation-issues_troubleshooting-installations",
+                text="API 서버 문제 조사 지원 문서입니다.",
+                source="hybrid_reranked",
+                raw_score=9.0,
+                fused_score=9.0,
+                component_scores={"pre_rerank_fused_score": 0.93, "reranker_score": 9.0},
+            ),
+            RetrievalHit(
+                chunk_id="cert-expiry",
+                book_slug="security_and_compliance",
+                chapter="security",
+                section="4.1.4. 만료",
+                anchor="expiration",
+                source_url="https://example.com/security",
+                viewer_path="/docs/security.html#expiration",
+                text="API 서버 인증서 만료 여부를 확인합니다.",
+                source="hybrid_reranked",
+                raw_score=8.0,
+                fused_score=8.0,
+                component_scores={"pre_rerank_fused_score": 0.84, "reranker_score": 8.0},
+            ),
+            RetrievalHit(
+                chunk_id="cert-command",
+                book_slug="cli_tools",
+                chapter="cli",
+                section="2.7.1.25. oc adm ocp-certificates monitor-certificates",
+                anchor="oc-adm-ocp-certificates-monitor-certificates",
+                source_url="https://example.com/cli",
+                viewer_path="/docs/cli.html#oc-adm-ocp-certificates-monitor-certificates",
+                text="플랫폼 인증서 감시 [CODE] oc adm ocp-certificates monitor-certificates [/CODE]",
+                source="hybrid_reranked",
+                raw_score=7.0,
+                fused_score=7.0,
+                component_scores={"pre_rerank_fused_score": 0.88, "reranker_score": 7.0},
+            ),
+        ]
+
+        hits, trace = maybe_rerank_hits(
+            _FakeRetrieverWithReranker(reranked_hits),
+            query="API 서버 인증서 만료 여부는 어떻게 확인해?",
+            hybrid_hits=hybrid_hits,
+            top_k=3,
+            trace_callback=None,
+            timings_ms={},
+            context=None,
+        )
+
+        self.assertTrue(trace["applied"])
+        self.assertIn("certificate_monitor_intent", trace["rebalance_reasons"])
+        self.assertIn(hits[0].book_slug, {"cli_tools", "security_and_compliance"})
 
     def test_fusion_prefers_pod_issue_section_over_installation_etcd_for_pending_question(self) -> None:
         installation_hit = RetrievalHit(

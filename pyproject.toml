@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "play-book-studio"
 version = "0.1.0"
 description = "Play Book Studio for grounded document ingestion, retrieval, and answering"
-readme = "README.md"
+readme = "PROJECT.md"
 requires-python = ">=3.11"
 dependencies = [
   "beautifulsoup4>=4.12",
