@@ -87,6 +87,12 @@ final report 는 closeout evidence 를 담는다.
 overlay 는 page-level 또는 별도 surface 에서 개인화 신호를 쌓는다.
 reader contract 는 paragraph shaping 과 figure width 기본값을 포함한다.
 
+계약을 잠글 때는 방향을 고정하는 것이지 방법을 고정하는 것이 아니다.
+
+- `더 좋은 encyclopedia experience`를 만들기 위한 시도는 열어 둔다.
+- `탐험형 prototype`, `layout 교체`, `정보 구조 재구성`, `문서-관계-이미지-챗봇 결합 방식 변경`을 허용한다.
+- Codex 는 안전한 보수안만 반복하지 말고, 목표에 더 가까운 강한 표현을 먼저 탐색한다.
+
 ## Runtime Doctrine
 
 one-click 실행은 아래를 한 묶음으로 유지한다.

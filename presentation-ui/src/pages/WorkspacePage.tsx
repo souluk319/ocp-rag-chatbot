@@ -42,6 +42,7 @@ import {
   type WikiOverlayRecommendedPlay,
   type WikiOverlaySignalsResponse,
   type SourceMetaResponse,
+  type RuntimeFigureItem,
   type WikiOverlayRecord,
   type WikiOverlayTargetKind,
   captureCustomerPackDraft,
@@ -57,6 +58,7 @@ import {
   deleteAllSessions,
   deleteSession,
   loadSourceMeta,
+  loadRuntimeFigures,
   normalizeCustomerPackDraft,
   removeWikiOverlay,
   saveWikiOverlay,
@@ -116,6 +118,7 @@ interface OverlayTargetDescriptor {
 }
 
 type LeftPanelMode = 'history' | 'outline' | 'signals';
+type VisionMode = 'atlas_canvas' | 'guided_tour' | 'encyclopedia_world';
 
 interface OutlineLinkItem {
   id: string;
@@ -140,6 +143,19 @@ interface OutlineCategoryGroup {
   books: WorkspaceManualBook[];
 }
 
+interface FigureAtlasEntry {
+  key: string;
+  title: string;
+  subtitle: string;
+  kind: string;
+  intent: string;
+  why: string;
+  thumbUrl?: string;
+  href: string;
+  count?: number;
+  isCluster?: boolean;
+}
+
 const OUTLINE_CATEGORY_RULES: Array<{
   key: string;
   label: string;
@@ -158,6 +174,101 @@ const OUTLINE_CATEGORY_RULES: Array<{
 ];
 
 const OUTLINE_CATEGORY_COLLAPSED = '__collapsed__';
+
+const WIKI_VISION_MODES: Array<{
+  id: VisionMode;
+  label: string;
+  summary: string;
+  cue: string;
+}> = [
+  {
+    id: 'atlas_canvas',
+    label: 'Atlas Canvas',
+    summary: '문서, 관계, figure를 한 화면에서 함께 펼치는 탐험형 위키',
+    cue: '문서 중심 + 관계 확장',
+  },
+  {
+    id: 'guided_tour',
+    label: 'Guided Tour',
+    summary: '질문에서 답으로 끝나지 않고 절차와 다음 문서로 이어지는 투어형 스튜디오',
+    cue: '답변 중심 + 다음 단계 안내',
+  },
+  {
+    id: 'encyclopedia_world',
+    label: 'Topic World',
+    summary: '책보다 주제 지형도를 먼저 열고 관련 문서를 묶어 탐험하는 대백과 모드',
+    cue: '주제 세계 중심 탐색',
+  },
+];
+
+function normalizeRouteKey(link: ChatRelatedLink): string {
+  return `${link.kind}:${(link.href || '').trim().toLowerCase()}::${(link.label || '').trim().toLowerCase()}`;
+}
+
+function firstFigureSectionToken(sectionHint: string): string {
+  const normalized = sectionHint.replace(/[›>]/g, '|');
+  return normalized
+    .split('|')
+    .map((chunk) => chunk.trim())
+    .find(Boolean) || '';
+}
+
+function buildFigureAtlasEntries(figures: RuntimeFigureItem[]): FigureAtlasEntry[] {
+  const groups = new Map<string, RuntimeFigureItem[]>();
+  for (const figure of figures) {
+    const diagramKey = (figure.diagram_type || '').trim().toLowerCase();
+    const sectionKey = firstFigureSectionToken(figure.section_hint || '').toLowerCase();
+    const assetKey = (figure.asset_kind || 'figure').trim().toLowerCase();
+    const key = diagramKey
+      ? `diagram:${diagramKey}`
+      : sectionKey
+        ? `section:${sectionKey}`
+        : `asset:${assetKey}`;
+    const bucket = groups.get(key) ?? [];
+    bucket.push(figure);
+    groups.set(key, bucket);
+  }
+
+  return [...groups.entries()]
+    .sort((a, b) => {
+      if (b[1].length !== a[1].length) return b[1].length - a[1].length;
+      return a[1][0].caption.localeCompare(b[1][0].caption);
+    })
+    .slice(0, 3)
+    .map(([key, bucket]) => {
+      const first = bucket[0];
+      const isDiagram = Boolean(first.diagram_type);
+      const thumbUrl = first.asset_url ? toRuntimeUrl(first.asset_url) : undefined;
+      if (bucket.length === 1) {
+        return {
+          key,
+          title: first.caption,
+          subtitle: first.section_hint || first.diagram_type || first.asset_kind,
+          kind: isDiagram ? 'Diagram' : 'Figure',
+          intent: 'View',
+          why: '현재 문서를 시각적으로 이해시키는 자산',
+          thumbUrl,
+          href: first.viewer_path,
+        };
+      }
+
+      const clusterLabel = isDiagram
+        ? `${first.diagram_type || 'diagram'} cluster`
+        : firstFigureSectionToken(first.section_hint || '') || 'figure cluster';
+      return {
+        key,
+        title: clusterLabel,
+        subtitle: `${bucket.length} visual assets grouped`,
+        kind: isDiagram ? 'Diagram Cluster' : 'Figure Cluster',
+        intent: 'Scan',
+        why: `현재 문서와 이어진 ${bucket.length}개의 시각 자산 묶음`,
+        thumbUrl,
+        href: first.viewer_path,
+        count: bucket.length,
+        isCluster: true,
+      };
+    });
+}
 
 type PreviewState =
   | { kind: 'empty' }
@@ -921,6 +1032,7 @@ function AssistantAnswer({
   citations,
   relatedLinks,
   relatedSections,
+  visionMode,
   primarySourceLane,
   primaryBoundaryTruth,
   primaryRuntimeTruthLabel,
@@ -938,6 +1050,7 @@ function AssistantAnswer({
   citations: ChatCitation[];
   relatedLinks: ChatRelatedLink[];
   relatedSections: ChatRelatedLink[];
+  visionMode: VisionMode;
   primarySourceLane?: string;
   primaryBoundaryTruth?: string;
   primaryRuntimeTruthLabel?: string;
@@ -980,6 +1093,53 @@ function AssistantAnswer({
 
   const displayedContent = content.slice(0, displayLength);
   const blocks = useMemo(() => parseAnswerBlocks(displayedContent, citations), [displayedContent, citations]);
+  const isGuidedTour = visionMode === 'guided_tour';
+  const guidedTourSteps = useMemo(() => {
+    const unique: ChatRelatedLink[] = [];
+    const seen = new Set<string>();
+    for (const link of relatedSections) {
+      const key = normalizeRouteKey(link);
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      unique.push(link);
+      if (unique.length >= 2) {
+        break;
+      }
+    }
+    return unique;
+  }, [relatedSections]);
+  const guidedTourDocs = useMemo(() => {
+    const unique: ChatRelatedLink[] = [];
+    const seen = new Set<string>(guidedTourSteps.map((link) => normalizeRouteKey(link)));
+    for (const link of relatedLinks) {
+      const key = normalizeRouteKey(link);
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      unique.push(link);
+      if (unique.length >= 2) {
+        break;
+      }
+    }
+    return unique;
+  }, [guidedTourSteps, relatedLinks]);
+  const hasGuidedTour = isGuidedTour && (guidedTourSteps.length > 0 || guidedTourDocs.length > 0);
+  const guidedTourLead = useMemo(() => {
+    if (!hasGuidedTour) {
+      return null;
+    }
+    const firstStep = guidedTourSteps[0];
+    const secondStep = guidedTourSteps[1];
+    const firstDoc = guidedTourDocs[0];
+    return {
+      start: firstStep?.label,
+      then: secondStep?.label ?? firstDoc?.label,
+      why: firstDoc?.summary ?? secondStep?.summary ?? firstStep?.summary,
+    };
+  }, [guidedTourDocs, guidedTourSteps, hasGuidedTour]);
   const hasTruth = Boolean(
     primaryBoundaryTruth ||
     primarySourceLane ||
@@ -1014,6 +1174,22 @@ function AssistantAnswer({
               )}
             </div>
       </div>
+      {guidedTourLead && (
+        <div className="guided-tour-lead">
+          <div className="guided-tour-lead-kicker">Route First</div>
+          <div className="guided-tour-lead-title">
+            {guidedTourLead.start ? `${guidedTourLead.start}부터 여세요.` : '이 경로부터 따라가면 됩니다.'}
+          </div>
+          {guidedTourLead.then && (
+            <p className="guided-tour-lead-copy">
+              이어서 <strong>{guidedTourLead.then}</strong>로 이동합니다.
+            </p>
+          )}
+          {guidedTourLead.why && (
+            <p className="guided-tour-lead-copy subdued">{guidedTourLead.why}</p>
+          )}
+        </div>
+      )}
       <div className="assistant-copy">
         {blocks.map((block, index) => {
           if (block.type === 'heading') {
@@ -1079,7 +1255,61 @@ function AssistantAnswer({
           );
         })}
       </div>
-      {relatedLinks.length > 0 && (
+      {hasGuidedTour && (
+        <div className="guided-tour-group">
+          <div className="suggested-query-label">Guided Tour</div>
+          <div className="guided-tour-header">
+            <div>
+              <div className="guided-tour-title">이 순서로 따라가면 됩니다</div>
+              <p className="guided-tour-summary">
+                핵심 절차 {guidedTourSteps.length}개와 관련 문서 {guidedTourDocs.length}개만 먼저 엽니다.
+              </p>
+            </div>
+          </div>
+          <div className="guided-tour-route">
+            {guidedTourSteps.length > 0 && (
+              <div className="guided-tour-lane">
+                <div className="guided-tour-lane-label">Start Here</div>
+                {guidedTourSteps.map((link, index) => (
+                  <button
+                    key={`guided-step-${link.href}-${index}`}
+                    className="guided-tour-card guided-tour-card-step"
+                    type="button"
+                    onClick={() => onRelatedLinkClick(link)}
+                    title={link.summary ?? ''}
+                  >
+                    <span className="guided-tour-kicker">Step {index + 1}</span>
+                    <strong>{link.label}</strong>
+                    <span>{link.summary || '지금 바로 확인해야 할 절차입니다.'}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {guidedTourDocs.length > 0 && (
+              <div className="guided-tour-lane">
+                <div className="guided-tour-lane-label">Then Open</div>
+                {guidedTourDocs.map((link, index) => (
+                  <button
+                    key={`guided-doc-${link.href}-${index}`}
+                    className="guided-tour-card guided-tour-card-doc"
+                    type="button"
+                    onClick={() => onRelatedLinkClick(link)}
+                    title={link.summary ?? ''}
+                  >
+                    <span className="guided-tour-kicker">Document {index + 1}</span>
+                    <strong>{link.label}</strong>
+                    <span>{link.summary || '이 절차를 따라간 뒤 이어서 참고할 문서입니다.'}</span>
+                    <span className="guided-tour-arrow">
+                      <ArrowRight size={14} />
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {!isGuidedTour && relatedLinks.length > 0 && (
         <div className="assistant-related-group">
           <div className="suggested-query-label">관련 문서</div>
           <div className="suggested-query-list">
@@ -1099,7 +1329,7 @@ function AssistantAnswer({
           </div>
         </div>
       )}
-      {relatedSections.length > 0 && (
+      {!isGuidedTour && relatedSections.length > 0 && (
         <div className="assistant-related-group">
           <div className="suggested-query-label">바로 볼 절차</div>
           <div className="suggested-query-list">
@@ -1198,6 +1428,7 @@ export default function WorkspacePage() {
   const [sessionId, setSessionId] = useState(() => makeId('ID'));
   const [activeSourceId, setActiveSourceId] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewState>({ kind: 'empty' });
+  const [atlasFigures, setAtlasFigures] = useState<RuntimeFigureItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -1218,6 +1449,9 @@ export default function WorkspacePage() {
       return saved;
     }
     return 'history';
+  });
+  const [visionMode, setVisionMode] = useState<VisionMode>(() => {
+    return 'atlas_canvas';
   });
 
   // Scroll + welcome
@@ -1287,11 +1521,38 @@ export default function WorkspacePage() {
       .slice(0, 4)
       .map((book) => `${book.title} 핵심 절차를 알려줘`);
   }, [manualBooks]);
+  const activeVision = useMemo(
+    () => WIKI_VISION_MODES.find((mode) => mode.id === visionMode) ?? WIKI_VISION_MODES[0],
+    [visionMode],
+  );
+  const leftPanelLabels = useMemo(() => ({
+    history: visionMode === 'guided_tour' ? 'Journey' : 'History',
+    outline: visionMode === 'guided_tour' ? 'Route Map' : 'Outline',
+    signals: visionMode === 'guided_tour' ? 'Signals' : 'Signals',
+    historyTitle: visionMode === 'guided_tour' ? 'Tour Journey' : 'Chat History',
+    outlineTitle: visionMode === 'guided_tour' ? 'Tour Map' : 'Document Outline',
+    signalsTitle: visionMode === 'guided_tour' ? 'Tour Signals' : 'Reader Signals',
+  }), [visionMode]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem('workspace.leftPanelMode', leftPanelMode);
   }, [leftPanelMode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('wikiVisionMode', visionMode);
+  }, [visionMode]);
+
+  useEffect(() => {
+    if (visionMode !== 'atlas_canvas' || preview.kind !== 'viewer' || !preview.meta?.book_slug) {
+      setAtlasFigures([]);
+      return;
+    }
+    loadRuntimeFigures(preview.meta.book_slug, 3)
+      .then((payload) => setAtlasFigures(payload.items ?? []))
+      .catch(() => setAtlasFigures([]));
+  }, [preview, visionMode]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -2099,6 +2360,15 @@ export default function WorkspacePage() {
     () => [...messages].reverse().find((message) => message.role === 'assistant') ?? null,
     [messages],
   );
+  const atlasRelationLinks = useMemo(
+    () => (activeAssistantMessage?.relatedLinks ?? []).slice(0, 2),
+    [activeAssistantMessage],
+  );
+  const atlasRelationSections = useMemo(
+    () => (activeAssistantMessage?.relatedSections ?? []).slice(0, 2),
+    [activeAssistantMessage],
+  );
+  const atlasFigureEntries = useMemo(() => buildFigureAtlasEntries(atlasFigures), [atlasFigures]);
   const activeBookSlug = useMemo(() => {
     if (preview.kind === 'viewer' && preview.meta?.book_slug) {
       return preview.meta.book_slug;
@@ -2247,10 +2517,10 @@ export default function WorkspacePage() {
     [activeSourceId, draftSources],
   );
   const viewerSurfaceTitle = preview.kind === 'draft'
-    ? 'Customer Pack Viewer'
+    ? (visionMode === 'guided_tour' ? 'Guided Tour Pack' : 'Customer Pack Viewer')
     : preview.kind === 'viewer'
-      ? 'Wiki Viewer'
-      : 'Document Viewer';
+      ? (visionMode === 'guided_tour' ? 'Guided Tour Viewer' : 'Wiki Viewer')
+      : (visionMode === 'guided_tour' ? 'Guided Tour Document' : 'Document Viewer');
   return (
     <div className="workspace-wrapper" ref={containerRef} data-lenis-prevent>
       <div className="bokeh-bg bokeh-1"></div>
@@ -2332,9 +2602,9 @@ export default function WorkspacePage() {
                 <div className="panel-header-main">
                   <div className="panel-header-copy">
                     <h3>
-                      {leftPanelMode === 'history' && 'Chat History'}
-                      {leftPanelMode === 'outline' && 'Document Outline'}
-                      {leftPanelMode === 'signals' && 'Reader Signals'}
+                      {leftPanelMode === 'history' && leftPanelLabels.historyTitle}
+                      {leftPanelMode === 'outline' && leftPanelLabels.outlineTitle}
+                      {leftPanelMode === 'signals' && leftPanelLabels.signalsTitle}
                     </h3>
                   </div>
                   <div className="session-header-actions">
@@ -2362,25 +2632,25 @@ export default function WorkspacePage() {
                       type="button"
                       className={`panel-mode-btn ${leftPanelMode === 'history' ? 'active' : ''}`}
                       onClick={() => setLeftPanelMode('history')}
-                      title="History"
+                      title={leftPanelLabels.history}
                     >
-                      History
+                      {leftPanelLabels.history}
                     </button>
                     <button
                       type="button"
                       className={`panel-mode-btn ${leftPanelMode === 'outline' ? 'active' : ''}`}
                       onClick={() => setLeftPanelMode('outline')}
-                      title="Outline"
+                      title={leftPanelLabels.outline}
                     >
-                      Outline
+                      {leftPanelLabels.outline}
                     </button>
                     <button
                       type="button"
                       className={`panel-mode-btn ${leftPanelMode === 'signals' ? 'active' : ''}`}
                       onClick={() => setLeftPanelMode('signals')}
-                      title="Reader Signals"
+                      title={leftPanelLabels.signalsTitle}
                     >
-                      Signals
+                      {leftPanelLabels.signals}
                     </button>
                 </div>
               </div>
@@ -2443,7 +2713,7 @@ export default function WorkspacePage() {
                   {outlineCategoryGroups.length > 0 && (
                     <section className="outline-category-board">
                       <div className="outline-section-head">
-                        <strong>Categories</strong>
+                        <strong>{visionMode === 'guided_tour' ? 'Tour Routes' : 'Categories'}</strong>
                         <span>{outlineCategoryGroups.length}</span>
                       </div>
                       <div className="outline-category-list">
@@ -2499,7 +2769,7 @@ export default function WorkspacePage() {
                   <nav className="outline-toc" aria-label="Document outline">
                     <div className="outline-section-head">
                       <div className="outline-section-copy">
-                        <strong>Current Document</strong>
+                        <strong>{visionMode === 'guided_tour' ? 'Current Stop' : 'Current Document'}</strong>
                         {preview.kind !== 'empty' && <span>{preview.title}</span>}
                       </div>
                       {outlineTocNodes.length > 0 && <span>{outlineTocNodes.length}</span>}
@@ -2542,7 +2812,7 @@ export default function WorkspacePage() {
                     )}
                     {outlineProcedureItems.length > 0 && (
                       <div className="outline-toc-suggested">
-                        <div className="outline-toc-suggested-title">Suggested next</div>
+                        <div className="outline-toc-suggested-title">{visionMode === 'guided_tour' ? 'Then Open' : 'Suggested next'}</div>
                         <div className="outline-toc-suggested-chips">
                           {outlineProcedureItems.slice(0, 3).map((item) => (
                             <button
@@ -2560,7 +2830,7 @@ export default function WorkspacePage() {
                     )}
                   </nav>
 
-                  {(outlineRuntimeItems.length > 0 || outlineCustomerItems.length > 0) && (
+                  {visionMode !== 'guided_tour' && (outlineRuntimeItems.length > 0 || outlineCustomerItems.length > 0) && (
                     <details className="outline-more">
                       <summary>More sources</summary>
                       {outlineRuntimeItems.length > 0 && (
@@ -2710,17 +2980,53 @@ export default function WorkspacePage() {
                     <div className="welcome-icon">
                       <Sparkles size={36} />
                     </div>
-                    <h2 className="welcome-title">질문을 시작하세요</h2>
-                    <div className="welcome-question-grid">
+                    <h2 className="welcome-title">{visionMode === 'guided_tour' ? '투어를 시작하세요' : '질문을 시작하세요'}</h2>
+                    <p className="welcome-vision-copy">
+                      {visionMode === 'guided_tour'
+                        ? '질문을 던지면 바로 읽을 절차와 이어서 열 문서를 한 경로로 엽니다.'
+                        : activeVision.summary}
+                    </p>
+                    {visionMode === 'guided_tour' ? (
+                      <div className="welcome-vision-active">
+                        <div className="welcome-vision-active-title">Guided Tour Active</div>
+                        <p className="welcome-vision-active-copy">질문을 던지면 답변, 문서, 다음 절차가 한 경로로 이어집니다.</p>
+                      </div>
+                    ) : (
+                      <div className="welcome-vision-grid">
+                        {WIKI_VISION_MODES.map((mode) => (
+                          <button
+                            key={mode.id}
+                            type="button"
+                            className={`welcome-vision-card ${visionMode === mode.id ? 'active' : ''}`}
+                            onClick={() => setVisionMode(mode.id)}
+                          >
+                            <strong>{mode.label}</strong>
+                            <span>{mode.cue}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div className="suggested-query-label welcome-route-label">
+                      {visionMode === 'guided_tour' ? 'Start Tour' : '시작 질문'}
+                    </div>
+                    <div className={visionMode === 'guided_tour' ? 'welcome-question-grid guided-welcome-grid' : 'welcome-question-grid'}>
                       {welcomeQuestions.map((q, i) => (
                         <button
                           key={`welcome-q-${i}`}
                           type="button"
-                          className="welcome-question-card glass-panel"
+                          className={visionMode === 'guided_tour' ? 'welcome-question-card glass-panel guided-welcome-card' : 'welcome-question-card glass-panel'}
                           onClick={() => { void handleSend(q); }}
                           disabled={isSending}
                         >
+                          {visionMode === 'guided_tour' && (
+                            <span className="guided-welcome-index">Step {i + 1}</span>
+                          )}
                           {q}
+                          {visionMode === 'guided_tour' && (
+                            <span className="guided-welcome-arrow">
+                              <ArrowRight size={14} />
+                            </span>
+                          )}
                         </button>
                       ))}
                     </div>
@@ -2736,6 +3042,7 @@ export default function WorkspacePage() {
                             citations={message.citations ?? []}
                             relatedLinks={message.relatedLinks ?? []}
                             relatedSections={message.relatedSections ?? []}
+                            visionMode={visionMode}
                             primarySourceLane={message.primarySourceLane}
                             primaryBoundaryTruth={message.primaryBoundaryTruth}
                             primaryRuntimeTruthLabel={message.primaryRuntimeTruthLabel}
@@ -2780,17 +3087,25 @@ export default function WorkspacePage() {
                       )}
                       {message.role === 'assistant' && message.suggestedQueries && message.suggestedQueries.length > 0 && (
                         <div className="suggested-query-group">
-                            <div className="suggested-query-label">이런 질문은 어떠세요?</div>
-                          <div className="suggested-query-list">
+                            <div className="suggested-query-label">{visionMode === 'guided_tour' ? '다음 경로' : '이런 질문은 어떠세요?'}</div>
+                          <div className={visionMode === 'guided_tour' ? 'suggested-query-list guided-tour-query-list' : 'suggested-query-list'}>
                             {message.suggestedQueries.map((suggestedQuery, suggestedIndex) => (
                               <button
                                 key={`${message.id}-suggested-${suggestedIndex}`}
-                                className="suggested-query-chip"
+                                className={visionMode === 'guided_tour' ? 'suggested-query-chip guided-tour-query-chip' : 'suggested-query-chip'}
                                 type="button"
                                 onClick={() => { void handleSend(suggestedQuery); }}
                                 disabled={isSending}
                               >
+                                {visionMode === 'guided_tour' && (
+                                  <span className="guided-tour-query-index">{suggestedIndex + 1}</span>
+                                )}
                                 {suggestedQuery}
+                                {visionMode === 'guided_tour' && (
+                                  <span className="guided-tour-query-arrow">
+                                    <ArrowRight size={12} />
+                                  </span>
+                                )}
                               </button>
                             ))}
                           </div>
@@ -2828,7 +3143,7 @@ export default function WorkspacePage() {
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     onKeyDown={handleInputKeyDown}
-                    placeholder="질문을 입력하거나 문서를 탐색하세요..."
+                    placeholder={visionMode === 'guided_tour' ? '질문을 던지면 문서 투어를 엽니다...' : '질문을 입력하거나 문서를 탐색하세요...'}
                     disabled={isSending}
                   />
                   <button className="send-btn" onClick={() => { void handleSend(); }} type="button" disabled={isSending}>
@@ -2859,6 +3174,7 @@ export default function WorkspacePage() {
                   <div className="header-icon"><BookOpen size={18} /></div>
                   <div className="panel-header-copy">
                     <h3>{viewerSurfaceTitle}</h3>
+                    <span className="viewer-vision-badge">{visionMode === 'guided_tour' ? 'Guided Tour Active' : activeVision.label}</span>
                   </div>
 
                   <button className="header-action-btn" type="button" onClick={toggleRightPanel} title="Close panel" style={{ marginLeft: 'auto' }}>
@@ -2881,7 +3197,7 @@ export default function WorkspacePage() {
                     onClick={() => setSourcesDrawerOpen((prev) => !prev)}
                   >
                     <FileText size={13} />
-                    <span>Sources ({totalSourceCount})</span>
+                    <span>{visionMode === 'guided_tour' ? `Tour Sources (${totalSourceCount})` : `Sources (${totalSourceCount})`}</span>
                     <ChevronDown size={11} className={`sources-chevron ${sourcesDrawerOpen ? 'open' : ''}`} />
                   </button>
                   <button
@@ -2891,7 +3207,7 @@ export default function WorkspacePage() {
                     disabled={isUploading}
                   >
                     <Upload size={13} />
-                    <span>{isUploading ? 'Uploading...' : 'Upload Pack'}</span>
+                    <span>{isUploading ? (visionMode === 'guided_tour' ? 'Adding source...' : 'Uploading...') : (visionMode === 'guided_tour' ? 'Add Source' : 'Upload Pack')}</span>
                   </button>
                 </div>
 
@@ -2909,7 +3225,7 @@ export default function WorkspacePage() {
                         <button className="section-header-btn" onClick={() => toggleSection('manuals')} type="button">
                           <div className="header-label-group">
                             {collapsedSections.manuals ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                            <span className="list-title">Validated Books</span>
+                            <span className="list-title">{visionMode === 'guided_tour' ? 'Tour Books' : 'Validated Books'}</span>
                           </div>
                           <span className="item-count-badge">{manualSources.length}</span>
                         </button>
@@ -2936,7 +3252,7 @@ export default function WorkspacePage() {
                         <button className="section-header-btn" onClick={() => toggleSection('drafts')} type="button">
                           <div className="header-label-group">
                             {collapsedSections.drafts ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                            <span className="list-title">Customer Packs</span>
+                            <span className="list-title">{visionMode === 'guided_tour' ? 'Added Sources' : 'Customer Packs'}</span>
                           </div>
                           <span className="item-count-badge">{draftSources.length}</span>
                         </button>
@@ -2967,7 +3283,7 @@ export default function WorkspacePage() {
                 {preview.kind === 'empty' && (
                   <div className="empty-state">
                     <div className="empty-icon"><BookOpen size={48} className="text-dim" /></div>
-                    <h4>문서를 선택하세요</h4>
+                    <h4>{visionMode === 'guided_tour' ? '투어 문서를 여세요' : '문서를 선택하세요'}</h4>
                   </div>
                 )}
 
@@ -2975,18 +3291,30 @@ export default function WorkspacePage() {
                   <div className="empty-state">
                     <div className="loading-spinner-small"></div>
                     <h4>{preview.title}</h4>
-                    <p>Loading</p>
+                    <p>{visionMode === 'guided_tour' ? 'Tour is opening' : 'Loading'}</p>
                   </div>
                 )}
 
                 {preview.kind === 'viewer' && (() => {
                   const previewTruth = truthSurfaceCopy(preview.meta);
+                  const guidedViewerStop = visionMode === 'guided_tour'
+                    ? preview.meta?.section_path_label || preview.subtitle || preview.title
+                    : '';
+                  const atlasViewerContext = visionMode === 'atlas_canvas'
+                    ? (preview.meta?.section_path ?? []).slice(0, 3)
+                    : [];
                   return (
                     <div className="document-page animate-in">
                       <div className="doc-header doc-header-with-actions">
                         <div className="doc-header-text">
                           <span className="doc-kicker">{previewTruth.label || preview.meta?.pack_label || 'Source Viewer'}</span>
                           <h2>{preview.title}</h2>
+                          {guidedViewerStop && (
+                            <div className="doc-tour-stop">
+                              <span className="doc-tour-stop-kicker">Now Reading</span>
+                              <span className="doc-tour-stop-label">{guidedViewerStop}</span>
+                            </div>
+                          )}
                         </div>
                         {currentOverlayTarget && (
                           <div className="wiki-overlay-toolbar inline">
@@ -3022,6 +3350,114 @@ export default function WorkspacePage() {
                         )}
                       </div>
                       {preview.subtitle && <p className="doc-summary">{preview.subtitle}</p>}
+                      {visionMode === 'atlas_canvas' && (
+                        <div className="atlas-viewer-strip">
+                          <div className="atlas-viewer-lane">
+                            <div className="atlas-viewer-label">Reading Spine</div>
+                            <div className="atlas-viewer-card atlas-viewer-card-core">
+                              <div className="atlas-viewer-meta-row">
+                                <span className="atlas-viewer-kind">Document</span>
+                                <span className="atlas-viewer-intent">Read</span>
+                              </div>
+                              <strong>{preview.title}</strong>
+                              <span>{preview.meta?.section_path_label || preview.subtitle || '현재 문서를 읽는 중입니다.'}</span>
+                            </div>
+                          </div>
+                          <div className="atlas-viewer-lane">
+                            <div className="atlas-viewer-label">Connected Paths</div>
+                            {(atlasRelationLinks.length > 0 || atlasRelationSections.length > 0) ? (
+                              <>
+                                {atlasRelationSections.map((link, index) => (
+                                  <button
+                                    key={`atlas-section-${link.href}-${index}`}
+                                    type="button"
+                                    className="atlas-viewer-card atlas-viewer-card-link atlas-viewer-card-step"
+                                    onClick={() => void handleRelatedLinkClick(link)}
+                                  >
+                                    <div className="atlas-viewer-meta-row">
+                                      <span className="atlas-viewer-kind">Procedure</span>
+                                      <span className="atlas-viewer-intent">Follow</span>
+                                    </div>
+                                    <strong>{link.label}</strong>
+                                    <span>{link.summary || '연결된 절차로 이동'}</span>
+                                    <span className="atlas-viewer-why">현재 문서에서 바로 이어서 따라갈 절차</span>
+                                  </button>
+                                ))}
+                                {atlasRelationLinks.map((link, index) => (
+                                  <button
+                                    key={`atlas-link-${link.href}-${index}`}
+                                    type="button"
+                                    className="atlas-viewer-card atlas-viewer-card-link atlas-viewer-card-doclink"
+                                    onClick={() => void handleRelatedLinkClick(link)}
+                                  >
+                                    <div className="atlas-viewer-meta-row">
+                                      <span className="atlas-viewer-kind">Linked Doc</span>
+                                      <span className="atlas-viewer-intent">Open</span>
+                                    </div>
+                                    <strong>{link.label}</strong>
+                                    <span>{link.summary || '연결된 문서를 엽니다.'}</span>
+                                    <span className="atlas-viewer-why">같은 주제를 넓히는 연결 문서</span>
+                                  </button>
+                                ))}
+                              </>
+                            ) : (
+                              <div className="atlas-viewer-card atlas-viewer-card-muted">
+                                <strong>연결 경로 수집 중</strong>
+                                <span>현재 문서 주변의 section relation과 관련 문서를 여기에 붙입니다.</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="atlas-viewer-lane">
+                            <div className="atlas-viewer-label">Visual Memory</div>
+                            {atlasFigureEntries.length > 0 ? (
+                              <>
+                                {atlasFigureEntries.map((figure, index) => (
+                                  <button
+                                    key={`atlas-figure-${figure.key}-${index}`}
+                                    type="button"
+                                    className={`atlas-viewer-card atlas-viewer-card-link atlas-viewer-card-figure${figure.isCluster ? ' atlas-viewer-card-cluster' : ''}`}
+                                    onClick={() => void handleRelatedLinkClick({
+                                      label: figure.title,
+                                      href: figure.href,
+                                      kind: 'book',
+                                      summary: figure.subtitle,
+                                    })}
+                                  >
+                                    <div className="atlas-viewer-meta-row">
+                                      <span className="atlas-viewer-kind">{figure.kind}</span>
+                                      <span className="atlas-viewer-intent">{figure.intent}</span>
+                                    </div>
+                                    {typeof figure.count === 'number' ? (
+                                      <span className="atlas-viewer-count">{figure.count} linked visuals</span>
+                                    ) : null}
+                                    {figure.thumbUrl ? (
+                                      <div
+                                        className="atlas-viewer-thumb"
+                                        style={{ backgroundImage: `url(${figure.thumbUrl})` }}
+                                        aria-hidden="true"
+                                      />
+                                    ) : null}
+                                    <strong>{figure.title}</strong>
+                                    <span>{figure.subtitle}</span>
+                                    <span className="atlas-viewer-why">{figure.why}</span>
+                                  </button>
+                                ))}
+                              </>
+                            ) : atlasViewerContext.length > 0 ? (
+                              <div className="atlas-context-chip-row">
+                                {atlasViewerContext.map((item) => (
+                                  <span key={item} className="atlas-context-chip">{item}</span>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="atlas-viewer-card atlas-viewer-card-muted">
+                                <strong>맥락 정보 없음</strong>
+                                <span>section path와 source truth가 이 레이어로 들어옵니다.</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       {previewTruth.meta.length > 0 && (
                         <div className="doc-chip-row">
                           {previewTruth.meta.map((item) => (

@@ -89,6 +89,12 @@ customer lane 은 아래를 기본선으로 추가한다.
 
 즉 제품의 본질은 `문서를 예쁘게 렌더`하는 것이 아니라, `운영과 학습이 가능한 connected technical wiki` 를 만드는 것이다.
 
+동시에 이 프로젝트는 방향만 고정하고 방법까지 고정하지 않는다.
+
+- `connected technical wiki` 라는 목표는 고정한다.
+- 그러나 그 목표를 가장 강하게 드러내는 정보 구조, 화면 형태, 탐색 경험, reader contract 는 창의적으로 탐험한다.
+- 기존 viewer 나 기존 layout 은 기준선일 뿐이며, 더 나은 encyclopedia form 이 있으면 과감하게 교체한다.
+
 ## Current Product Focus
 
 현재 우선순위는 아래다.

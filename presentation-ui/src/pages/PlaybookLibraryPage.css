@@ -119,6 +119,112 @@
   padding: 48px 40px;
 }
 
+.wiki-vision-lab {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.wiki-vision-lab-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-end;
+}
+
+.wiki-vision-eyebrow {
+  color: var(--accent-cyan);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.wiki-vision-lab-header h2 {
+  margin: 6px 0 8px;
+}
+
+.wiki-vision-lab-header p {
+  margin: 0;
+  color: var(--text-muted);
+  max-width: 720px;
+}
+
+.wiki-vision-focus {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 209, 255, 0.16);
+  background: rgba(0, 209, 255, 0.08);
+  color: var(--accent-cyan);
+  font-size: 0.84rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.wiki-vision-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.wiki-vision-active {
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(88, 196, 255, 0.16);
+  background: linear-gradient(180deg, rgba(12, 24, 40, 0.88), rgba(8, 14, 24, 0.74));
+}
+
+.wiki-vision-active-title {
+  color: #f6fbff;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.wiki-vision-active-copy {
+  margin: 8px 0 0;
+  color: rgba(218, 230, 239, 0.76);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.wiki-vision-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px 18px 20px;
+  border-radius: 20px;
+  border: 1px solid var(--glass-border);
+  background: rgba(21, 21, 24, 0.42);
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.25s, border-color 0.25s, background 0.25s;
+}
+
+.wiki-vision-card:hover,
+.wiki-vision-card.active {
+  transform: translateY(-3px);
+  border-color: rgba(0, 209, 255, 0.28);
+  background: rgba(0, 209, 255, 0.08);
+}
+
+.wiki-vision-card-eyebrow {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.wiki-vision-card strong {
+  font-size: 1.02rem;
+}
+
+.wiki-vision-card span:last-child {
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
 /* Metrics Grid */
 .metrics-grid {
   display: grid;
@@ -381,6 +487,259 @@
   gap: 14px;
 }
 
+.operational-tour-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.operational-tour-lane {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  padding-left: 14px;
+}
+
+.operational-tour-lane::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 22px;
+  bottom: 8px;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(88, 196, 255, 0.26), rgba(88, 196, 255, 0.08));
+}
+
+.operational-tour-lane-label {
+  color: rgba(211, 227, 238, 0.78);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.operational-tour-card {
+  position: relative;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+}
+
+.operational-tour-card::before {
+  content: '';
+  position: absolute;
+  left: -15px;
+  top: 18px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 0 4px rgba(88, 196, 255, 0.08);
+}
+
+.operational-tour-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(88, 196, 255, 0.24);
+  background: rgba(88, 196, 255, 0.08);
+}
+
+.operational-tour-kicker {
+  color: var(--accent-cyan);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.operational-tour-card strong {
+  color: #f6fbff;
+  font-size: 0.96rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.operational-tour-card span:last-child {
+  color: rgba(217, 230, 239, 0.72);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.operational-tour-card-doc {
+  padding-right: 42px;
+}
+
+.operational-tour-arrow {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  color: var(--accent-cyan);
+}
+
+.operational-atlas-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.operational-atlas-grid:hover .operational-atlas-card {
+  opacity: 0.68;
+}
+
+.operational-atlas-lane {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-left: 18px;
+}
+
+.operational-atlas-lane::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 28px;
+  bottom: 8px;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(89, 208, 255, 0.6), rgba(89, 208, 255, 0.08));
+}
+
+.operational-atlas-lane-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(154, 196, 214, 0.78);
+}
+
+.operational-atlas-card {
+  position: relative;
+  text-align: left;
+  padding: 16px 16px 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(89, 208, 255, 0.12);
+  background:
+    linear-gradient(180deg, rgba(12, 18, 28, 0.9), rgba(9, 14, 22, 0.96)),
+    radial-gradient(circle at top left, rgba(89, 208, 255, 0.1), transparent 55%);
+  color: inherit;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease,
+    background 0.18s ease;
+}
+
+.operational-atlas-kind {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 0.18rem 0.48rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(229, 238, 255, 0.72);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.operational-atlas-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.operational-atlas-intent {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 0.18rem 0.48rem;
+  border-radius: 999px;
+  background: rgba(89, 208, 255, 0.1);
+  color: rgba(157, 225, 255, 0.88);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.operational-atlas-card::before {
+  content: '';
+  position: absolute;
+  left: -18px;
+  top: 24px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(89, 208, 255, 0.92);
+  box-shadow: 0 0 0 4px rgba(89, 208, 255, 0.12);
+}
+
+.operational-atlas-card:hover,
+.operational-atlas-card:focus-visible {
+  opacity: 1 !important;
+  transform: translateY(-2px);
+  border-color: rgba(89, 208, 255, 0.26);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.2);
+}
+
+.operational-atlas-card strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 1rem;
+}
+
+.operational-atlas-card span:last-child {
+  color: rgba(187, 201, 212, 0.78);
+  font-size: 0.88rem;
+}
+
+.operational-atlas-why {
+  margin-top: 6px;
+  color: rgba(132, 219, 255, 0.72) !important;
+  font-size: 0.78rem !important;
+}
+
+.operational-atlas-kicker {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(89, 208, 255, 0.78);
+}
+
+.operational-atlas-card-relation {
+  border-color: rgba(125, 158, 255, 0.16);
+}
+
+.operational-atlas-card-relation::before {
+  background: rgba(125, 158, 255, 0.92);
+  box-shadow: 0 0 0 4px rgba(125, 158, 255, 0.12);
+}
+
+.operational-atlas-card-context {
+  border-color: rgba(255, 209, 122, 0.16);
+}
+
+.operational-atlas-card-context::before {
+  background: rgba(255, 209, 122, 0.94);
+  box-shadow: 0 0 0 4px rgba(255, 209, 122, 0.12);
+}
+
 .operational-book-card {
   display: flex;
   flex-direction: column;
@@ -613,6 +972,14 @@
 
   .metrics-grid-primary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .operational-tour-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .operational-atlas-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1773,6 +2140,159 @@
   cursor: not-allowed;
 }
 
+.book-preview-atlas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 16px;
+  padding: 16px 28px 0;
+}
+
+.book-preview-atlas:hover .book-preview-atlas-card {
+  opacity: 0.68;
+}
+
+.book-preview-atlas-lane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.book-preview-atlas-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(154, 196, 214, 0.78);
+}
+
+.book-preview-atlas-card {
+  display: block;
+  text-align: left;
+  padding: 14px 15px;
+  border-radius: 16px;
+  border: 1px solid rgba(89, 208, 255, 0.12);
+  background:
+    linear-gradient(180deg, rgba(12, 18, 28, 0.92), rgba(9, 14, 22, 0.96)),
+    radial-gradient(circle at top left, rgba(89, 208, 255, 0.08), transparent 55%);
+  color: inherit;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease,
+    background 0.18s ease;
+}
+
+.book-preview-atlas-kind {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 0.18rem 0.48rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(229, 238, 255, 0.72);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.book-preview-atlas-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.book-preview-atlas-intent {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 0.18rem 0.48rem;
+  border-radius: 999px;
+  background: rgba(89, 208, 255, 0.1);
+  color: rgba(157, 225, 255, 0.88);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.book-preview-atlas-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 8.5;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.04);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.book-preview-atlas-card-cluster {
+  background:
+    linear-gradient(180deg, rgba(34, 24, 18, 0.88), rgba(16, 11, 9, 0.96)),
+    radial-gradient(circle at top left, rgba(251, 191, 36, 0.12), transparent 55%);
+}
+
+.book-preview-atlas-count {
+  display: inline-flex;
+  width: fit-content;
+  margin: 2px 0 2px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.14);
+  color: rgba(255, 223, 173, 0.92);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.book-preview-atlas-card:hover,
+.book-preview-atlas-card:focus-visible {
+  opacity: 1 !important;
+  transform: translateY(-2px);
+  border-color: rgba(89, 208, 255, 0.24);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.2);
+}
+
+.book-preview-atlas-card:hover .book-preview-atlas-thumb,
+.book-preview-atlas-card:focus-visible .book-preview-atlas-thumb {
+  transform: scale(1.03);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.book-preview-atlas-card strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.98rem;
+}
+
+.book-preview-atlas-card span {
+  color: rgba(187, 201, 212, 0.78);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.book-preview-atlas-why {
+  margin-top: 6px;
+  color: rgba(132, 219, 255, 0.72) !important;
+  font-size: 0.78rem !important;
+}
+
+.book-preview-atlas-card-link {
+  text-decoration: none;
+}
+
+.book-preview-atlas-card-muted {
+  border-style: dashed;
+  border-color: rgba(154, 196, 214, 0.18);
+}
+
 .preview-body {
   flex: 1 1 0;
   overflow: hidden;
@@ -1798,6 +2318,12 @@
   border: none;
   background: #fff;
   border-radius: 0 0 24px 24px;
+}
+
+@media (max-width: 980px) {
+  .book-preview-atlas {
+    grid-template-columns: 1fr;
+  }
 }
 
 .preview-no-sections {

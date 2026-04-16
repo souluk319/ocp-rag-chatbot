@@ -1,0 +1,24 @@
+{
+  "task_id": "W6-E3-T3-REAL-DATA-VIEWER-VALIDATION",
+  "created_at": "2026-04-15T16:55:00+09:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "python",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "write_scope": "test plan + viewer validation evidence + quality scoring reports",
+  "target_outputs": [
+    "reports/build_logs/real_data_viewer_validation_report.json",
+    "reports/build_logs/real_data_viewer_validation_verification_report.json",
+    "reports/execution_harness/W6-E3-T3-REAL-DATA-VIEWER-VALIDATION/main/worklog.md",
+    "reports/execution_harness/W6-E3-T3-REAL-DATA-VIEWER-VALIDATION/main/final_report.json",
+    "TASK_BOARD.yaml"
+  ],
+  "validation_commands": [
+    "npm --prefix presentation-ui run build",
+    "python -c \"import json, pathlib; json.loads(pathlib.Path('reports/build_logs/real_data_viewer_validation_report.json').read_text(encoding='utf-8'))\"",
+    "python -c \"import json, pathlib; json.loads(pathlib.Path('reports/build_logs/real_data_viewer_validation_verification_report.json').read_text(encoding='utf-8'))\""
+  ],
+  "status": "prepared"
+}

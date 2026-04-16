@@ -8,8 +8,10 @@ from play_book_studio.config.packs import default_core_pack
 from play_book_studio.retrieval.query import (
     detect_out_of_corpus_version,
     detect_unsupported_product,
+    has_doc_locator_intent,
     has_logging_ambiguity,
     has_multiple_entity_ambiguity,
+    has_rbac_intent,
     has_security_doc_locator_ambiguity,
     has_update_doc_locator_ambiguity,
 )
@@ -194,6 +196,8 @@ def route_non_rag(
                 f"답변: 현재 코퍼스에는 {unsupported_product} 관련 설치나 비교 절차를 답할 근거가 없습니다."
             ),
         )
+    if has_doc_locator_intent(normalized) or has_rbac_intent(normalized):
+        return None
     if _looks_like_light_smalltalk(normalized):
         return RoutedResponse(route="smalltalk", answer=_generic_smalltalk_answer())
     return None

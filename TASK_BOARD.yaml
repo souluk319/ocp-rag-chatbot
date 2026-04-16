@@ -843,3 +843,52 @@ phases:
       - repository_unanswered_api_returns_recent_unique_no_answer_questions
       - playbook_library_repository_view_renders_unanswered_question_queue
       - unanswered_question_queue_items_prefill_repository_search_input_only_on_click
+  - id: W6-E3
+    name: wiki_vision_exploration
+    tasks:
+    - id: W6-E3-T1
+      title: 문서 관계 이미지 챗봇을 한 경험으로 묶는 wiki vision prototype 3개를 실제 surface로 비교 가능한 형태로 만든다
+      owner: product_architect
+      status: in_progress
+      outputs:
+      - reports/execution_harness/W6-E3-T1-WIKI-VISION-PROTOTYPES/main/manifest.json
+      - reports/execution_harness/W6-E3-T1-WIKI-VISION-PROTOTYPES/main/worklog.md
+      - reports/execution_harness/W6-E3-T1-WIKI-VISION-PROTOTYPES/main/final_report.json
+      - reports/build_logs/wiki_vision_packet_report.json
+      - presentation-ui/src/pages/PlaybookLibraryPage.tsx
+      - presentation-ui/src/pages/WorkspacePage.tsx
+      - presentation-ui/src/pages/PlaybookLibraryPage.css
+      - presentation-ui/src/pages/WorkspacePage.css
+      tests:
+      - execution_harness_bootstrap_creates_manifest_worklog_and_final_report
+      - presentation_ui_build_passes_after_wiki_vision_prototypes
+    - id: W6-E3-T2
+      title: viewer 선정 스프린트를 열고 atlas_canvas guided_tour encyclopedia_world 3안을 reader image relation chat 기준으로 비교한다
+      owner: product_architect
+      status: in_progress
+      outputs:
+      - reports/execution_harness/W6-E3-T2-VIEWER-SELECTION-SPRINT/main/manifest.json
+      - reports/execution_harness/W6-E3-T2-VIEWER-SELECTION-SPRINT/main/worklog.md
+      - reports/execution_harness/W6-E3-T2-VIEWER-SELECTION-SPRINT/main/final_report.json
+      - reports/build_logs/viewer_selection_packet_report.json
+      - PIPELINE_PLAIN_GUIDE.md
+      - presentation-ui/src/pages/PlaybookLibraryPage.tsx
+      - presentation-ui/src/pages/WorkspacePage.tsx
+      - src/play_book_studio/app/viewer_page.py
+      - src/play_book_studio/app/viewer_blocks.py
+      tests:
+      - viewer_selection_packet_defines_four_axis_comparison_for_three_modes
+      - presentation_ui_build_passes_after_viewer_selection_updates
+    - id: W6-E3-T3
+      title: active 29권 중 대표 5권 실데이터 viewer validation 을 돌려 개행 리스트 figure relation atlas 품질을 재채점한다
+      owner: judge
+      status: in_progress
+      outputs:
+      - reports/execution_harness/W6-E3-T3-REAL-DATA-VIEWER-VALIDATION/main/manifest.json
+      - reports/execution_harness/W6-E3-T3-REAL-DATA-VIEWER-VALIDATION/main/worklog.md
+      - reports/execution_harness/W6-E3-T3-REAL-DATA-VIEWER-VALIDATION/main/final_report.json
+      - reports/build_logs/real_data_viewer_validation_report.json
+      - reports/build_logs/real_data_viewer_validation_verification_report.json
+      tests:
+      - representative_five_books_cover_lists_code_figures_relations_and_stress
+      - real_data_viewer_validation_packet_records_pass_fail_by_quality_axis

@@ -134,6 +134,43 @@ def handle_source_meta(handler: Any, query: str, *, root_dir: Path) -> None:
     )
 
 
+def handle_runtime_figures(handler: Any, query: str, *, root_dir: Path) -> None:
+    params = parse_qs(query, keep_blank_values=False)
+    book_slug = str((params.get("book_slug") or [""])[0]).strip()
+    limit_raw = str((params.get("limit") or ["3"])[0]).strip()
+    if not book_slug:
+      handler._send_json({"error": "book_slug가 필요합니다."}, HTTPStatus.BAD_REQUEST)
+      return
+    try:
+      limit = max(1, min(12, int(limit_raw or "3")))
+    except ValueError:
+      limit = 3
+    asset_path = root_dir / "data" / "wiki_relations" / "figure_assets.json"
+    if not asset_path.exists():
+      handler._send_json({"count": 0, "items": []})
+      return
+    payload = json.loads(asset_path.read_text(encoding="utf-8"))
+    entries = payload.get("entries") if isinstance(payload.get("entries"), dict) else {}
+    items = entries.get(book_slug) if isinstance(entries, dict) else []
+    if not isinstance(items, list):
+      items = []
+    normalized: list[dict[str, Any]] = []
+    for item in items[:limit]:
+      if not isinstance(item, dict):
+        continue
+      normalized.append(
+        {
+          "caption": str(item.get("caption") or item.get("alt") or "Figure"),
+          "viewer_path": str(item.get("viewer_path") or "").strip(),
+          "asset_url": str(item.get("asset_url") or "").strip(),
+          "asset_kind": str(item.get("asset_kind") or "figure"),
+          "diagram_type": str(item.get("diagram_type") or "").strip(),
+          "section_hint": str(item.get("section_hint") or "").strip(),
+        }
+      )
+    handler._send_json({"count": len(normalized), "items": normalized, "book_slug": book_slug})
+
+
 def handle_sessions_list(handler: Any, query: str, *, store: Any) -> None:
     params = parse_qs(query, keep_blank_values=False)
     limit_raw = str((params.get("limit") or ["50"])[0]).strip()
@@ -206,9 +243,11 @@ def handle_debug_chat_log(handler: Any, query: str, *, root_dir: Path) -> None:
     handler._send_json({"entries": entries, "count": len(entries), "path": str(log_path)})
 
 
-def handle_data_control_room(handler: Any, query: str, *, root_dir: Path) -> None:
+def handle_data_control_room(handler: Any, query: str, *, root_dir: Path) -> dict[str, Any]:
     del query
-    handler._send_json(build_data_control_room_payload(root_dir))
+    payload = build_data_control_room_payload(root_dir)
+    handler._send_json(payload)
+    return payload
 
 
 def handle_buyer_packet(handler: Any, query: str, *, root_dir: Path) -> None:

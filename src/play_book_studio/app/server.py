@@ -4,8 +4,10 @@ from __future__ import annotations
 import json
 import mimetypes
 import threading
+import time
 import uuid
 import webbrowser
+import sys
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -42,6 +44,7 @@ from play_book_studio.app.server_routes import (
     handle_repository_favorites_save as _handle_repository_favorites_save_request,
     handle_repository_search as _handle_repository_search_request,
     handle_repository_unanswered as _handle_repository_unanswered_request,
+    handle_runtime_figures as _handle_runtime_figures_request,
     handle_source_meta as _handle_source_meta_request,
     handle_wiki_overlay_signals as _handle_wiki_overlay_signals_request,
     handle_wiki_user_overlay_remove as _handle_wiki_user_overlay_remove_request,
@@ -92,6 +95,34 @@ BLOCKED_LEGACY_VIEWER_PREFIXES = (
     "/playbooks/gold-candidates/",
     "/playbooks/wiki-runtime/wave1/",
 )
+DATA_CONTROL_ROOM_CACHE_TTL_SECONDS = 30.0
+VIEWER_HTML_CACHE_TTL_SECONDS = 45.0
+
+
+class _TimedValueCache:
+    def __init__(self, ttl_seconds: float) -> None:
+        self.ttl_seconds = ttl_seconds
+        self._lock = threading.Lock()
+        self._items: dict[str, tuple[float, Any]] = {}
+
+    def get(self, key: str) -> Any | None:
+        now = time.monotonic()
+        with self._lock:
+            cached = self._items.get(key)
+            if cached is None:
+                return None
+            created_at, value = cached
+            if now - created_at > self.ttl_seconds:
+                self._items.pop(key, None)
+                return None
+            return value
+
+    def set(self, key: str, value: Any) -> Any:
+        with self._lock:
+            self._items[key] = (time.monotonic(), value)
+        return value
+
+
 def _build_chat_payload(
     *,
     root_dir: Path,
@@ -153,6 +184,8 @@ def _build_handler(
     # 실제로 연결하는 구간이다.
     answerer_lock = threading.Lock()
     current_llm_signature = _llm_runtime_signature(answerer.settings)
+    data_control_room_cache = _TimedValueCache(DATA_CONTROL_ROOM_CACHE_TTL_SECONDS)
+    viewer_html_cache = _TimedValueCache(VIEWER_HTML_CACHE_TTL_SECONDS)
 
     def current_answerer() -> ChatAnswerer:
         nonlocal answerer, current_llm_signature
@@ -169,6 +202,10 @@ def _build_handler(
 
         def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
             return None
+
+        def _debug_timing(self, label: str, started_at: float) -> None:
+            elapsed = time.monotonic() - started_at
+            print(f"[timing] {label} {elapsed:.3f}s", file=sys.stderr, flush=True)
 
         def _send_json(self, payload: dict[str, Any], status: HTTPStatus = HTTPStatus.OK) -> None:
             body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -223,6 +260,7 @@ def _build_handler(
         def do_GET(self) -> None:  # noqa: N802
             parsed_request = urlparse(self.path)
             request_path = parsed_request.path
+            started_at = time.monotonic()
 
             if any(request_path.startswith(prefix) for prefix in BLOCKED_LEGACY_VIEWER_PREFIXES):
                 self.send_error(HTTPStatus.NOT_FOUND, "Not found")
@@ -261,7 +299,9 @@ def _build_handler(
                 self._send_json(_build_health_payload(current_answerer()))
                 return
             if request_path == "/api/data-control-room":
+                started_at = time.monotonic()
                 self._handle_data_control_room(parsed_request.query)
+                self._debug_timing("data-control-room", started_at)
                 return
             if request_path == "/api/buyer-packet":
                 self._handle_buyer_packet(parsed_request.query)
@@ -283,6 +323,9 @@ def _build_handler(
                 return
             if request_path == "/api/source-meta":
                 self._handle_source_meta(parsed_request.query)
+                return
+            if request_path == "/api/runtime-figures":
+                self._handle_runtime_figures(parsed_request.query)
                 return
             if request_path == "/api/repositories/search":
                 self._handle_repository_search(parsed_request.query)
@@ -308,33 +351,42 @@ def _build_handler(
             if request_path == "/api/customer-packs/captured":
                 self._handle_customer_pack_captured(parsed_request.query)
                 return
+            viewer_cache_key = self.path
+            cached_viewer_html = viewer_html_cache.get(viewer_cache_key)
+            if isinstance(cached_viewer_html, str):
+                self._send_html(cached_viewer_html)
+                return
+
+            local_html = _viewer_path_to_local_html(root_dir, self.path)
+            if local_html is not None:
+                self._send_html(viewer_html_cache.set(viewer_cache_key, local_html.read_text(encoding="utf-8")))
+                self._debug_timing(f"viewer:{request_path}", started_at)
+                return
+
             internal_buyer_packet_viewer = _internal_buyer_packet_viewer_html(root_dir, self.path)
             if internal_buyer_packet_viewer is not None:
-                self._send_html(internal_buyer_packet_viewer)
+                self._send_html(viewer_html_cache.set(viewer_cache_key, internal_buyer_packet_viewer))
                 return
             internal_customer_pack_viewer = _internal_customer_pack_viewer_html(root_dir, self.path)
             if internal_customer_pack_viewer is not None:
-                self._send_html(internal_customer_pack_viewer)
+                self._send_html(viewer_html_cache.set(viewer_cache_key, internal_customer_pack_viewer))
                 return
             internal_gold_candidate_markdown_viewer = _internal_gold_candidate_markdown_viewer_html(root_dir, self.path)
             if internal_gold_candidate_markdown_viewer is not None:
-                self._send_html(internal_gold_candidate_markdown_viewer)
+                self._send_html(viewer_html_cache.set(viewer_cache_key, internal_gold_candidate_markdown_viewer))
+                self._debug_timing(f"viewer:{request_path}", started_at)
                 return
             internal_entity_hub_viewer = _internal_entity_hub_viewer_html(root_dir, self.path)
             if internal_entity_hub_viewer is not None:
-                self._send_html(internal_entity_hub_viewer)
+                self._send_html(viewer_html_cache.set(viewer_cache_key, internal_entity_hub_viewer))
                 return
             internal_figure_viewer = _internal_figure_viewer_html(root_dir, self.path)
             if internal_figure_viewer is not None:
-                self._send_html(internal_figure_viewer)
+                self._send_html(viewer_html_cache.set(viewer_cache_key, internal_figure_viewer))
                 return
             internal_viewer = _internal_viewer_html(root_dir, self.path)
             if internal_viewer is not None:
-                self._send_html(internal_viewer)
-                return
-            local_html = _viewer_path_to_local_html(root_dir, self.path)
-            if local_html is not None:
-                self._send_html(local_html.read_text(encoding="utf-8"))
+                self._send_html(viewer_html_cache.set(viewer_cache_key, internal_viewer))
                 return
             self.send_error(HTTPStatus.NOT_FOUND, "Not found")
 
@@ -411,6 +463,13 @@ def _build_handler(
                 root_dir=root_dir,
             )
 
+        def _handle_runtime_figures(self, query: str) -> None:
+            _handle_runtime_figures_request(
+                self,
+                query,
+                root_dir=root_dir,
+            )
+
         def _handle_repository_favorites(self, query: str) -> None:
             _handle_repository_favorites_request(
                 self,
@@ -440,11 +499,18 @@ def _build_handler(
             )
 
         def _handle_data_control_room(self, query: str) -> None:
-            _handle_data_control_room_request(
+            del query
+            cached_payload = data_control_room_cache.get("payload")
+            if isinstance(cached_payload, dict):
+                self._send_json(cached_payload)
+                return
+            payload = _handle_data_control_room_request(
                 self,
-                query,
+                "",
                 root_dir=root_dir,
             )
+            if payload is not None:
+                data_control_room_cache.set("payload", payload)
 
         def _handle_buyer_packet(self, query: str) -> None:
             _handle_buyer_packet_request(

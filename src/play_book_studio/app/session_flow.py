@@ -362,7 +362,7 @@ def suggest_follow_up_questions(*, session: ChatSession, result: AnswerResult) -
         retrieval_backed = _suggestions_from_retrieval_hits(result)
         if retrieval_backed:
             return retrieval_backed
-        return []
+        return fallback_no_answer_questions(query=query, topic=topic)
     if result.response_kind == "clarification":
         subject = _suggestion_subject(query=query, topic=topic, primary=primary)
         return dedupe_suggestions(

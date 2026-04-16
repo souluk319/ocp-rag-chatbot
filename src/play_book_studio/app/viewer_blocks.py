@@ -17,6 +17,9 @@ FENCED_CODE_BLOCK_RE = re.compile(
 MARKDOWN_IMAGE_BLOCK_RE = re.compile(
     r"(?m)^(?:>\s*)?!\[(?P<alt>[^\]]*)\]\((?P<src>[^)\s]+)(?:\s+\"(?P<title>[^\"]+)\")?\)\s*$"
 )
+MARKDOWN_TABLE_BLOCK_RE = re.compile(
+    r"(?ms)(^|\n{2,})(?P<body>\|.*?\|\s*\n\|\s*[-:| ]+\|\s*(?:\n\|.*?\|\s*)+)(?=\n{2,}|\Z)"
+)
 WIKI_ASSET_URL_RE = re.compile(r"^/playbooks/wiki-assets/[^/]+/(?P<slug>[^/]+)/(?P<asset_name>[^/]+)$")
 MARKER_ATTR_RE = re.compile(r'([a-z_]+)="((?:[^"\\]|\\.)*)"')
 CODE_BLOCK_RE = re.compile(r"^\[CODE(?P<attrs>[^\]]*)\]\s*(?P<body>.*?)\s*\[/CODE\]$", re.DOTALL)
@@ -30,7 +33,15 @@ SOURCE_VIEW_LEADING_NOISE_RE = re.compile(
 SOURCE_VIEW_TOC_RE = re.compile(r"^\s*목차\s*(?:\n\n|\n)?")
 ASCII_GRID_BORDER_RE = re.compile(r"^\s*[+\-=:]{3,}\s*$")
 ASCII_GRID_ROW_RE = re.compile(r"^\s*\|.*\|\s*$")
-LOW_SIGNAL_SHELL_RE = re.compile(r"^\$?\s*(oc|kubectl)\s*$", re.IGNORECASE)
+MARKDOWN_TABLE_DIVIDER_RE = re.compile(r"^\s*\|?(?:\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\s*\|?\s*$")
+LOW_SIGNAL_SHELL_RE = re.compile(
+    r"^(?:\.\.\.|(?:\$|#)?\s*(?:oc|kubectl))\s*$",
+    re.IGNORECASE,
+)
+READER_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+|(?<=다\.)\s+|(?<=니다\.)\s+")
+READER_BREAKWORD_RE = re.compile(
+    r"\s+(?=(?:Procedure|Prerequisites|Warning|Caution|Note|주의|참고|사전 요구 사항|프로세스|다음 절차|다음 명령))"
+)
 
 
 def _clean_source_view_text(text: str) -> str:
@@ -63,6 +74,38 @@ def _normalize_markdown_image_blocks(text: str) -> str:
         return f'[FIGURE{attrs}]\n{body}\n[/FIGURE]'
 
     return MARKDOWN_IMAGE_BLOCK_RE.sub(_replace, text)
+
+
+def _normalize_markdown_table_blocks(text: str) -> str:
+    lines = str(text or "").splitlines()
+    if not lines:
+        return str(text or "")
+
+    normalized: list[str] = []
+    index = 0
+    total = len(lines)
+    while index < total:
+        current = lines[index]
+        next_line = lines[index + 1] if index + 1 < total else ""
+        if "|" in current and MARKDOWN_TABLE_DIVIDER_RE.match(next_line):
+            block = [current, next_line]
+            index += 2
+            while index < total:
+                candidate = lines[index]
+                if candidate.strip() and "|" in candidate:
+                    block.append(candidate)
+                    index += 1
+                    continue
+                break
+            normalized.append("[TABLE]")
+            normalized.extend(block)
+            normalized.append("[/TABLE]")
+            continue
+        normalized.append(current)
+        index += 1
+
+    trailing_newline = "\n" if str(text or "").endswith("\n") else ""
+    return "\n".join(normalized) + trailing_newline
 
 
 def _render_inline_html(text: str) -> str:
@@ -144,6 +187,115 @@ def _looks_like_ascii_grid(text: str) -> bool:
     return border_rows >= 2 and cell_rows >= 1
 
 
+def _split_table_row(row: str) -> list[str]:
+    stripped = str(row or "").strip()
+    if stripped.startswith("|"):
+        stripped = stripped[1:]
+    if stripped.endswith("|"):
+        stripped = stripped[:-1]
+    return [cell.strip() for cell in stripped.split("|")]
+
+
+def _looks_like_markdown_table_block(text: str) -> bool:
+    lines = [line.rstrip() for line in str(text or "").splitlines() if line.strip()]
+    if len(lines) < 2:
+        return False
+    if "|" not in lines[0]:
+        return False
+    if not MARKDOWN_TABLE_DIVIDER_RE.match(lines[1]):
+        return False
+    body_lines = lines[2:]
+    return bool(body_lines) and all("|" in line for line in body_lines)
+
+
+def _split_reader_display_paragraphs(text: str) -> list[str]:
+    def _hard_wrap(value: str, *, limit: int = 160) -> list[str]:
+        words = [word for word in str(value or "").split() if word]
+        if not words:
+            return []
+        wrapped: list[str] = []
+        bucket: list[str] = []
+        bucket_len = 0
+        for word in words:
+            projected = bucket_len + len(word) + (1 if bucket else 0)
+            if bucket and projected > limit:
+                wrapped.append(" ".join(bucket).strip())
+                bucket = [word]
+                bucket_len = len(word)
+                continue
+            bucket.append(word)
+            bucket_len = projected
+        if bucket:
+            wrapped.append(" ".join(bucket).strip())
+        return wrapped
+
+    cleaned = " ".join(str(text or "").split()).strip()
+    if not cleaned:
+        return []
+    if READER_BREAKWORD_RE.search(cleaned):
+        segmented: list[str] = []
+        for piece in READER_BREAKWORD_RE.split(cleaned):
+            piece = piece.strip()
+            if not piece:
+                continue
+            if len(piece) > 260:
+                segmented.extend(_hard_wrap(piece))
+            else:
+                segmented.append(piece)
+        if len(segmented) > 1:
+            return segmented
+    if len(cleaned) <= 320:
+        return [cleaned]
+    sentences = [
+        sentence.strip()
+        for sentence in READER_SENTENCE_SPLIT_RE.split(cleaned)
+        if sentence.strip()
+    ]
+    if len(sentences) <= 1:
+        return _hard_wrap(cleaned) or [cleaned]
+    chunks: list[str] = []
+    bucket: list[str] = []
+    bucket_len = 0
+    for sentence in sentences:
+        projected = bucket_len + len(sentence) + (1 if bucket else 0)
+        if bucket and (projected > 260 or len(bucket) >= 2):
+            chunks.append(" ".join(bucket).strip())
+            bucket = [sentence]
+            bucket_len = len(sentence)
+            continue
+        bucket.append(sentence)
+        bucket_len = projected
+    if bucket:
+        chunks.append(" ".join(bucket).strip())
+    normalized_chunks: list[str] = []
+    for chunk in chunks or [cleaned]:
+        if len(chunk) > 320:
+            normalized_chunks.extend(_hard_wrap(chunk))
+        else:
+            normalized_chunks.append(chunk)
+    return normalized_chunks or [cleaned]
+
+
+def _is_low_signal_ordered_item_body(text: str) -> bool:
+    normalized = " ".join(str(text or "").split()).strip()
+    if not normalized:
+        return True
+    return re.fullmatch(r"\d+(?:[./:-]\d+)*", normalized) is not None
+
+
+def _looks_like_structured_code_paragraph(text: str) -> bool:
+    normalized = " ".join(str(text or "").split()).strip()
+    if len(normalized) < 120:
+        return False
+    colon_count = normalized.count(":")
+    quote_count = normalized.count('"')
+    if normalized.startswith("{"):
+        return colon_count >= 4 and quote_count >= 8
+    if normalized.startswith('"'):
+        return colon_count >= 4 and quote_count >= 6
+    return False
+
+
 def _should_suppress_low_signal_code_block(code_text: str, *, language: str = "shell") -> bool:
     normalized = (code_text or "").strip()
     if not normalized:
@@ -207,15 +359,14 @@ def _render_code_block_html(
 
 
 def _render_table_block_html(table_text: str, *, caption: str = "") -> str:
-    rows = [
-        [cell.strip() for cell in row.split("|")]
-        for row in table_text.splitlines()
-        if row.strip()
-    ]
+    raw_lines = [row for row in table_text.splitlines() if row.strip()]
+    rows = [_split_table_row(row) for row in raw_lines]
     if not rows:
         return ""
     headers = rows[0]
     body = rows[1:]
+    if len(raw_lines) >= 2 and MARKDOWN_TABLE_DIVIDER_RE.match(raw_lines[1]):
+        body = rows[2:]
     if not body:
         body = [headers]
         headers = []
@@ -372,6 +523,7 @@ def _render_normalized_section_html(text: str) -> str:
     normalized = _clean_source_view_text(text)
     normalized = _normalize_markdown_fenced_code_blocks(normalized)
     normalized = _normalize_markdown_image_blocks(normalized)
+    normalized = _normalize_markdown_table_blocks(normalized)
     paragraph_queue: list[str] = []
 
     def flush_paragraph_queue() -> None:
@@ -385,8 +537,19 @@ def _render_normalized_section_html(text: str) -> str:
             if not ordered_match:
                 if _looks_like_subheading(current):
                     blocks.append(f"<h3>{html.escape(current)}</h3>")
+                elif _looks_like_structured_code_paragraph(current):
+                    blocks.append(
+                        _render_code_block_html(
+                            current,
+                            language="json",
+                            copy_text=current,
+                            wrap_hint=False,
+                            overflow_hint="toggle",
+                        )
+                    )
                 else:
-                    blocks.append(f"<p>{_render_inline_html(current)}</p>")
+                    for paragraph in _split_reader_display_paragraphs(current):
+                        blocks.append(f"<p>{_render_inline_html(paragraph)}</p>")
                 index += 1
                 continue
 
@@ -396,23 +559,28 @@ def _render_normalized_section_html(text: str) -> str:
                 item_match = ORDERED_LIST_ITEM_RE.match(paragraph_queue[index])
                 if not item_match:
                     break
-                item_body_parts = [_render_inline_html(item_match.group("body").strip())]
+                item_body = item_match.group("body").strip()
                 index += 1
+                if _is_low_signal_ordered_item_body(item_body):
+                    continue
+                item_body_parts = [_render_inline_html(item_body)]
                 while index < len(paragraph_queue):
                     continuation = paragraph_queue[index]
                     if ORDERED_LIST_ITEM_RE.match(continuation) or _looks_like_subheading(continuation):
                         break
-                    item_body_parts.append(
-                        "<p>{}</p>".format(_render_inline_html(continuation))
-                    )
+                    for paragraph in _split_reader_display_paragraphs(continuation):
+                        item_body_parts.append(
+                            "<p>{}</p>".format(_render_inline_html(paragraph))
+                        )
                     index += 1
                 items.append("<li>{}</li>".format("".join(item_body_parts)))
-            blocks.append(
-                '<ol class="normalized-ordered-list" start="{}">{}</ol>'.format(
-                    start,
-                    "".join(items),
+            if items:
+                blocks.append(
+                    '<ol class="normalized-ordered-list" start="{}">{}</ol>'.format(
+                        start,
+                        "".join(items),
+                    )
                 )
-            )
         paragraph_queue = []
 
     for part in NORMALIZED_BLOCK_RE.split(normalized):
@@ -465,6 +633,10 @@ def _render_normalized_section_html(text: str) -> str:
             )
             continue
         for paragraph in re.split(r"\n\s*\n+", stripped):
+            if _looks_like_markdown_table_block(paragraph):
+                flush_paragraph_queue()
+                blocks.append(_render_table_block_html(paragraph))
+                continue
             cleaned = re.sub(r"\s*\n\s*", " ", paragraph).strip()
             if not cleaned:
                 continue

@@ -832,17 +832,47 @@ def _build_gold_candidate_book_bucket(root: Path) -> dict[str, Any]:
     }
 
 
-def _build_approved_wiki_runtime_book_bucket(root: Path) -> dict[str, Any]:
+def _translation_runtime_blocked_slugs(translation_lane_report: dict[str, Any]) -> set[str]:
+    active_queue = (
+        translation_lane_report.get("active_queue")
+        if isinstance(translation_lane_report.get("active_queue"), list)
+        else []
+    )
+    blocked: set[str] = set()
+    for row in active_queue:
+        if not isinstance(row, dict):
+            continue
+        slug = str(row.get("book_slug") or "").strip()
+        lane = row.get("translation_lane") if isinstance(row.get("translation_lane"), dict) else {}
+        if not slug:
+            continue
+        if lane and not bool(lane.get("runtime_eligible")):
+            blocked.add(slug)
+    return blocked
+
+
+def _build_approved_wiki_runtime_book_bucket(root: Path, *, translation_lane_report: dict[str, Any]) -> dict[str, Any]:
     manifest_path = root / "data" / "wiki_runtime_books" / "active_manifest.json"
     manifest = _safe_read_json(manifest_path)
     entries = manifest.get("entries") if isinstance(manifest.get("entries"), list) else []
+    blocked_slugs = _translation_runtime_blocked_slugs(translation_lane_report)
     books: list[dict[str, Any]] = []
     runtime_paths: list[Path] = []
+    hidden_books: list[dict[str, Any]] = []
     for entry in entries:
         if not isinstance(entry, dict):
             continue
         runtime_path = Path(str(entry.get("runtime_path") or "")).resolve()
         slug = str(entry.get("slug") or runtime_path.stem)
+        if slug in blocked_slugs:
+            hidden_books.append(
+                {
+                    "book_slug": slug,
+                    "title": str(entry.get("title") or runtime_path.stem),
+                    "hidden_reason": "translated_ko_draft_runtime_ineligible",
+                }
+            )
+            continue
         if runtime_path.exists() and runtime_path.is_file():
             runtime_paths.append(runtime_path)
         books.append(
@@ -870,6 +900,8 @@ def _build_approved_wiki_runtime_book_bucket(root: Path) -> dict[str, Any]:
         "selected_dir": selected_dir,
         "books": books,
         "manifest_path": str(manifest_path.resolve()),
+        "hidden_books": hidden_books,
+        "hidden_count": len(hidden_books),
     }
 
 
@@ -1372,7 +1404,10 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
     manual_book_library = _build_manual_book_library(core_manualbooks, extra_manualbooks)
     playbook_library = _build_playbook_library(derived_playbook_family_statuses)
     gold_candidate_books = _build_gold_candidate_book_bucket(root)
-    approved_wiki_runtime_books = _build_approved_wiki_runtime_book_bucket(root)
+    approved_wiki_runtime_books = _build_approved_wiki_runtime_book_bucket(
+        root,
+        translation_lane_report=translation_lane_report,
+    )
     navigation_backlog = _build_navigation_backlog_bucket(root)
     wiki_usage_signals = _build_wiki_usage_signal_bucket(root)
     buyer_demo_gate = _build_buyer_demo_gate_bucket(root)

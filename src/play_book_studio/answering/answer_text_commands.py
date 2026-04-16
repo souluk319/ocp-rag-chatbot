@@ -551,8 +551,22 @@ def shape_etcd_backup_answer(
     )
     has_grounded_restore_section = any(
         (citation.book_slug or "").lower() in {"postinstallation_configuration", "backup_and_restore", "etcd"}
-        and "etcd" in (citation.section or "").lower()
-        and ("복원" in (citation.section or "").lower() or "restore" in (citation.section or "").lower())
+        and (
+            (
+                "etcd" in (citation.section or "").lower()
+                and ("복원" in (citation.section or "").lower() or "restore" in (citation.section or "").lower())
+            )
+            or any(
+                token in f"{citation.section or ''}\n{citation.excerpt or ''}".lower()
+                for token in (
+                    "이전 클러스터 상태로 복원",
+                    "cluster-restore.sh",
+                    "disable-etcd.sh",
+                    "etcd 백업",
+                    "정적 pod의 리소스",
+                )
+            )
+        )
         for citation in citations
     )
     backup_citation_index = next(
@@ -570,8 +584,21 @@ def shape_etcd_backup_answer(
             index
             for index, citation in enumerate(citations, start=1)
             if (citation.book_slug or "").lower() in {"postinstallation_configuration", "backup_and_restore", "etcd"}
-            and "etcd" in (citation.section or "").lower()
-            and ("복원" in (citation.section or "").lower() or "restore" in (citation.section or "").lower())
+            and (
+                (
+                    "etcd" in (citation.section or "").lower()
+                    and ("복원" in (citation.section or "").lower() or "restore" in (citation.section or "").lower())
+                )
+                or any(
+                    token in f"{citation.section or ''}\n{citation.excerpt or ''}".lower()
+                    for token in (
+                        "이전 클러스터 상태로 복원",
+                        "cluster-restore.sh",
+                        "disable-etcd.sh",
+                        "정적 pod의 리소스",
+                    )
+                )
+            )
         ),
         1,
     )

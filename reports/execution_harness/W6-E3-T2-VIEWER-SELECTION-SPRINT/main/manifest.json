@@ -1,0 +1,24 @@
+{
+  "task_id": "W6-E3-T2-VIEWER-SELECTION-SPRINT",
+  "created_at": "2026-04-15T10:35:00+09:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "python",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "write_scope": "viewer selection sprint scaffolding + comparison contract + surface iteration",
+  "target_outputs": [
+    "reports/build_logs/viewer_selection_packet_report.json",
+    "PIPELINE_PLAIN_GUIDE.md",
+    "presentation-ui/src/pages/PlaybookLibraryPage.tsx",
+    "presentation-ui/src/pages/WorkspacePage.tsx",
+    "src/play_book_studio/app/viewer_page.py",
+    "src/play_book_studio/app/viewer_blocks.py"
+  ],
+  "validation_commands": [
+    "npm --prefix presentation-ui run build",
+    "viewer comparison smoke in /studio and /playbook-library"
+  ],
+  "status": "prepared"
+}

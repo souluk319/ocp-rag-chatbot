@@ -16,6 +16,7 @@ from play_book_studio.retrieval.query import (
     has_backup_restore_intent,
     has_command_request,
     has_corrective_follow_up,
+    has_doc_locator_intent,
     has_follow_up_entity_ambiguity,
     has_follow_up_reference,
 )
@@ -28,6 +29,7 @@ from .answer_text_commands import (
 from .answer_text_formatting import summarize_session_context
 from .citations import (
     finalize_citations,
+    inject_single_citation,
     preserve_explicit_mixed_runtime_citations,
     summarize_selected_citations,
 )
@@ -89,6 +91,76 @@ def _citation_matches_keywords(citations: list, keywords: tuple[str, ...]) -> bo
 def _requires_monitoring_backup_grounding(query: str) -> bool:
     lowered = str(query or "").lower()
     return has_backup_restore_intent(query) and any(token in lowered for token in ("monitoring", "모니터링"))
+
+
+def _requires_console_grounding(query: str) -> bool:
+    lowered = str(query or "").lower()
+    return any(token in lowered for token in ("웹 콘솔", "web console", "console"))
+
+
+def _requires_rbac_grounding(query: str) -> bool:
+    lowered = str(query or "").lower()
+    return "권한" in lowered or "rbac" in lowered or "rolebinding" in lowered
+
+
+def _citations_match_rbac_intent(citations: list) -> bool:
+    return _citation_matches_keywords(
+        citations,
+        (
+            "rbac",
+            "rolebinding",
+            "role binding",
+            "authorization",
+            "권한",
+            "사용자 역할",
+            "clusterrole",
+            "cluster role",
+        ),
+    )
+
+
+def _citations_match_console_intent(citations: list) -> bool:
+    for citation in citations:
+        haystack = " ".join(
+            [
+                str(getattr(citation, "book_slug", "") or ""),
+                str(getattr(citation, "section", "") or ""),
+                str(getattr(citation, "excerpt", "") or ""),
+            ]
+        ).lower()
+        if any(token in haystack for token in ("웹 콘솔", "web console", "console", "콘솔")):
+            return True
+    return False
+
+
+def _build_doc_locator_answer(*, query: str, citations: list) -> str | None:
+    if not citations or not has_doc_locator_intent(query):
+        return None
+    if _requires_console_grounding(query) and not _citations_match_console_intent(citations):
+        return None
+    if _requires_rbac_grounding(query) and not _citations_match_rbac_intent(citations):
+        return None
+    primary = citations[0]
+    section_label = str(getattr(primary, "section_path_label", "") or getattr(primary, "section", "") or "").strip()
+    if not section_label:
+        return None
+    lowered = str(query or "").lower()
+    follow_up = ""
+    if any(token in lowered for token in ("시작", "먼저", "first")):
+        follow_up = " 이 경로를 먼저 열고 같은 문서 안의 절차를 순서대로 따라가면 됩니다 [1]."
+    elif any(token in lowered for token in ("경로", "path", "route")):
+        follow_up = " 이 경로를 기준으로 연결 문서와 다음 절차를 이어가면 됩니다 [1]."
+    return f"답변: 먼저 `{section_label}` 문서를 여는 것이 맞습니다 [1].{follow_up}"
+
+
+def _allow_single_citation_fallback(*, query: str, citations: list) -> bool:
+    return bool(citations) and any(
+        (
+            has_backup_restore_intent(query),
+            has_command_request(query),
+            has_doc_locator_intent(query),
+        )
+    )
 
 
 class ChatAnswerer:
@@ -473,6 +545,51 @@ class ChatAnswerer:
                 selected_hits=selected_hits,
             )
 
+        doc_locator_answer = _build_doc_locator_answer(
+            query=query,
+            citations=context_bundle.citations,
+        )
+        if doc_locator_answer is not None:
+            answer_text, final_citations, cited_indices = finalize_deployment_scaling_answer(
+                doc_locator_answer,
+                context_bundle.citations,
+            )
+            pipeline_timings_ms["total"] = round(
+                (time.perf_counter() - answer_started_at) * 1000,
+                1,
+            )
+            emit(
+                {
+                    "step": "deterministic_answer",
+                    "label": "문서 경로 답변 생성 완료",
+                    "status": "done",
+                    "detail": "doc locator",
+                }
+            )
+            emit(
+                {
+                    "step": "pipeline_complete",
+                    "label": "답변 생성 완료",
+                    "status": "done",
+                    "detail": f"총 {pipeline_timings_ms['total']}ms",
+                    "duration_ms": pipeline_timings_ms["total"],
+                }
+            )
+            return build_answer_result(
+                query=query,
+                mode=mode,
+                answer=answer_text,
+                rewritten_query=retrieval.rewritten_query,
+                response_kind="rag",
+                citations=final_citations,
+                cited_indices=cited_indices,
+                warnings=warnings,
+                retrieval_trace=retrieval.trace,
+                pipeline_events=pipeline_events,
+                pipeline_timings_ms=pipeline_timings_ms,
+                selected_hits=selected_hits,
+            )
+
         deployment_scaling_answer = build_deployment_scaling_answer(
             query=query,
             context=context,
@@ -636,6 +753,15 @@ class ChatAnswerer:
             selected_citations=context_bundle.citations,
             final_citations=final_citations,
         )
+        if not cited_indices and final_citations and _allow_single_citation_fallback(
+            query=query,
+            citations=final_citations,
+        ):
+            answer_text = inject_single_citation(answer_text, citation_index=1)
+            answer_text, final_citations, cited_indices = finalize_citations(
+                answer_text,
+                final_citations,
+            )
         if not cited_indices:
             warnings.append("answer has no inline citations")
         pipeline_timings_ms["citation_finalize"] = round(
@@ -658,6 +784,82 @@ class ChatAnswerer:
                     "label": "근거 검증 차단",
                     "status": "error",
                     "detail": "생성 답변에 inline citation이 없습니다",
+                }
+            )
+            pipeline_timings_ms["total"] = round(
+                (time.perf_counter() - answer_started_at) * 1000,
+                1,
+            )
+            emit(
+                {
+                    "step": "pipeline_complete",
+                    "label": "답변 생성 중단",
+                    "status": "done",
+                    "detail": f"총 {pipeline_timings_ms['total']}ms",
+                    "duration_ms": pipeline_timings_ms["total"],
+                }
+            )
+            return self._build_grounding_blocked_result(
+                query=query,
+                mode=mode,
+                rewritten_query=retrieval.rewritten_query,
+                answer=(
+                    "답변: 현재 Playbook Library에 해당 자료가 없습니다. "
+                    "자료 추가가 필요합니다."
+                ),
+                warnings=warnings,
+                retrieval_trace=retrieval.trace,
+                pipeline_events=pipeline_events,
+                pipeline_timings_ms=pipeline_timings_ms,
+                selected_hits=selected_hits,
+                llm_runtime_meta=llm_runtime_meta,
+            )
+        if _requires_console_grounding(query) and not _citations_match_console_intent(final_citations):
+            warnings.append("insufficient web console grounding coverage")
+            emit(
+                {
+                    "step": "grounding_guard",
+                    "label": "근거 검증 차단",
+                    "status": "error",
+                    "detail": "웹 콘솔 질문을 뒷받침하는 근거가 부족합니다",
+                }
+            )
+            pipeline_timings_ms["total"] = round(
+                (time.perf_counter() - answer_started_at) * 1000,
+                1,
+            )
+            emit(
+                {
+                    "step": "pipeline_complete",
+                    "label": "답변 생성 중단",
+                    "status": "done",
+                    "detail": f"총 {pipeline_timings_ms['total']}ms",
+                    "duration_ms": pipeline_timings_ms["total"],
+                }
+            )
+            return self._build_grounding_blocked_result(
+                query=query,
+                mode=mode,
+                rewritten_query=retrieval.rewritten_query,
+                answer=(
+                    "답변: 현재 Playbook Library에 해당 자료가 없습니다. "
+                    "자료 추가가 필요합니다."
+                ),
+                warnings=warnings,
+                retrieval_trace=retrieval.trace,
+                pipeline_events=pipeline_events,
+                pipeline_timings_ms=pipeline_timings_ms,
+                selected_hits=selected_hits,
+                llm_runtime_meta=llm_runtime_meta,
+            )
+        if _requires_rbac_grounding(query) and not _citations_match_rbac_intent(final_citations):
+            warnings.append("insufficient rbac grounding coverage")
+            emit(
+                {
+                    "step": "grounding_guard",
+                    "label": "근거 검증 차단",
+                    "status": "error",
+                    "detail": "RBAC 질문을 뒷받침하는 근거가 부족합니다",
                 }
             )
             pipeline_timings_ms["total"] = round(

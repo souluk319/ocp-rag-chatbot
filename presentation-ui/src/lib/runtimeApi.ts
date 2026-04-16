@@ -471,6 +471,21 @@ export interface SourceMetaResponse {
   boundary_badge?: string;
 }
 
+export interface RuntimeFigureItem {
+  caption: string;
+  viewer_path: string;
+  asset_url: string;
+  asset_kind: string;
+  diagram_type: string;
+  section_hint: string;
+}
+
+export interface RuntimeFiguresResponse {
+  count: number;
+  book_slug: string;
+  items: RuntimeFigureItem[];
+}
+
 export interface SessionSummary {
   session_id: string;
   session_name: string;
@@ -629,6 +644,10 @@ export async function sendChat(payload: {
 
 export async function loadSourceMeta(viewerPath: string): Promise<SourceMetaResponse> {
   return requestJson<SourceMetaResponse>(`/api/source-meta?viewer_path=${encodeURIComponent(viewerPath)}`);
+}
+
+export async function loadRuntimeFigures(bookSlug: string, limit = 3): Promise<RuntimeFiguresResponse> {
+  return requestJson<RuntimeFiguresResponse>(`/api/runtime-figures?book_slug=${encodeURIComponent(bookSlug)}&limit=${encodeURIComponent(String(limit))}`);
 }
 
 export async function listCustomerPackDrafts(): Promise<CustomerPackDraftListResponse> {

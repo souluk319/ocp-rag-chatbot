@@ -1,0 +1,15 @@
+{
+  "task_id": "W6-E3-T2-VIEWER-SELECTION-SPRINT",
+  "status": "in_progress",
+  "summary": "viewer selection sprint scaffold opened and comparison axes locked",
+  "outputs": [
+    "reports/build_logs/viewer_selection_packet_report.json",
+    "reports/execution_harness/W6-E3-T2-VIEWER-SELECTION-SPRINT/main/manifest.json",
+    "reports/execution_harness/W6-E3-T2-VIEWER-SELECTION-SPRINT/main/worklog.md"
+  ],
+  "next_focus": [
+    "formalize three-mode comparison in a plain guide",
+    "score atlas_canvas guided_tour encyclopedia_world against the four reader-facing axes",
+    "select the strongest viewer direction before deep polish"
+  ]
+}

@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
+  ArrowRight,
   Activity,
   Database,
   Layers,
@@ -36,6 +37,7 @@ import {
   type RepositoryFavorite,
   type RepositorySearchResult,
   type RepositoryUnansweredItem,
+  type RuntimeFigureItem,
   uploadCustomerPackDraft,
   captureCustomerPackDraft,
   normalizeCustomerPackDraft,
@@ -48,11 +50,26 @@ import {
   removeRepositoryFavorite,
   saveRepositoryFavorites,
   searchRepositories,
+  loadRuntimeFigures,
   toRuntimeUrl,
   formatBytes,
 } from '../lib/runtimeApi';
 
 type PipelineStage = 'idle' | 'uploading' | 'capturing' | 'normalizing' | 'done' | 'error';
+type VisionMode = 'atlas_canvas' | 'guided_tour' | 'encyclopedia_world';
+
+interface FigureAtlasEntry {
+  key: string;
+  title: string;
+  subtitle: string;
+  kind: string;
+  intent: string;
+  why: string;
+  thumbUrl?: string;
+  href: string;
+  count?: number;
+  isCluster?: boolean;
+}
 
 interface LogEntry {
   time: string;
@@ -77,6 +94,36 @@ const SUPPORTED_FORMATS = [
   { ext: 'AsciiDoc', via: 'Native' },
   { ext: 'HTML', via: 'Native' },
   { ext: 'Image', via: 'OCR' },
+];
+
+const WIKI_VISION_MODES: Array<{
+  id: VisionMode;
+  label: string;
+  eyebrow: string;
+  summary: string;
+  focus: string;
+}> = [
+  {
+    id: 'atlas_canvas',
+    label: 'Atlas Canvas',
+    eyebrow: 'Document + Relation + Figure',
+    summary: '문서 본문을 중심으로 관계 지도와 figure strip을 같이 여는 탐험형 위키입니다.',
+    focus: '문서를 읽다가 바로 관계와 도해로 확장',
+  },
+  {
+    id: 'guided_tour',
+    label: 'Guided Tour',
+    eyebrow: 'Chat-Led Route',
+    summary: '챗봇 답변이 문서 투어를 열고 절차, 근거, 다음 문서를 route처럼 안내합니다.',
+    focus: '답변이 끝나지 않고 문서 투어로 이어짐',
+  },
+  {
+    id: 'encyclopedia_world',
+    label: 'Topic World',
+    eyebrow: 'Encyclopedia Atlas',
+    summary: '책 단위보다 주제 세계를 먼저 열고 관련 문서와 그림을 한 번에 탐험하는 구조입니다.',
+    focus: '문서보다 주제 지형도를 먼저 보여줌',
+  },
 ];
 
 function nowTime(): string {
@@ -115,10 +162,78 @@ function customerPackBookEvidenceBits(book?: LibraryBook | null): string[] {
   return bits.filter(Boolean);
 }
 
+function firstFigureSectionToken(sectionHint: string): string {
+  const normalized = sectionHint.replace(/[›>]/g, '|');
+  return normalized
+    .split('|')
+    .map((chunk) => chunk.trim())
+    .find(Boolean) || '';
+}
+
+function buildFigureAtlasEntries(figures: RuntimeFigureItem[]): FigureAtlasEntry[] {
+  const groups = new Map<string, RuntimeFigureItem[]>();
+  for (const figure of figures) {
+    const diagramKey = (figure.diagram_type || '').trim().toLowerCase();
+    const sectionKey = firstFigureSectionToken(figure.section_hint || '').toLowerCase();
+    const assetKey = (figure.asset_kind || 'figure').trim().toLowerCase();
+    const key = diagramKey
+      ? `diagram:${diagramKey}`
+      : sectionKey
+        ? `section:${sectionKey}`
+        : `asset:${assetKey}`;
+    const bucket = groups.get(key) ?? [];
+    bucket.push(figure);
+    groups.set(key, bucket);
+  }
+
+  return [...groups.entries()]
+    .sort((a, b) => {
+      if (b[1].length !== a[1].length) return b[1].length - a[1].length;
+      return a[1][0].caption.localeCompare(b[1][0].caption);
+    })
+    .slice(0, 3)
+    .map(([key, bucket]) => {
+      const first = bucket[0];
+      const isDiagram = Boolean(first.diagram_type);
+      const thumbUrl = first.asset_url ? toRuntimeUrl(first.asset_url) : undefined;
+      if (bucket.length === 1) {
+        return {
+          key,
+          title: first.caption,
+          subtitle: first.section_hint || first.diagram_type || first.asset_kind,
+          kind: isDiagram ? 'Diagram' : 'Figure',
+          intent: 'View',
+          why: '문서를 읽기 전에 맥락을 빠르게 잡는 시각 자산',
+          thumbUrl,
+          href: first.viewer_path,
+        };
+      }
+
+      const clusterLabel = isDiagram
+        ? `${first.diagram_type || 'diagram'} cluster`
+        : firstFigureSectionToken(first.section_hint || '') || 'figure cluster';
+      return {
+        key,
+        title: clusterLabel,
+        subtitle: `${bucket.length} visual assets grouped`,
+        kind: isDiagram ? 'Diagram Cluster' : 'Figure Cluster',
+        intent: 'Scan',
+        why: `이 문서를 이해시키는 ${bucket.length}개의 시각 자산 묶음`,
+        thumbUrl,
+        href: first.viewer_path,
+        count: bucket.length,
+        isCluster: true,
+      };
+    });
+}
+
 const PlaybookLibraryPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'monitoring' | 'repository'>('monitoring');
+  const [visionMode, setVisionMode] = useState<VisionMode>(() => {
+    return 'atlas_canvas';
+  });
   const [pipelineStage, setPipelineStage] = useState<PipelineStage>('idle');
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [errorMsg, setErrorMsg] = useState('');
@@ -132,6 +247,8 @@ const PlaybookLibraryPage: React.FC = () => {
   const [bookViewer, setBookViewer] = useState<LibraryBook | null>(null);
   const [previewViewerUrl, setPreviewViewerUrl] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [atlasBookFigures, setAtlasBookFigures] = useState<RuntimeFigureItem[]>([]);
+  const atlasBookFigureEntries = useMemo(() => buildFigureAtlasEntries(atlasBookFigures), [atlasBookFigures]);
   const [searchQuery, setSearchQuery] = useState('');
   const [repositoryResults, setRepositoryResults] = useState<RepositorySearchResult[]>([]);
   const [repositoryFavorites, setRepositoryFavorites] = useState<RepositoryFavorite[]>([]);
@@ -176,6 +293,21 @@ const PlaybookLibraryPage: React.FC = () => {
   useEffect(() => {
     refreshData();
   }, [refreshData]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('wikiVisionMode', visionMode);
+  }, [visionMode]);
+
+  useEffect(() => {
+    if (visionMode !== 'atlas_canvas' || !bookViewer?.book_slug) {
+      setAtlasBookFigures([]);
+      return;
+    }
+    loadRuntimeFigures(bookViewer.book_slug, 3)
+      .then((payload) => setAtlasBookFigures(payload.items ?? []))
+      .catch(() => setAtlasBookFigures([]));
+  }, [bookViewer, visionMode]);
 
   useEffect(() => {
     const requestedView = (searchParams.get('view') || '').trim();
@@ -550,6 +682,12 @@ const PlaybookLibraryPage: React.FC = () => {
     (packet) => packet.book_slug === 'buyer_packet__release-candidate-freeze',
   ) ?? null;
   const derivedPlaybooks = summary?.derived_playbook_count ?? 0;
+  const activeVision = WIKI_VISION_MODES.find((mode) => mode.id === visionMode) ?? WIKI_VISION_MODES[0];
+  const guidedTourShelfSteps = useMemo(() => operationalWikiBooks.slice(0, 3), [operationalWikiBooks]);
+  const guidedTourShelfDocs = useMemo(() => operationalWikiBooks.slice(3, 5), [operationalWikiBooks]);
+  const atlasReadingBooks = useMemo(() => operationalWikiBooks.slice(0, 3), [operationalWikiBooks]);
+  const atlasRelationBooks = useMemo(() => operationalWikiBooks.slice(3, 6), [operationalWikiBooks]);
+  const atlasContextBooks = useMemo(() => operationalWikiBooks.slice(6, 8), [operationalWikiBooks]);
   const hasMetricSourceDrift = Boolean(controlRoom?.source_of_truth_drift?.status_alignment?.mismatches?.length);
   const gate = controlRoom?.gate;
   const ownerDemo = controlRoom?.owner_demo_rehearsal;
@@ -585,7 +723,9 @@ const PlaybookLibraryPage: React.FC = () => {
             </button>
             <div className="header-text">
               <h1>Playbook Library</h1>
-              <p className="text-muted">Control Tower & Asset Repository</p>
+              <p className="text-muted">
+                {visionMode === 'guided_tour' ? 'Guided Tour Entry & Operational Wiki' : 'Control Tower & Asset Repository'}
+              </p>
             </div>
           </div>
 
@@ -596,7 +736,7 @@ const PlaybookLibraryPage: React.FC = () => {
                 onClick={() => setViewMode('monitoring')}
               >
                 <Activity size={16} />
-                <span>Control Tower</span>
+                <span>{visionMode === 'guided_tour' ? 'Guided Tour' : 'Control Tower'}</span>
               </button>
               <button
                 className={viewMode === 'repository' ? 'active' : ''}
@@ -613,45 +753,196 @@ const PlaybookLibraryPage: React.FC = () => {
       <main className="library-main">
         {viewMode === 'monitoring' ? (
           <div className="monitoring-view">
+            <section className="wiki-vision-lab box-container">
+              <div className="wiki-vision-lab-header">
+                <div>
+                  <span className="wiki-vision-eyebrow">{visionMode === 'guided_tour' ? 'Guided Tour' : 'Wiki Vision Lab'}</span>
+                  <h2>{visionMode === 'guided_tour' ? 'Guided Tour Active' : '위키 대백과 이상형 3안'}</h2>
+                  <p>{activeVision.summary}</p>
+                </div>
+                <div className="wiki-vision-focus">{visionMode === 'guided_tour' ? 'Active Route' : activeVision.focus}</div>
+              </div>
+              {visionMode === 'guided_tour' ? (
+                <div className="wiki-vision-active">
+                  <div className="wiki-vision-active-title">질문에서 문서 투어로 바로 이어지는 모드</div>
+                  <p className="wiki-vision-active-copy">Start Here와 Then Open만 먼저 열고, 나머지 위키는 진행 중에 따라붙게 정리합니다.</p>
+                </div>
+              ) : (
+                <div className="wiki-vision-grid">
+                  {WIKI_VISION_MODES.map((mode) => (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      className={`wiki-vision-card ${visionMode === mode.id ? 'active' : ''}`}
+                      onClick={() => setVisionMode(mode.id)}
+                    >
+                      <span className="wiki-vision-card-eyebrow">{mode.eyebrow}</span>
+                      <strong>{mode.label}</strong>
+                      <span>{mode.summary}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+
             {operationalWikiBooks.length > 0 && (
               <section className="operational-shelf box-container">
                 <div className="operational-shelf-header">
                   <div>
-                    <span className="operational-shelf-eyebrow">Operational Wiki</span>
-                    <h2>바로 읽을 수 있는 운영 위키</h2>
-                    <p>지금 제품 표면에서 바로 여는 핵심 운영 문서 묶음입니다.</p>
+                    <span className="operational-shelf-eyebrow">{visionMode === 'guided_tour' ? 'Start Tour' : visionMode === 'atlas_canvas' ? 'Atlas Canvas' : 'Operational Wiki'}</span>
+                    <h2>{visionMode === 'guided_tour' ? '운영 위키 투어 시작점' : visionMode === 'atlas_canvas' ? '운영 위키 아틀라스' : '바로 읽을 수 있는 운영 위키'}</h2>
+                    <p>
+                      {visionMode === 'guided_tour'
+                        ? '가장 먼저 열 문서와 이어서 볼 문서를 이 순서대로 엽니다.'
+                        : visionMode === 'atlas_canvas'
+                          ? '문서 본문, 연결 경로, 맥락 문서를 한 화면 감각으로 읽기 위한 atlas shelf 입니다.'
+                        : '지금 제품 표면에서 바로 여는 핵심 운영 문서 묶음입니다.'}
+                    </p>
                   </div>
                   <button
                     type="button"
                     className="operational-shelf-link"
                     onClick={() => openMetricPopover('wikiRuntime')}
                   >
-                    전체 29권 보기
+                    전체 {approvedWikiRuntimeBooks.toLocaleString()}권 보기
                   </button>
                 </div>
-                <div className="operational-shelf-grid">
-                  {operationalWikiBooks.map((book) => (
-                    <button
-                      key={book.book_slug}
-                      type="button"
-                      className="operational-book-card"
-                      onClick={() => setBookViewer(book)}
-                    >
-                      <span className="operational-book-badge">Live Wiki</span>
-                      <strong>{book.title}</strong>
-                      <span>{book.book_slug.replace(/_/g, ' ')}</span>
-                    </button>
-                  ))}
-                </div>
+                {visionMode === 'atlas_canvas' && (
+                  <div className="operational-atlas-grid">
+                    {atlasReadingBooks.length > 0 && (
+                      <div className="operational-atlas-lane">
+                        <div className="operational-atlas-lane-label">Reading Spine</div>
+                        {atlasReadingBooks.map((book, index) => (
+                          <button
+                            key={`atlas-reading-${book.book_slug}`}
+                            type="button"
+                            className="operational-atlas-card"
+                            onClick={() => setBookViewer(book)}
+                          >
+                            <div className="operational-atlas-meta-row">
+                              <span className="operational-atlas-kind">Document</span>
+                              <span className="operational-atlas-intent">Read</span>
+                            </div>
+                            <span className="operational-atlas-kicker">Core {index + 1}</span>
+                            <strong>{book.title}</strong>
+                            <span>{book.book_slug.replace(/_/g, ' ')}</span>
+                            <span className="operational-atlas-why">아틀라스의 중심에서 먼저 읽을 문서</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {atlasRelationBooks.length > 0 && (
+                      <div className="operational-atlas-lane">
+                        <div className="operational-atlas-lane-label">Connected Paths</div>
+                        {atlasRelationBooks.map((book, index) => (
+                          <button
+                            key={`atlas-relation-${book.book_slug}`}
+                            type="button"
+                            className="operational-atlas-card operational-atlas-card-relation"
+                            onClick={() => setBookViewer(book)}
+                          >
+                            <div className="operational-atlas-meta-row">
+                              <span className="operational-atlas-kind">Linked Doc</span>
+                              <span className="operational-atlas-intent">Open</span>
+                            </div>
+                            <span className="operational-atlas-kicker">Path {index + 1}</span>
+                            <strong>{book.title}</strong>
+                            <span>{book.book_slug.replace(/_/g, ' ')}</span>
+                            <span className="operational-atlas-why">핵심 문서와 연결되는 확장 경로</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {atlasContextBooks.length > 0 && (
+                      <div className="operational-atlas-lane">
+                        <div className="operational-atlas-lane-label">Visual Memory</div>
+                        {atlasContextBooks.map((book, index) => (
+                          <button
+                            key={`atlas-context-${book.book_slug}`}
+                            type="button"
+                            className="operational-atlas-card operational-atlas-card-context"
+                            onClick={() => setBookViewer(book)}
+                          >
+                            <div className="operational-atlas-meta-row">
+                              <span className="operational-atlas-kind">Context</span>
+                              <span className="operational-atlas-intent">Scan</span>
+                            </div>
+                            <span className="operational-atlas-kicker">Context {index + 1}</span>
+                            <strong>{book.title}</strong>
+                            <span>{book.book_slug.replace(/_/g, ' ')}</span>
+                            <span className="operational-atlas-why">주변 맥락과 운영 배경을 채우는 층</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {visionMode === 'guided_tour' && (
+                  <div className="operational-tour-grid">
+                    {guidedTourShelfSteps.length > 0 && (
+                      <div className="operational-tour-lane">
+                        <div className="operational-tour-lane-label">Start Here</div>
+                        {guidedTourShelfSteps.map((book: LibraryBook, index: number) => (
+                          <button
+                            key={`guided-shelf-step-${book.book_slug}`}
+                            type="button"
+                            className="operational-tour-card"
+                            onClick={() => setBookViewer(book)}
+                          >
+                            <span className="operational-tour-kicker">Step {index + 1}</span>
+                            <strong>{book.title}</strong>
+                            <span>{book.book_slug.replace(/_/g, ' ')}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {guidedTourShelfDocs.length > 0 && (
+                      <div className="operational-tour-lane">
+                        <div className="operational-tour-lane-label">Then Open</div>
+                        {guidedTourShelfDocs.map((book: LibraryBook, index: number) => (
+                          <button
+                            key={`guided-shelf-doc-${book.book_slug}`}
+                            type="button"
+                            className="operational-tour-card operational-tour-card-doc"
+                            onClick={() => setBookViewer(book)}
+                          >
+                            <span className="operational-tour-kicker">Document {index + 1}</span>
+                            <strong>{book.title}</strong>
+                            <span>{book.book_slug.replace(/_/g, ' ')}</span>
+                            <span className="operational-tour-arrow">
+                              <ArrowRight size={14} />
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {visionMode !== 'guided_tour' && visionMode !== 'atlas_canvas' && (
+                  <div className="operational-shelf-grid">
+                    {operationalWikiBooks.map((book) => (
+                      <button
+                        key={book.book_slug}
+                        type="button"
+                        className="operational-book-card"
+                        onClick={() => setBookViewer(book)}
+                      >
+                        <span className="operational-book-badge">Live Wiki</span>
+                        <strong>{book.title}</strong>
+                        <span>{book.book_slug.replace(/_/g, ' ')}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </section>
             )}
 
-            {allOperationalWikiBooks.length > 0 && (
+            {allOperationalWikiBooks.length > 0 && visionMode !== 'guided_tour' && (
               <section className="operational-library box-container">
                 <div className="operational-library-header">
                   <div>
                     <span className="operational-library-eyebrow">Operational Library</span>
-                    <h2>운영 위키 29권</h2>
+                    <h2>운영 위키 {approvedWikiRuntimeBooks.toLocaleString()}권</h2>
                   </div>
                   <span className="operational-library-count">{approvedWikiRuntimeBooks.toLocaleString()} books</span>
                 </div>
@@ -672,7 +963,7 @@ const PlaybookLibraryPage: React.FC = () => {
               </section>
             )}
 
-            {releaseCandidateFreeze?.exists && (
+            {releaseCandidateFreeze?.exists && visionMode !== 'guided_tour' && (
               <section className="release-freeze-hero">
                 <div className="release-freeze-hero-copy">
                   <span className="release-freeze-eyebrow">Current Freeze</span>
@@ -709,7 +1000,7 @@ const PlaybookLibraryPage: React.FC = () => {
               </section>
             )}
 
-            {(gate || hasMetricSourceDrift) && (
+            {(gate || hasMetricSourceDrift) && visionMode !== 'guided_tour' && (
               <div className="truth-banner">
                 <AlertCircle size={16} />
                 <div className="truth-banner-copy">
@@ -768,68 +1059,71 @@ const PlaybookLibraryPage: React.FC = () => {
               </div>
             </section>
 
-            <section className="metrics-grid metrics-grid-secondary">
-              <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('manual')}>
-                <div className="metric-icon"><Layers size={24} /></div>
-                <div className="metric-data">
-                  <h3>{materializedManualBooks.toLocaleString()}</h3>
-                  <p>Catalog Playbooks</p>
+            {visionMode !== 'guided_tour' && (
+              <section className="metrics-grid metrics-grid-secondary">
+                <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('manual')}>
+                  <div className="metric-icon"><Layers size={24} /></div>
+                  <div className="metric-data">
+                    <h3>{materializedManualBooks.toLocaleString()}</h3>
+                    <p>Catalog Playbooks</p>
+                  </div>
+                  <div className="metric-status online">Materialized</div>
                 </div>
-                <div className="metric-status online">Materialized</div>
-              </div>
-              <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('customerPack')}>
-                <div className="metric-icon"><HardDrive size={24} /></div>
-                <div className="metric-data">
-                  <h3>{customerPackRuntimeBooks.toLocaleString()}</h3>
-                  <p>Customer Pack Runtime</p>
+                <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('customerPack')}>
+                  <div className="metric-icon"><HardDrive size={24} /></div>
+                  <div className="metric-data">
+                    <h3>{customerPackRuntimeBooks.toLocaleString()}</h3>
+                    <p>Customer Pack Runtime</p>
+                  </div>
+                  <div className="metric-status optimized">Pack</div>
                 </div>
-                <div className="metric-status optimized">Pack</div>
-              </div>
-              <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('navBacklog')}>
-                <div className="metric-icon"><Search size={24} /></div>
-                <div className="metric-data">
-                  <h3>{wikiNavigationBacklog.toLocaleString()}</h3>
-                  <p>Wiki Navigation Backlog</p>
+                <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('navBacklog')}>
+                  <div className="metric-icon"><Search size={24} /></div>
+                  <div className="metric-data">
+                    <h3>{wikiNavigationBacklog.toLocaleString()}</h3>
+                    <p>Wiki Navigation Backlog</p>
+                  </div>
+                  <div className="metric-status online">Signals</div>
                 </div>
-                <div className="metric-status online">Signals</div>
-              </div>
-              <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('wikiUsage')}>
-                <div className="metric-icon"><Star size={24} /></div>
-                <div className="metric-data">
-                  <h3>{wikiUsageSignals.toLocaleString()}</h3>
-                  <p>Usage</p>
+                <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('wikiUsage')}>
+                  <div className="metric-icon"><Star size={24} /></div>
+                  <div className="metric-data">
+                    <h3>{wikiUsageSignals.toLocaleString()}</h3>
+                    <p>Usage</p>
+                  </div>
+                  <div className="metric-status optimized">Personal</div>
                 </div>
-                <div className="metric-status optimized">Personal</div>
-              </div>
-              <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('buyerPackets')}>
-                <div className="metric-icon"><FileText size={24} /></div>
-                <div className="metric-data">
-                  <h3>{buyerPacketBundle.toLocaleString()}</h3>
-                  <p>Release Candidate Packets</p>
+                <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('buyerPackets')}>
+                  <div className="metric-icon"><FileText size={24} /></div>
+                  <div className="metric-data">
+                    <h3>{buyerPacketBundle.toLocaleString()}</h3>
+                    <p>Release Candidate Packets</p>
+                  </div>
+                  <div className="metric-status online">Packets</div>
                 </div>
-                <div className="metric-status online">Packets</div>
-              </div>
-              <div className="metric-card metric-card-secondary">
-                <div className="metric-icon"><CheckCircle2 size={24} /></div>
-                <div className="metric-data">
-                  <h3>{ownerDemoPassRate}%</h3>
-                  <p>Owner Demo Rehearsal</p>
+                <div className="metric-card metric-card-secondary">
+                  <div className="metric-icon"><CheckCircle2 size={24} /></div>
+                  <div className="metric-data">
+                    <h3>{ownerDemoPassRate}%</h3>
+                    <p>Owner Demo Rehearsal</p>
+                  </div>
+                  <div className={`metric-status ${ownerDemo?.blockers?.length ? 'warning' : 'online'}`}>
+                    {ownerDemo?.blockers?.length ? 'Blocking' : 'Passing'}
+                  </div>
                 </div>
-                <div className={`metric-status ${ownerDemo?.blockers?.length ? 'warning' : 'online'}`}>
-                  {ownerDemo?.blockers?.length ? 'Blocking' : 'Passing'}
+                <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('derived')}>
+                  <div className="metric-icon"><Activity size={24} /></div>
+                  <div className="metric-data">
+                    <h3>{derivedPlaybooks.toLocaleString()}</h3>
+                    <p>Derived Playbooks</p>
+                  </div>
+                  <div className="metric-status optimized">Generated</div>
                 </div>
-              </div>
-              <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('derived')}>
-                <div className="metric-icon"><Activity size={24} /></div>
-                <div className="metric-data">
-                  <h3>{derivedPlaybooks.toLocaleString()}</h3>
-                  <p>Derived Playbooks</p>
-                </div>
-                <div className="metric-status optimized">Generated</div>
-              </div>
-            </section>
+              </section>
+            )}
 
             {/* Pipeline Visualization */}
+            {visionMode !== 'guided_tour' && (
             <section className="pipeline-section box-container">
               <div className="section-header">
                 <div className="section-header-left">
@@ -953,9 +1247,10 @@ const PlaybookLibraryPage: React.FC = () => {
                 </div>
               </div>
             </section>
+            )}
 
             {/* Draft Management */}
-            {drafts.length > 0 && (
+            {drafts.length > 0 && visionMode !== 'guided_tour' && (
               <section className="draft-management box-container">
                 <div className="section-header">
                   <h2>Uploaded Drafts ({drafts.length})</h2>
@@ -1433,6 +1728,58 @@ const PlaybookLibraryPage: React.FC = () => {
               </div>
               <button className="preview-close-btn" onClick={() => setBookViewer(null)}><X size={18} /></button>
             </div>
+            {visionMode === 'atlas_canvas' && (
+              <div className="book-preview-atlas">
+                <div className="book-preview-atlas-lane">
+                  <div className="book-preview-atlas-label">Reading Spine</div>
+                  <div className="book-preview-atlas-card">
+                    <div className="book-preview-atlas-meta-row">
+                      <span className="book-preview-atlas-kind">Document</span>
+                      <span className="book-preview-atlas-intent">Read</span>
+                    </div>
+                    <strong>{bookViewer.title}</strong>
+                    <span>{bookViewer.book_slug.replace(/_/g, ' ')}</span>
+                  </div>
+                </div>
+                <div className="book-preview-atlas-lane">
+                  <div className="book-preview-atlas-label">Visual Memory</div>
+                  {atlasBookFigureEntries.length > 0 ? (
+                    atlasBookFigureEntries.map((figure, index) => (
+                      <a
+                        key={`${figure.key}-${index}`}
+                        className={`book-preview-atlas-card book-preview-atlas-card-link${figure.isCluster ? ' book-preview-atlas-card-cluster' : ''}`}
+                        href={toRuntimeUrl(figure.href)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <div className="book-preview-atlas-meta-row">
+                          <span className="book-preview-atlas-kind">{figure.kind}</span>
+                          <span className="book-preview-atlas-intent">{figure.intent}</span>
+                        </div>
+                        {typeof figure.count === 'number' ? (
+                          <span className="book-preview-atlas-count">{figure.count} linked visuals</span>
+                        ) : null}
+                        {figure.thumbUrl ? (
+                          <div
+                            className="book-preview-atlas-thumb"
+                            style={{ backgroundImage: `url(${figure.thumbUrl})` }}
+                            aria-hidden="true"
+                          />
+                        ) : null}
+                        <strong>{figure.title}</strong>
+                        <span>{figure.subtitle}</span>
+                        <span className="book-preview-atlas-why">{figure.why}</span>
+                      </a>
+                    ))
+                  ) : (
+                    <div className="book-preview-atlas-card book-preview-atlas-card-muted">
+                      <strong>Figure 없음</strong>
+                      <span>현재 book에 연결된 figure asset이 아직 없습니다.</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="preview-body">
               {bookViewer.viewer_path ? (
                 <iframe

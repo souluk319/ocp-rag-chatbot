@@ -848,7 +848,7 @@
       "viewer_strategy": "internal_text",
       "body_language_guess": "en_only",
       "hangul_section_ratio": 0.0,
-      "hangul_chunk_ratio": 0.0,
+      "hangul_chunk_ratio": 0.8462,
       "fallback_detected": true,
       "source_fingerprint": "a082fe3df564624e9045986f0dc1821f683d0d71903fe1624141d8f0fa41905b",
       "approval_status": "approved",
