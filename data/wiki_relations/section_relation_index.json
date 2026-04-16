@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-04-16T13:07:50+00:00",
+  "generated_at_utc": "2026-04-16T14:34:18+00:00",
   "book_count": 29,
   "entity_count": 14,
   "by_book": {
@@ -143,9 +143,9 @@
         "source": "figure_section"
       },
       {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "label": "5.13.2. 사용자 정의 튜닝 사양",
+        "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#5132-사용자-정의-튜닝-사양",
+        "summary": "설치 후 구성 · ... > 5.12. 가비지 컬렉션을 사용하여 노드 리소스 해제 > 5.13. Node Tuning Operator 사용 > 5.13.2. 사용자 정의 튜닝 사양",
         "source": "related_doc_section"
       }
     ],
@@ -161,24 +161,6 @@
         "href": "/playbooks/wiki-runtime/active/cli_tools/index.html#231-oc-바이너리",
         "summary": "yum install openshift-clients > 2.1.2.4. Homebrew를 사용하여 OpenShift CLI 설치 > 2.3. oc 및 kubectl 명령 사용 > 2.3.1. oc 바이너리",
         "source": "figure_section"
-      },
-      {
-        "label": "2.1.3. Operator 완성 모델",
-        "href": "/playbooks/wiki-runtime/active/operators/index.html#213-operator-완성-모델",
-        "summary": "Operator 운영 플레이북 · Operator 운영 플레이북 > 1장. Operator 개요 > 2.1. Operator란 무엇인가? > 2.1.3. Operator 완성 모델",
-        "source": "related_doc_section"
-      },
-      {
-        "label": "5.3. 웹 콘솔에서 퀵 스타트 비활성화",
-        "href": "/playbooks/wiki-runtime/active/web_console/index.html#53-웹-콘솔에서-퀵-스타트-비활성화",
-        "summary": "웹 콘솔 · 웹 콘솔 > 5장. OpenShift Container Platform에서 웹 콘솔 구성 > 5.3. 웹 콘솔에서 퀵 스타트 비활성화",
-        "source": "related_doc_section"
-      },
-      {
-        "label": "6.1.1. CSI 아키텍처",
-        "href": "/playbooks/wiki-runtime/active/storage/index.html#611-csi-아키텍처",
-        "summary": "스토리지 · oc delete pvc <clone_pvc_name> -n <namespace> > 5.4.11. LVM 스토리지 업데이트 > 6.1. CSI 볼륨 구성 > 6.1.1. CSI 아키텍처",
-        "source": "related_doc_section"
       }
     ],
     "disconnected_environments": [
@@ -187,24 +169,6 @@
         "href": "/playbooks/wiki-runtime/active/disconnected_environments/index.html#581-enclave-미러링-워크플로",
         "summary": "연결이 끊긴 환경 > 5장. oc-mirror 플러그인 v2를 사용하여 연결이 끊긴 설치의 이미지 미러링 > 5.8. enclave 지원의 이점 > 5.8.1. Enclave 미러링 워크플로",
         "source": "figure_section"
-      },
-      {
-        "label": "6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
-        "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#6132-bgp를-통해-클러스터-사용자-정의-네트워크에서-pod-ip-광고",
-        "summary": "고급 네트워킹 · nc <cluster_IP> 30102 --sctp > 4장. 보조 인터페이스 지표와 네트워크 연결 연관 짓기 > 6.1. 경로 알림 정보 > 6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
-        "source": "related_doc_section"
-      },
-      {
-        "label": "5.13.2. 사용자 정의 튜닝 사양",
-        "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#5132-사용자-정의-튜닝-사양",
-        "summary": "설치 후 구성 · ... > 5.12. 가비지 컬렉션을 사용하여 노드 리소스 해제 > 5.13. Node Tuning Operator 사용 > 5.13.2. 사용자 정의 튜닝 사양",
-        "source": "related_doc_section"
-      },
-      {
-        "label": "1.1.1. 설치 프로그램 정보",
-        "href": "/playbooks/wiki-runtime/active/installation_overview/index.html#111-설치-프로그램-정보",
-        "summary": "설치 개요 · 설치 개요 > OpenShift Container Platform 설치를 위한 개요 콘텐츠 > 1.1. OpenShift Container Platform 설치 정보 > 1.1.1. 설치 프로그램 정보",
-        "source": "related_doc_section"
       }
     ],
     "ingress_and_load_balancing": [
@@ -285,9 +249,9 @@
         "source": "related_doc_section"
       },
       {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "label": "5.13.2. 사용자 정의 튜닝 사양",
+        "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#5132-사용자-정의-튜닝-사양",
+        "summary": "설치 후 구성 · ... > 5.12. 가비지 컬렉션을 사용하여 노드 리소스 해제 > 5.13. Node Tuning Operator 사용 > 5.13.2. 사용자 정의 튜닝 사양",
         "source": "related_doc_section"
       }
     ],
@@ -305,9 +269,9 @@
         "source": "related_doc_section"
       },
       {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "label": "5.13.2. 사용자 정의 튜닝 사양",
+        "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#5132-사용자-정의-튜닝-사양",
+        "summary": "설치 후 구성 · ... > 5.12. 가비지 컬렉션을 사용하여 노드 리소스 해제 > 5.13. Node Tuning Operator 사용 > 5.13.2. 사용자 정의 튜닝 사양",
         "source": "related_doc_section"
       }
     ],
@@ -343,9 +307,9 @@
         "source": "figure_section"
       },
       {
-        "label": "2.1.2.2.1. 웹 콘솔을 사용하여 Linux에 OpenShift CLI 설치",
-        "href": "/playbooks/wiki-runtime/active/cli_tools/index.html#21221-웹-콘솔을-사용하여-linux에-openshift-cli-설치",
-        "summary": "CLI 툴 · CLI 툴 > 1장. OpenShift Container Platform CLI 툴 개요 > 1.1. CLI 툴 목록 > 2.1.2.2.1. 웹 콘솔을 사용하여 Linux에 OpenShift CLI 설치",
+        "label": "5.3. 웹 콘솔에서 퀵 스타트 비활성화",
+        "href": "/playbooks/wiki-runtime/active/web_console/index.html#53-웹-콘솔에서-퀵-스타트-비활성화",
+        "summary": "웹 콘솔 · 웹 콘솔 > 5장. OpenShift Container Platform에서 웹 콘솔 구성 > 5.3. 웹 콘솔에서 퀵 스타트 비활성화",
         "source": "related_doc_section"
       }
     ],
@@ -459,12 +423,6 @@
         "source": "figure_section"
       },
       {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "source": "related_doc_section"
-      },
-      {
         "label": "2.1.3. Operator 완성 모델",
         "href": "/playbooks/wiki-runtime/active/operators/index.html#213-operator-완성-모델",
         "summary": "Operator 운영 플레이북 · Operator 운영 플레이북 > 1장. Operator 개요 > 2.1. Operator란 무엇인가? > 2.1.3. Operator 완성 모델",
@@ -483,24 +441,6 @@
         "href": "/playbooks/wiki-runtime/active/support/index.html#451-insights-operator-구성",
         "summary": "지원 > 2장. 클러스터 리소스 관리 > 4.5. Insights Operator 사용 > 4.5.1. Insights Operator 구성",
         "source": "figure_section"
-      },
-      {
-        "label": "1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해",
-        "href": "/playbooks/wiki-runtime/active/updating_clusters/index.html#124-업데이트-중에-매니페스트가-적용되는-방법-이해",
-        "summary": "클러스터 업데이트 · 클러스터 업데이트 > OpenShift Container Platform 클러스터 업데이트 > 1.2. 클러스터 업데이트 작동 방식 > 1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해",
-        "source": "related_doc_section"
-      },
-      {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "source": "related_doc_section"
-      },
-      {
-        "label": "5.26.11. Using the must-gather tool",
-        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
-        "summary": "Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
-        "source": "related_doc_section"
       }
     ],
     "updating_clusters": [
@@ -523,18 +463,6 @@
         "source": "figure_section"
       },
       {
-        "label": "4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해",
-        "href": "/playbooks/wiki-runtime/active/support/index.html#413-telemetry-및-insights-operator-데이터-흐름-이해",
-        "summary": "지원 · 지원 > 2장. 클러스터 리소스 관리 > 4.1. 원격 상태 모니터링 정보 > 4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해",
-        "source": "related_doc_section"
-      },
-      {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "source": "related_doc_section"
-      },
-      {
         "label": "5.26.11. Using the must-gather tool",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
         "summary": "Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
@@ -547,12 +475,6 @@
         "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
         "summary": "검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
         "source": "figure_section"
-      },
-      {
-        "label": "5.26.11. Using the must-gather tool",
-        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
-        "summary": "Monitoring · 로깅 · Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
-        "source": "related_doc_section"
       }
     ],
     "web_console": [
@@ -601,9 +523,9 @@
         "source": "related_doc_section"
       },
       {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "label": "5.13.2. 사용자 정의 튜닝 사양",
+        "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#5132-사용자-정의-튜닝-사양",
+        "summary": "설치 후 구성 · ... > 5.12. 가비지 컬렉션을 사용하여 노드 리소스 해제 > 5.13. Node Tuning Operator 사용 > 5.13.2. 사용자 정의 튜닝 사양",
         "source": "related_doc_section"
       }
     ],
@@ -612,12 +534,6 @@
         "label": "6.1.1. CSI 아키텍처",
         "href": "/playbooks/wiki-runtime/active/storage/index.html#611-csi-아키텍처",
         "summary": "스토리지 · oc delete pvc <clone_pvc_name> -n <namespace> > 5.4.11. LVM 스토리지 업데이트 > 6.1. CSI 볼륨 구성 > 6.1.1. CSI 아키텍처",
-        "source": "related_doc_section"
-      },
-      {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
         "source": "related_doc_section"
       },
       {
@@ -663,9 +579,9 @@
         "source": "related_doc_section"
       },
       {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
+        "label": "5.13.2. 사용자 정의 튜닝 사양",
+        "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html#5132-사용자-정의-튜닝-사양",
+        "summary": "설치 후 구성 · ... > 5.12. 가비지 컬렉션을 사용하여 노드 리소스 해제 > 5.13. Node Tuning Operator 사용 > 5.13.2. 사용자 정의 튜닝 사양",
         "source": "related_doc_section"
       }
     ],
@@ -719,44 +635,13 @@
         "source": "related_doc_section"
       },
       {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "source": "related_doc_section"
-      },
-      {
         "label": "2.1.3. Operator 완성 모델",
         "href": "/playbooks/wiki-runtime/active/operators/index.html#213-operator-완성-모델",
         "summary": "Operator 운영 플레이북 · Operator 운영 플레이북 > 1장. Operator 개요 > 2.1. Operator란 무엇인가? > 2.1.3. Operator 완성 모델",
         "source": "related_doc_section"
       }
     ],
-    "release_notes": [
-      {
-        "label": "1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해",
-        "href": "/playbooks/wiki-runtime/active/updating_clusters/index.html#124-업데이트-중에-매니페스트가-적용되는-방법-이해",
-        "summary": "클러스터 업데이트 · 클러스터 업데이트 > OpenShift Container Platform 클러스터 업데이트 > 1.2. 클러스터 업데이트 작동 방식 > 1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해",
-        "source": "related_doc_section"
-      },
-      {
-        "label": "4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해",
-        "href": "/playbooks/wiki-runtime/active/support/index.html#413-telemetry-및-insights-operator-데이터-흐름-이해",
-        "summary": "지원 · 지원 > 2장. 클러스터 리소스 관리 > 4.1. 원격 상태 모니터링 정보 > 4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해",
-        "source": "related_doc_section"
-      },
-      {
-        "label": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html#19-클러스터-리소스-가용성-및-사용-여부-확인",
-        "summary": "검증 및 문제 해결 · 검증 및 문제 해결 > 1장. 설치 검증 > 1.9. 클러스터 리소스 가용성 및 사용 여부 확인",
-        "source": "related_doc_section"
-      },
-      {
-        "label": "5.26.11. Using the must-gather tool",
-        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html#52611-using-the-must-gather-tool",
-        "summary": "Backup and restore · ... > 5.26.10. OADP Data protection test > 5.26.10.1. OADP DataProtectionTest CR specification fields > 5.26.11. Using the must-gather tool",
-        "source": "related_doc_section"
-      }
-    ]
+    "release_notes": []
   },
   "by_entity": {
     "cluster-wide-proxy": [

@@ -1,0 +1,55 @@
+{
+  "task_id": "release_evidence_20260416",
+  "lane_id": "main",
+  "role": "main",
+  "status": "done",
+  "code_paths": [
+    "scripts/verify_release_evidence.py"
+  ],
+  "artifacts": [
+    "reports/build_logs/release_evidence_report.json",
+    "reports/build_logs/release_evidence_report.md"
+  ],
+  "validation": [
+    {
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex_python.ps1 -ScriptPath scripts/verify_release_evidence.py -WriteScope reports/build_logs/release_evidence_report.json -VerifyCmd release_evidence_report_updated",
+      "status": "passed"
+    },
+    {
+      "command": "python artifact rewrite for release_evidence_report.json",
+      "status": "passed"
+    }
+  ],
+  "summary": {
+    "current_judgment": "Packet G release evidence is closed. Owner demo, buyer packet, and release freeze packet all exist and expose a non-blocked commercial evidence path.",
+    "core_evidence": [
+      "owner_demo_exists=true",
+      "owner_demo_blocker_count=0",
+      "owner_critical_scenario_pass_rate=1.0",
+      "buyer_packet_exists=true",
+      "buyer_packet_count=5",
+      "release_packet_exists=true",
+      "release_supporting_packet_count=4"
+    ]
+  },
+  "failure_modes_closed": [
+    "Release evidence had no packet-level verifier tying owner demo, buyer packet, and release freeze artifacts together"
+  ],
+  "known_open_risks": [
+    "This packet verifies artifact presence and current blocker counts; it does not regenerate the commercial packets themselves",
+    "Buyer and release packet schema remains whatever the existing generators produced"
+  ],
+  "owner_decisions": [
+    "Release evidence closure is based on active artifact existence plus zero owner-demo blockers, not on hand-written summary text"
+  ],
+  "evidence_links": [
+    "reports/build_logs/release_evidence_report.json",
+    "reports/build_logs/release_evidence_report.md",
+    "reports/build_logs/owner_demo_rehearsal_report.json",
+    "reports/build_logs/buyer_packet_bundle_index.json",
+    "reports/build_logs/release_candidate_freeze_packet.json"
+  ],
+  "notes": [
+    "Release evidence report was rewritten directly from current artifact sources to keep packet metrics in sync."
+  ]
+}

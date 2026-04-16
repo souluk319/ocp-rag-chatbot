@@ -65,6 +65,7 @@ def _build_study_section_cards(
             for item in (row.get("section_path") or row.get("path") or [])
             if str(item).strip()
         ]
+        level = max(1, int(row.get("level") or row.get("section_level") or len(section_path) or 1))
         breadcrumb = " > ".join(item for item in section_path if item) if section_path else display_heading
         section_text = _clean_source_view_text(str(row.get("text") or ""))
         is_target = bool(target_anchor) and anchor == target_anchor
@@ -97,7 +98,7 @@ def _build_study_section_cards(
             continue
         cards.append(
             """
-            <section id="{anchor}" class="section-card{target_class}">
+            <section id="{anchor}" class="section-card section-level-{level}{target_class}" data-semantic-role="{semantic_role}" data-section-level="{level}">
               <div class="section-header">
                 <div class="section-meta">{breadcrumb}</div>
                 <h2>{heading}</h2>
@@ -106,13 +107,72 @@ def _build_study_section_cards(
             </section>
             """.format(
                 anchor=html.escape(anchor, quote=True),
+                level=level,
                 target_class=" is-target" if is_target else "",
+                semantic_role=html.escape(str(row.get("semantic_role") or "").strip(), quote=True),
                 breadcrumb=html.escape(breadcrumb),
                 heading=html.escape(display_heading),
                 text=rendered_body,
             ).strip()
         )
     return cards
+
+
+def _build_section_outline(sections: list[dict[str, Any]], *, limit: int = 5) -> list[dict[str, str]]:
+    outline: list[dict[str, str]] = []
+    for row in sections:
+        anchor = str(row.get("anchor") or "").strip()
+        heading = _display_heading(str(row.get("heading") or ""))
+        if not anchor or not heading:
+            continue
+        path = [
+            _display_heading(str(item))
+            for item in (row.get("section_path") or row.get("path") or [])
+            if str(item).strip()
+        ]
+        outline.append(
+            {
+                "anchor": anchor,
+                "heading": heading,
+                "path": " > ".join(item for item in path if item) or heading,
+            }
+        )
+        if len(outline) >= limit:
+            break
+    return outline
+
+
+def _build_section_metrics(sections: list[dict[str, Any]]) -> list[str]:
+    semantic_counts: dict[str, int] = {}
+    figure_count = 0
+    code_count = 0
+    table_count = 0
+    for row in sections:
+        semantic_role = str(row.get("semantic_role") or "").strip().lower()
+        if semantic_role:
+            semantic_counts[semantic_role] = semantic_counts.get(semantic_role, 0) + 1
+        for block in row.get("blocks") or []:
+            if not isinstance(block, dict):
+                continue
+            kind = str(block.get("kind") or "").strip().lower()
+            if kind == "figure":
+                figure_count += 1
+            elif kind == "code":
+                code_count += 1
+            elif kind == "table":
+                table_count += 1
+    metrics = [f"섹션 {len(sections)}"]
+    if semantic_counts.get("procedure"):
+        metrics.append(f"절차 {semantic_counts['procedure']}")
+    if semantic_counts.get("reference"):
+        metrics.append(f"참조 {semantic_counts['reference']}")
+    if figure_count:
+        metrics.append(f"figure {figure_count}")
+    if table_count:
+        metrics.append(f"table {table_count}")
+    if code_count:
+        metrics.append(f"code {code_count}")
+    return metrics[:5]
 
 
 def _render_study_viewer_html(
@@ -126,20 +186,59 @@ def _render_study_viewer_html(
     summary: str,
     embedded: bool = False,
     page_overlay_toolbar: str = "",
+    section_outline: list[dict[str, str]] | None = None,
+    section_metrics: list[str] | None = None,
 ) -> str:
     hero_block = ""
     embedded_meta_block = ""
     document_class = "study-document"
+    hero_meta_block = ""
+    hero_outline_block = ""
+    hero_metric_pills = "".join(
+        '<span class="meta-pill">{}</span>'.format(html.escape(metric))
+        for metric in (section_metrics or [])
+        if str(metric).strip()
+    )
+    if section_outline and not embedded:
+        hero_outline_links = "".join(
+            """
+            <a class="hero-jump-link" href="#{anchor}" title="{path}">{heading}</a>
+            """.format(
+                anchor=html.escape(str(item.get("anchor") or ""), quote=True),
+                path=html.escape(str(item.get("path") or "")),
+                heading=html.escape(str(item.get("heading") or "")),
+            ).strip()
+            for item in section_outline
+            if str(item.get("anchor") or "").strip() and str(item.get("heading") or "").strip()
+        )
+        if hero_outline_links:
+            hero_outline_block = """
+              <div class="hero-outline">
+                <div class="hero-outline-label">Quick Navigation</div>
+                <div class="hero-outline-links">{hero_outline_links}</div>
+              </div>
+            """.format(hero_outline_links=hero_outline_links)
     if not embedded:
+        hero_meta_block = """
+            <div class="hero-meta">
+              {hero_metric_pills}
+              <span class="meta-pill meta-pill-accent">{eyebrow}</span>
+              {source_link}
+            </div>
+        """
         hero_block = """
           <section class="hero">
-            <div class="eyebrow">{eyebrow}</div>
-            <h1>{title}</h1>
-            <p class="summary">{summary}</p>
-            {page_overlay_toolbar}
-            <div class="actions">
-              <span>섹션 수: {section_count}</span>
-              <a href="{source_url}" target="_blank" rel="noreferrer">원문 열기</a>
+            <div class="hero-grid">
+              <div class="hero-main">
+                <div class="eyebrow">{eyebrow}</div>
+                <h1>{title}</h1>
+                <p class="summary">{summary}</p>
+                {hero_outline_block}
+                {page_overlay_toolbar}
+              </div>
+              <div class="actions hero-actions">
+                {hero_meta_block}
+              </div>
             </div>
           </section>
         """
@@ -154,6 +253,10 @@ def _render_study_viewer_html(
         if page_overlay_toolbar:
             embedded_meta_block = (embedded_meta_block + page_overlay_toolbar) if embedded_meta_block else page_overlay_toolbar
     extra_blocks = "\n".join(supplementary_blocks or [])
+    reader_sidebar = ""
+    if extra_blocks and not embedded:
+        reader_sidebar = '<aside class="reader-sidebar">{}</aside>'.format(extra_blocks)
+        extra_blocks = ""
     return """
     <!DOCTYPE html>
     <html lang="ko">
@@ -211,11 +314,21 @@ def _render_study_viewer_html(
           .hero {{
             background: var(--panel);
             border: 1px solid var(--line);
-            border-radius: 24px;
-            padding: 28px 30px;
+            border-radius: 28px;
+            padding: 36px 38px;
             box-shadow:
               0 20px 50px rgba(17, 20, 24, 0.08),
               inset 0 1px 0 rgba(255, 255, 255, 0.8);
+          }}
+          .hero-grid {{
+            display: grid;
+            grid-template-columns: minmax(0, 1.8fr) minmax(240px, 0.9fr);
+            gap: 24px;
+            align-items: end;
+          }}
+          .hero-main {{
+            display: grid;
+            gap: 14px;
           }}
           .eyebrow {{
             color: var(--accent);
@@ -225,22 +338,70 @@ def _render_study_viewer_html(
             text-transform: uppercase;
           }}
           h1 {{
-            margin: 10px 0 8px;
-            font-size: clamp(1.8rem, 3vw, 2.7rem);
-            line-height: 1.15;
+            margin: 0;
+            font-family: "Fraunces", "Iowan Old Style", "Noto Serif KR", serif;
+            font-size: clamp(2.6rem, 5vw, 4.4rem);
+            line-height: 0.98;
+            letter-spacing: -0.05em;
+            max-width: 10ch;
           }}
           .summary {{
             margin: 0;
             color: var(--muted);
-            line-height: 1.6;
-            max-width: 72ch;
+            font-size: 1rem;
+            line-height: 1.78;
+            max-width: 66ch;
           }}
           .actions {{
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
-            margin-top: 18px;
             align-items: center;
+          }}
+          .hero-actions {{
+            justify-content: flex-end;
+          }}
+          .hero-meta {{
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-end;
+          }}
+          .hero-outline {{
+            display: grid;
+            gap: 10px;
+            margin-top: 6px;
+          }}
+          .hero-outline-label {{
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+          }}
+          .hero-outline-links {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+          }}
+          .hero-jump-link {{
+            display: inline-flex;
+            align-items: center;
+            min-height: 38px;
+            padding: 0 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(17, 20, 24, 0.08);
+            background: rgba(17, 20, 24, 0.025);
+            color: var(--ink);
+            font-size: 0.88rem;
+            font-weight: 700;
+            line-height: 1.2;
+            text-decoration: none;
+          }}
+          .hero-jump-link:hover {{
+            color: var(--accent);
+            border-color: rgba(198, 40, 40, 0.18);
+            background: rgba(198, 40, 40, 0.05);
           }}
           .meta-pill,
           .actions a {{
@@ -256,17 +417,36 @@ def _render_study_viewer_html(
             font-weight: 700;
             text-decoration: none;
           }}
+          .meta-pill-accent {{
+            color: var(--accent);
+            border-color: rgba(198, 40, 40, 0.16);
+            background: rgba(198, 40, 40, 0.06);
+          }}
           .section-list {{
             display: grid;
-            gap: 18px;
+            gap: 28px;
+          }}
+          .reader-layout {{
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+            gap: 24px;
+            align-items: start;
             margin-top: 24px;
+          }}
+          .reader-main {{
+            min-width: 0;
+          }}
+          .reader-sidebar {{
+            position: sticky;
+            top: 18px;
+            display: grid;
+            gap: 18px;
           }}
           .wiki-grid {{
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 14px;
-            margin-top: 18px;
-            margin-bottom: 10px;
+            margin: 0;
           }}
           .wiki-grid-primary {{
             align-items: start;
@@ -278,12 +458,10 @@ def _render_study_viewer_html(
           .wiki-parent-card {{
             display: grid;
             gap: 10px;
-            margin-top: 18px;
-            margin-bottom: 14px;
             background: linear-gradient(180deg, rgba(198, 40, 40, 0.06), rgba(198, 40, 40, 0.02));
             border: 1px solid rgba(198, 40, 40, 0.12);
-            border-radius: 18px;
-            padding: 16px 18px;
+            border-radius: 22px;
+            padding: 18px 20px;
           }}
           .wiki-parent-eyebrow {{
             color: var(--accent);
@@ -534,6 +712,21 @@ def _render_study_viewer_html(
             padding: 12px 16px;
           }}
           @media (max-width: 1100px) {{
+            .hero-grid,
+            .reader-layout {{
+              grid-template-columns: 1fr;
+            }}
+            .hero-actions,
+            .hero-meta {{
+              justify-content: flex-start;
+              align-items: flex-start;
+            }}
+            .hero-outline-links {{
+              gap: 8px;
+            }}
+            .reader-sidebar {{
+              position: static;
+            }}
             .wiki-grid,
             body.is-embedded .wiki-grid {{
               grid-template-columns: 1fr;
@@ -621,45 +814,77 @@ def _render_study_viewer_html(
             color: var(--ink);
           }}
           .section-card {{
-            background: rgba(255, 255, 255, 0.96);
-            border: 1px solid var(--line);
-            border-radius: 20px;
-            padding: 20px 22px 22px;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            padding: 0 0 10px;
             scroll-margin-top: 20px;
-            box-shadow: 0 12px 30px rgba(17, 20, 24, 0.05);
+            box-shadow: none;
+          }}
+          .section-card + .section-card {{
+            padding-top: 28px;
+            border-top: 1px solid rgba(17, 20, 24, 0.08);
           }}
           .section-card.is-target {{
-            border-color: var(--accent);
-            background: var(--accent-soft);
-            box-shadow: 0 18px 34px rgba(17, 20, 24, 0.08);
+            border-top-color: rgba(198, 40, 40, 0.22);
+            background: linear-gradient(180deg, rgba(198, 40, 40, 0.03), transparent 60%);
+            border-radius: 18px;
+            padding: 18px 20px 22px;
+            box-shadow: inset 0 0 0 1px rgba(198, 40, 40, 0.08);
           }}
           .section-header {{
             display: grid;
-            gap: 8px;
+            gap: 10px;
             padding-bottom: 14px;
-            margin-bottom: 16px;
-            border-bottom: 1px solid var(--line);
+            margin-bottom: 18px;
+            border-bottom: 1px solid rgba(17, 20, 24, 0.08);
           }}
           .section-card h2 {{
             margin: 0;
-            font-family: "Red Hat Display", "Red Hat Text", "Noto Sans KR", sans-serif;
-            font-size: 1.2rem;
-            line-height: 1.45;
+            font-family: "Fraunces", "Iowan Old Style", "Noto Serif KR", serif;
+            font-size: clamp(1.7rem, 2.3vw, 2.4rem);
+            line-height: 1.16;
+            letter-spacing: -0.04em;
+          }}
+          .section-card.section-level-2 h2 {{
+            font-size: clamp(1.45rem, 2vw, 2rem);
+          }}
+          .section-card.section-level-3 h2,
+          .section-card.section-level-4 h2,
+          .section-card.section-level-5 h2,
+          .section-card.section-level-6 h2 {{
+            font-size: clamp(1.2rem, 1.6vw, 1.6rem);
             letter-spacing: -0.02em;
           }}
           .section-body {{
             display: grid;
-            gap: 16px;
+            gap: 18px;
           }}
           .section-body p,
           .section-body h3 {{
             margin: 0;
           }}
           .section-body h3 {{
-            padding-top: 6px;
-            font-size: 1rem;
+            padding-top: 10px;
+            font-size: 1.12rem;
             color: var(--ink);
             letter-spacing: -0.01em;
+          }}
+          .section-body p,
+          .section-body li,
+          .section-body td {{
+            font-size: 1rem;
+            line-height: 1.82;
+            color: #36404a;
+          }}
+          .section-body a {{
+            color: #9a3412;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(154, 52, 18, 0.18);
+          }}
+          .section-body a:hover {{
+            color: #7c2d12;
+            border-bottom-color: rgba(124, 45, 18, 0.32);
           }}
           .section-body code {{
             display: inline;
@@ -673,7 +898,7 @@ def _render_study_viewer_html(
           }}
           .code-block {{
             border: 1px solid var(--line);
-            border-radius: 18px;
+            border-radius: 20px;
             overflow: hidden;
             background: linear-gradient(180deg, #ffffff 0%, #f7f8fa 100%);
             box-shadow:
@@ -766,7 +991,7 @@ def _render_study_viewer_html(
           .table-wrap {{
             overflow-x: auto;
             border: 1px solid var(--line);
-            border-radius: 16px;
+            border-radius: 20px;
             background: rgba(255, 255, 255, 0.96);
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
           }}
@@ -969,13 +1194,18 @@ def _render_study_viewer_html(
       <body class="{body_class}">
         <main>
           {hero_block}
-          <article class="{document_class}">
-            {embedded_meta_block}
-            {extra_blocks}
-            <div class="section-list">
-              {cards}
+          <section class="reader-layout">
+            <div class="reader-main">
+              <article class="{document_class}">
+                {embedded_meta_block}
+                {extra_blocks}
+                <div class="section-list">
+                  {cards}
+                </div>
+              </article>
             </div>
-          </article>
+            {reader_sidebar}
+          </section>
         </main>
       </body>
     </html>
@@ -988,17 +1218,42 @@ def _render_study_viewer_html(
         body_class="is-embedded" if embedded else "",
         document_class=document_class,
         extra_blocks=extra_blocks,
+        reader_sidebar=reader_sidebar,
         embedded_meta_block=embedded_meta_block.format(
             source_url=html.escape(source_url, quote=True),
         ) if embedded_meta_block else "",
         page_overlay_toolbar=page_overlay_toolbar,
+        hero_metric_pills=hero_metric_pills,
+        hero_outline_block=hero_outline_block,
+        hero_meta_block=hero_meta_block.format(
+            eyebrow=html.escape(eyebrow),
+            hero_metric_pills=hero_metric_pills,
+            source_link=(
+                '<a href="{href}" target="_blank" rel="noreferrer">원문 열기</a>'.format(
+                    href=html.escape(source_url, quote=True),
+                )
+                if source_url
+                else ""
+            ),
+        ) if hero_meta_block else "",
         hero_block=hero_block.format(
             title=html.escape(title),
             eyebrow=html.escape(eyebrow),
             summary=html.escape(summary),
-            section_count=section_count,
             source_url=html.escape(source_url, quote=True),
             page_overlay_toolbar=page_overlay_toolbar,
+            hero_outline_block=hero_outline_block,
+            hero_meta_block=hero_meta_block.format(
+                eyebrow=html.escape(eyebrow),
+                hero_metric_pills=hero_metric_pills,
+                source_link=(
+                    '<a href="{href}" target="_blank" rel="noreferrer">원문 열기</a>'.format(
+                        href=html.escape(source_url, quote=True),
+                    )
+                    if source_url
+                    else ""
+                ),
+            ) if hero_meta_block else "",
         ) if hero_block else "",
         cards="\n".join(cards),
     ).strip()

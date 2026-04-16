@@ -52,6 +52,27 @@ class ChatNavigationLinkTests(unittest.TestCase):
             "/playbooks/wiki-runtime/active/authentication_and_authorization/index.html#user-role",
         )
 
+    def test_navigation_links_skip_release_notes_when_support_is_the_relation_source(self) -> None:
+        links = build_chat_navigation_links(
+            ROOT,
+            [
+                {
+                    "book_slug": "support",
+                    "section": "지원",
+                    "excerpt": "지원 이후 함께 봐야 하는 문서다.",
+                }
+            ],
+        )
+
+        self.assertNotIn(
+            "/playbooks/wiki-runtime/active/release_notes/index.html",
+            [link["href"] for link in links],
+        )
+        self.assertNotIn("릴리스 노트", [link["label"] for link in links])
+        self.assertTrue(
+            all(link["href"].startswith("/playbooks/wiki-runtime/active/") for link in links)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

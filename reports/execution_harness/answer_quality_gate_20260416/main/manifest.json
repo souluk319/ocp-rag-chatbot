@@ -1,0 +1,37 @@
+{
+  "task_id": "answer_quality_gate_20260416",
+  "created_at": "2026-04-16T17:15:00+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": true,
+  "parallel_execution_required": true,
+  "companion_lanes": [
+    {
+      "lane_id": "explorer",
+      "role": "explorer"
+    },
+    {
+      "lane_id": "reviewer",
+      "role": "reviewer"
+    }
+  ],
+  "write_scope": "src/play_book_studio/answering/answerer.py;src/play_book_studio/answering/context.py;scripts/verify_answer_quality_gate.py;tests/test_answering_output.py;tests/test_demo_multiturn_scenarios.py;reports/build_logs/corpus_long_test_answer_eval_realworld_report.json;reports/build_logs/answer_quality_gate_report.json;reports/build_logs/answer_quality_gate_report.md;reports/execution_harness/answer_quality_gate_20260416/main/*",
+  "target_outputs": [
+    "reports/build_logs/corpus_long_test_answer_eval_realworld_report.json",
+    "reports/build_logs/answer_quality_gate_report.json",
+    "reports/build_logs/answer_quality_gate_report.md",
+    "reports/execution_harness/answer_quality_gate_20260416/main/final_report.json"
+  ],
+  "validation_commands": [
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_answering_output.py -k \"prunes_images_citation_from_mco_concept_answer or prunes_etcd_companion_citation_from_standard_backup_answer or answerer_deduplicates_same_section_citations or answerer_shapes_etcd_restore_follow_up_with_grounded_restore_command\" -q",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_answer_eval.py tests/test_demo_multiturn_scenarios.py tests/test_app_chat_api_multiturn.py -q",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_answering_context.py::ContextAssemblyTests::test_mco_concept_prefers_architecture_family_over_support tests/test_answering_context.py::ContextAssemblyTests::test_backup_only_etcd_context_keeps_postinstall_and_etcd_companion -q",
+    "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex_python.ps1 -ScriptPath scripts/run_answer_eval.py -WriteScope reports/build_logs/corpus_long_test_answer_eval_realworld_report.json -VerifyCmd answer_eval_realworld_report_updated --% --cases manifests/answer_eval_realworld_cases.jsonl",
+    "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex_python.ps1 -ScriptPath scripts/verify_answer_quality_gate.py -WriteScope reports/build_logs/answer_quality_gate_report.json -VerifyCmd answer_quality_gate_report_updated"
+  ],
+  "status": "done"
+}

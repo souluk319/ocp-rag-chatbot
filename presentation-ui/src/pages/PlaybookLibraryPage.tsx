@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import gsap from 'gsap';
 import './PlaybookLibraryPage.css';
+import ViewerDocumentStage, { type ViewerDocumentPayload } from '../components/ViewerDocumentStage';
 import {
   type CustomerPackDraft,
   type BuyerPacket,
@@ -50,7 +51,9 @@ import {
   removeRepositoryFavorite,
   saveRepositoryFavorites,
   searchRepositories,
+  loadCustomerPackCapturedPreview,
   loadRuntimeFigures,
+  loadViewerDocument,
   toRuntimeUrl,
   formatBytes,
 } from '../lib/runtimeApi';
@@ -292,7 +295,11 @@ const PlaybookLibraryPage: React.FC = () => {
   const [metricPopover, setMetricPopover] = useState<{ title: string; books: LibraryBook[] } | null>(null);
   const [buyerPacketPopover, setBuyerPacketPopover] = useState<{ title: string; packets: BuyerPacket[] } | null>(null);
   const [bookViewer, setBookViewer] = useState<LibraryBook | null>(null);
-  const [previewViewerUrl, setPreviewViewerUrl] = useState('');
+  const [bookViewerDocument, setBookViewerDocument] = useState<ViewerDocumentPayload | null>(null);
+  const [bookViewerLoading, setBookViewerLoading] = useState(false);
+  const [previewCapturedUrl, setPreviewCapturedUrl] = useState('');
+  const [previewCapturedType, setPreviewCapturedType] = useState('');
+  const [previewViewerDocument, setPreviewViewerDocument] = useState<ViewerDocumentPayload | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [atlasBookFigures, setAtlasBookFigures] = useState<RuntimeFigureItem[]>([]);
   const atlasBookFigureEntries = useMemo(() => buildFigureAtlasEntries(atlasBookFigures), [atlasBookFigures]);
@@ -357,6 +364,52 @@ const PlaybookLibraryPage: React.FC = () => {
       .then((payload) => setAtlasBookFigures(payload.items ?? []))
       .catch(() => setAtlasBookFigures([]));
   }, [bookViewer, visionMode]);
+
+  useEffect(() => {
+    if (!bookViewer?.viewer_path) {
+      setBookViewerDocument(null);
+      setBookViewerLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setBookViewerLoading(true);
+    setBookViewerDocument(null);
+
+    loadViewerDocument(bookViewer.viewer_path)
+      .then((viewerDocument) => {
+        if (cancelled) {
+          return;
+        }
+        setBookViewerDocument({
+          html: viewerDocument.html,
+          inlineStyles: viewerDocument.inline_styles,
+          bodyClassName: viewerDocument.body_class_name,
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setBookViewerDocument(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setBookViewerLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [bookViewer]);
+
+  useEffect(() => {
+    return () => {
+      if (previewCapturedUrl) {
+        URL.revokeObjectURL(previewCapturedUrl);
+      }
+    };
+  }, [previewCapturedUrl]);
 
   useEffect(() => {
     const requestedView = (searchParams.get('view') || '').trim();
@@ -591,26 +644,60 @@ const PlaybookLibraryPage: React.FC = () => {
 
   const openPreview = async (draft: CustomerPackDraft) => {
     setPreviewDraft(draft);
-    setPreviewViewerUrl('');
+    if (previewCapturedUrl) {
+      URL.revokeObjectURL(previewCapturedUrl);
+    }
+    setPreviewCapturedUrl('');
+    setPreviewCapturedType('');
+    setPreviewViewerDocument(null);
     setPreviewLoading(true);
 
     try {
       if (draft.status === 'normalized') {
         const book = await loadCustomerPackBook(draft.draft_id);
-        setPreviewViewerUrl(toRuntimeUrl(book.target_viewer_path));
+        const viewerDocument = await loadViewerDocument(book.target_viewer_path);
+        setPreviewViewerDocument({
+          html: viewerDocument.html,
+          inlineStyles: viewerDocument.inline_styles,
+          bodyClassName: viewerDocument.body_class_name,
+        });
       } else if (draft.capture_artifact_path) {
-        setPreviewViewerUrl(toRuntimeUrl(`/api/customer-packs/captured?draft_id=${encodeURIComponent(draft.draft_id)}`));
+        const captured = await loadCustomerPackCapturedPreview(draft.draft_id);
+        setPreviewCapturedType(captured.contentType);
+        setPreviewCapturedUrl(URL.createObjectURL(captured.blob));
       }
     } catch {
-      // viewer URL stays empty — fallback message shown
+      setPreviewCapturedUrl('');
+      setPreviewCapturedType('');
+      setPreviewViewerDocument(null);
     } finally {
       setPreviewLoading(false);
     }
   };
 
+  const openPreviewViewerPath = async (viewerPath: string) => {
+    const viewerDocument = await loadViewerDocument(viewerPath);
+    setPreviewViewerDocument({
+      html: viewerDocument.html,
+      inlineStyles: viewerDocument.inline_styles,
+      bodyClassName: viewerDocument.body_class_name,
+      interactionPolicy: {
+        codeCopy: viewerDocument.interaction_policy.code_copy,
+        codeWrapToggle: viewerDocument.interaction_policy.code_wrap_toggle,
+        recentPositionTracking: viewerDocument.interaction_policy.recent_position_tracking,
+        anchorNavigation: viewerDocument.interaction_policy.anchor_navigation,
+      },
+    });
+  };
+
   const closePreview = () => {
+    if (previewCapturedUrl) {
+      URL.revokeObjectURL(previewCapturedUrl);
+    }
     setPreviewDraft(null);
-    setPreviewViewerUrl('');
+    setPreviewCapturedUrl('');
+    setPreviewCapturedType('');
+    setPreviewViewerDocument(null);
   };
 
   const openMetricPopover = (kind: 'known' | 'approved' | 'manual' | 'customerPack' | 'candidate' | 'wikiRuntime' | 'navBacklog' | 'wikiUsage' | 'buyerGate' | 'buyerPackets' | 'derived') => {
@@ -1787,14 +1874,24 @@ const PlaybookLibraryPage: React.FC = () => {
               {previewLoading && (
                 <div className="preview-loading"><Loader2 size={20} className="spin-icon" /> Loading viewer...</div>
               )}
-              {!previewLoading && previewViewerUrl && (
+              {!previewLoading && previewViewerDocument && (
+                <div className="preview-viewer-shell">
+                  <ViewerDocumentStage
+                    viewerDocument={previewViewerDocument}
+                    onNavigateViewerPath={(viewerPath) => { void openPreviewViewerPath(viewerPath); }}
+                    className="preview-viewer-document"
+                  />
+                </div>
+              )}
+              {!previewLoading && !previewViewerDocument && previewCapturedUrl && (
                 <iframe
                   title={previewDraft.title}
                   className="preview-viewer-frame"
-                  src={previewViewerUrl}
+                  src={previewCapturedUrl}
+                  sandbox={previewCapturedType.includes('text/html') ? 'allow-same-origin' : undefined}
                 />
               )}
-              {!previewLoading && !previewViewerUrl && (
+              {!previewLoading && !previewViewerDocument && !previewCapturedUrl && (
                 <div className="preview-no-sections">
                   {previewDraft.status === 'planned'
                     ? '아직 캡처되지 않은 초안입니다. Capture/Normalize 후 미리보기를 확인할 수 있습니다.'
@@ -1923,16 +2020,6 @@ const PlaybookLibraryPage: React.FC = () => {
                 )}
               </div>
               <div className="preview-header-actions">
-                {bookViewer.viewer_path ? (
-                  <a
-                    className="preview-open-full-btn"
-                    href={toRuntimeUrl(bookViewer.viewer_path)}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    전체 문서 열기
-                  </a>
-                ) : null}
                 <button className="preview-close-btn" onClick={() => setBookViewer(null)}><X size={18} /></button>
               </div>
             </div>
@@ -1990,11 +2077,15 @@ const PlaybookLibraryPage: React.FC = () => {
                 </aside>
               )}
               <div className="preview-viewer-shell">
-                {bookViewer.viewer_path ? (
-                  <iframe
-                    title={bookViewer.title}
-                    className="preview-viewer-frame"
-                    src={toRuntimeUrl(bookViewer.viewer_path)}
+                {bookViewerLoading ? (
+                  <div className="preview-loading"><Loader2 size={20} className="spin-icon" /> Loading viewer...</div>
+                ) : bookViewerDocument ? (
+                  <ViewerDocumentStage
+                    viewerDocument={bookViewerDocument}
+                    onNavigateViewerPath={(viewerPath) => {
+                      setBookViewer((current) => (current ? { ...current, viewer_path: viewerPath } : current));
+                    }}
+                    className="preview-viewer-document"
                   />
                 ) : (
                   <div className="preview-no-sections">뷰어 경로가 없는 북입니다.</div>

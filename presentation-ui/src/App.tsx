@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import ProjectDetailsPage from './pages/ProjectDetailsPage';
 import WorkspacePage from './pages/WorkspacePage';
@@ -12,7 +12,6 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/details" element={<ProjectDetailsPage />} />
         <Route path="/workspace" element={<WorkspacePage />} />
-        <Route path="/studio" element={<Navigate to="/workspace" replace />} />
         <Route path="/playbook-library" element={<PlaybookLibraryPage />} />
       </Routes>
     </Router>

@@ -56,9 +56,10 @@ class TestRetrievalQueryIntents(unittest.TestCase):
 
         self.assertIn("구조", normalized)
         self.assertIn("개요", normalized)
-        self.assertIn("소개", normalized)
-        self.assertIn("기본", normalized)
-        self.assertIn("개념", normalized)
+        self.assertIn("플랫폼", normalized)
+        self.assertNotIn("소개", normalized)
+        self.assertNotIn("기본", normalized)
+        self.assertNotIn("개념", normalized)
         self.assertNotIn("OpenShift", normalized)
         self.assertNotIn("architecture", normalized)
         self.assertNotIn("overview", normalized)
@@ -66,10 +67,11 @@ class TestRetrievalQueryIntents(unittest.TestCase):
     def test_normalize_query_treats_openshift_summary_as_intro_query(self) -> None:
         normalized = normalize_query("오픈시프트에 대해 세줄요약해봐")
 
-        self.assertIn("소개", normalized)
         self.assertIn("개요", normalized)
-        self.assertIn("기본", normalized)
-        self.assertIn("개념", normalized)
+        self.assertIn("플랫폼", normalized)
+        self.assertNotIn("소개", normalized)
+        self.assertNotIn("기본", normalized)
+        self.assertNotIn("개념", normalized)
         self.assertNotIn("OpenShift", normalized)
         self.assertNotIn("overview", normalized)
 
@@ -79,24 +81,27 @@ class TestRetrievalQueryIntents(unittest.TestCase):
         self.assertIn("OpenShift", normalized)
         self.assertIn("Container", normalized)
         self.assertIn("Platform", normalized)
-        self.assertIn("소개", normalized)
         self.assertIn("개요", normalized)
+        self.assertNotIn("소개", normalized)
         self.assertNotIn("overview", normalized)
 
     def test_normalize_query_treats_spaced_openshift_intro_as_intro_query(self) -> None:
         normalized = normalize_query("오픈 시프트가 뭐야?")
 
-        self.assertIn("소개", normalized)
         self.assertIn("개요", normalized)
-        self.assertIn("기본", normalized)
-        self.assertIn("개념", normalized)
+        self.assertIn("플랫폼", normalized)
+        self.assertNotIn("소개", normalized)
+        self.assertNotIn("기본", normalized)
+        self.assertNotIn("개념", normalized)
 
     def test_normalize_query_treats_openshift_usage_question_as_intro_query(self) -> None:
         normalized = normalize_query("오픈시프트는 어떤 곳에 쓰여?")
 
-        self.assertIn("소개", normalized)
-        self.assertIn("기본", normalized)
-        self.assertIn("개념", normalized)
+        self.assertIn("개요", normalized)
+        self.assertIn("플랫폼", normalized)
+        self.assertNotIn("소개", normalized)
+        self.assertNotIn("기본", normalized)
+        self.assertNotIn("개념", normalized)
 
     def test_normalize_query_expands_openshift_kubernetes_compare_intent(self) -> None:
         normalized = normalize_query("오픈시프트와 쿠버네티스 차이를 세 줄로 설명해줘")

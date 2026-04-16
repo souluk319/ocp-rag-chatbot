@@ -1,0 +1,84 @@
+{
+  "task_id": "answer_quality_gate_20260416",
+  "lane_id": "main",
+  "role": "main",
+  "status": "done",
+  "code_paths": [
+    "src/play_book_studio/answering/answerer.py",
+    "src/play_book_studio/answering/context.py",
+    "scripts/verify_answer_quality_gate.py",
+    "tests/test_answering_output.py",
+    "tests/test_demo_multiturn_scenarios.py"
+  ],
+  "artifacts": [
+    "artifacts/answering/answer_eval_report.json",
+    "reports/build_logs/corpus_long_test_answer_eval_realworld_report.json",
+    "reports/build_logs/answer_quality_gate_report.json",
+    "reports/build_logs/answer_quality_gate_report.md"
+  ],
+  "validation": [
+    {
+      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_answering_output.py -k \"prunes_images_citation_from_mco_concept_answer or prunes_etcd_companion_citation_from_standard_backup_answer or answerer_deduplicates_same_section_citations or answerer_shapes_etcd_restore_follow_up_with_grounded_restore_command\" -q",
+      "status": "passed"
+    },
+    {
+      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_answer_eval.py tests/test_demo_multiturn_scenarios.py tests/test_app_chat_api_multiturn.py -q",
+      "status": "passed"
+    },
+    {
+      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_answering_context.py::ContextAssemblyTests::test_mco_concept_prefers_architecture_family_over_support tests/test_answering_context.py::ContextAssemblyTests::test_backup_only_etcd_context_keeps_postinstall_and_etcd_companion -q",
+      "status": "passed"
+    },
+    {
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex_python.ps1 -ScriptPath scripts/run_answer_eval.py -WriteScope reports/build_logs/corpus_long_test_answer_eval_realworld_report.json -VerifyCmd answer_eval_realworld_report_updated --% --cases manifests/answer_eval_realworld_cases.jsonl",
+      "status": "passed"
+    },
+    {
+      "command": "Copy-Item -LiteralPath artifacts\\answering\\answer_eval_report.json -Destination reports\\build_logs\\corpus_long_test_answer_eval_realworld_report.json -Force",
+      "status": "passed"
+    },
+    {
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex_python.ps1 -ScriptPath scripts/verify_answer_quality_gate.py -WriteScope reports/build_logs/answer_quality_gate_report.json -VerifyCmd answer_quality_gate_report_updated",
+      "status": "passed"
+    }
+  ],
+  "summary": {
+    "current_judgment": "Packet E answer quality gate is closed. Realworld answer eval now passes without provenance noise, unsupported assertions, or missed clarification gating.",
+    "core_evidence": [
+      "pass_rate=1.0",
+      "unsupported_assertion_rate=0.0",
+      "clarification_needed_but_answered_rate=0.0",
+      "strict_expected_only_rate=1.0",
+      "pass_with_provenance_noise_rate=0.0",
+      "realworld_status=sufficient",
+      "owner_critical_scenario_pass_rate=1.0",
+      "owner_demo_blocker_count=0"
+    ]
+  },
+  "failure_modes_closed": [
+    "MCO concept answers leaked images provenance into final citations",
+    "Standard etcd backup answers leaked etcd companion citations into otherwise standard postinstall answers",
+    "Demo multiturn topic-shift test diverged from the active stripped-topic session contract"
+  ],
+  "known_open_risks": [
+    "Packet E closes current realworld answer gate and owner demo scorecard but does not yet add a stronger external judge lane",
+    "Evidence-linked answer rate remains 0.6923 because ambiguous and no-answer cases correctly carry no citations",
+    "Unrelated workspace and tmp_source dirtiness remains untouched"
+  ],
+  "owner_decisions": [
+    "Answerer prunes provenance-noise citations at the final citation stage instead of collapsing context diversity earlier in the pipeline",
+    "MCO concept context prioritizes machine_configuration ahead of architecture, overview, and machine_management, and drops images from the concept family",
+    "The realworld answer eval artifact in artifacts/answering is mirrored into reports/build_logs for packet-level reporting"
+  ],
+  "evidence_links": [
+    "artifacts/answering/answer_eval_report.json",
+    "reports/build_logs/corpus_long_test_answer_eval_realworld_report.json",
+    "reports/build_logs/answer_quality_gate_report.json",
+    "reports/build_logs/answer_quality_gate_report.md",
+    "reports/build_logs/owner_demo_rehearsal_report.json"
+  ],
+  "notes": [
+    "Targeted answer-quality tests passed.",
+    "Realworld answer eval was rerun and mirrored to the packet report path."
+  ]
+}

@@ -633,12 +633,11 @@ def _select_hits(
         top_book = support_window[0].book_slug
     elif has_mco_concept_intent(normalized):
         preferred_order = {
-            "architecture": 0,
-            "overview": 1,
-            "machine_management": 2,
-            "images": 3,
+            "machine_configuration": 0,
+            "architecture": 1,
+            "overview": 2,
+            "machine_management": 3,
             "operators": 4,
-            "machine_configuration": 5,
         }
         ranked_hits = sorted(
             ranked_hits,
@@ -797,9 +796,34 @@ def _select_hits(
                 if best_book_scores.get(book_slug, 0.0) >= top_score * 0.56:
                     allowed_books.add(book_slug)
     if _is_intro_recommendation_query(normalized):
-        # Enforce single playbook anchor dominance
-        allowed_books = {top_book}
-        locked_allowed_books = True
+        intro_books = tuple(
+            book_slug
+            for book_slug in (
+                "overview",
+                "architecture",
+                "installation_overview",
+                "operators",
+                "extensions",
+                "web_console",
+                "cli_tools",
+            )
+            if best_book_scores.get(book_slug, 0.0) > 0.0
+        )
+        if intro_books:
+            allowed_books = set(intro_books)
+            locked_allowed_books = True
+        else:
+            for book_slug in (
+                "overview",
+                "architecture",
+                "installation_overview",
+                "operators",
+                "extensions",
+                "web_console",
+                "cli_tools",
+            ):
+                if best_book_scores.get(book_slug, 0.0) >= top_score * 0.5:
+                    allowed_books.add(book_slug)
     if has_pod_lifecycle_concept_intent(normalized):
         for book_slug in ("nodes", "overview", "architecture", "building_applications"):
             if best_book_scores.get(book_slug, 0.0) >= top_score * 0.58:
@@ -868,7 +892,7 @@ def _select_hits(
             if best_book_scores.get(book_slug, 0.0) >= top_score * 0.55:
                 allowed_books.add(book_slug)
     if has_mco_concept_intent(normalized):
-        for book_slug in ("architecture", "overview", "machine_management", "images"):
+        for book_slug in ("machine_configuration", "architecture", "overview", "machine_management", "operators"):
             if best_book_scores.get(book_slug, 0.0) >= top_score * 0.62:
                 allowed_books.add(book_slug)
     if has_rbac_intent(normalized):

@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import json
+import re
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urljoin
 
 from play_book_studio.app.data_control_room import build_data_control_room_payload
 from play_book_studio.app.repository_registry import (
@@ -41,10 +42,232 @@ from play_book_studio.app.presenters import (
     _resolve_normalized_row_for_viewer_path,
 )
 from play_book_studio.app.source_books import (
+    _entity_hubs,
+    _figure_asset_by_name,
+    _figure_section_match,
     load_customer_pack_book as _load_customer_pack_book,
     list_customer_pack_drafts as _list_customer_pack_drafts,
+    internal_active_runtime_markdown_viewer_html as _internal_active_runtime_markdown_viewer_html,
+    internal_buyer_packet_viewer_html as _internal_buyer_packet_viewer_html,
+    internal_customer_pack_viewer_html as _internal_customer_pack_viewer_html,
+    internal_entity_hub_viewer_html as _internal_entity_hub_viewer_html,
+    internal_figure_viewer_html as _internal_figure_viewer_html,
+    internal_viewer_html as _internal_viewer_html,
+    parse_active_runtime_markdown_viewer_path,
+    parse_entity_hub_viewer_path,
+    parse_figure_viewer_path,
 )
 from play_book_studio.app.viewers import _parse_viewer_path
+from play_book_studio.app.viewer_paths import _viewer_path_to_local_html
+
+
+_BODY_RE = re.compile(r"<body(?P<attrs>[^>]*)>(?P<body>.*)</body>", re.IGNORECASE | re.DOTALL)
+_STYLE_RE = re.compile(r"<style[^>]*>(?P<css>.*?)</style>", re.IGNORECASE | re.DOTALL)
+_SCRIPT_RE = re.compile(r"<script[^>]*>.*?</script>", re.IGNORECASE | re.DOTALL)
+_BODY_CLASS_RE = re.compile(r'class=(["\'])(?P<value>.*?)\1', re.IGNORECASE | re.DOTALL)
+_RESOURCE_ATTR_RE = re.compile(r'(?P<attr>\b(?:src|href))=(?P<quote>["\'])(?P<value>.*?)(?P=quote)', re.IGNORECASE | re.DOTALL)
+
+
+def _scope_viewer_style(style_text: str) -> str:
+    return (
+        str(style_text or "")
+        .replace(":root", ".viewer-root")
+        .replace("body.is-embedded", ".viewer-root.is-embedded")
+        .replace("body", ".viewer-root")
+    )
+
+
+def _viewer_html_for_path(root_dir: Path, viewer_path: str) -> str | None:
+    local_html = _viewer_path_to_local_html(root_dir, viewer_path)
+    if local_html is not None:
+      return local_html.read_text(encoding="utf-8")
+    return (
+      _internal_buyer_packet_viewer_html(root_dir, viewer_path)
+      or _internal_customer_pack_viewer_html(root_dir, viewer_path)
+      or _internal_active_runtime_markdown_viewer_html(root_dir, viewer_path)
+      or _internal_entity_hub_viewer_html(root_dir, viewer_path)
+      or _internal_figure_viewer_html(root_dir, viewer_path)
+      or _internal_viewer_html(root_dir, viewer_path)
+    )
+
+
+def _normalize_viewer_resource_urls(html_text: str, viewer_path: str) -> str:
+    base = f"http://runtime.local{viewer_path}"
+
+    def _replace(match: re.Match[str]) -> str:
+        value = str(match.group("value") or "").strip()
+        if not value or value.startswith("#") or re.match(r"^(?:data:|blob:|mailto:|tel:|javascript:)", value, re.IGNORECASE):
+            return match.group(0)
+        absolute = urljoin(base, value)
+        normalized = absolute.replace("http://runtime.local", "", 1)
+        return f'{match.group("attr")}={match.group("quote")}{normalized}{match.group("quote")}'
+
+    return _RESOURCE_ATTR_RE.sub(_replace, html_text)
+
+
+def _build_viewer_document_payload(html_text: str, viewer_path: str) -> dict[str, Any]:
+    body_match = _BODY_RE.search(html_text)
+    body_attrs = body_match.group("attrs") if body_match else ""
+    body_html = body_match.group("body") if body_match else html_text
+    class_match = _BODY_CLASS_RE.search(body_attrs)
+    body_class_name = str(class_match.group("value") if class_match else "").strip()
+    inline_styles = [
+        _scope_viewer_style(match.group("css"))
+        for match in _STYLE_RE.finditer(html_text)
+        if str(match.group("css") or "").strip()
+    ]
+    normalized_body_html = _normalize_viewer_resource_urls(_SCRIPT_RE.sub("", body_html), viewer_path)
+    return {
+        "viewer_path": viewer_path,
+        "body_class_name": body_class_name,
+        "inline_styles": inline_styles,
+        "html": normalized_body_html,
+        "interaction_policy": {
+            "code_copy": True,
+            "code_wrap_toggle": True,
+            "recent_position_tracking": True,
+            "anchor_navigation": True,
+        },
+    }
+
+
+def _official_runtime_source_meta(
+    *,
+    root_dir: Path,
+    viewer_path: str,
+    resolved_viewer_path: str,
+    book_slug: str,
+    anchor: str,
+) -> dict[str, Any]:
+    row, matched_exact = _resolve_normalized_row_for_viewer_path(root_dir, resolved_viewer_path)
+    manifest_entry = _manifest_entry_for_book(root_dir, book_slug)
+    settings = load_settings(root_dir)
+    book_title = (
+        str((row or {}).get("book_title") or "")
+        or str(manifest_entry.get("title") or "")
+        or _humanize_book_slug(book_slug)
+    )
+    section_path = [
+        str(item)
+        for item in ((row or {}).get("section_path") or [])
+        if str(item).strip()
+    ]
+    pack_label = str(manifest_entry.get("pack_label") or settings.active_pack.pack_label or "").strip()
+    runtime_truth_label = f"{pack_label} Runtime" if pack_label else "Validated Pack Runtime"
+    return {
+        "book_slug": book_slug,
+        "book_title": book_title,
+        "anchor": anchor,
+        "section": str((row or {}).get("heading") or ""),
+        "section_path": section_path,
+        "section_path_label": " > ".join(section_path)
+        if section_path
+        else str((row or {}).get("heading") or ""),
+        "source_url": str((row or {}).get("source_url") or manifest_entry.get("source_url") or ""),
+        "viewer_path": viewer_path,
+        "section_match_exact": matched_exact,
+        "source_lane": str(manifest_entry.get("source_lane") or "approved_wiki_runtime"),
+        "approval_state": str(manifest_entry.get("approval_state") or "approved"),
+        "publication_state": str(manifest_entry.get("publication_state") or "active"),
+        "parser_backend": str(manifest_entry.get("parser_backend") or ""),
+        "boundary_truth": "official_validated_runtime",
+        "runtime_truth_label": runtime_truth_label,
+        "boundary_badge": "Validated Runtime",
+        **_core_pack_payload(version=settings.ocp_version, language=settings.docs_language),
+    }
+
+
+def _viewer_source_meta(root_dir: Path, viewer_path: str) -> dict[str, Any] | None:
+    customer_pack_meta = _customer_pack_meta_for_viewer_path(root_dir, viewer_path)
+    if customer_pack_meta is not None:
+        return customer_pack_meta
+
+    parsed = _parse_viewer_path(viewer_path)
+    if parsed is not None:
+        book_slug, anchor = parsed
+        return _official_runtime_source_meta(
+            root_dir=root_dir,
+            viewer_path=viewer_path,
+            resolved_viewer_path=viewer_path,
+            book_slug=book_slug,
+            anchor=anchor,
+        )
+
+    active_book_slug = parse_active_runtime_markdown_viewer_path(viewer_path)
+    if active_book_slug:
+        anchor = viewer_path.split("#", 1)[1].strip() if "#" in viewer_path else ""
+        settings = load_settings(root_dir)
+        docs_viewer_path = f"/docs/ocp/{settings.ocp_version}/{settings.docs_language}/{active_book_slug}/index.html"
+        if anchor:
+            docs_viewer_path = f"{docs_viewer_path}#{anchor}"
+        return _official_runtime_source_meta(
+            root_dir=root_dir,
+            viewer_path=viewer_path,
+            resolved_viewer_path=docs_viewer_path,
+            book_slug=active_book_slug,
+            anchor=anchor,
+        )
+
+    entity_slug = parse_entity_hub_viewer_path(viewer_path)
+    if entity_slug:
+        entity = _entity_hubs().get(entity_slug)
+        if entity is None:
+            return None
+        title = str(entity.get("title") or entity_slug).strip() or entity_slug
+        return {
+            "book_slug": entity_slug,
+            "book_title": title,
+            "anchor": "",
+            "section": title,
+            "section_path": [title],
+            "section_path_label": title,
+            "source_url": "",
+            "viewer_path": viewer_path,
+            "section_match_exact": True,
+            "source_lane": "approved_wiki_runtime",
+            "approval_state": "approved",
+            "publication_state": "active",
+            "parser_backend": "",
+            "boundary_truth": "official_validated_runtime",
+            "runtime_truth_label": "Validated Runtime Entity Hub",
+            "boundary_badge": "Validated Runtime",
+            **_core_pack_payload(),
+        }
+
+    figure_parsed = parse_figure_viewer_path(viewer_path)
+    if figure_parsed is not None:
+        slug, asset_name = figure_parsed
+        asset = _figure_asset_by_name(slug, asset_name)
+        if asset is None:
+            return None
+        caption = str(asset.get("caption") or asset.get("alt") or asset_name).strip() or asset_name
+        section_match = _figure_section_match(slug, asset_name) or {}
+        section_path = [
+            str(section_match.get("section_heading") or "").strip(),
+            caption,
+        ]
+        section_path = [item for item in section_path if item]
+        return {
+            "book_slug": slug,
+            "book_title": caption,
+            "anchor": asset_name,
+            "section": caption,
+            "section_path": section_path,
+            "section_path_label": " > ".join(section_path) if section_path else caption,
+            "source_url": str(asset.get("asset_url") or "").strip(),
+            "viewer_path": viewer_path,
+            "section_match_exact": True,
+            "source_lane": "approved_wiki_runtime",
+            "approval_state": "approved",
+            "publication_state": "active",
+            "parser_backend": "",
+            "boundary_truth": "official_validated_runtime",
+            "runtime_truth_label": "Validated Runtime Figure",
+            "boundary_badge": "Validated Runtime",
+            **_core_pack_payload(),
+        }
+
+    return None
 
 
 def _list_unanswered_questions(root_dir: Path, *, limit: int = 20) -> dict[str, Any]:
@@ -90,48 +313,27 @@ def handle_source_meta(handler: Any, query: str, *, root_dir: Path) -> None:
         handler._send_json({"error": "viewer_path가 필요합니다."}, HTTPStatus.BAD_REQUEST)
         return
 
-    parsed = _parse_viewer_path(viewer_path)
-    if parsed is None:
-        payload = _customer_pack_meta_for_viewer_path(root_dir, viewer_path)
-        if payload is None:
-            handler._send_json(
-                {"error": "지원하지 않는 viewer_path입니다."},
-                HTTPStatus.BAD_REQUEST,
-            )
-            return
-        handler._send_json(payload)
+    payload = _viewer_source_meta(root_dir, viewer_path)
+    if payload is None:
+        handler._send_json(
+            {"error": "지원하지 않는 viewer_path입니다."},
+            HTTPStatus.BAD_REQUEST,
+        )
         return
+    handler._send_json(payload)
 
-    book_slug, anchor = parsed
-    row, matched_exact = _resolve_normalized_row_for_viewer_path(root_dir, viewer_path)
-    manifest_entry = _manifest_entry_for_book(root_dir, book_slug)
-    book_title = (
-        str((row or {}).get("book_title") or "")
-        or str(manifest_entry.get("title") or "")
-        or _humanize_book_slug(book_slug)
-    )
-    section_path = [
-        str(item)
-        for item in ((row or {}).get("section_path") or [])
-        if str(item).strip()
-    ]
-    settings = load_settings(root_dir)
-    handler._send_json(
-        {
-            "book_slug": book_slug,
-            "book_title": book_title,
-            "anchor": anchor,
-            "section": str((row or {}).get("heading") or ""),
-            "section_path": section_path,
-            "section_path_label": " > ".join(section_path)
-            if section_path
-            else str((row or {}).get("heading") or ""),
-            "source_url": str((row or {}).get("source_url") or manifest_entry.get("source_url") or ""),
-            "viewer_path": viewer_path,
-            "section_match_exact": matched_exact,
-            **_core_pack_payload(version=settings.ocp_version, language=settings.docs_language),
-        }
-    )
+
+def handle_viewer_document(handler: Any, query: str, *, root_dir: Path) -> None:
+    params = parse_qs(query, keep_blank_values=False)
+    viewer_path = str((params.get("viewer_path") or [""])[0]).strip()
+    if not viewer_path:
+        handler._send_json({"error": "viewer_path가 필요합니다."}, HTTPStatus.BAD_REQUEST)
+        return
+    html_text = _viewer_html_for_path(root_dir, viewer_path)
+    if html_text is None:
+        handler._send_json({"error": "viewer document를 찾을 수 없습니다."}, HTTPStatus.NOT_FOUND)
+        return
+    handler._send_json(_build_viewer_document_payload(html_text, viewer_path))
 
 
 def handle_runtime_figures(handler: Any, query: str, *, root_dir: Path) -> None:

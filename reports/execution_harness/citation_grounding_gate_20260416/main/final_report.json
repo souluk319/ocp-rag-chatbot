@@ -1,0 +1,66 @@
+{
+  "task_id": "citation_grounding_gate_20260416",
+  "lane_id": "main",
+  "role": "main",
+  "status": "done",
+  "code_paths": [
+    "src/play_book_studio/answering/context.py",
+    "scripts/verify_citation_grounding_gate.py",
+    "tests/test_session_persistence.py"
+  ],
+  "artifacts": [
+    "reports/build_logs/citation_grounding_gate_report.json",
+    "reports/build_logs/citation_grounding_gate_report.md"
+  ],
+  "validation": [
+    {
+      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_answering_context.py tests/test_chat_navigation_links.py tests/test_session_persistence.py -q",
+      "status": "passed"
+    },
+    {
+      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_app_session_flow.py tests/test_answering_output.py tests/test_answering_routes.py -q",
+      "status": "passed"
+    },
+    {
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex_python.ps1 -ScriptPath scripts/verify_citation_grounding_gate.py -WriteScope reports/build_logs/citation_grounding_gate_report.json -VerifyCmd citation_grounding_gate_report_updated",
+      "status": "passed"
+    }
+  ],
+  "summary": {
+    "current_judgment": "Packet D citation grounding gate is closed. Intro recommendation context, direct citation landing, related navigation, and session restore now stay on the same runtime truth without drift.",
+    "core_evidence": [
+      "citation_anchor_resolution_rate=1.0",
+      "viewer_jump_success_rate=1.0",
+      "broken_citation_count=0",
+      "viewer_anchor_mismatch_count=0",
+      "session_restore_citation_drift_count=0",
+      "session_restore_related_link_drift_count=0",
+      "session_restore_related_section_drift_count=0",
+      "related_link_truth_mismatch_count=0",
+      "citation_regeneration_consistency=true"
+    ]
+  },
+  "failure_modes_closed": [
+    "Intro recommendation queries collapsed context to a single top book and lost diverse starter playbooks",
+    "Session restart had no explicit regression proof that citations and related navigation survive round-trip persistence",
+    "Citation landing, related navigation, and restore drift lacked a single packet-level verifier report"
+  ],
+  "known_open_risks": [
+    "This packet proves direct citation and restore consistency on the current runtime truth but does not exercise frontend preview rendering",
+    "Unsupported assertion is held at a verifier subset rate only; broader answer behavior stays for the next packet",
+    "Unrelated workspace and tmp_source dirtiness remains untouched"
+  ],
+  "owner_decisions": [
+    "Intro recommendation context stays diversified across overview, architecture, installation_overview, operators, extensions, web_console, and cli_tools instead of locking to one book",
+    "Packet D closes session restore drift at the persistence layer before touching frontend preview",
+    "Citation grounding proof is kept as a backend/runtime packet with direct function-level verifier output"
+  ],
+  "evidence_links": [
+    "reports/build_logs/citation_grounding_gate_report.json",
+    "reports/build_logs/citation_grounding_gate_report.md"
+  ],
+  "notes": [
+    "Focused citation/session suite passed with 33 tests.",
+    "Broader session-flow and answering suites passed with 80 tests."
+  ]
+}

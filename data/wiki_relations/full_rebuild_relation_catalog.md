@@ -1,6 +1,6 @@
 # OCP 4.20 Full Rebuild Wiki Relations
 
-- generated_at_utc: `2026-04-16T13:07:50+00:00`
+- generated_at_utc: `2026-04-16T14:34:18+00:00`
 - entity_hub_count: `14`
 - candidate_relation_count: `29`
 
@@ -26,31 +26,31 @@
 
 - title: `Backup and restore`
 - entities: Etcd, Control Plane Nodes, Cluster Wide Proxy, Control Plane and Node Operations
-- related_docs: etcd 백업 및 복구 플레이북, Machine configuration, Monitoring, 검증 및 문제 해결
+- related_docs: etcd 백업 및 복구 플레이북, Machine configuration, Monitoring, 설치 후 구성
 
 ## `cli_tools`
 
 - title: `CLI 툴`
-- entities: Operators and Tooling
-- related_docs: Operator 운영 플레이북, 웹 콘솔, 스토리지
+- entities: (none)
+- related_docs: (none)
 
 ## `disconnected_environments`
 
 - title: `연결이 끊긴 환경`
-- entities: Cluster Wide Proxy, Networking and Connectivity, Storage, Registry, and Images
-- related_docs: 네트워킹 개요, 고급 네트워킹, 설치 후 구성, 설치 개요
+- entities: (none)
+- related_docs: (none)
 
 ## `etcd`
 
 - title: `etcd 백업 및 복구 플레이북`
 - entities: Etcd, Control Plane Nodes, Control Plane and Node Operations
-- related_docs: Backup and restore, Machine configuration, Monitoring, 검증 및 문제 해결
+- related_docs: Backup and restore, Machine configuration, Monitoring, 설치 후 구성
 
 ## `images`
 
 - title: `이미지`
 - entities: Storage, Registry, and Images, Operators and Tooling
-- related_docs: 스토리지, 레지스트리, 검증 및 문제 해결, Operator 운영 플레이북
+- related_docs: 스토리지, 레지스트리, Operator 운영 플레이북
 
 ## `ingress_and_load_balancing`
 
@@ -80,13 +80,13 @@
 
 - title: `Machine configuration`
 - entities: Machine Config Operator, Control Plane Nodes, Control Plane and Node Operations
-- related_docs: Backup and restore, etcd 백업 및 복구 플레이북, Monitoring, 검증 및 문제 해결
+- related_docs: Backup and restore, etcd 백업 및 복구 플레이북, Monitoring, 설치 후 구성
 
 ## `machine_management`
 
 - title: `머신 관리`
 - entities: Machine Config Operator, Control Plane Nodes, Control Plane and Node Operations
-- related_docs: Backup and restore, etcd 백업 및 복구 플레이북, Monitoring, 검증 및 문제 해결
+- related_docs: Backup and restore, etcd 백업 및 복구 플레이북, Monitoring, 설치 후 구성
 
 ## `monitoring`
 
@@ -104,7 +104,7 @@
 
 - title: `노드`
 - entities: Control Plane Nodes, Machine Config Operator, Control Plane and Node Operations
-- related_docs: Backup and restore, etcd 백업 및 복구 플레이북, Monitoring, 검증 및 문제 해결
+- related_docs: Backup and restore, etcd 백업 및 복구 플레이북, Monitoring, 설치 후 구성
 
 ## `observability_overview`
 
@@ -116,7 +116,7 @@
 
 - title: `Operator 운영 플레이북`
 - entities: Operators and Tooling
-- related_docs: CLI 툴, 웹 콘솔, 스토리지
+- related_docs: 웹 콘솔, 스토리지
 
 ## `overview`
 
@@ -134,13 +134,13 @@
 
 - title: `레지스트리`
 - entities: Storage, Registry, and Images, Operators and Tooling
-- related_docs: 스토리지, 이미지, 검증 및 문제 해결, Operator 운영 플레이북
+- related_docs: 스토리지, 이미지, Operator 운영 플레이북
 
 ## `release_notes`
 
 - title: `릴리스 노트`
-- entities: Lifecycle and Support
-- related_docs: 클러스터 업데이트, 지원, 검증 및 문제 해결, Backup and restore
+- entities: (none)
+- related_docs: (none)
 
 ## `security_and_compliance`
 
@@ -152,31 +152,31 @@
 
 - title: `스토리지`
 - entities: Storage, Registry, and Images
-- related_docs: 레지스트리, 이미지, 검증 및 문제 해결, Operator 운영 플레이북
+- related_docs: 레지스트리, 이미지, Operator 운영 플레이북
 
 ## `support`
 
 - title: `지원`
-- entities: Lifecycle and Support
-- related_docs: 클러스터 업데이트, 릴리스 노트, 검증 및 문제 해결, Backup and restore
+- entities: (none)
+- related_docs: (none)
 
 ## `updating_clusters`
 
 - title: `클러스터 업데이트`
-- entities: Installation and Day-2, Lifecycle and Support, Control Plane Nodes
-- related_docs: 릴리스 노트, 지원, 검증 및 문제 해결, Backup and restore
+- entities: Installation and Day-2, Control Plane Nodes
+- related_docs: Backup and restore, Monitoring
 
 ## `validation_and_troubleshooting`
 
 - title: `검증 및 문제 해결`
-- entities: Prometheus, Control Plane Nodes, Observability and Troubleshooting
-- related_docs: Monitoring, 관찰 기능 개요, Backup and restore, Machine configuration
+- entities: (none)
+- related_docs: (none)
 
 ## `web_console`
 
 - title: `웹 콘솔`
 - entities: Operators and Tooling
-- related_docs: Operator 운영 플레이북, CLI 툴, 스토리지
+- related_docs: Operator 운영 플레이북, 스토리지
 
 ## Figure Entity Coverage
 
@@ -223,10 +223,10 @@
 - `architecture` · related_sections=`6`
 - `authentication_and_authorization` · related_sections=`6`
 - `backup_and_restore` · related_sections=`5`
-- `cli_tools` · related_sections=`5`
-- `disconnected_environments` · related_sections=`4`
+- `cli_tools` · related_sections=`2`
+- `disconnected_environments` · related_sections=`1`
 - `etcd` · related_sections=`2`
-- `images` · related_sections=`3`
+- `images` · related_sections=`2`
 - `ingress_and_load_balancing` · related_sections=`6`
 - `installation_overview` · related_sections=`4`
 - `installing_on_any_platform` · related_sections=`3`
@@ -240,11 +240,11 @@
 - `operators` · related_sections=`6`
 - `overview` · related_sections=`6`
 - `postinstallation_configuration` · related_sections=`4`
-- `registry` · related_sections=`3`
-- `release_notes` · related_sections=`4`
+- `registry` · related_sections=`2`
+- `release_notes` · related_sections=`0`
 - `security_and_compliance` · related_sections=`6`
-- `storage` · related_sections=`3`
-- `support` · related_sections=`5`
-- `updating_clusters` · related_sections=`6`
-- `validation_and_troubleshooting` · related_sections=`2`
+- `storage` · related_sections=`2`
+- `support` · related_sections=`2`
+- `updating_clusters` · related_sections=`4`
+- `validation_and_troubleshooting` · related_sections=`1`
 - `web_console` · related_sections=`6`

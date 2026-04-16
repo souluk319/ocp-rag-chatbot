@@ -26,6 +26,16 @@ CATALOG_MD_PATH = ROOT / "data" / "wiki_relations" / "full_rebuild_relation_cata
 REPORT_PATH = ROOT / "reports" / "build_logs" / "full_rebuild_wiki_relations_report.json"
 
 ACTIVE_BOOK_PREFIX = "/playbooks/wiki-runtime/active"
+GARBAGE_RELATION_BOOK_SLUGS = {
+    "release_notes",
+    "support",
+    "validation_and_troubleshooting",
+    "cli_tools",
+    "disconnected_environments",
+}
+GARBAGE_RELATION_ENTITY_SLUGS = {
+    "lifecycle-and-support",
+}
 
 MANUAL_ENTITY_HUBS = {
     "etcd",
@@ -228,6 +238,21 @@ def _normalize_href(href: str) -> str:
     return _book_href(slug)
 
 
+def _book_slug_from_href(href: str) -> str:
+    normalized = _normalize_href(href)
+    parts = [part for part in urlparse(normalized).path.split("/") if part]
+    if "index.html" not in parts or len(parts) < 2:
+        return ""
+    return parts[-2]
+
+
+def _entity_slug_from_href(href: str) -> str:
+    parts = [part for part in urlparse(str(href or "").strip()).path.split("/") if part]
+    if len(parts) < 3 or parts[0] != "wiki" or parts[1] != "entities":
+        return ""
+    return parts[2]
+
+
 def _book_item(slug: str, title_by_slug: dict[str, str], *, summary: str = "") -> dict[str, str]:
     title = title_by_slug.get(slug, slug.replace("_", " ").title())
     return {
@@ -243,6 +268,24 @@ def _entity_item(entity_slug: str, entity_hubs: dict[str, dict[str, Any]]) -> di
         "label": title,
         "href": _hub_href(entity_slug),
     }
+
+
+def _visible_relation_book_slugs(candidates: list[str], title_by_slug: dict[str, str], *, exclude_slug: str) -> list[str]:
+    visible: list[str] = []
+    seen: set[str] = set()
+    for slug in candidates:
+        normalized = str(slug or "").strip()
+        if (
+            not normalized
+            or normalized == exclude_slug
+            or normalized not in title_by_slug
+            or normalized in GARBAGE_RELATION_BOOK_SLUGS
+            or normalized in seen
+        ):
+            continue
+        seen.add(normalized)
+        visible.append(normalized)
+    return visible
 
 
 def _cluster_lookup() -> dict[str, str]:
@@ -314,15 +357,32 @@ def _build_candidate_relations(title_by_slug: dict[str, str], entity_hubs: dict[
     cluster_by_slug = _cluster_lookup()
     relations: dict[str, dict[str, Any]] = {}
     for slug, title in title_by_slug.items():
+        if slug in GARBAGE_RELATION_BOOK_SLUGS:
+            relations[slug] = {
+                "entities": [],
+                "related_docs": [],
+                "next_reading_path": [],
+                "parent_topic": {},
+                "siblings": [],
+            }
+            continue
         cluster_slug = cluster_by_slug.get(slug, "platform-foundation")
         cluster = CLUSTERS.get(cluster_slug, {})
-        sibling_slugs = [item for item in cluster.get("books", []) if item in title_by_slug and item != slug]
-        bridge_slugs = [item for item in cluster.get("bridge_docs", []) if item in title_by_slug and item != slug]
+        sibling_slugs = _visible_relation_book_slugs(cluster.get("books", []), title_by_slug, exclude_slug=slug)
+        bridge_slugs = _visible_relation_book_slugs(cluster.get("bridge_docs", []), title_by_slug, exclude_slug=slug)
         entity_slugs = []
         for entity_slug in BOOK_ENTITY_MAP.get(slug, []):
-            if entity_slug in entity_hubs and entity_slug not in entity_slugs:
+            if (
+                entity_slug in entity_hubs
+                and entity_slug not in entity_slugs
+                and entity_slug not in GARBAGE_RELATION_ENTITY_SLUGS
+            ):
                 entity_slugs.append(entity_slug)
-        if cluster_slug in entity_hubs and cluster_slug not in entity_slugs:
+        if (
+            cluster_slug in entity_hubs
+            and cluster_slug not in entity_slugs
+            and cluster_slug not in GARBAGE_RELATION_ENTITY_SLUGS
+        ):
             entity_slugs.append(cluster_slug)
         relations[slug] = {
             "entities": [_entity_item(entity_slug, entity_hubs) for entity_slug in entity_slugs[:4]],
@@ -636,6 +696,13 @@ def _build_chat_aliases(relations: dict[str, dict[str, Any]]) -> dict[str, list[
                 href = str(item.get("href") or "").strip()
                 label = str(item.get("label") or "").strip()
                 if not href or not label or href in seen:
+                    continue
+                target_book_slug = _book_slug_from_href(href)
+                target_entity_slug = _entity_slug_from_href(href)
+                if (
+                    target_book_slug in GARBAGE_RELATION_BOOK_SLUGS
+                    or target_entity_slug in GARBAGE_RELATION_ENTITY_SLUGS
+                ):
                     continue
                 seen.add(href)
                 items.append({"label": label, "href": href, "kind": _kind_for_href(href)})

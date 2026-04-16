@@ -9,7 +9,6 @@ import os
 import threading
 import time
 import uuid
-import webbrowser
 import sys
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -49,6 +48,7 @@ from play_book_studio.app.server_routes import (
     handle_repository_unanswered as _handle_repository_unanswered_request,
     handle_runtime_figures as _handle_runtime_figures_request,
     handle_source_meta as _handle_source_meta_request,
+    handle_viewer_document as _handle_viewer_document_request,
     handle_wiki_overlay_signals as _handle_wiki_overlay_signals_request,
     handle_wiki_user_overlay_remove as _handle_wiki_user_overlay_remove_request,
     handle_wiki_user_overlay_save as _handle_wiki_user_overlay_save_request,
@@ -70,13 +70,7 @@ from play_book_studio.app.presenters import (
 )
 from play_book_studio.app.source_books import (
     build_chat_navigation_links as _build_chat_navigation_links,
-    internal_buyer_packet_viewer_html as _internal_buyer_packet_viewer_html,
     build_chat_section_links as _build_chat_section_links,
-    internal_active_runtime_markdown_viewer_html as _internal_active_runtime_markdown_viewer_html,
-    internal_customer_pack_viewer_html as _internal_customer_pack_viewer_html,
-    internal_entity_hub_viewer_html as _internal_entity_hub_viewer_html,
-    internal_figure_viewer_html as _internal_figure_viewer_html,
-    internal_viewer_html as _internal_viewer_html,
 )
 from play_book_studio.app.session_flow import (
     context_with_request_overrides as _context_with_request_overrides,
@@ -84,27 +78,13 @@ from play_book_studio.app.session_flow import (
     suggest_follow_up_questions as _suggest_follow_up_questions,
 )
 from play_book_studio.app.sessions import ChatSession, SessionStore
-from play_book_studio.app.viewers import _viewer_path_to_local_html
 
 DEFAULT_PLAYBOOK_UI_ORIGIN = "http://127.0.0.1:5173"
 PRESENTATION_UI_ORIGIN = (os.getenv("PRESENTATION_UI_ORIGIN") or DEFAULT_PLAYBOOK_UI_ORIGIN).rstrip("/")
-LEGACY_UI_ROUTE_REDIRECTS = {
-    "/": "/",
-    "/index.html": "/",
-    "/studio": "/workspace",
-    "/studio.html": "/workspace",
-    "/data-situation-room": "/playbook-library",
-    "/data-situation-room.html": "/playbook-library",
-}
 DEFAULT_RUNTIME_TOP_K = 8
 DEFAULT_RUNTIME_CANDIDATE_K = 20
 DEFAULT_RUNTIME_MAX_CONTEXT_CHUNKS = 6
-BLOCKED_LEGACY_VIEWER_PREFIXES = (
-    "/playbooks/gold-candidates/",
-    "/playbooks/wiki-runtime/wave1/",
-)
 DATA_CONTROL_ROOM_CACHE_TTL_SECONDS = 30.0
-VIEWER_HTML_CACHE_TTL_SECONDS = 45.0
 
 
 class _TimedValueCache:
@@ -193,7 +173,6 @@ def _build_handler(
     answerer_lock = threading.Lock()
     current_llm_signature = _llm_runtime_signature(answerer.settings)
     data_control_room_cache = _TimedValueCache(DATA_CONTROL_ROOM_CACHE_TTL_SECONDS)
-    viewer_html_cache = _TimedValueCache(VIEWER_HTML_CACHE_TTL_SECONDS)
 
     def current_answerer() -> ChatAnswerer:
         nonlocal answerer, current_llm_signature
@@ -224,23 +203,6 @@ def _build_handler(
             self.send_header("Pragma", "no-cache")
             self.end_headers()
             self.wfile.write(body)
-
-        def _send_html(self, html: str) -> None:
-            body = html.encode("utf-8")
-            self.send_response(HTTPStatus.OK)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.send_header("Cache-Control", "no-store")
-            self.send_header("Pragma", "no-cache")
-            self.end_headers()
-            self.wfile.write(body)
-
-        def _send_redirect(self, location: str, status: HTTPStatus = HTTPStatus.TEMPORARY_REDIRECT) -> None:
-            self.send_response(status)
-            self.send_header("Location", location)
-            self.send_header("Cache-Control", "no-store")
-            self.send_header("Pragma", "no-cache")
-            self.end_headers()
 
         def _send_bytes(
             self,
@@ -323,14 +285,6 @@ def _build_handler(
             parsed_request = urlparse(self.path)
             request_path = parsed_request.path
             started_at = time.monotonic()
-
-            if any(request_path.startswith(prefix) for prefix in BLOCKED_LEGACY_VIEWER_PREFIXES):
-                self.send_error(HTTPStatus.NOT_FOUND, "Not found")
-                return
-
-            if request_path in LEGACY_UI_ROUTE_REDIRECTS:
-                self._send_redirect(f"{PRESENTATION_UI_ORIGIN}{LEGACY_UI_ROUTE_REDIRECTS[request_path]}")
-                return
             if request_path.startswith("/playbooks/wiki-assets/"):
                 relative = request_path.removeprefix("/playbooks/wiki-assets/").strip("/")
                 asset_path = (root_dir / "data" / "wiki_assets" / relative).resolve()
@@ -370,6 +324,9 @@ def _build_handler(
             if request_path == "/api/source-meta":
                 self._handle_source_meta(parsed_request.query)
                 return
+            if request_path == "/api/viewer-document":
+                self._handle_viewer_document(parsed_request.query)
+                return
             if request_path == "/api/runtime-figures":
                 self._handle_runtime_figures(parsed_request.query)
                 return
@@ -396,43 +353,6 @@ def _build_handler(
                 return
             if request_path == "/api/customer-packs/captured":
                 self._handle_customer_pack_captured(parsed_request.query)
-                return
-            viewer_cache_key = self.path
-            cached_viewer_html = viewer_html_cache.get(viewer_cache_key)
-            if isinstance(cached_viewer_html, str):
-                self._send_html(cached_viewer_html)
-                return
-
-            local_html = _viewer_path_to_local_html(root_dir, self.path)
-            if local_html is not None:
-                self._send_html(viewer_html_cache.set(viewer_cache_key, local_html.read_text(encoding="utf-8")))
-                self._debug_timing(f"viewer:{request_path}", started_at)
-                return
-
-            internal_buyer_packet_viewer = _internal_buyer_packet_viewer_html(root_dir, self.path)
-            if internal_buyer_packet_viewer is not None:
-                self._send_html(viewer_html_cache.set(viewer_cache_key, internal_buyer_packet_viewer))
-                return
-            internal_customer_pack_viewer = _internal_customer_pack_viewer_html(root_dir, self.path)
-            if internal_customer_pack_viewer is not None:
-                self._send_html(viewer_html_cache.set(viewer_cache_key, internal_customer_pack_viewer))
-                return
-            internal_active_runtime_viewer = _internal_active_runtime_markdown_viewer_html(root_dir, self.path)
-            if internal_active_runtime_viewer is not None:
-                self._send_html(viewer_html_cache.set(viewer_cache_key, internal_active_runtime_viewer))
-                self._debug_timing(f"viewer:{request_path}", started_at)
-                return
-            internal_entity_hub_viewer = _internal_entity_hub_viewer_html(root_dir, self.path)
-            if internal_entity_hub_viewer is not None:
-                self._send_html(viewer_html_cache.set(viewer_cache_key, internal_entity_hub_viewer))
-                return
-            internal_figure_viewer = _internal_figure_viewer_html(root_dir, self.path)
-            if internal_figure_viewer is not None:
-                self._send_html(viewer_html_cache.set(viewer_cache_key, internal_figure_viewer))
-                return
-            internal_viewer = _internal_viewer_html(root_dir, self.path)
-            if internal_viewer is not None:
-                self._send_html(viewer_html_cache.set(viewer_cache_key, internal_viewer))
                 return
             self.send_error(HTTPStatus.NOT_FOUND, "Not found")
 
@@ -493,6 +413,13 @@ def _build_handler(
 
         def _handle_source_meta(self, query: str) -> None:
             _handle_source_meta_request(
+                self,
+                query,
+                root_dir=root_dir,
+            )
+
+        def _handle_viewer_document(self, query: str) -> None:
+            _handle_viewer_document_request(
                 self,
                 query,
                 root_dir=root_dir,
@@ -749,10 +676,12 @@ def serve(
     store = SessionStore(root_dir)
     handler = _build_handler(answerer=answerer, store=store, root_dir=root_dir)
     server = ThreadingHTTPServer((host, port), handler)
-    url = f"http://{host}:{port}"
-    print(f"Play Book Studio runtime/API server running at {url}")
+    backend_url = f"http://{host}:{port}"
+    print(f"Play Book Studio runtime/API server running at {backend_url}")
     if open_browser:
-        webbrowser.open(url)
+        import webbrowser
+
+        webbrowser.open(PRESENTATION_UI_ORIGIN)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

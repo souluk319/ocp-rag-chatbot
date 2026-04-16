@@ -1,0 +1,62 @@
+{
+  "task_id": "surface_lock_20260416",
+  "lane_id": "main",
+  "role": "main",
+  "status": "done",
+  "code_paths": [
+    "presentation-ui/src/pages/WorkspacePage.tsx",
+    "scripts/verify_surface_lock.py"
+  ],
+  "artifacts": [
+    "presentation-ui/dist/index.html",
+    "presentation-ui/dist/assets/index-Bb0kKjDL.js",
+    "presentation-ui/dist/assets/index-DvLTaOjo.css",
+    "reports/build_logs/surface_lock_report.json",
+    "reports/build_logs/surface_lock_report.md"
+  ],
+  "validation": [
+    {
+      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_app_runtime_ui.py -q",
+      "status": "passed"
+    },
+    {
+      "command": "npm --prefix presentation-ui run build",
+      "status": "passed"
+    },
+    {
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex_python.ps1 -ScriptPath scripts/verify_surface_lock.py -WriteScope reports/build_logs/surface_lock_report.json -VerifyCmd surface_lock_report_updated",
+      "status": "passed"
+    }
+  ],
+  "summary": {
+    "current_judgment": "Packet F surface lock is closed. Workspace surface code now builds again and the runtime UI contract tests pass without altering the active viewer behavior.",
+    "core_evidence": [
+      "frontend_build_pass=true",
+      "dist_asset_count=2",
+      "workspace_page_exists=true",
+      "workspace_trace_panel_exists=true",
+      "runtime_ui_test_file_exists=true"
+    ]
+  },
+  "failure_modes_closed": [
+    "WorkspacePage atlas-cleanup leftovers broke the TypeScript build with unused variable errors",
+    "Surface lock had no packet-level artifact proving the production build completed again"
+  ],
+  "known_open_risks": [
+    "Vite still warns about a large JS chunk after minification, but the build succeeds",
+    "Viewer behavior remains the user's current in-progress design and was not functionally redesigned in this packet",
+    "Unrelated tmp_source dirtiness remains untouched"
+  ],
+  "owner_decisions": [
+    "Packet F fixes build-blocking dead code only and does not reinterpret the user's current Workspace viewer direction",
+    "Surface lock proof is captured through UI contract tests plus a real frontend production build"
+  ],
+  "evidence_links": [
+    "presentation-ui/dist/index.html",
+    "reports/build_logs/surface_lock_report.json",
+    "reports/build_logs/surface_lock_report.md"
+  ],
+  "notes": [
+    "Removed dead atlas-only variables and helpers left unused in WorkspacePage."
+  ]
+}

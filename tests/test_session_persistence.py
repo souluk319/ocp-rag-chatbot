@@ -247,6 +247,88 @@ class SessionPersistenceTests(unittest.TestCase):
             self.assertIn("- diagnosis: risk", markdown)
             self.assertIn("답변: `oc scale`을 사용하세요.", markdown)
 
+    def test_session_store_preserves_citations_and_related_navigation_after_restart(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            self._write_isolated_env(root)
+            store = SessionStore(root)
+            session = ChatSession(
+                session_id="session-citations",
+                mode="chat",
+                context=SessionContext(
+                    mode="chat",
+                    user_goal="오픈시프트 입문",
+                    current_topic="overview",
+                    ocp_version="4.20",
+                ),
+                history=[
+                    Turn(
+                        turn_id="turn-citations",
+                        parent_turn_id="",
+                        created_at="2026-04-13T09:40:00",
+                        query="오픈시프트가 뭐야?",
+                        mode="chat",
+                        answer="개요부터 보면 됩니다.",
+                        citations=[
+                            {
+                                "book_slug": "overview",
+                                "section": "OpenShift Container Platform 소개",
+                                "href": "/playbooks/wiki-runtime/active/overview/index.html#ocp-overview",
+                            }
+                        ],
+                        related_links=[
+                            {
+                                "label": "아키텍처",
+                                "href": "/playbooks/wiki-runtime/active/architecture/index.html",
+                            }
+                        ],
+                        related_sections=[
+                            {
+                                "label": "OpenShift Container Platform 소개",
+                                "href": "/playbooks/wiki-runtime/active/overview/index.html#ocp-overview",
+                            }
+                        ],
+                        response_kind="grounded",
+                    )
+                ],
+                revision=1,
+                updated_at="2026-04-13T09:40:00",
+            )
+
+            store.update(session)
+
+            restored = SessionStore(root).peek("session-citations")
+
+            self.assertIsNotNone(restored)
+            self.assertEqual(
+                [
+                    {
+                        "book_slug": "overview",
+                        "section": "OpenShift Container Platform 소개",
+                        "href": "/playbooks/wiki-runtime/active/overview/index.html#ocp-overview",
+                    }
+                ],
+                restored.history[0].citations,
+            )
+            self.assertEqual(
+                [
+                    {
+                        "label": "아키텍처",
+                        "href": "/playbooks/wiki-runtime/active/architecture/index.html",
+                    }
+                ],
+                restored.history[0].related_links,
+            )
+            self.assertEqual(
+                [
+                    {
+                        "label": "OpenShift Container Platform 소개",
+                        "href": "/playbooks/wiki-runtime/active/overview/index.html#ocp-overview",
+                    }
+                ],
+                restored.history[0].related_sections,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

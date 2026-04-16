@@ -886,6 +886,126 @@ class TestAnsweringOutput(unittest.TestCase):
         self.assertIn("```bash", result.answer)
         self.assertIn("[1]", result.answer)
 
+    def test_answerer_prunes_images_citation_from_mco_concept_answer(self) -> None:
+        class _McoConceptRetriever:
+            def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
+                hits = [
+                    RetrievalHit(
+                        chunk_id="mco-images",
+                        book_slug="images",
+                        chapter="images",
+                        section="Cluster image configuration",
+                        anchor="image-config",
+                        source_url="https://example.com/images",
+                        viewer_path="/docs/images.html#image-config",
+                        text="image.config.openshift.io/cluster 변경을 설명합니다.",
+                        source="hybrid",
+                        raw_score=1.0,
+                        fused_score=1.0,
+                    ),
+                    RetrievalHit(
+                        chunk_id="mco-core",
+                        book_slug="machine_configuration",
+                        chapter="machine_configuration",
+                        section="About the Machine Config Operator",
+                        anchor="about-mco",
+                        source_url="https://example.com/mco",
+                        viewer_path="/docs/mco.html#about-mco",
+                        text="Machine Config Operator의 역할과 업데이트 흐름을 설명합니다.",
+                        source="hybrid",
+                        raw_score=0.99,
+                        fused_score=0.99,
+                    ),
+                ]
+                return RetrievalResult(
+                    query=query,
+                    normalized_query=query,
+                    rewritten_query=query,
+                    top_k=top_k,
+                    candidate_k=candidate_k,
+                    context=(context or SessionContext()).to_dict(),
+                    hits=hits,
+                    trace={"warnings": [], "timings_ms": {"bm25_search": 1.0}},
+                )
+
+        class _McoConceptLLMClient:
+            def generate(self, messages, trace_callback=None):  # noqa: ANN001
+                return (
+                    "답변: Machine Config Operator는 노드 구성을 적용하고 변경을 롤아웃하는 핵심 제어기입니다 [1][2]."
+                )
+
+        settings = Settings(root_dir=ROOT)
+        answerer = ChatAnswerer(
+            settings=settings,
+            retriever=_McoConceptRetriever(),
+            llm_client=_McoConceptLLMClient(),
+        )
+
+        result = answerer.answer("Machine Config Operator가 뭐고 건드리면 뭐가 바뀌는지 설명해줘", mode="learn")
+
+        self.assertEqual([1], result.cited_indices)
+        self.assertEqual(["machine_configuration"], [citation.book_slug for citation in result.citations])
+        self.assertNotIn("[2]", result.answer)
+
+    def test_answerer_prunes_etcd_companion_citation_from_standard_backup_answer(self) -> None:
+        class _StandardEtcdBackupRetriever:
+            def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
+                hits = [
+                    RetrievalHit(
+                        chunk_id="backup-standard",
+                        book_slug="postinstallation_configuration",
+                        chapter="postinstallation_configuration",
+                        section="4.12.5. etcd 데이터 백업",
+                        anchor="backing-up-etcd-data_post-install-cluster-tasks",
+                        source_url="https://example.com/postinstall",
+                        viewer_path="/docs/postinstall.html#backing-up-etcd-data_post-install-cluster-tasks",
+                        text="cluster-backup.sh 절차를 설명합니다.",
+                        source="hybrid",
+                        raw_score=1.0,
+                        fused_score=1.0,
+                    ),
+                    RetrievalHit(
+                        chunk_id="backup-companion",
+                        book_slug="etcd",
+                        chapter="etcd",
+                        section="4.1.1. etcd 데이터 백업",
+                        anchor="backing-up-etcd-data_etcd-backup",
+                        source_url="https://example.com/etcd",
+                        viewer_path="/docs/etcd.html#backing-up-etcd-data_etcd-backup",
+                        text="전용 etcd 문서의 companion 설명입니다.",
+                        source="hybrid",
+                        raw_score=0.99,
+                        fused_score=0.99,
+                    ),
+                ]
+                return RetrievalResult(
+                    query=query,
+                    normalized_query=query,
+                    rewritten_query=query,
+                    top_k=top_k,
+                    candidate_k=candidate_k,
+                    context=(context or SessionContext()).to_dict(),
+                    hits=hits,
+                    trace={"warnings": [], "timings_ms": {"bm25_search": 1.0}},
+                )
+
+        class _StandardEtcdBackupLLMClient:
+            def generate(self, messages, trace_callback=None):  # noqa: ANN001
+                return "답변: 표준 절차는 설치 후 구성 문서를 기준으로 보면 됩니다 [1][2]."
+
+        settings = Settings(root_dir=ROOT)
+        answerer = ChatAnswerer(
+            settings=settings,
+            retriever=_StandardEtcdBackupRetriever(),
+            llm_client=_StandardEtcdBackupLLMClient(),
+        )
+
+        result = answerer.answer("etcd 백업은 실제로 어떤 절차로 해? 표준적인 방법만 짧게 알려줘", mode="ops")
+
+        self.assertEqual([1], result.cited_indices)
+        self.assertEqual(["postinstallation_configuration"], [citation.book_slug for citation in result.citations])
+        self.assertNotIn("[2]", result.answer)
+
     def test_answerer_shapes_cluster_admin_difference_follow_up(self) -> None:
         class _RbacDiffRetriever:
             def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001

@@ -38,6 +38,29 @@ class RetrievalEvalTests(unittest.TestCase):
         self.assertFalse(
             landing_hit_at_k(hits, ["machine_management"], ["resource-usage"], 2)
         )
+        self.assertFalse(
+            landing_hit_at_k(
+                [
+                    {
+                        "book_slug": "support",
+                        "section": "7.2.1. 노드 상태, 리소스 사용량 및 구성 확인",
+                        "anchor": "wrong-anchor",
+                        "viewer_path": "/docs/support.html#wrong-anchor",
+                    }
+                ],
+                ["support"],
+                ["resource-usage"],
+                1,
+            )
+        )
+        self.assertFalse(
+            landing_hit_at_k(
+                hits,
+                ["support"],
+                [],
+                1,
+            )
+        )
 
     def test_classify_graph_signal_marks_clean_when_expected_family_is_ranked_first(self) -> None:
         signal, reason = classify_graph_signal(
@@ -87,6 +110,23 @@ class RetrievalEvalTests(unittest.TestCase):
                 "warnings": [],
             },
             {
+                "mode": "ops",
+                "query_type": "ops",
+                "query": "q-mid",
+                "expected_book_slugs": ["b"],
+                "expected_landing_terms": ["anchor-b"],
+                "top_book_slugs": ["b", "a", "c"],
+                "top_hits": [
+                    {
+                        "book_slug": "b",
+                        "section": "right-book-wrong-anchor",
+                        "anchor": "other-anchor",
+                        "viewer_path": "/docs/b.html#other-anchor",
+                    }
+                ],
+                "warnings": [],
+            },
+            {
                 "mode": "learn",
                 "query_type": "follow_up",
                 "query": "q2",
@@ -113,14 +153,14 @@ class RetrievalEvalTests(unittest.TestCase):
 
         summary = summarize_case_results(cases)
 
-        self.assertEqual(2, summary["case_count"])
-        self.assertEqual(0.5, summary["overall"]["hit@1"])
+        self.assertEqual(3, summary["case_count"])
+        self.assertEqual(0.6667, summary["overall"]["hit@1"])
         self.assertEqual(1.0, summary["overall"]["hit@3"])
-        self.assertEqual(0.5, summary["overall"]["warning_free_rate"])
-        self.assertEqual(0.5, summary["overall"]["similar_document_risk_rate"])
-        self.assertEqual(2, summary["overall"]["landing_case_count"])
-        self.assertEqual(0.5, summary["overall"]["landing_hit@1"])
-        self.assertEqual(1.0, summary["overall"]["landing_hit@3"])
+        self.assertEqual(0.6667, summary["overall"]["warning_free_rate"])
+        self.assertEqual(0.3333, summary["overall"]["similar_document_risk_rate"])
+        self.assertEqual(3, summary["overall"]["landing_case_count"])
+        self.assertEqual(0.3333, summary["overall"]["landing_hit@1"])
+        self.assertEqual(0.6667, summary["overall"]["landing_hit@3"])
         self.assertEqual(1, summary["graph_signal_counts"]["similar-document"])
         self.assertEqual(0, len(summary["misses"]))
 

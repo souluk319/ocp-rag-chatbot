@@ -13,6 +13,7 @@ if str(SRC) not in sys.path:
 from play_book_studio.answering.models import AnswerResult, Citation
 from play_book_studio.app.session_flow import derive_next_context
 from play_book_studio.retrieval.models import SessionContext
+from play_book_studio.retrieval.text_utils import strip_section_prefix
 
 MANIFEST_PATH = ROOT / "manifests" / "demo_multiturn_scenarios.jsonl"
 
@@ -110,12 +111,12 @@ class TestDemoMultiturnScenarios(unittest.TestCase):
                 result=result,
             )
             observed_topics.append(context.current_topic or "")
-            self.assertEqual(turn["expected_topic"], context.current_topic)
+            self.assertEqual(strip_section_prefix(str(turn["expected_topic"])), context.current_topic)
             self.assertIsNone(context.unresolved_question)
 
         self.assertEqual("OpenShift 아키텍처", observed_topics[0])
         self.assertEqual("Route와 Ingress 비교", observed_topics[2])
-        self.assertEqual("2.1.5.2. 클러스터의 모든 심각한 경고 해결", observed_topics[4])
+        self.assertEqual("클러스터의 모든 심각한 경고 해결", observed_topics[4])
         self.assertGreater(len(set(observed_topics)), 1)
 
 

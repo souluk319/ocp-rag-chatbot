@@ -9,7 +9,7 @@ export default defineConfig({
       '/api': 'http://127.0.0.1:8765',
       '/docs': 'http://127.0.0.1:8765',
       '/playbooks': 'http://127.0.0.1:8765',
-      '/data-situation-room': 'http://127.0.0.1:8765',
+      '/wiki': 'http://127.0.0.1:8765',
     },
   },
 })

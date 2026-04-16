@@ -19,9 +19,98 @@ from _support_app_ui import (
     _serialize_citation,
     _viewer_path_to_local_html,
 )
+from play_book_studio.app.server_routes import _build_viewer_document_payload, _viewer_source_meta
 from play_book_studio.config.settings import load_settings
 
 class TestAppViewers(unittest.TestCase):
+    def test_viewer_document_payload_preserves_body_and_normalizes_assets(self) -> None:
+        payload = _build_viewer_document_payload(
+            """
+            <html>
+              <head>
+                <style>:root { --bg: #fff; } body.is-embedded main { padding: 0; }</style>
+                <script>window.bad = true;</script>
+              </head>
+              <body class="doc-body">
+                <main>
+                  <img src="./images/hero.png" />
+                  <a href="./guide/next.html">next</a>
+                  <a href="#section-1">anchor</a>
+                </main>
+              </body>
+            </html>
+            """,
+            "/playbooks/wiki-runtime/active/release_notes/index.html",
+        )
+
+        self.assertEqual("doc-body", payload["body_class_name"])
+        self.assertEqual(1, len(payload["inline_styles"]))
+        self.assertIn(".viewer-root", payload["inline_styles"][0])
+        self.assertIn('/playbooks/wiki-runtime/active/release_notes/images/hero.png', payload["html"])
+        self.assertIn('/playbooks/wiki-runtime/active/release_notes/guide/next.html', payload["html"])
+        self.assertIn('href="#section-1"', payload["html"])
+        self.assertNotIn("<script", payload["html"])
+        self.assertTrue(payload["interaction_policy"]["code_copy"])
+
+    def test_viewer_source_meta_resolves_active_runtime_viewer_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = load_settings(root)
+
+            settings.source_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.source_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "entries": [
+                            {
+                                "book_slug": "support",
+                                "title": "Support",
+                                "source_url": "https://example.com/support",
+                                "source_lane": "approved_wiki_runtime",
+                                "approval_state": "approved",
+                                "publication_state": "active",
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            settings.normalized_docs_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.normalized_docs_path.write_text(
+                json.dumps(
+                    {
+                        "book_slug": "support",
+                        "book_title": "Support",
+                        "heading": "Get support",
+                        "section_path": ["Support", "Get support"],
+                        "anchor": "contact-red-hat-support",
+                        "source_url": "https://example.com/support",
+                        "viewer_path": "/docs/ocp/4.20/ko/support/index.html#contact-red-hat-support",
+                        "text": "본문",
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            payload = _viewer_source_meta(
+                root,
+                "/playbooks/wiki-runtime/active/support/index.html#contact-red-hat-support",
+            )
+
+        self.assertIsNotNone(payload)
+        assert payload is not None
+        self.assertEqual("support", payload["book_slug"])
+        self.assertEqual("Get support", payload["section"])
+        self.assertEqual(
+            "/playbooks/wiki-runtime/active/support/index.html#contact-red-hat-support",
+            payload["viewer_path"],
+        )
+        self.assertEqual("official_validated_runtime", payload["boundary_truth"])
+
     def test_viewer_path_local_raw_html_fallback_is_disabled(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -408,8 +497,9 @@ class TestAppViewers(unittest.TestCase):
         self.assertIn("리소스를 확인합니다.", html)
         self.assertIn("운영 중에는 영향도를 먼저 확인합니다.", html)
         self.assertIn("예제 명령", html)
-        self.assertIn(">줄바꿈 해제<", html)
-        self.assertIn(">넓게 보기<", html)
+        self.assertIn('data-label-active="줄바꿈 해제"', html)
+        self.assertIn('title="줄바꿈 해제"', html)
+        self.assertIn('class="code-block overflow-toggle is-wrapped"', html)
 
     def test_internal_viewer_html_renders_topic_playbook_chrome(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -590,6 +680,65 @@ class TestAppViewers(unittest.TestCase):
         self.assertIn("노드 역할", html)
         self.assertIn("<thead><tr><th>이름</th><th>역할</th></tr></thead>", html)
 
+    def test_internal_viewer_html_exposes_quick_navigation_and_metrics(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            playbook_dir = load_settings(root).playbook_books_dir
+            playbook_dir.mkdir(parents=True, exist_ok=True)
+            (playbook_dir / "operations.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "playbook_document_v1",
+                        "source_view_strategy": "playbook_ast_v1",
+                        "book_slug": "operations",
+                        "title": "운영 개요",
+                        "source_uri": "https://example.com/operations",
+                        "sections": [
+                            {
+                                "section_id": "operations:overview",
+                                "section_key": "operations:overview",
+                                "ordinal": 1,
+                                "heading": "개요",
+                                "level": 1,
+                                "path": ["개요"],
+                                "section_path": ["개요"],
+                                "anchor": "overview",
+                                "viewer_path": "/docs/ocp/4.20/ko/operations/index.html#overview",
+                                "semantic_role": "overview",
+                                "blocks": [{"kind": "paragraph", "text": "운영 개요입니다."}],
+                            },
+                            {
+                                "section_id": "operations:procedure",
+                                "section_key": "operations:procedure",
+                                "ordinal": 2,
+                                "heading": "적용 절차",
+                                "level": 1,
+                                "path": ["적용 절차"],
+                                "section_path": ["적용 절차"],
+                                "anchor": "apply",
+                                "viewer_path": "/docs/ocp/4.20/ko/operations/index.html#apply",
+                                "semantic_role": "procedure",
+                                "blocks": [{"kind": "paragraph", "text": "절차 안내입니다."}],
+                            },
+                        ],
+                    },
+                    ensure_ascii=False,
+                ) + "\n",
+                encoding="utf-8",
+            )
+
+            html = _internal_viewer_html(
+                root,
+                "/docs/ocp/4.20/ko/operations/index.html#overview",
+            )
+
+        self.assertIsNotNone(html)
+        assert html is not None
+        self.assertIn("Quick Navigation", html)
+        self.assertIn('href="#overview"', html)
+        self.assertIn('href="#apply"', html)
+        self.assertIn(">절차 1<", html)
+
     def test_internal_viewer_html_splits_inline_command_paragraph_into_code_box(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -768,8 +917,172 @@ class TestAppViewers(unittest.TestCase):
 
         self.assertIsNotNone(html)
         assert html is not None
-        self.assertIn('class="code-block preserve-layout"', html)
-        self.assertNotIn('class="code-block preserve-layout is-wrapped"', html)
+        self.assertIn('class="code-block preserve-layout overflow-toggle"', html)
+        self.assertNotIn('class="code-block preserve-layout overflow-toggle is-wrapped"', html)
+
+    def test_internal_viewer_html_preserves_raw_html_tables(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            playbook_dir = load_settings(root).playbook_books_dir
+            playbook_dir.mkdir(parents=True, exist_ok=True)
+            (playbook_dir / "matrix.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "playbook_document_v1",
+                        "source_view_strategy": "playbook_ast_v1",
+                        "book_slug": "matrix",
+                        "title": "Matrix",
+                        "source_uri": "https://example.com/matrix",
+                        "sections": [
+                            {
+                                "section_id": "matrix:table",
+                                "section_key": "matrix:table",
+                                "ordinal": 1,
+                                "heading": "매트릭스",
+                                "level": 1,
+                                "path": ["매트릭스"],
+                                "section_path": ["매트릭스"],
+                                "anchor": "matrix",
+                                "viewer_path": "/docs/ocp/4.20/ko/matrix/index.html#matrix",
+                                "semantic_role": "reference",
+                                "blocks": [
+                                    {
+                                        "kind": "paragraph",
+                                        "text": '<table><thead><tr><th colspan="2">지원</th></tr></thead><tbody><tr><td>A</td><td>B</td></tr></tbody></table>',
+                                    }
+                                ],
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ) + "\n",
+                encoding="utf-8",
+            )
+
+            html = _internal_viewer_html(
+                root,
+                "/docs/ocp/4.20/ko/matrix/index.html#matrix",
+            )
+
+        self.assertIsNotNone(html)
+        assert html is not None
+        self.assertIn('<th colspan="2">지원</th>', html)
+        self.assertIn("<td>A</td><td>B</td>", html)
+
+    def test_internal_viewer_html_renders_structured_table_cells(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            playbook_dir = load_settings(root).playbook_books_dir
+            playbook_dir.mkdir(parents=True, exist_ok=True)
+            (playbook_dir / "compatibility.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "playbook_document_v1",
+                        "source_view_strategy": "playbook_ast_v1",
+                        "book_slug": "compatibility",
+                        "title": "Compatibility",
+                        "source_uri": "https://example.com/compatibility",
+                        "sections": [
+                            {
+                                "section_id": "compatibility:matrix",
+                                "section_key": "compatibility:matrix",
+                                "ordinal": 1,
+                                "heading": "지원 매트릭스",
+                                "level": 2,
+                                "path": ["지원", "지원 매트릭스"],
+                                "section_path": ["지원", "지원 매트릭스"],
+                                "anchor": "matrix",
+                                "viewer_path": "/docs/ocp/4.20/ko/compatibility/index.html#matrix",
+                                "semantic_role": "reference",
+                                "blocks": [
+                                    {
+                                        "kind": "table",
+                                        "caption": "버전 호환성",
+                                        "header_cells": [
+                                            {"text": "플랫폼", "rowspan": 2},
+                                            {"text": "지원", "colspan": 2},
+                                        ],
+                                        "row_cells": [
+                                            [
+                                                {"text": "AWS"},
+                                                {"text": "4.20"},
+                                                {"text": "GA"},
+                                            ]
+                                        ],
+                                    }
+                                ],
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ) + "\n",
+                encoding="utf-8",
+            )
+
+            html = _internal_viewer_html(
+                root,
+                "/docs/ocp/4.20/ko/compatibility/index.html#matrix",
+            )
+
+        self.assertIsNotNone(html)
+        assert html is not None
+        self.assertIn('<th rowspan="2">플랫폼</th>', html)
+        self.assertIn('<th colspan="2">지원</th>', html)
+        self.assertIn(">버전 호환성<", html)
+
+    def test_internal_viewer_html_renders_figure_metadata_strip(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            playbook_dir = load_settings(root).playbook_books_dir
+            playbook_dir.mkdir(parents=True, exist_ok=True)
+            (playbook_dir / "networking.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "playbook_document_v1",
+                        "source_view_strategy": "playbook_ast_v1",
+                        "book_slug": "networking",
+                        "title": "Networking",
+                        "source_uri": "https://example.com/networking",
+                        "sections": [
+                            {
+                                "section_id": "networking:diagram",
+                                "section_key": "networking:diagram",
+                                "ordinal": 1,
+                                "heading": "토폴로지",
+                                "level": 3,
+                                "path": ["네트워킹", "토폴로지"],
+                                "section_path": ["네트워킹", "토폴로지"],
+                                "anchor": "topology",
+                                "viewer_path": "/docs/ocp/4.20/ko/networking/index.html#topology",
+                                "semantic_role": "reference",
+                                "blocks": [
+                                    {
+                                        "kind": "figure",
+                                        "src": "/playbooks/wiki-assets/networking/topology.png",
+                                        "caption": "네트워크 토폴로지",
+                                        "alt": "네트워크 토폴로지",
+                                        "kind_label": "diagram",
+                                        "diagram_type": "network_map",
+                                    }
+                                ],
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ) + "\n",
+                encoding="utf-8",
+            )
+
+            html = _internal_viewer_html(
+                root,
+                "/docs/ocp/4.20/ko/networking/index.html#topology",
+            )
+
+        self.assertIsNotNone(html)
+        assert html is not None
+        self.assertIn('class="figure-meta"', html)
+        self.assertIn("network map", html)
+        self.assertIn('class="section-card section-level-3', html)
 
     def test_internal_viewer_html_strips_heading_number_prefix_from_visible_title(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -828,4 +1141,3 @@ class TestAppViewers(unittest.TestCase):
         self.assertIn("OpenShift CLI(oc) &gt; OpenShift CLI 개발자 명령 참조 &gt; OpenShift CLI (oc) 개발자", html)
         self.assertNotIn(">2.6.1.78. oc expose</h2>", html)
         self.assertNotIn("2장. OpenShift CLI(oc)", html)
-

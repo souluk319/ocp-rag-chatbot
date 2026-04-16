@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import gsap from 'gsap';
 import './WorkspacePage.css';
+import ViewerDocumentStage, { type ViewerDocumentPayload } from '../components/ViewerDocumentStage';
 import {
   type ChatResponse,
   type ChatCitation,
@@ -44,7 +45,6 @@ import {
   type WikiOverlayRecommendedPlay,
   type WikiOverlaySignalsResponse,
   type SourceMetaResponse,
-  type RuntimeFigureItem,
   type WikiOverlayRecord,
   type WikiOverlayTargetKind,
   captureCustomerPackDraft,
@@ -60,7 +60,7 @@ import {
   deleteAllSessions,
   deleteSession,
   loadSourceMeta,
-  loadRuntimeFigures,
+  loadViewerDocument,
   normalizeCustomerPackDraft,
   removeWikiOverlay,
   saveWikiOverlay,
@@ -158,19 +158,6 @@ interface OutlineCategoryGroup {
   books: WorkspaceManualBook[];
 }
 
-interface FigureAtlasEntry {
-  key: string;
-  title: string;
-  subtitle: string;
-  kind: string;
-  intent: string;
-  why: string;
-  thumbUrl?: string;
-  href: string;
-  count?: number;
-  isCluster?: boolean;
-}
-
 const OUTLINE_CATEGORY_RULES: Array<{
   key: string;
   label: string;
@@ -220,71 +207,6 @@ function normalizeRouteKey(link: ChatRelatedLink): string {
   return `${link.kind}:${(link.href || '').trim().toLowerCase()}::${(link.label || '').trim().toLowerCase()}`;
 }
 
-function firstFigureSectionToken(sectionHint: string): string {
-  const normalized = sectionHint.replace(/[›>]/g, '|');
-  return normalized
-    .split('|')
-    .map((chunk) => chunk.trim())
-    .find(Boolean) || '';
-}
-
-function buildFigureAtlasEntries(figures: RuntimeFigureItem[]): FigureAtlasEntry[] {
-  const groups = new Map<string, RuntimeFigureItem[]>();
-  for (const figure of figures) {
-    const diagramKey = (figure.diagram_type || '').trim().toLowerCase();
-    const sectionKey = firstFigureSectionToken(figure.section_hint || '').toLowerCase();
-    const assetKey = (figure.asset_kind || 'figure').trim().toLowerCase();
-    const key = diagramKey
-      ? `diagram:${diagramKey}`
-      : sectionKey
-        ? `section:${sectionKey}`
-        : `asset:${assetKey}`;
-    const bucket = groups.get(key) ?? [];
-    bucket.push(figure);
-    groups.set(key, bucket);
-  }
-
-  return [...groups.entries()]
-    .sort((a, b) => {
-      if (b[1].length !== a[1].length) return b[1].length - a[1].length;
-      return a[1][0].caption.localeCompare(b[1][0].caption);
-    })
-    .slice(0, 3)
-    .map(([key, bucket]) => {
-      const first = bucket[0];
-      const isDiagram = Boolean(first.diagram_type);
-      const thumbUrl = first.asset_url ? toRuntimeUrl(first.asset_url) : undefined;
-      if (bucket.length === 1) {
-        return {
-          key,
-          title: first.caption,
-          subtitle: first.section_hint || first.diagram_type || first.asset_kind,
-          kind: isDiagram ? 'Diagram' : 'Figure',
-          intent: 'View',
-          why: '현재 문서를 시각적으로 이해시키는 자산',
-          thumbUrl,
-          href: first.viewer_path,
-        };
-      }
-
-      const clusterLabel = isDiagram
-        ? `${first.diagram_type || 'diagram'} cluster`
-        : firstFigureSectionToken(first.section_hint || '') || 'figure cluster';
-      return {
-        key,
-        title: clusterLabel,
-        subtitle: `${bucket.length} visual assets grouped`,
-        kind: isDiagram ? 'Diagram Cluster' : 'Figure Cluster',
-        intent: 'Scan',
-        why: `현재 문서와 이어진 ${bucket.length}개의 시각 자산 묶음`,
-        thumbUrl,
-        href: first.viewer_path,
-        count: bucket.length,
-        isCluster: true,
-      };
-    });
-}
-
 type PreviewState =
   | { kind: 'empty' }
   | { kind: 'loading'; title: string }
@@ -294,6 +216,7 @@ type PreviewState =
     subtitle: string;
     meta?: SourceMetaResponse;
     viewerUrl: string;
+    viewerDocument?: ViewerDocumentPayload;
   }
   | {
     kind: 'draft';
@@ -303,6 +226,7 @@ type PreviewState =
     book?: CustomerPackBook;
     viewerUrl: string;
     derivedAssets: DerivedAsset[];
+    viewerDocument?: ViewerDocumentPayload;
   };
 
 function makeId(prefix: string): string {
@@ -319,6 +243,7 @@ function summarizeBookMeta(book: WorkspaceManualBook): string {
   ].filter(Boolean);
   return parts.join(' · ');
 }
+
 
 function inferOutlineCategory(book: WorkspaceManualBook): OutlineCategoryGroup {
   const haystack = [
@@ -621,9 +546,54 @@ function containsHangul(text: string): boolean {
 function runtimePathFromUrl(viewerUrl: string): string {
   try {
     const parsed = new URL(viewerUrl, window.location.origin);
-    return `${parsed.pathname}${parsed.hash || ''}`;
+    return `${parsed.pathname}${parsed.search || ''}${parsed.hash || ''}`;
   } catch {
     return viewerUrl;
+  }
+}
+
+function normalizeViewerDocumentPayload(viewerDocument: Awaited<ReturnType<typeof loadViewerDocument>>): ViewerDocumentPayload {
+  return {
+    html: viewerDocument.html,
+    inlineStyles: viewerDocument.inline_styles,
+    bodyClassName: viewerDocument.body_class_name,
+    interactionPolicy: {
+      codeCopy: viewerDocument.interaction_policy.code_copy,
+      codeWrapToggle: viewerDocument.interaction_policy.code_wrap_toggle,
+      recentPositionTracking: viewerDocument.interaction_policy.recent_position_tracking,
+      anchorNavigation: viewerDocument.interaction_policy.anchor_navigation,
+    },
+  };
+}
+
+async function loadViewerDocumentPayload(viewerPath: string): Promise<ViewerDocumentPayload> {
+  return normalizeViewerDocumentPayload(await loadViewerDocument(viewerPath));
+}
+
+function normalizePreviewNavigationTarget(viewerPath: string): string | null {
+  const raw = String(viewerPath || '').trim();
+  if (!raw) {
+    return null;
+  }
+  try {
+    const parsed = new URL(raw, window.location.origin);
+    const runtimePath = `${parsed.pathname}${parsed.search || ''}${parsed.hash || ''}`;
+    if (
+      parsed.pathname.startsWith('/playbooks/')
+      || parsed.pathname.startsWith('/docs/ocp/')
+      || parsed.pathname.startsWith('/wiki/entities/')
+      || parsed.pathname.startsWith('/wiki/figures/')
+      || parsed.pathname.startsWith('/api/customer-packs/captured')
+    ) {
+      return runtimePath;
+    }
+    if (/^https?:\/\//i.test(raw)) {
+      window.open(raw, '_blank', 'noopener,noreferrer');
+      return null;
+    }
+    return runtimePath;
+  } catch {
+    return raw;
   }
 }
 
@@ -1474,6 +1444,7 @@ export default function WorkspacePage() {
   const [packDropdownOpen, setPackDropdownOpen] = useState(false);
   const [manualBooks, setManualBooks] = useState<WorkspaceManualBook[]>([]);
   const [drafts, setDrafts] = useState<CustomerPackDraft[]>([]);
+  const [isBootstrapLoading, setIsBootstrapLoading] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [query, setQuery] = useState('');
   const [sessionId, setSessionId] = useState(() => makeId('ID'));
@@ -1481,7 +1452,6 @@ export default function WorkspacePage() {
   const [activeTestTrace, setActiveTestTrace] = useState<WorkspaceTestTrace | null>(null);
   const [activeSourceId, setActiveSourceId] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewState>({ kind: 'empty' });
-  const [atlasFigures, setAtlasFigures] = useState<RuntimeFigureItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -1493,6 +1463,7 @@ export default function WorkspacePage() {
 
   // Session history
   const [sessionList, setSessionList] = useState<SessionSummary[]>([]);
+  const [isSessionListLoading, setIsSessionListLoading] = useState(true);
   const [isLoadingSession, setIsLoadingSession] = useState(false);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [leftPanelMode, setLeftPanelMode] = useState<LeftPanelMode>(() => {
@@ -1543,11 +1514,14 @@ export default function WorkspacePage() {
   });
 
   const refreshSessionList = useCallback(async () => {
+    setIsSessionListLoading(true);
     try {
       const result = await listSessions();
       setSessionList(result.sessions);
     } catch (error) {
       console.error(error);
+    } finally {
+      setIsSessionListLoading(false);
     }
   }, []);
 
@@ -1568,11 +1542,20 @@ export default function WorkspacePage() {
   }, []);
 
   const welcomeQuestions = useMemo(() => {
-    return manualBooks
+    const derived = manualBooks
       .filter((book) => Boolean(book.title?.trim()))
       .filter((book) => containsHangul(book.title) || book.title.length > 0)
       .slice(0, 4)
       .map((book) => `${book.title} 핵심 절차를 알려줘`);
+    if (derived.length > 0) {
+      return derived;
+    }
+    return [
+      '오픈시프트가 뭐야?',
+      '운영 입문 기준으로 먼저 봐야 할 플레이북 3개 알려줘',
+      '특정 namespace에 admin 권한 주는 법 알려줘',
+      '프로젝트가 Terminating에서 안 지워질 때 어떻게 해?',
+    ];
   }, [manualBooks]);
   const activeVision = useMemo(
     () => WIKI_VISION_MODES.find((mode) => mode.id === visionMode) ?? WIKI_VISION_MODES[0],
@@ -1596,16 +1579,6 @@ export default function WorkspacePage() {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem('wikiVisionMode', visionMode);
   }, [visionMode]);
-
-  useEffect(() => {
-    if (visionMode !== 'atlas_canvas' || preview.kind !== 'viewer' || !preview.meta?.book_slug) {
-      setAtlasFigures([]);
-      return;
-    }
-    loadRuntimeFigures(preview.meta.book_slug, 3)
-      .then((payload) => setAtlasFigures(payload.items ?? []))
-      .catch(() => setAtlasFigures([]));
-  }, [preview, visionMode]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1853,11 +1826,12 @@ export default function WorkspacePage() {
     let cancelled = false;
 
     const bootstrap = async () => {
+      setIsBootstrapLoading(true);
       try {
+        void refreshSessionList();
         const [room, draftPayload] = await Promise.all([
           loadDataControlRoom(),
           listCustomerPackDrafts(),
-          refreshSessionList(),
         ]);
         if (cancelled) {
           return;
@@ -1876,6 +1850,10 @@ export default function WorkspacePage() {
         setDrafts(nextDrafts);
       } catch (error) {
         console.error(error);
+      } finally {
+        if (!cancelled) {
+          setIsBootstrapLoading(false);
+        }
       }
     };
 
@@ -1960,27 +1938,36 @@ export default function WorkspacePage() {
   }
 
   async function openViewerPreview(viewerPath: string, title: string, sourceId?: string): Promise<void> {
-    if (!viewerPath) {
+    const normalizedViewerPath = normalizePreviewNavigationTarget(viewerPath);
+    if (!normalizedViewerPath) {
       setPreview({ kind: 'empty' });
       return;
     }
-    setActiveSourceId(sourceId ?? `viewer:${viewerPath}`);
+    setActiveSourceId(sourceId ?? `viewer:${normalizedViewerPath}`);
     setPreview({ kind: 'loading', title });
     try {
-      const meta = await loadSourceMeta(viewerPath);
+      const meta = await loadSourceMeta(normalizedViewerPath);
+      const resolvedViewerPath = meta.viewer_path || normalizedViewerPath;
+      const viewerUrl = toRuntimeUrl(resolvedViewerPath);
+      const viewerDocument = await loadViewerDocumentPayload(resolvedViewerPath);
       setPreview({
         kind: 'viewer',
         title: meta.book_title || title,
         subtitle: meta.section_path_label || meta.section || meta.source_url || '',
         meta,
-        viewerUrl: toRuntimeUrl(meta.viewer_path || viewerPath),
+        viewerUrl,
+        viewerDocument,
       });
-    } catch {
+    } catch (error) {
+      console.error('viewer-preview-failed', {
+        viewerPath: normalizedViewerPath,
+        error,
+      });
       setPreview({
         kind: 'viewer',
         title,
         subtitle: '',
-        viewerUrl: toRuntimeUrl(viewerPath),
+        viewerUrl: toRuntimeUrl(normalizedViewerPath),
       });
     }
   }
@@ -2011,6 +1998,10 @@ export default function WorkspacePage() {
       viewerUrl = toRuntimeUrl(`/api/customer-packs/captured?draft_id=${encodeURIComponent(draftId)}`);
     }
 
+      const viewerDocument = viewerUrl
+        ? await loadViewerDocumentPayload(runtimePathFromUrl(viewerUrl))
+        : undefined;
+
     setPreview({
       kind: 'draft',
       title: loadedDraft.title,
@@ -2019,6 +2010,7 @@ export default function WorkspacePage() {
       book: loadedBook,
       viewerUrl,
       derivedAssets: loadedBook?.derived_assets ?? loadedDraft.derived_assets ?? [],
+      viewerDocument,
     });
   }
 
@@ -2262,16 +2254,49 @@ export default function WorkspacePage() {
     }
   }
 
+  function getSignalDisplayTitle(item: WikiOverlayRecord): string {
+    if (item.resolved_target?.title) return item.resolved_target.title;
+    const fallback = (item as any).title;
+    if (fallback) return fallback;
+    const ref = item.target_ref || '';
+    try {
+      const cleanRef = ref.replace(/^section:/, '').replace(/^book:/, '');
+      const parts = cleanRef.split('#');
+      if (parts.length > 1) {
+        return `${parts[0]} > ${decodeURIComponent(parts[1])}`;
+      }
+      return decodeURIComponent(cleanRef);
+    } catch {
+      return ref;
+    }
+  }
+
+  function getSignalHref(item: WikiOverlayRecord): string | undefined {
+    if (item.resolved_target?.viewer_path) return item.resolved_target.viewer_path;
+    const fallbackPath = item.payload?.viewer_path as string | undefined;
+    if (fallbackPath) return fallbackPath;
+    if (item.target_ref) {
+      if (item.target_ref.startsWith('section:')) {
+         const split = item.target_ref.replace('section:', '').split('#');
+         return `/wiki-runtime/active/${split[0]}/index.html${split[1] ? '#' + split[1] : ''}`;
+      }
+      if (item.target_ref.startsWith('book:')) {
+         return `/wiki-runtime/active/${item.target_ref.replace('book:', '')}/index.html`;
+      }
+    }
+    return undefined;
+  }
+
   async function handleOverlayJump(item: WikiOverlayRecord): Promise<void> {
-    const href = item.resolved_target?.viewer_path;
+    const href = getSignalHref(item);
     if (!href) {
       return;
     }
     await handleRelatedLinkClick({
-      label: item.resolved_target?.title || item.title || item.target_ref,
+      label: getSignalDisplayTitle(item),
       href,
       kind: item.target_kind === 'entity_hub' ? 'entity' : 'book',
-      summary: item.resolved_target?.summary || item.summary || '',
+      summary: item.resolved_target?.summary || (item as any).summary || '',
     });
   }
 
@@ -2486,15 +2511,6 @@ export default function WorkspacePage() {
     () => [...messages].reverse().find((message) => message.role === 'assistant') ?? null,
     [messages],
   );
-  const atlasRelationLinks = useMemo(
-    () => (activeAssistantMessage?.relatedLinks ?? []).slice(0, 2),
-    [activeAssistantMessage],
-  );
-  const atlasRelationSections = useMemo(
-    () => (activeAssistantMessage?.relatedSections ?? []).slice(0, 2),
-    [activeAssistantMessage],
-  );
-  const atlasFigureEntries = useMemo(() => buildFigureAtlasEntries(atlasFigures), [atlasFigures]);
   const activeBookSlug = useMemo(() => {
     if (preview.kind === 'viewer' && preview.meta?.book_slug) {
       return preview.meta.book_slug;
@@ -2790,7 +2806,12 @@ export default function WorkspacePage() {
 
               {leftPanelMode === 'history' ? (
                 <div className="session-list">
-                  {sessionList.length === 0 && (
+                  {isSessionListLoading ? (
+                    <div className="session-list-empty loading">
+                      <div className="loading-spinner-small"></div>
+                      <p>대화 기록 불러오는 중</p>
+                    </div>
+                  ) : sessionList.length === 0 && (
                     <div className="session-list-empty">
                       <MessageSquare size={24} className="text-dim" />
                       <p>아직 대화 기록이 없습니다</p>
@@ -3010,14 +3031,15 @@ export default function WorkspacePage() {
                       <span>Recent Position</span>
                     </div>
                     <div className="signals-chip-list">
-                      {recentOverlayItems.length > 0 ? recentOverlayItems.map((item) => (
+                      {isOverlayLoading ? <span className="signals-empty">불러오는 중</span> : recentOverlayItems.length > 0 ? recentOverlayItems.map((item) => (
                         <button
                           key={item.overlay_id}
                           type="button"
                           className="signals-chip"
                           onClick={() => { void handleOverlayJump(item); }}
+                          title={item.target_ref}
                         >
-                          {item.resolved_target?.title || item.title || item.target_ref}
+                          {getSignalDisplayTitle(item)}
                         </button>
                       )) : <span className="signals-empty">아직 기록이 없습니다.</span>}
                     </div>
@@ -3028,14 +3050,15 @@ export default function WorkspacePage() {
                       <span>Favorites</span>
                     </div>
                     <div className="signals-chip-list">
-                      {favoriteOverlayItems.length > 0 ? favoriteOverlayItems.map((item) => (
+                      {isOverlayLoading ? <span className="signals-empty">불러오는 중</span> : favoriteOverlayItems.length > 0 ? favoriteOverlayItems.map((item) => (
                         <button
                           key={item.overlay_id}
                           type="button"
                           className="signals-chip"
                           onClick={() => { void handleOverlayJump(item); }}
+                          title={item.target_ref}
                         >
-                          {item.resolved_target?.title || item.title || item.target_ref}
+                          {getSignalDisplayTitle(item)}
                         </button>
                       )) : <span className="signals-empty">즐겨찾기가 없습니다.</span>}
                     </div>
@@ -3046,7 +3069,7 @@ export default function WorkspacePage() {
                       <span>Next</span>
                     </div>
                     <div className="signals-chip-list">
-                      {nextPlayItems.length > 0 ? nextPlayItems.map((item, index) => (
+                      {isOverlayLoading ? <span className="signals-empty">불러오는 중</span> : nextPlayItems.length > 0 ? nextPlayItems.map((item, index) => (
                         <button
                           key={`${item.source_target_ref}-${item.href}-${index}`}
                           type="button"
@@ -3163,6 +3186,12 @@ export default function WorkspacePage() {
                         </button>
                       ))}
                     </div>
+                    {isBootstrapLoading && (
+                      <div className="welcome-loading-hint">
+                        <div className="loading-spinner-small"></div>
+                        <span>runtime 문서 목록 동기화 중</span>
+                      </div>
+                    )}
                   </div>
                 )}
                 {messages.map((message) => (
@@ -3302,19 +3331,43 @@ export default function WorkspacePage() {
             onResize={(panelSize) => setRightCollapsed(panelSize.asPercentage <= 0.5)}
             className="workspace-panel-item"
           >
-              <div className={`panel-inner glass-panel no-border-radius-left ${rightCollapsed ? 'panel-collapsed-inner' : ''}`}>
-                <div className="panel-header">
-                  <div className="header-icon"><BookOpen size={18} /></div>
-                  <div className="panel-header-copy">
-                    <h3>{viewerSurfaceTitle}</h3>
-                    <span className={`viewer-vision-badge ${testMode ? 'viewer-vision-badge-test' : ''}`}>
-                      {testMode ? 'TEST' : visionMode === 'guided_tour' ? 'Guided Tour Active' : activeVision.label}
-                    </span>
-                  </div>
+            <div className={`panel-inner workspace-viewer-panel no-border-radius-left ${rightCollapsed ? 'panel-collapsed-inner' : ''}`}>
+                <div className={`panel-header ${testMode ? '' : 'viewer-panel-toolbar'}`} style={{ alignItems: 'center' }}>
+                  {testMode && (
+                    <>
+                      <div className="header-icon"><BookOpen size={18} /></div>
+                      <div className="panel-header-copy" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
+                        <h3>{viewerSurfaceTitle}</h3>
+                        <span className={`viewer-vision-badge ${testMode ? 'viewer-vision-badge-test' : ''}`} style={{ marginTop: 0 }}>
+                          {testMode ? 'TEST' : visionMode === 'guided_tour' ? 'Guided Tour Active' : activeVision.label}
+                        </span>
+                      </div>
+                    </>
+                  )}
 
-                  <button className="header-action-btn" type="button" onClick={toggleRightPanel} title="Close panel" style={{ marginLeft: 'auto' }}>
-                    <PanelRightClose size={14} />
-                  </button>
+                  <div className={`viewer-utility-bar ${testMode ? '' : 'viewer-utility-bar-minimal'}`} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', padding: 0, border: 'none', background: 'transparent' }}>
+                    <button
+                      className={`viewer-utility-btn ${sourcesDrawerOpen ? 'active' : ''}`}
+                      type="button"
+                      onClick={() => setSourcesDrawerOpen((prev) => !prev)}
+                    >
+                      <FileText size={13} />
+                      <span>{visionMode === 'guided_tour' ? `Tour Sources (${totalSourceCount})` : `Sources (${totalSourceCount})`}</span>
+                      <ChevronDown size={11} className={`sources-chevron ${sourcesDrawerOpen ? 'open' : ''}`} />
+                    </button>
+                    <button
+                      className="viewer-utility-btn"
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                    >
+                      <Upload size={13} />
+                      <span>{isUploading ? (visionMode === 'guided_tour' ? 'Adding source...' : 'Uploading...') : (visionMode === 'guided_tour' ? 'Add Source' : 'Upload Pack')}</span>
+                    </button>
+                    <button className="header-action-btn" type="button" onClick={toggleRightPanel} title="Close panel">
+                      <PanelRightClose size={14} />
+                    </button>
+                  </div>
                 </div>
 
                 <input
@@ -3325,26 +3378,6 @@ export default function WorkspacePage() {
                     void handleUploadSelection(event);
                   }}
                 />
-                <div className="viewer-utility-bar">
-                  <button
-                    className={`viewer-utility-btn ${sourcesDrawerOpen ? 'active' : ''}`}
-                    type="button"
-                    onClick={() => setSourcesDrawerOpen((prev) => !prev)}
-                  >
-                    <FileText size={13} />
-                    <span>{visionMode === 'guided_tour' ? `Tour Sources (${totalSourceCount})` : `Sources (${totalSourceCount})`}</span>
-                    <ChevronDown size={11} className={`sources-chevron ${sourcesDrawerOpen ? 'open' : ''}`} />
-                  </button>
-                  <button
-                    className="viewer-utility-btn"
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                  >
-                    <Upload size={13} />
-                    <span>{isUploading ? (visionMode === 'guided_tour' ? 'Adding source...' : 'Uploading...') : (visionMode === 'guided_tour' ? 'Add Source' : 'Upload Pack')}</span>
-                  </button>
-                </div>
 
               {/* Sources Drawer — absolute overlay above the viewer */}
               {sourcesDrawerOpen && (
@@ -3439,277 +3472,98 @@ export default function WorkspacePage() {
                   </div>
                 )}
 
-                {!testMode && preview.kind === 'viewer' && (() => {
-                  const previewTruth = truthSurfaceCopy(preview.meta);
-                  const guidedViewerStop = visionMode === 'guided_tour'
-                    ? preview.meta?.section_path_label || preview.subtitle || preview.title
-                    : '';
-                  const atlasViewerContext = visionMode === 'atlas_canvas'
-                    ? (preview.meta?.section_path ?? []).slice(0, 3)
-                    : [];
-                  return (
-                    <div className="document-page animate-in">
-                      <div className="doc-header doc-header-with-actions">
-                        <div className="doc-header-text">
-                          <span className="doc-kicker">{previewTruth.label || preview.meta?.pack_label || 'Source Viewer'}</span>
-                          <h2>{preview.title}</h2>
-                          {guidedViewerStop && (
-                            <div className="doc-tour-stop">
-                              <span className="doc-tour-stop-kicker">Now Reading</span>
-                              <span className="doc-tour-stop-label">{guidedViewerStop}</span>
-                            </div>
-                          )}
-                        </div>
-                        {currentOverlayTarget && (
-                          <div className="wiki-overlay-toolbar inline">
-                            <button
-                              type="button"
-                              className={`wiki-overlay-action ${currentFavorite ? 'active' : ''}`}
-                              onClick={() => { void handleToggleFavoriteCurrent(); }}
-                              disabled={isOverlaySaving}
-                              title={currentFavorite ? 'Saved' : 'Save'}
-                            >
-                              <Star size={14} />
-                            </button>
-                            {currentOverlayTarget.kind === 'section' && (
-                              <button
-                                type="button"
-                                className={`wiki-overlay-action ${currentSectionCheck ? 'active' : ''}`}
-                                onClick={() => { void handleToggleSectionCheckCurrent(); }}
-                                disabled={isOverlaySaving}
-                                title={currentSectionCheck ? 'Done' : 'Mark Done'}
-                              >
-                                <Check size={14} />
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              className={`wiki-overlay-action ${noteOpen ? 'active' : ''}`}
-                              onClick={() => setNoteOpen((value) => !value)}
-                              title="Note"
-                            >
-                              <NotebookPen size={14} />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                      {preview.subtitle && <p className="doc-summary">{preview.subtitle}</p>}
-                      {previewTruth.meta.length > 0 && (
-                        <div className="doc-chip-row">
-                          {previewTruth.meta.map((item) => (
-                            <span key={item} className="doc-evidence-chip">{item}</span>
-                          ))}
-                        </div>
-                      )}
-                      {currentOverlayTarget && noteOpen && (
-                        <div className="wiki-note-panel">
-                          <textarea
-                            className="wiki-note-input"
-                            value={noteDraft}
-                            onChange={(event) => setNoteDraft(event.target.value)}
-                            placeholder="메모"
-                          />
-                          <div className="wiki-note-actions">
-                            <button
-                              type="button"
-                              className="outline-btn"
-                              onClick={() => { void handleSaveCurrentNote(); }}
-                              disabled={isOverlaySaving}
-                            >
-                              {currentNote ? 'Update Note' : 'Save Note'}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                      <div className="doc-metadata">
-                        {preview.meta?.source_url && (
-                          <a href={preview.meta.source_url} className="doc-inline-link" target="_blank" rel="noreferrer">
+                {!testMode && currentOverlayTarget && (
+                  <div className="reader-stage-rail">
+                    <div className="viewer-stage-topline">
+                      <div className="viewer-stage-actions">
+                        {preview.kind === 'viewer' && preview.meta?.source_url && (
+                          <a href={toRuntimeUrl(preview.meta.source_url)} className="doc-inline-link viewer-stage-link" target="_blank" rel="noreferrer">
                             원문 열기
                           </a>
                         )}
-                      </div>
-                      {preview.viewerUrl && (
-                        <iframe
-                          title={preview.title}
-                          className="source-preview-frame"
-                          src={preview.viewerUrl}
-                          onLoad={resetParentScroll}
-                        />
-                      )}
-                      {visionMode === 'atlas_canvas' && (
-                        <div className="atlas-viewer-strip">
-                          <div className="atlas-viewer-lane">
-                            <div className="atlas-viewer-label">Reading Spine</div>
-                            <div className="atlas-viewer-card atlas-viewer-card-core">
-                              <div className="atlas-viewer-meta-row">
-                                <span className="atlas-viewer-kind">Document</span>
-                                <span className="atlas-viewer-intent">Read</span>
-                              </div>
-                              <strong>{preview.title}</strong>
-                              <span>{preview.meta?.section_path_label || preview.subtitle || '현재 문서를 읽는 중입니다.'}</span>
-                            </div>
-                          </div>
-                          <div className="atlas-viewer-lane">
-                            <div className="atlas-viewer-label">Connected Paths</div>
-                            {(atlasRelationLinks.length > 0 || atlasRelationSections.length > 0) ? (
-                              <>
-                                {atlasRelationSections.map((link, index) => (
-                                  <button
-                                    key={`atlas-section-${link.href}-${index}`}
-                                    type="button"
-                                    className="atlas-viewer-card atlas-viewer-card-link atlas-viewer-card-step"
-                                    onClick={() => void handleRelatedLinkClick(link)}
-                                  >
-                                    <div className="atlas-viewer-meta-row">
-                                      <span className="atlas-viewer-kind">Procedure</span>
-                                      <span className="atlas-viewer-intent">Follow</span>
-                                    </div>
-                                    <strong>{link.label}</strong>
-                                    <span>{link.summary || '연결된 절차로 이동'}</span>
-                                    <span className="atlas-viewer-why">현재 문서에서 바로 이어서 따라갈 절차</span>
-                                  </button>
-                                ))}
-                                {atlasRelationLinks.map((link, index) => (
-                                  <button
-                                    key={`atlas-link-${link.href}-${index}`}
-                                    type="button"
-                                    className="atlas-viewer-card atlas-viewer-card-link atlas-viewer-card-doclink"
-                                    onClick={() => void handleRelatedLinkClick(link)}
-                                  >
-                                    <div className="atlas-viewer-meta-row">
-                                      <span className="atlas-viewer-kind">Linked Doc</span>
-                                      <span className="atlas-viewer-intent">Open</span>
-                                    </div>
-                                    <strong>{link.label}</strong>
-                                    <span>{link.summary || '연결된 문서를 엽니다.'}</span>
-                                    <span className="atlas-viewer-why">같은 주제를 넓히는 연결 문서</span>
-                                  </button>
-                                ))}
-                              </>
-                            ) : (
-                              <div className="atlas-viewer-card atlas-viewer-card-muted">
-                                <strong>연결 경로 수집 중</strong>
-                                <span>현재 문서 주변의 section relation과 관련 문서를 여기에 붙입니다.</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="atlas-viewer-lane">
-                            <div className="atlas-viewer-label">Visual Memory</div>
-                            {atlasFigureEntries.length > 0 ? (
-                              <>
-                                {atlasFigureEntries.map((figure, index) => (
-                                  <button
-                                    key={`atlas-figure-${figure.key}-${index}`}
-                                    type="button"
-                                    className={`atlas-viewer-card atlas-viewer-card-link atlas-viewer-card-figure${figure.isCluster ? ' atlas-viewer-card-cluster' : ''}`}
-                                    onClick={() => void handleRelatedLinkClick({
-                                      label: figure.title,
-                                      href: figure.href,
-                                      kind: 'book',
-                                      summary: figure.subtitle,
-                                    })}
-                                  >
-                                    <div className="atlas-viewer-meta-row">
-                                      <span className="atlas-viewer-kind">{figure.kind}</span>
-                                      <span className="atlas-viewer-intent">{figure.intent}</span>
-                                    </div>
-                                    {typeof figure.count === 'number' ? (
-                                      <span className="atlas-viewer-count">{figure.count} linked visuals</span>
-                                    ) : null}
-                                    {figure.thumbUrl ? (
-                                      <div
-                                        className="atlas-viewer-thumb"
-                                        style={{ backgroundImage: `url(${figure.thumbUrl})` }}
-                                        aria-hidden="true"
-                                      />
-                                    ) : null}
-                                    <strong>{figure.title}</strong>
-                                    <span>{figure.subtitle}</span>
-                                    <span className="atlas-viewer-why">{figure.why}</span>
-                                  </button>
-                                ))}
-                              </>
-                            ) : atlasViewerContext.length > 0 ? (
-                              <div className="atlas-context-chip-row">
-                                {atlasViewerContext.map((item) => (
-                                  <span key={item} className="atlas-context-chip">{item}</span>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="atlas-viewer-card atlas-viewer-card-muted">
-                                <strong>맥락 정보 없음</strong>
-                                <span>section path와 source truth가 이 레이어로 들어옵니다.</span>
-                              </div>
-                            )}
-                          </div>
+                        <div className="wiki-overlay-toolbar inline">
+                        <button
+                          type="button"
+                          className={`wiki-overlay-action ${currentFavorite ? 'active' : ''}`}
+                          onClick={() => { void handleToggleFavoriteCurrent(); }}
+                          disabled={isOverlaySaving}
+                          title={currentFavorite ? 'Saved' : 'Save'}
+                        >
+                          <Star size={14} />
+                        </button>
+                        {currentOverlayTarget.kind === 'section' && (
+                          <button
+                            type="button"
+                            className={`wiki-overlay-action ${currentSectionCheck ? 'active' : ''}`}
+                            onClick={() => { void handleToggleSectionCheckCurrent(); }}
+                            disabled={isOverlaySaving}
+                            title={currentSectionCheck ? 'Done' : 'Mark Done'}
+                          >
+                            <Check size={14} />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className={`wiki-overlay-action ${noteOpen ? 'active' : ''}`}
+                          onClick={() => setNoteOpen((value) => !value)}
+                          title="Note"
+                        >
+                          <NotebookPen size={14} />
+                        </button>
                         </div>
-                      )}
+                      </div>
                     </div>
+                    {noteOpen && (
+                      <div className="wiki-note-panel viewer-stage-note-panel">
+                        <textarea
+                          className="wiki-note-input"
+                          value={noteDraft}
+                          onChange={(event) => setNoteDraft(event.target.value)}
+                          placeholder="메모"
+                        />
+                        <div className="wiki-note-actions">
+                          <button
+                            type="button"
+                            className="outline-btn"
+                            onClick={() => { void handleSaveCurrentNote(); }}
+                            disabled={isOverlaySaving}
+                          >
+                            {currentNote ? 'Update Note' : 'Save Note'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {!testMode && preview.kind === 'viewer' && (() => {
+                  return (
+                    <section className="reader-stage animate-in">
+                      {preview.viewerDocument?.html ? (
+                        <ViewerDocumentStage
+                          viewerDocument={preview.viewerDocument}
+                          onNavigateViewerPath={(viewerPath) => {
+                            void openViewerPreview(viewerPath, preview.title);
+                          }}
+                          className="playbook-reader-shadow-host"
+                        />
+                      ) : (
+                        <div className="playbook-reader-empty">문서 본문을 불러오지 못했습니다.</div>
+                      )}
+                    </section>
                   );
                 })()}
 
                 {!testMode && preview.kind === 'draft' && (() => {
                   const draftTruth = truthSurfaceCopy(preview.book ?? preview.draft);
                   return (
-                    <div className="document-page animate-in">
-                      <div className="doc-header doc-header-with-actions">
+                    <section className="reader-stage reader-stage-draft animate-in">
+                      <div className="doc-header">
                         <div className="doc-header-text">
                           <span className="doc-kicker">{draftTruth.label}</span>
                           <h2>{preview.title}</h2>
                         </div>
-                        {currentOverlayTarget && (
-                          <div className="wiki-overlay-toolbar inline">
-                            <button
-                              type="button"
-                              className={`wiki-overlay-action ${currentFavorite ? 'active' : ''}`}
-                              onClick={() => { void handleToggleFavoriteCurrent(); }}
-                              disabled={isOverlaySaving}
-                              title={currentFavorite ? 'Saved' : 'Save'}
-                            >
-                              <Star size={14} />
-                            </button>
-                            {currentOverlayTarget.kind === 'section' && (
-                              <button
-                                type="button"
-                                className={`wiki-overlay-action ${currentSectionCheck ? 'active' : ''}`}
-                                onClick={() => { void handleToggleSectionCheckCurrent(); }}
-                                disabled={isOverlaySaving}
-                                title={currentSectionCheck ? 'Done' : 'Mark Done'}
-                              >
-                                <Check size={14} />
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              className={`wiki-overlay-action ${noteOpen ? 'active' : ''}`}
-                              onClick={() => setNoteOpen((value) => !value)}
-                              title="Note"
-                            >
-                              <NotebookPen size={14} />
-                            </button>
-                          </div>
-                        )}
                       </div>
-                      {currentOverlayTarget && noteOpen && (
-                        <div className="wiki-note-panel">
-                          <textarea
-                            className="wiki-note-input"
-                            value={noteDraft}
-                            onChange={(event) => setNoteDraft(event.target.value)}
-                            placeholder="메모"
-                          />
-                          <div className="wiki-note-actions">
-                            <button
-                              type="button"
-                              className="outline-btn"
-                              onClick={() => { void handleSaveCurrentNote(); }}
-                              disabled={isOverlaySaving}
-                            >
-                              {currentNote ? 'Update Note' : 'Save Note'}
-                            </button>
-                          </div>
-                        </div>
-                      )}
                       <p className="doc-summary">{preview.subtitle}</p>
                       <div className="doc-metadata">
                         <span>Quality {preview.draft.quality_score}</span>
@@ -3737,12 +3591,13 @@ export default function WorkspacePage() {
                           ))}
                         </div>
                       )}
-                      {preview.viewerUrl ? (
-                        <iframe
-                          title={preview.title}
-                          className="source-preview-frame"
-                          src={preview.viewerUrl}
-                          onLoad={resetParentScroll}
+                      {preview.viewerDocument?.html ? (
+                        <ViewerDocumentStage
+                          viewerDocument={preview.viewerDocument}
+                          onNavigateViewerPath={(viewerPath) => {
+                            void openViewerPreview(viewerPath, preview.title);
+                          }}
+                          className="playbook-reader-shadow-host"
                         />
                       ) : (
                         <div className="doc-section">
@@ -3750,7 +3605,7 @@ export default function WorkspacePage() {
                           <p>{preview.draft.status}</p>
                         </div>
                       )}
-                    </div>
+                    </section>
                   );
                 })()}
               </div>

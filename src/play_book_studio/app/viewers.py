@@ -4,6 +4,8 @@ from play_book_studio.app.viewer_blocks import (
     _render_normalized_section_html,
 )
 from play_book_studio.app.viewer_page import (
+    _build_section_metrics,
+    _build_section_outline,
     _build_study_section_cards,
     _render_study_viewer_html,
 )

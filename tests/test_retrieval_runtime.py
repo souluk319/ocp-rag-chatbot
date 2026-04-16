@@ -407,6 +407,9 @@ class TestRetrievalRuntime(unittest.TestCase):
 
         self.assertTrue(trace["applied"])
         self.assertEqual("overview", hits[0].book_slug)
+        self.assertEqual("ocp-overview", hits[0].anchor)
+        self.assertEqual("OpenShift Container Platform 소개", hits[0].section)
+        self.assertTrue(hits[0].viewer_path.endswith("#ocp-overview"))
         self.assertEqual("overview-intro", hits[0].chunk_id)
         self.assertIn("generic_intro_intent", trace["rebalance_reasons"])
 
@@ -1468,6 +1471,8 @@ class TestRetrievalRuntime(unittest.TestCase):
                         source="bm25",
                         raw_score=1.0,
                         fused_score=1.0,
+                        source_collection="core",
+                        review_status="approved",
                     ),
                     RetrievalHit(
                         chunk_id="machine-config-hit",
@@ -1481,6 +1486,8 @@ class TestRetrievalRuntime(unittest.TestCase):
                         source="bm25",
                         raw_score=0.95,
                         fused_score=0.95,
+                        source_collection="core",
+                        review_status="approved",
                     ),
                     RetrievalHit(
                         chunk_id="updating-glossary-hit",
@@ -1494,6 +1501,8 @@ class TestRetrievalRuntime(unittest.TestCase):
                         source="bm25",
                         raw_score=0.9,
                         fused_score=0.9,
+                        source_collection="core",
+                        review_status="approved",
                     ),
                 ]
 
@@ -1537,6 +1546,9 @@ class TestRetrievalRuntime(unittest.TestCase):
         self.assertEqual("machine_configuration", result.trace["hybrid"][0]["book_slug"])
         self.assertEqual("machine_configuration", result.hits[0].book_slug)
         self.assertEqual("machine_configuration", result.trace["reranked"][0]["book_slug"])
+        self.assertEqual("about-mco", result.hits[0].anchor)
+        self.assertEqual("About the Machine Config Operator", result.hits[0].section)
+        self.assertTrue(result.hits[0].viewer_path.endswith("#about-mco"))
 
 
 class TestRetrievalGraphRuntime(unittest.TestCase):

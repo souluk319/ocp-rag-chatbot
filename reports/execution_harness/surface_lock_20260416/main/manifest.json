@@ -1,0 +1,35 @@
+{
+  "task_id": "surface_lock_20260416",
+  "created_at": "2026-04-16T18:05:00+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": true,
+  "parallel_execution_required": true,
+  "companion_lanes": [
+    {
+      "lane_id": "explorer",
+      "role": "explorer"
+    },
+    {
+      "lane_id": "reviewer",
+      "role": "reviewer"
+    }
+  ],
+  "write_scope": "presentation-ui/src/pages/WorkspacePage.tsx;scripts/verify_surface_lock.py;reports/build_logs/surface_lock_report.json;reports/build_logs/surface_lock_report.md;presentation-ui/dist/*;reports/execution_harness/surface_lock_20260416/main/*",
+  "target_outputs": [
+    "presentation-ui/dist/index.html",
+    "reports/build_logs/surface_lock_report.json",
+    "reports/build_logs/surface_lock_report.md",
+    "reports/execution_harness/surface_lock_20260416/main/final_report.json"
+  ],
+  "validation_commands": [
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_app_runtime_ui.py -q",
+    "npm --prefix presentation-ui run build",
+    "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex_python.ps1 -ScriptPath scripts/verify_surface_lock.py -WriteScope reports/build_logs/surface_lock_report.json -VerifyCmd surface_lock_report_updated"
+  ],
+  "status": "done"
+}

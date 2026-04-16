@@ -16,6 +16,8 @@ from play_book_studio.intake.service import evaluate_canonical_book_quality
 from .presenters import _default_customer_pack_summary
 from .viewer_page import _render_page_overlay_toolbar
 from .viewers import (
+    _build_section_metrics,
+    _build_section_outline,
     _build_study_section_cards,
     _parse_viewer_path,
     _render_study_viewer_html,
@@ -1573,6 +1575,8 @@ def internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
         eyebrow=eyebrow,
         summary=summary,
         embedded=embedded,
+        section_outline=_build_section_outline(sections),
+        section_metrics=_build_section_metrics(sections),
         page_overlay_toolbar=_render_page_overlay_toolbar(
             target_kind="book",
             target_ref=f"book:{book_slug}",
@@ -2138,6 +2142,8 @@ def internal_active_runtime_markdown_viewer_html(root_dir: Path, viewer_path: st
         eyebrow="Approved Wiki Runtime Book",
         summary=summary,
         embedded=embedded,
+        section_outline=_build_section_outline(content_sections),
+        section_metrics=_build_section_metrics(content_sections),
         page_overlay_toolbar=_render_page_overlay_toolbar(
             target_kind="book",
             target_ref=f"book:{slug}",
@@ -2168,6 +2174,8 @@ def internal_entity_hub_viewer_html(root_dir: Path, viewer_path: str) -> str | N
         eyebrow=str(entity.get("eyebrow") or "Entity Hub"),
         summary=str(entity.get("summary") or ""),
         embedded=embedded,
+        section_outline=_build_section_outline(sections),
+        section_metrics=_build_section_metrics(sections),
         page_overlay_toolbar=_render_page_overlay_toolbar(
             target_kind="entity_hub",
             target_ref=f"entity:{parsed}",
@@ -2200,6 +2208,8 @@ def internal_figure_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
         eyebrow="Figure Asset",
         summary=f"{slug.replace('_', ' ').title()} 문서에서 추출한 figure 자산이다.",
         embedded=embedded,
+        section_outline=_build_section_outline(sections),
+        section_metrics=_build_section_metrics(sections),
         page_overlay_toolbar=_render_page_overlay_toolbar(
             target_kind="figure",
             target_ref=f"figure:{slug}:{asset_name}",
@@ -2240,6 +2250,8 @@ def internal_buyer_packet_viewer_html(root_dir: Path, viewer_path: str) -> str |
         eyebrow="Release Packet",
         summary=summary,
         embedded=embedded,
+        section_outline=_build_section_outline(content_sections),
+        section_metrics=_build_section_metrics(content_sections),
         page_overlay_toolbar=_render_page_overlay_toolbar(
             target_kind="book",
             target_ref=f"buyer_packet:{packet_id}",
@@ -2380,6 +2392,8 @@ def internal_customer_pack_viewer_html(root_dir: Path, viewer_path: str) -> str 
         eyebrow=family_label or "Customer Playbook Draft",
         summary=summary,
         embedded=embedded,
+        section_outline=_build_section_outline(sections),
+        section_metrics=_build_section_metrics(sections),
         page_overlay_toolbar=_render_page_overlay_toolbar(
             target_kind="book",
             target_ref=f"book:{str(canonical_book.get('book_slug') or draft_id)}",

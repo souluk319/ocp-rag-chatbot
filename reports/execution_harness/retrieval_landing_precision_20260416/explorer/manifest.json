@@ -1,0 +1,18 @@
+{
+  "task_id": "retrieval_landing_precision_20260416",
+  "created_at": "2026-04-16T15:05:00+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "explorer",
+  "role": "explorer",
+  "major_task": true,
+  "parallel_execution_required": true,
+  "companion_lanes": [],
+  "write_scope": "reserved-by-main",
+  "target_outputs": [],
+  "validation_commands": [],
+  "status": "reserved",
+  "reserved_by_lane": "main"
+}

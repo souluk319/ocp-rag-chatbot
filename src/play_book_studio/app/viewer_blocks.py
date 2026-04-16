@@ -26,6 +26,7 @@ CODE_BLOCK_RE = re.compile(r"^\[CODE(?P<attrs>[^\]]*)\]\s*(?P<body>.*?)\s*\[/COD
 TABLE_BLOCK_RE = re.compile(r"^\[TABLE(?P<attrs>[^\]]*)\]\s*(?P<body>.*?)\s*\[/TABLE\]$", re.DOTALL)
 FIGURE_BLOCK_RE = re.compile(r"^\[FIGURE(?P<attrs>[^\]]*)\]\s*(?P<body>.*?)\s*\[/FIGURE\]$", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`([^`]+)`")
+MARKDOWN_LINK_RE = re.compile(r"\[([^\]]+)\]\(([^)\s]+)(?:\s+\"[^\"]+\")?\)")
 ORDERED_LIST_ITEM_RE = re.compile(r"^(?P<index>\d+)\.\s+(?P<body>.+)$", re.DOTALL)
 SOURCE_VIEW_LEADING_NOISE_RE = re.compile(
     r"^\s*Red Hat OpenShift Documentation Team(?:\s+법적 공지)?(?:\s+초록)?\s*",
@@ -38,6 +39,9 @@ LOW_SIGNAL_SHELL_RE = re.compile(
     r"^(?:\.\.\.|(?:\$|#)?\s*(?:oc|kubectl))\s*$",
     re.IGNORECASE,
 )
+RAW_TABLE_HTML_RE = re.compile(r"<table\b[^>]*>.*?</table>", re.IGNORECASE | re.DOTALL)
+SCRIPT_TAG_RE = re.compile(r"<script\b[^>]*>.*?</script>", re.IGNORECASE | re.DOTALL)
+EVENT_HANDLER_ATTR_RE = re.compile(r"\s+on[a-z]+\s*=\s*(?:\"[^\"]*\"|'[^']*')", re.IGNORECASE)
 READER_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+|(?<=다\.)\s+|(?<=니다\.)\s+")
 READER_BREAKWORD_RE = re.compile(
     r"\s+(?=(?:Procedure|Prerequisites|Warning|Caution|Note|주의|참고|사전 요구 사항|프로세스|다음 절차|다음 명령))"
@@ -111,17 +115,33 @@ def _normalize_markdown_table_blocks(text: str) -> str:
 def _render_inline_html(text: str) -> str:
     fragments: list[str] = []
     last_index = 0
-    for match in INLINE_CODE_RE.finditer(text):
-        if match.start() > last_index:
-            fragments.append(html.escape(text[last_index:match.start()]))
-        fragments.append(f"<code>{html.escape(match.group(1))}</code>")
-        last_index = match.end()
+    matches: list[tuple[int, int, str, re.Match[str]]] = []
+    matches.extend((match.start(), match.end(), "code", match) for match in INLINE_CODE_RE.finditer(text))
+    matches.extend((match.start(), match.end(), "link", match) for match in MARKDOWN_LINK_RE.finditer(text))
+    matches.sort(key=lambda item: (item[0], item[1]))
+    for start, end, kind, match in matches:
+        if start < last_index:
+            continue
+        if start > last_index:
+            fragments.append(html.escape(text[last_index:start]))
+        if kind == "code":
+            fragments.append(f"<code>{html.escape(match.group(1))}</code>")
+        else:
+            label = html.escape(match.group(1))
+            href = html.escape(match.group(2), quote=True)
+            external_attrs = ""
+            if not href.startswith("#") and not href.startswith("/"):
+                external_attrs = ' target="_blank" rel="noreferrer"'
+            fragments.append(f'<a href="{href}"{external_attrs}>{label}</a>')
+        last_index = end
     if last_index < len(text):
         fragments.append(html.escape(text[last_index:]))
     return "".join(fragments)
 
 
 def _render_text_with_command_boxes(text: str, *, step_mode: bool = False) -> str:
+    if RAW_TABLE_HTML_RE.search(text):
+        return _render_table_block_html(text)
     split = split_inline_commands(text)
     if split is None:
         escaped = _render_inline_html(text)
@@ -320,9 +340,19 @@ def _render_code_block_html(
         return ""
     copy_payload = html.escape(json.dumps(copy_text or code_text), quote=True)
     classes = ["code-block"]
+    normalized_overflow_hint = (overflow_hint or "toggle").strip().lower() or "toggle"
     if preserve_layout:
         classes.append("preserve-layout")
         wrap_hint = False
+        normalized_overflow_hint = "toggle"
+    if normalized_overflow_hint == "scroll":
+        classes.append("overflow-scroll")
+        wrap_hint = False
+    elif normalized_overflow_hint == "wrap":
+        classes.append("overflow-wrap")
+        wrap_hint = True
+    else:
+        classes.append("overflow-toggle")
     if wrap_hint:
         classes.append("is-wrapped")
     caption_html = (
@@ -330,7 +360,16 @@ def _render_code_block_html(
         if caption.strip()
         else ""
     )
-    _ = overflow_hint
+    wrap_button_html = ""
+    if normalized_overflow_hint == "toggle":
+        wrap_button_html = """
+          <button type="button" class="copy-button icon-button" data-label-default="줄바꿈" data-label-active="줄바꿈 해제" aria-pressed="{wrap_pressed}" onclick="toggleViewerCodeWrap(this)" title="{wrap_title}" aria-label="{wrap_title}">
+            <span aria-hidden="true">↵</span>
+          </button>
+        """.format(
+            wrap_pressed="true" if wrap_hint else "false",
+            wrap_title="줄바꿈 해제" if wrap_hint else "줄바꿈",
+        )
     return """
     <section class="{classes}">
       {caption_html}
@@ -340,9 +379,7 @@ def _render_code_block_html(
           <button type="button" class="copy-button icon-button" data-copy="{copy_payload}" data-label-default="복사" onclick="copyViewerCode(this)" title="복사" aria-label="복사">
             <span aria-hidden="true">⧉</span>
           </button>
-          <button type="button" class="copy-button icon-button" data-label-default="줄바꿈" data-label-active="줄바꿈 해제" aria-pressed="{wrap_pressed}" onclick="toggleViewerCodeWrap(this)" title="{wrap_title}" aria-label="{wrap_title}">
-            <span aria-hidden="true">↵</span>
-          </button>
+          {wrap_button_html}
         </div>
       </div>
       <pre><code>{code}</code></pre>
@@ -352,13 +389,49 @@ def _render_code_block_html(
         caption_html=caption_html,
         language=html.escape(language),
         copy_payload=copy_payload,
-        wrap_pressed="true" if wrap_hint else "false",
-        wrap_title="줄바꿈 해제" if wrap_hint else "줄바꿈",
+        wrap_button_html=wrap_button_html,
         code=html.escape(code_text),
     ).strip()
 
 
-def _render_table_block_html(table_text: str, *, caption: str = "") -> str:
+def _sanitize_table_html(table_html: str) -> str:
+    sanitized = SCRIPT_TAG_RE.sub("", str(table_html or ""))
+    sanitized = EVENT_HANDLER_ATTR_RE.sub("", sanitized)
+    return sanitized.strip()
+
+
+def _render_table_block_html(table_text: str, *, caption: str = "", table_html: str = "") -> str:
+    if str(table_html or "").strip():
+        caption_html = (
+            '<div class="table-caption">{}</div>'.format(html.escape(caption))
+            if caption.strip()
+            else ""
+        )
+        return """
+        <div class="table-wrap">
+          {caption_html}
+          {table_html}
+        </div>
+        """.format(
+            caption_html=caption_html,
+            table_html=_sanitize_table_html(table_html),
+        ).strip()
+    raw_table_match = RAW_TABLE_HTML_RE.search(str(table_text or ""))
+    if raw_table_match is not None:
+        caption_html = (
+            '<div class="table-caption">{}</div>'.format(html.escape(caption))
+            if caption.strip()
+            else ""
+        )
+        return """
+        <div class="table-wrap">
+          {caption_html}
+          {table_html}
+        </div>
+        """.format(
+            caption_html=caption_html,
+            table_html=_sanitize_table_html(raw_table_match.group(0)),
+        ).strip()
     raw_lines = [row for row in table_text.splitlines() if row.strip()]
     rows = [_split_table_row(row) for row in raw_lines]
     if not rows:
@@ -420,9 +493,23 @@ def _render_figure_block_html(src: str, *, caption: str = "", alt: str = "", kin
         external_attrs = ""
     else:
         pass
+    meta_bits = [
+        str(kind or "").strip(),
+        str(diagram_type or "").strip(),
+    ]
+    meta_html = ""
+    if any(meta_bits):
+        meta_html = '<div class="figure-meta">{}</div>'.format(
+            "".join(
+                '<span class="figure-meta-pill">{}</span>'.format(html.escape(bit.replace("_", " ")))
+                for bit in meta_bits
+                if bit
+            )
+        )
     return """
     <figure class="{class_names}">
       {eyebrow_html}
+      {meta_html}
       <a class="figure-link" href="{href}"{external_attrs}>
         <img src="{src}" alt="{alt}" loading="lazy" />
       </a>
@@ -431,6 +518,7 @@ def _render_figure_block_html(src: str, *, caption: str = "", alt: str = "", kin
     """.format(
         class_names=" ".join(class_names),
         eyebrow_html=eyebrow_html,
+        meta_html=meta_html,
         href=html.escape(href, quote=True),
         external_attrs=external_attrs,
         src=safe_src,
@@ -508,13 +596,80 @@ def _render_playbook_block_html(block: dict[str, Any]) -> str:
             text=_render_inline_html(str(block.get("text") or "").strip()),
         ).strip()
     if kind == "table":
+        if str(block.get("table_html") or "").strip():
+            return _render_table_block_html(
+                "",
+                caption=str(block.get("caption") or "").strip(),
+                table_html=str(block.get("table_html") or "").strip(),
+            )
         headers = [str(item).strip() for item in (block.get("headers") or [])]
         rows = [tuple(str(cell).strip() for cell in row) for row in (block.get("rows") or [])]
+        structured_headers = block.get("header_cells")
+        structured_rows = block.get("row_cells")
+        if isinstance(structured_headers, list) or isinstance(structured_rows, list):
+            table_html_parts: list[str] = ["<table>"]
+            if isinstance(structured_headers, list) and structured_headers:
+                table_html_parts.append("<thead><tr>")
+                for cell in structured_headers:
+                    if not isinstance(cell, dict):
+                        continue
+                    attrs = []
+                    colspan = int(cell.get("colspan") or 1)
+                    rowspan = int(cell.get("rowspan") or 1)
+                    if colspan > 1:
+                        attrs.append(f' colspan="{colspan}"')
+                    if rowspan > 1:
+                        attrs.append(f' rowspan="{rowspan}"')
+                    table_html_parts.append(
+                        "<th{attrs}>{text}</th>".format(
+                            attrs="".join(attrs),
+                            text=html.escape(str(cell.get("text") or "").strip()),
+                        )
+                    )
+                table_html_parts.append("</tr></thead>")
+            if isinstance(structured_rows, list) and structured_rows:
+                table_html_parts.append("<tbody>")
+                for row in structured_rows:
+                    if not isinstance(row, list):
+                        continue
+                    table_html_parts.append("<tr>")
+                    for cell in row:
+                        if not isinstance(cell, dict):
+                            continue
+                        attrs = []
+                        colspan = int(cell.get("colspan") or 1)
+                        rowspan = int(cell.get("rowspan") or 1)
+                        if colspan > 1:
+                            attrs.append(f' colspan="{colspan}"')
+                        if rowspan > 1:
+                            attrs.append(f' rowspan="{rowspan}"')
+                        table_html_parts.append(
+                            "<td{attrs}>{text}</td>".format(
+                                attrs="".join(attrs),
+                                text=html.escape(str(cell.get("text") or "").strip()),
+                            )
+                        )
+                    table_html_parts.append("</tr>")
+                table_html_parts.append("</tbody>")
+            table_html_parts.append("</table>")
+            return _render_table_block_html(
+                "",
+                caption=str(block.get("caption") or "").strip(),
+                table_html="".join(table_html_parts),
+            )
         lines: list[str] = []
         if headers:
             lines.append(" | ".join(headers))
         lines.extend(" | ".join(row) for row in rows)
         return _render_table_block_html("\n".join(lines), caption=str(block.get("caption") or "").strip())
+    if kind == "figure":
+        return _render_figure_block_html(
+            str(block.get("src") or "").strip(),
+            caption=str(block.get("caption") or "").strip(),
+            alt=str(block.get("alt") or "").strip(),
+            kind=str(block.get("kind_label") or block.get("asset_kind") or "").strip(),
+            diagram_type=str(block.get("diagram_type") or "").strip(),
+        )
     return ""
 
 
@@ -535,7 +690,9 @@ def _render_normalized_section_html(text: str) -> str:
             current = paragraph_queue[index]
             ordered_match = ORDERED_LIST_ITEM_RE.match(current)
             if not ordered_match:
-                if _looks_like_subheading(current):
+                if RAW_TABLE_HTML_RE.search(current):
+                    blocks.append(_render_table_block_html(current))
+                elif _looks_like_subheading(current):
                     blocks.append(f"<h3>{html.escape(current)}</h3>")
                 elif _looks_like_structured_code_paragraph(current):
                     blocks.append(

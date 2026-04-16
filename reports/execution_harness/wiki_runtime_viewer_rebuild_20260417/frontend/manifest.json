@@ -1,0 +1,18 @@
+{
+  "task_id": "wiki_runtime_viewer_rebuild_20260417",
+  "created_at": "2026-04-16T16:47:38.665027+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": ".\\.venv\\Scripts\\python.exe",
+  "worktree_path": ".",
+  "lane_id": "frontend",
+  "role": "worker",
+  "major_task": true,
+  "parallel_execution_required": true,
+  "companion_lanes": [],
+  "write_scope": "reserved-by-main",
+  "target_outputs": [],
+  "validation_commands": [],
+  "status": "reserved",
+  "reserved_by_lane": "main"
+}

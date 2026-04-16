@@ -188,6 +188,17 @@ class TestAppChatApiMultiturn(unittest.TestCase):
             body = exc.read().decode("utf-8")
             return int(exc.code), json.loads(body or "{}")
 
+    def _get_bytes(self, path: str) -> tuple[int, bytes]:
+        req = request.Request(
+            f"http://127.0.0.1:{self.port}{path}",
+            method="GET",
+        )
+        try:
+            with request.urlopen(req, timeout=10) as resp:
+                return int(resp.status), resp.read()
+        except HTTPError as exc:
+            return int(exc.code), exc.read()
+
     def test_multiturn_manifest_runs_end_to_end_via_api_chat(self) -> None:
         self.assertEqual(5, len(self.scenarios))
 
@@ -278,6 +289,29 @@ class TestAppChatApiMultiturn(unittest.TestCase):
         status, sessions_payload = self._get_json("/api/sessions?limit=20")
         self.assertEqual(200, status)
         self.assertEqual([], sessions_payload["sessions"])
+
+    def test_get_boundary_keeps_api_and_assets_but_rejects_legacy_html(self) -> None:
+        asset_dir = self.root_dir / "data" / "wiki_assets"
+        asset_dir.mkdir(parents=True, exist_ok=True)
+        asset_path = asset_dir / "boundary-smoke.txt"
+        asset_path.write_text("asset-ok", encoding="utf-8")
+
+        status, payload = self._get_json("/api/health")
+        self.assertEqual(200, status)
+        self.assertIn("runtime", payload)
+
+        status, body = self._get_bytes("/playbooks/wiki-assets/boundary-smoke.txt")
+        self.assertEqual(200, status)
+        self.assertEqual(b"asset-ok", body)
+
+        for path in [
+            "/",
+            "/index.html",
+            "/docs/ocp/4.20/ko/support/index.html",
+            "/playbooks/wiki-runtime/active/support/index.html",
+        ]:
+            status, _ = self._get_bytes(path)
+            self.assertEqual(404, status, path)
 
 
 if __name__ == "__main__":

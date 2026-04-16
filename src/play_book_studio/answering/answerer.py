@@ -21,6 +21,7 @@ from play_book_studio.retrieval.query import (
     has_doc_locator_intent,
     has_follow_up_entity_ambiguity,
     has_follow_up_reference,
+    has_mco_concept_intent,
     has_node_drain_intent,
     has_openshift_kubernetes_compare_intent,
     has_rbac_intent,
@@ -179,6 +180,41 @@ def _allow_single_citation_fallback(*, query: str, citations: list) -> bool:
             has_doc_locator_intent(query),
         )
     )
+
+
+def _is_standard_etcd_backup_query(query: str) -> bool:
+    lowered = str(query or "").lower()
+    return (
+        has_backup_restore_intent(query)
+        and "etcd" in lowered
+        and any(token in query for token in ("표준", "표준적", "정석"))
+        and not any(token in lowered for token in ("복원", "restore", "recovery"))
+    )
+
+
+def _prune_provenance_noise_citations(*, query: str, citations: list) -> list:
+    if not citations:
+        return citations
+
+    pruned = list(citations)
+    if has_mco_concept_intent(query):
+        preferred_books = {
+            "machine_configuration",
+            "machine_management",
+            "operators",
+            "updating_clusters",
+            "architecture",
+            "overview",
+        }
+        if any(citation.book_slug in preferred_books for citation in pruned):
+            pruned = [citation for citation in pruned if citation.book_slug in preferred_books]
+
+    if _is_standard_etcd_backup_query(query):
+        preferred_books = {"postinstallation_configuration", "hosted_control_planes"}
+        if any(citation.book_slug in preferred_books for citation in pruned):
+            pruned = [citation for citation in pruned if citation.book_slug in preferred_books]
+
+    return pruned or citations
 
 
 class ChatAnswerer:
@@ -771,6 +807,17 @@ class ChatAnswerer:
             selected_citations=context_bundle.citations,
             final_citations=final_citations,
         )
+        pruned_citations = _prune_provenance_noise_citations(
+            query=query,
+            citations=final_citations,
+        )
+        if len(pruned_citations) != len(final_citations):
+            answer_text, final_citations, cited_indices = finalize_citations(
+                answer_text,
+                pruned_citations,
+            )
+        else:
+            final_citations = pruned_citations
         if not cited_indices and final_citations and _allow_single_citation_fallback(
             query=query,
             citations=final_citations,

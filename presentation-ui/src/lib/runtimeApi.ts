@@ -280,6 +280,19 @@ export interface WikiOverlaySignalsResponse {
   };
 }
 
+export interface ViewerDocumentResponse {
+  viewer_path: string;
+  body_class_name: string;
+  inline_styles: string[];
+  html: string;
+  interaction_policy: {
+    code_copy: boolean;
+    code_wrap_toggle: boolean;
+    recent_position_tracking: boolean;
+    anchor_navigation: boolean;
+  };
+}
+
 export interface ChatResponse {
   answer: string;
   rewritten_query?: string;
@@ -578,6 +591,27 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+async function requestResponse(path: string, init?: RequestInit): Promise<Response> {
+  const headers = new Headers(init?.headers ?? {});
+  const response = await fetch(`${RUNTIME_ORIGIN}${path}`, {
+    headers,
+    ...init,
+  });
+  if (!response.ok) {
+    let message = `${response.status} ${response.statusText}`;
+    try {
+      const payload = (await response.json()) as { error?: string };
+      if (payload.error) {
+        message = payload.error;
+      }
+    } catch {
+      // Keep default HTTP message.
+    }
+    throw new Error(message);
+  }
+  return response;
+}
+
 export function toRuntimeUrl(path: string): string {
   if (!path) {
     return '';
@@ -585,7 +619,7 @@ export function toRuntimeUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) {
     return path;
   }
-  return `${RUNTIME_ORIGIN}${path}`;
+  return `${RUNTIME_EXTERNAL_ORIGIN}${path}`;
 }
 
 export async function loadDataControlRoom(): Promise<DataControlRoomResponse> {
@@ -753,6 +787,10 @@ export async function loadSourceMeta(viewerPath: string): Promise<SourceMetaResp
   return requestJson<SourceMetaResponse>(`/api/source-meta?viewer_path=${encodeURIComponent(viewerPath)}`);
 }
 
+export async function loadViewerDocument(viewerPath: string): Promise<ViewerDocumentResponse> {
+  return requestJson<ViewerDocumentResponse>(`/api/viewer-document?viewer_path=${encodeURIComponent(viewerPath)}`);
+}
+
 export async function loadRuntimeFigures(bookSlug: string, limit = 3): Promise<RuntimeFiguresResponse> {
   return requestJson<RuntimeFiguresResponse>(`/api/runtime-figures?book_slug=${encodeURIComponent(bookSlug)}&limit=${encodeURIComponent(String(limit))}`);
 }
@@ -767,6 +805,16 @@ export async function loadCustomerPackDraft(draftId: string): Promise<CustomerPa
 
 export async function loadCustomerPackBook(draftId: string): Promise<CustomerPackBook> {
   return requestJson<CustomerPackBook>(`/api/customer-packs/book?draft_id=${encodeURIComponent(draftId)}`);
+}
+
+export async function loadCustomerPackCapturedPreview(
+  draftId: string,
+): Promise<{ blob: Blob; contentType: string }> {
+  const response = await requestResponse(`/api/customer-packs/captured?draft_id=${encodeURIComponent(draftId)}`);
+  return {
+    blob: await response.blob(),
+    contentType: response.headers.get('Content-Type') || 'application/octet-stream',
+  };
 }
 
 function inferSourceType(file: File): string {

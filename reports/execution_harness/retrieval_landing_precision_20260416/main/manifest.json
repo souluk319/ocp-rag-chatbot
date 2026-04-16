@@ -1,0 +1,37 @@
+{
+  "task_id": "retrieval_landing_precision_20260416",
+  "created_at": "2026-04-16T15:05:00+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": true,
+  "parallel_execution_required": true,
+  "companion_lanes": [
+    {
+      "lane_id": "explorer",
+      "role": "explorer"
+    },
+    {
+      "lane_id": "reviewer",
+      "role": "reviewer"
+    }
+  ],
+  "write_scope": "src/play_book_studio/retrieval/*;scripts/run_retrieval_eval.py;tests/test_retrieval_eval.py;tests/test_retrieval_query_intents.py;tests/test_retrieval_runtime.py;reports/build_logs/retrieval_landing_precision_report.json;reports/build_logs/retrieval_landing_precision_report.md;reports/execution_harness/retrieval_landing_precision_20260416/main/*",
+  "target_outputs": [
+    "reports/build_logs/retrieval_landing_precision_report.json",
+    "reports/build_logs/retrieval_landing_precision_summary.json",
+    "reports/build_logs/retrieval_landing_precision_report.md",
+    "reports/execution_harness/retrieval_landing_precision_20260416/main/final_report.json"
+  ],
+  "validation_commands": [
+    "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex_python.ps1 -ScriptPath scripts/run_retrieval_eval.py -WriteScope reports/build_logs/retrieval_landing_precision_report.json -VerifyCmd retrieval_landing_eval_updated -- --output reports/build_logs/retrieval_landing_precision_report.json",
+    "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex_python.ps1 -ScriptPath scripts/verify_retrieval_landing_precision.py -WriteScope reports/build_logs/retrieval_landing_precision_summary.json -VerifyCmd retrieval_landing_summary_updated",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_retrieval_eval.py tests/test_query_terms_core.py",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_retrieval_query_intents.py -k \"architecture_explainer_prompt or summary_as_intro_query or ocp_attached_korean_explainer or spaced_openshift_intro or usage_question_as_intro\" -q",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_retrieval_runtime.py::TestRetrievalRuntime::test_reranker_rebalances_generic_intro_back_to_intro_overview tests/test_retrieval_runtime.py::TestRetrievalRuntime::test_retriever_rebalances_mco_concept_when_reranker_promotes_update_glossary -q"
+  ],
+  "status": "done"
+}
