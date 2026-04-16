@@ -291,6 +291,56 @@ class ContextAssemblyTests(unittest.TestCase):
         self.assertIn(bundle.citations[0].book_slug, {"overview", "architecture"})
         self.assertNotEqual("release_notes", bundle.citations[0].book_slug)
 
+    def test_intro_recommendation_query_keeps_diverse_playbook_context(self) -> None:
+        query = "운영 입문 기준으로 먼저 봐야 할 플레이북 3개를 알려줘"
+        hits = [
+            _hit(
+                "chunk-1",
+                "overview",
+                "OpenShift Container Platform 소개",
+                "처음 읽는 운영 입문용 개요입니다.",
+                anchor="ocp-overview",
+                score=0.021,
+                semantic_role="overview",
+            ),
+            _hit(
+                "chunk-2",
+                "architecture",
+                "1장. 아키텍처 개요",
+                "플랫폼 구조를 이해하기 위한 아키텍처 개요입니다.",
+                anchor="architecture-overview",
+                score=0.0203,
+                semantic_role="overview",
+            ),
+            _hit(
+                "chunk-3",
+                "installation_overview",
+                "설치 개요",
+                "설치 전반과 운영 진입 경로를 설명합니다.",
+                anchor="installation-overview",
+                score=0.0198,
+                semantic_role="overview",
+            ),
+            _hit(
+                "chunk-4",
+                "release_notes",
+                "확인된 문제",
+                "릴리스 이슈 목록입니다.",
+                anchor="known-issues",
+                score=0.0196,
+            ),
+        ]
+
+        self.assertFalse(_should_force_clarification(hits, query=query))
+        bundle = assemble_context(hits, query=query, max_chunks=4)
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertEqual(
+            ["overview", "architecture", "installation_overview"],
+            [citation.book_slug for citation in bundle.citations[:3]],
+        )
+        self.assertNotIn("release_notes", [citation.book_slug for citation in bundle.citations])
+
     def test_follow_up_query_keeps_context_even_when_scores_are_close(self) -> None:
         hits = [
             _hit(

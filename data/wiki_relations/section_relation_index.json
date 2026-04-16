@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-04-16T06:55:29+00:00",
+  "generated_at_utc": "2026-04-16T13:07:50+00:00",
   "book_count": 29,
   "entity_count": 14,
   "by_book": {
@@ -172,12 +172,6 @@
         "label": "5.3. 웹 콘솔에서 퀵 스타트 비활성화",
         "href": "/playbooks/wiki-runtime/active/web_console/index.html#53-웹-콘솔에서-퀵-스타트-비활성화",
         "summary": "웹 콘솔 · 웹 콘솔 > 5장. OpenShift Container Platform에서 웹 콘솔 구성 > 5.3. 웹 콘솔에서 퀵 스타트 비활성화",
-        "source": "related_doc_section"
-      },
-      {
-        "label": "4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해",
-        "href": "/playbooks/wiki-runtime/active/support/index.html#413-telemetry-및-insights-operator-데이터-흐름-이해",
-        "summary": "지원 · 지원 > 2장. 클러스터 리소스 관리 > 4.1. 원격 상태 모니터링 정보 > 4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해",
         "source": "related_doc_section"
       },
       {

@@ -443,7 +443,10 @@ function primaryCitationTruth(citations?: ChatCitation[] | null): {
   if (!citations || citations.length === 0) {
     return null;
   }
-  const primary = citations[0];
+  const primary = pickPrimaryPlaybookCitation(citations);
+  if (!primary) {
+    return null;
+  }
   return {
     sourceLane: primary.source_lane,
     boundaryTruth: primary.boundary_truth,
@@ -452,6 +455,39 @@ function primaryCitationTruth(citations?: ChatCitation[] | null): {
     publicationState: primary.publication_state,
     approvalState: primary.approval_state,
   };
+}
+
+function scorePrimaryPlaybookCitation(citation: ChatCitation, index: number): number {
+  const slug = String(citation.book_slug || '').trim().toLowerCase();
+  const title = String(citation.book_title || citation.source_label || citation.section || '').trim().toLowerCase();
+  const sourceLane = String(citation.source_lane || '').trim().toLowerCase();
+  const boundaryTruth = String(citation.boundary_truth || '').trim().toLowerCase();
+  const viewerPath = String(citation.viewer_path || '').trim().toLowerCase();
+
+  let score = 0;
+
+  if (boundaryTruth === 'official_validated_runtime') score += 40;
+  if (sourceLane.includes('wiki_runtime') || sourceLane.includes('approved')) score += 24;
+  if (viewerPath.includes('/playbooks/wiki-runtime/active/')) score += 20;
+  if (viewerPath.includes('/docs/ocp/')) score += 12;
+
+  if (slug === 'support' || slug === 'release_notes') score -= 120;
+  if (title.includes('지원') || title.includes('release note') || title.includes('릴리스 노트')) score -= 80;
+
+  // Prefer earlier citations when scores are otherwise equal.
+  score -= index;
+
+  return score;
+}
+
+function pickPrimaryPlaybookCitation(citations?: ChatCitation[] | null): ChatCitation | null {
+  if (!citations || citations.length === 0) {
+    return null;
+  }
+
+  return citations
+    .map((citation, index) => ({ citation, score: scorePrimaryPlaybookCitation(citation, index), index }))
+    .sort((left, right) => right.score - left.score || left.index - right.index)[0]?.citation ?? null;
 }
 
 function formatCitationLabel(citation: ChatCitation): string {
@@ -2063,14 +2099,8 @@ export default function WorkspacePage() {
 
   async function handleRelatedLinkClick(link: ChatRelatedLink): Promise<void> {
     try {
-      const runtimeUrl = toRuntimeUrl(link.href);
-      const label = link.kind === 'entity' ? 'Entity Hub' : 'Related Document';
-      setPreview({
-        kind: 'viewer',
-        title: link.label,
-        subtitle: label,
-        viewerUrl: `${runtimeUrl}${runtimeUrl.includes('?') ? '&' : '?'}embed=1`,
-      });
+      await openViewerPreview(link.href, link.label);
+      animatePreviewPanel();
     } catch (error) {
       console.error(error);
     }
@@ -2392,9 +2422,10 @@ export default function WorkspacePage() {
         }));
       }
 
-      if (response.citations?.[0]) {
-        await handleCitationClick(response.citations[0]);
-      }
+        const primaryCitation = pickPrimaryPlaybookCitation(response.citations);
+        if (primaryCitation) {
+          await handleCitationClick(primaryCitation);
+        }
     } catch (error) {
       console.error(error);
       if (testMode && error instanceof Error) {
@@ -3463,6 +3494,48 @@ export default function WorkspacePage() {
                         )}
                       </div>
                       {preview.subtitle && <p className="doc-summary">{preview.subtitle}</p>}
+                      {previewTruth.meta.length > 0 && (
+                        <div className="doc-chip-row">
+                          {previewTruth.meta.map((item) => (
+                            <span key={item} className="doc-evidence-chip">{item}</span>
+                          ))}
+                        </div>
+                      )}
+                      {currentOverlayTarget && noteOpen && (
+                        <div className="wiki-note-panel">
+                          <textarea
+                            className="wiki-note-input"
+                            value={noteDraft}
+                            onChange={(event) => setNoteDraft(event.target.value)}
+                            placeholder="메모"
+                          />
+                          <div className="wiki-note-actions">
+                            <button
+                              type="button"
+                              className="outline-btn"
+                              onClick={() => { void handleSaveCurrentNote(); }}
+                              disabled={isOverlaySaving}
+                            >
+                              {currentNote ? 'Update Note' : 'Save Note'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      <div className="doc-metadata">
+                        {preview.meta?.source_url && (
+                          <a href={preview.meta.source_url} className="doc-inline-link" target="_blank" rel="noreferrer">
+                            원문 열기
+                          </a>
+                        )}
+                      </div>
+                      {preview.viewerUrl && (
+                        <iframe
+                          title={preview.title}
+                          className="source-preview-frame"
+                          src={preview.viewerUrl}
+                          onLoad={resetParentScroll}
+                        />
+                      )}
                       {visionMode === 'atlas_canvas' && (
                         <div className="atlas-viewer-strip">
                           <div className="atlas-viewer-lane">
@@ -3570,48 +3643,6 @@ export default function WorkspacePage() {
                             )}
                           </div>
                         </div>
-                      )}
-                      {previewTruth.meta.length > 0 && (
-                        <div className="doc-chip-row">
-                          {previewTruth.meta.map((item) => (
-                            <span key={item} className="doc-evidence-chip">{item}</span>
-                          ))}
-                        </div>
-                      )}
-                      {currentOverlayTarget && noteOpen && (
-                        <div className="wiki-note-panel">
-                          <textarea
-                            className="wiki-note-input"
-                            value={noteDraft}
-                            onChange={(event) => setNoteDraft(event.target.value)}
-                            placeholder="메모"
-                          />
-                          <div className="wiki-note-actions">
-                            <button
-                              type="button"
-                              className="outline-btn"
-                              onClick={() => { void handleSaveCurrentNote(); }}
-                              disabled={isOverlaySaving}
-                            >
-                              {currentNote ? 'Update Note' : 'Save Note'}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                      <div className="doc-metadata">
-                        {preview.meta?.source_url && (
-                          <a href={preview.meta.source_url} className="doc-inline-link" target="_blank" rel="noreferrer">
-                            원문 열기
-                          </a>
-                        )}
-                      </div>
-                      {preview.viewerUrl && (
-                        <iframe
-                          title={preview.title}
-                          className="source-preview-frame"
-                          src={preview.viewerUrl}
-                          onLoad={resetParentScroll}
-                        />
                       )}
                     </div>
                   );

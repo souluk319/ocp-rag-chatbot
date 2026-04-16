@@ -83,6 +83,12 @@ function formatMs(value: unknown, fallback = '–'): string {
   return `${num.toFixed(num < 10 ? 1 : 0)}ms`;
 }
 
+function formatScore(value: unknown, fallback = '–'): string {
+  const num = asNumber(value);
+  if (num === null) return fallback;
+  return num.toFixed(3);
+}
+
 function shortSession(id: string | undefined): string {
   if (!id) return 'no-session';
   return id.length > 14 ? `${id.slice(0, 6)}…${id.slice(-4)}` : id;
@@ -97,6 +103,20 @@ interface DerivedStage {
   timestampMs: number | null;
   meta: Record<string, unknown>;
   ordinal: number;
+}
+
+interface ForensicHitRow {
+  key: string;
+  bookSlug: string;
+  section: string;
+  bm25Rank: number | null;
+  vectorRank: number | null;
+  hybridRank: number | null;
+  rerankRank: number | null;
+  bm25Score: number | null;
+  vectorScore: number | null;
+  fusedScore: number | null;
+  survived: boolean;
 }
 
 /**
@@ -128,6 +148,86 @@ function collapseStages(events: ChatTraceEvent[]): DerivedStage[] {
     byStep.set(event.step, merged);
   });
   return Array.from(byStep.values()).sort((a, b) => a.ordinal - b.ordinal);
+}
+
+function deriveForensicHitRows(retrievalTrace: Record<string, unknown>): ForensicHitRow[] {
+  const stages = {
+    bm25: asArray(retrievalTrace.bm25).map((hit) => asRecord(hit)),
+    vector: asArray(retrievalTrace.vector).map((hit) => asRecord(hit)),
+    hybrid: asArray(retrievalTrace.hybrid).map((hit) => asRecord(hit)),
+    reranked: asArray(retrievalTrace.reranked).map((hit) => asRecord(hit)),
+  };
+
+  const rows = new Map<string, ForensicHitRow>();
+  const ensureRow = (hit: Record<string, unknown>): ForensicHitRow => {
+    const key = asString(hit.chunk_id)
+      ?? `${asString(hit.book_slug) ?? 'unknown'}::${asString(hit.section) ?? 'unknown'}`;
+    const existing = rows.get(key);
+    if (existing) return existing;
+    const created: ForensicHitRow = {
+      key,
+      bookSlug: asString(hit.book_slug) ?? 'unknown',
+      section: asString(hit.section) ?? '',
+      bm25Rank: null,
+      vectorRank: null,
+      hybridRank: null,
+      rerankRank: null,
+      bm25Score: null,
+      vectorScore: null,
+      fusedScore: asNumber(hit.fused_score),
+      survived: false,
+    };
+    rows.set(key, created);
+    return created;
+  };
+
+  stages.bm25.forEach((hit, index) => {
+    const row = ensureRow(hit);
+    const componentScores = asRecord(hit.component_scores);
+    row.bm25Rank = index + 1;
+    row.bm25Score = asNumber(componentScores.bm25_score)
+      ?? asNumber(componentScores.overlay_bm25_score)
+      ?? asNumber(hit.raw_score);
+  });
+  stages.vector.forEach((hit, index) => {
+    const row = ensureRow(hit);
+    const componentScores = asRecord(hit.component_scores);
+    row.vectorRank = index + 1;
+    row.vectorScore = asNumber(componentScores.vector_score) ?? asNumber(hit.raw_score);
+  });
+  stages.hybrid.forEach((hit, index) => {
+    const row = ensureRow(hit);
+    row.hybridRank = index + 1;
+    row.fusedScore = asNumber(hit.fused_score) ?? row.fusedScore;
+    row.survived = true;
+  });
+  stages.reranked.forEach((hit, index) => {
+    const row = ensureRow(hit);
+    row.rerankRank = index + 1;
+    row.fusedScore = asNumber(hit.fused_score) ?? row.fusedScore;
+    row.survived = true;
+  });
+
+  return Array.from(rows.values())
+    .filter((row) => row.survived)
+    .sort((left, right) => {
+    const leftRank = left.rerankRank ?? left.hybridRank ?? left.bm25Rank ?? left.vectorRank ?? 9999;
+    const rightRank = right.rerankRank ?? right.hybridRank ?? right.bm25Rank ?? right.vectorRank ?? 9999;
+    if (leftRank !== rightRank) return leftRank - rightRank;
+    return left.bookSlug.localeCompare(right.bookSlug) || left.section.localeCompare(right.section);
+    });
+}
+
+function formatRank(rank: number | null): string {
+  return rank ? `#${rank}` : '–';
+}
+
+function formatShift(fromRank: number | null, toRank: number | null): string {
+  if (!fromRank && !toRank) return '–';
+  if (!fromRank && toRank) return `new→#${toRank}`;
+  if (fromRank && !toRank) return `#${fromRank}→out`;
+  if (fromRank === toRank) return `#${toRank}`;
+  return `#${fromRank}→#${toRank}`;
 }
 
 function stageWidthFor(durationMs: number | null, maxDuration: number): number {
@@ -185,10 +285,9 @@ export default function WorkspaceTracePanel({
   const [activeStep, setActiveStep] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Reset to Demo view + clear stage focus when a fresh turn begins.
+  // Keep the user's chosen view mode across turns.
   useEffect(() => {
     if (isSending) {
-      setView('demo');
       setActiveStep(null);
       setCopied(false);
     }
@@ -218,6 +317,7 @@ export default function WorkspaceTracePanel({
   const metrics = asRecord(retrievalTrace.metrics);
   const reranker = asRecord(retrievalTrace.reranker);
   const plan = asRecord(retrievalTrace.plan);
+  const forensicHitRows = useMemo(() => deriveForensicHitRows(retrievalTrace), [retrievalTrace]);
   const decomposed = asArray(retrievalTrace.decomposed_queries)
     .map((q) => (typeof q === 'string' ? q : ''))
     .filter(Boolean);
@@ -630,6 +730,55 @@ export default function WorkspaceTracePanel({
                   <strong>{formatMs(ms)}</strong>
                 </div>
               ))}
+            </div>
+          ) : null}
+
+          {forensicHitRows.length > 0 ? (
+            <div className="wtp-scoretable-wrap">
+              <div className="wtp-card-header">
+                <span className="wtp-card-title">Retrieval Score Audit</span>
+                <span className="wtp-card-meta">{forensicHitRows.length} hits</span>
+              </div>
+              <div className="wtp-scoretable" role="table" aria-label="Retrieval score audit">
+                <span className="wtp-scoretable-head" role="columnheader">hit</span>
+                <span className="wtp-scoretable-head" role="columnheader">BM25</span>
+                <span className="wtp-scoretable-head" role="columnheader">Vector</span>
+                <span className="wtp-scoretable-head" role="columnheader">B→H</span>
+                <span className="wtp-scoretable-head" role="columnheader">H→R</span>
+                <span className="wtp-scoretable-head" role="columnheader">Fused</span>
+                {forensicHitRows.map((row) => (
+                  <Fragment key={row.key}>
+                    <span className="wtp-scoretable-cell is-hit">
+                      <strong>{row.bookSlug}</strong>
+                      <span>{row.section || 'section 없음'}</span>
+                    </span>
+                    <span className="wtp-scoretable-cell">
+                      {formatRank(row.bm25Rank)}
+                      <em>{formatScore(row.bm25Score)}</em>
+                    </span>
+                    <span className="wtp-scoretable-cell">
+                      {formatRank(row.vectorRank)}
+                      <em>{formatScore(row.vectorScore)}</em>
+                    </span>
+                    <span className="wtp-scoretable-cell">
+                      {formatShift(
+                        (() => {
+                          const ranks = [row.bm25Rank, row.vectorRank].filter((value): value is number => value !== null);
+                          if (ranks.length === 0) return null;
+                          return Math.min(...ranks);
+                        })(),
+                        row.hybridRank,
+                      )}
+                    </span>
+                    <span className="wtp-scoretable-cell">
+                      {formatShift(row.hybridRank, row.rerankRank)}
+                    </span>
+                    <span className="wtp-scoretable-cell">
+                      {formatScore(row.fusedScore)}
+                    </span>
+                  </Fragment>
+                ))}
+              </div>
             </div>
           ) : null}
 

@@ -669,12 +669,12 @@ def _wiki_relation_assets() -> dict[str, dict[str, Any]]:
 
 def _entity_hubs() -> dict[str, dict[str, Any]]:
     payload = _wiki_relation_assets().get("entity_hubs")
-    return payload if isinstance(payload, dict) and payload else DEFAULT_ENTITY_HUBS
+    return payload if isinstance(payload, dict) else {}
 
 
 def _chat_navigation_aliases() -> dict[str, list[dict[str, str]]]:
     payload = _wiki_relation_assets().get("chat_navigation_aliases")
-    return payload if isinstance(payload, dict) and payload else DEFAULT_CHAT_NAVIGATION_ALIASES
+    return payload if isinstance(payload, dict) else {}
 
 
 def _chat_link_truth_payload(root_dir: Path, href: str, kind: str) -> dict[str, str]:
@@ -727,7 +727,7 @@ def _is_final_runtime_href(href: str) -> bool:
 
 def _candidate_relations() -> dict[str, dict[str, Any]]:
     payload = _wiki_relation_assets().get("candidate_relations")
-    return payload if isinstance(payload, dict) and payload else DEFAULT_WIKI_CANDIDATE_RELATIONS
+    return payload if isinstance(payload, dict) else {}
 
 
 def _figure_assets() -> dict[str, list[dict[str, Any]]]:
@@ -1188,13 +1188,70 @@ def build_chat_navigation_links(
     *,
     user_id: str | None = None,
 ) -> list[dict[str, str]]:
+    direct_links: list[dict[str, str]] = []
+    direct_seen: set[str] = set()
+    direct_slug_seen: set[str] = set()
+    href_scores, ref_scores = _overlay_recent_target_scores(root_dir, user_id=user_id)
+    direct_counts: dict[str, int] = {}
+
+    for citation in citations:
+        if not isinstance(citation, dict):
+            continue
+        href = _rewrite_book_href(root_dir, str(citation.get("href") or "").strip())
+        if not _is_final_runtime_href(href):
+            continue
+        book_slug = str(citation.get("book_slug") or _link_book_slug(href)).strip()
+        if not book_slug:
+            continue
+        direct_counts[href] = direct_counts.get(href, 0) + 1
+        if href in direct_seen or book_slug in direct_slug_seen:
+            continue
+        book_title = str(citation.get("book_title") or "").strip()
+        source_label = str(citation.get("source_label") or "").strip()
+        section_label = str(citation.get("section_path_label") or citation.get("section") or "").strip()
+        label = book_title or source_label.split(" · ", 1)[0].strip() or book_slug.replace("_", " ").title()
+        summary = section_label or source_label
+        if not label:
+            continue
+        direct_seen.add(href)
+        direct_slug_seen.add(book_slug)
+        direct_links.append(
+            {
+                "label": label,
+                "href": href,
+                "kind": "book",
+                "summary": summary,
+                **_chat_link_truth_payload(root_dir, href, "book"),
+            }
+        )
+
+    if direct_links:
+        ranked_direct_links = sorted(
+            direct_links,
+            key=lambda item: (
+                -max(
+                    direct_counts.get(str(item.get("href") or "").strip(), 0) * 100,
+                    href_scores.get(str(item.get("href") or "").strip(), 0),
+                    ref_scores.get(
+                        _link_target_ref(
+                            str(item.get("kind") or "").strip(),
+                            str(item.get("href") or "").strip(),
+                        ),
+                        0,
+                    ),
+                ),
+                0 if _contains_hangul(str(item.get("label") or "")) else 1,
+                str(item.get("label") or ""),
+            ),
+        )
+        return ranked_direct_links[:2]
+
     links: list[dict[str, str]] = []
     seen: set[str] = set()
     slug_seen: set[str] = set()
     semantic_seen: set[str] = set()
     alias_map = _chat_navigation_aliases()
     relation_map = _candidate_relations()
-    href_scores, ref_scores = _overlay_recent_target_scores(root_dir, user_id=user_id)
 
     def duplicate_semantic(label: str, kind: str) -> bool:
         normalized = re.sub(r"\s+", " ", str(label or "").strip().lower())
@@ -1361,6 +1418,7 @@ def build_chat_section_links(
     label_seen: set[str] = set()
     slug_seen: set[str] = set()
     href_scores, ref_scores = _overlay_recent_target_scores(root_dir, user_id=user_id)
+    direct_candidate_count = 0
     for citation in citations:
         if not isinstance(citation, dict):
             continue
@@ -1382,6 +1440,9 @@ def build_chat_section_links(
                     **direct_candidate,
                     "_score": max(int(candidates.get(rewritten_citation_href, {}).get("_score", 0)), 1500),
                 }
+                direct_candidate_count += 1
+        if direct_candidate_count > 0:
+            continue
         for item in _book_related_sections(slug):
             href = str(item.get("href") or "").strip()
             label = str(item.get("label") or "").strip()

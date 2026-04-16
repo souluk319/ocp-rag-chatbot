@@ -1,6 +1,6 @@
 # OCP 4.20 Full Rebuild Wiki Relations
 
-- generated_at_utc: `2026-04-16T06:55:29+00:00`
+- generated_at_utc: `2026-04-16T13:07:50+00:00`
 - entity_hub_count: `14`
 - candidate_relation_count: `29`
 
@@ -20,7 +20,7 @@
 
 - title: `인증 및 권한 부여`
 - entities: Security and Access
-- related_docs: 보안 및 컴플라이언스, Operator 운영 플레이북, 지원
+- related_docs: 보안 및 컴플라이언스
 
 ## `backup_and_restore`
 
@@ -32,7 +32,7 @@
 
 - title: `CLI 툴`
 - entities: Operators and Tooling
-- related_docs: Operator 운영 플레이북, 웹 콘솔, 지원, 스토리지
+- related_docs: Operator 운영 플레이북, 웹 콘솔, 스토리지
 
 ## `disconnected_environments`
 
@@ -116,7 +116,7 @@
 
 - title: `Operator 운영 플레이북`
 - entities: Operators and Tooling
-- related_docs: CLI 툴, 웹 콘솔, 지원, 스토리지
+- related_docs: CLI 툴, 웹 콘솔, 스토리지
 
 ## `overview`
 
@@ -146,7 +146,7 @@
 
 - title: `보안 및 컴플라이언스`
 - entities: Security and Access
-- related_docs: 인증 및 권한 부여, Operator 운영 플레이북, 지원
+- related_docs: 인증 및 권한 부여
 
 ## `storage`
 
@@ -176,7 +176,7 @@
 
 - title: `웹 콘솔`
 - entities: Operators and Tooling
-- related_docs: Operator 운영 플레이북, CLI 툴, 지원, 스토리지
+- related_docs: Operator 운영 플레이북, CLI 툴, 스토리지
 
 ## Figure Entity Coverage
 
@@ -223,7 +223,7 @@
 - `architecture` · related_sections=`6`
 - `authentication_and_authorization` · related_sections=`6`
 - `backup_and_restore` · related_sections=`5`
-- `cli_tools` · related_sections=`6`
+- `cli_tools` · related_sections=`5`
 - `disconnected_environments` · related_sections=`4`
 - `etcd` · related_sections=`2`
 - `images` · related_sections=`3`

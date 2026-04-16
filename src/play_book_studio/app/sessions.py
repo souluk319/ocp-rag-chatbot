@@ -39,6 +39,9 @@ def serialize_turn(turn: "Turn") -> dict[str, Any]:
         "chatbot": turn.answer,
         "rewritten_query": turn.rewritten_query,
         "response_kind": turn.response_kind,
+        "citations": list(turn.citations),
+        "related_links": list(turn.related_links),
+        "related_sections": list(turn.related_sections),
         "warnings": list(turn.warnings),
         "stages": list(turn.stages),
         "diagnosis": dict(turn.diagnosis),
@@ -52,9 +55,18 @@ def serialize_turn(turn: "Turn") -> dict[str, Any]:
 
 
 def deserialize_turn(payload: dict[str, Any]) -> "Turn":
+    citations = payload.get("citations") or []
+    related_links = payload.get("related_links") or []
+    related_sections = payload.get("related_sections") or []
     warnings = payload.get("warnings") or []
     stages = payload.get("stages") or []
     diagnosis = payload.get("diagnosis") or {}
+    if not isinstance(citations, list):
+        citations = []
+    if not isinstance(related_links, list):
+        related_links = []
+    if not isinstance(related_sections, list):
+        related_sections = []
     if isinstance(warnings, str):
         warnings = [warnings]
     if not isinstance(warnings, list):
@@ -74,6 +86,9 @@ def deserialize_turn(payload: dict[str, Any]) -> "Turn":
         answer=answer,
         rewritten_query=str(payload.get("rewritten_query") or ""),
         response_kind=str(payload.get("response_kind") or ""),
+        citations=[dict(item) for item in citations if isinstance(item, dict)],
+        related_links=[dict(item) for item in related_links if isinstance(item, dict)],
+        related_sections=[dict(item) for item in related_sections if isinstance(item, dict)],
         warnings=[str(item) for item in warnings if str(item).strip()],
         stages=[dict(item) for item in stages if isinstance(item, dict)],
         diagnosis={str(key): value for key, value in diagnosis.items()},
@@ -93,6 +108,9 @@ class Turn:
     answer: str
     rewritten_query: str = ""
     response_kind: str = ""
+    citations: list[dict[str, Any]] = field(default_factory=list)
+    related_links: list[dict[str, Any]] = field(default_factory=list)
+    related_sections: list[dict[str, Any]] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     stages: list[dict[str, object]] = field(default_factory=list)
     diagnosis: dict[str, object] = field(default_factory=dict)

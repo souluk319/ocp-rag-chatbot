@@ -17,6 +17,13 @@ try:  # pragma: no cover - optional runtime dependency
 except Exception:  # noqa: BLE001
     GraphDatabase = None
 
+GARBAGE_RELATION_SLUGS = {
+    "release_notes",
+    "support",
+    "validation_and_troubleshooting",
+    "cli_tools",
+    "disconnected_environments",
+}
 
 def _safe_read_json(path: Path) -> dict[str, Any]:
     if not path.exists() or not path.is_file():
@@ -132,24 +139,27 @@ def _relation_index_from_sidecar_payload(payload: dict[str, Any]) -> dict[str, l
             if str(value).strip()
         ]
         weight = int(item.get("weight") or 1)
-        relation_index.setdefault(source_book_slug, []).append(
-            {
-                "type": relation_types[0] if relation_types else "related",
-                "relation_types": relation_types,
-                "signal_values": signal_values,
-                "target_book_slug": target_book_slug,
-                "weight": weight,
-            }
-        )
-        relation_index.setdefault(target_book_slug, []).append(
-            {
-                "type": relation_types[0] if relation_types else "related",
-                "relation_types": relation_types,
-                "signal_values": signal_values,
-                "target_book_slug": source_book_slug,
-                "weight": weight,
-            }
-        )
+        
+        if target_book_slug not in GARBAGE_RELATION_SLUGS:
+            relation_index.setdefault(source_book_slug, []).append(
+                {
+                    "type": relation_types[0] if relation_types else "related",
+                    "relation_types": relation_types,
+                    "signal_values": signal_values,
+                    "target_book_slug": target_book_slug,
+                    "weight": weight,
+                }
+            )
+        if source_book_slug not in GARBAGE_RELATION_SLUGS:
+            relation_index.setdefault(target_book_slug, []).append(
+                {
+                    "type": relation_types[0] if relation_types else "related",
+                    "relation_types": relation_types,
+                    "signal_values": signal_values,
+                    "target_book_slug": source_book_slug,
+                    "weight": weight,
+                }
+            )
     return relation_index
 
 
@@ -296,6 +306,8 @@ class LocalGraphSidecar:
             )
         for other in hits:
             if other.chunk_id == hit.chunk_id:
+                continue
+            if other.book_slug in GARBAGE_RELATION_SLUGS:
                 continue
             if other.book_slug == hit.book_slug:
                 relations.append(

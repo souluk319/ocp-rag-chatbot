@@ -41,6 +41,7 @@ def _english_expansion_enabled(normalized: str) -> bool:
 def append_core_query_terms(normalized: str, terms: list[str]) -> None:
     allow_english = _english_expansion_enabled(normalized)
     route_ingress_compare = has_route_ingress_compare_intent(normalized)
+    generic_intro = is_generic_intro_query(normalized)
 
     if OCP_RE.search(normalized) and allow_english:
         terms.extend(["OpenShift", "Container", "Platform"])
@@ -169,14 +170,23 @@ def append_core_query_terms(normalized: str, terms: list[str]) -> None:
         terms.append("복원")
         if allow_english:
             terms.append("restore")
-    if is_explainer_query(normalized) and not route_ingress_compare:
+    if is_explainer_query(normalized) and not route_ingress_compare and not generic_intro:
         terms.append("개요")
         if allow_english:
             terms.append("overview")
-    if is_generic_intro_query(normalized):
-        terms.extend(["소개", "기본", "개념"])
-        if allow_english:
-            terms.extend(["overview", "architecture"])
+    if generic_intro:
+        if OCP_RE.search(normalized) or OPENSHIFT_RE.search(normalized):
+            terms.extend(["개요", "플랫폼"])
+            if allow_english:
+                terms.append("overview")
+        elif KUBERNETES_RE.search(normalized):
+            terms.extend(["개요", "플랫폼"])
+            if allow_english:
+                terms.append("overview")
+        else:
+            terms.append("개요")
+            if allow_english:
+                terms.append("overview")
     if has_openshift_kubernetes_compare_intent(normalized):
         terms.extend(["비교", "차이점", "유사점"])
         if allow_english:

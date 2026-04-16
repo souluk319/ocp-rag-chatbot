@@ -1,4 +1,49 @@
 {
+  "etcd": {
+    "title": "Etcd",
+    "eyebrow": "Entity Hub",
+    "summary": "",
+    "overview": [],
+    "related_books": [
+      {
+        "label": "Backup and restore",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
+        "summary": "Backup and restore 문서로 바로 이동한다."
+      },
+      {
+        "label": "etcd 백업 및 복구 플레이북",
+        "href": "/playbooks/wiki-runtime/active/etcd/index.html",
+        "summary": "etcd 백업 및 복구 플레이북 문서로 바로 이동한다."
+      },
+      {
+        "label": "Machine configuration",
+        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
+        "summary": "Machine configuration 문서로 바로 이동한다."
+      },
+      {
+        "label": "Monitoring",
+        "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
+        "summary": "Monitoring 문서로 바로 이동한다."
+      }
+    ],
+    "next_reading_path": [
+      {
+        "label": "1. Backup and restore",
+        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
+        "summary": "Backup and restore 문서로 이어서 탐색한다."
+      },
+      {
+        "label": "2. Machine configuration",
+        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
+        "summary": "Machine configuration 문서로 이어서 탐색한다."
+      },
+      {
+        "label": "3. Monitoring",
+        "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
+        "summary": "Monitoring 문서로 이어서 탐색한다."
+      }
+    ]
+  },
   "cluster-wide-proxy": {
     "title": "Cluster Wide Proxy",
     "eyebrow": "Entity Hub",
@@ -44,48 +89,48 @@
       }
     ]
   },
-  "prometheus": {
-    "title": "Prometheus",
+  "machine-config-operator": {
+    "title": "Machine Config Operator",
     "eyebrow": "Entity Hub",
     "summary": "",
     "overview": [],
     "related_books": [
       {
-        "label": "Monitoring",
-        "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Monitoring 문서로 바로 이동한다."
+        "label": "Machine configuration",
+        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
+        "summary": "Machine configuration 문서로 바로 이동한다."
       },
       {
-        "label": "관찰 기능 개요",
-        "href": "/playbooks/wiki-runtime/active/observability_overview/index.html",
-        "summary": "관찰 기능 개요 문서로 바로 이동한다."
+        "label": "머신 관리",
+        "href": "/playbooks/wiki-runtime/active/machine_management/index.html",
+        "summary": "머신 관리 문서로 바로 이동한다."
       },
       {
-        "label": "로깅",
-        "href": "/playbooks/wiki-runtime/active/logging/index.html",
-        "summary": "로깅 문서로 바로 이동한다."
+        "label": "노드",
+        "href": "/playbooks/wiki-runtime/active/nodes/index.html",
+        "summary": "노드 문서로 바로 이동한다."
       },
       {
-        "label": "검증 및 문제 해결",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html",
-        "summary": "검증 및 문제 해결 문서로 바로 이동한다."
+        "label": "Installing on any platform",
+        "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
+        "summary": "Installing on any platform 문서로 바로 이동한다."
       }
     ],
     "next_reading_path": [
       {
-        "label": "1. Monitoring",
+        "label": "1. Machine configuration",
+        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
+        "summary": "Machine configuration 문서로 이어서 탐색한다."
+      },
+      {
+        "label": "2. Installing on any platform",
+        "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
+        "summary": "Installing on any platform 문서로 이어서 탐색한다."
+      },
+      {
+        "label": "3. Monitoring",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
         "summary": "Monitoring 문서로 이어서 탐색한다."
-      },
-      {
-        "label": "2. 로깅",
-        "href": "/playbooks/wiki-runtime/active/logging/index.html",
-        "summary": "로깅 문서로 이어서 탐색한다."
-      },
-      {
-        "label": "3. 검증 및 문제 해결",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html",
-        "summary": "검증 및 문제 해결 문서로 이어서 탐색한다."
       }
     ]
   },
@@ -134,93 +179,48 @@
       }
     ]
   },
-  "etcd": {
-    "title": "Etcd",
+  "prometheus": {
+    "title": "Prometheus",
     "eyebrow": "Entity Hub",
     "summary": "",
     "overview": [],
     "related_books": [
-      {
-        "label": "Backup and restore",
-        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Backup and restore 문서로 바로 이동한다."
-      },
-      {
-        "label": "etcd 백업 및 복구 플레이북",
-        "href": "/playbooks/wiki-runtime/active/etcd/index.html",
-        "summary": "etcd 백업 및 복구 플레이북 문서로 바로 이동한다."
-      },
-      {
-        "label": "Machine configuration",
-        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Machine configuration 문서로 바로 이동한다."
-      },
       {
         "label": "Monitoring",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
         "summary": "Monitoring 문서로 바로 이동한다."
+      },
+      {
+        "label": "관찰 기능 개요",
+        "href": "/playbooks/wiki-runtime/active/observability_overview/index.html",
+        "summary": "관찰 기능 개요 문서로 바로 이동한다."
+      },
+      {
+        "label": "로깅",
+        "href": "/playbooks/wiki-runtime/active/logging/index.html",
+        "summary": "로깅 문서로 바로 이동한다."
+      },
+      {
+        "label": "검증 및 문제 해결",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html",
+        "summary": "검증 및 문제 해결 문서로 바로 이동한다."
       }
     ],
     "next_reading_path": [
       {
-        "label": "1. Backup and restore",
-        "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Backup and restore 문서로 이어서 탐색한다."
-      },
-      {
-        "label": "2. Machine configuration",
-        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Machine configuration 문서로 이어서 탐색한다."
-      },
-      {
-        "label": "3. Monitoring",
+        "label": "1. Monitoring",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
         "summary": "Monitoring 문서로 이어서 탐색한다."
-      }
-    ]
-  },
-  "machine-config-operator": {
-    "title": "Machine Config Operator",
-    "eyebrow": "Entity Hub",
-    "summary": "",
-    "overview": [],
-    "related_books": [
-      {
-        "label": "Machine configuration",
-        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Machine configuration 문서로 바로 이동한다."
       },
       {
-        "label": "머신 관리",
-        "href": "/playbooks/wiki-runtime/active/machine_management/index.html",
-        "summary": "머신 관리 문서로 바로 이동한다."
+        "label": "2. 로깅",
+        "href": "/playbooks/wiki-runtime/active/logging/index.html",
+        "summary": "로깅 문서로 이어서 탐색한다."
       },
       {
-        "label": "노드",
-        "href": "/playbooks/wiki-runtime/active/nodes/index.html",
-        "summary": "노드 문서로 바로 이동한다."
-      },
-      {
-        "label": "Installing on any platform",
-        "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-        "summary": "Installing on any platform 문서로 바로 이동한다."
-      }
-    ],
-    "next_reading_path": [
-      {
-        "label": "1. Machine configuration",
-        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Machine configuration 문서로 이어서 탐색한다."
-      },
-      {
-        "label": "2. Installing on any platform",
-        "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-        "summary": "Installing on any platform 문서로 이어서 탐색한다."
-      },
-      {
-        "label": "3. Monitoring",
-        "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Monitoring 문서로 이어서 탐색한다."
+        "label": "3. 검증 및 문제 해결",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html",
+        "summary": "검증 및 문제 해결 문서로 이어서 탐색한다."
       }
     ]
   },
@@ -489,11 +489,6 @@
         "label": "2. 보안 및 컴플라이언스",
         "href": "/playbooks/wiki-runtime/active/security_and_compliance/index.html",
         "summary": "보안 및 컴플라이언스 문서로 이어서 읽는다."
-      },
-      {
-        "label": "3. Operator 운영 플레이북",
-        "href": "/playbooks/wiki-runtime/active/operators/index.html",
-        "summary": "Operator 운영 플레이북 문서로 이어서 읽는다."
       }
     ]
   },
@@ -577,9 +572,9 @@
         "summary": "CLI 툴 문서로 이어서 읽는다."
       },
       {
-        "label": "3. 지원",
-        "href": "/playbooks/wiki-runtime/active/support/index.html",
-        "summary": "지원 문서로 이어서 읽는다."
+        "label": "3. 스토리지",
+        "href": "/playbooks/wiki-runtime/active/storage/index.html",
+        "summary": "스토리지 문서로 이어서 읽는다."
       }
     ]
   },

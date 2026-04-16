@@ -164,6 +164,9 @@ def handle_chat(
         session=session,
         result=result,
     )
+    turn.citations = [item for item in response_payload.get("citations") or [] if isinstance(item, dict)]
+    turn.related_links = [item for item in response_payload.get("related_links") or [] if isinstance(item, dict)]
+    turn.related_sections = [item for item in response_payload.get("related_sections") or [] if isinstance(item, dict)]
     _apply_primary_citation_truth(turn, response_payload)
     store.update(session)
     append_chat_turn_log(
@@ -289,6 +292,9 @@ def handle_chat_stream(
         session=session,
         result=result,
     )
+    turn.citations = [item for item in response_payload.get("citations") or [] if isinstance(item, dict)]
+    turn.related_links = [item for item in response_payload.get("related_links") or [] if isinstance(item, dict)]
+    turn.related_sections = [item for item in response_payload.get("related_sections") or [] if isinstance(item, dict)]
     _apply_primary_citation_truth(turn, response_payload)
     store.update(session)
     append_chat_turn_log(

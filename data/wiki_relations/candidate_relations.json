@@ -152,31 +152,11 @@
         "label": "보안 및 컴플라이언스",
         "href": "/playbooks/wiki-runtime/active/security_and_compliance/index.html",
         "summary": "인증 및 권한 부여 이후 함께 봐야 하는 문서다."
-      },
-      {
-        "label": "Operator 운영 플레이북",
-        "href": "/playbooks/wiki-runtime/active/operators/index.html",
-        "summary": "인증 및 권한 부여 이후 함께 봐야 하는 문서다."
-      },
-      {
-        "label": "지원",
-        "href": "/playbooks/wiki-runtime/active/support/index.html",
-        "summary": "인증 및 권한 부여 이후 함께 봐야 하는 문서다."
       }
     ],
     "next_reading_path": [
       {
-        "label": "1. Operator 운영 플레이북",
-        "href": "/playbooks/wiki-runtime/active/operators/index.html",
-        "summary": "인증 및 권한 부여 다음 경로로 Operator 운영 플레이북를 본다."
-      },
-      {
-        "label": "2. 지원",
-        "href": "/playbooks/wiki-runtime/active/support/index.html",
-        "summary": "인증 및 권한 부여 다음 경로로 지원를 본다."
-      },
-      {
-        "label": "3. 보안 및 컴플라이언스",
+        "label": "1. 보안 및 컴플라이언스",
         "href": "/playbooks/wiki-runtime/active/security_and_compliance/index.html",
         "summary": "인증 및 권한 부여 다음 경로로 보안 및 컴플라이언스를 본다."
       }
@@ -294,11 +274,6 @@
         "summary": "CLI 툴 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "지원",
-        "href": "/playbooks/wiki-runtime/active/support/index.html",
-        "summary": "CLI 툴 이후 함께 봐야 하는 문서다."
-      },
-      {
         "label": "스토리지",
         "href": "/playbooks/wiki-runtime/active/storage/index.html",
         "summary": "CLI 툴 이후 함께 봐야 하는 문서다."
@@ -306,19 +281,19 @@
     ],
     "next_reading_path": [
       {
-        "label": "1. 지원",
-        "href": "/playbooks/wiki-runtime/active/support/index.html",
-        "summary": "CLI 툴 다음 경로로 지원를 본다."
-      },
-      {
-        "label": "2. 스토리지",
+        "label": "1. 스토리지",
         "href": "/playbooks/wiki-runtime/active/storage/index.html",
         "summary": "CLI 툴 다음 경로로 스토리지를 본다."
       },
       {
-        "label": "3. Operator 운영 플레이북",
+        "label": "2. Operator 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/operators/index.html",
         "summary": "CLI 툴 다음 경로로 Operator 운영 플레이북를 본다."
+      },
+      {
+        "label": "3. 웹 콘솔",
+        "href": "/playbooks/wiki-runtime/active/web_console/index.html",
+        "summary": "CLI 툴 다음 경로로 웹 콘솔를 본다."
       }
     ],
     "parent_topic": {
@@ -1326,11 +1301,6 @@
         "summary": "Operator 운영 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "지원",
-        "href": "/playbooks/wiki-runtime/active/support/index.html",
-        "summary": "Operator 운영 플레이북 이후 함께 봐야 하는 문서다."
-      },
-      {
         "label": "스토리지",
         "href": "/playbooks/wiki-runtime/active/storage/index.html",
         "summary": "Operator 운영 플레이북 이후 함께 봐야 하는 문서다."
@@ -1338,19 +1308,19 @@
     ],
     "next_reading_path": [
       {
-        "label": "1. 지원",
-        "href": "/playbooks/wiki-runtime/active/support/index.html",
-        "summary": "Operator 운영 플레이북 다음 경로로 지원를 본다."
-      },
-      {
-        "label": "2. 스토리지",
+        "label": "1. 스토리지",
         "href": "/playbooks/wiki-runtime/active/storage/index.html",
         "summary": "Operator 운영 플레이북 다음 경로로 스토리지를 본다."
       },
       {
-        "label": "3. CLI 툴",
+        "label": "2. CLI 툴",
         "href": "/playbooks/wiki-runtime/active/cli_tools/index.html",
         "summary": "Operator 운영 플레이북 다음 경로로 CLI 툴를 본다."
+      },
+      {
+        "label": "3. 웹 콘솔",
+        "href": "/playbooks/wiki-runtime/active/web_console/index.html",
+        "summary": "Operator 운영 플레이북 다음 경로로 웹 콘솔를 본다."
       }
     ],
     "parent_topic": {
@@ -1656,31 +1626,11 @@
         "label": "인증 및 권한 부여",
         "href": "/playbooks/wiki-runtime/active/authentication_and_authorization/index.html",
         "summary": "보안 및 컴플라이언스 이후 함께 봐야 하는 문서다."
-      },
-      {
-        "label": "Operator 운영 플레이북",
-        "href": "/playbooks/wiki-runtime/active/operators/index.html",
-        "summary": "보안 및 컴플라이언스 이후 함께 봐야 하는 문서다."
-      },
-      {
-        "label": "지원",
-        "href": "/playbooks/wiki-runtime/active/support/index.html",
-        "summary": "보안 및 컴플라이언스 이후 함께 봐야 하는 문서다."
       }
     ],
     "next_reading_path": [
       {
-        "label": "1. Operator 운영 플레이북",
-        "href": "/playbooks/wiki-runtime/active/operators/index.html",
-        "summary": "보안 및 컴플라이언스 다음 경로로 Operator 운영 플레이북를 본다."
-      },
-      {
-        "label": "2. 지원",
-        "href": "/playbooks/wiki-runtime/active/support/index.html",
-        "summary": "보안 및 컴플라이언스 다음 경로로 지원를 본다."
-      },
-      {
-        "label": "3. 인증 및 권한 부여",
+        "label": "1. 인증 및 권한 부여",
         "href": "/playbooks/wiki-runtime/active/authentication_and_authorization/index.html",
         "summary": "보안 및 컴플라이언스 다음 경로로 인증 및 권한 부여를 본다."
       }
@@ -1994,11 +1944,6 @@
         "summary": "웹 콘솔 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "지원",
-        "href": "/playbooks/wiki-runtime/active/support/index.html",
-        "summary": "웹 콘솔 이후 함께 봐야 하는 문서다."
-      },
-      {
         "label": "스토리지",
         "href": "/playbooks/wiki-runtime/active/storage/index.html",
         "summary": "웹 콘솔 이후 함께 봐야 하는 문서다."
@@ -2006,19 +1951,19 @@
     ],
     "next_reading_path": [
       {
-        "label": "1. 지원",
-        "href": "/playbooks/wiki-runtime/active/support/index.html",
-        "summary": "웹 콘솔 다음 경로로 지원를 본다."
-      },
-      {
-        "label": "2. 스토리지",
+        "label": "1. 스토리지",
         "href": "/playbooks/wiki-runtime/active/storage/index.html",
         "summary": "웹 콘솔 다음 경로로 스토리지를 본다."
       },
       {
-        "label": "3. Operator 운영 플레이북",
+        "label": "2. Operator 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/operators/index.html",
         "summary": "웹 콘솔 다음 경로로 Operator 운영 플레이북를 본다."
+      },
+      {
+        "label": "3. CLI 툴",
+        "href": "/playbooks/wiki-runtime/active/cli_tools/index.html",
+        "summary": "웹 콘솔 다음 경로로 CLI 툴를 본다."
       }
     ],
     "parent_topic": {

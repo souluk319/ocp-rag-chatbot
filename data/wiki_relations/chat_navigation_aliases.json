@@ -53,16 +53,6 @@
       "label": "보안 및 컴플라이언스",
       "href": "/playbooks/wiki-runtime/active/security_and_compliance/index.html",
       "kind": "book"
-    },
-    {
-      "label": "Operator 운영 플레이북",
-      "href": "/playbooks/wiki-runtime/active/operators/index.html",
-      "kind": "book"
-    },
-    {
-      "label": "지원",
-      "href": "/playbooks/wiki-runtime/active/support/index.html",
-      "kind": "book"
     }
   ],
   "backup_and_restore": [
@@ -104,8 +94,8 @@
       "kind": "book"
     },
     {
-      "label": "지원",
-      "href": "/playbooks/wiki-runtime/active/support/index.html",
+      "label": "스토리지",
+      "href": "/playbooks/wiki-runtime/active/storage/index.html",
       "kind": "book"
     }
   ],
@@ -412,8 +402,8 @@
       "kind": "book"
     },
     {
-      "label": "지원",
-      "href": "/playbooks/wiki-runtime/active/support/index.html",
+      "label": "스토리지",
+      "href": "/playbooks/wiki-runtime/active/storage/index.html",
       "kind": "book"
     }
   ],
@@ -514,16 +504,6 @@
     {
       "label": "인증 및 권한 부여",
       "href": "/playbooks/wiki-runtime/active/authentication_and_authorization/index.html",
-      "kind": "book"
-    },
-    {
-      "label": "Operator 운영 플레이북",
-      "href": "/playbooks/wiki-runtime/active/operators/index.html",
-      "kind": "book"
-    },
-    {
-      "label": "지원",
-      "href": "/playbooks/wiki-runtime/active/support/index.html",
       "kind": "book"
     }
   ],
@@ -632,8 +612,8 @@
       "kind": "book"
     },
     {
-      "label": "지원",
-      "href": "/playbooks/wiki-runtime/active/support/index.html",
+      "label": "스토리지",
+      "href": "/playbooks/wiki-runtime/active/storage/index.html",
       "kind": "book"
     }
   ]

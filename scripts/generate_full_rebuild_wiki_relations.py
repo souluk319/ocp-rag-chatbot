@@ -61,7 +61,7 @@ CLUSTERS: dict[str, dict[str, Any]] = {
             "실제 운영 시작 전 기준선과 후속 작업을 재탐색하는 허브로 쓴다.",
         ],
         "books": ["installation_overview", "installing_on_any_platform", "postinstallation_configuration", "updating_clusters"],
-        "bridge_docs": ["machine_configuration", "backup_and_restore", "support"],
+        "bridge_docs": ["machine_configuration", "backup_and_restore"],
     },
     "control-plane-ops": {
         "title": "Control Plane and Node Operations",
@@ -81,7 +81,7 @@ CLUSTERS: dict[str, dict[str, Any]] = {
             "운영 이후 확인, 이상 징후 추적, 문제 해결 진입점으로 사용한다.",
         ],
         "books": ["monitoring", "observability_overview", "logging", "validation_and_troubleshooting"],
-        "bridge_docs": ["backup_and_restore", "machine_configuration", "support"],
+        "bridge_docs": ["backup_and_restore", "machine_configuration"],
     },
     "networking": {
         "title": "Networking and Connectivity",
@@ -101,7 +101,7 @@ CLUSTERS: dict[str, dict[str, Any]] = {
             "운영 정책과 접근 제어 관점에서 관련 문서를 탐색하는 허브다.",
         ],
         "books": ["authentication_and_authorization", "security_and_compliance"],
-        "bridge_docs": ["operators", "support", "networking_overview"],
+        "bridge_docs": [],
     },
     "storage-and-content": {
         "title": "Storage, Registry, and Images",
@@ -121,7 +121,7 @@ CLUSTERS: dict[str, dict[str, Any]] = {
             "운영자가 실제 손을 대는 진입점을 다시 고르는 허브다.",
         ],
         "books": ["operators", "cli_tools", "web_console"],
-        "bridge_docs": ["support", "security_and_auth", "storage"],
+        "bridge_docs": ["storage"],
     },
     "lifecycle-and-support": {
         "title": "Lifecycle and Support",

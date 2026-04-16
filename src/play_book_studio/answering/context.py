@@ -37,6 +37,7 @@ from .models import Citation, ContextBundle
 
 SPACE_RE = re.compile(r"\s+")
 SECTION_PREFIX_RE = re.compile(r"^\d+(?:\.\d+)*\.?\s*")
+INTRO_RECOMMENDATION_COUNT_RE = re.compile(r"(\d+\s*개|세\s*개|3\s*개|목록|리스트|top\s*\d+)", re.IGNORECASE)
 
 
 def _normalize_excerpt(text: str) -> str:
@@ -183,6 +184,53 @@ def _is_customer_pack_explicit_query(query: str) -> bool:
             "customer pack",
             "customer-pack",
         )
+    )
+
+
+def _is_intro_recommendation_query(query: str) -> bool:
+    normalized = (query or "").strip()
+    lowered = normalized.lower()
+    if not normalized:
+        return False
+
+    asks_for_intro = any(
+        token in normalized
+        for token in (
+            "입문",
+            "처음",
+            "처음 볼",
+            "처음 봐야",
+            "먼저 봐야",
+            "먼저 볼",
+            "추천",
+            "순서",
+            "로드맵",
+            "뭐부터",
+            "시작",
+        )
+    )
+    asks_for_list = bool(INTRO_RECOMMENDATION_COUNT_RE.search(normalized))
+    mentions_playbook_surface = any(
+        token in normalized
+        for token in (
+            "플레이북",
+            "문서",
+            "가이드",
+            "책",
+        )
+    )
+    mentions_runtime_scope = any(
+        token in lowered
+        for token in (
+            "openshift",
+            "ocp",
+            "오픈시프트",
+            "운영",
+        )
+    )
+
+    return (asks_for_intro and mentions_playbook_surface) or (
+        asks_for_list and mentions_playbook_surface and mentions_runtime_scope
     )
 
 
@@ -353,6 +401,7 @@ def _should_force_clarification(
             has_cluster_node_usage_intent(normalized),
             has_deployment_scaling_intent(normalized),
             has_registry_storage_ops_intent(normalized),
+            _is_intro_recommendation_query(normalized),
         ]
     ):
         return False
@@ -398,6 +447,7 @@ def _select_hits(
         [
             has_openshift_kubernetes_compare_intent(normalized),
             is_generic_intro_query(normalized),
+            _is_intro_recommendation_query(normalized),
             has_operator_concept_intent(normalized),
             has_mco_concept_intent(normalized),
             has_pod_lifecycle_concept_intent(normalized),
@@ -466,6 +516,29 @@ def _select_hits(
             ),
         )
         support_window = ranked_hits[: max(max_chunks * 2, 6)]
+        top_score = _hit_score(support_window[0])
+        top_book = support_window[0].book_slug
+    elif _is_intro_recommendation_query(normalized):
+        preferred_order = {
+            "overview": 0,
+            "architecture": 1,
+            "installation_overview": 2,
+            "operators": 3,
+            "extensions": 4,
+            "web_console": 5,
+            "cli_tools": 6,
+        }
+        ranked_hits = sorted(
+            ranked_hits,
+            key=lambda hit: (
+                preferred_order.get(hit.book_slug, 9),
+                *_generic_intro_priority(hit),
+                -_hit_score(hit),
+                hit.book_slug,
+                hit.chunk_id,
+            ),
+        )
+        support_window = ranked_hits[: max(max_chunks * 2, 8)]
         top_score = _hit_score(support_window[0])
         top_book = support_window[0].book_slug
     elif has_pod_lifecycle_concept_intent(normalized):
@@ -723,6 +796,10 @@ def _select_hits(
             for book_slug in ("overview", "architecture", "extensions", "operators"):
                 if best_book_scores.get(book_slug, 0.0) >= top_score * 0.56:
                     allowed_books.add(book_slug)
+    if _is_intro_recommendation_query(normalized):
+        # Enforce single playbook anchor dominance
+        allowed_books = {top_book}
+        locked_allowed_books = True
     if has_pod_lifecycle_concept_intent(normalized):
         for book_slug in ("nodes", "overview", "architecture", "building_applications"):
             if best_book_scores.get(book_slug, 0.0) >= top_score * 0.58:
