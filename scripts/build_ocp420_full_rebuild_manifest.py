@@ -13,6 +13,7 @@ if str(SRC) not in sys.path:
 WORKING_SET_PATH = ROOT / "manifests" / "ocp_ko_4_20_corpus_working_set.json"
 OUTPUT_MANIFEST_PATH = ROOT / "manifests" / "ocp420_source_first_full_rebuild_manifest.json"
 OUTPUT_REPORT_PATH = ROOT / "reports" / "build_logs" / "ocp420_full_rebuild_manifest_report.json"
+# local unmanaged source mirror; top-level git intentionally ignores tmp_source/
 SOURCE_ROOT = ROOT / "tmp_source" / "openshift-docs-enterprise-4.20"
 SOURCE_REPO_URL = "https://github.com/openshift/openshift-docs"
 SOURCE_BRANCH = "enterprise-4.20"

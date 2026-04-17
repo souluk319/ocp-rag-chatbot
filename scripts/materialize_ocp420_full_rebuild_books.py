@@ -71,6 +71,7 @@ def _figure_viewer_path(slug: str, asset_url: str) -> str:
     return f"/wiki/figures/{slug}/{asset_name}/index.html"
 
 
+# local unmanaged source mirror; top-level git intentionally ignores tmp_source/
 SOURCE_MIRROR_ROOT = ROOT / "tmp_source" / "openshift-docs-enterprise-4.20"
 ASCIIDOC_IMAGE_RE = re.compile(r"^\s*image::(?P<target>[^\[]+)\[(?P<attrs>[^\]]*)\]", re.MULTILINE)
 ASCIIDOC_INCLUDE_RE = re.compile(r"^\s*include::(?P<target>[^\[]+)\[[^\]]*\]", re.MULTILINE)
