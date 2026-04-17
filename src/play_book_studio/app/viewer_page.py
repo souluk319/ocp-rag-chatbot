@@ -265,857 +265,625 @@ def _render_study_viewer_html(
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{title} - OCP 출처 뷰어</title>
         <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
+          
           :root {{
             color-scheme: light;
-            --bg: #f3f5f7;
+            --bg: #ffffff;
             --panel: #ffffff;
-            --panel-soft: #f7f8fa;
-            --line: rgba(17, 20, 24, 0.1);
-            --line-strong: rgba(17, 20, 24, 0.16);
-            --ink: #111418;
-            --muted: #5f6872;
-            --accent: #c62828;
-            --accent-soft: rgba(238, 0, 0, 0.06);
+            --panel-soft: #f9fafb;
+            --line: #e2e8f0;
+            --line-strong: #cbd5e1;
+            --ink: #0f172a;
+            --ink-soft: #334155;
+            --muted: #64748b;
+            --accent: #2563eb;
+            --accent-soft: #eff6ff;
+            --border-radius: 12px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
           }}
           * {{
             box-sizing: border-box;
           }}
           body {{
             margin: 0;
-            background:
-              radial-gradient(circle at top right, rgba(238, 0, 0, 0.06), transparent 24rem),
-              linear-gradient(180deg, #f7f8fa 0%, var(--bg) 100%);
+            background: var(--bg);
             color: var(--ink);
-            font-family: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
-          }}
-          main {{
-            width: min(1480px, calc(100vw - 32px));
-            max-width: none;
-            margin: 0 auto;
-            padding: 28px 0 44px;
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
           }}
           body.is-embedded {{
-            background: linear-gradient(180deg, #f8f9fb 0%, #f1f3f5 100%);
+            background: #ffffff;
+            margin: 0;
+            padding: 0;
+          }}
+          html, body {{
+            max-width: 100%;
+          }}
+          main {{
+            width: min(1000px, calc(100vw - 48px));
+            max-width: 100%;
+            min-width: 0;
+            margin: 0 auto;
+            padding: 40px 0 80px;
           }}
           body.is-embedded main {{
             width: 100%;
             margin: 0;
-            padding: 16px 18px 24px;
+            padding: 32px 48px;
             min-height: 100%;
+            min-width: 0;
           }}
           .study-document-embedded {{
             min-height: 100%;
             padding: 0;
             border: 0;
-            border-radius: 0;
             background: transparent;
             box-shadow: none;
+            min-width: 0;
           }}
+          
+          /* Hero Section */
           .hero {{
-            background: var(--panel);
-            border: 1px solid var(--line);
-            border-radius: 28px;
-            padding: 36px 38px;
-            box-shadow:
-              0 20px 50px rgba(17, 20, 24, 0.08),
-              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            margin: 0 0 50px;
+            padding: 0 0 40px;
+            border-bottom: 1px solid var(--line);
+          }}
+          body.is-embedded .hero {{
+            margin: 0 0 32px;
+            padding: 0;
+            border-bottom: 0;
           }}
           .hero-grid {{
             display: grid;
-            grid-template-columns: minmax(0, 1.8fr) minmax(240px, 0.9fr);
-            gap: 24px;
-            align-items: end;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 20px;
+            min-width: 0;
           }}
           .hero-main {{
             display: grid;
-            gap: 14px;
+            gap: 16px;
+            max-width: 100%;
+            min-width: 0;
           }}
           .eyebrow {{
             color: var(--accent);
-            font-size: 0.85rem;
-            font-weight: 700;
-            letter-spacing: 0.04em;
+            font-size: 0.875rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
             text-transform: uppercase;
           }}
           h1 {{
             margin: 0;
-            font-family: "Fraunces", "Iowan Old Style", "Noto Serif KR", serif;
-            font-size: clamp(2.6rem, 5vw, 4.4rem);
-            line-height: 0.98;
-            letter-spacing: -0.05em;
-            max-width: 10ch;
+            font-size: clamp(2.2rem, 4.5vw, 3.2rem);
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            font-weight: 800;
+            color: var(--ink);
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            word-break: keep-all;
+          }}
+          body.is-embedded h1 {{
+            font-size: clamp(1.8rem, 3.8vw, 2.6rem);
+            margin-bottom: 8px;
           }}
           .summary {{
             margin: 0;
-            color: var(--muted);
-            font-size: 1rem;
-            line-height: 1.78;
-            max-width: 66ch;
+            color: var(--ink-soft);
+            font-size: 1.125rem;
+            line-height: 1.7;
+            max-width: 100%;
+            overflow-wrap: break-word;
+            word-break: keep-all;
           }}
-          .actions {{
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            align-items: center;
-          }}
-          .hero-actions {{
-            justify-content: flex-end;
-          }}
-          .hero-meta {{
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            align-items: flex-end;
-          }}
+          
+          /* Hero Outline (Quick Navigation) */
           .hero-outline {{
-            display: grid;
-            gap: 10px;
-            margin-top: 6px;
+            margin-top: 12px;
+            padding: 16px;
+            background: var(--panel-soft);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--line);
           }}
           .hero-outline-label {{
-            color: var(--muted);
-            font-size: 0.78rem;
-            font-weight: 800;
-            letter-spacing: 0.08em;
+            font-size: 0.8125rem;
+            font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--muted);
+            margin-bottom: 12px;
           }}
           .hero-outline-links {{
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
           }}
           .hero-jump-link {{
-            display: inline-flex;
-            align-items: center;
-            min-height: 38px;
-            padding: 0 14px;
-            border-radius: 999px;
-            border: 1px solid rgba(17, 20, 24, 0.08);
-            background: rgba(17, 20, 24, 0.025);
-            color: var(--ink);
-            font-size: 0.88rem;
-            font-weight: 700;
-            line-height: 1.2;
-            text-decoration: none;
+            color: var(--accent);
+            text-decoration: underline;
+            text-decoration-color: transparent;
+            font-size: 0.9375rem;
+            line-height: 1.4;
+            transition: text-decoration-color 0.2s ease;
           }}
           .hero-jump-link:hover {{
-            color: var(--accent);
-            border-color: rgba(198, 40, 40, 0.18);
-            background: rgba(198, 40, 40, 0.05);
+            text-decoration-color: var(--accent);
           }}
-          .meta-pill,
-          .actions a {{
+          
+          .hero-meta {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-top: 12px;
+            max-width: 100%;
+            min-width: 0;
+          }}
+          .meta-pill, .hero-meta a {{
             display: inline-flex;
             align-items: center;
-            min-height: 38px;
-            padding: 0 14px;
-            border: 1px solid rgba(17, 20, 24, 0.08);
+            min-height: 32px;
+            padding: 0 16px;
+            border: 1px solid var(--line);
             border-radius: 999px;
-            background: rgba(17, 20, 24, 0.025);
-            color: var(--muted);
-            font-size: 0.88rem;
-            font-weight: 700;
+            background: var(--panel-soft);
+            color: var(--ink-soft);
+            font-size: 0.875rem;
+            font-weight: 500;
             text-decoration: none;
+            transition: all 0.2s ease;
+            max-width: 100%;
+            min-width: 0;
+          }}
+          .meta-pill:hover, .hero-meta a:hover {{
+            background: #f1f5f9;
+            border-color: var(--line-strong);
+            color: var(--ink);
           }}
           .meta-pill-accent {{
             color: var(--accent);
-            border-color: rgba(198, 40, 40, 0.16);
-            background: rgba(198, 40, 40, 0.06);
+            border-color: #bfdbfe;
+            background: var(--accent-soft);
           }}
-          .section-list {{
-            display: grid;
-            gap: 28px;
-          }}
+          
+          /* Layout */
           .reader-layout {{
             display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-            gap: 24px;
+            grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
+            justify-content: space-between;
+            gap: 80px;
             align-items: start;
-            margin-top: 24px;
           }}
           .reader-main {{
             min-width: 0;
           }}
           .reader-sidebar {{
             position: sticky;
-            top: 18px;
+            top: 40px;
             display: grid;
-            gap: 18px;
+            gap: 32px;
           }}
-          .wiki-grid {{
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 14px;
-            margin: 0;
+          
+          /* Auto-hide sidebar if embedded */
+          body.is-embedded .reader-sidebar {{
+            display: none !important;
           }}
-          .wiki-grid-primary {{
-            align-items: start;
+          body.is-embedded .reader-layout {{
+            grid-template-columns: 1fr;
+            max-width: 900px;
+            margin: 0 auto;
           }}
-          .wiki-grid-secondary {{
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            margin-top: 0;
-          }}
-          .wiki-parent-card {{
-            display: grid;
-            gap: 10px;
-            background: linear-gradient(180deg, rgba(198, 40, 40, 0.06), rgba(198, 40, 40, 0.02));
-            border: 1px solid rgba(198, 40, 40, 0.12);
-            border-radius: 22px;
-            padding: 18px 20px;
-          }}
-          .wiki-parent-eyebrow {{
-            color: var(--accent);
-            font-size: 0.78rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-          }}
-          .viewer-truth-topline {{
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            flex-wrap: wrap;
-          }}
-          .viewer-truth-badge {{
-            display: inline-flex;
-            align-items: center;
-            min-height: 24px;
-            padding: 0 10px;
-            border-radius: 999px;
-            border: 1px solid rgba(198, 40, 40, 0.16);
-            background: rgba(198, 40, 40, 0.08);
-            color: var(--accent);
-            font-size: 0.7rem;
-            font-weight: 800;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-          }}
-          .viewer-truth-link {{
-            display: inline-flex;
-            align-items: center;
-            min-height: 24px;
-            color: var(--muted);
-            text-decoration: none;
-            font-size: 0.82rem;
-            font-weight: 700;
-          }}
-          .viewer-truth-title {{
-            color: var(--ink);
-            font-size: 1.02rem;
-            font-weight: 800;
-            line-height: 1.4;
-          }}
-          .wiki-parent-card a {{
-            color: var(--ink);
-            text-decoration: none;
-            font-weight: 800;
-            font-size: 1.02rem;
-            line-height: 1.4;
-          }}
-          .wiki-parent-card p {{
-            margin: 0;
-            color: var(--muted);
-            line-height: 1.55;
-          }}
-          .wiki-card {{
-            background: rgba(255, 255, 255, 0.96);
-            border: 1px solid var(--line);
-            border-radius: 18px;
-            padding: 16px 18px;
-            box-shadow: 0 10px 24px rgba(17, 20, 24, 0.05);
-          }}
-          .wiki-card h3 {{
-            margin: 0 0 10px;
-            font-size: 0.9rem;
-            line-height: 1.4;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-          }}
-          .wiki-card h4 {{
-            margin: 0 0 10px;
-            font-size: 0.82rem;
-            line-height: 1.4;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-          }}
-          .wiki-card-primary {{
-            padding: 18px 20px;
-          }}
-          .wiki-card-intro {{
-            margin: 0 0 12px;
-            color: var(--muted);
-            font-size: 0.92rem;
-            line-height: 1.6;
-          }}
-          .wiki-card-stack {{
+          
+          /* Quick Navigation */
+          .reader-outline-card {{
             display: grid;
             gap: 16px;
-          }}
-          .wiki-links,
-          .wiki-path {{
-            display: grid;
-            gap: 10px;
-          }}
-          .wiki-details {{
-            margin-top: 8px;
+            padding: 24px;
             border: 1px solid var(--line);
-            border-radius: 18px;
-            background: rgba(255, 255, 255, 0.78);
-            overflow: hidden;
+            border-radius: var(--border-radius);
+            background: var(--panel);
+            box-shadow: var(--shadow-sm);
           }}
-          .wiki-details summary {{
-            list-style: none;
-            cursor: pointer;
-            padding: 14px 18px;
-            font-size: 0.88rem;
-            font-weight: 800;
-            letter-spacing: 0.03em;
+          .reader-outline-label {{
+            color: var(--ink);
+            font-size: 0.875rem;
+            font-weight: 700;
             text-transform: uppercase;
-            color: var(--muted);
-            background: rgba(17, 20, 24, 0.025);
-          }}
-          .wiki-details summary::-webkit-details-marker {{
-            display: none;
-          }}
-          .wiki-details[open] summary {{
-            border-bottom: 1px solid var(--line);
-            color: var(--ink);
-          }}
-          .wiki-details > .wiki-grid {{
-            padding: 14px 14px 12px;
-            margin: 0;
-          }}
-          .wiki-links a,
-          .wiki-path a {{
-            color: var(--ink);
-            text-decoration: none;
-            font-weight: 700;
-            line-height: 1.5;
-          }}
-          .wiki-links a:hover,
-          .wiki-path a:hover {{
-            color: var(--accent);
-          }}
-          .wiki-links span,
-          .wiki-path span {{
-            color: var(--muted);
-            font-size: 0.88rem;
-            line-height: 1.55;
-          }}
-          .wiki-empty {{
-            color: var(--muted);
-            font-size: 0.92rem;
-            line-height: 1.55;
-          }}
-          .wiki-entity-list {{
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-          }}
-          .wiki-entity-list a,
-          .meta-pill {{
-            display: inline-flex;
-            align-items: center;
-            min-height: 34px;
-            padding: 0 12px;
-            border-radius: 999px;
-            border: 1px solid var(--line);
-            background: rgba(17, 20, 24, 0.025);
-            color: var(--ink);
-            text-decoration: none;
-            font-size: 0.86rem;
-            font-weight: 700;
-          }}
-          .wiki-entity-list a:hover {{
-            color: var(--accent);
-            border-color: rgba(198, 40, 40, 0.2);
-            background: rgba(198, 40, 40, 0.05);
-          }}
-          .figure-block {{
-            display: grid;
-            gap: 10px;
-            margin: 18px 0;
-            padding: 14px;
-            border: 1px solid var(--line);
-            border-radius: 18px;
-            background: rgba(17, 20, 24, 0.02);
-          }}
-          .diagram-block {{
-            border-color: rgba(198, 40, 40, 0.18);
-            background: linear-gradient(180deg, rgba(198, 40, 40, 0.05), rgba(198, 40, 40, 0.015));
-          }}
-          .figure-eyebrow {{
-            color: var(--accent);
-            font-size: 0.74rem;
-            font-weight: 800;
             letter-spacing: 0.05em;
-            text-transform: uppercase;
           }}
-          .figure-link {{
-            display: block;
-            width: fit-content;
-            max-width: min(100%, 760px);
-            margin: 0 auto;
-            text-decoration: none;
-          }}
-          .figure-block img {{
-            display: block;
-            width: auto;
-            height: auto;
-            max-width: 100%;
-            max-height: min(68vh, 760px);
-            margin: 0 auto;
-            border-radius: 12px;
-            border: 1px solid rgba(17, 20, 24, 0.08);
-            background: #fff;
-            object-fit: contain;
-          }}
-          .diagram-block .figure-link {{
-            max-width: min(100%, 920px);
-          }}
-          .figure-block figcaption {{
-            color: var(--muted);
-            font-size: 0.9rem;
-            line-height: 1.55;
-            max-width: min(100%, 760px);
-            margin: 0 auto;
-          }}
-          .diagram-block figcaption {{
-            max-width: min(100%, 920px);
-          }}
-          body.is-embedded .section-list {{
-            margin-top: 14px;
-            gap: 0;
-          }}
-          body.is-embedded .wiki-grid {{
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
-            margin: 8px 0 18px;
-          }}
-          body.is-embedded .wiki-parent-card {{
-            margin: 8px 0 14px;
-            padding: 14px 16px;
-            border-radius: 16px;
-          }}
-          body.is-embedded .wiki-card {{
-            border-radius: 16px;
-            padding: 14px 16px;
-          }}
-          body.is-embedded .wiki-details {{
-            margin: 6px 0 16px;
-            border-radius: 16px;
-          }}
-          body.is-embedded .wiki-details summary {{
-            padding: 12px 16px;
-          }}
-          @media (max-width: 1100px) {{
-            .hero-grid,
-            .reader-layout {{
-              grid-template-columns: 1fr;
-            }}
-            .hero-actions,
-            .hero-meta {{
-              justify-content: flex-start;
-              align-items: flex-start;
-            }}
-            .hero-outline-links {{
-              gap: 8px;
-            }}
-            .reader-sidebar {{
-              position: static;
-            }}
-            .wiki-grid,
-            body.is-embedded .wiki-grid {{
-              grid-template-columns: 1fr;
-            }}
-            .wiki-grid-secondary {{
-              grid-template-columns: 1fr;
-            }}
-          }}
-          .embedded-origin-row {{
-            display: flex;
-            align-items: center;
+          .reader-outline-links {{
+            display: grid;
             gap: 10px;
-            margin: 0 0 14px;
+            max-width: 100%;
+            min-width: 0;
           }}
-          .embedded-origin-link {{
-            display: inline-flex;
-            align-items: center;
-            min-height: 34px;
-            padding: 0 12px;
-            border-radius: 999px;
-            border: 1px solid rgba(17, 20, 24, 0.08);
-            background: rgba(255, 255, 255, 0.88);
-            color: #4b5560;
-            font-size: 0.8rem;
-            font-weight: 700;
-            letter-spacing: 0.01em;
+          .reader-outline-link {{
+            display: block;
+            color: var(--muted);
             text-decoration: none;
+            font-size: 0.9375rem;
+            line-height: 1.5;
+            padding-left: 14px;
+            border-left: 2px solid var(--line);
+            transition: all 0.2s ease;
           }}
-          .embedded-origin-link:hover {{
+          .reader-outline-link:hover {{
+            color: var(--accent);
+            border-left-color: var(--accent);
+          }}
+          .hero-outline {{
+            display: grid;
+            gap: 12px;
+            max-width: 100%;
+            min-width: 0;
+          }}
+          .hero-outline-label {{
             color: var(--ink);
-            border-color: rgba(17, 20, 24, 0.14);
-            background: rgba(255, 255, 255, 0.96);
-          }}
-          body.is-embedded .embedded-section {{
-            padding: 0 0 28px;
-            scroll-margin-top: 20px;
-          }}
-          body.is-embedded .embedded-section + .embedded-section {{
-            margin-top: 28px;
-            padding-top: 28px;
-            border-top: 1px solid var(--line);
-          }}
-          body.is-embedded .embedded-section.is-target {{
-            background: linear-gradient(180deg, rgba(238, 0, 0, 0.028), rgba(255, 255, 255, 0.96));
-            border-radius: 16px;
-            padding: 16px 18px 22px;
-            box-shadow: inset 0 0 0 1px rgba(238, 0, 0, 0.1);
-          }}
-          body.is-embedded .section-card {{
-            background: transparent;
-            border: 0;
-            border-radius: 0;
-            padding: 0 0 28px;
-            box-shadow: none;
-          }}
-          body.is-embedded .section-card + .section-card {{
-            margin-top: 28px;
-            padding-top: 28px;
-            border-top: 1px solid var(--line);
-          }}
-          body.is-embedded .section-card.is-target {{
-            background: transparent;
-            border-color: transparent;
-            box-shadow: none;
-          }}
-          body.is-embedded .section-header {{
-            padding-bottom: 12px;
-            margin-bottom: 14px;
-          }}
-          body.is-embedded .section-header h2 {{
-            font-size: clamp(1.4rem, 2.6vw, 2rem);
-            line-height: 1.32;
-            letter-spacing: -0.03em;
-          }}
-          body.is-embedded .section-meta {{
-            font-size: 0.82rem;
-            letter-spacing: -0.01em;
-          }}
-          body.is-embedded .section-body {{
-            gap: 18px;
-          }}
-          body.is-embedded .section-body p {{
             font-size: 1rem;
-            line-height: 1.82;
-            color: var(--ink);
+            font-weight: 600;
+          }}
+          .hero-outline-links {{
+            display: grid;
+            gap: 10px;
+          }}
+          .hero-jump-link {{
+            display: block;
+            max-width: 100%;
+            min-width: 0;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+          }}
+          .hero-jump-link:hover {{
+            text-decoration: underline;
+            text-underline-offset: 0.16em;
+          }}
+          
+          /* Sections */
+          .section-list {{
+            display: grid;
+            gap: 80px;
+            min-width: 0;
           }}
           .section-card {{
-            background: transparent;
+            scroll-margin-top: 40px;
             border: 0;
-            border-radius: 0;
-            padding: 0 0 10px;
-            scroll-margin-top: 20px;
+            background: transparent;
             box-shadow: none;
+            min-width: 0;
+            max-width: 100%;
           }}
-          .section-card + .section-card {{
-            padding-top: 28px;
-            border-top: 1px solid rgba(17, 20, 24, 0.08);
+          body.is-embedded .section-list {{
+            gap: 40px;
+          }}
+          body.is-embedded .section-card + .section-card {{
+            padding-top: 40px;
+            border-top: 1px solid var(--line);
           }}
           .section-card.is-target {{
-            border-top-color: rgba(198, 40, 40, 0.22);
-            background: linear-gradient(180deg, rgba(198, 40, 40, 0.03), transparent 60%);
-            border-radius: 18px;
-            padding: 18px 20px 22px;
-            box-shadow: inset 0 0 0 1px rgba(198, 40, 40, 0.08);
+            padding: 40px;
+            margin: -40px;
+            border-radius: calc(var(--border-radius) + 12px);
+            background: var(--accent-soft);
+            border: 1px solid #bfdbfe;
           }}
+          body.is-embedded .section-card.is-target {{
+            margin: 0;
+            padding: 32px 40px;
+            border-left: 4px solid var(--accent);
+            border-radius: 0 16px 16px 0;
+            border-top: 0;
+            border-bottom: 0;
+            border-right: 0;
+            background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%);
+            box-shadow: none;
+          }}
+          
           .section-header {{
-            display: grid;
-            gap: 10px;
-            padding-bottom: 14px;
-            margin-bottom: 18px;
-            border-bottom: 1px solid rgba(17, 20, 24, 0.08);
+            margin-bottom: 32px;
+            min-width: 0;
+          }}
+          .section-meta {{
+            color: var(--accent);
+            font-size: 0.9375rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: block;
           }}
           .section-card h2 {{
             margin: 0;
-            font-family: "Fraunces", "Iowan Old Style", "Noto Serif KR", serif;
-            font-size: clamp(1.7rem, 2.3vw, 2.4rem);
-            line-height: 1.16;
-            letter-spacing: -0.04em;
+            font-size: clamp(1.75rem, 3.5vw, 2.25rem);
+            font-weight: 700;
+            color: var(--ink);
+            line-height: 1.3;
+            letter-spacing: -0.01em;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            word-break: keep-all;
           }}
-          .section-card.section-level-2 h2 {{
-            font-size: clamp(1.45rem, 2vw, 2rem);
-          }}
-          .section-card.section-level-3 h2,
-          .section-card.section-level-4 h2,
-          .section-card.section-level-5 h2,
-          .section-card.section-level-6 h2 {{
-            font-size: clamp(1.2rem, 1.6vw, 1.6rem);
-            letter-spacing: -0.02em;
-          }}
+          
+          /* Body Text */
           .section-body {{
-            display: grid;
-            gap: 18px;
+            display: block;
+            color: var(--ink-soft);
+            min-width: 0;
+            max-width: 100%;
           }}
-          .section-body p,
-          .section-body h3 {{
-            margin: 0;
+          .section-body p {{
+            font-size: 1rem;
+            line-height: 1.625;
+            color: var(--ink-soft);
+            margin: 0 0 1.25em 0;
+            word-break: keep-all;
+            overflow-wrap: break-word;
+          }}
+          .section-body p:last-child {{
+            margin-bottom: 0;
+          }}
+          .section-body li, .section-body td {{
+            font-size: 1rem;
+            line-height: 1.625;
+            color: var(--ink-soft);
+            overflow-wrap: break-word;
+            word-break: keep-all;
           }}
           .section-body h3 {{
-            padding-top: 10px;
-            font-size: 1.12rem;
+            margin: 2.5em 0 1em;
+            font-size: 1.25rem;
+            font-weight: 700;
             color: var(--ink);
             letter-spacing: -0.01em;
-          }}
-          .section-body p,
-          .section-body li,
-          .section-body td {{
-            font-size: 1rem;
-            line-height: 1.82;
-            color: #36404a;
+            line-height: 1.4;
+            max-width: 100%;
+            overflow-wrap: anywhere;
           }}
           .section-body a {{
-            color: #9a3412;
+            color: var(--accent);
             text-decoration: none;
-            border-bottom: 1px solid rgba(154, 52, 18, 0.18);
+            font-weight: 500;
+            border-bottom: 1px solid transparent;
+            transition: border-bottom-color 0.2s ease;
+            overflow-wrap: anywhere;
+            word-break: break-word;
           }}
           .section-body a:hover {{
-            color: #7c2d12;
-            border-bottom-color: rgba(124, 45, 18, 0.32);
+            border-bottom-color: var(--accent);
           }}
+          
+          /* Lists */
+          .section-body ul, .section-body ol, .procedure-list {{
+            padding-left: 20px;
+            margin: 0 0 1.25em 0;
+          }}
+          .section-body li {{
+            margin-bottom: 0.5em;
+          }}
+          .section-body li > p {{
+            margin-bottom: 0.5em;
+          }}
+          
+          /* Code blocks */
           .section-body code {{
             display: inline;
-            padding: 0.08rem 0.32rem;
+            padding: 0.125rem 0.375rem;
             border-radius: 6px;
-            border: 1px solid rgba(238, 0, 0, 0.14);
-            background: rgba(238, 0, 0, 0.05);
-            color: #a32719;
-            font-family: "SF Mono", "Menlo", monospace;
-            font-size: 0.92em;
+            background: #f1f5f9;
+            border: 1px solid var(--line);
+            color: #db2777;
+            font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.4;
+            white-space: break-spaces;
+            overflow-wrap: anywhere;
+            word-break: break-word;
           }}
           .code-block {{
             border: 1px solid var(--line);
-            border-radius: 20px;
+            border-radius: var(--border-radius);
             overflow: hidden;
-            background: linear-gradient(180deg, #ffffff 0%, #f7f8fa 100%);
-            box-shadow:
-              inset 0 1px 0 rgba(255, 255, 255, 0.75),
-              0 8px 24px rgba(17, 20, 24, 0.05);
+            background: #0f172a;
+            box-shadow: var(--shadow-sm);
+            margin: 16px 0;
+            min-width: 0;
+            max-width: 100%;
           }}
           .code-header {{
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
-            padding: 12px 14px;
-            background: linear-gradient(180deg, #f8f9fb 0%, #f1f3f5 100%);
-            border-top: 1px solid rgba(255, 255, 255, 0.8);
-            border-bottom: 1px solid var(--line);
+            padding: 14px 20px;
+            border-bottom: 1px solid #1e293b;
+            background: #0f172a;
           }}
           .code-label {{
-            color: #66707a;
-            font-size: 0.76rem;
-            font-weight: 700;
-            letter-spacing: 0.04em;
+            color: #94a3b8;
+            font-size: 0.8125rem;
+            font-weight: 600;
             text-transform: uppercase;
-          }}
-          .code-caption,
-          .table-caption {{
-            padding: 14px 16px 0;
-            color: var(--muted);
-            font-size: 0.8rem;
-            font-weight: 700;
-            line-height: 1.5;
-            letter-spacing: 0.02em;
-          }}
-          .copy-button {{
-            border: 1px solid var(--line);
-            border-radius: 999px;
-            padding: 7px 11px;
-            background: rgba(255, 255, 255, 0.95);
-            color: var(--ink);
-            font: inherit;
-            font-size: 0.78rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
-          }}
-          .icon-button {{
-            width: 34px;
-            min-width: 34px;
-            height: 34px;
-            padding: 0;
-            display: inline-grid;
-            place-items: center;
-            font-size: 0.95rem;
-            line-height: 1;
+            letter-spacing: 0.05em;
           }}
           .code-actions {{
             display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
+            gap: 12px;
           }}
-          .copy-button.is-copied {{
-            background: rgba(238, 0, 0, 0.1);
-            color: var(--accent);
+          .icon-button {{
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            color: #94a3b8;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            transition: all 0.2s ease;
           }}
-          .code-block.is-wrapped pre,
-          .code-block.is-wrapped code {{
-            white-space: pre-wrap;
-            word-break: break-word;
+          .icon-button:hover {{
+            background: #1e293b;
+            color: #f8fafc;
           }}
           .code-block pre {{
             margin: 0;
-            padding: 18px 20px 20px;
+            padding: 24px;
             overflow-x: auto;
-            white-space: pre;
-            background: #fbfcfd;
-            color: #232a31;
-            font-family: "SF Mono", "Menlo", monospace;
-            font-size: 0.92rem;
+            color: #f8fafc;
+            font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
+            font-size: 0.875rem;
             line-height: 1.7;
+            max-width: 100%;
+            min-width: 0;
           }}
           .code-block code {{
-            display: block;
-            padding: 0;
-            border: 0;
-            border-radius: 0;
             background: transparent;
+            border: 0;
+            padding: 0;
             color: inherit;
-            font: inherit;
             white-space: inherit;
+            overflow-wrap: normal;
+            word-break: normal;
           }}
+          
+          /* Notes */
+          .note-card {{
+            padding: 24px 32px;
+            margin: 16px 0;
+            border-radius: var(--border-radius);
+            background: var(--panel-soft);
+            border-left: 4px solid var(--muted);
+          }}
+          .note-title {{
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 12px;
+            font-size: 1rem;
+          }}
+          .note-warning, .note-caution {{ border-left-color: #f59e0b; background: #fffbeb; }}
+          .note-warning .note-title, .note-caution .note-title {{ color: #b45309; }}
+          .note-note {{ border-left-color: #3b82f6; background: #eff6ff; }}
+          .note-note .note-title {{ color: #1d4ed8; }}
+          .note-important {{ border-left-color: #8b5cf6; background: #f5f3ff; }}
+          .note-important .note-title {{ color: #5b21b6; }}
+          .note-tip {{ border-left-color: #10b981; background: #ecfdf5; }}
+          .note-tip .note-title {{ color: #047857; }}
+          
+          /* Tables */
           .table-wrap {{
             overflow-x: auto;
             border: 1px solid var(--line);
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.96);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            margin: 24px 0;
+            max-width: 100%;
           }}
           table {{
             width: 100%;
+            max-width: 100%;
             border-collapse: collapse;
+            background: var(--panel);
           }}
-          th,
-          td {{
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--line);
+          th, td {{
+            padding: 16px 24px;
             text-align: left;
-            vertical-align: top;
-            font-size: 0.94rem;
-            line-height: 1.5;
+            border-bottom: 1px solid var(--line);
+            overflow-wrap: break-word;
+            word-break: keep-all;
           }}
           th {{
-            background: #f6f7f9;
-            color: #55606b;
-            font-size: 0.82rem;
-            font-weight: 800;
-            letter-spacing: 0.03em;
-            text-transform: uppercase;
-          }}
-          tbody tr:nth-child(even) {{
-            background: rgba(17, 20, 24, 0.02);
-          }}
-          tr:last-child td {{
-            border-bottom: 0;
-          }}
-          .section-meta {{
-            color: var(--muted);
-            font-size: 0.86rem;
-            font-weight: 700;
-            line-height: 1.5;
-          }}
-          .list-block,
-          .normalized-ordered-list,
-          .procedure-list,
-          .substep-list {{
-            margin: 0;
-            padding-left: 1.2rem;
-          }}
-          .normalized-ordered-list {{
-            display: grid;
-            gap: 10px;
-            margin: 8px 0 14px;
-          }}
-          .normalized-ordered-list > li {{
-            line-height: 1.82;
-          }}
-          .normalized-ordered-list > li > p {{
-            margin: 8px 0 0;
-          }}
-          .procedure-list {{
-            display: grid;
-            gap: 12px;
-            counter-reset: playbook-step;
-            list-style: none;
-            padding-left: 0;
-          }}
-          .procedure-list > li {{
-            position: relative;
-            display: grid;
-            gap: 8px;
-            padding: 14px 16px 14px 58px;
-            border: 1px solid var(--line);
-            border-radius: 16px;
-            background: #fbfcfd;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-          }}
-          .procedure-list > li::before {{
-            counter-increment: playbook-step;
-            content: counter(playbook-step);
-            position: absolute;
-            left: 16px;
-            top: 14px;
-            width: 28px;
-            height: 28px;
-            border-radius: 999px;
-            display: grid;
-            place-items: center;
-            background: rgba(238, 0, 0, 0.09);
-            color: var(--accent);
-            font-size: 0.82rem;
-            font-weight: 800;
-          }}
-          .step-text {{
+            background: var(--panel-soft);
             font-weight: 600;
+            font-size: 0.9375rem;
+            color: var(--ink);
           }}
-          .substep-list {{
-            margin-top: 2px;
+          tr:last-child td {{ border-bottom: 0; }}
+          
+          /* Figures */
+          .figure-block {{
+            margin: 40px 0;
+            padding: 32px;
+            background: var(--panel-soft);
+            border: 1px solid var(--line);
+            border-radius: var(--border-radius);
+            text-align: center;
+            max-width: 100%;
+          }}
+          .figure-block img {{
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: var(--shadow-sm);
+            margin: 0 auto;
+          }}
+          .figure-block figcaption {{
+            margin-top: 20px;
+            font-size: 0.9375rem;
             color: var(--muted);
           }}
-          .note-card {{
-            border: 1px solid var(--line-strong);
-            border-left: 5px solid rgba(198, 40, 40, 0.45);
-            border-radius: 16px;
-            padding: 16px 18px;
-            background: linear-gradient(180deg, rgba(238, 0, 0, 0.025) 0%, rgba(238, 0, 0, 0.05) 100%);
+          
+          /* Embedded Source Overrides */
+          .embedded-origin-row {{
+            margin-bottom: 32px;
           }}
-          .note-card.note-warning,
-          .note-card.note-caution {{
-            background: rgba(245, 158, 11, 0.08);
-            border-color: rgba(245, 158, 11, 0.18);
-            border-left-color: rgba(217, 119, 6, 0.5);
+          .embedded-origin-link {{
+            display: inline-flex;
+            align-items: center;
+            height: 36px;
+            padding: 0 20px;
+            border-radius: 999px;
+            background: var(--panel-soft);
+            border: 1px solid var(--line);
+            color: var(--ink-soft);
+            text-decoration: none;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
           }}
-          .note-card.note-important {{
-            background: rgba(198, 40, 40, 0.08);
-            border-color: rgba(198, 40, 40, 0.18);
-            border-left-color: rgba(198, 40, 40, 0.5);
+          .embedded-origin-link:hover {{
+            background: var(--line);
+            color: var(--ink);
           }}
-          .note-card.note-tip {{
-            background: rgba(22, 163, 74, 0.08);
-            border-color: rgba(22, 163, 74, 0.18);
-            border-left-color: rgba(22, 163, 74, 0.5);
+          
+          @media (max-width: 1100px) {{
+            .reader-layout {{
+              grid-template-columns: 1fr;
+              padding: 0 24px;
+            }}
+            .reader-sidebar {{
+              display: none;
+            }}
           }}
-          .note-title {{
-            margin-bottom: 8px;
+          .wiki-parent-card, .wiki-card {{
+            border: 1px solid var(--line);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            background: var(--panel);
+            box-shadow: var(--shadow-sm);
+            margin: 16px 0;
+          }}
+          .wiki-parent-card p, .wiki-card p {{
+            color: var(--ink-soft);
+            line-height: 1.7;
+          }}
+          .wiki-parent-card a, .wiki-card a {{
+            color: var(--ink);
+            font-weight: 600;
+            text-decoration: none;
+          }}
+          .wiki-parent-eyebrow {{
             color: var(--accent);
-            font-size: 0.92rem;
-            font-weight: 800;
+            font-size: 0.8125rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
           }}
-        </style>
+</style>
         <script>
           async function copyViewerCode(button) {{
             try {{
@@ -1207,6 +975,13 @@ def _render_study_viewer_html(
             {reader_sidebar}
           </section>
         </main>
+      
+        <script>
+          if (window.self !== window.top) {{
+            document.body.classList.add("is-embedded");
+          }}
+        </script>
+
       </body>
     </html>
     """.format(

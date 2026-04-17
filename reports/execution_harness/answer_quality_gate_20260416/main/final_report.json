@@ -51,8 +51,8 @@
       "strict_expected_only_rate=1.0",
       "pass_with_provenance_noise_rate=0.0",
       "realworld_status=sufficient",
-      "owner_critical_scenario_pass_rate=1.0",
-      "owner_demo_blocker_count=0"
+      "product_rehearsal_pass_rate=1.0",
+      "product_rehearsal_blocker_count=0"
     ]
   },
   "failure_modes_closed": [
@@ -61,7 +61,7 @@
     "Demo multiturn topic-shift test diverged from the active stripped-topic session contract"
   ],
   "known_open_risks": [
-    "Packet E closes current realworld answer gate and owner demo scorecard but does not yet add a stronger external judge lane",
+    "Packet E closes current realworld answer gate and product rehearsal scorecard but does not yet add a stronger external judge lane",
     "Evidence-linked answer rate remains 0.6923 because ambiguous and no-answer cases correctly carry no citations",
     "Unrelated workspace and tmp_source dirtiness remains untouched"
   ],
@@ -75,7 +75,7 @@
     "reports/build_logs/corpus_long_test_answer_eval_realworld_report.json",
     "reports/build_logs/answer_quality_gate_report.json",
     "reports/build_logs/answer_quality_gate_report.md",
-    "reports/build_logs/owner_demo_rehearsal_report.json"
+    "reports/build_logs/product_rehearsal_report.json"
   ],
   "notes": [
     "Targeted answer-quality tests passed.",

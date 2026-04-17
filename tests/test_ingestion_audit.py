@@ -4,7 +4,9 @@ import json
 import sys
 import tempfile
 import unittest
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterator
 from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,6 +33,59 @@ from play_book_studio.ingestion.manifest import read_manifest
 
 
 class Part1AuditTests(unittest.TestCase):
+    @contextmanager
+    def _workspace(self) -> Iterator[Path]:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            yield Path(tmpdir)
+
+    def _audit_layout(self, root: Path, *, corpus_dir_name: str = "part1") -> tuple[Path, Path, Path]:
+        manifests = root / "manifests"
+        corpus = root / corpus_dir_name
+        raw_html = corpus / "raw_html"
+        manifests.mkdir(parents=True, exist_ok=True)
+        raw_html.mkdir(parents=True, exist_ok=True)
+        return manifests, corpus, raw_html
+
+    def _ensure_dir(self, path: Path) -> Path:
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def _audit_settings(
+        self,
+        root: Path,
+        *,
+        corpus_dir_name: str = "part1",
+        source_catalog_name: str = "ocp_ko_4_20_html_single.json",
+        **overrides: object,
+    ) -> SimpleNamespace:
+        manifests, corpus, raw_html = self._audit_layout(root, corpus_dir_name=corpus_dir_name)
+        defaults = {
+            "source_catalog_path": manifests / source_catalog_name,
+            "normalized_docs_path": corpus / "normalized_docs.jsonl",
+            "chunks_path": corpus / "chunks.jsonl",
+            "bm25_corpus_path": corpus / "bm25_corpus.jsonl",
+            "preprocessing_log_path": corpus / "preprocessing_log.json",
+            "raw_html_dir": raw_html,
+            "corpus_dir": corpus,
+            "source_manifest_path": manifests / "approved_wiki_runtime.json",
+            "translation_draft_manifest_path": manifests / "translation_draft_manifest.json",
+            "playbook_books_dir": root / "playbooks",
+            "playbook_documents_path": root / "playbook_documents.jsonl",
+            "viewer_path_template": "/docs/ocp/{version}/{lang}/{slug}/index.html",
+            "ocp_version": "4.20",
+            "docs_language": "ko",
+        }
+        defaults.update(overrides)
+        return SimpleNamespace(**defaults)
+
+    def _corpus_settings(self, root: Path, **overrides: object) -> SimpleNamespace:
+        return self._audit_settings(
+            root,
+            corpus_dir_name="corpus",
+            source_catalog_name="ocp_multiversion_html_single_catalog.json",
+            **overrides,
+        )
+
     def test_looks_like_mojibake_title_flags_broken_korean(self) -> None:
         self.assertTrue(looks_like_mojibake_title("怨좉툒 ?ㅽ듃?뚰궧"))
         self.assertTrue(looks_like_mojibake_title("?꾪궎?띿쿂"))
@@ -85,13 +140,8 @@ class Part1AuditTests(unittest.TestCase):
         self.assertEqual("ko", body_language_guess(hangul_chunk_ratio=0.95, fallback_detected=False))
 
     def test_build_data_quality_report_separates_manifest_and_chunk_title_quality(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            part1 = root / "part1"
-            raw_html = part1 / "raw_html"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, part1, raw_html = self._audit_layout(root)
 
             manifest_payload = {
                 "version": 1,
@@ -188,14 +238,7 @@ class Part1AuditTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            settings = SimpleNamespace(
-                source_catalog_path=manifests / "ocp_ko_4_20_html_single.json",
-                normalized_docs_path=part1 / "normalized_docs.jsonl",
-                chunks_path=part1 / "chunks.jsonl",
-                bm25_corpus_path=part1 / "bm25_corpus.jsonl",
-                preprocessing_log_path=part1 / "preprocessing_log.json",
-                raw_html_dir=raw_html,
-            )
+            settings = self._audit_settings(root)
 
             report = build_data_quality_report(settings)
 
@@ -211,13 +254,8 @@ class Part1AuditTests(unittest.TestCase):
         self.assertFalse(report["checks"]["manifest_titles_clean"])
 
     def test_build_data_quality_report_uses_original_title_for_manual_synthesis(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            part1 = root / "part1"
-            raw_html = part1 / "raw_html"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, part1, raw_html = self._audit_layout(root)
 
             manifest_payload = {
                 "version": 1,
@@ -320,14 +358,7 @@ class Part1AuditTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            settings = SimpleNamespace(
-                source_catalog_path=manifests / "ocp_ko_4_20_html_single.json",
-                normalized_docs_path=part1 / "normalized_docs.jsonl",
-                chunks_path=part1 / "chunks.jsonl",
-                bm25_corpus_path=part1 / "bm25_corpus.jsonl",
-                preprocessing_log_path=part1 / "preprocessing_log.json",
-                raw_html_dir=raw_html,
-            )
+            settings = self._audit_settings(root)
 
             report = build_data_quality_report(settings)
 
@@ -337,13 +368,8 @@ class Part1AuditTests(unittest.TestCase):
         self.assertTrue(report["checks"]["chunk_titles_align_with_raw_html"])
 
     def test_build_data_quality_report_ignores_raw_html_only_books_outside_processed_subset(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            part1 = root / "part1"
-            raw_html = part1 / "raw_html"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, part1, raw_html = self._audit_layout(root)
 
             manifest_payload = {
                 "version": 1,
@@ -442,14 +468,7 @@ class Part1AuditTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            settings = SimpleNamespace(
-                source_catalog_path=manifests / "ocp_ko_4_20_html_single.json",
-                normalized_docs_path=part1 / "normalized_docs.jsonl",
-                chunks_path=part1 / "chunks.jsonl",
-                bm25_corpus_path=part1 / "bm25_corpus.jsonl",
-                preprocessing_log_path=part1 / "preprocessing_log.json",
-                raw_html_dir=raw_html,
-            )
+            settings = self._audit_settings(root)
 
             report = build_data_quality_report(settings)
 
@@ -459,13 +478,8 @@ class Part1AuditTests(unittest.TestCase):
         self.assertTrue(report["checks"]["chunk_titles_align_with_raw_html"])
 
     def test_build_data_quality_report_skips_chunk_title_match_for_manual_synthesis(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            part1 = root / "part1"
-            raw_html = part1 / "raw_html"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, part1, raw_html = self._audit_layout(root)
 
             (manifests / "ocp_ko_4_20_html_single.json").write_text(
                 json.dumps(
@@ -542,14 +556,7 @@ class Part1AuditTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            settings = SimpleNamespace(
-                source_catalog_path=manifests / "ocp_ko_4_20_html_single.json",
-                normalized_docs_path=part1 / "normalized_docs.jsonl",
-                chunks_path=part1 / "chunks.jsonl",
-                bm25_corpus_path=part1 / "bm25_corpus.jsonl",
-                preprocessing_log_path=part1 / "preprocessing_log.json",
-                raw_html_dir=raw_html,
-            )
+            settings = self._audit_settings(root)
 
             report = build_data_quality_report(settings)
 
@@ -557,15 +564,9 @@ class Part1AuditTests(unittest.TestCase):
         self.assertTrue(report["checks"]["chunk_titles_align_with_raw_html"])
 
     def test_build_data_quality_report_blocks_playbooks_with_weak_structure_or_english_headings(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            part1 = root / "part1"
-            raw_html = part1 / "raw_html"
-            playbooks = part1 / "playbooks"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
-            playbooks.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, part1, raw_html = self._audit_layout(root)
+            playbooks = self._ensure_dir(part1 / "playbooks")
 
             manifest_payload = {
                 "version": 1,
@@ -717,15 +718,7 @@ class Part1AuditTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            settings = SimpleNamespace(
-                source_catalog_path=manifests / "ocp_ko_4_20_html_single.json",
-                normalized_docs_path=part1 / "normalized_docs.jsonl",
-                chunks_path=part1 / "chunks.jsonl",
-                bm25_corpus_path=part1 / "bm25_corpus.jsonl",
-                preprocessing_log_path=part1 / "preprocessing_log.json",
-                raw_html_dir=raw_html,
-                playbook_books_dir=playbooks,
-            )
+            settings = self._audit_settings(root, playbook_books_dir=playbooks)
 
             report = build_data_quality_report(settings)
 
@@ -735,15 +728,9 @@ class Part1AuditTests(unittest.TestCase):
         self.assertEqual("monitoring", report["manualbook_audit"]["failing_books"][0]["book_slug"])
 
     def test_build_data_quality_report_allows_command_and_extension_headings(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            part1 = root / "part1"
-            raw_html = part1 / "raw_html"
-            playbooks = root / "playbooks"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
-            playbooks.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, part1, raw_html = self._audit_layout(root)
+            playbooks = self._ensure_dir(root / "playbooks")
 
             (manifests / "ocp_ko_4_20_html_single.json").write_text(
                 json.dumps({"entries": []}, ensure_ascii=False, indent=2),
@@ -775,15 +762,7 @@ class Part1AuditTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            settings = SimpleNamespace(
-                source_catalog_path=manifests / "ocp_ko_4_20_html_single.json",
-                normalized_docs_path=part1 / "normalized_docs.jsonl",
-                chunks_path=part1 / "chunks.jsonl",
-                bm25_corpus_path=part1 / "bm25_corpus.jsonl",
-                preprocessing_log_path=part1 / "preprocessing_log.json",
-                raw_html_dir=raw_html,
-                playbook_books_dir=playbooks,
-            )
+            settings = self._audit_settings(root, playbook_books_dir=playbooks)
 
             report = build_data_quality_report(settings)
 
@@ -792,13 +771,8 @@ class Part1AuditTests(unittest.TestCase):
         self.assertEqual(0, report["manualbook_audit"]["failing_book_count"])
 
     def test_source_approval_report_marks_mixed_and_approved_books(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            part1 = root / "part1"
-            raw_html = part1 / "raw_html"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, part1, raw_html = self._audit_layout(root)
 
             manifest_payload = {
                 "version": 1,
@@ -907,12 +881,7 @@ class Part1AuditTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            settings = SimpleNamespace(
-                source_catalog_path=source_manifest_path,
-                normalized_docs_path=part1 / "normalized_docs.jsonl",
-                chunks_path=part1 / "chunks.jsonl",
-                raw_html_dir=raw_html,
-            )
+            settings = self._audit_settings(root, source_catalog_path=source_manifest_path)
 
             report = build_source_approval_report(settings)
 
@@ -928,13 +897,8 @@ class Part1AuditTests(unittest.TestCase):
         self.assertFalse(report["books"][1]["citation_eligible"])
 
     def test_source_approval_report_backfills_provenance_from_raw_html_metadata(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            part1 = root / "part1"
-            raw_html = part1 / "raw_html"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, part1, raw_html = self._audit_layout(root)
 
             source_manifest_path = manifests / "ocp_ko_4_20_html_single.json"
             source_manifest_path.write_text(
@@ -1003,12 +967,7 @@ class Part1AuditTests(unittest.TestCase):
                 "<html><body><article><h1>아키텍처</h1></article></body></html>",
                 encoding="utf-8",
             )
-            settings = SimpleNamespace(
-                source_catalog_path=source_manifest_path,
-                normalized_docs_path=part1 / "normalized_docs.jsonl",
-                chunks_path=part1 / "chunks.jsonl",
-                raw_html_dir=raw_html,
-            )
+            settings = self._audit_settings(root, source_catalog_path=source_manifest_path)
             raw_html_metadata_path(settings, "architecture").write_text(
                 json.dumps(
                     {
@@ -1045,13 +1004,8 @@ class Part1AuditTests(unittest.TestCase):
         self.assertEqual("2026-04-10T00:00:00Z", row["updated_at"])
 
     def test_source_approval_report_preserves_translation_draft_lane(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            part1 = root / "part1"
-            raw_html = part1 / "raw_html"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, part1, raw_html = self._audit_layout(root)
 
             source_manifest_path = manifests / "ocp_ko_4_20_html_single.json"
             source_manifest_path.write_text(
@@ -1120,11 +1074,9 @@ class Part1AuditTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            settings = SimpleNamespace(
+            settings = self._audit_settings(
+                root,
                 source_catalog_path=source_manifest_path,
-                normalized_docs_path=part1 / "normalized_docs.jsonl",
-                chunks_path=part1 / "chunks.jsonl",
-                raw_html_dir=raw_html,
                 corpus_dir=part1,
             )
 
@@ -1150,13 +1102,8 @@ class Part1AuditTests(unittest.TestCase):
         )
 
     def test_translation_lane_report_tracks_required_and_draft_states(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            part1 = root / "part1"
-            raw_html = part1 / "raw_html"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, part1, raw_html = self._audit_layout(root)
 
             source_manifest_path = manifests / "ocp_ko_4_20_html_single.json"
             source_manifest_path.write_text(
@@ -1206,11 +1153,9 @@ class Part1AuditTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            settings = SimpleNamespace(
+            settings = self._audit_settings(
+                root,
                 source_catalog_path=source_manifest_path,
-                normalized_docs_path=part1 / "normalized_docs.jsonl",
-                chunks_path=part1 / "chunks.jsonl",
-                raw_html_dir=raw_html,
                 corpus_dir=part1,
                 docs_language="ko",
             )
@@ -1231,13 +1176,8 @@ class Part1AuditTests(unittest.TestCase):
         )
 
     def test_corpus_gap_report_groups_translation_and_manual_review_priorities(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            part1 = root / "part1"
-            raw_html = part1 / "raw_html"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, part1, raw_html = self._audit_layout(root)
 
             source_manifest_path = manifests / "ocp_ko_4_20_html_single.json"
             source_manifest_path.write_text(
@@ -1326,12 +1266,7 @@ class Part1AuditTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            settings = SimpleNamespace(
-                source_catalog_path=source_manifest_path,
-                normalized_docs_path=part1 / "normalized_docs.jsonl",
-                chunks_path=part1 / "chunks.jsonl",
-                raw_html_dir=raw_html,
-            )
+            settings = self._audit_settings(root, source_catalog_path=source_manifest_path)
 
             report = build_corpus_gap_report(settings)
 
@@ -1340,13 +1275,8 @@ class Part1AuditTests(unittest.TestCase):
         self.assertEqual(["operators"], [item["book_slug"] for item in report["manual_review_first"]])
 
     def test_build_approved_manifest_filters_out_non_korean_books(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            part1 = root / "part1"
-            raw_html = part1 / "raw_html"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, part1, raw_html = self._audit_layout(root)
 
             source_manifest_path = manifests / "ocp_ko_4_20_html_single.json"
             source_manifest_path.write_text(
@@ -1462,12 +1392,7 @@ class Part1AuditTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            settings = SimpleNamespace(
-                source_catalog_path=source_manifest_path,
-                normalized_docs_path=part1 / "normalized_docs.jsonl",
-                chunks_path=part1 / "chunks.jsonl",
-                raw_html_dir=raw_html,
-            )
+            settings = self._audit_settings(root, source_catalog_path=source_manifest_path)
 
             entries = build_approved_manifest(settings)
             output_path = manifests / "approved_ko.json"
@@ -1480,13 +1405,8 @@ class Part1AuditTests(unittest.TestCase):
         self.assertEqual("internal_text", written_entries[0].viewer_strategy)
 
     def test_source_approval_report_overlays_translation_draft_manifest(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            corpus = root / "corpus"
-            raw_html = corpus / "raw_html"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, corpus, raw_html = self._audit_layout(root, corpus_dir_name="corpus")
 
             source_catalog_path = manifests / "ocp_multiversion_html_single_catalog.json"
             source_catalog_path.write_text(
@@ -1593,15 +1513,10 @@ class Part1AuditTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            settings = SimpleNamespace(
+            settings = self._corpus_settings(
+                root,
                 source_catalog_path=source_catalog_path,
                 translation_draft_manifest_path=translated_manifest_path,
-                normalized_docs_path=corpus / "normalized_docs.jsonl",
-                chunks_path=corpus / "chunks.jsonl",
-                raw_html_dir=raw_html,
-                corpus_dir=corpus,
-                ocp_version="4.20",
-                docs_language="ko",
             )
 
             report = build_source_approval_report(settings)
@@ -1611,13 +1526,8 @@ class Part1AuditTests(unittest.TestCase):
         self.assertEqual("en", report["books"][0]["translation_lane"]["source_language"])
 
     def test_source_approval_report_preserves_approved_manual_synthesis_overlay(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            corpus = root / "corpus"
-            raw_html = corpus / "raw_html"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, corpus, raw_html = self._audit_layout(root, corpus_dir_name="corpus")
 
             source_catalog_path = manifests / "ocp_multiversion_html_single_catalog.json"
             source_catalog_path.write_text(
@@ -1731,15 +1641,11 @@ class Part1AuditTests(unittest.TestCase):
             (corpus / "normalized_docs.jsonl").write_text("", encoding="utf-8")
             (corpus / "chunks.jsonl").write_text("", encoding="utf-8")
 
-            settings = SimpleNamespace(
+            settings = self._corpus_settings(
+                root,
                 source_catalog_path=source_catalog_path,
                 source_manifest_path=approved_manifest_path,
                 translation_draft_manifest_path=translated_manifest_path,
-                normalized_docs_path=corpus / "normalized_docs.jsonl",
-                chunks_path=corpus / "chunks.jsonl",
-                raw_html_dir=raw_html,
-                ocp_version="4.20",
-                docs_language="ko",
             )
 
             report = build_source_approval_report(settings)
@@ -1755,15 +1661,9 @@ class Part1AuditTests(unittest.TestCase):
         self.assertEqual("approved_ko", entries[0].translation_stage)
 
     def test_build_approved_manifest_backfills_approved_manual_synthesis_from_playbook_documents(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            corpus = root / "corpus"
-            raw_html = corpus / "raw_html"
-            gold_manualbook = root / "data" / "gold_manualbook_ko"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
-            gold_manualbook.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, corpus, raw_html = self._audit_layout(root, corpus_dir_name="corpus")
+            gold_manualbook = self._ensure_dir(root / "data" / "gold_manualbook_ko")
 
             source_catalog_path = manifests / "ocp_multiversion_html_single_catalog.json"
             source_catalog_path.write_text(
@@ -1828,16 +1728,11 @@ class Part1AuditTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            settings = SimpleNamespace(
+            settings = self._corpus_settings(
+                root,
                 source_catalog_path=source_catalog_path,
                 source_manifest_path=approved_manifest_path,
-                normalized_docs_path=corpus / "normalized_docs.jsonl",
-                chunks_path=corpus / "chunks.jsonl",
-                raw_html_dir=raw_html,
                 playbook_documents_path=gold_manualbook / "playbook_documents.jsonl",
-                ocp_version="4.20",
-                docs_language="ko",
-                viewer_path_template="/docs/ocp/{version}/{lang}/{slug}/index.html",
             )
 
             entries = build_approved_manifest(settings)
@@ -1848,15 +1743,9 @@ class Part1AuditTests(unittest.TestCase):
         self.assertEqual("approved", entries[0].approval_status)
 
     def test_source_approval_report_demotes_reader_grade_failed_manualbook(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            corpus = root / "corpus"
-            raw_html = corpus / "raw_html"
-            playbooks = corpus / "playbooks"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
-            playbooks.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, corpus, raw_html = self._audit_layout(root, corpus_dir_name="corpus")
+            playbooks = self._ensure_dir(corpus / "playbooks")
 
             source_catalog_path = manifests / "ocp_multiversion_html_single_catalog.json"
             source_catalog_path.write_text(
@@ -1944,15 +1833,11 @@ class Part1AuditTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            settings = SimpleNamespace(
+            settings = self._corpus_settings(
+                root,
                 source_catalog_path=source_catalog_path,
                 source_manifest_path=approved_manifest_path,
-                normalized_docs_path=corpus / "normalized_docs.jsonl",
-                chunks_path=corpus / "chunks.jsonl",
-                raw_html_dir=raw_html,
                 playbook_books_dir=playbooks,
-                ocp_version="4.20",
-                docs_language="ko",
             )
 
             report = build_source_approval_report(settings)
@@ -1967,15 +1852,9 @@ class Part1AuditTests(unittest.TestCase):
         self.assertEqual([], entries)
 
     def test_source_approval_report_respects_bundle_dossier_over_generated_korean_artifacts(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            manifests = root / "manifests"
-            corpus = root / "corpus"
-            raw_html = corpus / "raw_html"
-            source_bundles = corpus / "source_bundles"
-            manifests.mkdir(parents=True)
-            raw_html.mkdir(parents=True)
-            source_bundles.mkdir(parents=True)
+        with self._workspace() as root:
+            manifests, corpus, raw_html = self._audit_layout(root, corpus_dir_name="corpus")
+            source_bundles = self._ensure_dir(corpus / "source_bundles")
 
             source_catalog_path = manifests / "ocp_multiversion_html_single_catalog.json"
             source_catalog_path.write_text(
@@ -2103,15 +1982,7 @@ class Part1AuditTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            settings = SimpleNamespace(
-                source_catalog_path=source_catalog_path,
-                normalized_docs_path=corpus / "normalized_docs.jsonl",
-                chunks_path=corpus / "chunks.jsonl",
-                raw_html_dir=raw_html,
-                corpus_dir=corpus,
-                ocp_version="4.20",
-                docs_language="ko",
-            )
+            settings = self._corpus_settings(root, source_catalog_path=source_catalog_path)
 
             report = build_source_approval_report(settings)
             approved_entries = build_approved_manifest(settings)

@@ -19,6 +19,7 @@ from play_book_studio.retrieval.query import (
     has_cluster_node_usage_intent,
     has_crash_loop_troubleshooting_intent,
     has_deployment_scaling_intent,
+    has_doc_locator_intent,
     has_follow_up_reference,
     has_mco_concept_intent,
     has_node_drain_intent,
@@ -118,6 +119,26 @@ def _procedure_chunk_priority(hit: RetrievalHit) -> int:
     if hit.semantic_role == "procedure":
         return 2
     return 3
+
+
+def _is_troubleshooting_doc_locator_query(query: str) -> bool:
+    normalized = (query or "").lower()
+    if not has_doc_locator_intent(normalized):
+        return False
+    return any(
+        token in normalized
+        for token in (
+            "문제 해결",
+            "트러블슈팅",
+            "문제가 생기면",
+            "문제 생기면",
+            "문제가 나면",
+            "오류가 나면",
+            "장애가 나면",
+            "위키",
+            "wiki",
+        )
+    )
 
 
 def _compare_context_priority(hit: RetrievalHit) -> tuple[int, int]:
@@ -290,17 +311,16 @@ def _hit_identity(hit: RetrievalHit) -> tuple[str, str, str]:
 
 
 def _unique_top_hits(hits: list[RetrievalHit], *, limit: int) -> list[RetrievalHit]:
-    unique: list[RetrievalHit] = []
+    unique: list[tuple[int, RetrievalHit]] = []
     seen: set[tuple[str, str, str]] = set()
-    for hit in hits:
+    for order, hit in enumerate(hits):
         identity = _hit_identity(hit)
         if identity in seen:
             continue
         seen.add(identity)
-        unique.append(hit)
-        if len(unique) >= limit:
-            break
-    return unique
+        unique.append((order, hit))
+    unique.sort(key=lambda item: (-_hit_score(item[1]), item[0]))
+    return [hit for _, hit in unique[:limit]]
 
 
 def _load_overlay_preference_payload(
@@ -387,6 +407,7 @@ def _should_force_clarification(
         return False
     if any(
         [
+            has_doc_locator_intent(normalized),
             has_openshift_kubernetes_compare_intent(normalized),
             is_generic_intro_query(normalized),
             has_operator_concept_intent(normalized),
@@ -745,6 +766,28 @@ def _select_hits(
         support_window = ranked_hits[: max(max_chunks * 2, 8)]
         top_score = _hit_score(support_window[0])
         top_book = support_window[0].book_slug
+    elif _is_troubleshooting_doc_locator_query(normalized):
+        preferred_order = {
+            "support": 0,
+            "validation_and_troubleshooting": 1,
+            "cli_tools": 2,
+            "overview": 3,
+            "architecture": 4,
+            "web_console": 7,
+            "release_notes": 8,
+        }
+        ranked_hits = sorted(
+            ranked_hits,
+            key=lambda hit: (
+                preferred_order.get(hit.book_slug, 5),
+                -_hit_score(hit),
+                hit.book_slug,
+                hit.chunk_id,
+            ),
+        )
+        support_window = ranked_hits[: max(max_chunks * 2, 8)]
+        top_score = _hit_score(support_window[0])
+        top_book = support_window[0].book_slug
 
     book_counts = Counter(hit.book_slug for hit in support_window)
     best_book_scores: dict[str, float] = defaultdict(float)
@@ -914,6 +957,10 @@ def _select_hits(
     if has_registry_storage_ops_intent(normalized):
         for book_slug in ("registry", "images", "storage", "installing_on_any_platform", "installation_overview"):
             if best_book_scores.get(book_slug, 0.0) >= top_score * 0.5:
+                allowed_books.add(book_slug)
+    if _is_troubleshooting_doc_locator_query(normalized):
+        for book_slug in ("support", "validation_and_troubleshooting", "cli_tools"):
+            if best_book_scores.get(book_slug, 0.0) >= top_score * 0.52:
                 allowed_books.add(book_slug)
     for book_slug, count in book_counts.items():
         if book_slug == top_book:

@@ -1,0 +1,30 @@
+{
+  "status": "completed",
+  "current_judgment": "The first real monolith cut is now landed: retrieval runtime coverage is no longer trapped inside one 86 KB test file that cannot be proved quickly. The suite is split into reranker, core, and graph-trace files, and each focused file now validates cleanly when run directly.",
+  "key_evidence": [
+    "Tracked repo concentration remains data=184, src=162, reports=130, tests=64, scripts=57, presentation-ui=38.",
+    "tests/test_retrieval_runtime.py was reduced from 86304 bytes to 54839 bytes and now holds only reranker coverage; tests/test_retrieval_runtime_core.py (20094 bytes) and tests/test_retrieval_runtime_graph_trace.py (14663 bytes) carry the extracted core and graph-trace coverage.",
+    "SeededBm25 now lives in tests/_support_retrieval.py, so inline StubBm25 scaffolding count in the retrieval runtime suite is 0.",
+    "Sequential validation now passes for each focused retrieval file: reranker 15 passed in 35.63s, core 10 passed in 19.46s, graph trace 11 passed in 7.94s.",
+    "The next heaviest test and code hotspots remain tests/test_ingestion_audit.py (98533 bytes, 17 TemporaryDirectory blocks), tests/test_app_viewers.py (73117 bytes, 23 TemporaryDirectory blocks), src/play_book_studio/ingestion/curated_gold.py (129650 bytes), src/play_book_studio/app/source_books.py (114333 bytes), presentation-ui/src/pages/WorkspacePage.tsx (134361 bytes), and presentation-ui/src/pages/PlaybookLibraryPage.tsx (92230 bytes)."
+  ],
+  "artifact_paths": [
+    "reports/execution_harness/repo_wide_code_inspection_20260417/main/repo_hygiene_inventory.json",
+    "reports/execution_harness/repo_wide_code_inspection_20260417/main/repo_hygiene_post_validation.json",
+    "tests/_support_retrieval.py",
+    "tests/test_retrieval_runtime.py",
+    "tests/test_retrieval_runtime_core.py",
+    "tests/test_retrieval_runtime_graph_trace.py"
+  ],
+  "validation_results": [
+    "npm --prefix presentation-ui run lint",
+    "npm --prefix presentation-ui run test -> 3 files, 9 tests passed",
+    "npm --prefix presentation-ui run build -> passes with existing vite chunk-size warning",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_retrieval_runtime.py -q -> 15 passed in 35.63s",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_retrieval_runtime_core.py -q -> 10 passed in 19.46s",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_retrieval_runtime_graph_trace.py -q -> 11 passed in 7.94s",
+    "import timing: reranker file 26.58s, core file 0.01s, graph trace file 0.01s",
+    "post-validation hygiene cleanup -> removed 13 junk targets / 2,393,089 bytes / workspace_junk_count=0"
+  ],
+  "next_action": "The next cut should extract shared temp-root/env builders from tests/test_ingestion_audit.py and tests/test_app_viewers.py, because those two files now dominate the test debt after the retrieval runtime split. After that, split WorkspacePage.tsx / PlaybookLibraryPage.tsx and start data-driving curated_gold.py."
+}

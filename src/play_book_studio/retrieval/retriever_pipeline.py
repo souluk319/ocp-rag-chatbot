@@ -11,8 +11,27 @@ from .retriever_plan import build_retrieval_plan
 from .retriever_rerank import maybe_rerank_hits
 from .retriever_search import search_bm25_candidates, search_vector_candidates
 from .ranking import summarize_hit_list as _summarize_hit_list
+from .query import (
+    has_follow_up_reference,
+    has_mco_concept_intent,
+    has_openshift_kubernetes_compare_intent,
+    has_operator_concept_intent,
+    has_pod_lifecycle_concept_intent,
+    has_route_ingress_compare_intent,
+    is_generic_intro_query,
+)
 from .scoring import fuse_ranked_hits
 from .trace import build_retrieval_trace, duration_ms as _duration_ms, emit_trace_event as _emit_trace_event
+
+DERIVED_RUNTIME_SOURCE_TYPES = frozenset(
+    {
+        "topic_playbook",
+        "operation_playbook",
+        "troubleshooting_playbook",
+        "policy_overlay_book",
+        "synthesized_playbook",
+    }
+)
 
 
 def _is_customer_pack_explicit_query(query: str) -> bool:
@@ -103,13 +122,19 @@ def _active_runtime_manifest_path(retriever) -> Path:
 
 
 def _is_latest_only_hit(hit: RetrievalHit, *, active_slugs: frozenset[str]) -> bool:
-    if str(hit.source_collection or "").strip() == "uploaded":
+    source_collection = str(hit.source_collection or "").strip()
+    if source_collection == "uploaded":
         return True
-    if active_slugs and str(hit.book_slug or "").strip() not in active_slugs:
+    if str(hit.source_type or "").strip() in DERIVED_RUNTIME_SOURCE_TYPES:
+        return True
+    if not active_slugs:
+        return True
+    if str(hit.book_slug or "").strip() not in active_slugs:
         return False
-    if str(hit.review_status or "").strip() != "approved":
+    review_status = str(hit.review_status or "").strip()
+    if review_status not in {"", "approved", "unreviewed"}:
         return False
-    if str(hit.source_collection or "").strip() != "core":
+    if source_collection != "core":
         return False
     return True
 
@@ -117,6 +142,67 @@ def _is_latest_only_hit(hit: RetrievalHit, *, active_slugs: frozenset[str]) -> b
 def _filter_latest_only_hits(retriever, hits: list[RetrievalHit]) -> list[RetrievalHit]:
     active_slugs = _active_runtime_slug_set(str(_active_runtime_manifest_path(retriever)))
     return [hit for hit in hits if _is_latest_only_hit(hit, active_slugs=active_slugs)]
+
+
+def _graph_worthy_intent(query: str) -> bool:
+    return any(
+        (
+            has_follow_up_reference(query),
+            has_mco_concept_intent(query),
+            has_openshift_kubernetes_compare_intent(query),
+            has_operator_concept_intent(query),
+            has_pod_lifecycle_concept_intent(query),
+            has_route_ingress_compare_intent(query),
+            is_generic_intro_query(query),
+        )
+    )
+
+
+def _has_graph_worthy_source(hits: list[RetrievalHit]) -> bool:
+    for hit in hits[:4]:
+        source_collection = str(hit.source_collection or "").strip()
+        source_type = str(hit.source_type or "").strip()
+        if source_collection not in {"", "core"}:
+            return True
+        if source_type in DERIVED_RUNTIME_SOURCE_TYPES:
+            return True
+    return False
+
+
+def _has_cross_book_ambiguity(hits: list[RetrievalHit]) -> bool:
+    if len(hits) < 2:
+        return False
+    top_hits = hits[:3]
+    top_books = {str(hit.book_slug or "").strip() for hit in top_hits if str(hit.book_slug or "").strip()}
+    if len(top_books) < 2:
+        return False
+    top_score = float(top_hits[0].fused_score or top_hits[0].raw_score or 0.0)
+    if top_score <= 0:
+        return True
+    runner_up_score = max(float(hit.fused_score or hit.raw_score or 0.0) for hit in top_hits[1:])
+    return runner_up_score >= (top_score * 0.92)
+
+
+def _should_expand_graph(
+    query: str,
+    *,
+    follow_up_detected: bool,
+    decomposed_query_count: int,
+    hits: list[RetrievalHit],
+) -> tuple[bool, str]:
+    if not hits:
+        return False, "no_hits"
+    if follow_up_detected:
+        return True, "follow_up_reference"
+    if decomposed_query_count > 1:
+        return True, "decomposed_query"
+    if _graph_worthy_intent(query):
+        return True, "graph_worthy_intent"
+    if _has_graph_worthy_source(hits):
+        return True, "derived_or_non_core_hits"
+    if _has_cross_book_ambiguity(hits):
+        return True, "cross_book_ambiguity"
+    return False, "not_needed"
 
 
 def execute_retrieval_pipeline(
@@ -321,12 +407,34 @@ def execute_retrieval_pipeline(
             "top_support": hybrid_top_support,
         },
     )
-    graph_enriched_hits, graph_trace = retriever.graph_runtime.enrich_hits(
-        query=plan.rewritten_query,
+    should_expand_graph, graph_reason = _should_expand_graph(
+        plan.rewritten_query,
+        follow_up_detected=plan.follow_up_detected,
+        decomposed_query_count=len(plan.decomposed_queries),
         hits=hybrid_hits,
-        context=context,
-        trace_callback=trace_callback,
     )
+    if should_expand_graph:
+        graph_enriched_hits, graph_trace = retriever.graph_runtime.enrich_hits(
+            query=plan.rewritten_query,
+            hits=hybrid_hits,
+            context=context,
+            trace_callback=trace_callback,
+        )
+    else:
+        graph_enriched_hits = list(hybrid_hits)
+        graph_trace = retriever.graph_runtime.skipped_payload(reason=graph_reason)
+        _emit_trace_event(
+            trace_callback,
+            step="graph_expand",
+            label="관계/근거 그래프 생략",
+            status="done",
+            detail=graph_reason,
+            meta={
+                "adapter_mode": graph_trace.get("adapter_mode", "skipped"),
+                "fallback_reason": graph_trace.get("fallback_reason", ""),
+                "hit_count": 0,
+            },
+        )
     graph_enriched_hits = _preserve_uploaded_customer_pack_candidate(
         plan.rewritten_query,
         hybrid_hits=graph_enriched_hits,

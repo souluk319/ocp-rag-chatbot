@@ -43,10 +43,10 @@ export default function MetricsFooter() {
   useEffect(() => {
     const ctx = gsap.context(() => {
       // Counter animation logic
-      const counters = gsap.utils.toArray('.metric-number');
+      const counters = gsap.utils.toArray<HTMLElement>('.metric-number');
 
-      counters.forEach((counter: any) => {
-        const targetValue = parseInt(counter.getAttribute('data-target') || '0', 10);
+      counters.forEach((counter) => {
+        const targetValue = Number.parseInt(counter.dataset.target || '0', 10);
 
         gsap.to(counter, {
           scrollTrigger: {
@@ -59,7 +59,8 @@ export default function MetricsFooter() {
           ease: "power2.out",
           snap: { innerHTML: 1 },
           onUpdate: function () {
-            counter.innerHTML = Math.round(this.targets()[0].innerHTML);
+            const nextValue = Number.parseFloat(counter.innerHTML || '0');
+            counter.innerHTML = String(Math.round(nextValue));
           }
         });
       });

@@ -1,0 +1,851 @@
+{
+  "known_books_total": 113,
+  "passed_count": 29,
+  "failed_count": 84,
+  "error_breakdown": {
+    "ok": 29,
+    "viewer_document_http_404": 84
+  },
+  "failures": [
+    {
+      "index": 30,
+      "book_slug": "builds_using_buildconfig",
+      "title": "Builds using BuildConfig",
+      "viewer_path": "/docs/ocp/4.20/ko/builds_using_buildconfig/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 31,
+      "book_slug": "distributed_tracing",
+      "title": "Distributed Tracing",
+      "viewer_path": "/docs/ocp/4.20/ko/distributed_tracing/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 32,
+      "book_slug": "extension_apis",
+      "title": "Extension APIs",
+      "viewer_path": "/docs/ocp/4.20/ko/extension_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 33,
+      "book_slug": "installing_on_aws",
+      "title": "Installing on AWS",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on_aws/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 34,
+      "book_slug": "installing_on_azure",
+      "title": "Installing on Azure",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on_azure/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 35,
+      "book_slug": "installing_on_azure_stack_hub",
+      "title": "Installing on Azure Stack Hub",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on_azure_stack_hub/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 36,
+      "book_slug": "installing_on_bare_metal",
+      "title": "Installing on bare metal",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on_bare_metal/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 37,
+      "book_slug": "installing_on_google_cloud",
+      "title": "Installing on Google Cloud",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on_google_cloud/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 38,
+      "book_slug": "installing_on_ibm_cloud",
+      "title": "Installing on IBM Cloud",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on_ibm_cloud/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 39,
+      "book_slug": "installing_on_ibm_power",
+      "title": "Installing on IBM Power",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on_ibm_power/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 40,
+      "book_slug": "installing_on_ibm_power_virtual_server",
+      "title": "Installing on IBM Power Virtual Server",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on_ibm_power_virtual_server/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 41,
+      "book_slug": "installing_on_ibm_z_and_ibm_linuxone",
+      "title": "Installing on IBM Z and IBM LinuxONE",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on_ibm_z_and_ibm_linuxone/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 42,
+      "book_slug": "installing_on_nutanix",
+      "title": "Installing on Nutanix",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on_nutanix/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 43,
+      "book_slug": "installing_on_openstack",
+      "title": "Installing on OpenStack",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on_openstack/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 44,
+      "book_slug": "installing_on_vmware_vsphere",
+      "title": "Installing on VMware vSphere",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on_vmware_vsphere/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 45,
+      "book_slug": "network_observability",
+      "title": "Network Observability",
+      "viewer_path": "/docs/ocp/4.20/ko/network_observability/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 46,
+      "book_slug": "red_hat_build_of_opentelemetry",
+      "title": "Red Hat build of OpenTelemetry",
+      "viewer_path": "/docs/ocp/4.20/ko/red_hat_build_of_opentelemetry/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 47,
+      "book_slug": "scalability_and_performance",
+      "title": "Scalability and performance",
+      "viewer_path": "/docs/ocp/4.20/ko/scalability_and_performance/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 48,
+      "book_slug": "service_mesh",
+      "title": "Service Mesh",
+      "viewer_path": "/docs/ocp/4.20/ko/service_mesh/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 49,
+      "book_slug": "virtualization",
+      "title": "Virtualization",
+      "viewer_path": "/docs/ocp/4.20/ko/virtualization/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 50,
+      "book_slug": "ai_workloads",
+      "title": "AI 워크로드",
+      "viewer_path": "/docs/ocp/4.20/ko/ai_workloads/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 51,
+      "book_slug": "api_overview",
+      "title": "API 개요",
+      "viewer_path": "/docs/ocp/4.20/ko/api_overview/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 52,
+      "book_slug": "authorization_apis",
+      "title": "권한 부여 API",
+      "viewer_path": "/docs/ocp/4.20/ko/authorization_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 53,
+      "book_slug": "autoscale_apis",
+      "title": "autoscale API",
+      "viewer_path": "/docs/ocp/4.20/ko/autoscale_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 54,
+      "book_slug": "building_applications",
+      "title": "애플리케이션 빌드",
+      "viewer_path": "/docs/ocp/4.20/ko/building_applications/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 55,
+      "book_slug": "builds_using_shipwright",
+      "title": "shipwright를 사용하는 빌드",
+      "viewer_path": "/docs/ocp/4.20/ko/builds_using_shipwright/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 56,
+      "book_slug": "cicd_overview",
+      "title": "CI/CD 개요",
+      "viewer_path": "/docs/ocp/4.20/ko/cicd_overview/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 57,
+      "book_slug": "cluster_apis",
+      "title": "클러스터 API",
+      "viewer_path": "/docs/ocp/4.20/ko/cluster_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 58,
+      "book_slug": "cluster_observability_operator",
+      "title": "Cluster Observability Operator",
+      "viewer_path": "/docs/ocp/4.20/ko/cluster_observability_operator/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 59,
+      "book_slug": "common_object_reference",
+      "title": "공통 오브젝트 참조",
+      "viewer_path": "/docs/ocp/4.20/ko/common_object_reference/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 60,
+      "book_slug": "config_apis",
+      "title": "구성 API",
+      "viewer_path": "/docs/ocp/4.20/ko/config_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 61,
+      "book_slug": "configuring_network_settings",
+      "title": "네트워크 설정 구성",
+      "viewer_path": "/docs/ocp/4.20/ko/configuring_network_settings/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 62,
+      "book_slug": "console_apis",
+      "title": "콘솔 API",
+      "viewer_path": "/docs/ocp/4.20/ko/console_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 63,
+      "book_slug": "edge_computing",
+      "title": "엣지 컴퓨팅",
+      "viewer_path": "/docs/ocp/4.20/ko/edge_computing/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 64,
+      "book_slug": "extensions",
+      "title": "확장",
+      "viewer_path": "/docs/ocp/4.20/ko/extensions/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 65,
+      "book_slug": "gitops",
+      "title": "GitOps",
+      "viewer_path": "/docs/ocp/4.20/ko/gitops/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 66,
+      "book_slug": "hardware_accelerators",
+      "title": "하드웨어 가속기",
+      "viewer_path": "/docs/ocp/4.20/ko/hardware_accelerators/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 67,
+      "book_slug": "hardware_networks",
+      "title": "하드웨어 네트워크",
+      "viewer_path": "/docs/ocp/4.20/ko/hardware_networks/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 68,
+      "book_slug": "hosted_control_planes",
+      "title": "호스팅된 컨트롤 플레인",
+      "viewer_path": "/docs/ocp/4.20/ko/hosted_control_planes/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 69,
+      "book_slug": "image_apis",
+      "title": "이미지 API",
+      "viewer_path": "/docs/ocp/4.20/ko/image_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 70,
+      "book_slug": "installation_configuration",
+      "title": "설치 구성",
+      "viewer_path": "/docs/ocp/4.20/ko/installation_configuration/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 71,
+      "book_slug": "installing_a_two_node_openshift_cluster",
+      "title": "두 개의 노드 OpenShift 클러스터 설치",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_a_two_node_openshift_cluster/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 72,
+      "book_slug": "installing_an_on-premise_cluster_with_the_agent-based_installer",
+      "title": "에이전트 기반 설치 관리자를 사용하여 온프레미스 클러스터 설치",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_an_on-premise_cluster_with_the_agent-based_installer/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 73,
+      "book_slug": "installing_ibm_cloud_bare_metal_classic",
+      "title": "IBM Cloud Bare Metal (Classic) 설치",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_ibm_cloud_bare_metal_classic/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 74,
+      "book_slug": "installing_on-premise_with_assisted_installer",
+      "title": "지원 설치 관리자를 사용하여 온프레미스 설치",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on-premise_with_assisted_installer/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 75,
+      "book_slug": "installing_on_a_single_node",
+      "title": "단일 노드에 설치",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on_a_single_node/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 76,
+      "book_slug": "installing_on_alibaba_cloud",
+      "title": "Alibaba Cloud에 설치",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on_alibaba_cloud/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 77,
+      "book_slug": "installing_on_oracle_distributed_cloud",
+      "title": "OCI에 설치",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on_oracle_distributed_cloud/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 78,
+      "book_slug": "installing_on_oracle_edge_cloud",
+      "title": "Oracle Edge Cloud에 설치",
+      "viewer_path": "/docs/ocp/4.20/ko/installing_on_oracle_edge_cloud/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 79,
+      "book_slug": "jenkins",
+      "title": "Jenkins",
+      "viewer_path": "/docs/ocp/4.20/ko/jenkins/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 80,
+      "book_slug": "kubernetes_nmstate",
+      "title": "Kubernetes NMState",
+      "viewer_path": "/docs/ocp/4.20/ko/kubernetes_nmstate/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 81,
+      "book_slug": "machine_apis",
+      "title": "머신 API",
+      "viewer_path": "/docs/ocp/4.20/ko/machine_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 82,
+      "book_slug": "metadata_apis",
+      "title": "메타데이터 API",
+      "viewer_path": "/docs/ocp/4.20/ko/metadata_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 83,
+      "book_slug": "migrating_from_version_3_to_4",
+      "title": "버전 3에서 4로 마이그레이션",
+      "viewer_path": "/docs/ocp/4.20/ko/migrating_from_version_3_to_4/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 84,
+      "book_slug": "migration_toolkit_for_containers",
+      "title": "Migration Toolkit for Containers",
+      "viewer_path": "/docs/ocp/4.20/ko/migration_toolkit_for_containers/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 85,
+      "book_slug": "monitoring_apis",
+      "title": "모니터링 API",
+      "viewer_path": "/docs/ocp/4.20/ko/monitoring_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 86,
+      "book_slug": "multiple_networks",
+      "title": "다중 네트워크",
+      "viewer_path": "/docs/ocp/4.20/ko/multiple_networks/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 87,
+      "book_slug": "network_apis",
+      "title": "네트워크 API",
+      "viewer_path": "/docs/ocp/4.20/ko/network_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 88,
+      "book_slug": "network_security",
+      "title": "네트워크 보안",
+      "viewer_path": "/docs/ocp/4.20/ko/network_security/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 89,
+      "book_slug": "networking_operators",
+      "title": "Networking Operator",
+      "viewer_path": "/docs/ocp/4.20/ko/networking_operators/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 90,
+      "book_slug": "node_apis",
+      "title": "노드 API",
+      "viewer_path": "/docs/ocp/4.20/ko/node_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 91,
+      "book_slug": "oauth_apis",
+      "title": "OAuth API",
+      "viewer_path": "/docs/ocp/4.20/ko/oauth_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 92,
+      "book_slug": "openshift_lightspeed",
+      "title": "Lightspeed",
+      "viewer_path": "/docs/ocp/4.20/ko/openshift_lightspeed/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 93,
+      "book_slug": "openshift_sandboxed_containers",
+      "title": "OpenShift 샌드박스 컨테이너",
+      "viewer_path": "/docs/ocp/4.20/ko/openshift_sandboxed_containers/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 94,
+      "book_slug": "operator_apis",
+      "title": "Operator API",
+      "viewer_path": "/docs/ocp/4.20/ko/operator_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 95,
+      "book_slug": "operatorhub_apis",
+      "title": "OperatorHub API",
+      "viewer_path": "/docs/ocp/4.20/ko/operatorhub_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 96,
+      "book_slug": "ovn-kubernetes_network_plugin",
+      "title": "OVN-Kubernetes 네트워크 플러그인",
+      "viewer_path": "/docs/ocp/4.20/ko/ovn-kubernetes_network_plugin/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 97,
+      "book_slug": "pipelines",
+      "title": "파이프라인",
+      "viewer_path": "/docs/ocp/4.20/ko/pipelines/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 98,
+      "book_slug": "policy_apis",
+      "title": "정책 API",
+      "viewer_path": "/docs/ocp/4.20/ko/policy_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 99,
+      "book_slug": "power_monitoring",
+      "title": "전원 모니터링",
+      "viewer_path": "/docs/ocp/4.20/ko/power_monitoring/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 100,
+      "book_slug": "project_apis",
+      "title": "프로젝트 API",
+      "viewer_path": "/docs/ocp/4.20/ko/project_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 101,
+      "book_slug": "provisioning_apis",
+      "title": "프로비저닝 API",
+      "viewer_path": "/docs/ocp/4.20/ko/provisioning_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 102,
+      "book_slug": "rbac_apis",
+      "title": "RBAC API",
+      "viewer_path": "/docs/ocp/4.20/ko/rbac_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 103,
+      "book_slug": "role_apis",
+      "title": "역할 API",
+      "viewer_path": "/docs/ocp/4.20/ko/role_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 104,
+      "book_slug": "schedule_and_quota_apis",
+      "title": "일정 및 할당량 API",
+      "viewer_path": "/docs/ocp/4.20/ko/schedule_and_quota_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 105,
+      "book_slug": "security_apis",
+      "title": "보안 API",
+      "viewer_path": "/docs/ocp/4.20/ko/security_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 106,
+      "book_slug": "serverless",
+      "title": "서버리스",
+      "viewer_path": "/docs/ocp/4.20/ko/serverless/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 107,
+      "book_slug": "specialized_hardware_and_driver_enablement",
+      "title": "특화된 하드웨어 및 드라이버 활성화",
+      "viewer_path": "/docs/ocp/4.20/ko/specialized_hardware_and_driver_enablement/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 108,
+      "book_slug": "storage_apis",
+      "title": "스토리지 API",
+      "viewer_path": "/docs/ocp/4.20/ko/storage_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 109,
+      "book_slug": "template_apis",
+      "title": "템플릿 API",
+      "viewer_path": "/docs/ocp/4.20/ko/template_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 110,
+      "book_slug": "tutorials",
+      "title": "튜토리얼",
+      "viewer_path": "/docs/ocp/4.20/ko/tutorials/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 111,
+      "book_slug": "user_and_group_apis",
+      "title": "사용자 및 그룹 API",
+      "viewer_path": "/docs/ocp/4.20/ko/user_and_group_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 112,
+      "book_slug": "windows_container_support_for_openshift",
+      "title": "OpenShift용 Windows 컨테이너 지원",
+      "viewer_path": "/docs/ocp/4.20/ko/windows_container_support_for_openshift/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    },
+    {
+      "index": 113,
+      "book_slug": "workloads_apis",
+      "title": "워크로드 API",
+      "viewer_path": "/docs/ocp/4.20/ko/workloads_apis/index.html",
+      "source_meta_status": 200,
+      "viewer_document_status": 404,
+      "body_present": null,
+      "error": "viewer_document_http_404"
+    }
+  ]
+}

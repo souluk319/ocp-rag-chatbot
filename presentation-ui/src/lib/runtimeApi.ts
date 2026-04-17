@@ -62,9 +62,9 @@ export interface ReleaseCandidateFreezeSummary {
   commercial_truth: string;
   runtime_count: number;
   active_group: string;
-  owner_demo_pass_rate: number;
-  owner_demo_pass_count: number;
-  owner_demo_scenario_count: number;
+  product_gate_pass_rate: number | null;
+  product_gate_pass_count: number;
+  product_gate_scenario_count: number;
   promotion_gate_count: number;
   release_blocker_count: number;
   sell_now: string;
@@ -84,10 +84,10 @@ export interface DataControlRoomSummary {
   approved_wiki_runtime_book_count?: number;
   wiki_navigation_backlog_count?: number;
   wiki_usage_signal_count?: number;
-  buyer_demo_gate_count?: number;
+  product_gate_count?: number;
   buyer_packet_bundle_count?: number;
   release_candidate_freeze_ready?: boolean;
-  owner_demo_pass_rate?: number;
+  product_gate_pass_rate?: number | null;
   topic_playbook_count: number;
   derived_playbook_count: number;
   playable_asset_count: number;
@@ -111,12 +111,13 @@ export interface DataControlRoomResponse {
       failed_data_quality_checks?: string[];
     };
   };
-  owner_demo_rehearsal?: {
+  product_rehearsal?: {
     status: string;
+    exists?: boolean;
     current_stage: string;
     scenario_count: number;
     pass_count: number;
-    owner_critical_scenario_pass_rate: number;
+    critical_scenario_pass_rate: number | null;
     blockers: string[];
   };
   known_books: LibraryBook[];
@@ -127,7 +128,7 @@ export interface DataControlRoomResponse {
   approved_wiki_runtime_books?: LibraryBucket;
   wiki_navigation_backlog?: LibraryBucket;
   wiki_usage_signals?: LibraryBucket;
-  buyer_demo_gate?: LibraryBucket;
+  product_gate?: LibraryBucket;
   buyer_packet_bundle?: BuyerPacketBucket;
   release_candidate_freeze?: ReleaseCandidateFreezeSummary;
   topic_playbooks: LibraryBucket;
@@ -612,6 +613,35 @@ async function requestResponse(path: string, init?: RequestInit): Promise<Respon
   return response;
 }
 
+const CANONICAL_VIEWER_DIRECTORY_PATTERNS = [
+  /^\/docs\/ocp\/[^/]+\/[^/]+\/[^/]+$/,
+  /^\/playbooks\/wiki-runtime\/active\/[^/]+$/,
+  /^\/wiki\/entities\/[^/]+$/,
+  /^\/wiki\/figures\/[^/]+\/[^/]+$/,
+];
+
+export function normalizeViewerPath(path: string): string {
+  const raw = String(path || '').trim();
+  if (!raw || /^https?:\/\//i.test(raw)) {
+    return raw;
+  }
+  const baseOrigin = typeof window !== 'undefined' ? window.location.origin : RUNTIME_EXTERNAL_ORIGIN;
+  try {
+    const parsed = new URL(raw, baseOrigin);
+    const trimmedPath = parsed.pathname === '/' ? parsed.pathname : parsed.pathname.replace(/\/+$/, '');
+    const normalizedPath = (
+      trimmedPath
+      && !trimmedPath.endsWith('/index.html')
+      && CANONICAL_VIEWER_DIRECTORY_PATTERNS.some((pattern) => pattern.test(trimmedPath))
+    )
+      ? `${trimmedPath}/index.html`
+      : parsed.pathname;
+    return `${normalizedPath}${parsed.search || ''}${parsed.hash || ''}`;
+  } catch {
+    return raw;
+  }
+}
+
 export function toRuntimeUrl(path: string): string {
   if (!path) {
     return '';
@@ -619,7 +649,7 @@ export function toRuntimeUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) {
     return path;
   }
-  return `${RUNTIME_EXTERNAL_ORIGIN}${path}`;
+  return `${RUNTIME_EXTERNAL_ORIGIN}${normalizeViewerPath(path)}`;
 }
 
 export async function loadDataControlRoom(): Promise<DataControlRoomResponse> {
@@ -784,11 +814,13 @@ export async function sendChatStream(
 }
 
 export async function loadSourceMeta(viewerPath: string): Promise<SourceMetaResponse> {
-  return requestJson<SourceMetaResponse>(`/api/source-meta?viewer_path=${encodeURIComponent(viewerPath)}`);
+  const normalizedViewerPath = normalizeViewerPath(viewerPath);
+  return requestJson<SourceMetaResponse>(`/api/source-meta?viewer_path=${encodeURIComponent(normalizedViewerPath)}`);
 }
 
 export async function loadViewerDocument(viewerPath: string): Promise<ViewerDocumentResponse> {
-  return requestJson<ViewerDocumentResponse>(`/api/viewer-document?viewer_path=${encodeURIComponent(viewerPath)}`);
+  const normalizedViewerPath = normalizeViewerPath(viewerPath);
+  return requestJson<ViewerDocumentResponse>(`/api/viewer-document?viewer_path=${encodeURIComponent(normalizedViewerPath)}`);
 }
 
 export async function loadRuntimeFigures(bookSlug: string, limit = 3): Promise<RuntimeFiguresResponse> {

@@ -15,93 +15,58 @@ export interface ViewerDocumentPayload {
 const VIEWER_READER_POLISH = `
   :host {
     display: block;
-    color: #161b22;
+    color: #0f172a;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .viewer-root {
     min-height: 100%;
+    background: transparent;
+    padding-bottom: 40px;
+    min-width: 0;
+    max-width: 100%;
   }
 
-  .viewer-root main {
-    width: min(100%, 1320px) !important;
-    padding: 18px 24px 48px !important;
+  /* 
+   * Allow the native styling from viewer_page.py to take over entirely.
+   * Hide the reader-sidebar as requested by user ("목록들은 껍데기같은데 싹 지우면 안돼?").
+   */
+  .viewer-root .reader-sidebar {
+    display: none !important;
   }
 
   .viewer-root .reader-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(260px, 320px) !important;
-    gap: 22px !important;
-    margin-top: 18px !important;
+    grid-template-columns: 1fr !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
   }
 
-  .viewer-root .reader-main,
+  /* Constrain the main width similar to a typical book/documentation layout */
+  .viewer-root main {
+    width: min(900px, 100%) !important;
+    max-width: 900px !important;
+    margin: 0 auto !important;
+    padding: 32px 48px !important;
+    min-width: 0 !important;
+  }
+
+  .viewer-root .study-document,
+  .viewer-root .hero,
+  .viewer-root .hero-grid,
+  .viewer-root .hero-main,
   .viewer-root .section-list,
+  .viewer-root .section-card,
   .viewer-root .section-body,
-  .viewer-root .table-wrap,
   .viewer-root .code-block,
-  .viewer-root table {
-    min-width: 0;
-  }
-
-  .viewer-root .section-list {
-    gap: 0 !important;
-  }
-
-  .viewer-root .section-card + .section-card,
-  .viewer-root .embedded-section + .embedded-section {
-    margin-top: 32px !important;
-    padding-top: 32px !important;
-  }
-
-  .viewer-root .section-header {
-    gap: 8px !important;
-    padding-bottom: 14px !important;
-    margin-bottom: 18px !important;
-  }
-
-  .viewer-root .section-header h2 {
-    max-width: 18ch;
-  }
-
-  .viewer-root .section-body {
-    gap: 18px !important;
-  }
-
-  .viewer-root .section-body p,
-  .viewer-root .section-body li,
-  .viewer-root .section-body td {
-    color: #2f3742 !important;
-  }
-
-  .viewer-root .figure-block {
-    margin: 22px 0 !important;
-    padding: 18px !important;
-  }
-
-  .viewer-root .figure-block img {
-    box-shadow: 0 18px 40px rgba(17, 20, 24, 0.08);
-  }
-
   .viewer-root .table-wrap {
-    overflow-x: auto !important;
-  }
-
-  .viewer-root .code-block pre {
-    overflow-x: auto !important;
-  }
-
-  .viewer-root .code-block.is-wrapped pre,
-  .viewer-root .code-block.is-wrapped code {
-    white-space: pre-wrap !important;
-    word-break: break-word !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
   }
 
   @media (max-width: 1100px) {
-    .viewer-root .reader-layout {
-      grid-template-columns: 1fr !important;
-    }
-
-    .viewer-root .reader-sidebar {
-      position: static !important;
+    .viewer-root main {
+      padding: 32px 24px !important;
     }
   }
 `;
@@ -176,7 +141,25 @@ export default function ViewerDocumentStage({
           const targetId = href.slice(1);
           const targetNode = root.getElementById(targetId) ?? root.querySelector(`[id="${CSS.escape(targetId)}"]`);
           if (targetNode instanceof HTMLElement) {
-            targetNode.scrollIntoView({ block: 'start', behavior: 'smooth' });
+            // scrollIntoView on shadow DOM nodes scrolls ALL light-DOM ancestors including the
+            // panel scroll container, which snaps the whole panel to scrollTop=0 before trying
+            // to reveal the element. Instead, find the nearest scrollable ancestor of the shadow
+            // host in the light DOM and scroll it manually using viewport-relative coordinates.
+            const shadowHost = host;
+            let scrollContainer: Element | null = shadowHost.parentElement;
+            while (scrollContainer && scrollContainer !== document.documentElement) {
+              const style = window.getComputedStyle(scrollContainer);
+              if (style.overflowY === 'auto' || style.overflowY === 'scroll') break;
+              scrollContainer = scrollContainer.parentElement;
+            }
+            if (scrollContainer && scrollContainer !== document.documentElement) {
+              const containerRect = scrollContainer.getBoundingClientRect();
+              const nodeRect = targetNode.getBoundingClientRect();
+              const targetScrollTop = scrollContainer.scrollTop + (nodeRect.top - containerRect.top) - 16;
+              scrollContainer.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+            } else {
+              targetNode.scrollIntoView({ block: 'start', behavior: 'smooth' });
+            }
           }
           return;
         }

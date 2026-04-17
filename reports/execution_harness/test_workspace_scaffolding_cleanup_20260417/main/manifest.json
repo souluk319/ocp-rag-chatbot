@@ -1,0 +1,27 @@
+{
+  "task_id": "test_workspace_scaffolding_cleanup_20260417",
+  "created_at": "2026-04-17T04:10:00+09:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": ".\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": false,
+  "parallel_execution_required": false,
+  "companion_lanes": [],
+  "write_scope": "tests/**;reports/execution_harness/test_workspace_scaffolding_cleanup_20260417/main/*",
+  "target_outputs": [
+    "shared test workspace helper cleanup",
+    "reduced temp-root and env scaffolding",
+    "focused validation evidence"
+  ],
+  "validation_commands": [
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_ingestion_audit.py -q",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_app_viewers.py -q",
+    "npm --prefix presentation-ui run lint",
+    "npm --prefix presentation-ui run test",
+    "npm --prefix presentation-ui run build"
+  ],
+  "status": "completed"
+}

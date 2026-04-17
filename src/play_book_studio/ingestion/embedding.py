@@ -1,7 +1,9 @@
 # 정규화된 chunk를 임베딩 벡터로 바꾸는 배치 helper.
 from __future__ import annotations
 
+from collections import OrderedDict
 from collections.abc import Callable
+import threading
 from typing import Iterable
 
 import requests
@@ -19,11 +21,34 @@ class EmbeddingClient:
         # Query-time vector retrieval should fail fast when the embedding runtime
         # is unavailable so the chatbot can fall back to BM25 without hanging.
         self.timeout = settings.embedding_timeout_seconds
+        self._single_text_cache: OrderedDict[str, list[float]] = OrderedDict()
+        self._cache_lock = threading.Lock()
         if not self.base_url:
             raise RuntimeError(
                 "Remote embedding endpoint is not configured. "
                 "Local embedding execution is disabled."
             )
+
+    def _cache_get_single_text(self, text: str) -> list[float] | None:
+        normalized = str(text or "")
+        if not normalized:
+            return None
+        with self._cache_lock:
+            vector = self._single_text_cache.get(normalized)
+            if vector is None:
+                return None
+            self._single_text_cache.move_to_end(normalized)
+            return list(vector)
+
+    def _cache_put_single_text(self, text: str, vector: list[float]) -> None:
+        normalized = str(text or "")
+        if not normalized:
+            return
+        with self._cache_lock:
+            self._single_text_cache[normalized] = list(vector)
+            self._single_text_cache.move_to_end(normalized)
+            while len(self._single_text_cache) > 128:
+                self._single_text_cache.popitem(last=False)
 
     def _headers(self) -> dict[str, str]:
         if not self.api_key:
@@ -72,6 +97,12 @@ class EmbeddingClient:
         progress_callback: Callable[[int, int], None] | None = None,
     ) -> list[list[float]]:
         items = list(texts)
+        if len(items) == 1:
+            cached_vector = self._cache_get_single_text(items[0])
+            if cached_vector is not None:
+                if progress_callback is not None:
+                    progress_callback(1, 1)
+                return [cached_vector]
         vectors: list[list[float]] = []
         total_batches = (len(items) + self.batch_size - 1) // self.batch_size
         for start in range(0, len(items), self.batch_size):
@@ -80,4 +111,6 @@ class EmbeddingClient:
             if progress_callback is not None:
                 completed_batches = (start // self.batch_size) + 1
                 progress_callback(completed_batches, total_batches)
+        if len(items) == 1 and vectors:
+            self._cache_put_single_text(items[0], vectors[0])
         return vectors

@@ -9,7 +9,7 @@ supersedes:
   - EXECUTION_HARNESS_CONTRACT.md (legacy version)
   - CODEX_OPERATING_CHARTER.md
   - HARNESS_ENGINEERING_CONTRACT.md
-last_updated: 2026-04-16
+last_updated: 2026-04-17
 ---
 
 # EXECUTION HARNESS CONTRACT
@@ -21,6 +21,20 @@ last_updated: 2026-04-16
 핵심 원칙은 하나다.
 
 `중간 진행은 harness 에 쌓고, 사용자에게는 검증된 closeout packet 으로만 보고한다.`
+
+## Renewal Default
+
+PBS 는 이미 검증된 제품이므로, renewal 기간의 기본 packet 목표는 아래다.
+
+- `refine existing surfaces`
+- `harden runtime / retrieval / citation`
+- `validate deliverables`
+- `execute customer orders inside the current architecture`
+
+기본적으로 허용하지 않는 것은 아래다.
+
+- `reinvention-only rename or doctrine reset without order/quality reason`
+- `temporary demo fork used as delivery path`
 
 ## Harness Package
 
@@ -122,6 +136,7 @@ Main lane 은 통합과 최종 verdict 를 맡는다.
 - touched evaluator test via `pytest` if suite exists
 - `ragas` or equivalent metric subset if the repo already supports it
 - failure case 저장 when the bug is reproducible
+- buyer/demo/release packet or rehearsal metric 은 supporting evidence 로만 쓰고, core reader/runtime/retrieval gate 를 대체하지 않는다
 
 검증이 없다면 closeout 도 없다.
 
@@ -134,6 +149,7 @@ Main lane 은 통합과 최종 verdict 를 맡는다.
 - 관측/trace/audit packet 은 `실제 로그와 runtime data를 드러내는 것`만 허용하고, 없는 단계나 과장된 상태 표현을 만들지 않는다.
 - 사용자가 특정 결과를 거부하면 다음 시도는 `축소`, `제거`, `원형 복구` 중 하나로만 간다.
 - 실패한 packet 의 복구안으로 `지침서 수정`, `메타 원칙 설명`, `프로세스 제안`만 내놓는 것은 허용하지 않는다.
+- renewal packet 에서 surface 재정의나 product framing 변경은 `active contract` 또는 `delivery quality` 근거가 없으면 금지한다.
 - milestone 초반에는 `토큰 절약`보다 `이해 정확도`를 우선한다.
 - 구현 전에 `무엇을 바꾸는지`, `무엇을 안 바꾸는지`, `무엇으로 검증하는지`를 충분히 잠근다.
 - 이해가 얕은 상태에서 빨리 코드를 쓰는 것은 실패 패턴으로 간주한다.

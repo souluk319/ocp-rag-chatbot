@@ -768,6 +768,32 @@ class TestAppDataControlRoom(unittest.TestCase):
                 {family["family"] for family in payload["playbook_library"]["families"]},
             )
 
+    def test_build_data_control_room_payload_fails_closed_for_missing_product_rehearsal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / ".env").write_text("ARTIFACTS_DIR=artifacts\n", encoding="utf-8")
+            settings = load_settings(root)
+            self._write_json(settings.source_manifest_path, {"version": 2, "count": 0, "entries": []})
+            self._write_json(
+                root / "reports" / "build_logs" / "foundry_runs" / "profiles" / "morning_gate" / "latest.json",
+                {"verdict": {"status": "blocked", "release_blocking": True, "summary": {}}},
+            )
+            self._write_json(
+                root / "reports" / "build_logs" / "release_candidate_freeze_packet.json",
+                {"status": "ok"},
+            )
+            self._write_json(settings.retrieval_eval_report_path, {"overall": {}})
+            self._write_json(settings.answer_eval_report_path, {"overall": {}})
+            self._write_json(settings.ragas_eval_report_path, {"overall": {}})
+            self._write_json(settings.runtime_report_path, {"app": {}, "runtime": {}, "probes": {}})
+
+            payload = build_data_control_room_payload(root)
+
+        self.assertEqual("missing", payload["product_rehearsal"]["status"])
+        self.assertIsNone(payload["product_rehearsal"]["critical_scenario_pass_rate"])
+        self.assertIsNone(payload["summary"]["product_gate_pass_rate"])
+        self.assertIsNone(payload["release_candidate_freeze"]["product_gate_pass_rate"])
+
     def test_handler_exposes_data_control_room_payload(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -808,3 +834,77 @@ class TestAppDataControlRoom(unittest.TestCase):
             self.assertIn("synthesized_playbook_status", payload)
             self.assertEqual("blocked", payload["summary"]["gate_status"])
             self.assertTrue(payload["gate"]["release_blocking"])
+
+    def test_build_data_control_room_payload_uses_shared_official_runtime_registry(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / ".env").write_text("ARTIFACTS_DIR=artifacts\n", encoding="utf-8")
+            settings = load_settings(root)
+
+            self._write_json(
+                settings.source_manifest_path,
+                {
+                    "entries": [
+                        {
+                            "book_slug": "architecture",
+                            "title": "Architecture",
+                            "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html",
+                            "source_url": "https://example.com/architecture",
+                            "source_lane": "official_ko",
+                            "source_type": "official_doc",
+                            "approval_state": "approved",
+                            "publication_state": "active",
+                            "content_status": "approved_ko",
+                        }
+                    ]
+                },
+            )
+            self._write_json(
+                root / "data" / "wiki_runtime_books" / "active_manifest.json",
+                {
+                    "generated_at_utc": "2026-04-17T11:00:00+00:00",
+                    "active_group": "full_rebuild",
+                    "entries": [
+                        {
+                            "slug": "support",
+                            "title": "Support",
+                            "source_candidate_path": str(root / "support.md"),
+                            "runtime_path": str(root / "runtime" / "support.md"),
+                        }
+                    ],
+                },
+            )
+            self._write_jsonl(
+                settings.playbook_documents_path,
+                [
+                    {
+                        "book_slug": "backup_restore_operations",
+                        "title": "Backup Restore Operations",
+                        "source_uri": "https://example.com/backup_restore_operations",
+                        "review_status": "approved",
+                        "section_count": 3,
+                        "source_metadata": {
+                            "source_type": "operation_playbook",
+                            "source_lane": "applied_playbook",
+                            "approval_state": "approved",
+                            "publication_state": "published",
+                        },
+                    }
+                ],
+            )
+
+            payload = build_data_control_room_payload(root)
+
+        self.assertEqual(3, payload["summary"]["approved_wiki_runtime_book_count"])
+        self.assertEqual(
+            {"architecture", "backup_restore_operations", "support"},
+            {book["book_slug"] for book in payload["approved_wiki_runtime_books"]["books"]},
+        )
+        self.assertEqual(
+            {
+                "/docs/ocp/4.20/ko/architecture/index.html",
+                "/docs/ocp/4.20/ko/backup_restore_operations/index.html",
+                "/playbooks/wiki-runtime/active/support/index.html",
+            },
+            {book["viewer_path"] for book in payload["approved_wiki_runtime_books"]["books"]},
+        )

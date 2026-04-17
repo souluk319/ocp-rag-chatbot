@@ -61,6 +61,7 @@ import {
   deleteSession,
   loadSourceMeta,
   loadViewerDocument,
+  normalizeViewerPath,
   normalizeCustomerPackDraft,
   removeWikiOverlay,
   saveWikiOverlay,
@@ -69,6 +70,8 @@ import {
   toRuntimeUrl,
   uploadCustomerPackDraft,
 } from '../lib/runtimeApi';
+import { WIKI_VISION_MODES, loadStoredVisionMode, persistVisionMode, type VisionMode } from '../lib/wikiVision';
+import { resolveWorkspaceSourceBooks } from '../lib/workspaceSourceCatalog';
 import WorkspaceTracePanel from '../components/WorkspaceTracePanel';
 
 type WorkspaceManualBook = LibraryBook & {
@@ -133,8 +136,6 @@ interface OverlayTargetDescriptor {
 }
 
 type LeftPanelMode = 'history' | 'outline' | 'signals';
-type VisionMode = 'atlas_canvas' | 'guided_tour' | 'encyclopedia_world';
-
 interface OutlineLinkItem {
   id: string;
   label: string;
@@ -164,44 +165,18 @@ const OUTLINE_CATEGORY_RULES: Array<{
   description: string;
   patterns: string[];
 }> = [
-  { key: 'install', label: 'Install', description: '클러스터 설치와 Day-1 경로', patterns: ['install', 'installation', 'day-1', 'day 1', 'cluster installation'] },
-  { key: 'day2', label: 'Day-2', description: '운영 전환과 후속 구성', patterns: ['day-2', 'day 2', 'postinstall', 'post-install', 'day two'] },
-  { key: 'operations', label: 'Operations', description: '일상 운영과 변경 관리', patterns: ['machine config', 'operator', 'control plane', 'node', 'proxy', 'configuration', 'operations'] },
-  { key: 'storage', label: 'Storage', description: '스토리지, 백업, 복구', patterns: ['storage', 'backup', 'restore', 'etcd', 'registry', 'image'] },
-  { key: 'observability', label: 'Observability', description: '모니터링과 진단', patterns: ['monitor', 'observab', 'alert', 'logging', 'telemetry'] },
-  { key: 'security', label: 'Security', description: '권한, 인증, 보안 운영', patterns: ['security', 'auth', 'authorization', 'rbac', 'certificate', 'compliance'] },
-  { key: 'networking', label: 'Networking', description: '네트워크와 연결 경로', patterns: ['network', 'ingress', 'egress', 'dns', 'route'] },
-  { key: 'troubleshooting', label: 'Troubleshooting', description: '문제 해결과 복구 경로', patterns: ['troubleshoot', 'issue', 'failure', 'debug', 'problem'] },
-  { key: 'reference', label: 'Reference', description: '기타 참조 문서', patterns: [] },
-];
+    { key: 'install', label: 'Install', description: '클러스터 설치와 Day-1 경로', patterns: ['install', 'installation', 'day-1', 'day 1', 'cluster installation'] },
+    { key: 'day2', label: 'Day-2', description: '운영 전환과 후속 구성', patterns: ['day-2', 'day 2', 'postinstall', 'post-install', 'day two'] },
+    { key: 'operations', label: 'Operations', description: '일상 운영과 변경 관리', patterns: ['machine config', 'operator', 'control plane', 'node', 'proxy', 'configuration', 'operations'] },
+    { key: 'storage', label: 'Storage', description: '스토리지, 백업, 복구', patterns: ['storage', 'backup', 'restore', 'etcd', 'registry', 'image'] },
+    { key: 'observability', label: 'Observability', description: '모니터링과 진단', patterns: ['monitor', 'observab', 'alert', 'logging', 'telemetry'] },
+    { key: 'security', label: 'Security', description: '권한, 인증, 보안 운영', patterns: ['security', 'auth', 'authorization', 'rbac', 'certificate', 'compliance'] },
+    { key: 'networking', label: 'Networking', description: '네트워크와 연결 경로', patterns: ['network', 'ingress', 'egress', 'dns', 'route'] },
+    { key: 'troubleshooting', label: 'Troubleshooting', description: '문제 해결과 복구 경로', patterns: ['troubleshoot', 'issue', 'failure', 'debug', 'problem'] },
+    { key: 'reference', label: 'Reference', description: '기타 참조 문서', patterns: [] },
+  ];
 
 const OUTLINE_CATEGORY_COLLAPSED = '__collapsed__';
-
-const WIKI_VISION_MODES: Array<{
-  id: VisionMode;
-  label: string;
-  summary: string;
-  cue: string;
-}> = [
-  {
-    id: 'atlas_canvas',
-    label: 'Atlas Canvas',
-    summary: '문서, 관계, figure를 한 화면에서 함께 펼치는 탐험형 위키',
-    cue: '문서 중심 + 관계 확장',
-  },
-  {
-    id: 'guided_tour',
-    label: 'Guided Tour',
-    summary: '질문에서 답으로 끝나지 않고 절차와 다음 문서로 이어지는 투어형 스튜디오',
-    cue: '답변 중심 + 다음 단계 안내',
-  },
-  {
-    id: 'encyclopedia_world',
-    label: 'Topic World',
-    summary: '책보다 주제 지형도를 먼저 열고 관련 문서를 묶어 탐험하는 대백과 모드',
-    cue: '주제 세계 중심 탐색',
-  },
-];
 
 function normalizeRouteKey(link: ChatRelatedLink): string {
   return `${link.kind}:${(link.href || '').trim().toLowerCase()}::${(link.label || '').trim().toLowerCase()}`;
@@ -295,9 +270,9 @@ function truthSurfaceCopy(payload?: {
 } | null): {
   label: string;
   meta: string[];
-  } {
-    if (!payload) {
-      return { label: '', meta: [] };
+} {
+  if (!payload) {
+    return { label: '', meta: [] };
   }
   const boundaryTruth = String(payload.boundary_truth || '').trim();
   const sourceLane = String(payload.source_lane || '').trim();
@@ -546,9 +521,9 @@ function containsHangul(text: string): boolean {
 function runtimePathFromUrl(viewerUrl: string): string {
   try {
     const parsed = new URL(viewerUrl, window.location.origin);
-    return `${parsed.pathname}${parsed.search || ''}${parsed.hash || ''}`;
+    return normalizeViewerPath(`${parsed.pathname}${parsed.search || ''}${parsed.hash || ''}`);
   } catch {
-    return viewerUrl;
+    return normalizeViewerPath(viewerUrl);
   }
 }
 
@@ -585,15 +560,15 @@ function normalizePreviewNavigationTarget(viewerPath: string): string | null {
       || parsed.pathname.startsWith('/wiki/figures/')
       || parsed.pathname.startsWith('/api/customer-packs/captured')
     ) {
-      return runtimePath;
+      return normalizeViewerPath(runtimePath);
     }
     if (/^https?:\/\//i.test(raw)) {
       window.open(raw, '_blank', 'noopener,noreferrer');
       return null;
     }
-    return runtimePath;
+    return normalizeViewerPath(runtimePath);
   } catch {
-    return raw;
+    return normalizeViewerPath(raw);
   }
 }
 
@@ -1175,25 +1150,25 @@ function AssistantAnswer({
           <Bot size={18} />
         </div>
         <div className="assistant-head-copy">
-              <span className="assistant-label">PlayBot</span>
-              {hasTruth && (
-                <div className="assistant-truth-row">
-                  <TruthBadgeBlock
-                    payload={{
-                      boundary_truth: primaryBoundaryTruth,
-                      runtime_truth_label: primaryRuntimeTruthLabel,
-                      boundary_badge: primaryBoundaryBadge,
-                      source_lane: primarySourceLane,
-                      approval_state: primaryApprovalState,
-                      publication_state: primaryPublicationState,
-                    }}
-                    badgeClassName="assistant-truth-chip"
-                    metaClassName="assistant-truth-meta"
-                    showMeta={false}
-                  />
-                </div>
-              )}
+          <span className="assistant-label">Playbot</span>
+          {hasTruth && (
+            <div className="assistant-truth-row">
+              <TruthBadgeBlock
+                payload={{
+                  boundary_truth: primaryBoundaryTruth,
+                  runtime_truth_label: primaryRuntimeTruthLabel,
+                  boundary_badge: primaryBoundaryBadge,
+                  source_lane: primarySourceLane,
+                  approval_state: primaryApprovalState,
+                  publication_state: primaryPublicationState,
+                }}
+                badgeClassName="assistant-truth-chip"
+                metaClassName="assistant-truth-meta"
+                showMeta={false}
+              />
             </div>
+          )}
+        </div>
       </div>
       {guidedTourLead && (
         <div className="guided-tour-lead">
@@ -1474,9 +1449,7 @@ export default function WorkspacePage() {
     }
     return 'history';
   });
-  const [visionMode, setVisionMode] = useState<VisionMode>(() => {
-    return 'atlas_canvas';
-  });
+  const [visionMode, setVisionMode] = useState<VisionMode>(() => loadStoredVisionMode());
 
   // Scroll + welcome
   const [userScrolledUp, setUserScrolledUp] = useState(false);
@@ -1577,7 +1550,7 @@ export default function WorkspacePage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem('wikiVisionMode', visionMode);
+    persistVisionMode(visionMode);
   }, [visionMode]);
 
   useEffect(() => {
@@ -1609,7 +1582,7 @@ export default function WorkspacePage() {
 
     el.addEventListener('wheel', handleWheel, { passive: true });
     return () => el.removeEventListener('wheel', handleWheel);
-  }, []);
+  }, [refreshSessionList]);
 
   function scrollToBottom(): void {
     const el = chatMessagesRef.current;
@@ -1837,16 +1810,11 @@ export default function WorkspacePage() {
           return;
         }
 
-        const runtimeBooks = (
-          room.approved_wiki_runtime_books?.books
-          ?? room.manualbooks?.books
-          ?? room.gold_books
-          ?? []
-        ) as WorkspaceManualBook[];
+        const sourceBooks = resolveWorkspaceSourceBooks(room) as WorkspaceManualBook[];
         const nextDrafts = draftPayload.drafts ?? [];
 
         setPackLabel(room.active_pack.pack_label || 'OpenShift 4.20');
-        setManualBooks(runtimeBooks);
+        setManualBooks(sourceBooks);
         setDrafts(nextDrafts);
       } catch (error) {
         console.error(error);
@@ -1861,7 +1829,7 @@ export default function WorkspacePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshSessionList]);
 
   const manualSources = useMemo<SourceEntry[]>(
     () =>
@@ -1998,9 +1966,9 @@ export default function WorkspacePage() {
       viewerUrl = toRuntimeUrl(`/api/customer-packs/captured?draft_id=${encodeURIComponent(draftId)}`);
     }
 
-      const viewerDocument = viewerUrl
-        ? await loadViewerDocumentPayload(runtimePathFromUrl(viewerUrl))
-        : undefined;
+    const viewerDocument = viewerUrl
+      ? await loadViewerDocumentPayload(runtimePathFromUrl(viewerUrl))
+      : undefined;
 
     setPreview({
       kind: 'draft',
@@ -2256,7 +2224,7 @@ export default function WorkspacePage() {
 
   function getSignalDisplayTitle(item: WikiOverlayRecord): string {
     if (item.resolved_target?.title) return item.resolved_target.title;
-    const fallback = (item as any).title;
+    const fallback = item.title;
     if (fallback) return fallback;
     const ref = item.target_ref || '';
     try {
@@ -2273,15 +2241,15 @@ export default function WorkspacePage() {
 
   function getSignalHref(item: WikiOverlayRecord): string | undefined {
     if (item.resolved_target?.viewer_path) return item.resolved_target.viewer_path;
-    const fallbackPath = item.payload?.viewer_path as string | undefined;
+    const fallbackPath = typeof item.payload.viewer_path === 'string' ? item.payload.viewer_path : undefined;
     if (fallbackPath) return fallbackPath;
     if (item.target_ref) {
       if (item.target_ref.startsWith('section:')) {
-         const split = item.target_ref.replace('section:', '').split('#');
-         return `/wiki-runtime/active/${split[0]}/index.html${split[1] ? '#' + split[1] : ''}`;
+        const split = item.target_ref.replace('section:', '').split('#');
+        return `/wiki-runtime/active/${split[0]}/index.html${split[1] ? '#' + split[1] : ''}`;
       }
       if (item.target_ref.startsWith('book:')) {
-         return `/wiki-runtime/active/${item.target_ref.replace('book:', '')}/index.html`;
+        return `/wiki-runtime/active/${item.target_ref.replace('book:', '')}/index.html`;
       }
     }
     return undefined;
@@ -2296,7 +2264,7 @@ export default function WorkspacePage() {
       label: getSignalDisplayTitle(item),
       href,
       kind: item.target_kind === 'entity_hub' ? 'entity' : 'book',
-      summary: item.resolved_target?.summary || (item as any).summary || '',
+      summary: item.resolved_target?.summary || item.summary || '',
     });
   }
 
@@ -2447,10 +2415,10 @@ export default function WorkspacePage() {
         }));
       }
 
-        const primaryCitation = pickPrimaryPlaybookCitation(response.citations);
-        if (primaryCitation) {
-          await handleCitationClick(primaryCitation);
-        }
+      const primaryCitation = pickPrimaryPlaybookCitation(response.citations);
+      if (primaryCitation) {
+        await handleCitationClick(primaryCitation);
+      }
     } catch (error) {
       console.error(error);
       if (testMode && error instanceof Error) {
@@ -2503,7 +2471,7 @@ export default function WorkspacePage() {
   const canCapture = Boolean(activeDraft) && !isCapturing;
   const canNormalize = Boolean(activeDraft) && !isNormalizing;
 
-  const totalSourceCount = manualSources.length + draftSources.length;
+  const totalSourceCount = manualSources.length;
   const recentOverlayItems = recentPositionOverlays.slice(0, 4);
   const favoriteOverlayItems = favoriteOverlays.slice(0, 4);
   const nextPlayItems = personalizedNextPlays.slice(0, 4);
@@ -2623,41 +2591,34 @@ export default function WorkspacePage() {
     }
     return null;
   }, [outlineTocNodes, preview]);
-  const outlineProcedureItems = useMemo<OutlineLinkItem[]>(
-    () => (activeAssistantMessage?.relatedSections ?? []).slice(0, 6).map((link, index) => ({
+  const outlineProcedureItems: OutlineLinkItem[] = (activeAssistantMessage?.relatedSections ?? [])
+    .slice(0, 6)
+    .map((link, index) => ({
       id: `procedure:${link.href}:${index}`,
       label: link.label,
       meta: link.summary || '',
       action: () => {
         void handleRelatedLinkClick(link);
       },
-    })),
-    [activeAssistantMessage],
-  );
-  const outlineRuntimeItems = useMemo<OutlineLinkItem[]>(
-    () => manualSources.map((source) => ({
-      id: source.id,
-      label: source.name,
-      meta: source.meta,
-      action: () => {
-        void handleSourceClick(source);
-      },
-      tone: activeSourceId === source.id ? 'default' : 'muted',
-    })),
-    [activeSourceId, manualSources],
-  );
-  const outlineCustomerItems = useMemo<OutlineLinkItem[]>(
-    () => draftSources.slice(0, 4).map((source) => ({
-      id: source.id,
-      label: source.name,
-      meta: source.meta,
-      action: () => {
-        void handleSourceClick(source);
-      },
-      tone: activeSourceId === source.id ? 'default' : 'muted',
-    })),
-    [activeSourceId, draftSources],
-  );
+    }));
+  const outlineRuntimeItems: OutlineLinkItem[] = manualSources.map((source) => ({
+    id: source.id,
+    label: source.name,
+    meta: source.meta,
+    action: () => {
+      void handleSourceClick(source);
+    },
+    tone: activeSourceId === source.id ? 'default' : 'muted',
+  }));
+  const outlineCustomerItems: OutlineLinkItem[] = draftSources.slice(0, 4).map((source) => ({
+    id: source.id,
+    label: source.name,
+    meta: source.meta,
+    action: () => {
+      void handleSourceClick(source);
+    },
+    tone: activeSourceId === source.id ? 'default' : 'muted',
+  }));
   const viewerSurfaceTitle = preview.kind === 'draft'
     ? (visionMode === 'guided_tour' ? 'Guided Tour Pack' : 'Customer Pack Viewer')
     : preview.kind === 'viewer'
@@ -2777,30 +2738,30 @@ export default function WorkspacePage() {
               </div>
               <div className="panel-mode-strip">
                 <div className="panel-mode-switch" role="tablist" aria-label="Left panel mode">
-                    <button
-                      type="button"
-                      className={`panel-mode-btn ${leftPanelMode === 'history' ? 'active' : ''}`}
-                      onClick={() => setLeftPanelMode('history')}
-                      title={leftPanelLabels.history}
-                    >
-                      {leftPanelLabels.history}
-                    </button>
-                    <button
-                      type="button"
-                      className={`panel-mode-btn ${leftPanelMode === 'outline' ? 'active' : ''}`}
-                      onClick={() => setLeftPanelMode('outline')}
-                      title={leftPanelLabels.outline}
-                    >
-                      {leftPanelLabels.outline}
-                    </button>
-                    <button
-                      type="button"
-                      className={`panel-mode-btn ${leftPanelMode === 'signals' ? 'active' : ''}`}
-                      onClick={() => setLeftPanelMode('signals')}
-                      title={leftPanelLabels.signalsTitle}
-                    >
-                      {leftPanelLabels.signals}
-                    </button>
+                  <button
+                    type="button"
+                    className={`panel-mode-btn ${leftPanelMode === 'history' ? 'active' : ''}`}
+                    onClick={() => setLeftPanelMode('history')}
+                    title={leftPanelLabels.history}
+                  >
+                    {leftPanelLabels.history}
+                  </button>
+                  <button
+                    type="button"
+                    className={`panel-mode-btn ${leftPanelMode === 'outline' ? 'active' : ''}`}
+                    onClick={() => setLeftPanelMode('outline')}
+                    title={leftPanelLabels.outline}
+                  >
+                    {leftPanelLabels.outline}
+                  </button>
+                  <button
+                    type="button"
+                    className={`panel-mode-btn ${leftPanelMode === 'signals' ? 'active' : ''}`}
+                    onClick={() => setLeftPanelMode('signals')}
+                    title={leftPanelLabels.signalsTitle}
+                  >
+                    {leftPanelLabels.signals}
+                  </button>
                 </div>
               </div>
 
@@ -3140,7 +3101,7 @@ export default function WorkspacePage() {
                     <p className="welcome-vision-copy">
                       {visionMode === 'guided_tour'
                         ? '질문을 던지면 바로 읽을 절차와 이어서 열 문서를 한 경로로 엽니다.'
-                        : activeVision.summary}
+                        : activeVision.workspace.summary}
                     </p>
                     {visionMode === 'guided_tour' ? (
                       <div className="welcome-vision-active">
@@ -3157,7 +3118,7 @@ export default function WorkspacePage() {
                             onClick={() => setVisionMode(mode.id)}
                           >
                             <strong>{mode.label}</strong>
-                            <span>{mode.cue}</span>
+                            <span>{mode.workspace.cue}</span>
                           </button>
                         ))}
                       </div>
@@ -3249,7 +3210,7 @@ export default function WorkspacePage() {
                       )}
                       {message.role === 'assistant' && message.suggestedQueries && message.suggestedQueries.length > 0 && (
                         <div className="suggested-query-group">
-                            <div className="suggested-query-label">{visionMode === 'guided_tour' ? '다음 경로' : '이런 질문은 어떠세요?'}</div>
+                          <div className="suggested-query-label">{visionMode === 'guided_tour' ? '다음 경로' : '이런 질문은 어떠세요?'}</div>
                           <div className={visionMode === 'guided_tour' ? 'suggested-query-list guided-tour-query-list' : 'suggested-query-list'}>
                             {message.suggestedQueries.map((suggestedQuery, suggestedIndex) => (
                               <button
@@ -3332,52 +3293,48 @@ export default function WorkspacePage() {
             className="workspace-panel-item"
           >
             <div className={`panel-inner workspace-viewer-panel no-border-radius-left ${rightCollapsed ? 'panel-collapsed-inner' : ''}`}>
-                <div className={`panel-header ${testMode ? '' : 'viewer-panel-toolbar'}`} style={{ alignItems: 'center' }}>
-                  {testMode && (
-                    <>
-                      <div className="header-icon"><BookOpen size={18} /></div>
-                      <div className="panel-header-copy" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
-                        <h3>{viewerSurfaceTitle}</h3>
-                        <span className={`viewer-vision-badge ${testMode ? 'viewer-vision-badge-test' : ''}`} style={{ marginTop: 0 }}>
-                          {testMode ? 'TEST' : visionMode === 'guided_tour' ? 'Guided Tour Active' : activeVision.label}
-                        </span>
-                      </div>
-                    </>
-                  )}
-
-                  <div className={`viewer-utility-bar ${testMode ? '' : 'viewer-utility-bar-minimal'}`} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', padding: 0, border: 'none', background: 'transparent' }}>
-                    <button
-                      className={`viewer-utility-btn ${sourcesDrawerOpen ? 'active' : ''}`}
-                      type="button"
-                      onClick={() => setSourcesDrawerOpen((prev) => !prev)}
-                    >
-                      <FileText size={13} />
-                      <span>{visionMode === 'guided_tour' ? `Tour Sources (${totalSourceCount})` : `Sources (${totalSourceCount})`}</span>
-                      <ChevronDown size={11} className={`sources-chevron ${sourcesDrawerOpen ? 'open' : ''}`} />
-                    </button>
-                    <button
-                      className="viewer-utility-btn"
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
-                    >
-                      <Upload size={13} />
-                      <span>{isUploading ? (visionMode === 'guided_tour' ? 'Adding source...' : 'Uploading...') : (visionMode === 'guided_tour' ? 'Add Source' : 'Upload Pack')}</span>
-                    </button>
-                    <button className="header-action-btn" type="button" onClick={toggleRightPanel} title="Close panel">
-                      <PanelRightClose size={14} />
-                    </button>
-                  </div>
+              <div className={`panel-header ${testMode ? '' : 'viewer-panel-toolbar'}`} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <div className="panel-header-copy" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px' }}>
+                  {testMode && <div className="header-icon"><BookOpen size={18} /></div>}
+                  <h3 style={{ margin: 0 }}>{viewerSurfaceTitle}</h3>
+                  <span className={`viewer-vision-badge ${testMode ? 'viewer-vision-badge-test' : ''}`} style={{ marginTop: 0 }}>
+                    {testMode ? 'TEST' : visionMode === 'guided_tour' ? 'Guided Tour Active' : activeVision.label}
+                  </span>
                 </div>
 
-                <input
-                  ref={fileInputRef}
-                  className="file-input-hidden"
-                  type="file"
-                  onChange={(event) => {
-                    void handleUploadSelection(event);
-                  }}
-                />
+                <div className={`viewer-utility-bar ${testMode ? '' : 'viewer-utility-bar-minimal'}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: 0, border: 'none', background: 'transparent' }}>
+                  <button
+                    className={`viewer-utility-btn ${sourcesDrawerOpen ? 'active' : ''}`}
+                    type="button"
+                    onClick={() => setSourcesDrawerOpen((prev) => !prev)}
+                  >
+                    <FileText size={13} />
+                    <span>{visionMode === 'guided_tour' ? `Tour Sources (${totalSourceCount})` : `Sources (${totalSourceCount})`}</span>
+                    <ChevronDown size={11} className={`sources-chevron ${sourcesDrawerOpen ? 'open' : ''}`} />
+                  </button>
+                  <button
+                    className="viewer-utility-btn"
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    <Upload size={13} />
+                    <span>{isUploading ? (visionMode === 'guided_tour' ? 'Adding source...' : 'Uploading...') : (visionMode === 'guided_tour' ? 'Add Source' : 'Upload Pack')}</span>
+                  </button>
+                  <button className="header-action-btn" type="button" onClick={toggleRightPanel} title="Close panel">
+                    <PanelRightClose size={14} />
+                  </button>
+                </div>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                className="file-input-hidden"
+                type="file"
+                onChange={(event) => {
+                  void handleUploadSelection(event);
+                }}
+              />
 
               {/* Sources Drawer — absolute overlay above the viewer */}
               {sourcesDrawerOpen && (
@@ -3393,7 +3350,7 @@ export default function WorkspacePage() {
                         <button className="section-header-btn" onClick={() => toggleSection('manuals')} type="button">
                           <div className="header-label-group">
                             {collapsedSections.manuals ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                            <span className="list-title">{visionMode === 'guided_tour' ? 'Tour Books' : 'Validated Books'}</span>
+                            <span className="list-title">{visionMode === 'guided_tour' ? 'Tour Books' : 'Source Books'}</span>
                           </div>
                           <span className="item-count-badge">{manualSources.length}</span>
                         </button>
@@ -3482,34 +3439,34 @@ export default function WorkspacePage() {
                           </a>
                         )}
                         <div className="wiki-overlay-toolbar inline">
-                        <button
-                          type="button"
-                          className={`wiki-overlay-action ${currentFavorite ? 'active' : ''}`}
-                          onClick={() => { void handleToggleFavoriteCurrent(); }}
-                          disabled={isOverlaySaving}
-                          title={currentFavorite ? 'Saved' : 'Save'}
-                        >
-                          <Star size={14} />
-                        </button>
-                        {currentOverlayTarget.kind === 'section' && (
                           <button
                             type="button"
-                            className={`wiki-overlay-action ${currentSectionCheck ? 'active' : ''}`}
-                            onClick={() => { void handleToggleSectionCheckCurrent(); }}
+                            className={`wiki-overlay-action ${currentFavorite ? 'active' : ''}`}
+                            onClick={() => { void handleToggleFavoriteCurrent(); }}
                             disabled={isOverlaySaving}
-                            title={currentSectionCheck ? 'Done' : 'Mark Done'}
+                            title={currentFavorite ? 'Saved' : 'Save'}
                           >
-                            <Check size={14} />
+                            <Star size={14} />
                           </button>
-                        )}
-                        <button
-                          type="button"
-                          className={`wiki-overlay-action ${noteOpen ? 'active' : ''}`}
-                          onClick={() => setNoteOpen((value) => !value)}
-                          title="Note"
-                        >
-                          <NotebookPen size={14} />
-                        </button>
+                          {currentOverlayTarget.kind === 'section' && (
+                            <button
+                              type="button"
+                              className={`wiki-overlay-action ${currentSectionCheck ? 'active' : ''}`}
+                              onClick={() => { void handleToggleSectionCheckCurrent(); }}
+                              disabled={isOverlaySaving}
+                              title={currentSectionCheck ? 'Done' : 'Mark Done'}
+                            >
+                              <Check size={14} />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className={`wiki-overlay-action ${noteOpen ? 'active' : ''}`}
+                            onClick={() => setNoteOpen((value) => !value)}
+                            title="Note"
+                          >
+                            <NotebookPen size={14} />
+                          </button>
                         </div>
                       </div>
                     </div>

@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import base64
 import re
 import uuid
 from pathlib import Path
 from typing import Any
 
-from play_book_studio.app.source_books import load_customer_pack_book
+from play_book_studio.app.source_books_customer_pack import load_customer_pack_book
 from play_book_studio.intake import (
     DocSourceRequest,
     CustomerPackDraftStore,
@@ -101,7 +102,13 @@ def upload_customer_pack_draft(root_dir: Path, payload: dict[str, Any]) -> dict[
     if not file_name:
         raise ValueError("업로드할 file_name이 필요합니다.")
     if not isinstance(file_bytes, (bytes, bytearray)):
-        raise ValueError("업로드할 file_bytes가 필요합니다.")
+        content_base64 = str(payload.get("content_base64") or "").strip()
+        if not content_base64:
+            raise ValueError("업로드할 file_bytes가 필요합니다.")
+        try:
+            file_bytes = base64.b64decode(content_base64, validate=True)
+        except Exception as exc:  # noqa: BLE001
+            raise ValueError("content_base64가 올바른 base64 문자열이 아닙니다.") from exc
 
     content = bytes(file_bytes)
     if not content:

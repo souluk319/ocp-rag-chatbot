@@ -1,0 +1,21 @@
+{
+  "task_id": "wiki_runtime_completion_20260417",
+  "lane_id": "reviewer",
+  "role": "reviewer",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "read-only"
+  ],
+  "target_outputs": [
+    "five-document smoke checklist",
+    "regression findings if any"
+  ],
+  "validation_commands": [
+    "http smoke",
+    "pytest subset",
+    "frontend build"
+  ],
+  "status": "in_progress"
+}

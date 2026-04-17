@@ -28,15 +28,33 @@ def apply_locator_discovery_adjustments(
         or "restore" in lowered_combined
         or "recovery" in lowered_combined
     )
+    troubleshooting_locator_signal = any(
+        token in normalized
+        for token in (
+            "문제 해결",
+            "트러블슈팅",
+            "문제가 생기면",
+            "문제 생기면",
+            "문제가 나면",
+            "오류가 나면",
+            "장애가 나면",
+        )
+    )
 
     if has_doc_locator_intent(normalized):
         boosts["web_console"] = 1.35 if "콘솔" in normalized else boosts.get("web_console", 1.0)
-        if "문제 해결" in normalized or "트러블슈팅" in normalized:
-            boosts["validation_and_troubleshooting"] = 1.35
-            boosts["support"] = 1.2
+        if troubleshooting_locator_signal:
+            boosts["validation_and_troubleshooting"] = max(
+                boosts.get("validation_and_troubleshooting", 1.0),
+                1.35,
+            )
+            boosts["support"] = max(boosts.get("support", 1.0), 1.25)
+            penalties["release_notes"] = min(penalties.get("release_notes", 1.0), 0.52)
         if "보안" in normalized or "컴플라이언스" in normalized:
             boosts["security_and_compliance"] = 1.35
             penalties["security_apis"] = 0.78
+        if "위키" in normalized or "wiki" in lowered_combined:
+            penalties["web_console"] = min(penalties.get("web_console", 1.0), 0.44)
         if has_backup_restore_intent(normalized):
             boosts["backup_and_restore"] = 1.55
             boosts["etcd"] = max(boosts.get("etcd", 1.0), 1.1)

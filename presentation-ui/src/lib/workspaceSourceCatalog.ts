@@ -1,0 +1,36 @@
+import type { DataControlRoomResponse, LibraryBook } from './runtimeApi';
+
+type WorkspaceSourceRoom = Pick<
+  DataControlRoomResponse,
+  'known_books' | 'manualbooks' | 'approved_wiki_runtime_books' | 'gold_books'
+>;
+
+function dedupeBooks(books: readonly LibraryBook[]): LibraryBook[] {
+  const seen = new Set<string>();
+  const items: LibraryBook[] = [];
+  for (const book of books) {
+    const key = (book.book_slug || book.viewer_path || book.title || '').trim();
+    if (!key || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    items.push(book);
+  }
+  return items;
+}
+
+export function resolveWorkspaceSourceBooks(room: WorkspaceSourceRoom | null | undefined): LibraryBook[] {
+  if (!room) {
+    return [];
+  }
+
+  const preferredBooks = room.known_books?.length
+    ? room.known_books
+    : room.manualbooks?.books?.length
+      ? room.manualbooks.books
+      : room.approved_wiki_runtime_books?.books?.length
+        ? room.approved_wiki_runtime_books.books
+        : room.gold_books ?? [];
+
+  return dedupeBooks(preferredBooks);
+}

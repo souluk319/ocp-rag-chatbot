@@ -1,20 +1,19 @@
 """Play Book Studio의 HTTP 런타임 진입점."""
 from __future__ import annotations
 
-import cgi
-import io
 import json
 import mimetypes
-import os
 import threading
 import time
 import uuid
 import sys
+from email.parser import BytesParser
+from email.policy import default as default_email_policy
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 from play_book_studio.answering.answerer import ChatAnswerer
 from play_book_studio.answering.models import AnswerResult
 from play_book_studio.app.server_chat import (
@@ -79,12 +78,75 @@ from play_book_studio.app.session_flow import (
 )
 from play_book_studio.app.sessions import ChatSession, SessionStore
 
-DEFAULT_PLAYBOOK_UI_ORIGIN = "http://127.0.0.1:5173"
-PRESENTATION_UI_ORIGIN = (os.getenv("PRESENTATION_UI_ORIGIN") or DEFAULT_PLAYBOOK_UI_ORIGIN).rstrip("/")
+FRONTEND_DIST_DIRNAME = "presentation-ui/dist"
 DEFAULT_RUNTIME_TOP_K = 8
 DEFAULT_RUNTIME_CANDIDATE_K = 20
 DEFAULT_RUNTIME_MAX_CONTEXT_CHUNKS = 6
 DATA_CONTROL_ROOM_CACHE_TTL_SECONDS = 30.0
+
+
+def _frontend_dist_dir(root_dir: Path) -> Path:
+    return (root_dir / FRONTEND_DIST_DIRNAME).resolve()
+
+
+def _resolve_frontend_asset(root_dir: Path, request_path: str) -> Path | None:
+    dist_dir = _frontend_dist_dir(root_dir)
+    if not dist_dir.exists():
+        return None
+    relative = unquote((request_path or "").lstrip("/"))
+    if not relative:
+        relative = "index.html"
+    candidate = (dist_dir / relative).resolve()
+    if candidate.is_file() and (candidate == dist_dir or dist_dir in candidate.parents):
+        return candidate
+    return None
+
+
+def _decode_multipart_text(part) -> str:
+    payload = part.get_payload(decode=True) or b""
+    charset = part.get_content_charset() or "utf-8"
+    try:
+        return payload.decode(charset)
+    except (LookupError, UnicodeDecodeError):
+        return payload.decode("utf-8", errors="replace")
+
+
+def _parse_multipart_form_data(raw_body: bytes, content_type: str) -> dict[str, Any]:
+    if not raw_body:
+        return {}
+    envelope = (
+        f"Content-Type: {content_type}\r\n"
+        "MIME-Version: 1.0\r\n"
+        "\r\n"
+    ).encode("utf-8")
+    message = BytesParser(policy=default_email_policy).parsebytes(envelope + raw_body)
+    if not message.is_multipart():
+        return {}
+
+    payload: dict[str, Any] = {}
+    uploaded_file_name = ""
+    for part in message.iter_parts():
+        field_name = str(part.get_param("name", header="content-disposition") or "").strip()
+        if not field_name:
+            continue
+        filename = part.get_filename()
+        if filename:
+            payload[field_name] = part.get_payload(decode=True) or b""
+            payload[f"{field_name}_name"] = str(filename)
+            if field_name == "file":
+                uploaded_file_name = str(filename)
+            continue
+        payload[field_name] = _decode_multipart_text(part)
+
+    if "file" in payload:
+        payload["file_bytes"] = payload.pop("file")
+    if "file_name" not in payload and "file_name_name" in payload:
+        payload["file_name"] = str(payload.pop("file_name_name") or "")
+    elif "file_name" in payload:
+        payload["file_name"] = str(payload["file_name"] or "")
+    elif "file_bytes" in payload:
+        payload["file_name"] = uploaded_file_name
+    return payload
 
 
 class _TimedValueCache:
@@ -235,45 +297,13 @@ def _build_handler(
                 return
 
         def _parse_request_payload(self) -> dict[str, Any] | None:
-            content_type = str(self.headers.get("Content-Type") or "").strip().lower()
+            raw_content_type = str(self.headers.get("Content-Type") or "").strip()
+            content_type = raw_content_type.lower()
             content_length = int(self.headers.get("Content-Length", "0"))
             raw_body = self.rfile.read(content_length) if content_length else b""
 
             if content_type.startswith("multipart/form-data"):
-                environ = {
-                    "REQUEST_METHOD": "POST",
-                    "CONTENT_TYPE": str(self.headers.get("Content-Type") or ""),
-                    "CONTENT_LENGTH": str(content_length),
-                }
-                form = cgi.FieldStorage(
-                    fp=io.BytesIO(raw_body),
-                    headers=self.headers,
-                    environ=environ,
-                    keep_blank_values=True,
-                )
-                payload: dict[str, Any] = {}
-                for key in form.keys():
-                    field = form[key]
-                    if isinstance(field, list):
-                        field = field[0]
-                    if getattr(field, "filename", None):
-                        payload[key] = field.file.read()
-                        payload[f"{key}_name"] = str(field.filename or "")
-                    else:
-                        payload[key] = str(field.value or "")
-                if "file" in payload:
-                    payload["file_bytes"] = payload.pop("file")
-                if "file_name" not in payload and "file_name_name" in payload:
-                    payload["file_name"] = payload.pop("file_name_name")
-                elif "file_name" not in payload and "file_name" in payload:
-                    payload["file_name"] = str(payload["file_name"] or "")
-                elif "file_name" not in payload and "file_name_name" not in payload and "file_name" not in payload and "file_bytes" in payload:
-                    payload["file_name"] = str(payload.get("file_name") or "")
-                if not payload.get("file_name") and "file_name_name" in payload:
-                    payload["file_name"] = str(payload.pop("file_name_name") or "")
-                if not payload.get("file_name") and "file_name" not in payload and "file_bytes" in payload:
-                    payload["file_name"] = str(form["file"].filename or "") if "file" in form else ""
-                return payload
+                return _parse_multipart_form_data(raw_body, raw_content_type)
 
             try:
                 return json.loads(raw_body.decode("utf-8") or "{}")
@@ -285,6 +315,15 @@ def _build_handler(
             parsed_request = urlparse(self.path)
             request_path = parsed_request.path
             started_at = time.monotonic()
+            if request_path.startswith("/assets/") or request_path in {"/", "/favicon.svg", "/studio", "/workspace", "/playbook-library", "/details"}:
+                asset_path = _resolve_frontend_asset(
+                    root_dir,
+                    request_path if request_path.startswith("/assets/") or request_path == "/favicon.svg" else "/index.html",
+                )
+                if asset_path is not None:
+                    content_type = mimetypes.guess_type(str(asset_path))[0] or "text/html; charset=utf-8"
+                    self._send_bytes(asset_path.read_bytes(), content_type=content_type)
+                    return
             if request_path.startswith("/playbooks/wiki-assets/"):
                 relative = request_path.removeprefix("/playbooks/wiki-assets/").strip("/")
                 asset_path = (root_dir / "data" / "wiki_assets" / relative).resolve()
@@ -354,6 +393,16 @@ def _build_handler(
             if request_path == "/api/customer-packs/captured":
                 self._handle_customer_pack_captured(parsed_request.query)
                 return
+            frontend_fallback = _resolve_frontend_asset(root_dir, request_path)
+            if frontend_fallback is not None:
+                content_type = mimetypes.guess_type(str(frontend_fallback))[0] or "application/octet-stream"
+                self._send_bytes(frontend_fallback.read_bytes(), content_type=content_type)
+                return
+            if not request_path.startswith(("/api/", "/playbooks/", "/docs/", "/wiki/")):
+                index_path = _resolve_frontend_asset(root_dir, "/index.html")
+                if index_path is not None:
+                    self._send_bytes(index_path.read_bytes(), content_type="text/html; charset=utf-8")
+                    return
             self.send_error(HTTPStatus.NOT_FOUND, "Not found")
 
         def do_POST(self) -> None:  # noqa: N802
@@ -681,7 +730,7 @@ def serve(
     if open_browser:
         import webbrowser
 
-        webbrowser.open(PRESENTATION_UI_ORIGIN)
+        webbrowser.open(backend_url)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

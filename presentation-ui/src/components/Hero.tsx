@@ -61,8 +61,8 @@ export default function Hero() {
         </p>
 
         <div className="hero-actions">
-          <Link to="/workspace" className="primary-cta">
-            <span>Open Workspace</span>
+          <Link to="/studio" className="primary-cta">
+            <span>Launch Studio</span>
             <ArrowRight size={18} />
           </Link>
           <button className="secondary-cta">Watch Demo</button>

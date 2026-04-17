@@ -1,0 +1,42 @@
+# Local Worklog
+
+- task_id: `data_control_room_bucket_split_20260417`
+- lane_id: `main`
+- role: `main`
+- major_task: `false`
+- user-visible progress는 milestone 종료 전까지 기록하지 않는다.
+- 중간 자동 복구, 실행 메모, 임시 판단은 이 파일에만 적는다.
+- target: `data_control_room.py` 에서 bucket builder 와 bucket 전용 I/O helper 를 분리해 payload 조립부와 관측 bucket 정의를 갈라놓는다
+- `src/play_book_studio/app/data_control_room_buckets.py` 신설: bucket/helper `15개` 이동
+- 이동한 핵심 함수:
+  - `_safe_read_json`, `_safe_read_yaml`, `_safe_int`, `_iso_now`
+  - `_build_gold_candidate_book_bucket`
+  - `_build_approved_wiki_runtime_book_bucket`
+  - `_build_navigation_backlog_bucket`
+  - `_build_wiki_usage_signal_bucket`
+  - `_build_product_gate_bucket`
+  - `_build_product_rehearsal_summary`
+  - `_build_buyer_packet_bundle_bucket`
+  - `_build_release_candidate_freeze_summary`
+- `src/play_book_studio/app/data_control_room.py` 는 bucket 조립 호출만 남기고 구현 정의 `0개`가 됐다.
+- size change:
+  - `data_control_room.py` `76,310 -> 60,838 bytes`
+  - new module `data_control_room_buckets.py` `16,545 bytes`
+- diff stat:
+  - `data_control_room.py` `14 insertions / 365 deletions`
+- focused validation:
+  - `python -m py_compile src/play_book_studio/app/data_control_room.py src/play_book_studio/app/data_control_room_buckets.py` -> pass
+  - `.\.venv\Scripts\python.exe -m pytest tests/test_app_data_control_room.py -q` -> `6 passed, 1 warning`
+  - `npm --prefix presentation-ui run lint` -> pass
+  - `npm --prefix presentation-ui run test` -> `3 files, 9 tests` pass
+  - `npm --prefix presentation-ui run build` -> pass, existing `vite` chunk-size warning remains
+- post-validation hygiene:
+  - `repo_hygiene_post_validation.json` 생성
+  - junk cleanup `14개 / 3,006,301 bytes`
+  - `workspace_junk_count = 0`
+- updated hotspot inventory:
+  - `src/play_book_studio/ingestion/curated_gold.py` `97,315 bytes`
+  - `src/play_book_studio/app/data_control_room.py` `60,838 bytes`
+  - `src/play_book_studio/app/source_books.py` `58,537 bytes`
+  - `presentation-ui/src/pages/WorkspacePage.tsx` `134,361 bytes`
+  - `presentation-ui/src/pages/PlaybookLibraryPage.tsx` `92,230 bytes`

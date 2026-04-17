@@ -17,6 +17,7 @@ from play_book_studio.intake.service import evaluate_canonical_book_quality
 from play_book_studio.config.packs import default_core_pack, resolve_ocp_core_pack
 from play_book_studio.config.settings import Settings, load_settings
 from play_book_studio.config.validation import read_jsonl
+from play_book_studio.runtime_catalog_registry import official_runtime_book_entry
 from play_book_studio.answering.answerer import ChatAnswerer
 from play_book_studio.answering.models import Citation
 from play_book_studio.app.viewers import _parse_viewer_path
@@ -217,12 +218,15 @@ def _load_manifest_entries(
 def _manifest_entry_for_book(root_dir: Path, book_slug: str) -> dict[str, Any]:
     settings = load_settings(root_dir)
     manifest_path = settings.source_manifest_path
-    if not manifest_path.exists():
-        return {}
-    return _load_manifest_entries(
-        str(manifest_path),
-        manifest_path.stat().st_mtime_ns,
-    ).get(book_slug, {})
+    manifest_entry: dict[str, Any] = {}
+    if manifest_path.exists():
+        manifest_entry = _load_manifest_entries(
+            str(manifest_path),
+            manifest_path.stat().st_mtime_ns,
+        ).get(book_slug, {})
+    if manifest_entry:
+        return manifest_entry
+    return official_runtime_book_entry(root_dir, book_slug)
 
 
 @lru_cache(maxsize=1)
@@ -349,14 +353,14 @@ def _customer_pack_meta_for_viewer_path(root_dir: Path, viewer_path: str) -> dic
 
 def _default_customer_pack_summary(payload: dict[str, Any]) -> str:
     source_type = str(payload.get("source_type") or "").strip().lower()
-    source_kind = {
-        "pdf": "PDF",
-        "md": "text",
-        "asciidoc": "text",
-        "txt": "text",
-    }.get(source_type, "web")
+    source_label = {
+        "pdf": "PDF를",
+        "md": "text 문서를",
+        "asciidoc": "text 문서를",
+        "txt": "text 문서를",
+    }.get(source_type, "웹 문서를")
     return (
-        f"업로드 {source_kind} 문서를 canonical section으로 정리한 customer pack view입니다. "
+        f"업로드 {source_label} canonical section으로 정리한 내부 review view입니다. "
         "이후 retrieval chunk는 이 section을 부모로 파생됩니다."
     )
 

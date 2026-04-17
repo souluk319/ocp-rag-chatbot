@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import json
 import sys
-import tempfile
-import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -25,6 +23,7 @@ from play_book_studio.retrieval.query import (
     has_cluster_node_usage_intent,
     has_command_request,
     has_deployment_scaling_intent,
+    has_doc_locator_intent,
     has_follow_up_reference,
     has_follow_up_entity_ambiguity,
     has_logging_ambiguity,
@@ -46,11 +45,51 @@ from play_book_studio.retrieval.retriever import (
     fuse_ranked_hits,
 )
 from play_book_studio.retrieval.retriever_plan import build_retrieval_plan
+
+
+class SeededBm25:
+    def __init__(self, hits: list[RetrievalHit] | None = None, *, record_calls: bool = False) -> None:
+        self.hits = list(hits or [])
+        self.record_calls = record_calls
+        self.calls: list[tuple[str, int]] = []
+
+    def search(self, query: str, top_k: int) -> list[RetrievalHit]:
+        if self.record_calls:
+            self.calls.append((query, top_k))
+        return list(self.hits[:top_k])
+
+
+class SeededReranker:
+    def __init__(self, hits: list[RetrievalHit], *, model_name: str = "fake-reranker", top_n: int = 8) -> None:
+        self.hits = hits
+        self.model_name = model_name
+        self.top_n = top_n
+
+    def rerank(self, query: str, hits: list[RetrievalHit], *, top_k: int) -> list[RetrievalHit]:
+        del query, hits, top_k
+        return list(self.hits)
+
+
+class FakeRetrieverWithReranker:
+    def __init__(self, hits: list[RetrievalHit], *, root_dir: Path = ROOT) -> None:
+        self.reranker = SeededReranker(hits)
+        self.settings = SimpleNamespace(root_dir=root_dir)
+
+
+class _FakeReranker(SeededReranker):
+    pass
+
+
+class _FakeRetrieverWithReranker(FakeRetrieverWithReranker):
+    pass
+
+
 __all__ = [
     "Settings",
     "BM25Index",
     "RetrievalHit",
     "SessionContext",
+    "SeededBm25",
     "_filter_customer_pack_hits_by_selection",
     "decompose_retrieval_queries",
     "detect_out_of_corpus_version",
@@ -59,6 +98,7 @@ __all__ = [
     "has_cluster_node_usage_intent",
     "has_command_request",
     "has_deployment_scaling_intent",
+    "has_doc_locator_intent",
     "has_follow_up_reference",
     "has_follow_up_entity_ambiguity",
     "has_logging_ambiguity",
@@ -77,4 +117,8 @@ __all__ = [
     "ChatRetriever",
     "fuse_ranked_hits",
     "build_retrieval_plan",
+    "SeededReranker",
+    "FakeRetrieverWithReranker",
+    "_FakeReranker",
+    "_FakeRetrieverWithReranker",
 ]

@@ -1,0 +1,25 @@
+{
+  "status": "completed",
+  "current_judgment": "The remaining ingestion audit settings/layout boilerplate is materially cleaner now. The file still contains plenty of test data, but the confusing repeated scaffolding is no longer hand-expanded across the suite.",
+  "key_evidence": [
+    "tests/test_ingestion_audit.py now has helper coverage for both part1 and corpus-lane settings: _audit_settings(...) handles the default part1 contract and _corpus_settings(...) handles the multiversion corpus lane.",
+    "All remaining settings = SimpleNamespace(...) blocks in tests/test_ingestion_audit.py were removed: 13 -> 0.",
+    "The last real manual root layout starts for manifests/part1-or-corpus/raw_html plus extra directory creation were collapsed from 5 repeated blocks to helper-based setup; the only remaining 'manifests = root / \"manifests\"' occurrence is inside the helper definition itself.",
+    "File size dropped from 98,587 bytes to 95,057 bytes while pytest coverage remained intact.",
+    "The repo hotspot list is clearer after this cut: tests/test_ingestion_audit.py is still the largest tracked test file, followed by tests/test_app_viewers.py and tests/test_retrieval_runtime.py, while product-side concentration remains in src/play_book_studio/ingestion/curated_gold.py and src/play_book_studio/app/source_books.py."
+  ],
+  "artifact_paths": [
+    "tests/test_ingestion_audit.py",
+    "reports/execution_harness/ingestion_audit_helper_cleanup_20260417/main/manifest.json",
+    "reports/execution_harness/ingestion_audit_helper_cleanup_20260417/main/worklog.md",
+    "reports/execution_harness/ingestion_audit_helper_cleanup_20260417/main/repo_hygiene_post_validation.json"
+  ],
+  "validation_results": [
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_ingestion_audit.py -q -> 23 passed",
+    "npm --prefix presentation-ui run lint -> passed",
+    "npm --prefix presentation-ui run test -> 3 files, 9 tests passed",
+    "npm --prefix presentation-ui run build -> passed with existing vite chunk-size warning",
+    "post-validation hygiene cleanup -> removed 6 junk targets / 1,089,678 bytes / workspace_junk_count=0"
+  ],
+  "next_action": "The next cleanup should move from tests to product code: start with src/play_book_studio/ingestion/curated_gold.py and src/play_book_studio/app/source_books.py, because those two files now dominate the same 'slow to reason about, easy to break' pattern on the runtime side."
+}

@@ -48,6 +48,11 @@ def build_parser() -> argparse.ArgumentParser:
     ui_parser.add_argument("--host", default="127.0.0.1")
     ui_parser.add_argument("--port", type=int, default=8765)
     ui_parser.add_argument("--no-browser", action="store_true")
+    ui_parser.add_argument(
+        "--warmup-reranker",
+        action="store_true",
+        help="Warm the reranker model before serve. Disabled by default to keep shared serve startup fast.",
+    )
 
     ask_parser = subparsers.add_parser("ask", help="Run a single grounded answer query")
     ask_parser.add_argument("--query", required=True)
@@ -110,7 +115,8 @@ def _warmup_ui_runtime(answerer: ChatAnswerer) -> None:
 
 def _run_ui(args: argparse.Namespace) -> int:
     answerer = _build_answerer()
-    _warmup_ui_runtime(answerer)
+    if getattr(args, "warmup_reranker", False):
+        _warmup_ui_runtime(answerer)
     serve(
         answerer=answerer,
         root_dir=ROOT,
@@ -254,3 +260,7 @@ def main() -> int:
     if args.command == "runtime":
         return _run_runtime(args)
     raise ValueError(f"unsupported command: {args.command}")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

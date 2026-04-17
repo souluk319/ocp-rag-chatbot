@@ -357,6 +357,98 @@ class TestAnsweringOutput(unittest.TestCase):
         )
         self.assertIn("answer has no inline citations", result.warnings)
 
+    def test_answerer_runtime_preserves_grounded_multi_hit_answer_when_inline_citations_are_missing(self) -> None:
+        settings = Settings(root_dir=ROOT)
+        answerer = ChatAnswerer(
+            settings=settings,
+            retriever=_MultiCitationRetriever(),
+            llm_client=_NarrativeNoCitationLLMClient(),
+        )
+
+        result = answerer.answer("OpenShift 아키텍처를 운영 관점에서 짧게 설명해줘", mode="runtime")
+
+        self.assertEqual("rag", result.response_kind)
+        self.assertIn("[1]", result.answer)
+        self.assertIn("[2]", result.answer)
+        self.assertNotIn("현재 Playbook Library에 해당 자료가 없습니다", result.answer)
+        self.assertEqual([1, 2], result.cited_indices)
+        self.assertCountEqual(
+            ["OpenShift 아키텍처 개요", "플랫폼 개요"],
+            [citation.section for citation in result.citations],
+        )
+
+    def test_answerer_runtime_preserves_grounded_duplicate_section_answer_when_inline_citations_are_missing(self) -> None:
+        class _RbacProcedureRetriever:
+            def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
+                hits = [
+                    RetrievalHit(
+                        chunk_id="rbac-procedure-1",
+                        book_slug="authentication_and_authorization",
+                        chapter="authentication_and_authorization",
+                        section="9.6. 사용자 역할 추가",
+                        anchor="adding-user-role",
+                        source_url="https://example.com/auth",
+                        viewer_path="/docs/auth.html#adding-user-role",
+                        text="oc adm policy add-role-to-user <role> <user> -n <project>",
+                        source="hybrid",
+                        raw_score=1.0,
+                        fused_score=1.0,
+                    ),
+                    RetrievalHit(
+                        chunk_id="rbac-procedure-2",
+                        book_slug="authentication_and_authorization",
+                        chapter="authentication_and_authorization",
+                        section="9.6. 사용자 역할 추가",
+                        anchor="adding-user-role",
+                        source_url="https://example.com/auth",
+                        viewer_path="/docs/auth.html#adding-user-role",
+                        text="oc describe rolebinding.rbac -n <project>",
+                        source="hybrid",
+                        raw_score=0.97,
+                        fused_score=0.97,
+                    ),
+                ]
+                return RetrievalResult(
+                    query=query,
+                    normalized_query=query,
+                    rewritten_query=query,
+                    top_k=top_k,
+                    candidate_k=candidate_k,
+                    context=(context or SessionContext()).to_dict(),
+                    hits=hits,
+                    trace={"warnings": [], "timings_ms": {"bm25_search": 1.0}},
+                )
+
+        class _RbacNarrativeNoCitationLLMClient:
+            def generate(self, messages, trace_callback=None):  # noqa: ANN001
+                return (
+                    "답변: 먼저 역할을 바인딩하고, 적용 후에는 rolebinding 상태를 확인해 검증하면 됩니다.\n\n"
+                    "```bash\n"
+                    "oc adm policy add-role-to-user <role> <user> -n <project>\n"
+                    "```\n\n"
+                    "```bash\n"
+                    "oc describe rolebinding.rbac -n <project>\n"
+                    "```"
+                )
+
+        settings = Settings(root_dir=ROOT)
+        answerer = ChatAnswerer(
+            settings=settings,
+            retriever=_RbacProcedureRetriever(),
+            llm_client=_RbacNarrativeNoCitationLLMClient(),
+        )
+
+        result = answerer.answer("인증 및 권한 부여 핵심 절차를 알려줘", mode="runtime")
+
+        self.assertEqual("rag", result.response_kind)
+        self.assertIn("[1]", result.answer)
+        self.assertNotIn("현재 Playbook Library에 해당 자료가 없습니다", result.answer)
+        self.assertEqual([1], result.cited_indices)
+        self.assertEqual(
+            ["9.6. 사용자 역할 추가"],
+            [citation.section for citation in result.citations],
+        )
+
     def test_answerer_shapes_english_mixed_etcd_backup_query_into_code_block(self) -> None:
         class _EtcdBackupSectionOnlyRetriever:
             def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001

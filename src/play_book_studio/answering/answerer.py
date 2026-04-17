@@ -35,8 +35,10 @@ from .answer_text_commands import (
 from .answer_text_formatting import summarize_session_context
 from .citations import (
     finalize_citations,
+    inject_citation_indices,
     inject_single_citation,
     preserve_explicit_mixed_runtime_citations,
+    select_fallback_citations,
     summarize_selected_citations,
 )
 from .context import assemble_context
@@ -167,6 +169,8 @@ def _build_doc_locator_answer(*, query: str, citations: list) -> str | None:
     follow_up = ""
     if any(token in lowered for token in ("시작", "먼저", "first")):
         follow_up = " 이 경로를 먼저 열고 같은 문서 안의 절차를 순서대로 따라가면 됩니다 [1]."
+    elif any(token in lowered for token in ("순서", "이동", "흐름", "route")):
+        follow_up = " 이 경로를 먼저 열고 문제 해결 섹션을 순서대로 따라가면 됩니다 [1]."
     elif any(token in lowered for token in ("경로", "path", "route")):
         follow_up = " 이 경로를 기준으로 연결 문서와 다음 절차를 이어가면 됩니다 [1]."
     return f"답변: 먼저 `{section_label}` 문서를 여는 것이 맞습니다 [1].{follow_up}"
@@ -180,6 +184,14 @@ def _allow_single_citation_fallback(*, query: str, citations: list) -> bool:
             has_doc_locator_intent(query),
         )
     )
+
+
+def _allow_multi_citation_runtime_fallback(*, mode: str, citations: list) -> bool:
+    if mode == "learn":
+        return False
+    if len(citations) < 2:
+        return False
+    return bool(select_fallback_citations(citations, limit=2))
 
 
 def _is_standard_etcd_backup_query(query: str) -> bool:
@@ -827,6 +839,27 @@ class ChatAnswerer:
                 answer_text,
                 final_citations,
             )
+        if (
+            not cited_indices
+            and _allow_multi_citation_runtime_fallback(
+                mode=mode,
+                citations=context_bundle.citations,
+            )
+            and not _looks_like_missing_coverage_answer(answer_text)
+        ):
+            fallback_citations = select_fallback_citations(
+                final_citations or context_bundle.citations,
+                limit=2,
+            )
+            if fallback_citations:
+                answer_text = inject_citation_indices(
+                    answer_text,
+                    citation_indices=list(range(1, len(fallback_citations) + 1)),
+                )
+                answer_text, final_citations, cited_indices = finalize_citations(
+                    answer_text,
+                    fallback_citations,
+                )
         if not cited_indices:
             warnings.append("answer has no inline citations")
         pipeline_timings_ms["citation_finalize"] = round(

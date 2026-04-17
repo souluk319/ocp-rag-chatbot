@@ -1,0 +1,25 @@
+{
+  "task_id": "wiki_runtime_completion_20260417",
+  "lane_id": "main",
+  "status": "completed",
+  "summary": "Recovered entity/figure short-path compatibility, normalized frontend viewer paths, and passed five-document runtime smoke.",
+  "changed_files": [
+    "src/play_book_studio/app/server_routes.py",
+    "src/play_book_studio/app/source_books.py",
+    "src/play_book_studio/app/viewer_paths.py",
+    "presentation-ui/src/lib/runtimeApi.ts",
+    "presentation-ui/src/pages/WorkspacePage.tsx",
+    "tests/test_app_viewers.py"
+  ],
+  "validation": [
+    ".venv\\Scripts\\python.exe -m pytest tests\\test_app_viewers.py tests\\test_app_runtime_ui.py -q",
+    "npm --prefix presentation-ui run build",
+    "runtime smoke on support, overview, release_notes, entity, figure",
+    "POST /api/chat smoke"
+  ],
+  "result": {
+    "five_document_smoke_passed": true,
+    "backend_health": 200,
+    "chat_api_status": 200
+  }
+}

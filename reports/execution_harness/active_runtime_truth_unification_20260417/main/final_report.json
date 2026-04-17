@@ -1,0 +1,30 @@
+{
+  "status": "done",
+  "current_judgment": "viewer, control-room, citation/source-meta, and served-viewer generation no longer trust `active_manifest.json` alone; they now converge on one shared official runtime registry built from `active_manifest + source_manifest + playbook_documents`.",
+  "key_evidence": [
+    "`runtime_catalog_registry.py` now merges active markdown runtime, approved source manifest metadata, and materialized playbook documents into one official runtime registry.",
+    "`presenters.py` now falls back to the shared registry when a book is missing from the source manifest, so derived docs paths keep official runtime truth metadata instead of degrading to empty metadata.",
+    "`source_books.py` now resolves preferred viewer paths and chat link truth payloads from the shared registry, so `/docs/...` official runtime links and `/playbooks/wiki-runtime/active/...` links carry the same truth boundary.",
+    "`data_control_room.py` now builds `approved_wiki_runtime_books` from the shared registry instead of only `active_manifest.json`.",
+    "`materialize_active_runtime_viewers.py` now serves `/docs/ocp/...` viewers for the full official runtime registry and still serves the `29` active markdown viewers under `/playbooks/wiki-runtime/active/...`."
+  ],
+  "artifact_paths": [
+    "src/play_book_studio/runtime_catalog_registry.py",
+    "src/play_book_studio/app/presenters.py",
+    "src/play_book_studio/app/source_books.py",
+    "src/play_book_studio/app/data_control_room.py",
+    "scripts/materialize_active_runtime_viewers.py",
+    "tests/test_runtime_catalog_registry.py",
+    "tests/test_app_viewers.py",
+    "tests/test_app_data_control_room.py",
+    "reports/build_logs/active_runtime_viewer_serving_report.json"
+  ],
+  "validation_results": [
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_runtime_catalog_registry.py tests/test_app_viewers.py tests/test_app_data_control_room.py -q -> 35 passed, 1 warning, 10 subtests passed",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_chat_navigation_links.py -q -> 3 passed",
+    ".\\scripts\\codex_python.ps1 scripts\\materialize_active_runtime_viewers.py \"scripts/materialize_active_runtime_viewers.py,artifacts/runtime/served_viewers,reports/build_logs/active_runtime_viewer_serving_report.json\" \".\\.venv\\Scripts\\python.exe -m pytest tests/test_runtime_catalog_registry.py tests/test_app_viewers.py tests/test_app_data_control_room.py -q\" -> docs_materialized_count=174, active_runtime_materialized_count=29",
+    "shared registry smoke -> official_runtime_count=174, active_runtime_count=29",
+    "control-room payload smoke -> approved_wiki_runtime_book_count=171, playbook_library_total_count=150"
+  ],
+  "next_action": "the remaining legacy knot is governance, not surface routing: `activate_wiki_runtime_group.py` and `runtime_truth_freeze.py` still frame `active_manifest.json` as the active snapshot owner. The next packet should move activation/audit contracts onto the shared registry so the build pipeline and evidence layer stop speaking a different truth from the product surfaces."
+}

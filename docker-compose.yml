@@ -1,7 +1,6 @@
 services:
   qdrant:
     image: qdrant/qdrant:latest
-    container_name: ocp-rag-qdrant
     ports:
       - "6333:6333"
       - "6334:6334"

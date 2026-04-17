@@ -1,0 +1,27 @@
+{
+  "status": "completed",
+  "current_judgment": "The repeated test scaffolding that was slowing cleanup work and obscuring intent is reduced in the two biggest target files. App viewers now boots temp roots, settings, playbook dirs, and env overrides through shared helpers, and ingestion audit now uses shared workspace/layout helpers for the dominant temp-root/path patterns.",
+  "key_evidence": [
+    "tests/test_app_viewers.py now routes temp roots through _workspace, load_settings through _settings, playbook directory setup through _playbook_dir, and env stripping through _patched_env.",
+    "In tests/test_app_viewers.py, direct load_settings(root) calls dropped from 20 to 1 helper implementation, manual env restore variables old_artifacts/old_raw/old_manifest dropped to 0, and the 23 temp-root setups collapsed to helper-based entry points.",
+    "tests/test_ingestion_audit.py now routes 17 temp-root setups through _workspace and collapses the dominant path bootstrapping into _audit_layout(root, corpus_dir_name=...).",
+    "Four common data-quality settings blocks in tests/test_ingestion_audit.py now use _audit_settings(root); the helper bug introduced during refactor was fixed by restoring the runtime viewer path template contract to version/lang/slug keys.",
+    "Remaining debt is explicit: tests/test_ingestion_audit.py still contains 13 custom SimpleNamespace settings blocks and 6 manual manifest layout starts, so one more pass is needed if we want that file genuinely slim."
+  ],
+  "artifact_paths": [
+    "tests/test_app_viewers.py",
+    "tests/test_ingestion_audit.py",
+    "reports/execution_harness/test_workspace_scaffolding_cleanup_20260417/main/manifest.json",
+    "reports/execution_harness/test_workspace_scaffolding_cleanup_20260417/main/worklog.md",
+    "reports/execution_harness/test_workspace_scaffolding_cleanup_20260417/main/repo_hygiene_post_validation.json"
+  ],
+  "validation_results": [
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_app_viewers.py -q -> 27 passed, 1 warning, 10 subtests passed",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_ingestion_audit.py -q -> 23 passed",
+    "npm --prefix presentation-ui run lint -> passed",
+    "npm --prefix presentation-ui run test -> 3 files, 9 tests passed",
+    "npm --prefix presentation-ui run build -> passed with existing vite chunk-size warning",
+    "post-validation hygiene cleanup -> removed 14 junk targets / 2,845,719 bytes / workspace_junk_count=0"
+  ],
+  "next_action": "The next cut should finish tests/test_ingestion_audit.py by replacing the remaining 13 custom SimpleNamespace settings blocks and 6 manual manifest layouts with tighter helpers, then do the same kind of collapse in src/play_book_studio/ingestion/curated_gold.py and src/play_book_studio/app/source_books.py where the product-side confusion is still concentrated."
+}

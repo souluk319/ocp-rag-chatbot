@@ -1,0 +1,25 @@
+{
+  "status": "completed",
+  "current_judgment": "curated_gold.py 의 six-book 수기 확장 패턴을 shared spec/helper 계약으로 접어서 느리고 헷갈리는 ingestion 코드층을 줄였다.",
+  "key_evidence": [
+    "CuratedGoldSpec dataclass와 shared helper로 provenance/section/document/manifest/apply 경로를 공통화했다.",
+    "book별 구현은 spec + thin wrapper만 남겼고 dead helper _upsert_book_rows/_upsert_playbook_payload는 제거했다.",
+    "curated_gold.py diff stat은 372 insertions / 1159 deletions 이고 현재 파일 크기는 97315 bytes다.",
+    "curated book spec 선언은 6개로 고정됐고 focused pytest + py_compile + frontend baseline이 다시 통과했다."
+  ],
+  "artifact_paths": [
+    "src/play_book_studio/ingestion/curated_gold.py",
+    "reports/execution_harness/curated_gold_refactor_20260417/main/manifest.json",
+    "reports/execution_harness/curated_gold_refactor_20260417/main/worklog.md",
+    "reports/execution_harness/curated_gold_refactor_20260417/main/repo_hygiene_post_validation.json"
+  ],
+  "validation_results": [
+    ".\\\\.venv\\\\Scripts\\\\python.exe -m pytest tests/test_curated_gold.py -q -> 6 passed in 5.37s",
+    "python -m py_compile src/play_book_studio/ingestion/curated_gold.py -> pass",
+    "npm --prefix presentation-ui run lint -> pass",
+    "npm --prefix presentation-ui run test -> 3 files, 9 tests passed",
+    "npm --prefix presentation-ui run build -> pass with existing vite chunk-size warning",
+    "repo_hygiene.py --clean -> removed 13 items / 2098660 bytes, workspace_junk_count=0"
+  ],
+  "next_action": "다음 타격점은 src/play_book_studio/app/source_books.py 를 navigation assembly / viewer routing / customer-pack rendering 단위로 분해하는 것이다."
+}

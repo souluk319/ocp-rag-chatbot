@@ -5,7 +5,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 REALWORLD_REPORT = ROOT / "reports" / "build_logs" / "corpus_long_test_answer_eval_realworld_report.json"
-OWNER_DEMO_REPORT = ROOT / "reports" / "build_logs" / "owner_demo_rehearsal_report.json"
 OUTPUT_JSON = ROOT / "reports" / "build_logs" / "answer_quality_gate_report.json"
 OUTPUT_MD = ROOT / "reports" / "build_logs" / "answer_quality_gate_report.md"
 
@@ -16,7 +15,6 @@ def _load_json(path: Path) -> dict:
 
 def main() -> int:
     realworld = _load_json(REALWORLD_REPORT)
-    owner_demo = _load_json(OWNER_DEMO_REPORT)
     overall = realworld.get("overall") if isinstance(realworld.get("overall"), dict) else {}
     assessment = realworld.get("realworld_assessment") if isinstance(realworld.get("realworld_assessment"), dict) else {}
     report = {
@@ -31,8 +29,6 @@ def main() -> int:
         "realworld_status": str(assessment.get("status") or ""),
         "realworld_failed_case_count": int(assessment.get("failed_case_count") or 0),
         "provenance_noise_case_count": len(assessment.get("provenance_noise_case_ids") or []),
-        "owner_critical_scenario_pass_rate": float(owner_demo.get("owner_critical_scenario_pass_rate") or 0.0),
-        "owner_demo_blocker_count": len(owner_demo.get("blockers") or []),
     }
     OUTPUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -51,8 +47,6 @@ def main() -> int:
                 f"- realworld_status: `{report['realworld_status']}`",
                 f"- realworld_failed_case_count: `{report['realworld_failed_case_count']}`",
                 f"- provenance_noise_case_count: `{report['provenance_noise_case_count']}`",
-                f"- owner_critical_scenario_pass_rate: `{report['owner_critical_scenario_pass_rate']}`",
-                f"- owner_demo_blocker_count: `{report['owner_demo_blocker_count']}`",
                 "",
             ]
         ),

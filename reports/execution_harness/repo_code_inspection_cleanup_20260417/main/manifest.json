@@ -1,0 +1,26 @@
+{
+  "task_id": "repo_code_inspection_cleanup_20260417",
+  "created_at": "2026-04-16T23:00:37.291897+00:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": ".\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": false,
+  "parallel_execution_required": false,
+  "companion_lanes": [],
+  "write_scope": "presentation-ui/src/**;tests/**;reports/execution_harness/repo_code_inspection_cleanup_20260417/main/*",
+  "target_outputs": [
+    "shared wiki vision contract",
+    "retrieval runtime test dedup",
+    "validation evidence"
+  ],
+  "validation_commands": [
+    "npm --prefix presentation-ui run lint",
+    "npm --prefix presentation-ui run test",
+    "npm --prefix presentation-ui run build",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_retrieval_runtime.py -q"
+  ],
+  "status": "completed"
+}

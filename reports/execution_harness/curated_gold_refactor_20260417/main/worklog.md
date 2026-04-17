@@ -1,0 +1,28 @@
+# Local Worklog
+
+- task_id: `curated_gold_refactor_20260417`
+- lane_id: `main`
+- role: `main`
+- major_task: `false`
+- user-visible progress는 milestone 종료 전까지 기록하지 않는다.
+- 중간 자동 복구, 실행 메모, 임시 판단은 이 파일에만 적는다.
+- target: `src/play_book_studio/ingestion/curated_gold.py` 의 repeated provenance / section / manifest / apply pipeline을 shared helper로 통합한다
+- `CuratedGoldSpec` dataclass, `_build_curated_provenance`, `_section_for`, `_build_curated_document`, `_curated_manifest_entry`, `_apply_curated_gold` 를 추가해 six-book pattern을 공통 계약으로 접었다.
+- `etcd`, `backup_restore`, `machine_configuration`, `operators`, `monitoring`, `installing_on_any_platform` 는 각자 spec + thin wrapper만 남기고 shared helper를 재사용하게 바꿨다.
+- dead helper `def _upsert_book_rows(`, `def _upsert_playbook_payload(` 는 제거했고 slug-aware helper만 유지했다.
+- 현재 `src/play_book_studio/ingestion/curated_gold.py` 크기: `97,315 bytes`
+- diff stat: `372 insertions`, `1,159 deletions`
+- focused validation:
+  - `.\.venv\Scripts\python.exe -m pytest tests/test_curated_gold.py -q` -> `6 passed in 5.37s`
+  - `python -m py_compile src/play_book_studio/ingestion/curated_gold.py` -> pass
+  - `npm --prefix presentation-ui run lint` -> pass
+  - `npm --prefix presentation-ui run test` -> `3 files, 9 tests` pass
+  - `npm --prefix presentation-ui run build` -> pass, existing `vite` chunk-size warning remains
+- post-validation hygiene:
+  - `repo_hygiene_post_validation.json` 생성
+  - junk cleanup `13개 / 2,098,660 bytes`
+  - `workspace_junk_count = 0`
+- remaining hotspot inventory:
+  - `src/play_book_studio/app/source_books.py` `114,333 bytes`
+  - `presentation-ui/src/pages/WorkspacePage.tsx` `134,361 bytes`
+  - `presentation-ui/src/pages/PlaybookLibraryPage.tsx` `92,230 bytes`

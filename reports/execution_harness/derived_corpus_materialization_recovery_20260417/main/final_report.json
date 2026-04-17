@@ -1,0 +1,31 @@
+{
+  "status": "done",
+  "current_judgment": "approved 29권만 보던 runtime을 파생 플레이북 포함 174권 corpus로 확장했고, retrieval가 operation/troubleshooting/policy intent에서 해당 family를 실제 top hit로 올리도록 복구했다.",
+  "key_evidence": [
+    "runtime_catalog_library가 derived playbook section을 normalized/chunk row로 materialize하도록 바뀌었다.",
+    "retriever_pipeline latest-only filter가 topic/operation/troubleshooting/policy/synthesized family를 active runtime hit로 허용한다.",
+    "retriever_rerank가 query intent를 읽고 operation_playbook, troubleshooting_playbook, policy_overlay_book, topic_playbook family를 top hit로 재배치한다.",
+    "current corpus artifacts now show 174 unique books in playbook_documents.jsonl and 174 unique books in chunks.jsonl.",
+    "artifacts/retrieval/graph_sidecar.json summary now reports book_count=174, chunk_count=39281, relation_count=7003."
+  ],
+  "artifact_paths": [
+    "src/play_book_studio/ingestion/runtime_catalog_library.py",
+    "src/play_book_studio/retrieval/retriever_pipeline.py",
+    "src/play_book_studio/retrieval/retriever_rerank.py",
+    "src/play_book_studio/app/source_books.py",
+    "tests/test_runtime_catalog_library.py",
+    "tests/test_app_viewers.py",
+    "tests/test_retrieval_runtime.py",
+    "data/gold_manualbook_ko/playbook_documents.jsonl",
+    "data/gold_corpus_ko/chunks.jsonl",
+    "artifacts/retrieval/graph_sidecar.json"
+  ],
+  "validation_results": [
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_runtime_catalog_library.py tests/test_topic_playbooks.py tests/test_app_viewers.py -q -> 37 passed, 1 warning, 10 subtests passed",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_retrieval_runtime.py -k \"registry_follow_up_when_reranker_promotes_installation_overview or rebalances_mco_concept_when_reranker_promotes_update_glossary or operations_query_toward_operation_playbook or troubleshooting_query_toward_troubleshooting_playbook or policy_query_toward_policy_overlay_book\" -q -> 5 passed, 31 deselected",
+    "playbook_documents.jsonl -> rows=183, unique_books=174",
+    "chunks.jsonl -> rows=39281, unique_books=174",
+    "graph_sidecar.json -> book_count=174, chunk_count=39281, relation_count=7003"
+  ],
+  "next_action": "one-click runtime activation path still writes active_manifest.json with 29 official slugs only; next packet should either materialize derived runtime manifest entries or retire slug-only gating entirely so viewer/control-room/runtime activation all speak the same 174-book truth."
+}

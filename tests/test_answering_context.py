@@ -834,3 +834,75 @@ class ContextAssemblyTests(unittest.TestCase):
 
         self.assertNotEqual([], bundle.citations)
         self.assertEqual("authentication_and_authorization", bundle.citations[0].book_slug)
+
+    def test_troubleshooting_doc_locator_prefers_support_path_over_release_notes_and_console(self) -> None:
+        hits = [
+            _hit(
+                "chunk-1",
+                "web_console",
+                "10.5.3. 작업 단계",
+                "문제 조사 흐름의 콘솔 단계 요약입니다.",
+                score=-2.4,
+                source="hybrid_reranked",
+                component_scores={
+                    "pre_rerank_fused_score": 0.1564,
+                    "reranker_score": -2.4,
+                },
+            ),
+            _hit(
+                "chunk-2",
+                "support",
+                "7.7. Pod 문제 조사",
+                "문제가 생기면 먼저 관련 상태와 이벤트를 조사합니다.",
+                score=-2.9,
+                source="hybrid_reranked",
+                component_scores={
+                    "pre_rerank_fused_score": 0.2063,
+                    "reranker_score": -2.9,
+                },
+            ),
+            _hit(
+                "chunk-3",
+                "release_notes",
+                "1.9.8.2. 버그 수정",
+                "해결된 이슈 목록입니다.",
+                score=-2.8,
+                source="hybrid_reranked",
+                component_scores={
+                    "pre_rerank_fused_score": 0.2069,
+                    "reranker_score": -2.8,
+                },
+            ),
+            _hit(
+                "chunk-4",
+                "support",
+                "1.4. 문제 해결",
+                "문제 유형별로 점검 순서를 안내합니다.",
+                score=-3.0,
+                source="hybrid_reranked",
+                component_scores={
+                    "pre_rerank_fused_score": 0.2060,
+                    "reranker_score": -3.0,
+                },
+            ),
+            _hit(
+                "chunk-5",
+                "validation_and_troubleshooting",
+                "1.4. 클러스터 버전, 상태 및 업데이트 세부 정보 가져오기",
+                "상태를 점검하는 기본 확인 절차입니다.",
+                score=-3.1,
+                source="hybrid_reranked",
+                component_scores={
+                    "pre_rerank_fused_score": 0.1912,
+                    "reranker_score": -3.1,
+                },
+            ),
+        ]
+
+        query = "문제가 생기면 위키 안에서 어떤 순서로 이동해야 하는지 알려줘"
+        self.assertFalse(_should_force_clarification(hits, query=query))
+        bundle = assemble_context(hits, query=query, max_chunks=4)
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertEqual("support", bundle.citations[0].book_slug)
+        self.assertNotIn("release_notes", [citation.book_slug for citation in bundle.citations])

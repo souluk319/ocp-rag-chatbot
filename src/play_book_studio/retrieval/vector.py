@@ -53,6 +53,7 @@ class VectorRetriever:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.embedding_client = EmbeddingClient(settings)
+        self.request_timeout_seconds = max(float(self.settings.request_timeout_seconds), 1.0)
 
     def search(self, query: str, top_k: int) -> list[RetrievalHit]:
         hits, _runtime = self.search_with_trace(query, top_k)
@@ -90,7 +91,7 @@ class VectorRetriever:
             response = requests.post(
                 url,
                 json=payload,
-                timeout=max(self.settings.request_timeout_seconds, 30),
+                timeout=self.request_timeout_seconds,
             )
             if not response.ok:
                 last_error = response.text[:500]

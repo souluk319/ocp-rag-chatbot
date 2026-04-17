@@ -6,7 +6,7 @@ import re
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, urljoin
+from urllib.parse import parse_qs, urljoin, urlparse, urlunparse
 
 from play_book_studio.app.data_control_room import build_data_control_room_payload
 from play_book_studio.app.repository_registry import (
@@ -45,17 +45,19 @@ from play_book_studio.app.source_books import (
     _entity_hubs,
     _figure_asset_by_name,
     _figure_section_match,
-    load_customer_pack_book as _load_customer_pack_book,
-    list_customer_pack_drafts as _list_customer_pack_drafts,
     internal_active_runtime_markdown_viewer_html as _internal_active_runtime_markdown_viewer_html,
     internal_buyer_packet_viewer_html as _internal_buyer_packet_viewer_html,
-    internal_customer_pack_viewer_html as _internal_customer_pack_viewer_html,
     internal_entity_hub_viewer_html as _internal_entity_hub_viewer_html,
     internal_figure_viewer_html as _internal_figure_viewer_html,
     internal_viewer_html as _internal_viewer_html,
     parse_active_runtime_markdown_viewer_path,
     parse_entity_hub_viewer_path,
     parse_figure_viewer_path,
+)
+from play_book_studio.app.source_books_customer_pack import (
+    internal_customer_pack_viewer_html as _internal_customer_pack_viewer_html,
+    list_customer_pack_drafts as _list_customer_pack_drafts,
+    load_customer_pack_book as _load_customer_pack_book,
 )
 from play_book_studio.app.viewers import _parse_viewer_path
 from play_book_studio.app.viewer_paths import _viewer_path_to_local_html
@@ -66,6 +68,10 @@ _STYLE_RE = re.compile(r"<style[^>]*>(?P<css>.*?)</style>", re.IGNORECASE | re.D
 _SCRIPT_RE = re.compile(r"<script[^>]*>.*?</script>", re.IGNORECASE | re.DOTALL)
 _BODY_CLASS_RE = re.compile(r'class=(["\'])(?P<value>.*?)\1', re.IGNORECASE | re.DOTALL)
 _RESOURCE_ATTR_RE = re.compile(r'(?P<attr>\b(?:src|href))=(?P<quote>["\'])(?P<value>.*?)(?P=quote)', re.IGNORECASE | re.DOTALL)
+_DOCS_DIRECTORY_VIEWER_PATH_RE = re.compile(r"^/docs/ocp/[^/]+/[^/]+/[^/]+$")
+_ACTIVE_RUNTIME_DIRECTORY_VIEWER_PATH_RE = re.compile(r"^/playbooks/wiki-runtime/active/[^/]+$")
+_ENTITY_DIRECTORY_VIEWER_PATH_RE = re.compile(r"^/wiki/entities/[^/]+$")
+_FIGURE_DIRECTORY_VIEWER_PATH_RE = re.compile(r"^/wiki/figures/[^/]+/[^/]+$")
 
 
 def _scope_viewer_style(style_text: str) -> str:
@@ -77,11 +83,36 @@ def _scope_viewer_style(style_text: str) -> str:
     )
 
 
+def _canonicalize_viewer_path(viewer_path: str) -> str:
+    raw = str(viewer_path or "").strip()
+    if not raw:
+        return ""
+    parsed = urlparse(raw)
+    path = parsed.path.strip()
+    if not path:
+        return raw
+
+    normalized_path = path if path == "/" else path.rstrip("/")
+    if (
+        normalized_path
+        and not normalized_path.endswith("/index.html")
+        and (
+            _DOCS_DIRECTORY_VIEWER_PATH_RE.fullmatch(normalized_path)
+            or _ACTIVE_RUNTIME_DIRECTORY_VIEWER_PATH_RE.fullmatch(normalized_path)
+            or _ENTITY_DIRECTORY_VIEWER_PATH_RE.fullmatch(normalized_path)
+            or _FIGURE_DIRECTORY_VIEWER_PATH_RE.fullmatch(normalized_path)
+        )
+    ):
+        normalized_path = f"{normalized_path}/index.html"
+
+    if normalized_path == path:
+        return raw
+    return urlunparse(parsed._replace(path=normalized_path))
+
+
 def _viewer_html_for_path(root_dir: Path, viewer_path: str) -> str | None:
-    local_html = _viewer_path_to_local_html(root_dir, viewer_path)
-    if local_html is not None:
-      return local_html.read_text(encoding="utf-8")
-    return (
+    viewer_path = _canonicalize_viewer_path(viewer_path)
+    internal_html = (
       _internal_buyer_packet_viewer_html(root_dir, viewer_path)
       or _internal_customer_pack_viewer_html(root_dir, viewer_path)
       or _internal_active_runtime_markdown_viewer_html(root_dir, viewer_path)
@@ -89,6 +120,12 @@ def _viewer_html_for_path(root_dir: Path, viewer_path: str) -> str | None:
       or _internal_figure_viewer_html(root_dir, viewer_path)
       or _internal_viewer_html(root_dir, viewer_path)
     )
+    if internal_html is not None:
+      return internal_html
+    local_html = _viewer_path_to_local_html(root_dir, viewer_path)
+    if local_html is not None:
+      return local_html.read_text(encoding="utf-8")
+    return None
 
 
 def _normalize_viewer_resource_urls(html_text: str, viewer_path: str) -> str:
@@ -178,6 +215,7 @@ def _official_runtime_source_meta(
 
 
 def _viewer_source_meta(root_dir: Path, viewer_path: str) -> dict[str, Any] | None:
+    viewer_path = _canonicalize_viewer_path(viewer_path)
     customer_pack_meta = _customer_pack_meta_for_viewer_path(root_dir, viewer_path)
     if customer_pack_meta is not None:
         return customer_pack_meta
@@ -329,6 +367,7 @@ def handle_viewer_document(handler: Any, query: str, *, root_dir: Path) -> None:
     if not viewer_path:
         handler._send_json({"error": "viewer_path가 필요합니다."}, HTTPStatus.BAD_REQUEST)
         return
+    viewer_path = _canonicalize_viewer_path(viewer_path)
     html_text = _viewer_html_for_path(root_dir, viewer_path)
     if html_text is None:
         handler._send_json({"error": "viewer document를 찾을 수 없습니다."}, HTTPStatus.NOT_FOUND)

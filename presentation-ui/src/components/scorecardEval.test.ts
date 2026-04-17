@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ChatResponse, ChatTraceEvent } from '../lib/runtimeApi';
+import type { ChatResponse } from '../lib/runtimeApi';
 import {
   deriveSeverity,
   deriveVerdict,
@@ -40,14 +40,14 @@ describe('scorecardEval', () => {
     expect(deriveSeverity(result, []).severity).toBe('risk');
   });
 
-  it('passes all applicable owner checks for grounded official response', () => {
-    const items = evaluateScorecard(makeResponse(), []);
+  it('passes all applicable product-gate checks for grounded official response', () => {
+    const items = evaluateScorecard(makeResponse());
     const summary = summarizeScorecard(items);
 
-    expect(items.find((item) => item.id === 'owner-002')?.outcome).toBe('pass');
-    expect(items.find((item) => item.id === 'owner-003')?.outcome).toBe('pass');
-    expect(items.find((item) => item.id === 'owner-004')?.outcome).toBe('n/a');
-    expect(items.find((item) => item.id === 'owner-005')?.outcome).toBe('pass');
+    expect(items.find((item) => item.id === 'product-002')?.outcome).toBe('pass');
+    expect(items.find((item) => item.id === 'product-003')?.outcome).toBe('pass');
+    expect(items.find((item) => item.id === 'product-004')?.outcome).toBe('n/a');
+    expect(items.find((item) => item.id === 'product-005')?.outcome).toBe('pass');
     expect(summary.pass).toBe(4);
     expect(summary.fail).toBe(0);
   });
@@ -64,7 +64,7 @@ describe('scorecardEval', () => {
       ],
     });
 
-    const items = evaluateScorecard(bad, [] as ChatTraceEvent[]);
-    expect(items.find((item) => item.id === 'owner-003')?.outcome).toBe('fail');
+    const items = evaluateScorecard(bad);
+    expect(items.find((item) => item.id === 'product-003')?.outcome).toBe('fail');
   });
 });

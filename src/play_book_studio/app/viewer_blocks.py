@@ -363,8 +363,8 @@ def _render_code_block_html(
     wrap_button_html = ""
     if normalized_overflow_hint == "toggle":
         wrap_button_html = """
-          <button type="button" class="copy-button icon-button" data-label-default="줄바꿈" data-label-active="줄바꿈 해제" aria-pressed="{wrap_pressed}" onclick="toggleViewerCodeWrap(this)" title="{wrap_title}" aria-label="{wrap_title}">
-            <span aria-hidden="true">↵</span>
+          <button type="button" class="wrap-button icon-button" aria-pressed="{wrap_pressed}" onclick="toggleViewerCodeWrap(this)" data-label-default="줄바꿈" data-label-active="줄바꿈 해제" title="{wrap_title}" aria-label="{wrap_title}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 10 20 15 15 20"></polyline><path d="M4 4v7a4 4 0 0 0 4 4h12"></path></svg>
           </button>
         """.format(
             wrap_pressed="true" if wrap_hint else "false",
@@ -376,8 +376,9 @@ def _render_code_block_html(
       <div class="code-header">
         <span class="code-label">{language}</span>
         <div class="code-actions">
-          <button type="button" class="copy-button icon-button" data-copy="{copy_payload}" data-label-default="복사" onclick="copyViewerCode(this)" title="복사" aria-label="복사">
-            <span aria-hidden="true">⧉</span>
+          <button type="button" class="copy-button icon-button" data-copy="{copy_payload}" data-label-default="복사" data-label-active="복사됨" title="복사" aria-label="복사">
+            <svg class="copy-icon-idle" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <svg class="copy-icon-success" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
           </button>
           {wrap_button_html}
         </div>

@@ -1,0 +1,27 @@
+{
+  "task_id": "source_books_relation_helper_split_20260417",
+  "created_at": "2026-04-17T14:15:00+09:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": ".\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": false,
+  "parallel_execution_required": false,
+  "companion_lanes": [],
+  "write_scope": "src/play_book_studio/app/source_books.py;src/play_book_studio/app/source_books_wiki_relations.py;reports/execution_harness/source_books_relation_helper_split_20260417/main/*",
+  "target_outputs": [
+    "dead wiki default removal",
+    "live wiki relation helper split from source_books",
+    "focused viewer/navigation validation evidence"
+  ],
+  "validation_commands": [
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_chat_navigation_links.py tests/test_app_viewers.py tests/test_app_runtime_ui.py -q",
+    "python -m py_compile src/play_book_studio/app/source_books.py src/play_book_studio/app/source_books_wiki_relations.py",
+    "npm --prefix presentation-ui run lint",
+    "npm --prefix presentation-ui run test",
+    "npm --prefix presentation-ui run build"
+  ],
+  "status": "completed"
+}

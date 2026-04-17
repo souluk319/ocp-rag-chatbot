@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import socket
 import time
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import requests
 
@@ -24,6 +26,9 @@ GARBAGE_RELATION_SLUGS = {
     "cli_tools",
     "disconnected_environments",
 }
+GRAPH_HEALTH_CACHE_TTL_SECONDS = 15.0
+GRAPH_PROBE_MAX_TIMEOUT_SECONDS = 1.0
+GRAPH_PROBE_MIN_TIMEOUT_SECONDS = 0.2
 
 def _safe_read_json(path: Path) -> dict[str, Any]:
     if not path.exists() or not path.is_file():
@@ -189,6 +194,52 @@ def _resolved_mode(settings: Settings) -> str:
     if settings.graph_endpoint:
         return "remote"
     return "local"
+
+
+def _graph_probe_timeout_seconds(settings: Settings) -> float:
+    return max(
+        GRAPH_PROBE_MIN_TIMEOUT_SECONDS,
+        min(float(settings.graph_timeout_seconds or 0.0), GRAPH_PROBE_MAX_TIMEOUT_SECONDS),
+    )
+
+
+def _neo4j_host_port(graph_uri: str) -> tuple[str, int] | None:
+    parsed = urlparse(str(graph_uri or "").strip())
+    host = parsed.hostname
+    if not host:
+        return None
+    return host, int(parsed.port or 7687)
+
+
+def _probe_tcp_endpoint(host: str, port: int, *, timeout_seconds: float) -> tuple[bool, str]:
+    deadline = time.monotonic() + max(timeout_seconds, GRAPH_PROBE_MIN_TIMEOUT_SECONDS)
+    last_error: OSError | None = None
+    try:
+        addresses = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+    except OSError as exc:
+        return False, f"resolve failed: {exc}"
+
+    seen: set[tuple[int, int, int, str]] = set()
+    for family, socktype, proto, _canonname, sockaddr in addresses:
+        target = (family, socktype, proto, str(sockaddr))
+        if target in seen:
+            continue
+        seen.add(target)
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        try:
+            with socket.socket(family, socktype, proto) as sock:
+                sock.settimeout(remaining)
+                sock.connect(sockaddr)
+            return True, ""
+        except OSError as exc:
+            last_error = exc
+            continue
+
+    if last_error is None:
+        return False, "connect failed: probe timeout"
+    return False, f"connect failed: {last_error}"
 
 
 def _apply_graph_payload(
@@ -392,6 +443,7 @@ class RetrievalGraphRuntime:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.local_sidecar = LocalGraphSidecar(settings)
+        self._backend_health_cache: dict[str, tuple[float, bool, str]] = {}
 
     def _disabled_payload(self) -> dict[str, Any]:
         return {
@@ -407,6 +459,87 @@ class RetrievalGraphRuntime:
             },
             "hits": [],
         }
+
+    def skipped_payload(self, *, reason: str) -> dict[str, Any]:
+        graph_enabled = _graph_enabled(self.settings)
+        adapter_mode = "skipped" if graph_enabled else "disabled"
+        fallback_reason = reason if graph_enabled else "graph_disabled"
+        return {
+            **_payload_graph_flags(enabled=graph_enabled, adapter_mode=adapter_mode),
+            "configured_mode": _resolved_mode(self.settings),
+            "endpoint": self.settings.graph_endpoint or self.settings.graph_uri,
+            "sidecar_path": str(self.settings.graph_sidecar_path),
+            "fallback_reason": fallback_reason,
+            "summary": {
+                "hit_count": 0,
+                "relation_count": 0,
+                "provenance_count": 0,
+            },
+            "hits": [],
+        }
+
+    def _backend_cache_key(self, mode: str) -> str:
+        if mode == "neo4j":
+            return "|".join(
+                (
+                    mode,
+                    self.settings.graph_uri,
+                    self.settings.graph_database,
+                    self.settings.graph_username,
+                )
+            )
+        if mode == "remote":
+            return f"{mode}|{self.settings.graph_endpoint}"
+        return mode
+
+    def _cached_backend_health(self, mode: str) -> tuple[bool, str] | None:
+        cache_key = self._backend_cache_key(mode)
+        cached = self._backend_health_cache.get(cache_key)
+        if cached is None:
+            return None
+        checked_at, healthy, reason = cached
+        if (time.monotonic() - checked_at) > GRAPH_HEALTH_CACHE_TTL_SECONDS:
+            self._backend_health_cache.pop(cache_key, None)
+            return None
+        return healthy, reason
+
+    def _remember_backend_health(self, mode: str, *, healthy: bool, reason: str = "") -> tuple[bool, str]:
+        self._backend_health_cache[self._backend_cache_key(mode)] = (
+            time.monotonic(),
+            healthy,
+            reason,
+        )
+        return healthy, reason
+
+    def _neo4j_backend_health(self) -> tuple[bool, str]:
+        cached = self._cached_backend_health("neo4j")
+        if cached is not None:
+            return cached
+        if GraphDatabase is None:
+            return self._remember_backend_health(
+                "neo4j",
+                healthy=False,
+                reason="neo4j driver is not installed",
+            )
+        host_port = _neo4j_host_port(self.settings.graph_uri)
+        if host_port is None:
+            return self._remember_backend_health(
+                "neo4j",
+                healthy=False,
+                reason="graph uri is invalid",
+            )
+        healthy, reason = _probe_tcp_endpoint(
+            host_port[0],
+            host_port[1],
+            timeout_seconds=_graph_probe_timeout_seconds(self.settings),
+        )
+        if not healthy:
+            return self._remember_backend_health(
+                "neo4j",
+                healthy=False,
+                reason=reason,
+            )
+        return self._remember_backend_health("neo4j", healthy=True, reason="")
 
     def _remote_headers(self) -> dict[str, str]:
         headers = {"Content-Type": "application/json"}
@@ -581,7 +714,17 @@ class RetrievalGraphRuntime:
         fallback_reason = ""
         try:
             if mode == "neo4j":
-                payload = self._neo4j_payload(query=query, hits=hits, context=context)
+                neo4j_ready, neo4j_reason = self._neo4j_backend_health()
+                if not neo4j_ready:
+                    payload = self.local_sidecar.build_payload(
+                        query=query,
+                        hits=hits,
+                        context=context,
+                        fallback_reason=f"neo4j_unhealthy:{neo4j_reason}",
+                    )
+                else:
+                    payload = self._neo4j_payload(query=query, hits=hits, context=context)
+                    self._remember_backend_health("neo4j", healthy=True, reason="")
             elif mode == "remote":
                 payload = self._remote_payload(query=query, hits=hits, context=context)
             else:
@@ -592,6 +735,8 @@ class RetrievalGraphRuntime:
                 "neo4j": "neo4j_failed",
             }.get(mode, f"{mode}_failed")
             fallback_reason = f"{fallback_label}:{exc}"
+            if mode == "neo4j":
+                self._remember_backend_health("neo4j", healthy=False, reason=str(exc))
             payload = self.local_sidecar.build_payload(
                 query=query,
                 hits=hits,

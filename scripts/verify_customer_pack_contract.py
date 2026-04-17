@@ -12,16 +12,17 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 DOCS = {
     "project": REPO_ROOT / "PROJECT.md",
-    "scorecard": REPO_ROOT / "OWNER_SCENARIO_SCORECARD.yaml",
+    "security": REPO_ROOT / "SECURITY_BOUNDARY_CONTRACT.md",
     "task_board": REPO_ROOT / "TASK_BOARD.yaml",
 }
 
 
 REQUIRED_TERMS = {
-    "customer document PoC": ["project"],
+    "OpenShift playbook package delivery": ["project"],
+    "customer/private pack lane when explicitly ordered": ["project"],
     "pack boundary labeled runtime": ["project"],
-    "같은 security boundary": ["project"],
-    "paid_poc_candidate": ["scorecard"],
+    "tenant/workspace/pack": ["security"],
+    "renewal_hardening_validation": ["task_board"],
 }
 
 
@@ -49,7 +50,7 @@ def main() -> int:
         "task_test": task["tests"][0],
         "term_checks": term_checks,
         "project_exists": DOCS["project"].exists(),
-        "scorecard_exists": DOCS["scorecard"].exists(),
+        "security_exists": DOCS["security"].exists(),
         "yaml_ok": True,
     }
 
@@ -66,7 +67,7 @@ def main() -> int:
         f"- task_status: `{report['task_status']}`",
         f"- task_test: `{report['task_test']}`",
         f"- project_exists: `{report['project_exists']}`",
-        f"- scorecard_exists: `{report['scorecard_exists']}`",
+        f"- security_exists: `{report['security_exists']}`",
         f"- yaml_ok: `{report['yaml_ok']}`",
         "",
         "## Term Checks",

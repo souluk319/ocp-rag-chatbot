@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Callable
 
 from play_book_studio.canonical import (
     AstProvenance,
@@ -48,6 +50,26 @@ CURATED_ETCD_UPDATED_AT = "2026-04-10T00:00:00Z"
 CURATED_ETCD_LICENSE = "OpenShift documentation is licensed under the Apache License 2.0."
 CURATED_PUBLIC_PACK_VERSION = "4.20"
 CURATED_PUBLIC_PACK_ID = "openshift_container_platform-4.20-core"
+CURATED_PUBLIC_PACK_LABEL = "OpenShift 4.20 Gold Dataset"
+
+
+@dataclass(frozen=True)
+class CuratedGoldSpec:
+    book_slug: str
+    title: str
+    source_url: str
+    translation_source_url: str
+    index_url: str
+    viewer_base_path: str
+    source_id: str
+    updated_at: str
+    license_or_terms: str
+    original_title: str
+    vendor_title: str
+    approval_notes: str
+    notes: tuple[str, ...]
+    trust_score: float = 0.97
+    source_state_reason: str = "curated_manual_review_promoted_from_bronze_bundle"
 
 
 def _provenance_notes() -> tuple[str, ...]:
@@ -56,6 +78,24 @@ def _provenance_notes() -> tuple[str, ...]:
         "manual_review_promoted_from_source_bundle",
         "official_ko_en_and_repo_sidecars_reviewed",
     )
+
+
+CURATED_ETCD_SPEC = CuratedGoldSpec(
+    book_slug=CURATED_ETCD_BOOK_SLUG,
+    title=CURATED_ETCD_TITLE,
+    source_url=CURATED_ETCD_SOURCE_URL,
+    translation_source_url=CURATED_ETCD_TRANSLATION_SOURCE_URL,
+    index_url=CURATED_ETCD_INDEX_URL,
+    viewer_base_path=CURATED_ETCD_VIEWER_BASE_PATH,
+    source_id=CURATED_ETCD_SOURCE_ID,
+    updated_at=CURATED_ETCD_UPDATED_AT,
+    license_or_terms=CURATED_ETCD_LICENSE,
+    original_title="Backing up and restoring etcd data / Disaster recovery",
+    vendor_title="etcd",
+    approval_notes="curated etcd gold sample from official KO/EN docs and repo sidecars",
+    notes=_provenance_notes(),
+    trust_score=0.98,
+)
 
 
 def _curated_public_provenance_defaults(source_id: str) -> dict[str, object]:
@@ -77,33 +117,41 @@ def _curated_public_provenance_defaults(source_id: str) -> dict[str, object]:
     }
 
 
-def _build_etcd_provenance() -> AstProvenance:
+def _curated_provenance_fingerprint(spec: CuratedGoldSpec) -> str:
+    return hashlib.sha256(
+        "|".join(
+            (
+                spec.source_id,
+                spec.source_url,
+                spec.translation_source_url,
+                "curated_gold_v1",
+            )
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _curated_translation_fingerprint(spec: CuratedGoldSpec) -> str:
+    return hashlib.sha256(spec.translation_source_url.encode("utf-8")).hexdigest()
+
+
+def _build_curated_provenance(spec: CuratedGoldSpec) -> AstProvenance:
     return AstProvenance(
-        source_id=CURATED_ETCD_SOURCE_ID,
+        source_id=spec.source_id,
         source_lane="applied_playbook",
         source_type="manual_synthesis",
         source_collection="core",
         product="openshift",
         version="4.20",
         locale="ko",
-        original_title="Backing up and restoring etcd data / Disaster recovery",
+        original_title=spec.original_title,
         legal_notice_url="",
-        license_or_terms=CURATED_ETCD_LICENSE,
+        license_or_terms=spec.license_or_terms,
         review_status="approved",
-        trust_score=0.98,
+        trust_score=spec.trust_score,
         verifiability="anchor_backed",
-        updated_at=CURATED_ETCD_UPDATED_AT,
-        capture_uri=CURATED_ETCD_SOURCE_URL,
-        source_fingerprint=hashlib.sha256(
-            "|".join(
-                (
-                    CURATED_ETCD_SOURCE_ID,
-                    CURATED_ETCD_SOURCE_URL,
-                    CURATED_ETCD_TRANSLATION_SOURCE_URL,
-                    "curated_gold_v1",
-                )
-            ).encode("utf-8")
-        ).hexdigest(),
+        updated_at=spec.updated_at,
+        capture_uri=spec.source_url,
+        source_fingerprint=_curated_provenance_fingerprint(spec),
         parser_name="curated_gold",
         parser_version="v1",
         source_state=SOURCE_STATE_BLOCKED,
@@ -111,13 +159,126 @@ def _build_etcd_provenance() -> AstProvenance:
         translation_stage="approved_ko",
         translation_source_language="en",
         translation_target_language="ko",
-        translation_source_url=CURATED_ETCD_TRANSLATION_SOURCE_URL,
-        translation_source_fingerprint=hashlib.sha256(
-            CURATED_ETCD_TRANSLATION_SOURCE_URL.encode("utf-8")
-        ).hexdigest(),
-        **_curated_public_provenance_defaults(CURATED_ETCD_SOURCE_ID),
-        notes=_provenance_notes(),
+        translation_source_url=spec.translation_source_url,
+        translation_source_fingerprint=_curated_translation_fingerprint(spec),
+        **_curated_public_provenance_defaults(spec.source_id),
+        notes=spec.notes,
     )
+
+
+def _section_for(
+    spec: CuratedGoldSpec,
+    *,
+    ordinal: int,
+    heading: str,
+    anchor: str,
+    semantic_role: str,
+    blocks: tuple[object, ...],
+    path: tuple[str, ...] | None = None,
+    level: int = 2,
+) -> CanonicalSectionAst:
+    resolved_path = path or (heading,)
+    return CanonicalSectionAst(
+        section_id=f"{spec.book_slug}:{anchor}",
+        ordinal=ordinal,
+        heading=heading,
+        level=level,
+        path=resolved_path,
+        anchor=anchor,
+        source_url=spec.source_url,
+        viewer_path=f"{spec.viewer_base_path}#{anchor}",
+        semantic_role=semantic_role,
+        blocks=blocks,
+    )
+
+
+def _build_curated_document(
+    spec: CuratedGoldSpec,
+    sections: tuple[CanonicalSectionAst, ...],
+) -> CanonicalDocumentAst:
+    return CanonicalDocumentAst(
+        doc_id=spec.source_id,
+        book_slug=spec.book_slug,
+        title=spec.title,
+        source_type="web",
+        source_url=spec.source_url,
+        viewer_base_path=spec.viewer_base_path,
+        source_language="ko",
+        display_language="ko",
+        translation_status="approved_ko",
+        pack_id="openshift-4-20-core",
+        pack_label=CURATED_PUBLIC_PACK_LABEL,
+        inferred_product="openshift",
+        inferred_version="4.20",
+        sections=sections,
+        notes=(),
+        provenance=_build_curated_provenance(spec),
+    )
+
+
+def _curated_manifest_source_fingerprint(spec: CuratedGoldSpec) -> str:
+    return hashlib.sha256(
+        "|".join(
+            (
+                spec.book_slug,
+                spec.source_url,
+                spec.translation_source_url,
+                spec.source_id,
+            )
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _curated_manifest_entry(spec: CuratedGoldSpec) -> SourceManifestEntry:
+    return SourceManifestEntry(
+        product_slug="openshift_container_platform",
+        ocp_version="4.20",
+        docs_language="ko",
+        source_kind="html-single",
+        book_slug=spec.book_slug,
+        title=spec.title,
+        index_url=spec.index_url,
+        source_url=spec.source_url,
+        resolved_source_url=spec.source_url,
+        resolved_language="ko",
+        source_state=SOURCE_STATE_BLOCKED,
+        source_state_reason=spec.source_state_reason,
+        catalog_source_label="curated gold manual synthesis",
+        viewer_path=spec.viewer_base_path,
+        high_value=True,
+        vendor_title=spec.vendor_title,
+        content_status="approved_ko",
+        citation_eligible=True,
+        citation_block_reason="",
+        viewer_strategy="internal_text",
+        body_language_guess="ko",
+        hangul_section_ratio=1.0,
+        hangul_chunk_ratio=1.0,
+        fallback_detected=False,
+        source_fingerprint=_curated_manifest_source_fingerprint(spec),
+        approval_status="approved",
+        approval_notes=spec.approval_notes,
+        source_id=spec.source_id,
+        source_lane="applied_playbook",
+        source_type="manual_synthesis",
+        source_collection="core",
+        legal_notice_url="",
+        original_title=spec.original_title,
+        license_or_terms=spec.license_or_terms,
+        review_status="approved",
+        trust_score=spec.trust_score,
+        verifiability="anchor_backed",
+        updated_at=spec.updated_at,
+        translation_source_language="en",
+        translation_target_language="ko",
+        translation_source_url=spec.translation_source_url,
+        translation_source_fingerprint=_curated_translation_fingerprint(spec),
+        translation_stage="approved_ko",
+    )
+
+
+def _build_etcd_provenance() -> AstProvenance:
+    return _build_curated_provenance(CURATED_ETCD_SPEC)
 
 
 def _section(
@@ -130,18 +291,15 @@ def _section(
     path: tuple[str, ...] | None = None,
     level: int = 2,
 ) -> CanonicalSectionAst:
-    resolved_path = path or (heading,)
-    return CanonicalSectionAst(
-        section_id=f"{CURATED_ETCD_BOOK_SLUG}:{anchor}",
+    return _section_for(
+        CURATED_ETCD_SPEC,
         ordinal=ordinal,
         heading=heading,
-        level=level,
-        path=resolved_path,
         anchor=anchor,
-        source_url=CURATED_ETCD_SOURCE_URL,
-        viewer_path=f"{CURATED_ETCD_VIEWER_BASE_PATH}#{anchor}",
         semantic_role=semantic_role,
         blocks=blocks,
+        path=path,
+        level=level,
     )
 
 
@@ -363,24 +521,7 @@ def build_curated_etcd_document() -> CanonicalDocumentAst:
             ),
         ),
     )
-    return CanonicalDocumentAst(
-        doc_id=CURATED_ETCD_SOURCE_ID,
-        book_slug=CURATED_ETCD_BOOK_SLUG,
-        title=CURATED_ETCD_TITLE,
-        source_type="web",
-        source_url=CURATED_ETCD_SOURCE_URL,
-        viewer_base_path=CURATED_ETCD_VIEWER_BASE_PATH,
-        source_language="ko",
-        display_language="ko",
-        translation_status="approved_ko",
-        pack_id="openshift-4-20-core",
-        pack_label="OpenShift 4.20 Gold Dataset",
-        inferred_product="openshift",
-        inferred_version="4.20",
-        sections=sections,
-        notes=(),
-        provenance=_build_etcd_provenance(),
-    )
+    return _build_curated_document(CURATED_ETCD_SPEC, sections)
 
 
 def _write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:
@@ -404,14 +545,6 @@ def _upsert_rows(
 ) -> list[dict[str, object]]:
     new_keys = {str(row[key_field]) for row in new_rows}
     kept = [row for row in existing if str(row.get(key_field, "")) not in new_keys]
-    return kept + new_rows
-
-
-def _upsert_book_rows(
-    existing: list[dict[str, object]],
-    new_rows: list[dict[str, object]],
-) -> list[dict[str, object]]:
-    kept = [row for row in existing if str(row.get("book_slug", "")) != CURATED_ETCD_BOOK_SLUG]
     return kept + new_rows
 
 
@@ -461,21 +594,6 @@ def _bm25_row(chunk_row: dict[str, object]) -> dict[str, object]:
     }
 
 
-def _upsert_playbook_payload(
-    path: Path,
-    books_dir: Path,
-    payload: dict[str, object],
-) -> None:
-    rows = _read_jsonl_safe(path)
-    rows = _upsert_book_rows(rows, [payload])
-    _write_jsonl(path, rows)
-    books_dir.mkdir(parents=True, exist_ok=True)
-    (books_dir / f"{CURATED_ETCD_BOOK_SLUG}.json").write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-
-
 def _upsert_playbook_payload_for_slug(
     path: Path,
     books_dir: Path,
@@ -494,63 +612,7 @@ def _upsert_playbook_payload_for_slug(
 
 
 def _curated_etcd_manifest_entry() -> SourceManifestEntry:
-    source_fingerprint = hashlib.sha256(
-        "|".join(
-            (
-                CURATED_ETCD_BOOK_SLUG,
-                CURATED_ETCD_SOURCE_URL,
-                CURATED_ETCD_TRANSLATION_SOURCE_URL,
-                CURATED_ETCD_SOURCE_ID,
-            )
-        ).encode("utf-8")
-    ).hexdigest()
-    return SourceManifestEntry(
-        product_slug="openshift_container_platform",
-        ocp_version="4.20",
-        docs_language="ko",
-        source_kind="html-single",
-        book_slug=CURATED_ETCD_BOOK_SLUG,
-        title=CURATED_ETCD_TITLE,
-        index_url=CURATED_ETCD_INDEX_URL,
-        source_url=CURATED_ETCD_SOURCE_URL,
-        resolved_source_url=CURATED_ETCD_SOURCE_URL,
-        resolved_language="ko",
-        source_state=SOURCE_STATE_BLOCKED,
-        source_state_reason="curated_manual_review_promoted_from_bronze_bundle",
-        catalog_source_label="curated gold manual synthesis",
-        viewer_path=CURATED_ETCD_VIEWER_BASE_PATH,
-        high_value=True,
-        vendor_title="etcd",
-        content_status="approved_ko",
-        citation_eligible=True,
-        citation_block_reason="",
-        viewer_strategy="internal_text",
-        body_language_guess="ko",
-        hangul_section_ratio=1.0,
-        hangul_chunk_ratio=1.0,
-        fallback_detected=False,
-        source_fingerprint=source_fingerprint,
-        approval_status="approved",
-        approval_notes="curated etcd gold sample from official KO/EN docs and repo sidecars",
-        source_id=CURATED_ETCD_SOURCE_ID,
-        source_lane="applied_playbook",
-        source_type="manual_synthesis",
-        source_collection="core",
-        legal_notice_url="",
-        original_title="Backing up and restoring etcd data / Disaster recovery",
-        license_or_terms=CURATED_ETCD_LICENSE,
-        review_status="approved",
-        trust_score=0.98,
-        verifiability="anchor_backed",
-        updated_at=CURATED_ETCD_UPDATED_AT,
-        translation_source_language="en",
-        translation_target_language="ko",
-        translation_source_url=CURATED_ETCD_TRANSLATION_SOURCE_URL,
-        translation_source_fingerprint=hashlib.sha256(
-            CURATED_ETCD_TRANSLATION_SOURCE_URL.encode("utf-8")
-        ).hexdigest(),
-        translation_stage="approved_ko",
-    )
+    return _curated_manifest_entry(CURATED_ETCD_SPEC)
 
 
 def _upsert_manifest_entry(settings: Settings, entry: SourceManifestEntry) -> tuple[int, int]:
@@ -567,12 +629,14 @@ def _upsert_manifest_entry(settings: Settings, entry: SourceManifestEntry) -> tu
     return before, len(filtered)
 
 
-def apply_curated_etcd_gold(
+def _apply_curated_gold(
     settings: Settings,
     *,
+    spec: CuratedGoldSpec,
+    document_builder: Callable[[], CanonicalDocumentAst],
     refresh_synthesis_report: bool = False,
 ) -> dict[str, object]:
-    document = build_curated_etcd_document()
+    document = document_builder()
     sections = project_normalized_sections(document)
     chunks = chunk_sections(sections, settings)
 
@@ -581,14 +645,17 @@ def apply_curated_etcd_gold(
     bm25_rows = [_bm25_row(chunk_row) for chunk_row in chunk_rows]
 
     playbook_payload = project_playbook_document(document).to_dict()
-    playbook_payload["quality_score"] = 0.98
+    playbook_payload["quality_score"] = spec.trust_score
     playbook_payload["quality_flags"] = []
     playbook_payload["review_status"] = "approved"
     playbook_payload["source_metadata"]["source_collection"] = "core"
 
     for path in settings.normalized_docs_candidates:
         rows = _read_jsonl_safe(path)
-        _write_jsonl(path, _upsert_book_rows(rows, normalized_rows))
+        _write_jsonl(
+            path,
+            _upsert_book_rows_for_slug(rows, normalized_rows, book_slug=spec.book_slug),
+        )
 
     for path in (settings.chunks_path,):
         rows = _read_jsonl_safe(path)
@@ -599,11 +666,16 @@ def apply_curated_etcd_gold(
         _write_jsonl(path, _upsert_rows(rows, bm25_rows, key_field="chunk_id"))
 
     for path in (settings.playbook_documents_path,):
-        books_dir = settings.playbook_books_dir
-        _upsert_playbook_payload(path, books_dir, playbook_payload)
+        _upsert_playbook_payload_for_slug(
+            path,
+            settings.playbook_books_dir,
+            playbook_payload,
+            book_slug=spec.book_slug,
+        )
 
     manifest_before, manifest_after = _upsert_manifest_entry(
-        settings, _curated_etcd_manifest_entry()
+        settings,
+        _curated_manifest_entry(spec),
     )
 
     synthesis_report_path = synthesis_lane_report_path(settings)
@@ -612,26 +684,17 @@ def apply_curated_etcd_gold(
         synthesis_report = write_synthesis_lane_outputs(settings)
 
     report = {
-        "book_slug": CURATED_ETCD_BOOK_SLUG,
-        "title": CURATED_ETCD_TITLE,
+        "book_slug": spec.book_slug,
+        "title": spec.title,
         "section_count": len(normalized_rows),
         "chunk_count": len(chunk_rows),
         "manifest_before_count": manifest_before,
         "manifest_after_count": manifest_after,
         "output_targets": {
             "normalized_docs": [str(path) for path in settings.normalized_docs_candidates],
-            "chunks": [
-                str(path)
-                for path in (settings.chunks_path,)
-            ],
-            "bm25_corpus": [
-                str(path)
-                for path in (settings.bm25_corpus_path,)
-            ],
-            "playbook_documents": [
-                str(path)
-                for path in (settings.playbook_documents_path,)
-            ],
+            "chunks": [str(path) for path in (settings.chunks_path,)],
+            "bm25_corpus": [str(path) for path in (settings.bm25_corpus_path,)],
+            "playbook_documents": [str(path) for path in (settings.playbook_documents_path,)],
             "playbook_books": [str(path) for path in settings.playbook_book_dirs],
             "approved_manifest_path": str(settings.source_manifest_path),
         },
@@ -640,6 +703,19 @@ def apply_curated_etcd_gold(
         report["synthesis_report_path"] = str(synthesis_report_path)
         report["synthesis_summary"] = synthesis_report["summary"]
     return report
+
+
+def apply_curated_etcd_gold(
+    settings: Settings,
+    *,
+    refresh_synthesis_report: bool = False,
+) -> dict[str, object]:
+    return _apply_curated_gold(
+        settings,
+        spec=CURATED_ETCD_SPEC,
+        document_builder=build_curated_etcd_document,
+        refresh_synthesis_report=refresh_synthesis_report,
+    )
 
 
 CURATED_BACKUP_RESTORE_BOOK_SLUG = "backup_and_restore"
@@ -673,47 +749,25 @@ def _backup_restore_provenance_notes() -> tuple[str, ...]:
     )
 
 
+CURATED_BACKUP_RESTORE_SPEC = CuratedGoldSpec(
+    book_slug=CURATED_BACKUP_RESTORE_BOOK_SLUG,
+    title=CURATED_BACKUP_RESTORE_TITLE,
+    source_url=CURATED_BACKUP_RESTORE_SOURCE_URL,
+    translation_source_url=CURATED_BACKUP_RESTORE_TRANSLATION_SOURCE_URL,
+    index_url=CURATED_BACKUP_RESTORE_INDEX_URL,
+    viewer_base_path=CURATED_BACKUP_RESTORE_VIEWER_BASE_PATH,
+    source_id=CURATED_BACKUP_RESTORE_SOURCE_ID,
+    updated_at=CURATED_BACKUP_RESTORE_UPDATED_AT,
+    license_or_terms=CURATED_BACKUP_RESTORE_LICENSE,
+    original_title="Backup and restore",
+    vendor_title="Backup and restore",
+    approval_notes="curated backup_and_restore gold sample from official KO/EN docs and repo sidecars",
+    notes=_backup_restore_provenance_notes(),
+)
+
+
 def _build_backup_restore_provenance() -> AstProvenance:
-    return AstProvenance(
-        source_id=CURATED_BACKUP_RESTORE_SOURCE_ID,
-        source_lane="applied_playbook",
-        source_type="manual_synthesis",
-        source_collection="core",
-        product="openshift",
-        version="4.20",
-        locale="ko",
-        original_title="Backup and restore",
-        legal_notice_url="",
-        license_or_terms=CURATED_BACKUP_RESTORE_LICENSE,
-        review_status="approved",
-        trust_score=0.97,
-        verifiability="anchor_backed",
-        updated_at=CURATED_BACKUP_RESTORE_UPDATED_AT,
-        capture_uri=CURATED_BACKUP_RESTORE_SOURCE_URL,
-        source_fingerprint=hashlib.sha256(
-            "|".join(
-                (
-                    CURATED_BACKUP_RESTORE_SOURCE_ID,
-                    CURATED_BACKUP_RESTORE_SOURCE_URL,
-                    CURATED_BACKUP_RESTORE_TRANSLATION_SOURCE_URL,
-                    "curated_gold_v1",
-                )
-            ).encode("utf-8")
-        ).hexdigest(),
-        parser_name="curated_gold",
-        parser_version="v1",
-        source_state=SOURCE_STATE_BLOCKED,
-        content_status="approved_ko",
-        translation_stage="approved_ko",
-        translation_source_language="en",
-        translation_target_language="ko",
-        translation_source_url=CURATED_BACKUP_RESTORE_TRANSLATION_SOURCE_URL,
-        translation_source_fingerprint=hashlib.sha256(
-            CURATED_BACKUP_RESTORE_TRANSLATION_SOURCE_URL.encode("utf-8")
-        ).hexdigest(),
-        **_curated_public_provenance_defaults(CURATED_BACKUP_RESTORE_SOURCE_ID),
-        notes=_backup_restore_provenance_notes(),
-    )
+    return _build_curated_provenance(CURATED_BACKUP_RESTORE_SPEC)
 
 
 def _backup_restore_section(
@@ -726,18 +780,15 @@ def _backup_restore_section(
     path: tuple[str, ...] | None = None,
     level: int = 2,
 ) -> CanonicalSectionAst:
-    resolved_path = path or (heading,)
-    return CanonicalSectionAst(
-        section_id=f"{CURATED_BACKUP_RESTORE_BOOK_SLUG}:{anchor}",
+    return _section_for(
+        CURATED_BACKUP_RESTORE_SPEC,
         ordinal=ordinal,
         heading=heading,
-        level=level,
-        path=resolved_path,
         anchor=anchor,
-        source_url=CURATED_BACKUP_RESTORE_SOURCE_URL,
-        viewer_path=f"{CURATED_BACKUP_RESTORE_VIEWER_BASE_PATH}#{anchor}",
         semantic_role=semantic_role,
         blocks=blocks,
+        path=path,
+        level=level,
     )
 
 
@@ -969,84 +1020,11 @@ def build_curated_backup_restore_document() -> CanonicalDocumentAst:
             ),
         ),
     )
-    return CanonicalDocumentAst(
-        doc_id=CURATED_BACKUP_RESTORE_SOURCE_ID,
-        book_slug=CURATED_BACKUP_RESTORE_BOOK_SLUG,
-        title=CURATED_BACKUP_RESTORE_TITLE,
-        source_type="web",
-        source_url=CURATED_BACKUP_RESTORE_SOURCE_URL,
-        viewer_base_path=CURATED_BACKUP_RESTORE_VIEWER_BASE_PATH,
-        source_language="ko",
-        display_language="ko",
-        translation_status="approved_ko",
-        pack_id="openshift-4-20-core",
-        pack_label="OpenShift 4.20 Gold Dataset",
-        inferred_product="openshift",
-        inferred_version="4.20",
-        sections=sections,
-        notes=(),
-        provenance=_build_backup_restore_provenance(),
-    )
+    return _build_curated_document(CURATED_BACKUP_RESTORE_SPEC, sections)
 
 
 def _curated_backup_restore_manifest_entry() -> SourceManifestEntry:
-    source_fingerprint = hashlib.sha256(
-        "|".join(
-            (
-                CURATED_BACKUP_RESTORE_BOOK_SLUG,
-                CURATED_BACKUP_RESTORE_SOURCE_URL,
-                CURATED_BACKUP_RESTORE_TRANSLATION_SOURCE_URL,
-                CURATED_BACKUP_RESTORE_SOURCE_ID,
-            )
-        ).encode("utf-8")
-    ).hexdigest()
-    return SourceManifestEntry(
-        product_slug="openshift_container_platform",
-        ocp_version="4.20",
-        docs_language="ko",
-        source_kind="html-single",
-        book_slug=CURATED_BACKUP_RESTORE_BOOK_SLUG,
-        title=CURATED_BACKUP_RESTORE_TITLE,
-        index_url=CURATED_BACKUP_RESTORE_INDEX_URL,
-        source_url=CURATED_BACKUP_RESTORE_SOURCE_URL,
-        resolved_source_url=CURATED_BACKUP_RESTORE_SOURCE_URL,
-        resolved_language="ko",
-        source_state=SOURCE_STATE_BLOCKED,
-        source_state_reason="curated_manual_review_promoted_from_bronze_bundle",
-        catalog_source_label="curated gold manual synthesis",
-        viewer_path=CURATED_BACKUP_RESTORE_VIEWER_BASE_PATH,
-        high_value=True,
-        vendor_title="Backup and restore",
-        content_status="approved_ko",
-        citation_eligible=True,
-        citation_block_reason="",
-        viewer_strategy="internal_text",
-        body_language_guess="ko",
-        hangul_section_ratio=1.0,
-        hangul_chunk_ratio=1.0,
-        fallback_detected=False,
-        source_fingerprint=source_fingerprint,
-        approval_status="approved",
-        approval_notes="curated backup_and_restore gold sample from official KO/EN docs and repo sidecars",
-        source_id=CURATED_BACKUP_RESTORE_SOURCE_ID,
-        source_lane="applied_playbook",
-        source_type="manual_synthesis",
-        source_collection="core",
-        legal_notice_url="",
-        original_title="Backup and restore",
-        license_or_terms=CURATED_BACKUP_RESTORE_LICENSE,
-        review_status="approved",
-        trust_score=0.97,
-        verifiability="anchor_backed",
-        updated_at=CURATED_BACKUP_RESTORE_UPDATED_AT,
-        translation_source_language="en",
-        translation_target_language="ko",
-        translation_source_url=CURATED_BACKUP_RESTORE_TRANSLATION_SOURCE_URL,
-        translation_source_fingerprint=hashlib.sha256(
-            CURATED_BACKUP_RESTORE_TRANSLATION_SOURCE_URL.encode("utf-8")
-        ).hexdigest(),
-        translation_stage="approved_ko",
-    )
+    return _curated_manifest_entry(CURATED_BACKUP_RESTORE_SPEC)
 
 
 def apply_curated_backup_restore_gold(
@@ -1054,87 +1032,12 @@ def apply_curated_backup_restore_gold(
     *,
     refresh_synthesis_report: bool = False,
 ) -> dict[str, object]:
-    document = build_curated_backup_restore_document()
-    sections = project_normalized_sections(document)
-    chunks = chunk_sections(sections, settings)
-
-    normalized_rows = [section.to_dict() for section in sections]
-    chunk_rows = [chunk.to_dict() for chunk in chunks]
-    bm25_rows = [_bm25_row(chunk_row) for chunk_row in chunk_rows]
-
-    playbook_payload = project_playbook_document(document).to_dict()
-    playbook_payload["quality_score"] = 0.97
-    playbook_payload["quality_flags"] = []
-    playbook_payload["review_status"] = "approved"
-    playbook_payload["source_metadata"]["source_collection"] = "core"
-
-    for path in settings.normalized_docs_candidates:
-        rows = _read_jsonl_safe(path)
-        _write_jsonl(
-            path,
-            _upsert_book_rows_for_slug(
-                rows,
-                normalized_rows,
-                book_slug=CURATED_BACKUP_RESTORE_BOOK_SLUG,
-            ),
-        )
-
-    for path in (settings.chunks_path,):
-        rows = _read_jsonl_safe(path)
-        _write_jsonl(path, _upsert_rows(rows, chunk_rows, key_field="chunk_id"))
-
-    for path in (settings.bm25_corpus_path,):
-        rows = _read_jsonl_safe(path)
-        _write_jsonl(path, _upsert_rows(rows, bm25_rows, key_field="chunk_id"))
-
-    for path in (settings.playbook_documents_path,):
-        books_dir = settings.playbook_books_dir
-        _upsert_playbook_payload_for_slug(
-            path,
-            books_dir,
-            playbook_payload,
-            book_slug=CURATED_BACKUP_RESTORE_BOOK_SLUG,
-        )
-
-    manifest_before, manifest_after = _upsert_manifest_entry(
+    return _apply_curated_gold(
         settings,
-        _curated_backup_restore_manifest_entry(),
+        spec=CURATED_BACKUP_RESTORE_SPEC,
+        document_builder=build_curated_backup_restore_document,
+        refresh_synthesis_report=refresh_synthesis_report,
     )
-
-    synthesis_report_path = synthesis_lane_report_path(settings)
-    synthesis_report = None
-    if refresh_synthesis_report and settings.source_catalog_path.exists():
-        synthesis_report = write_synthesis_lane_outputs(settings)
-
-    report = {
-        "book_slug": CURATED_BACKUP_RESTORE_BOOK_SLUG,
-        "title": CURATED_BACKUP_RESTORE_TITLE,
-        "section_count": len(normalized_rows),
-        "chunk_count": len(chunk_rows),
-        "manifest_before_count": manifest_before,
-        "manifest_after_count": manifest_after,
-        "output_targets": {
-            "normalized_docs": [str(path) for path in settings.normalized_docs_candidates],
-            "chunks": [
-                str(path)
-                for path in (settings.chunks_path,)
-            ],
-            "bm25_corpus": [
-                str(path)
-                for path in (settings.bm25_corpus_path,)
-            ],
-            "playbook_documents": [
-                str(path)
-                for path in (settings.playbook_documents_path,)
-            ],
-            "playbook_books": [str(path) for path in settings.playbook_book_dirs],
-            "approved_manifest_path": str(settings.source_manifest_path),
-        },
-    }
-    if synthesis_report is not None:
-        report["synthesis_report_path"] = str(synthesis_report_path)
-        report["synthesis_summary"] = synthesis_report["summary"]
-    return report
 
 
 CURATED_MACHINE_CONFIGURATION_BOOK_SLUG = "machine_configuration"
@@ -1170,47 +1073,25 @@ def _machine_configuration_provenance_notes() -> tuple[str, ...]:
     )
 
 
+CURATED_MACHINE_CONFIGURATION_SPEC = CuratedGoldSpec(
+    book_slug=CURATED_MACHINE_CONFIGURATION_BOOK_SLUG,
+    title=CURATED_MACHINE_CONFIGURATION_TITLE,
+    source_url=CURATED_MACHINE_CONFIGURATION_SOURCE_URL,
+    translation_source_url=CURATED_MACHINE_CONFIGURATION_TRANSLATION_SOURCE_URL,
+    index_url=CURATED_MACHINE_CONFIGURATION_INDEX_URL,
+    viewer_base_path=CURATED_MACHINE_CONFIGURATION_VIEWER_BASE_PATH,
+    source_id=CURATED_MACHINE_CONFIGURATION_SOURCE_ID,
+    updated_at=CURATED_MACHINE_CONFIGURATION_UPDATED_AT,
+    license_or_terms=CURATED_MACHINE_CONFIGURATION_LICENSE,
+    original_title="Machine configuration",
+    vendor_title="Machine configuration",
+    approval_notes="curated machine_configuration gold sample from official KO/EN docs and repo sidecars",
+    notes=_machine_configuration_provenance_notes(),
+)
+
+
 def _build_machine_configuration_provenance() -> AstProvenance:
-    return AstProvenance(
-        source_id=CURATED_MACHINE_CONFIGURATION_SOURCE_ID,
-        source_lane="applied_playbook",
-        source_type="manual_synthesis",
-        source_collection="core",
-        product="openshift",
-        version="4.20",
-        locale="ko",
-        original_title="Machine configuration overview / Using machine config objects to configure nodes",
-        legal_notice_url="",
-        license_or_terms=CURATED_MACHINE_CONFIGURATION_LICENSE,
-        review_status="approved",
-        trust_score=0.97,
-        verifiability="anchor_backed",
-        updated_at=CURATED_MACHINE_CONFIGURATION_UPDATED_AT,
-        capture_uri=CURATED_MACHINE_CONFIGURATION_SOURCE_URL,
-        source_fingerprint=hashlib.sha256(
-            "|".join(
-                (
-                    CURATED_MACHINE_CONFIGURATION_SOURCE_ID,
-                    CURATED_MACHINE_CONFIGURATION_SOURCE_URL,
-                    CURATED_MACHINE_CONFIGURATION_TRANSLATION_SOURCE_URL,
-                    "curated_gold_v1",
-                )
-            ).encode("utf-8")
-        ).hexdigest(),
-        parser_name="curated_gold",
-        parser_version="v1",
-        source_state=SOURCE_STATE_BLOCKED,
-        content_status="approved_ko",
-        translation_stage="approved_ko",
-        translation_source_language="en",
-        translation_target_language="ko",
-        translation_source_url=CURATED_MACHINE_CONFIGURATION_TRANSLATION_SOURCE_URL,
-        translation_source_fingerprint=hashlib.sha256(
-            CURATED_MACHINE_CONFIGURATION_TRANSLATION_SOURCE_URL.encode("utf-8")
-        ).hexdigest(),
-        **_curated_public_provenance_defaults(CURATED_MACHINE_CONFIGURATION_SOURCE_ID),
-        notes=_machine_configuration_provenance_notes(),
-    )
+    return _build_curated_provenance(CURATED_MACHINE_CONFIGURATION_SPEC)
 
 
 def _machine_configuration_section(
@@ -1223,18 +1104,15 @@ def _machine_configuration_section(
     path: tuple[str, ...] | None = None,
     level: int = 2,
 ) -> CanonicalSectionAst:
-    resolved_path = path or (heading,)
-    return CanonicalSectionAst(
-        section_id=f"{CURATED_MACHINE_CONFIGURATION_BOOK_SLUG}:{anchor}",
+    return _section_for(
+        CURATED_MACHINE_CONFIGURATION_SPEC,
         ordinal=ordinal,
         heading=heading,
-        level=level,
-        path=resolved_path,
         anchor=anchor,
-        source_url=CURATED_MACHINE_CONFIGURATION_SOURCE_URL,
-        viewer_path=f"{CURATED_MACHINE_CONFIGURATION_VIEWER_BASE_PATH}#{anchor}",
         semantic_role=semantic_role,
         blocks=blocks,
+        path=path,
+        level=level,
     )
 
 
@@ -1436,84 +1314,11 @@ def build_curated_machine_configuration_document() -> CanonicalDocumentAst:
             ),
         ),
     )
-    return CanonicalDocumentAst(
-        doc_id=CURATED_MACHINE_CONFIGURATION_SOURCE_ID,
-        book_slug=CURATED_MACHINE_CONFIGURATION_BOOK_SLUG,
-        title=CURATED_MACHINE_CONFIGURATION_TITLE,
-        source_type="web",
-        source_url=CURATED_MACHINE_CONFIGURATION_SOURCE_URL,
-        viewer_base_path=CURATED_MACHINE_CONFIGURATION_VIEWER_BASE_PATH,
-        source_language="ko",
-        display_language="ko",
-        translation_status="approved_ko",
-        pack_id="openshift-4-20-core",
-        pack_label="OpenShift 4.20 Gold Dataset",
-        inferred_product="openshift",
-        inferred_version="4.20",
-        sections=sections,
-        notes=(),
-        provenance=_build_machine_configuration_provenance(),
-    )
+    return _build_curated_document(CURATED_MACHINE_CONFIGURATION_SPEC, sections)
 
 
 def _curated_machine_configuration_manifest_entry() -> SourceManifestEntry:
-    source_fingerprint = hashlib.sha256(
-        "|".join(
-            (
-                CURATED_MACHINE_CONFIGURATION_BOOK_SLUG,
-                CURATED_MACHINE_CONFIGURATION_SOURCE_URL,
-                CURATED_MACHINE_CONFIGURATION_TRANSLATION_SOURCE_URL,
-                CURATED_MACHINE_CONFIGURATION_SOURCE_ID,
-            )
-        ).encode("utf-8")
-    ).hexdigest()
-    return SourceManifestEntry(
-        product_slug="openshift_container_platform",
-        ocp_version="4.20",
-        docs_language="ko",
-        source_kind="html-single",
-        book_slug=CURATED_MACHINE_CONFIGURATION_BOOK_SLUG,
-        title=CURATED_MACHINE_CONFIGURATION_TITLE,
-        index_url=CURATED_MACHINE_CONFIGURATION_INDEX_URL,
-        source_url=CURATED_MACHINE_CONFIGURATION_SOURCE_URL,
-        resolved_source_url=CURATED_MACHINE_CONFIGURATION_SOURCE_URL,
-        resolved_language="ko",
-        source_state=SOURCE_STATE_BLOCKED,
-        source_state_reason="curated_manual_review_promoted_from_bronze_bundle",
-        catalog_source_label="curated gold manual synthesis",
-        viewer_path=CURATED_MACHINE_CONFIGURATION_VIEWER_BASE_PATH,
-        high_value=True,
-        vendor_title="Machine configuration",
-        content_status="approved_ko",
-        citation_eligible=True,
-        citation_block_reason="",
-        viewer_strategy="internal_text",
-        body_language_guess="ko",
-        hangul_section_ratio=1.0,
-        hangul_chunk_ratio=1.0,
-        fallback_detected=False,
-        source_fingerprint=source_fingerprint,
-        approval_status="approved",
-        approval_notes="curated machine_configuration gold sample from official KO/EN docs and repo sidecars",
-        source_id=CURATED_MACHINE_CONFIGURATION_SOURCE_ID,
-        source_lane="applied_playbook",
-        source_type="manual_synthesis",
-        source_collection="core",
-        legal_notice_url="",
-        original_title="Machine configuration",
-        license_or_terms=CURATED_MACHINE_CONFIGURATION_LICENSE,
-        review_status="approved",
-        trust_score=0.97,
-        verifiability="anchor_backed",
-        updated_at=CURATED_MACHINE_CONFIGURATION_UPDATED_AT,
-        translation_source_language="en",
-        translation_target_language="ko",
-        translation_source_url=CURATED_MACHINE_CONFIGURATION_TRANSLATION_SOURCE_URL,
-        translation_source_fingerprint=hashlib.sha256(
-            CURATED_MACHINE_CONFIGURATION_TRANSLATION_SOURCE_URL.encode("utf-8")
-        ).hexdigest(),
-        translation_stage="approved_ko",
-    )
+    return _curated_manifest_entry(CURATED_MACHINE_CONFIGURATION_SPEC)
 
 
 def apply_curated_machine_configuration_gold(
@@ -1521,87 +1326,12 @@ def apply_curated_machine_configuration_gold(
     *,
     refresh_synthesis_report: bool = False,
 ) -> dict[str, object]:
-    document = build_curated_machine_configuration_document()
-    sections = project_normalized_sections(document)
-    chunks = chunk_sections(sections, settings)
-
-    normalized_rows = [section.to_dict() for section in sections]
-    chunk_rows = [chunk.to_dict() for chunk in chunks]
-    bm25_rows = [_bm25_row(chunk_row) for chunk_row in chunk_rows]
-
-    playbook_payload = project_playbook_document(document).to_dict()
-    playbook_payload["quality_score"] = 0.97
-    playbook_payload["quality_flags"] = []
-    playbook_payload["review_status"] = "approved"
-    playbook_payload["source_metadata"]["source_collection"] = "core"
-
-    for path in settings.normalized_docs_candidates:
-        rows = _read_jsonl_safe(path)
-        _write_jsonl(
-            path,
-            _upsert_book_rows_for_slug(
-                rows,
-                normalized_rows,
-                book_slug=CURATED_MACHINE_CONFIGURATION_BOOK_SLUG,
-            ),
-        )
-
-    for path in (settings.chunks_path,):
-        rows = _read_jsonl_safe(path)
-        _write_jsonl(path, _upsert_rows(rows, chunk_rows, key_field="chunk_id"))
-
-    for path in (settings.bm25_corpus_path,):
-        rows = _read_jsonl_safe(path)
-        _write_jsonl(path, _upsert_rows(rows, bm25_rows, key_field="chunk_id"))
-
-    for path in (settings.playbook_documents_path,):
-        books_dir = settings.playbook_books_dir
-        _upsert_playbook_payload_for_slug(
-            path,
-            books_dir,
-            playbook_payload,
-            book_slug=CURATED_MACHINE_CONFIGURATION_BOOK_SLUG,
-        )
-
-    manifest_before, manifest_after = _upsert_manifest_entry(
+    return _apply_curated_gold(
         settings,
-        _curated_machine_configuration_manifest_entry(),
+        spec=CURATED_MACHINE_CONFIGURATION_SPEC,
+        document_builder=build_curated_machine_configuration_document,
+        refresh_synthesis_report=refresh_synthesis_report,
     )
-
-    synthesis_report_path = synthesis_lane_report_path(settings)
-    synthesis_report = None
-    if refresh_synthesis_report and settings.source_catalog_path.exists():
-        synthesis_report = write_synthesis_lane_outputs(settings)
-
-    report = {
-        "book_slug": CURATED_MACHINE_CONFIGURATION_BOOK_SLUG,
-        "title": CURATED_MACHINE_CONFIGURATION_TITLE,
-        "section_count": len(normalized_rows),
-        "chunk_count": len(chunk_rows),
-        "manifest_before_count": manifest_before,
-        "manifest_after_count": manifest_after,
-        "output_targets": {
-            "normalized_docs": [str(path) for path in settings.normalized_docs_candidates],
-            "chunks": [
-                str(path)
-                for path in (settings.chunks_path,)
-            ],
-            "bm25_corpus": [
-                str(path)
-                for path in (settings.bm25_corpus_path,)
-            ],
-            "playbook_documents": [
-                str(path)
-                for path in (settings.playbook_documents_path,)
-            ],
-            "playbook_books": [str(path) for path in settings.playbook_book_dirs],
-            "approved_manifest_path": str(settings.source_manifest_path),
-        },
-    }
-    if synthesis_report is not None:
-        report["synthesis_report_path"] = str(synthesis_report_path)
-        report["synthesis_summary"] = synthesis_report["summary"]
-    return report
 
 
 CURATED_OPERATORS_BOOK_SLUG = "operators"
@@ -1631,47 +1361,25 @@ def _operators_provenance_notes() -> tuple[str, ...]:
     )
 
 
+CURATED_OPERATORS_SPEC = CuratedGoldSpec(
+    book_slug=CURATED_OPERATORS_BOOK_SLUG,
+    title=CURATED_OPERATORS_TITLE,
+    source_url=CURATED_OPERATORS_SOURCE_URL,
+    translation_source_url=CURATED_OPERATORS_TRANSLATION_SOURCE_URL,
+    index_url=CURATED_OPERATORS_INDEX_URL,
+    viewer_base_path=CURATED_OPERATORS_VIEWER_BASE_PATH,
+    source_id=CURATED_OPERATORS_SOURCE_ID,
+    updated_at=CURATED_OPERATORS_UPDATED_AT,
+    license_or_terms=CURATED_OPERATORS_LICENSE,
+    original_title="Operators",
+    vendor_title="Operators",
+    approval_notes="curated operators gold sample from official KO/EN docs and repo sidecars",
+    notes=_operators_provenance_notes(),
+)
+
+
 def _build_operators_provenance() -> AstProvenance:
-    return AstProvenance(
-        source_id=CURATED_OPERATORS_SOURCE_ID,
-        source_lane="applied_playbook",
-        source_type="manual_synthesis",
-        source_collection="core",
-        product="openshift",
-        version="4.20",
-        locale="ko",
-        original_title="Operators",
-        legal_notice_url="",
-        license_or_terms=CURATED_OPERATORS_LICENSE,
-        review_status="approved",
-        trust_score=0.97,
-        verifiability="anchor_backed",
-        updated_at=CURATED_OPERATORS_UPDATED_AT,
-        capture_uri=CURATED_OPERATORS_SOURCE_URL,
-        source_fingerprint=hashlib.sha256(
-            "|".join(
-                (
-                    CURATED_OPERATORS_SOURCE_ID,
-                    CURATED_OPERATORS_SOURCE_URL,
-                    CURATED_OPERATORS_TRANSLATION_SOURCE_URL,
-                    "curated_gold_v1",
-                )
-            ).encode("utf-8")
-        ).hexdigest(),
-        parser_name="curated_gold",
-        parser_version="v1",
-        source_state=SOURCE_STATE_BLOCKED,
-        content_status="approved_ko",
-        translation_stage="approved_ko",
-        translation_source_language="en",
-        translation_target_language="ko",
-        translation_source_url=CURATED_OPERATORS_TRANSLATION_SOURCE_URL,
-        translation_source_fingerprint=hashlib.sha256(
-            CURATED_OPERATORS_TRANSLATION_SOURCE_URL.encode("utf-8")
-        ).hexdigest(),
-        **_curated_public_provenance_defaults(CURATED_OPERATORS_SOURCE_ID),
-        notes=_operators_provenance_notes(),
-    )
+    return _build_curated_provenance(CURATED_OPERATORS_SPEC)
 
 
 def _operators_section(
@@ -1684,18 +1392,15 @@ def _operators_section(
     path: tuple[str, ...] | None = None,
     level: int = 2,
 ) -> CanonicalSectionAst:
-    resolved_path = path or (heading,)
-    return CanonicalSectionAst(
-        section_id=f"{CURATED_OPERATORS_BOOK_SLUG}:{anchor}",
+    return _section_for(
+        CURATED_OPERATORS_SPEC,
         ordinal=ordinal,
         heading=heading,
-        level=level,
-        path=resolved_path,
         anchor=anchor,
-        source_url=CURATED_OPERATORS_SOURCE_URL,
-        viewer_path=f"{CURATED_OPERATORS_VIEWER_BASE_PATH}#{anchor}",
         semantic_role=semantic_role,
         blocks=blocks,
+        path=path,
+        level=level,
     )
 
 
@@ -1916,84 +1621,11 @@ def build_curated_operators_document() -> CanonicalDocumentAst:
             ),
         ),
     )
-    return CanonicalDocumentAst(
-        doc_id=CURATED_OPERATORS_SOURCE_ID,
-        book_slug=CURATED_OPERATORS_BOOK_SLUG,
-        title=CURATED_OPERATORS_TITLE,
-        source_type="web",
-        source_url=CURATED_OPERATORS_SOURCE_URL,
-        viewer_base_path=CURATED_OPERATORS_VIEWER_BASE_PATH,
-        source_language="ko",
-        display_language="ko",
-        translation_status="approved_ko",
-        pack_id="openshift-4-20-core",
-        pack_label="OpenShift 4.20 Gold Dataset",
-        inferred_product="openshift",
-        inferred_version="4.20",
-        sections=sections,
-        notes=(),
-        provenance=_build_operators_provenance(),
-    )
+    return _build_curated_document(CURATED_OPERATORS_SPEC, sections)
 
 
 def _curated_operators_manifest_entry() -> SourceManifestEntry:
-    source_fingerprint = hashlib.sha256(
-        "|".join(
-            (
-                CURATED_OPERATORS_BOOK_SLUG,
-                CURATED_OPERATORS_SOURCE_URL,
-                CURATED_OPERATORS_TRANSLATION_SOURCE_URL,
-                CURATED_OPERATORS_SOURCE_ID,
-            )
-        ).encode("utf-8")
-    ).hexdigest()
-    return SourceManifestEntry(
-        product_slug="openshift_container_platform",
-        ocp_version="4.20",
-        docs_language="ko",
-        source_kind="html-single",
-        book_slug=CURATED_OPERATORS_BOOK_SLUG,
-        title=CURATED_OPERATORS_TITLE,
-        index_url=CURATED_OPERATORS_INDEX_URL,
-        source_url=CURATED_OPERATORS_SOURCE_URL,
-        resolved_source_url=CURATED_OPERATORS_SOURCE_URL,
-        resolved_language="ko",
-        source_state=SOURCE_STATE_BLOCKED,
-        source_state_reason="curated_manual_review_promoted_from_bronze_bundle",
-        catalog_source_label="curated gold manual synthesis",
-        viewer_path=CURATED_OPERATORS_VIEWER_BASE_PATH,
-        high_value=True,
-        vendor_title="Operators",
-        content_status="approved_ko",
-        citation_eligible=True,
-        citation_block_reason="",
-        viewer_strategy="internal_text",
-        body_language_guess="ko",
-        hangul_section_ratio=1.0,
-        hangul_chunk_ratio=1.0,
-        fallback_detected=False,
-        source_fingerprint=source_fingerprint,
-        approval_status="approved",
-        approval_notes="curated operators gold sample from official KO/EN docs and repo sidecars",
-        source_id=CURATED_OPERATORS_SOURCE_ID,
-        source_lane="applied_playbook",
-        source_type="manual_synthesis",
-        source_collection="core",
-        legal_notice_url="",
-        original_title="Operators",
-        license_or_terms=CURATED_OPERATORS_LICENSE,
-        review_status="approved",
-        trust_score=0.97,
-        verifiability="anchor_backed",
-        updated_at=CURATED_OPERATORS_UPDATED_AT,
-        translation_source_language="en",
-        translation_target_language="ko",
-        translation_source_url=CURATED_OPERATORS_TRANSLATION_SOURCE_URL,
-        translation_source_fingerprint=hashlib.sha256(
-            CURATED_OPERATORS_TRANSLATION_SOURCE_URL.encode("utf-8")
-        ).hexdigest(),
-        translation_stage="approved_ko",
-    )
+    return _curated_manifest_entry(CURATED_OPERATORS_SPEC)
 
 
 def apply_curated_operators_gold(
@@ -2001,87 +1633,12 @@ def apply_curated_operators_gold(
     *,
     refresh_synthesis_report: bool = False,
 ) -> dict[str, object]:
-    document = build_curated_operators_document()
-    sections = project_normalized_sections(document)
-    chunks = chunk_sections(sections, settings)
-
-    normalized_rows = [section.to_dict() for section in sections]
-    chunk_rows = [chunk.to_dict() for chunk in chunks]
-    bm25_rows = [_bm25_row(chunk_row) for chunk_row in chunk_rows]
-
-    playbook_payload = project_playbook_document(document).to_dict()
-    playbook_payload["quality_score"] = 0.97
-    playbook_payload["quality_flags"] = []
-    playbook_payload["review_status"] = "approved"
-    playbook_payload["source_metadata"]["source_collection"] = "core"
-
-    for path in settings.normalized_docs_candidates:
-        rows = _read_jsonl_safe(path)
-        _write_jsonl(
-            path,
-            _upsert_book_rows_for_slug(
-                rows,
-                normalized_rows,
-                book_slug=CURATED_OPERATORS_BOOK_SLUG,
-            ),
-        )
-
-    for path in (settings.chunks_path,):
-        rows = _read_jsonl_safe(path)
-        _write_jsonl(path, _upsert_rows(rows, chunk_rows, key_field="chunk_id"))
-
-    for path in (settings.bm25_corpus_path,):
-        rows = _read_jsonl_safe(path)
-        _write_jsonl(path, _upsert_rows(rows, bm25_rows, key_field="chunk_id"))
-
-    for path in (settings.playbook_documents_path,):
-        books_dir = settings.playbook_books_dir
-        _upsert_playbook_payload_for_slug(
-            path,
-            books_dir,
-            playbook_payload,
-            book_slug=CURATED_OPERATORS_BOOK_SLUG,
-        )
-
-    manifest_before, manifest_after = _upsert_manifest_entry(
+    return _apply_curated_gold(
         settings,
-        _curated_operators_manifest_entry(),
+        spec=CURATED_OPERATORS_SPEC,
+        document_builder=build_curated_operators_document,
+        refresh_synthesis_report=refresh_synthesis_report,
     )
-
-    synthesis_report_path = synthesis_lane_report_path(settings)
-    synthesis_report = None
-    if refresh_synthesis_report and settings.source_catalog_path.exists():
-        synthesis_report = write_synthesis_lane_outputs(settings)
-
-    report = {
-        "book_slug": CURATED_OPERATORS_BOOK_SLUG,
-        "title": CURATED_OPERATORS_TITLE,
-        "section_count": len(normalized_rows),
-        "chunk_count": len(chunk_rows),
-        "manifest_before_count": manifest_before,
-        "manifest_after_count": manifest_after,
-        "output_targets": {
-            "normalized_docs": [str(path) for path in settings.normalized_docs_candidates],
-            "chunks": [
-                str(path)
-                for path in (settings.chunks_path,)
-            ],
-            "bm25_corpus": [
-                str(path)
-                for path in (settings.bm25_corpus_path,)
-            ],
-            "playbook_documents": [
-                str(path)
-                for path in (settings.playbook_documents_path,)
-            ],
-            "playbook_books": [str(path) for path in settings.playbook_book_dirs],
-            "approved_manifest_path": str(settings.source_manifest_path),
-        },
-    }
-    if synthesis_report is not None:
-        report["synthesis_report_path"] = str(synthesis_report_path)
-        report["synthesis_summary"] = synthesis_report["summary"]
-    return report
 
 
 CURATED_MONITORING_BOOK_SLUG = "monitoring"
@@ -2113,47 +1670,26 @@ def _monitoring_provenance_notes() -> tuple[str, ...]:
     )
 
 
+CURATED_MONITORING_SPEC = CuratedGoldSpec(
+    book_slug=CURATED_MONITORING_BOOK_SLUG,
+    title=CURATED_MONITORING_TITLE,
+    source_url=CURATED_MONITORING_SOURCE_URL,
+    translation_source_url=CURATED_MONITORING_TRANSLATION_SOURCE_URL,
+    index_url=CURATED_MONITORING_INDEX_URL,
+    viewer_base_path=CURATED_MONITORING_VIEWER_BASE_PATH,
+    source_id=CURATED_MONITORING_SOURCE_ID,
+    updated_at=CURATED_MONITORING_UPDATED_AT,
+    license_or_terms=CURATED_MONITORING_LICENSE,
+    original_title="Monitoring",
+    vendor_title="Monitoring",
+    approval_notes="curated monitoring gold sample from official EN docs and repo sidecars",
+    notes=_monitoring_provenance_notes(),
+    source_state_reason="curated_translation_ready_promoted_from_official_en_bundle",
+)
+
+
 def _build_monitoring_provenance() -> AstProvenance:
-    return AstProvenance(
-        source_id=CURATED_MONITORING_SOURCE_ID,
-        source_lane="applied_playbook",
-        source_type="manual_synthesis",
-        source_collection="core",
-        product="openshift",
-        version="4.20",
-        locale="ko",
-        original_title="Monitoring",
-        legal_notice_url="",
-        license_or_terms=CURATED_MONITORING_LICENSE,
-        review_status="approved",
-        trust_score=0.97,
-        verifiability="anchor_backed",
-        updated_at=CURATED_MONITORING_UPDATED_AT,
-        capture_uri=CURATED_MONITORING_SOURCE_URL,
-        source_fingerprint=hashlib.sha256(
-            "|".join(
-                (
-                    CURATED_MONITORING_SOURCE_ID,
-                    CURATED_MONITORING_SOURCE_URL,
-                    CURATED_MONITORING_TRANSLATION_SOURCE_URL,
-                    "curated_gold_v1",
-                )
-            ).encode("utf-8")
-        ).hexdigest(),
-        parser_name="curated_gold",
-        parser_version="v1",
-        source_state=SOURCE_STATE_BLOCKED,
-        content_status="approved_ko",
-        translation_stage="approved_ko",
-        translation_source_language="en",
-        translation_target_language="ko",
-        translation_source_url=CURATED_MONITORING_TRANSLATION_SOURCE_URL,
-        translation_source_fingerprint=hashlib.sha256(
-            CURATED_MONITORING_TRANSLATION_SOURCE_URL.encode("utf-8")
-        ).hexdigest(),
-        **_curated_public_provenance_defaults(CURATED_MONITORING_SOURCE_ID),
-        notes=_monitoring_provenance_notes(),
-    )
+    return _build_curated_provenance(CURATED_MONITORING_SPEC)
 
 
 def _monitoring_section(
@@ -2166,18 +1702,15 @@ def _monitoring_section(
     path: tuple[str, ...] | None = None,
     level: int = 2,
 ) -> CanonicalSectionAst:
-    resolved_path = path or (heading,)
-    return CanonicalSectionAst(
-        section_id=f"{CURATED_MONITORING_BOOK_SLUG}:{anchor}",
+    return _section_for(
+        CURATED_MONITORING_SPEC,
         ordinal=ordinal,
         heading=heading,
-        level=level,
-        path=resolved_path,
         anchor=anchor,
-        source_url=CURATED_MONITORING_SOURCE_URL,
-        viewer_path=f"{CURATED_MONITORING_VIEWER_BASE_PATH}#{anchor}",
         semantic_role=semantic_role,
         blocks=blocks,
+        path=path,
+        level=level,
     )
 
 
@@ -2382,84 +1915,11 @@ def build_curated_monitoring_document() -> CanonicalDocumentAst:
             ),
         ),
     )
-    return CanonicalDocumentAst(
-        doc_id=CURATED_MONITORING_SOURCE_ID,
-        book_slug=CURATED_MONITORING_BOOK_SLUG,
-        title=CURATED_MONITORING_TITLE,
-        source_type="web",
-        source_url=CURATED_MONITORING_SOURCE_URL,
-        viewer_base_path=CURATED_MONITORING_VIEWER_BASE_PATH,
-        source_language="ko",
-        display_language="ko",
-        translation_status="approved_ko",
-        pack_id="openshift-4-20-core",
-        pack_label="OpenShift 4.20 Gold Dataset",
-        inferred_product="openshift",
-        inferred_version="4.20",
-        sections=sections,
-        notes=(),
-        provenance=_build_monitoring_provenance(),
-    )
+    return _build_curated_document(CURATED_MONITORING_SPEC, sections)
 
 
 def _curated_monitoring_manifest_entry() -> SourceManifestEntry:
-    source_fingerprint = hashlib.sha256(
-        "|".join(
-            (
-                CURATED_MONITORING_BOOK_SLUG,
-                CURATED_MONITORING_SOURCE_URL,
-                CURATED_MONITORING_TRANSLATION_SOURCE_URL,
-                CURATED_MONITORING_SOURCE_ID,
-            )
-        ).encode("utf-8")
-    ).hexdigest()
-    return SourceManifestEntry(
-        product_slug="openshift_container_platform",
-        ocp_version="4.20",
-        docs_language="ko",
-        source_kind="html-single",
-        book_slug=CURATED_MONITORING_BOOK_SLUG,
-        title=CURATED_MONITORING_TITLE,
-        index_url=CURATED_MONITORING_INDEX_URL,
-        source_url=CURATED_MONITORING_SOURCE_URL,
-        resolved_source_url=CURATED_MONITORING_SOURCE_URL,
-        resolved_language="ko",
-        source_state=SOURCE_STATE_BLOCKED,
-        source_state_reason="curated_translation_ready_promoted_from_official_en_bundle",
-        catalog_source_label="curated gold manual synthesis",
-        viewer_path=CURATED_MONITORING_VIEWER_BASE_PATH,
-        high_value=True,
-        vendor_title="Monitoring",
-        content_status="approved_ko",
-        citation_eligible=True,
-        citation_block_reason="",
-        viewer_strategy="internal_text",
-        body_language_guess="ko",
-        hangul_section_ratio=1.0,
-        hangul_chunk_ratio=1.0,
-        fallback_detected=False,
-        source_fingerprint=source_fingerprint,
-        approval_status="approved",
-        approval_notes="curated monitoring gold sample from official EN docs and repo sidecars",
-        source_id=CURATED_MONITORING_SOURCE_ID,
-        source_lane="applied_playbook",
-        source_type="manual_synthesis",
-        source_collection="core",
-        legal_notice_url="",
-        original_title="Monitoring",
-        license_or_terms=CURATED_MONITORING_LICENSE,
-        review_status="approved",
-        trust_score=0.97,
-        verifiability="anchor_backed",
-        updated_at=CURATED_MONITORING_UPDATED_AT,
-        translation_source_language="en",
-        translation_target_language="ko",
-        translation_source_url=CURATED_MONITORING_TRANSLATION_SOURCE_URL,
-        translation_source_fingerprint=hashlib.sha256(
-            CURATED_MONITORING_TRANSLATION_SOURCE_URL.encode("utf-8")
-        ).hexdigest(),
-        translation_stage="approved_ko",
-    )
+    return _curated_manifest_entry(CURATED_MONITORING_SPEC)
 
 
 def apply_curated_monitoring_gold(
@@ -2467,87 +1927,12 @@ def apply_curated_monitoring_gold(
     *,
     refresh_synthesis_report: bool = False,
 ) -> dict[str, object]:
-    document = build_curated_monitoring_document()
-    sections = project_normalized_sections(document)
-    chunks = chunk_sections(sections, settings)
-
-    normalized_rows = [section.to_dict() for section in sections]
-    chunk_rows = [chunk.to_dict() for chunk in chunks]
-    bm25_rows = [_bm25_row(chunk_row) for chunk_row in chunk_rows]
-
-    playbook_payload = project_playbook_document(document).to_dict()
-    playbook_payload["quality_score"] = 0.97
-    playbook_payload["quality_flags"] = []
-    playbook_payload["review_status"] = "approved"
-    playbook_payload["source_metadata"]["source_collection"] = "core"
-
-    for path in settings.normalized_docs_candidates:
-        rows = _read_jsonl_safe(path)
-        _write_jsonl(
-            path,
-            _upsert_book_rows_for_slug(
-                rows,
-                normalized_rows,
-                book_slug=CURATED_MONITORING_BOOK_SLUG,
-            ),
-        )
-
-    for path in (settings.chunks_path,):
-        rows = _read_jsonl_safe(path)
-        _write_jsonl(path, _upsert_rows(rows, chunk_rows, key_field="chunk_id"))
-
-    for path in (settings.bm25_corpus_path,):
-        rows = _read_jsonl_safe(path)
-        _write_jsonl(path, _upsert_rows(rows, bm25_rows, key_field="chunk_id"))
-
-    for path in (settings.playbook_documents_path,):
-        books_dir = settings.playbook_books_dir
-        _upsert_playbook_payload_for_slug(
-            path,
-            books_dir,
-            playbook_payload,
-            book_slug=CURATED_MONITORING_BOOK_SLUG,
-        )
-
-    manifest_before, manifest_after = _upsert_manifest_entry(
+    return _apply_curated_gold(
         settings,
-        _curated_monitoring_manifest_entry(),
+        spec=CURATED_MONITORING_SPEC,
+        document_builder=build_curated_monitoring_document,
+        refresh_synthesis_report=refresh_synthesis_report,
     )
-
-    synthesis_report_path = synthesis_lane_report_path(settings)
-    synthesis_report = None
-    if refresh_synthesis_report and settings.source_catalog_path.exists():
-        synthesis_report = write_synthesis_lane_outputs(settings)
-
-    report = {
-        "book_slug": CURATED_MONITORING_BOOK_SLUG,
-        "title": CURATED_MONITORING_TITLE,
-        "section_count": len(normalized_rows),
-        "chunk_count": len(chunk_rows),
-        "manifest_before_count": manifest_before,
-        "manifest_after_count": manifest_after,
-        "output_targets": {
-            "normalized_docs": [str(path) for path in settings.normalized_docs_candidates],
-            "chunks": [
-                str(path)
-                for path in (settings.chunks_path,)
-            ],
-            "bm25_corpus": [
-                str(path)
-                for path in (settings.bm25_corpus_path,)
-            ],
-            "playbook_documents": [
-                str(path)
-                for path in (settings.playbook_documents_path,)
-            ],
-            "playbook_books": [str(path) for path in settings.playbook_book_dirs],
-            "approved_manifest_path": str(settings.source_manifest_path),
-        },
-    }
-    if synthesis_report is not None:
-        report["synthesis_report_path"] = str(synthesis_report_path)
-        report["synthesis_summary"] = synthesis_report["summary"]
-    return report
 
 
 CURATED_INSTALLING_ANY_BOOK_SLUG = "installing_on_any_platform"
@@ -2579,47 +1964,26 @@ def _installing_any_provenance_notes() -> tuple[str, ...]:
     )
 
 
+CURATED_INSTALLING_ANY_SPEC = CuratedGoldSpec(
+    book_slug=CURATED_INSTALLING_ANY_BOOK_SLUG,
+    title=CURATED_INSTALLING_ANY_TITLE,
+    source_url=CURATED_INSTALLING_ANY_SOURCE_URL,
+    translation_source_url=CURATED_INSTALLING_ANY_TRANSLATION_SOURCE_URL,
+    index_url=CURATED_INSTALLING_ANY_INDEX_URL,
+    viewer_base_path=CURATED_INSTALLING_ANY_VIEWER_BASE_PATH,
+    source_id=CURATED_INSTALLING_ANY_SOURCE_ID,
+    updated_at=CURATED_INSTALLING_ANY_UPDATED_AT,
+    license_or_terms=CURATED_INSTALLING_ANY_LICENSE,
+    original_title="Installing a cluster on any platform",
+    vendor_title="Installing on any platform",
+    approval_notes="curated any-platform installation gold sample from official EN docs and repo sidecars",
+    notes=_installing_any_provenance_notes(),
+    source_state_reason="curated_translation_ready_promoted_from_official_en_bundle",
+)
+
+
 def _build_installing_any_provenance() -> AstProvenance:
-    return AstProvenance(
-        source_id=CURATED_INSTALLING_ANY_SOURCE_ID,
-        source_lane="applied_playbook",
-        source_type="manual_synthesis",
-        source_collection="core",
-        product="openshift",
-        version="4.20",
-        locale="ko",
-        original_title="Installing a cluster on any platform",
-        legal_notice_url="",
-        license_or_terms=CURATED_INSTALLING_ANY_LICENSE,
-        review_status="approved",
-        trust_score=0.97,
-        verifiability="anchor_backed",
-        updated_at=CURATED_INSTALLING_ANY_UPDATED_AT,
-        capture_uri=CURATED_INSTALLING_ANY_SOURCE_URL,
-        source_fingerprint=hashlib.sha256(
-            "|".join(
-                (
-                    CURATED_INSTALLING_ANY_SOURCE_ID,
-                    CURATED_INSTALLING_ANY_SOURCE_URL,
-                    CURATED_INSTALLING_ANY_TRANSLATION_SOURCE_URL,
-                    "curated_gold_v1",
-                )
-            ).encode("utf-8")
-        ).hexdigest(),
-        parser_name="curated_gold",
-        parser_version="v1",
-        source_state=SOURCE_STATE_BLOCKED,
-        content_status="approved_ko",
-        translation_stage="approved_ko",
-        translation_source_language="en",
-        translation_target_language="ko",
-        translation_source_url=CURATED_INSTALLING_ANY_TRANSLATION_SOURCE_URL,
-        translation_source_fingerprint=hashlib.sha256(
-            CURATED_INSTALLING_ANY_TRANSLATION_SOURCE_URL.encode("utf-8")
-        ).hexdigest(),
-        **_curated_public_provenance_defaults(CURATED_INSTALLING_ANY_SOURCE_ID),
-        notes=_installing_any_provenance_notes(),
-    )
+    return _build_curated_provenance(CURATED_INSTALLING_ANY_SPEC)
 
 
 def _installing_any_section(
@@ -2632,18 +1996,15 @@ def _installing_any_section(
     path: tuple[str, ...] | None = None,
     level: int = 2,
 ) -> CanonicalSectionAst:
-    resolved_path = path or (heading,)
-    return CanonicalSectionAst(
-        section_id=f"{CURATED_INSTALLING_ANY_BOOK_SLUG}:{anchor}",
+    return _section_for(
+        CURATED_INSTALLING_ANY_SPEC,
         ordinal=ordinal,
         heading=heading,
-        level=level,
-        path=resolved_path,
         anchor=anchor,
-        source_url=CURATED_INSTALLING_ANY_SOURCE_URL,
-        viewer_path=f"{CURATED_INSTALLING_ANY_VIEWER_BASE_PATH}#{anchor}",
         semantic_role=semantic_role,
         blocks=blocks,
+        path=path,
+        level=level,
     )
 
 
@@ -2884,84 +2245,11 @@ def build_curated_installing_on_any_platform_document() -> CanonicalDocumentAst:
             ),
         ),
     )
-    return CanonicalDocumentAst(
-        doc_id=CURATED_INSTALLING_ANY_SOURCE_ID,
-        book_slug=CURATED_INSTALLING_ANY_BOOK_SLUG,
-        title=CURATED_INSTALLING_ANY_TITLE,
-        source_type="web",
-        source_url=CURATED_INSTALLING_ANY_SOURCE_URL,
-        viewer_base_path=CURATED_INSTALLING_ANY_VIEWER_BASE_PATH,
-        source_language="ko",
-        display_language="ko",
-        translation_status="approved_ko",
-        pack_id="openshift-4-20-core",
-        pack_label="OpenShift 4.20 Gold Dataset",
-        inferred_product="openshift",
-        inferred_version="4.20",
-        sections=sections,
-        notes=(),
-        provenance=_build_installing_any_provenance(),
-    )
+    return _build_curated_document(CURATED_INSTALLING_ANY_SPEC, sections)
 
 
 def _curated_installing_any_manifest_entry() -> SourceManifestEntry:
-    source_fingerprint = hashlib.sha256(
-        "|".join(
-            (
-                CURATED_INSTALLING_ANY_BOOK_SLUG,
-                CURATED_INSTALLING_ANY_SOURCE_URL,
-                CURATED_INSTALLING_ANY_TRANSLATION_SOURCE_URL,
-                CURATED_INSTALLING_ANY_SOURCE_ID,
-            )
-        ).encode("utf-8")
-    ).hexdigest()
-    return SourceManifestEntry(
-        product_slug="openshift_container_platform",
-        ocp_version="4.20",
-        docs_language="ko",
-        source_kind="html-single",
-        book_slug=CURATED_INSTALLING_ANY_BOOK_SLUG,
-        title=CURATED_INSTALLING_ANY_TITLE,
-        index_url=CURATED_INSTALLING_ANY_INDEX_URL,
-        source_url=CURATED_INSTALLING_ANY_SOURCE_URL,
-        resolved_source_url=CURATED_INSTALLING_ANY_SOURCE_URL,
-        resolved_language="ko",
-        source_state=SOURCE_STATE_BLOCKED,
-        source_state_reason="curated_translation_ready_promoted_from_official_en_bundle",
-        catalog_source_label="curated gold manual synthesis",
-        viewer_path=CURATED_INSTALLING_ANY_VIEWER_BASE_PATH,
-        high_value=True,
-        vendor_title="Installing on any platform",
-        content_status="approved_ko",
-        citation_eligible=True,
-        citation_block_reason="",
-        viewer_strategy="internal_text",
-        body_language_guess="ko",
-        hangul_section_ratio=1.0,
-        hangul_chunk_ratio=1.0,
-        fallback_detected=False,
-        source_fingerprint=source_fingerprint,
-        approval_status="approved",
-        approval_notes="curated any-platform installation gold sample from official EN docs and repo sidecars",
-        source_id=CURATED_INSTALLING_ANY_SOURCE_ID,
-        source_lane="applied_playbook",
-        source_type="manual_synthesis",
-        source_collection="core",
-        legal_notice_url="",
-        original_title="Installing a cluster on any platform",
-        license_or_terms=CURATED_INSTALLING_ANY_LICENSE,
-        review_status="approved",
-        trust_score=0.97,
-        verifiability="anchor_backed",
-        updated_at=CURATED_INSTALLING_ANY_UPDATED_AT,
-        translation_source_language="en",
-        translation_target_language="ko",
-        translation_source_url=CURATED_INSTALLING_ANY_TRANSLATION_SOURCE_URL,
-        translation_source_fingerprint=hashlib.sha256(
-            CURATED_INSTALLING_ANY_TRANSLATION_SOURCE_URL.encode("utf-8")
-        ).hexdigest(),
-        translation_stage="approved_ko",
-    )
+    return _curated_manifest_entry(CURATED_INSTALLING_ANY_SPEC)
 
 
 def apply_curated_installing_on_any_platform_gold(
@@ -2969,84 +2257,9 @@ def apply_curated_installing_on_any_platform_gold(
     *,
     refresh_synthesis_report: bool = False,
 ) -> dict[str, object]:
-    document = build_curated_installing_on_any_platform_document()
-    sections = project_normalized_sections(document)
-    chunks = chunk_sections(sections, settings)
-
-    normalized_rows = [section.to_dict() for section in sections]
-    chunk_rows = [chunk.to_dict() for chunk in chunks]
-    bm25_rows = [_bm25_row(chunk_row) for chunk_row in chunk_rows]
-
-    playbook_payload = project_playbook_document(document).to_dict()
-    playbook_payload["quality_score"] = 0.97
-    playbook_payload["quality_flags"] = []
-    playbook_payload["review_status"] = "approved"
-    playbook_payload["source_metadata"]["source_collection"] = "core"
-
-    for path in settings.normalized_docs_candidates:
-        rows = _read_jsonl_safe(path)
-        _write_jsonl(
-            path,
-            _upsert_book_rows_for_slug(
-                rows,
-                normalized_rows,
-                book_slug=CURATED_INSTALLING_ANY_BOOK_SLUG,
-            ),
-        )
-
-    for path in (settings.chunks_path,):
-        rows = _read_jsonl_safe(path)
-        _write_jsonl(path, _upsert_rows(rows, chunk_rows, key_field="chunk_id"))
-
-    for path in (settings.bm25_corpus_path,):
-        rows = _read_jsonl_safe(path)
-        _write_jsonl(path, _upsert_rows(rows, bm25_rows, key_field="chunk_id"))
-
-    for path in (settings.playbook_documents_path,):
-        books_dir = settings.playbook_books_dir
-        _upsert_playbook_payload_for_slug(
-            path,
-            books_dir,
-            playbook_payload,
-            book_slug=CURATED_INSTALLING_ANY_BOOK_SLUG,
-        )
-
-    manifest_before, manifest_after = _upsert_manifest_entry(
+    return _apply_curated_gold(
         settings,
-        _curated_installing_any_manifest_entry(),
+        spec=CURATED_INSTALLING_ANY_SPEC,
+        document_builder=build_curated_installing_on_any_platform_document,
+        refresh_synthesis_report=refresh_synthesis_report,
     )
-
-    synthesis_report_path = synthesis_lane_report_path(settings)
-    synthesis_report = None
-    if refresh_synthesis_report and settings.source_catalog_path.exists():
-        synthesis_report = write_synthesis_lane_outputs(settings)
-
-    report = {
-        "book_slug": CURATED_INSTALLING_ANY_BOOK_SLUG,
-        "title": CURATED_INSTALLING_ANY_TITLE,
-        "section_count": len(normalized_rows),
-        "chunk_count": len(chunk_rows),
-        "manifest_before_count": manifest_before,
-        "manifest_after_count": manifest_after,
-        "output_targets": {
-            "normalized_docs": [str(path) for path in settings.normalized_docs_candidates],
-            "chunks": [
-                str(path)
-                for path in (settings.chunks_path,)
-            ],
-            "bm25_corpus": [
-                str(path)
-                for path in (settings.bm25_corpus_path,)
-            ],
-            "playbook_documents": [
-                str(path)
-                for path in (settings.playbook_documents_path,)
-            ],
-            "playbook_books": [str(path) for path in settings.playbook_book_dirs],
-            "approved_manifest_path": str(settings.source_manifest_path),
-        },
-    }
-    if synthesis_report is not None:
-        report["synthesis_report_path"] = str(synthesis_report_path)
-        report["synthesis_summary"] = synthesis_report["summary"]
-    return report

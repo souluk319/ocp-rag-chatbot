@@ -1,0 +1,38 @@
+{
+  "task_id": "legacy_rehearsal_cleanup_20260417",
+  "status": "completed",
+  "summary": "Active code, active reports/build_logs, task board language, selected runtime session artifacts, and historical harness closeouts were normalized from owner-demo wording to current product rehearsal wording. Stale packet references were removed so active release artifacts now only point at files that actually exist.",
+  "changed_files": [
+    "scripts/verify_release_evidence.py",
+    "tests/test_app_data_control_room.py",
+    "tests/test_release_evidence.py",
+    "TASK_BOARD.yaml",
+    "reports/build_logs/buyer_packet_bundle_index.json",
+    "reports/build_logs/buyer_packet_bundle_index.md",
+    "reports/build_logs/product_rehearsal_report.md",
+    "reports/build_logs/release_candidate_freeze_packet.json",
+    "reports/build_logs/release_candidate_freeze_packet.md",
+    "reports/build_logs/runtime_rebuild_readiness_report.json",
+    "reports/build_logs/foundry_runs/**",
+    "reports/execution_harness/answer_quality_gate_20260416/main/final_report.json",
+    "reports/execution_harness/data_control_room_bucket_split_20260417/main/worklog.md",
+    "reports/execution_harness/release_evidence_20260416/main/final_report.json",
+    "reports/execution_harness/renewal_runtime_hardening_20260417/main/final_report.json",
+    "artifacts/runtime/sessions/owner-demo-rehearsal.json"
+  ],
+  "validation_results": [
+    {
+      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_app_data_control_room.py tests/test_release_evidence.py",
+      "status": "passed"
+    },
+    {
+      "command": "powershell -ExecutionPolicy Bypass -File scripts\\codex_python.ps1 -ScriptPath scripts\\verify_release_evidence.py -WriteScope reports/build_logs/release_evidence_report.json -VerifyCmd \"verify release evidence\"",
+      "status": "passed"
+    },
+    {
+      "command": "owner_demo and owner-demo string search across src/scripts/tests/reports/TASK_BOARD",
+      "status": "passed"
+    }
+  ],
+  "next_action": "If you want the same language sweep for every archived packet outside src/scripts/tests/reports, do that as a separate archive cleanup so historical evidence rewrites stay intentionally scoped."
+}

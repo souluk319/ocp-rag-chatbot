@@ -1,0 +1,50 @@
+# Local Worklog
+
+- task_id: `source_books_relation_helper_split_20260417`
+- lane_id: `main`
+- role: `main`
+- major_task: `false`
+- user-visible progress는 milestone 종료 전까지 기록하지 않는다.
+- 중간 자동 복구, 실행 메모, 임시 판단은 이 파일에만 적는다.
+- target: `source_books.py` 의 dead wiki defaults 를 제거하고 live relation/runtime helper 를 별도 모듈로 분리한다
+- `src/play_book_studio/app/source_books_wiki_relations.py` 신설: wiki relation/runtime helper `29개`를 이동
+- 이동한 핵심 함수:
+  - `_chat_link_truth_payload`
+  - `_candidate_relations`
+  - `_figure_asset_by_name`
+  - `_active_runtime_markdown_path`
+  - `_preferred_book_href`
+  - `_rewrite_book_href`
+  - `_build_backlinks`
+  - `_build_entity_backlinks`
+  - `_entity_hub_sections`
+  - `_figure_viewer_sections`
+- `source_books.py` 에서 dead giant defaults 제거:
+  - `DEFAULT_ENTITY_HUBS`
+  - `DEFAULT_CHAT_NAVIGATION_ALIASES`
+  - `DEFAULT_WIKI_CANDIDATE_RELATIONS`
+- dead helper도 함께 제거:
+  - `_wiki_relation_assets`
+  - `_active_wiki_runtime_manifest_path`
+  - `_active_wiki_runtime_manifest`
+  - `_approved_wiki_runtime_slugs`
+- current size:
+  - `source_books.py` `105,001 -> 58,537 bytes`
+  - `source_books_wiki_relations.py` `16,106 bytes`
+- `source_books.py` diff stat: `148 insertions / 1172 deletions`
+- dead default occurrence scan: `0`
+- focused validation:
+  - `python -m py_compile src/play_book_studio/app/source_books.py src/play_book_studio/app/source_books_wiki_relations.py` -> pass
+  - `.\.venv\Scripts\python.exe -m pytest tests/test_chat_navigation_links.py tests/test_app_viewers.py tests/test_app_runtime_ui.py -q` -> `33 passed, 1 warning, 10 subtests passed`
+  - `npm --prefix presentation-ui run lint` -> pass
+  - `npm --prefix presentation-ui run test` -> `3 files, 9 tests` pass
+  - `npm --prefix presentation-ui run build` -> pass, existing `vite` chunk-size warning remains
+- post-validation hygiene:
+  - `repo_hygiene_post_validation.json` 생성
+  - junk cleanup `14개 / 2,705,541 bytes`
+  - `workspace_junk_count = 0`
+- updated hotspot inventory:
+  - `src/play_book_studio/ingestion/curated_gold.py` `97,315 bytes`
+  - `src/play_book_studio/app/data_control_room.py` `76,310 bytes`
+  - `presentation-ui/src/pages/WorkspacePage.tsx` `134,361 bytes`
+  - `presentation-ui/src/pages/PlaybookLibraryPage.tsx` `92,230 bytes`

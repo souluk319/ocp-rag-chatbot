@@ -1,0 +1,27 @@
+{
+  "status": "completed",
+  "current_judgment": "The codebase still has large-file debt, but the inspection found and fixed two concrete lies in the current code: duplicated frontend vision contracts and fake persistence that never read stored state, plus repeated reranker scaffolding inside the largest retrieval runtime test file.",
+  "key_evidence": [
+    "Added a shared frontend wiki vision contract and persistence helpers so both pages read the same mode metadata and actually restore stored `wikiVisionMode` instead of always forcing `atlas_canvas`.",
+    "Added `presentation-ui/src/lib/wikiVision.test.ts`, increasing the frontend vitest suite from 6 to 9 passing tests and locking valid-mode fallback behavior.",
+    "Moved repeated fake reranker support into `tests/_support_retrieval.py` and removed seven inline reranker/retriever class copies from `tests/test_retrieval_runtime.py`.",
+    "Post-validation hygiene cleanup removed 11 regenerated junk targets totaling 1486124 bytes and restored `workspace_junk_count` to 0."
+  ],
+  "artifact_paths": [
+    "presentation-ui/src/lib/wikiVision.ts",
+    "presentation-ui/src/lib/wikiVision.test.ts",
+    "presentation-ui/src/pages/WorkspacePage.tsx",
+    "presentation-ui/src/pages/PlaybookLibraryPage.tsx",
+    "tests/_support_retrieval.py",
+    "tests/test_retrieval_runtime.py",
+    "reports/execution_harness/repo_code_inspection_cleanup_20260417/main/repo_hygiene_post_validation.json"
+  ],
+  "validation_results": [
+    "npm --prefix presentation-ui run lint",
+    "npm --prefix presentation-ui run test -> 3 files, 9 tests passed",
+    "npm --prefix presentation-ui run build",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_retrieval_runtime.py -q -> exceeded 300s timeout",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_retrieval_runtime.py -q -k \"reranker_rebalances_cluster_node_usage_back_to_support_family or reranker_rebalances_generic_intro_back_to_intro_overview or reranker_rebalances_etcd_backup_hits_toward_backup_procedure or reranker_rescues_uploaded_customer_pack_for_explicit_customer_doc_query or reranker_keeps_etcd_backup_companion_when_rerank_returns_only_postinstall_hits or reranker_replaces_restore_companion_with_backup_companion_for_etcd_backup_query or reranker_rebalances_certificate_monitor_query_back_to_cli_or_security\" -> 7 passed, 29 deselected"
+  ],
+  "next_action": "The next code-inspection cut should attack oversized tracked files directly: split `tests/test_retrieval_runtime.py` into domain-focused suites so full-file validation no longer exceeds 300s, then split `presentation-ui/src/pages/WorkspacePage.tsx` and `PlaybookLibraryPage.tsx` by extracted view-model helpers and presentational sections."
+}

@@ -39,5 +39,5 @@
     ".\\.venv\\Scripts\\python.exe -m pytest tests/test_app_viewers.py tests/test_app_runtime_ui.py",
     "npm --prefix presentation-ui run build"
   ],
-  "status": "prepared"
+  "status": "done"
 }

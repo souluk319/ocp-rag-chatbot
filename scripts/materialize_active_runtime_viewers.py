@@ -4,13 +4,18 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from play_book_studio.app.source_books import internal_active_runtime_markdown_viewer_html
+from play_book_studio.app.source_books import (
+    internal_active_runtime_markdown_viewer_html,
+    internal_viewer_html,
+)
+from play_book_studio.runtime_catalog_registry import official_runtime_books
 
 
 def _utc_now() -> str:
@@ -46,6 +51,11 @@ def _load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _viewer_target_path(served_root: Path, viewer_path: str) -> Path:
+    relative_path = urlparse(str(viewer_path or "").strip()).path.lstrip("/")
+    return served_root / relative_path
+
+
 def _runtime_eligible_slugs() -> set[str]:
     report_path = _translation_lane_report_path()
     if report_path is None or not report_path.exists():
@@ -78,16 +88,40 @@ def _active_manifest_slugs() -> list[str]:
 def main() -> int:
     served_root = _served_root()
     runtime_root = served_root / "playbooks" / "wiki-runtime" / "active"
-    docs_root = served_root / "docs" / "ocp"
     runtime_root.mkdir(parents=True, exist_ok=True)
-    docs_root.mkdir(parents=True, exist_ok=True)
 
+    registry_entries = official_runtime_books(ROOT)
     active_slugs = _active_manifest_slugs()
     eligible = _runtime_eligible_slugs()
-    materialized: list[dict[str, str | int]] = []
+    docs_materialized: list[dict[str, str | int]] = []
+    active_materialized: list[dict[str, str | int]] = []
 
-    for slug in active_slugs:
-        viewer_path = f"/playbooks/wiki-runtime/active/{slug}/index.html"
+    for entry in registry_entries:
+        docs_viewer_path = str(entry.get("docs_viewer_path") or entry.get("viewer_path") or "").strip()
+        if not docs_viewer_path:
+            continue
+        html = internal_viewer_html(ROOT, docs_viewer_path)
+        if not html:
+            continue
+        docs_target = _viewer_target_path(served_root, docs_viewer_path)
+        docs_target.parent.mkdir(parents=True, exist_ok=True)
+        docs_target.write_text(html, encoding="utf-8")
+        docs_materialized.append(
+            {
+                "book_slug": str(entry.get("book_slug") or ""),
+                "viewer_path": docs_viewer_path,
+                "docs_target": str(docs_target),
+                "html_bytes": len(html.encode("utf-8")),
+            }
+        )
+
+    for entry in registry_entries:
+        if not bool(entry.get("active_runtime")):
+            continue
+        slug = str(entry.get("book_slug") or "").strip()
+        viewer_path = str(entry.get("active_runtime_viewer_path") or entry.get("viewer_path") or "").strip()
+        if not viewer_path:
+            continue
         html = internal_active_runtime_markdown_viewer_html(ROOT, viewer_path)
         if not html:
             continue
@@ -96,16 +130,11 @@ def main() -> int:
         runtime_target.parent.mkdir(parents=True, exist_ok=True)
         runtime_target.write_text(html, encoding="utf-8")
 
-        docs_target = docs_root / slug / "index.html"
-        docs_target.parent.mkdir(parents=True, exist_ok=True)
-        docs_target.write_text(html, encoding="utf-8")
-
-        materialized.append(
+        active_materialized.append(
             {
                 "book_slug": slug,
                 "viewer_path": viewer_path,
                 "runtime_target": str(runtime_target),
-                "docs_target": str(docs_target),
                 "html_bytes": len(html.encode("utf-8")),
             }
         )
@@ -114,15 +143,28 @@ def main() -> int:
         "generated_at_utc": _utc_now(),
         "active_manifest_path": str(_active_manifest_path()),
         "translation_lane_report_path": str(_translation_lane_report_path()) if _translation_lane_report_path() else "",
+        "official_runtime_count": len(registry_entries),
         "active_manifest_count": len(active_slugs),
         "runtime_eligible_count": len(eligible),
         "served_root": str(served_root),
-        "materialized_count": len(materialized),
-        "books": materialized,
+        "docs_materialized_count": len(docs_materialized),
+        "active_runtime_materialized_count": len(active_materialized),
+        "materialized_count": len(docs_materialized),
+        "docs_books": docs_materialized,
+        "active_runtime_books": active_materialized,
         "status": "ok",
     }
     _report_path().write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(json.dumps({"materialized_count": len(materialized), "served_root": str(served_root)}, ensure_ascii=False))
+    print(
+        json.dumps(
+            {
+                "docs_materialized_count": len(docs_materialized),
+                "active_runtime_materialized_count": len(active_materialized),
+                "served_root": str(served_root),
+            },
+            ensure_ascii=False,
+        )
+    )
     return 0
 
 

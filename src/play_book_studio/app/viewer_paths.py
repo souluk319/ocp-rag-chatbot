@@ -3,8 +3,8 @@ import re
 from pathlib import Path
 from urllib.parse import urlparse
 
-VIEWER_PATH_RE = re.compile(r"^/docs/ocp/[^/]+/[^/]+/([^/]+)/index\.html$")
-ACTIVE_RUNTIME_RE = re.compile(r"^/playbooks/wiki-runtime/active/([^/]+)/index\.html$")
+VIEWER_PATH_RE = re.compile(r"^/docs/ocp/[^/]+/[^/]+/([^/]+)(?:/index\.html)?$")
+ACTIVE_RUNTIME_RE = re.compile(r"^/playbooks/wiki-runtime/active/([^/]+)(?:/index\.html)?$")
 
 
 def _parse_viewer_path(viewer_path: str) -> tuple[str, str] | None:

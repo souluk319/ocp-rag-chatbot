@@ -1,0 +1,7 @@
+[preflight] shell=pwsh
+[preflight] cwd=C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio
+[preflight] python=C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\.venv\\Scripts\\python.exe
+[preflight] git_bash=C:\Program Files\Git\bin\bash.exe
+[preflight] command=ui
+[preflight] write_scope=read-only:ui-runtime
+[preflight] verify_cmd=C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\play_book.cmd ui --no-browser

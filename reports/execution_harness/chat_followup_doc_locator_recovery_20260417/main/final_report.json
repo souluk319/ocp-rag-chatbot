@@ -1,0 +1,43 @@
+{
+  "packet_id": "chat_followup_doc_locator_recovery_20260417",
+  "lane": "main",
+  "status": "completed",
+  "current_judgement": "follow-up status query 와 wiki navigation query 가 모두 no_answer 에서 grounded runtime answer 로 복구됐다.",
+  "key_evidence": [
+    "follow-up detector 가 `삭제 진행 상태를 확인하는 방법도 알려줘` 를 follow-up reference 로 판별하고 prior goal 을 포함해 rewrite 한다.",
+    "doc-locator detector 가 `문제가 생기면 위키 안에서 어떤 순서로 이동해야 하는지 알려줘` 를 wiki navigation query 로 판별한다.",
+    "context selection 이 troubleshooting doc-locator query 에서 support family citation 을 유지한다."
+  ],
+  "artifacts": [
+    "reports/execution_harness/chat_followup_doc_locator_recovery_20260417/main/manifest.json",
+    "reports/execution_harness/chat_followup_doc_locator_recovery_20260417/main/worklog.md",
+    "reports/execution_harness/chat_followup_doc_locator_recovery_20260417/main/final_report.json"
+  ],
+  "verification": {
+    "tests": [
+      {
+        "command": "./.venv/Scripts/python.exe -m pytest tests/test_retrieval_query_intents.py tests/test_answering_context.py -q",
+        "result": "78 passed"
+      },
+      {
+        "command": "./.venv/Scripts/python.exe -m pytest tests/test_answering_output.py tests/test_answering_routes.py tests/test_app_session_flow.py tests/test_app_chat_api_multiturn.py -q",
+        "result": "89 passed, 1 warning"
+      }
+    ],
+    "live_smoke": [
+      {
+        "query": "삭제 진행 상태를 확인하는 방법도 알려줘",
+        "result": "rag",
+        "warnings": [],
+        "rewritten_query": "OCP 4.20 | 주제 실패한 제거 후 Operator 다시 설치 | 사용자 목표 프로젝트가 Terminating에서 안 지워질 때 어떻게 해? | 삭제 진행 상태를 확인하는 방법도 알려줘"
+      },
+      {
+        "query": "문제가 생기면 위키 안에서 어떤 순서로 이동해야 하는지 알려줘",
+        "result": "rag",
+        "warnings": [],
+        "citation": "support | 7.7.2. Pod 상태 검토"
+      }
+    ]
+  },
+  "next_best_action": "남은 unanswered log 를 다시 재생성해서 아직 no_answer 인 질의를 새 top set 으로 압축하고, 동일 패턴이 더 남는지 packet 단위로 제거한다."
+}

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -73,7 +74,9 @@ class RetrievalGraphRuntimeTests(unittest.TestCase):
                 source="bm25",
                 raw_score=1.0,
                 fused_score=1.0,
-                source_collection="core",
+                source_collection="customer_pack",
+                source_lane="applied_playbook",
+                source_type="topic_playbook",
                 semantic_role="procedure",
                 block_kinds=("code",),
             )
@@ -143,7 +146,9 @@ class RetrievalGraphRuntimeTests(unittest.TestCase):
                 source="bm25",
                 raw_score=1.0,
                 fused_score=1.0,
-                source_collection="core",
+                source_collection="customer_pack",
+                source_lane="applied_playbook",
+                source_type="topic_playbook",
                 semantic_role="procedure",
                 block_kinds=("code",),
             )
@@ -168,6 +173,65 @@ class RetrievalGraphRuntimeTests(unittest.TestCase):
             self.assertEqual(
                 "etcd",
                 result.trace["graph"]["hits"][0]["provenance"]["derived_from_book_slug"],
+            )
+
+    def test_retrieve_fail_fast_falls_back_when_neo4j_transport_is_unavailable(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            settings = Settings(
+                root_dir=Path(tmpdir),
+                graph_runtime_mode="auto",
+                graph_backend="neo4j",
+                graph_uri="bolt://127.0.0.1:1",
+                graph_sidecar_path_override="artifacts/retrieval/custom_graph_sidecar.json",
+            )
+            _write_json(
+                settings.graph_sidecar_path,
+                {
+                    "books": [
+                        {
+                            "book_slug": "backup_restore_control_plane",
+                            "title": "컨트롤 플레인 백업/복구 플레이북",
+                            "source_type": "topic_playbook",
+                            "source_lane": "applied_playbook",
+                            "source_collection": "core",
+                            "derived_from_book_slug": "backup_and_restore",
+                            "topic_key": "backup_restore_control_plane",
+                        }
+                    ]
+                },
+            )
+            hit = RetrievalHit(
+                chunk_id="backup-hit",
+                book_slug="backup_restore_control_plane",
+                chapter="backup",
+                section="컨트롤 플레인 백업 절차",
+                anchor="control-plane-backup",
+                source_url="https://example.com/backup",
+                viewer_path="/docs/ocp/4.20/ko/backup_restore_control_plane/index.html#control-plane-backup",
+                text="cluster-backup.sh /home/core/assets/backup",
+                source="bm25",
+                raw_score=1.0,
+                fused_score=1.0,
+                source_collection="core",
+                semantic_role="procedure",
+                source_type="topic_playbook",
+                block_kinds=("code",),
+            )
+            retriever = ChatRetriever(settings, _StubBm25([hit]), vector_retriever=None)
+
+            started_at = time.perf_counter()
+            result = retriever.retrieve(
+                "컨트롤 플레인 백업 절차",
+                top_k=1,
+                candidate_k=1,
+                use_vector=False,
+            )
+            elapsed_ms = (time.perf_counter() - started_at) * 1000
+
+            self.assertLess(elapsed_ms, 1500.0)
+            self.assertEqual("local_sidecar", result.trace["graph"]["adapter_mode"])
+            self.assertTrue(
+                str(result.trace["graph"]["fallback_reason"]).startswith("neo4j_unhealthy:")
             )
 
     def test_retrieve_uses_graph_relations_to_promote_related_playbook(self) -> None:
@@ -316,6 +380,38 @@ class RetrievalGraphRuntimeTests(unittest.TestCase):
             self.assertFalse(result.trace["graph"]["enabled"])
             self.assertFalse(result.trace["graph"]["graph_enabled"])
             self.assertEqual("disabled", result.trace["graph"]["adapter_mode"])
+            self.assertEqual(0, result.trace["graph"]["summary"]["hit_count"])
+
+    def test_retrieve_skips_graph_for_simple_single_book_official_query(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            settings = Settings(root_dir=Path(tmpdir))
+            hit = RetrievalHit(
+                chunk_id="console-hit",
+                book_slug="web_console",
+                chapter="console",
+                section="웹 콘솔 메뉴 개요",
+                anchor="console-overview",
+                source_url="https://example.com/console",
+                viewer_path="/docs/web_console.html#console-overview",
+                text="웹 콘솔 메뉴 구조 설명",
+                source="bm25",
+                raw_score=1.0,
+                fused_score=1.0,
+                source_collection="core",
+                source_type="official_doc",
+            )
+            retriever = ChatRetriever(settings, _StubBm25([hit]), vector_retriever=None)
+
+            result = retriever.retrieve(
+                "웹 콘솔 메뉴 위치",
+                top_k=1,
+                candidate_k=1,
+                use_vector=False,
+            )
+
+            self.assertTrue(result.trace["graph"]["enabled"])
+            self.assertEqual("skipped", result.trace["graph"]["adapter_mode"])
+            self.assertEqual("not_needed", result.trace["graph"]["fallback_reason"])
             self.assertEqual(0, result.trace["graph"]["summary"]["hit_count"])
 
 

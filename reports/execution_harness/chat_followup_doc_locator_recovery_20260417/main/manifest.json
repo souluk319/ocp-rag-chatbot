@@ -1,0 +1,19 @@
+{
+  "packet_id": "chat_followup_doc_locator_recovery_20260417",
+  "lane": "main",
+  "created_at": "2026-04-17",
+  "focus": [
+    "follow-up retrieval rewrite recovery",
+    "wiki doc-locator grounding recovery"
+  ],
+  "changed_files": [
+    "src/play_book_studio/answering/answerer.py",
+    "src/play_book_studio/answering/context.py",
+    "src/play_book_studio/retrieval/book_adjustment_discovery_locator.py",
+    "src/play_book_studio/retrieval/followups.py",
+    "src/play_book_studio/retrieval/intent_patterns.py",
+    "tests/_support_retrieval.py",
+    "tests/test_answering_context.py",
+    "tests/test_retrieval_query_intents.py"
+  ]
+}

@@ -144,6 +144,26 @@ def inject_single_citation(answer_text: str, *, citation_index: int = 1) -> str:
     return f"{answer_text.rstrip()} [{citation_index}]".strip()
 
 
+def inject_citation_indices(answer_text: str, *, citation_indices: list[int] | tuple[int, ...]) -> str:
+    normalized_indices = [int(index) for index in citation_indices if int(index) > 0]
+    if not normalized_indices:
+        return answer_text.strip()
+    if len(normalized_indices) == 1:
+        return inject_single_citation(answer_text, citation_index=normalized_indices[0])
+
+    citation_suffix = " " + " ".join(f"[{index}]" for index in normalized_indices)
+    blocks = answer_text.split("\n\n")
+    for index, block in enumerate(blocks):
+        stripped = block.strip()
+        if not stripped or stripped.startswith("```"):
+            continue
+        if CITATION_RE.search(stripped):
+            return answer_text
+        blocks[index] = f"{stripped}{citation_suffix}"
+        return "\n\n".join(blocks).strip()
+    return f"{answer_text.rstrip()}{citation_suffix}".strip()
+
+
 def summarize_selected_citations(citations, retrieval_hits) -> list[dict[str, str | float | int]]:
     hit_by_chunk_id = {hit.chunk_id: hit for hit in retrieval_hits}
     summaries: list[dict[str, str | float | int]] = []

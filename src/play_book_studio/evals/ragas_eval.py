@@ -15,7 +15,12 @@ from openai import OpenAI
 from ragas import evaluate
 from ragas.dataset_schema import EvaluationDataset
 from ragas.llms import llm_factory
-from ragas.metrics import answer_relevancy, context_precision, context_recall, faithfulness
+from ragas.metrics.collections import (
+    answer_relevancy,
+    context_precision,
+    context_recall,
+    faithfulness,
+)
 
 from play_book_studio.answering.answerer import ChatAnswerer
 from play_book_studio.answering.models import AnswerResult

@@ -1,0 +1,19 @@
+{
+  "task_id": "wiki_runtime_completion_20260417",
+  "lane_id": "explorer",
+  "role": "explorer",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "read-only"
+  ],
+  "target_outputs": [
+    "exact viewer path contract",
+    "frontend call sites using entity/figure paths"
+  ],
+  "validation_commands": [
+    "read-only code inspection"
+  ],
+  "status": "in_progress"
+}

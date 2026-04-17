@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from play_book_studio.config.settings import Settings
 
@@ -18,10 +19,20 @@ from .intake_overlay import (
     load_customer_pack_overlay_index,
 )
 from .models import RetrievalResult, SessionContext
-from .reranker import CrossEncoderReranker
 from .scoring import fuse_ranked_hits
 from .vector import VectorRetriever
 from .retriever_pipeline import execute_retrieval_pipeline
+
+if TYPE_CHECKING:
+    from .reranker import CrossEncoderReranker
+
+
+def _build_reranker(settings: Settings, *, enabled: bool) -> "CrossEncoderReranker | None":
+    if not enabled:
+        return None
+    from .reranker import CrossEncoderReranker
+
+    return CrossEncoderReranker(settings)
 
 
 class ChatRetriever:
@@ -55,7 +66,7 @@ class ChatRetriever:
         bm25_index = BM25Index.from_jsonl(settings.bm25_corpus_path)
         vector_retriever = VectorRetriever(settings) if enable_vector else None
         reranker_enabled = settings.reranker_enabled if enable_reranker is None else enable_reranker
-        reranker = CrossEncoderReranker(settings) if reranker_enabled else None
+        reranker = _build_reranker(settings, enabled=reranker_enabled)
         return cls(
             settings,
             bm25_index,

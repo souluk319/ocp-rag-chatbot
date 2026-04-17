@@ -1,0 +1,36 @@
+# Local Worklog
+
+- task_id: `source_books_customer_pack_split_20260417`
+- lane_id: `main`
+- role: `main`
+- major_task: `false`
+- user-visible progress는 milestone 종료 전까지 기록하지 않는다.
+- 중간 자동 복구, 실행 메모, 임시 판단은 이 파일에만 적는다.
+- target: `src/play_book_studio/app/source_books.py` 에서 customer-pack viewer/list/load lane 을 별도 모듈로 분리해 god-file 책임을 줄인다
+- `src/play_book_studio/app/source_books_customer_pack.py` 신설: `_customer_pack_boundary_payload`, `parse_customer_pack_viewer_path`, `load_customer_pack_book`, `internal_customer_pack_viewer_html`, `list_customer_pack_drafts` 이동
+- `src/play_book_studio/app/source_books.py` 는 customer-pack 구현을 제거하고 import/export만 유지하도록 축소
+- call site 정리:
+  - `src/play_book_studio/app/intake_api.py`
+  - `src/play_book_studio/app/server_routes.py`
+  - `tests/_support_app_ui.py`
+- size change:
+  - `source_books.py` `114,333 -> 105,001 bytes`
+  - new module `source_books_customer_pack.py` `9,992 bytes`
+- search check:
+  - `source_books.py` 내부 customer-pack 함수 정의 `0개`
+  - imported/exported symbol만 남음
+- focused validation:
+  - `python -m py_compile src/play_book_studio/app/source_books.py src/play_book_studio/app/source_books_customer_pack.py src/play_book_studio/app/server_routes.py src/play_book_studio/app/intake_api.py` -> pass
+  - `.\.venv\Scripts\python.exe -m pytest tests/test_app_intake_ui.py -q` -> `19 passed, 1 warning, 4 subtests passed`
+  - `.\.venv\Scripts\python.exe -m pytest tests/test_app_viewers.py -q` -> `27 passed, 1 warning, 10 subtests passed`
+  - `npm --prefix presentation-ui run lint` -> pass
+  - `npm --prefix presentation-ui run test` -> `3 files, 9 tests` pass
+  - `npm --prefix presentation-ui run build` -> pass, existing `vite` chunk-size warning remains
+- post-validation hygiene:
+  - `repo_hygiene_post_validation.json` 생성
+  - junk cleanup `14개 / 2,755,172 bytes`
+  - `workspace_junk_count = 0`
+- remaining hotspot inventory:
+  - `src/play_book_studio/app/source_books.py` `105,001 bytes`
+  - `presentation-ui/src/pages/WorkspacePage.tsx` `134,361 bytes`
+  - `presentation-ui/src/pages/PlaybookLibraryPage.tsx` `92,230 bytes`

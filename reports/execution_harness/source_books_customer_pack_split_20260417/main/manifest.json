@@ -1,0 +1,28 @@
+{
+  "task_id": "source_books_customer_pack_split_20260417",
+  "created_at": "2026-04-17T13:49:06+09:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": ".\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": false,
+  "parallel_execution_required": false,
+  "companion_lanes": [],
+  "write_scope": "src/play_book_studio/app/source_books.py;src/play_book_studio/app/source_books_customer_pack.py;src/play_book_studio/app/server_routes.py;src/play_book_studio/app/intake_api.py;tests/_support_app_ui.py;reports/execution_harness/source_books_customer_pack_split_20260417/main/*",
+  "target_outputs": [
+    "customer-pack viewer split from source_books god-file",
+    "focused regression validation evidence",
+    "remaining source_books hotspot inventory"
+  ],
+  "validation_commands": [
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_app_intake_ui.py -q",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_app_viewers.py -q",
+    "python -m py_compile src/play_book_studio/app/source_books.py src/play_book_studio/app/source_books_customer_pack.py src/play_book_studio/app/server_routes.py src/play_book_studio/app/intake_api.py",
+    "npm --prefix presentation-ui run lint",
+    "npm --prefix presentation-ui run test",
+    "npm --prefix presentation-ui run build"
+  ],
+  "status": "completed"
+}

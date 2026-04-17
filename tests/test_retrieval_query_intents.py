@@ -17,6 +17,7 @@ from _support_retrieval import (
     has_cluster_node_usage_intent,
     has_follow_up_entity_ambiguity,
     has_follow_up_reference,
+    has_doc_locator_intent,
     has_logging_ambiguity,
     has_machine_config_reboot_intent,
     has_node_drain_intent,
@@ -188,6 +189,23 @@ class TestRetrievalQueryIntents(unittest.TestCase):
         self.assertTrue(plan.rewrite_reason)
         self.assertIn("follow", plan.rewrite_reason)
         self.assertNotEqual(plan.normalized_query, plan.rewritten_query)
+
+    def test_build_retrieval_plan_rewrites_project_status_follow_up(self) -> None:
+        plan = build_retrieval_plan(
+            "삭제 진행 상태를 확인하는 방법도 알려줘",
+            context=SessionContext(
+                user_goal="프로젝트가 Terminating에서 안 지워질 때 어떻게 해?",
+                current_topic="7.6.8. 실패한 제거 후 Operator 다시 설치",
+                ocp_version="4.20",
+            ),
+            candidate_k=20,
+        )
+
+        self.assertTrue(plan.follow_up_detected)
+        self.assertTrue(plan.rewrite_applied)
+        self.assertEqual("follow_up_reference", plan.rewrite_reason)
+        self.assertIn("프로젝트가 Terminating에서 안 지워질 때 어떻게 해?", plan.rewritten_query)
+        self.assertEqual(40, plan.effective_candidate_k)
 
     def test_rewrite_query_strips_numeric_section_prefix_from_context_topic(self) -> None:
         rewritten = rewrite_query(
@@ -405,10 +423,21 @@ class TestRetrievalQueryIntents(unittest.TestCase):
         self.assertTrue(has_follow_up_reference("그 RoleBinding YAML 예시도 보여줘"))
         self.assertTrue(has_follow_up_reference("그 권한이 잘 들어갔는지 확인하는 명령도 알려줘"))
         self.assertTrue(has_follow_up_reference("그 권한을 회수하려면 어떻게 해?"))
+        self.assertTrue(has_follow_up_reference("삭제 진행 상태를 확인하는 방법도 알려줘"))
         self.assertTrue(has_follow_up_reference("쿠버네티스와 차이도 설명해줘"))
         self.assertTrue(has_follow_up_reference("Route와 Ingress 관련 주의사항도 함께 정리해줘"))
         self.assertTrue(has_follow_up_reference("Route와 Ingress 상태 확인 방법도 같이 알려줘"))
         self.assertTrue(has_follow_up_reference("Route와 Ingress 관련 실행 예시도 같이 보여줘"))
+
+    def test_has_doc_locator_intent_detects_wiki_navigation_question(self) -> None:
+        query = "문제가 생기면 위키 안에서 어떤 순서로 이동해야 하는지 알려줘"
+
+        self.assertTrue(has_doc_locator_intent(query))
+        boosts, penalties = query_book_adjustments(query)
+        self.assertGreater(boosts["support"], 1.0)
+        self.assertGreater(boosts["validation_and_troubleshooting"], 1.0)
+        self.assertLess(penalties["release_notes"], 1.0)
+        self.assertLess(penalties["web_console"], 1.0)
 
     def test_has_route_ingress_compare_intent_detects_networking_compare_query(self) -> None:
         self.assertTrue(

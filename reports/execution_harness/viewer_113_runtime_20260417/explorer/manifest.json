@@ -1,0 +1,20 @@
+{
+  "task_id": "viewer_113_runtime_20260417",
+  "lane_id": "explorer",
+  "role": "explorer",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "reports/execution_harness/viewer_113_runtime_20260417/explorer/*"
+  ],
+  "target_outputs": [
+    "root-cause map for missing 84 books",
+    "fallback source inventory by slug"
+  ],
+  "validation_commands": [
+    "read-only code and artifact inspection",
+    "known_books viewer sweep sample"
+  ],
+  "status": "in_progress"
+}

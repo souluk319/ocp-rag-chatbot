@@ -51,8 +51,10 @@ from play_book_studio.app.session_flow import (
 )
 from play_book_studio.app.sessions import ChatSession, SessionStore, Turn
 from play_book_studio.app.source_books import (
-    internal_customer_pack_viewer_html as _internal_customer_pack_viewer_html,
     internal_viewer_html as _internal_viewer_html,
+)
+from play_book_studio.app.source_books_customer_pack import (
+    internal_customer_pack_viewer_html as _internal_customer_pack_viewer_html,
     list_customer_pack_drafts as _list_customer_pack_drafts,
     load_customer_pack_book as _load_customer_pack_book,
 )

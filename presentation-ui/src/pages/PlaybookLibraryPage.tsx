@@ -57,9 +57,9 @@ import {
   toRuntimeUrl,
   formatBytes,
 } from '../lib/runtimeApi';
+import { WIKI_VISION_MODES, loadStoredVisionMode, persistVisionMode, type VisionMode } from '../lib/wikiVision';
 
 type PipelineStage = 'idle' | 'uploading' | 'capturing' | 'normalizing' | 'done' | 'error';
-type VisionMode = 'atlas_canvas' | 'guided_tour' | 'encyclopedia_world';
 
 interface FigureAtlasEntry {
   key: string;
@@ -80,6 +80,10 @@ interface LogEntry {
   msg: string;
 }
 
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message.trim() ? error.message : fallback;
+}
+
 const REPOSITORY_CATEGORIES: RepositoryCategory[] = [
   'Official Docs',
   'Enterprise Knowledge',
@@ -98,74 +102,6 @@ const SUPPORTED_FORMATS = [
   { ext: 'HTML', via: 'Native' },
   { ext: 'Image', via: 'OCR' },
 ];
-
-const WIKI_VISION_MODES: Array<{
-  id: VisionMode;
-  label: string;
-  eyebrow: string;
-  summary: string;
-  focus: string;
-}> = [
-  {
-    id: 'atlas_canvas',
-    label: 'Atlas Canvas',
-    eyebrow: 'Document + Relation + Figure',
-    summary: '문서 본문을 중심으로 관계 지도와 figure strip을 같이 여는 탐험형 위키입니다.',
-    focus: '문서를 읽다가 바로 관계와 도해로 확장',
-  },
-  {
-    id: 'guided_tour',
-    label: 'Guided Tour',
-    eyebrow: 'Chat-Led Route',
-    summary: '챗봇 답변이 문서 투어를 열고 절차, 근거, 다음 문서를 route처럼 안내합니다.',
-    focus: '답변이 끝나지 않고 문서 투어로 이어짐',
-  },
-  {
-    id: 'encyclopedia_world',
-    label: 'Topic World',
-    eyebrow: 'Encyclopedia Atlas',
-    summary: '책 단위보다 주제 세계를 먼저 열고 관련 문서와 그림을 한 번에 탐험하는 구조입니다.',
-    focus: '문서보다 주제 지형도를 먼저 보여줌',
-  },
-];
-
-const VISION_COMPARE_COPY: Record<VisionMode, {
-  title: string;
-  eyebrow: string;
-  bullets: string[];
-  cta: string;
-}> = {
-  atlas_canvas: {
-    title: '읽는 중심형',
-    eyebrow: 'Document first',
-    bullets: [
-      '본문을 먼저 읽고, 옆에서 연결 문서와 절차를 확장합니다.',
-      '대표 figure와 관련 문서를 같은 시야 안에 두되 본문 몰입을 해치지 않습니다.',
-      '문서를 읽다가 자연스럽게 옆으로 퍼져 나가는 백과 경험을 노립니다.',
-    ],
-    cta: '이 방식으로 열기',
-  },
-  guided_tour: {
-    title: '행동 유도형',
-    eyebrow: 'Action next',
-    bullets: [
-      '질문에 답하고 끝나지 않고, 다음에 볼 문서와 절차를 바로 제시합니다.',
-      '운영자가 지금 무엇을 먼저 해야 하는지 route처럼 안내합니다.',
-      '챗봇과 문서가 하나의 업무 흐름으로 이어지는 경험을 노립니다.',
-    ],
-    cta: '투어 방식으로 열기',
-  },
-  encyclopedia_world: {
-    title: '맥락 탐험형',
-    eyebrow: 'Context world',
-    bullets: [
-      '한 문서보다 이 문서가 속한 주제 세계와 연결 고리를 먼저 보여줍니다.',
-      '키워드와 연결 문서를 중심으로 큰 그림을 탐험하게 만듭니다.',
-      '지식의 지형도를 먼저 보고 필요한 문서를 파고드는 경험을 노립니다.',
-    ],
-    cta: '맥락 중심으로 열기',
-  },
-};
 
 function nowTime(): string {
   const d = new Date();
@@ -271,7 +207,7 @@ function buildFigureAtlasEntries(figures: RuntimeFigureItem[]): FigureAtlasEntry
 function buildWorldKeywords(book: LibraryBook): string[] {
   const slugBits = book.book_slug.split('_').filter(Boolean);
   const titleBits = book.title
-    .split(/[·,:()\-\/\s]+/)
+    .split(/[·,:()/\s-]+/)
     .map((bit) => bit.trim())
     .filter((bit) => bit.length >= 2);
   return [...new Set([...slugBits, ...titleBits])].slice(0, 5);
@@ -281,9 +217,7 @@ const PlaybookLibraryPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'monitoring' | 'repository'>('monitoring');
-  const [visionMode, setVisionMode] = useState<VisionMode>(() => {
-    return 'atlas_canvas';
-  });
+  const [visionMode, setVisionMode] = useState<VisionMode>(() => loadStoredVisionMode());
   const [pipelineStage, setPipelineStage] = useState<PipelineStage>('idle');
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [errorMsg, setErrorMsg] = useState('');
@@ -352,7 +286,7 @@ const PlaybookLibraryPage: React.FC = () => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem('wikiVisionMode', visionMode);
+    persistVisionMode(visionMode);
   }, [visionMode]);
 
   useEffect(() => {
@@ -440,8 +374,8 @@ const PlaybookLibraryPage: React.FC = () => {
         setRepositoryStage('done');
         addLog('info', `Repository search '${requestedQuery}' → ${payload.count} matches`);
       })
-      .catch((err: any) => {
-        const msg = err?.message || 'Repository search failed';
+      .catch((error: unknown) => {
+        const msg = errorMessage(error, 'Repository search failed');
         setRepositoryStage('error');
         setRepositoryError(msg);
         setRepositoryResults([]);
@@ -521,8 +455,8 @@ const PlaybookLibraryPage: React.FC = () => {
       addLog('success', `'${draft.title}' ready in library.`);
       refreshData();
       setTimeout(() => { setPipelineStage('idle'); setCurrentFile(''); }, 6000);
-    } catch (err: any) {
-      const msg = err?.message || 'Unknown error';
+    } catch (error: unknown) {
+      const msg = errorMessage(error, 'Unknown error');
       setPipelineStage('error');
       setErrorMsg(msg);
       addLog('error', `Pipeline failed: ${msg}`);
@@ -569,8 +503,8 @@ const PlaybookLibraryPage: React.FC = () => {
       setSelectedRepositoryNames([]);
       setRepositoryStage('done');
       addLog('info', `Repository search '${normalizedQuery}' → ${payload.count} matches`);
-    } catch (err: any) {
-      const msg = err?.message || 'Repository search failed';
+    } catch (error: unknown) {
+      const msg = errorMessage(error, 'Repository search failed');
       setRepositoryStage('error');
       setRepositoryError(msg);
       setRepositoryResults([]);
@@ -611,8 +545,8 @@ const PlaybookLibraryPage: React.FC = () => {
       );
       addLog('success', `${selectedRepositories.length} repositories saved to ${activeRepositoryCategory}`);
       setSelectedRepositoryNames([]);
-    } catch (err: any) {
-      const msg = err?.message || 'Favorite save failed';
+    } catch (error: unknown) {
+      const msg = errorMessage(error, 'Favorite save failed');
       setRepositoryError(msg);
       addLog('error', `Favorite save failed: ${msg}`);
     } finally {
@@ -633,8 +567,8 @@ const PlaybookLibraryPage: React.FC = () => {
         )
       );
       addLog('info', `Removed favorite ${fullName}`);
-    } catch (err: any) {
-      const msg = err?.message || 'Favorite remove failed';
+    } catch (error: unknown) {
+      const msg = errorMessage(error, 'Favorite remove failed');
       setRepositoryError(msg);
       addLog('error', `Favorite remove failed: ${msg}`);
     } finally {
@@ -737,7 +671,7 @@ const PlaybookLibraryPage: React.FC = () => {
         break;
       case 'buyerGate':
         title = 'Release Gate Surface';
-        books = [...(cr.buyer_demo_gate?.books ?? [])];
+        books = [...(cr.product_gate?.books ?? [])];
         break;
       case 'buyerPackets':
         title = 'Release Candidate Packets';
@@ -811,7 +745,7 @@ const PlaybookLibraryPage: React.FC = () => {
   const operationalWikiBooks = allOperationalWikiBooks.slice(0, 8);
   const wikiNavigationBacklog = summary?.wiki_navigation_backlog_count ?? controlRoom?.wiki_navigation_backlog?.books?.length ?? 0;
   const wikiUsageSignals = summary?.wiki_usage_signal_count ?? controlRoom?.wiki_usage_signals?.books?.length ?? 0;
-  const buyerDemoGate = summary?.buyer_demo_gate_count ?? controlRoom?.buyer_demo_gate?.books?.length ?? 0;
+  const productGate = summary?.product_gate_count ?? controlRoom?.product_gate?.books?.length ?? 0;
   const buyerPacketBundle = summary?.buyer_packet_bundle_count ?? controlRoom?.buyer_packet_bundle?.books?.length ?? 0;
   const releaseCandidateFreeze = controlRoom?.release_candidate_freeze;
   const releaseCandidatePacket = controlRoom?.buyer_packet_bundle?.books?.find(
@@ -862,18 +796,28 @@ const PlaybookLibraryPage: React.FC = () => {
   const atlasContextBooks = useMemo(() => operationalWikiBooks.slice(6, 8), [operationalWikiBooks]);
   const hasMetricSourceDrift = Boolean(controlRoom?.source_of_truth_drift?.status_alignment?.mismatches?.length);
   const gate = controlRoom?.gate;
-  const ownerDemo = controlRoom?.owner_demo_rehearsal;
+  const productRehearsal = controlRoom?.product_rehearsal;
   const gateReasons = [
     ...((gate?.reasons ?? []).slice(0, 3)),
     ...((gate?.summary?.failed_validation_checks ?? []).slice(0, 2)),
     ...((gate?.summary?.failed_data_quality_checks ?? []).slice(0, 2)),
   ].filter(Boolean).slice(0, 3);
-  const ownerDemoPassRate = typeof ownerDemo?.owner_critical_scenario_pass_rate === 'number'
-    ? Math.round(ownerDemo.owner_critical_scenario_pass_rate * 100)
-    : 0;
-  const ownerDemoBlockerCopy = ownerDemo?.blockers?.length
-    ? ownerDemo.blockers.join(' · ')
-    : 'No current owner-demo blockers';
+  const hasProductRehearsalMetric = typeof productRehearsal?.critical_scenario_pass_rate === 'number';
+  const productGatePassRate = hasProductRehearsalMetric
+    ? Math.round((productRehearsal?.critical_scenario_pass_rate ?? 0) * 100)
+    : null;
+  const productGateBlockerCopy = !productRehearsal
+    ? 'Product rehearsal unavailable'
+    : productRehearsal.status === 'missing'
+      ? 'Current product rehearsal report is missing'
+      : productRehearsal.blockers?.length
+        ? productRehearsal.blockers.join(' · ')
+        : 'No current gate blockers';
+  const productRehearsalStatus = !productRehearsal || productRehearsal.status === 'missing'
+    ? 'Missing'
+    : productRehearsal.blockers?.length
+      ? 'Blocking'
+      : 'Passing';
   const gateBannerCopy = gate?.release_blocking
     ? `Release blocked · ${gate?.status ?? 'unknown'}`
     : `Release gate · ${gate?.status ?? 'unknown'}`;
@@ -956,7 +900,7 @@ const PlaybookLibraryPage: React.FC = () => {
                 </div>
                 <div className="vision-compare-grid">
                   {WIKI_VISION_MODES.map((mode) => {
-                    const copy = VISION_COMPARE_COPY[mode.id];
+                    const copy = mode.compare;
                     const isActive = visionMode === mode.id;
                     return (
                       <article key={mode.id} className={`vision-compare-card ${isActive ? 'active' : ''}`}>
@@ -965,7 +909,7 @@ const PlaybookLibraryPage: React.FC = () => {
                           <span className="vision-compare-card-mode">{mode.label}</span>
                         </div>
                         <h3>{copy.title}</h3>
-                        <p className="vision-compare-card-summary">{mode.summary}</p>
+                        <p className="vision-compare-card-summary">{mode.library.summary}</p>
                         <ul className="vision-compare-bullets">
                           {copy.bullets.map((bullet) => (
                             <li key={bullet}>{bullet}</li>
@@ -1041,9 +985,9 @@ const PlaybookLibraryPage: React.FC = () => {
                 <div>
                   <span className="wiki-vision-eyebrow">{visionMode === 'guided_tour' ? 'Guided Tour' : 'Wiki Vision Lab'}</span>
                   <h2>{visionMode === 'guided_tour' ? 'Guided Tour Active' : '위키 대백과 이상형 3안'}</h2>
-                  <p>{activeVision.summary}</p>
+                  <p>{activeVision.library.summary}</p>
                 </div>
-                <div className="wiki-vision-focus">{visionMode === 'guided_tour' ? 'Active Route' : activeVision.focus}</div>
+                <div className="wiki-vision-focus">{visionMode === 'guided_tour' ? 'Active Route' : activeVision.library.focus}</div>
               </div>
               {visionMode === 'guided_tour' ? (
                 <div className="wiki-vision-active">
@@ -1059,9 +1003,9 @@ const PlaybookLibraryPage: React.FC = () => {
                       className={`wiki-vision-card ${visionMode === mode.id ? 'active' : ''}`}
                       onClick={() => setVisionMode(mode.id)}
                     >
-                      <span className="wiki-vision-card-eyebrow">{mode.eyebrow}</span>
+                      <span className="wiki-vision-card-eyebrow">{mode.library.eyebrow}</span>
                       <strong>{mode.label}</strong>
-                      <span>{mode.summary}</span>
+                      <span>{mode.library.summary}</span>
                     </button>
                   ))}
                 </div>
@@ -1256,7 +1200,7 @@ const PlaybookLibraryPage: React.FC = () => {
                     <span>{releaseCandidateFreeze.current_stage || 'paid_poc_candidate'}</span>
                     <span>{releaseCandidateFreeze.runtime_count} runtime books</span>
                     <span>
-                      owner demo {releaseCandidateFreeze.owner_demo_pass_count}/{releaseCandidateFreeze.owner_demo_scenario_count}
+                      product gate {releaseCandidateFreeze.product_gate_pass_count}/{releaseCandidateFreeze.product_gate_scenario_count}
                     </span>
                     <span>{releaseCandidateFreeze.release_blocker_count} blockers</span>
                   </div>
@@ -1293,9 +1237,11 @@ const PlaybookLibraryPage: React.FC = () => {
                       <span>{gateReasons.length > 0 ? gateReasons.join(' · ') : 'Aligned with current runtime evidence.'}</span>
                     </>
                   )}
-                  {ownerDemo && (
+                  {productRehearsal && (
                     <span>
-                      Owner demo {ownerDemo.pass_count}/{ownerDemo.scenario_count} · {ownerDemoBlockerCopy}
+                      {productRehearsal.status === 'missing'
+                        ? productGateBlockerCopy
+                        : `Product gate ${productRehearsal.pass_count}/${productRehearsal.scenario_count} · ${productGateBlockerCopy}`}
                     </span>
                   )}
                   {hasMetricSourceDrift && (
@@ -1335,7 +1281,7 @@ const PlaybookLibraryPage: React.FC = () => {
               <div className="metric-card metric-card-priority metric-clickable" onClick={() => openMetricPopover('buyerGate')}>
                 <div className="metric-icon"><ShieldAlert size={24} /></div>
                 <div className="metric-data">
-                  <h3>{buyerDemoGate.toLocaleString()}</h3>
+                  <h3>{productGate.toLocaleString()}</h3>
                   <p>Release Gate</p>
                 </div>
                 <div className="metric-status warning">Release</div>
@@ -1387,11 +1333,11 @@ const PlaybookLibraryPage: React.FC = () => {
                 <div className="metric-card metric-card-secondary">
                   <div className="metric-icon"><CheckCircle2 size={24} /></div>
                   <div className="metric-data">
-                    <h3>{ownerDemoPassRate}%</h3>
-                    <p>Owner Demo Rehearsal</p>
+                    <h3>{productGatePassRate === null ? '--' : `${productGatePassRate}%`}</h3>
+                    <p>Product Rehearsal</p>
                   </div>
-                  <div className={`metric-status ${ownerDemo?.blockers?.length ? 'warning' : 'online'}`}>
-                    {ownerDemo?.blockers?.length ? 'Blocking' : 'Passing'}
+                  <div className={`metric-status ${productRehearsalStatus === 'Passing' ? 'online' : 'warning'}`}>
+                    {productRehearsalStatus}
                   </div>
                 </div>
                 <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('derived')}>

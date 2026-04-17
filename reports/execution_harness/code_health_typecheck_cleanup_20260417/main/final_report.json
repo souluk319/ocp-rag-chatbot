@@ -1,0 +1,26 @@
+{
+  "status": "done",
+  "current_judgment": "현재 타입체크/린트 기준에서 실제로 터지던 프론트 코드 냄새는 정리됐다. `any`, 죽은 파라미터, 잘못된 effect/memo 의존성, 불필요한 캐스팅 경로를 걷어내고 빌드/린트/테스트를 다시 통과시켰다.",
+  "key_evidence": [
+    "`MetricsFooter.tsx`의 GSAP counter loop가 `any` 대신 `HTMLElement` 기반으로 정리됐다.",
+    "`WorkspaceTracePanel.tsx`에서 `setState in effect` 회귀를 없애고, 불필요한 forensic `useMemo`와 죽은 scorecard 인자를 정리했다.",
+    "`scorecardEval.ts`와 `scorecardEval.test.ts`에서 사용되지 않던 `_events` 인자를 제거했다.",
+    "`PlaybookLibraryPage.tsx`에서 repository/customer-pack 흐름의 `catch (err: any)`를 정리하고 정규식 escape 찌꺼기를 제거했다.",
+    "`WorkspacePage.tsx`에서 overlay title/summary를 더 이상 `any` 캐스팅으로 읽지 않고, outline item memo 경로를 단순화해 hook 경고를 없앴다."
+  ],
+  "artifact_paths": [
+    "presentation-ui/src/components/MetricsFooter.tsx",
+    "presentation-ui/src/components/WorkspaceTracePanel.tsx",
+    "presentation-ui/src/components/scorecardEval.ts",
+    "presentation-ui/src/components/scorecardEval.test.ts",
+    "presentation-ui/src/pages/PlaybookLibraryPage.tsx",
+    "presentation-ui/src/pages/WorkspacePage.tsx"
+  ],
+  "validation_results": [
+    "npm --prefix presentation-ui run lint -> pass",
+    "npm --prefix presentation-ui run build -> pass",
+    "npm --prefix presentation-ui run test -> 2 files, 6 tests passed",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_app_viewers.py tests/test_app_data_control_room.py tests/test_runtime_catalog_registry.py -q -> 35 passed, 1 warning, 10 subtests passed"
+  ],
+  "next_action": "남은 정리 포인트는 repo-wide health debt다. 지금도 `vite` chunk size warning과 backend `cgi` deprecation warning은 남아 있다. 다음 packet은 frontend bundle split과 Python deprecation 정리처럼 실제 남은 경고를 제거하는 쪽으로 가면 된다."
+}

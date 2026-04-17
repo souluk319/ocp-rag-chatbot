@@ -1,0 +1,27 @@
+{
+  "task_id": "data_control_room_bucket_split_20260417",
+  "created_at": "2026-04-17T14:26:00+09:00",
+  "shell": "powershell",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": ".\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": false,
+  "parallel_execution_required": false,
+  "companion_lanes": [],
+  "write_scope": "src/play_book_studio/app/data_control_room.py;src/play_book_studio/app/data_control_room_buckets.py;reports/execution_harness/data_control_room_bucket_split_20260417/main/*",
+  "target_outputs": [
+    "data_control_room bucket builder split",
+    "focused control-room validation evidence",
+    "updated hotspot inventory"
+  ],
+  "validation_commands": [
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_app_data_control_room.py -q",
+    "python -m py_compile src/play_book_studio/app/data_control_room.py src/play_book_studio/app/data_control_room_buckets.py",
+    "npm --prefix presentation-ui run lint",
+    "npm --prefix presentation-ui run test",
+    "npm --prefix presentation-ui run build"
+  ],
+  "status": "completed"
+}

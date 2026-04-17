@@ -2,7 +2,14 @@ board_version: 3
 product: play-book-studio
 product_mode: technical_wiki_platform
 north_star: source_first_figure_aware_wiki_runtime
-current_stage: paid_poc_candidate
+product_status: award_winning_enterprise_product
+renewal_mode: refinement_hardening_validation
+change_policy: execute_customer_order_within_existing_pbs_architecture
+current_stage: renewal_hardening_validation
+current_order:
+  deliverable: ocp_operator_playbook_package
+  audience: ocp_operators
+  execution_rule: no_product_redefinition
 validated_pack:
   product: openshift_container_platform
   version: '4.20'
@@ -44,14 +51,14 @@ phases:
       tests:
       - archived_active_docs_exist
     - id: R0-E1-T2
-      title: active rule set 전체를 technical wiki 기준으로 다시 작성한다
+      title: active rule set 전체를 PBS renewal 기준선으로 다시 작성한다
       owner: product_architect
       status: done
       outputs:
       - AGENTS.md
       - PROJECT.md
       - CODEX_OPERATING_CHARTER.md
-      - OWNER_SCENARIO_SCORECARD.yaml
+      - PRODUCT_GATE_SCORECARD.yaml
       - P0_ARCHITECTURE_FREEZE_ADDENDUM.md
       - PARSED_ARTIFACT_CONTRACT.md
       - SECURITY_BOUNDARY_CONTRACT.md
@@ -616,26 +623,26 @@ phases:
       tests:
       - assistant_session_related_viewer_surfaces_pass_compact_truth_audit
 - id: W5
-  name: buyer_demo_and_release_gate
-  goal: buyer 가 제품 가치와 release gate, buyer/demo/release packet surface 를 화면에서 바로 확인할 수 있게 한다.
+  name: product_rehearsal_and_release_gate
+  goal: buyer 가 제품 가치와 release gate, product rehearsal/release packet surface 를 화면에서 바로 확인할 수 있게 한다.
   epics:
   - id: W5-E1
     name: control_tower_gate_surface
     tasks:
     - id: W5-E1-T1
-      title: buyer demo gate 를 Control Tower surface 와 popover bucket 으로 노출한다
+      title: product gate 를 Control Tower surface 와 popover bucket 으로 노출한다
       owner: product_engineer
       status: done
       outputs:
       - src/play_book_studio/app/data_control_room.py
       - presentation-ui/src/lib/runtimeApi.ts
       - presentation-ui/src/pages/PlaybookLibraryPage.tsx
-      - _quarantine/scripts_packets/verify_buyer_demo_gate_surface.py
-      - _quarantine/reports/build_logs_packets/buyer_demo_gate_surface_report.json
+      - _quarantine/scripts_packets/verify_product_gate_surface.py
+      - _quarantine/reports/build_logs_packets/product_gate_surface_report.json
       tests:
-      - control_tower_exposes_buyer_demo_gate_bucket
+      - control_tower_exposes_product_gate_bucket
     - id: W5-E1-T2
-      title: buyer demo gate 의 pass blocking current stage 를 summary banner 로 노출한다
+      title: product gate 의 pass blocking current stage 를 summary banner 로 노출한다
       owner: product_engineer
       status: done
       outputs:
@@ -643,22 +650,22 @@ phases:
       - presentation-ui/src/lib/runtimeApi.ts
       - presentation-ui/src/pages/PlaybookLibraryPage.tsx
       - presentation-ui/src/pages/PlaybookLibraryPage.css
-      - _quarantine/scripts_packets/verify_buyer_demo_gate_banner.py
-      - _quarantine/reports/build_logs_packets/buyer_demo_gate_banner_report.json
+      - _quarantine/scripts_packets/verify_product_gate_banner.py
+      - _quarantine/reports/build_logs_packets/product_gate_banner_report.json
       tests:
-      - control_tower_exposes_buyer_demo_gate_banner
+      - control_tower_exposes_product_gate_banner
     - id: W5-E1-T3
-      title: owner 질문 5개를 rehearsal 해서 pass rate 와 blocker evidence 를 남긴다
+      title: product 질문 5개를 rehearsal 해서 pass rate 와 blocker evidence 를 남긴다
       owner: judge
       status: done
       outputs:
-      - _quarantine/scripts_packets/verify_owner_demo_rehearsal.py
-      - reports/build_logs/owner_demo_rehearsal_report.json
-      - _quarantine/reports/build_logs_packets/owner_demo_rehearsal_report.md
+      - _quarantine/scripts_packets/verify_product_rehearsal.py
+      - reports/build_logs/product_rehearsal_report.json
+      - _quarantine/reports/build_logs_packets/product_rehearsal_report.md
       tests:
-      - owner_demo_rehearsal_computes_pass_rate_and_blockers
+      - product_rehearsal_computes_pass_rate_and_blockers
     - id: W5-E1-T4
-      title: owner demo rehearsal 결과를 pass rate 와 current blockers surface 로 노출한다
+      title: product rehearsal 결과를 pass rate 와 current blockers surface 로 노출한다
       owner: product_engineer
       status: done
       outputs:
@@ -666,42 +673,42 @@ phases:
       - presentation-ui/src/lib/runtimeApi.ts
       - presentation-ui/src/pages/PlaybookLibraryPage.tsx
       - presentation-ui/src/pages/PlaybookLibraryPage.css
-      - _quarantine/scripts_packets/verify_owner_demo_surface.py
-      - _quarantine/reports/build_logs_packets/owner_demo_surface_report.json
+      - _quarantine/scripts_packets/verify_product_rehearsal_surface.py
+      - _quarantine/reports/build_logs_packets/product_rehearsal_surface_report.json
       tests:
-      - control_tower_exposes_owner_demo_pass_rate_and_blockers
+      - control_tower_exposes_product_rehearsal_pass_rate_and_blockers
     - id: W5-E1-T5
-      title: owner demo rehearsal 결과를 바로 읽을 수 있는 script packet 으로 생성한다
+      title: product rehearsal 결과를 바로 읽을 수 있는 script packet 으로 생성한다
       owner: judge
       status: done
       outputs:
-      - _quarantine/scripts_packets/generate_owner_demo_script_packet.py
-      - _quarantine/reports/build_logs_packets/owner_demo_script_packet.json
-      - _quarantine/reports/build_logs_packets/owner_demo_script_packet.md
+      - _quarantine/scripts_packets/generate_product_rehearsal_script_packet.py
+      - _quarantine/reports/build_logs_packets/product_rehearsal_script_packet.json
+      - _quarantine/reports/build_logs_packets/product_rehearsal_script_packet.md
       tests:
-      - owner_demo_script_packet_is_generated_from_contract_scorecard_and_rehearsal
+      - product_rehearsal_script_packet_is_generated_from_contract_scorecard_and_rehearsal
     - id: W5-E1-T6
-      title: buyer demo live rehearsal packet 으로 실제 클릭 경로와 live evidence 를 고정한다
+      title: live rehearsal packet 으로 실제 클릭 경로와 live evidence 를 고정한다
       owner: judge
       status: done
       outputs:
-      - _quarantine/scripts_packets/generate_buyer_demo_live_packet.py
-      - _quarantine/scripts_packets/verify_buyer_demo_live_packet.py
-      - _quarantine/reports/build_logs_packets/buyer_demo_live_packet.json
-      - _quarantine/reports/build_logs_packets/buyer_demo_live_packet.md
+      - _quarantine/scripts_packets/generate_live_rehearsal_packet.py
+      - _quarantine/scripts_packets/verify_live_rehearsal_packet.py
+      - _quarantine/reports/build_logs_packets/live_rehearsal_packet.json
+      - _quarantine/reports/build_logs_packets/live_rehearsal_packet.md
       tests:
-      - buyer_demo_live_packet_contains_live_routes_and_surface_checks
+      - live_rehearsal_packet_contains_live_routes_and_surface_checks
     - id: W5-E1-T7
-      title: owner demo one-sheet 를 생성해서 buyer-facing 세일즈 요약을 한 장으로 고정한다
+      title: product gate one-sheet 를 생성해서 buyer-facing 세일즈 요약을 한 장으로 고정한다
       owner: judge
       status: done
       outputs:
-      - _quarantine/scripts_packets/generate_owner_demo_one_sheet.py
-      - _quarantine/scripts_packets/verify_owner_demo_one_sheet.py
-      - _quarantine/reports/build_logs_packets/owner_demo_one_sheet.json
-      - _quarantine/reports/build_logs_packets/owner_demo_one_sheet.md
+      - _quarantine/scripts_packets/generate_product_gate_one_sheet.py
+      - _quarantine/scripts_packets/verify_product_gate_one_sheet.py
+      - _quarantine/reports/build_logs_packets/product_gate_one_sheet.json
+      - _quarantine/reports/build_logs_packets/product_gate_one_sheet.md
       tests:
-      - owner_demo_one_sheet_summarizes_value_boundary_and_live_entry_points
+      - product_gate_one_sheet_summarizes_value_boundary_and_live_entry_points
     - id: W5-E1-T8
       title: release gate one-sheet 를 생성해서 현재 판매 가능 범위와 full-sale blocker 를 한 장으로 고정한다
       owner: judge

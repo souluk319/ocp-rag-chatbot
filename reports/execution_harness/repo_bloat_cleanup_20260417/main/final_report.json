@@ -1,0 +1,22 @@
+{
+  "status": "completed",
+  "current_judgment": "Repo hygiene is not fine: the workspace had repeated generated clutter and several oversized tracked hotspots. This packet fixed the repeatable junk layer and left an audit trail for the larger tracked cleanup.",
+  "key_evidence": [
+    "Added scripts/repo_hygiene.py to inventory tracked file concentration and clean generated junk safely without touching .venv, node_modules, or tmp_source.",
+    "Added explicit presentation-ui/dist/ ignore coverage so the frontend build output stays outside tracked repo truth.",
+    "Initial hygiene pass removed 16 junk targets totaling 5125620 bytes; a second pass after validation removed 14 regenerated targets totaling 2759528 bytes and restored workspace_junk_count to 0.",
+    "Audit confirmed the main tracked concentration remains in data (184), src (162), reports (130), tests (64), and scripts (57), with the heaviest files clustered in tests, backend app modules, and frontend pages."
+  ],
+  "artifact_paths": [
+    ".gitignore",
+    "scripts/repo_hygiene.py",
+    "reports/execution_harness/repo_bloat_cleanup_20260417/main/repo_hygiene_audit.json"
+  ],
+  "validation_results": [
+    "npm --prefix presentation-ui run lint",
+    "npm --prefix presentation-ui run test",
+    "npm --prefix presentation-ui run build",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_app_viewers.py tests/test_app_data_control_room.py tests/test_runtime_catalog_registry.py -q -> 35 passed, 1 warning, 10 subtests passed"
+  ],
+  "next_action": "Next cut should target tracked bloat instead of generated junk: split WorkspacePage.tsx and PlaybookLibraryPage.tsx, then carve oversized test files like tests/test_ingestion_audit.py and tests/test_retrieval_runtime.py into narrower suites before considering destructive harness-report pruning."
+}

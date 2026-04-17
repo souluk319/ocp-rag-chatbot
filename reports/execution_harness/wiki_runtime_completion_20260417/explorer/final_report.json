@@ -1,0 +1,10 @@
+{
+  "task_id": "wiki_runtime_completion_20260417",
+  "lane_id": "explorer",
+  "status": "completed",
+  "summary": "Confirmed backend accepted canonical entity/figure paths only before fix and mapped the frontend/runtime path flow that needed normalization.",
+  "outputs": [
+    "backend path mismatch diagnosis",
+    "frontend viewer_path emission call sites"
+  ]
+}

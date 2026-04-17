@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Check,
@@ -29,12 +29,12 @@ interface WorkspaceTracePanelProps {
   isSending: boolean;
 }
 
-type ViewMode = 'demo' | 'forensic';
+type ViewMode = 'overview' | 'forensic';
 
 /**
  * Backend whitelist of step IDs we know how to render. Other steps still show
  * up in the Forensic events table — only the timeline filters by this set so
- * the demo surface stays curated.
+ * the overview surface stays curated.
  */
 const TIMELINE_STEPS: ReadonlyArray<string> = [
   'request_received',
@@ -281,17 +281,9 @@ export default function WorkspaceTracePanel({
   result,
   isSending,
 }: WorkspaceTracePanelProps) {
-  const [view, setView] = useState<ViewMode>('demo');
+  const [view, setView] = useState<ViewMode>('overview');
   const [activeStep, setActiveStep] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-
-  // Keep the user's chosen view mode across turns.
-  useEffect(() => {
-    if (isSending) {
-      setActiveStep(null);
-      setCopied(false);
-    }
-  }, [isSending]);
 
   const stages = useMemo(() => collapseStages(events), [events]);
   const stageMap = useMemo(() => {
@@ -302,7 +294,7 @@ export default function WorkspaceTracePanel({
 
   const verdict = deriveVerdict(result ?? null);
   const { severity, signals } = deriveSeverity(result ?? null, events);
-  const scorecard = useMemo(() => evaluateScorecard(result ?? null, events), [result, events]);
+  const scorecard = useMemo(() => evaluateScorecard(result ?? null), [result]);
   const scorecardSummary = useMemo(() => summarizeScorecard(scorecard), [scorecard]);
 
   const pipelineTrace = asRecord(result?.pipeline_trace);
@@ -317,10 +309,12 @@ export default function WorkspaceTracePanel({
   const metrics = asRecord(retrievalTrace.metrics);
   const reranker = asRecord(retrievalTrace.reranker);
   const plan = asRecord(retrievalTrace.plan);
-  const forensicHitRows = useMemo(() => deriveForensicHitRows(retrievalTrace), [retrievalTrace]);
+  const forensicHitRows = deriveForensicHitRows(retrievalTrace);
   const decomposed = asArray(retrievalTrace.decomposed_queries)
     .map((q) => (typeof q === 'string' ? q : ''))
     .filter(Boolean);
+  const selectedStep = isSending ? null : activeStep;
+  const isCopied = !isSending && copied;
 
   const rewritten = asString(result?.rewritten_query);
   const showRewritten = Boolean(rewritten && rewritten !== query);
@@ -395,10 +389,10 @@ export default function WorkspaceTracePanel({
           <div className="wtp-toggle" role="group" aria-label="View mode">
             <button
               type="button"
-              aria-pressed={view === 'demo'}
-              onClick={() => setView('demo')}
+              aria-pressed={view === 'overview'}
+              onClick={() => setView('overview')}
             >
-              Demo
+              Overview
             </button>
             <button
               type="button"
@@ -461,10 +455,10 @@ export default function WorkspaceTracePanel({
                 type="button"
                 className="wtp-stage"
                 data-status={stage.status}
-                data-active={activeStep === stage.step}
+                data-active={selectedStep === stage.step}
                 style={{ width: stageWidthFor(stage.durationMs, maxDuration) }}
                 onClick={() => toggleStage(stage.step)}
-                aria-pressed={activeStep === stage.step}
+                aria-pressed={selectedStep === stage.step}
                 aria-label={`${stage.label} ${stage.status} ${formatMs(stage.durationMs)}`}
               >
                 <span className="wtp-stage-top">
@@ -484,8 +478,8 @@ export default function WorkspaceTracePanel({
           </div>
         )}
 
-        {activeStep ? (() => {
-          const stage = stageMap.get(activeStep);
+        {selectedStep ? (() => {
+          const stage = stageMap.get(selectedStep);
           if (!stage) return null;
           const metaEntries = Object.entries(stage.meta);
           return (
@@ -607,10 +601,10 @@ export default function WorkspaceTracePanel({
           ) : null}
         </article>
 
-        {/* Owner Scorecard */}
+        {/* Product Gate */}
         <article className="wtp-card">
           <div className="wtp-card-header">
-            <span className="wtp-card-title">Owner Scorecard · 계약 채점</span>
+            <span className="wtp-card-title">Product Gate · 계약 채점</span>
             <span className="wtp-card-meta">
               {scorecardSummary.pass}/{scorecardSummary.pass + scorecardSummary.fail} pass
               {scorecardSummary.na > 0 ? ` · ${scorecardSummary.na} n/a` : ''}
@@ -641,7 +635,7 @@ export default function WorkspaceTracePanel({
                 ? '평가 대기'
                 : `${Math.round(scorecardSummary.passRate * 100)}% pass`}
             </strong>
-            <span>· promotion gate ≥ 90% (5턴 누적)</span>
+            <span>· product gate ≥ 90% (5턴 누적)</span>
           </div>
         </article>
       </div>
@@ -656,12 +650,12 @@ export default function WorkspaceTracePanel({
             <button
               type="button"
               className="wtp-copy-btn"
-              data-copied={copied}
+              data-copied={isCopied}
               onClick={() => void handleCopy()}
               disabled={!hasAnyEvent}
             >
-              {copied ? <CheckCircle2 size={14} /> : <ClipboardCopy size={14} />}
-              {copied ? 'Copied' : 'Copy turn JSON'}
+              {isCopied ? <CheckCircle2 size={14} /> : <ClipboardCopy size={14} />}
+              {isCopied ? 'Copied' : 'Copy turn JSON'}
             </button>
           </div>
 

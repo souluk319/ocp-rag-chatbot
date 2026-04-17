@@ -27,18 +27,18 @@ export default function ProductSurfaces() {
       // 3D Magnetic Mouse Tracking
       cardsRef.current.forEach(card => {
         if (!card) return;
-        
+
         card.addEventListener("mousemove", (e) => {
           const rect = card.getBoundingClientRect();
           const x = e.clientX - rect.left; // x position within the element
           const y = e.clientY - rect.top; // y position within the element
-          
+
           const centerX = rect.width / 2;
           const centerY = rect.height / 2;
-          
+
           const rotateX = ((y - centerY) / centerY) * -10; // max 10 deg
           const rotateY = ((x - centerX) / centerX) * 10;
-          
+
           gsap.to(card, {
             rotateX: rotateX,
             rotateY: rotateY,
@@ -46,7 +46,7 @@ export default function ProductSurfaces() {
             ease: "power2.out",
             duration: 0.5
           });
-          
+
           // Move the inner glow
           const glow = card.querySelector('.glow-orb') as HTMLElement;
           if (glow) {
@@ -59,7 +59,7 @@ export default function ProductSurfaces() {
             });
           }
         });
-        
+
         card.addEventListener("mouseleave", () => {
           gsap.to(card, {
             rotateX: 0,
@@ -67,7 +67,7 @@ export default function ProductSurfaces() {
             ease: "elastic.out(1, 0.3)",
             duration: 1.5
           });
-          
+
           const glow = card.querySelector('.glow-orb') as HTMLElement;
           if (glow) {
             gsap.to(glow, { opacity: 0, duration: 0.5 });
@@ -87,10 +87,10 @@ export default function ProductSurfaces() {
       </div>
 
       <div className="surfaces-grid">
-        
-        <Link 
-          to="/workspace" 
-          className="surface-card glass-panel" 
+
+        <Link
+          to="/studio"
+          className="surface-card glass-panel"
           ref={el => { cardsRef.current[0] = el; }}
         >
           <div className="glow-orb"></div>
@@ -98,14 +98,14 @@ export default function ProductSurfaces() {
             <div className="surface-icon">
               <MessageSquare size={48} color="var(--accent-cyan)" />
             </div>
-            <h3>Chat Workspace</h3>
-            <p>어디서 답을 찾았는지 추적 가능한 질의응답 창구</p>
+            <h3>Studio</h3>
+            <p>Playbot과 근거 문서를 함께 여는 운영 스튜디오</p>
           </div>
         </Link>
 
-        <Link 
-          to="/playbook-library" 
-          className="surface-card glass-panel" 
+        <Link
+          to="/playbook-library"
+          className="surface-card glass-panel"
           ref={el => { cardsRef.current[1] = el; }}
         >
           <div className="glow-orb"></div>
@@ -120,7 +120,7 @@ export default function ProductSurfaces() {
 
         <Link
           to="/playbook-library"
-          className="surface-card glass-panel" 
+          className="surface-card glass-panel"
           ref={el => { cardsRef.current[2] = el; }}
         >
           <div className="glow-orb"></div>

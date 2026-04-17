@@ -5,7 +5,12 @@ import os
 import tempfile
 import sys
 import unittest
+from contextlib import contextmanager
+from http import HTTPStatus
 from pathlib import Path
+from typing import Iterator
+from urllib.parse import urlencode
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = ROOT / "tests"
@@ -19,10 +24,51 @@ from _support_app_ui import (
     _serialize_citation,
     _viewer_path_to_local_html,
 )
-from play_book_studio.app.server_routes import _build_viewer_document_payload, _viewer_source_meta
+from play_book_studio.app.server_routes import (
+    _build_viewer_document_payload,
+    _canonicalize_viewer_path,
+    handle_source_meta,
+    handle_viewer_document,
+    _viewer_source_meta,
+)
 from play_book_studio.config.settings import load_settings
 
 class TestAppViewers(unittest.TestCase):
+    def _capture_json_response(self) -> object:
+        class _CaptureHandler:
+            def __init__(self) -> None:
+                self.calls: list[tuple[HTTPStatus, dict[str, object]]] = []
+
+            def _send_json(self, payload: dict[str, object], status: HTTPStatus = HTTPStatus.OK) -> None:
+                self.calls.append((status, payload))
+
+        return _CaptureHandler()
+
+    @contextmanager
+    def _workspace(self, *, env_text: str | None = None) -> Iterator[Path]:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            if env_text is not None:
+                (root / ".env").write_text(env_text, encoding="utf-8")
+            yield root
+
+    def _settings(self, root: Path):
+        return load_settings(root)
+
+    def _playbook_dir(self, root: Path) -> Path:
+        playbook_dir = self._settings(root).playbook_books_dir
+        playbook_dir.mkdir(parents=True, exist_ok=True)
+        return playbook_dir
+
+    @contextmanager
+    def _patched_env(self, *, removed: tuple[str, ...] = (), **updates: str) -> Iterator[None]:
+        patched_env = dict(os.environ)
+        for key in removed:
+            patched_env.pop(key, None)
+        patched_env.update(updates)
+        with patch.dict(os.environ, patched_env, clear=True):
+            yield
+
     def test_viewer_document_payload_preserves_body_and_normalizes_assets(self) -> None:
         payload = _build_viewer_document_payload(
             """
@@ -53,9 +99,8 @@ class TestAppViewers(unittest.TestCase):
         self.assertTrue(payload["interaction_policy"]["code_copy"])
 
     def test_viewer_source_meta_resolves_active_runtime_viewer_path(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            settings = load_settings(root)
+        with self._workspace() as root:
+            settings = self._settings(root)
 
             settings.source_manifest_path.parent.mkdir(parents=True, exist_ok=True)
             settings.source_manifest_path.write_text(
@@ -96,62 +141,387 @@ class TestAppViewers(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            payload = _viewer_source_meta(
-                root,
-                "/playbooks/wiki-runtime/active/support/index.html#contact-red-hat-support",
+            handler = self._capture_json_response()
+            handle_source_meta(
+                handler,
+                urlencode(
+                    {
+                        "viewer_path": "/playbooks/wiki-runtime/active/support/index.html#contact-red-hat-support",
+                    }
+                ),
+                root_dir=root,
             )
 
-        self.assertIsNotNone(payload)
-        assert payload is not None
+        self.assertEqual(1, len(handler.calls))
+        status, payload = handler.calls[0]
+        self.assertEqual(HTTPStatus.OK, status)
         self.assertEqual("support", payload["book_slug"])
         self.assertEqual("Get support", payload["section"])
+        self.assertEqual(["Support", "Get support"], payload["section_path"])
         self.assertEqual(
             "/playbooks/wiki-runtime/active/support/index.html#contact-red-hat-support",
             payload["viewer_path"],
         )
         self.assertEqual("official_validated_runtime", payload["boundary_truth"])
 
+    def test_viewer_source_meta_uses_registry_for_derived_docs_viewer_path(self) -> None:
+        with self._workspace(env_text="ARTIFACTS_DIR=artifacts\n") as root:
+            settings = self._settings(root)
+
+            settings.playbook_documents_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.playbook_documents_path.write_text(
+                json.dumps(
+                    {
+                        "book_slug": "backup_restore_operations",
+                        "title": "Backup Restore Operations",
+                        "source_uri": "https://example.com/backup_restore_operations",
+                        "review_status": "approved",
+                        "section_count": 3,
+                        "source_metadata": {
+                            "source_type": "operation_playbook",
+                            "source_lane": "applied_playbook",
+                            "approval_state": "approved",
+                            "publication_state": "published",
+                        },
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            handler = self._capture_json_response()
+            handle_source_meta(
+                handler,
+                urlencode(
+                    {
+                        "viewer_path": "/docs/ocp/4.20/ko/backup_restore_operations/index.html",
+                    }
+                ),
+                root_dir=root,
+            )
+
+        self.assertEqual(1, len(handler.calls))
+        status, payload = handler.calls[0]
+        self.assertEqual(HTTPStatus.OK, status)
+        self.assertEqual("backup_restore_operations", payload["book_slug"])
+        self.assertEqual("Backup Restore Operations", payload["book_title"])
+        self.assertEqual("applied_playbook", payload["source_lane"])
+        self.assertEqual("official_validated_runtime", payload["boundary_truth"])
+        self.assertEqual(
+            "/docs/ocp/4.20/ko/backup_restore_operations/index.html",
+            payload["viewer_path"],
+        )
+
+    def test_viewer_document_route_falls_back_to_normalized_sections_for_known_book(self) -> None:
+        with self._workspace() as root:
+            settings = self._settings(root)
+
+            settings.source_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.source_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "entries": [
+                            {
+                                "book_slug": "distributed_tracing",
+                                "title": "Distributed Tracing",
+                                "source_url": "https://example.com/distributed-tracing",
+                                "source_lane": "approved_wiki_runtime",
+                                "approval_state": "approved",
+                                "publication_state": "active",
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            settings.normalized_docs_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.normalized_docs_path.write_text(
+                "\n".join(
+                    [
+                        json.dumps(
+                            {
+                                "book_slug": "distributed_tracing",
+                                "book_title": "Distributed Tracing",
+                                "heading": "Overview",
+                                "section_path": ["Distributed Tracing", "Overview"],
+                                "anchor": "overview",
+                                "viewer_path": "/docs/ocp/4.20/ko/distributed_tracing/index.html#overview",
+                                "source_url": "https://example.com/distributed-tracing",
+                                "text": "Distributed tracing overview.",
+                            },
+                            ensure_ascii=False,
+                        ),
+                        json.dumps(
+                            {
+                                "book_slug": "distributed_tracing",
+                                "book_title": "Distributed Tracing",
+                                "heading": "Configuration",
+                                "section_path": ["Distributed Tracing", "Configuration"],
+                                "anchor": "configuration",
+                                "viewer_path": "/docs/ocp/4.20/ko/distributed_tracing/index.html#configuration",
+                                "source_url": "https://example.com/distributed-tracing",
+                                "text": "Configure the collector.",
+                            },
+                            ensure_ascii=False,
+                        ),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            handler = self._capture_json_response()
+            handle_viewer_document(
+                handler,
+                urlencode(
+                    {
+                        "viewer_path": "/docs/ocp/4.20/ko/distributed_tracing/index.html",
+                    }
+                ),
+                root_dir=root,
+            )
+
+        self.assertEqual(1, len(handler.calls))
+        status, payload = handler.calls[0]
+        self.assertEqual(HTTPStatus.OK, status)
+        self.assertEqual(
+            "/docs/ocp/4.20/ko/distributed_tracing/index.html",
+            payload["viewer_path"],
+        )
+        self.assertIn("Distributed Tracing", payload["html"])
+        self.assertIn('id="overview"', payload["html"])
+        self.assertIn('id="configuration"', payload["html"])
+
+    def test_canonicalize_viewer_path_adds_index_for_short_known_paths(self) -> None:
+        self.assertEqual(
+            "/playbooks/wiki-runtime/active/support/index.html#contact-red-hat-support",
+            _canonicalize_viewer_path("/playbooks/wiki-runtime/active/support#contact-red-hat-support"),
+        )
+        self.assertEqual(
+            "/wiki/entities/etcd/index.html",
+            _canonicalize_viewer_path("/wiki/entities/etcd"),
+        )
+        self.assertEqual(
+            "/wiki/figures/overview/oke-about-ocp-stack-image.png/index.html",
+            _canonicalize_viewer_path("/wiki/figures/overview/oke-about-ocp-stack-image.png"),
+        )
+
+    def test_viewer_source_meta_route_supports_entity_and_figure_paths(self) -> None:
+        cases = [
+            (
+                "/wiki/entities/etcd/index.html",
+                {
+                    "book_slug": "etcd",
+                    "book_title": "Etcd",
+                    "section": "Etcd",
+                    "section_path": ["Etcd"],
+                    "viewer_path": "/wiki/entities/etcd/index.html",
+                    "source_url": "",
+                    "boundary_truth": "official_validated_runtime",
+                    "runtime_truth_label": "Validated Runtime Entity Hub",
+                },
+            ),
+            (
+                "/wiki/figures/overview/oke-about-ocp-stack-image.png/index.html",
+                {
+                    "book_slug": "overview",
+                    "book_title": "Red Hat OpenShift Kubernetes Engine",
+                    "anchor": "oke-about-ocp-stack-image.png",
+                    "section": "Red Hat OpenShift Kubernetes Engine",
+                    "section_path": [
+                        "2.1. OpenShift Container Platform 이해",
+                        "Red Hat OpenShift Kubernetes Engine",
+                    ],
+                    "viewer_path": "/wiki/figures/overview/oke-about-ocp-stack-image.png/index.html",
+                    "source_url": "/playbooks/wiki-assets/full_rebuild/overview/oke-about-ocp-stack-image.png",
+                    "boundary_truth": "official_validated_runtime",
+                    "runtime_truth_label": "Validated Runtime Figure",
+                },
+            ),
+            (
+                "/wiki/entities/etcd",
+                {
+                    "book_slug": "etcd",
+                    "book_title": "Etcd",
+                    "section": "Etcd",
+                    "section_path": ["Etcd"],
+                    "viewer_path": "/wiki/entities/etcd/index.html",
+                    "source_url": "",
+                    "boundary_truth": "official_validated_runtime",
+                    "runtime_truth_label": "Validated Runtime Entity Hub",
+                },
+            ),
+            (
+                "/wiki/figures/overview/oke-about-ocp-stack-image.png",
+                {
+                    "book_slug": "overview",
+                    "book_title": "Red Hat OpenShift Kubernetes Engine",
+                    "anchor": "oke-about-ocp-stack-image.png",
+                    "section": "Red Hat OpenShift Kubernetes Engine",
+                    "section_path": [
+                        "2.1. OpenShift Container Platform 이해",
+                        "Red Hat OpenShift Kubernetes Engine",
+                    ],
+                    "viewer_path": "/wiki/figures/overview/oke-about-ocp-stack-image.png/index.html",
+                    "source_url": "/playbooks/wiki-assets/full_rebuild/overview/oke-about-ocp-stack-image.png",
+                    "boundary_truth": "official_validated_runtime",
+                    "runtime_truth_label": "Validated Runtime Figure",
+                },
+            ),
+        ]
+
+        for viewer_path, expected in cases:
+            with self.subTest(viewer_path=viewer_path):
+                handler = self._capture_json_response()
+                handle_source_meta(handler, urlencode({"viewer_path": viewer_path}), root_dir=ROOT)
+
+                self.assertEqual(1, len(handler.calls))
+                status, payload = handler.calls[0]
+                self.assertEqual(HTTPStatus.OK, status)
+                for key, value in expected.items():
+                    self.assertEqual(value, payload[key], key)
+                self.assertTrue(payload["section_match_exact"])
+                self.assertEqual("approved_wiki_runtime", payload["source_lane"])
+                self.assertEqual("approved", payload["approval_state"])
+                self.assertEqual("active", payload["publication_state"])
+                self.assertEqual("", payload["parser_backend"])
+                self.assertEqual("Validated Runtime", payload["boundary_badge"])
+
+    def test_viewer_document_route_supports_entity_and_figure_paths(self) -> None:
+        cases = [
+            (
+                "/wiki/entities/etcd/index.html",
+                "/wiki/entities/etcd/index.html",
+                [
+                    'class="wiki-parent-card"',
+                    'class="wiki-parent-eyebrow"',
+                    'href="/playbooks/wiki-runtime/active/backup_and_restore/index.html"',
+                ],
+            ),
+            (
+                "/wiki/figures/overview/oke-about-ocp-stack-image.png/index.html",
+                "/wiki/figures/overview/oke-about-ocp-stack-image.png/index.html",
+                [
+                    'class="figure-block"',
+                    '<figcaption>Red Hat OpenShift Kubernetes Engine</figcaption>',
+                    'src="/playbooks/wiki-assets/full_rebuild/overview/oke-about-ocp-stack-image.png"',
+                    'href="/wiki/figures/overview/oke-about-ocp-stack-image.png/index.html"',
+                ],
+            ),
+            (
+                "/wiki/entities/etcd",
+                "/wiki/entities/etcd/index.html",
+                [
+                    'class="wiki-parent-card"',
+                    'class="wiki-parent-eyebrow"',
+                    'href="/playbooks/wiki-runtime/active/backup_and_restore/index.html"',
+                ],
+            ),
+            (
+                "/wiki/figures/overview/oke-about-ocp-stack-image.png",
+                "/wiki/figures/overview/oke-about-ocp-stack-image.png/index.html",
+                [
+                    'class="figure-block"',
+                    '<figcaption>Red Hat OpenShift Kubernetes Engine</figcaption>',
+                    'src="/playbooks/wiki-assets/full_rebuild/overview/oke-about-ocp-stack-image.png"',
+                    'href="/wiki/figures/overview/oke-about-ocp-stack-image.png/index.html"',
+                ],
+            ),
+        ]
+
+        for viewer_path, expected_viewer_path, markers in cases:
+            with self.subTest(viewer_path=viewer_path):
+                handler = self._capture_json_response()
+                handle_viewer_document(handler, urlencode({"viewer_path": viewer_path}), root_dir=ROOT)
+
+                self.assertEqual(1, len(handler.calls))
+                status, payload = handler.calls[0]
+                self.assertEqual(HTTPStatus.OK, status)
+                self.assertEqual(expected_viewer_path, payload["viewer_path"])
+                self.assertIn("html", payload)
+                html = str(payload["html"])
+                for marker in markers:
+                    self.assertIn(marker, html)
+                self.assertTrue(payload["interaction_policy"]["anchor_navigation"])
+
+    def test_viewer_document_route_falls_back_to_runtime_markdown_when_artifacts_are_missing(self) -> None:
+        with self._workspace() as root:
+            runtime_dir = root / "data" / "wiki_runtime_books" / "full_rebuild"
+            runtime_dir.mkdir(parents=True, exist_ok=True)
+            markdown_path = runtime_dir / "monitoring.md"
+            markdown_path.write_text(
+                (ROOT / "data" / "wiki_runtime_books" / "full_rebuild" / "monitoring.md").read_text(
+                    encoding="utf-8"
+                ),
+                encoding="utf-8",
+            )
+
+            manifest_path = root / "data" / "wiki_runtime_books" / "full_rebuild_manifest.json"
+            manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            manifest_path.write_text(
+                json.dumps(
+                    {
+                        "entries": [
+                            {
+                                "slug": "monitoring",
+                                "title": "Monitoring",
+                                "runtime_path": str(markdown_path),
+                                "promotion_strategy": "full_rebuild_generic_export",
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            cases = [
+                "/docs/ocp/4.20/ko/monitoring/index.html",
+                "/playbooks/wiki-runtime/active/monitoring/index.html",
+            ]
+
+            for viewer_path in cases:
+                with self.subTest(viewer_path=viewer_path):
+                    handler = self._capture_json_response()
+                    handle_viewer_document(handler, urlencode({"viewer_path": viewer_path}), root_dir=root)
+
+                    self.assertEqual(1, len(handler.calls))
+                    status, payload = handler.calls[0]
+                    self.assertEqual(HTTPStatus.OK, status)
+                    self.assertEqual(viewer_path, payload["viewer_path"])
+                    html = str(payload["html"])
+                    self.assertIn("Configuring and using the monitoring stack in OpenShift Container Platform", html)
+                    self.assertIn("OpenShift Container Platform includes a preconfigured", html)
+
     def test_viewer_path_local_raw_html_fallback_is_disabled(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
+        with self._workspace() as root:
             raw_html_dir = root / "custom_raw_html"
             raw_html_dir.mkdir(parents=True)
             expected = raw_html_dir / "architecture.html"
             expected.write_text("<html><body>ok</body></html>", encoding="utf-8")
 
-            old_artifacts = os.environ.get("ARTIFACTS_DIR")
-            old_raw = os.environ.get("RAW_HTML_DIR")
-            try:
-                os.environ.pop("ARTIFACTS_DIR", None)
-                os.environ["RAW_HTML_DIR"] = str(raw_html_dir)
+            with self._patched_env(removed=("ARTIFACTS_DIR",), RAW_HTML_DIR=str(raw_html_dir)):
                 target = _viewer_path_to_local_html(
                     root,
                     "/docs/ocp/4.20/ko/architecture/index.html#overview",
                 )
-            finally:
-                if old_artifacts is None:
-                    os.environ.pop("ARTIFACTS_DIR", None)
-                else:
-                    os.environ["ARTIFACTS_DIR"] = old_artifacts
-                if old_raw is None:
-                    os.environ.pop("RAW_HTML_DIR", None)
-                else:
-                    os.environ["RAW_HTML_DIR"] = old_raw
 
         self.assertIsNone(target)
 
     def test_viewer_path_local_raw_html_fallback_is_disabled_for_other_versions(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
+        with self._workspace(
+            env_text=(
+                "RAW_HTML_DIR=custom_raw_html\n"
+                "OCP_VERSION=4.18\n"
+            )
+        ) as root:
             raw_html_dir = root / "custom_raw_html"
             raw_html_dir.mkdir(parents=True)
             expected = raw_html_dir / "architecture.html"
             expected.write_text("<html><body>ok</body></html>", encoding="utf-8")
-            (root / ".env").write_text(
-                "RAW_HTML_DIR=custom_raw_html\n"
-                "OCP_VERSION=4.18\n",
-                encoding="utf-8",
-            )
 
             target = _viewer_path_to_local_html(
                 root,
@@ -161,9 +531,8 @@ class TestAppViewers(unittest.TestCase):
         self.assertIsNone(target)
 
     def test_serialize_citation_enriches_source_labels(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            settings = load_settings(root)
+        with self._workspace() as root:
+            settings = self._settings(root)
             manifest_path = settings.source_manifest_path
             manifest_path.parent.mkdir(parents=True, exist_ok=True)
             manifest_path.write_text(
@@ -203,27 +572,10 @@ class TestAppViewers(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            old_artifacts = os.environ.get("ARTIFACTS_DIR")
-            old_raw = os.environ.get("RAW_HTML_DIR")
-            old_manifest = os.environ.get("SOURCE_MANIFEST_PATH")
-            try:
-                os.environ.pop("ARTIFACTS_DIR", None)
-                os.environ.pop("RAW_HTML_DIR", None)
-                os.environ.pop("SOURCE_MANIFEST_PATH", None)
+            with self._patched_env(
+                removed=("ARTIFACTS_DIR", "RAW_HTML_DIR", "SOURCE_MANIFEST_PATH"),
+            ):
                 payload = _serialize_citation(root, _citation(1))
-            finally:
-                if old_artifacts is None:
-                    os.environ.pop("ARTIFACTS_DIR", None)
-                else:
-                    os.environ["ARTIFACTS_DIR"] = old_artifacts
-                if old_raw is None:
-                    os.environ.pop("RAW_HTML_DIR", None)
-                else:
-                    os.environ["RAW_HTML_DIR"] = old_raw
-                if old_manifest is None:
-                    os.environ.pop("SOURCE_MANIFEST_PATH", None)
-                else:
-                    os.environ["SOURCE_MANIFEST_PATH"] = old_manifest
 
         self.assertEqual("아키텍처", payload["book_title"])
         self.assertEqual(["개요", "컨트롤 플레인"], payload["section_path"])
@@ -237,9 +589,8 @@ class TestAppViewers(unittest.TestCase):
         self.assertTrue(payload["section_match_exact"])
 
     def test_serialize_citation_strips_heading_number_prefix_from_source_labels(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            settings = load_settings(root)
+        with self._workspace() as root:
+            settings = self._settings(root)
             manifest_path = settings.source_manifest_path
             manifest_path.parent.mkdir(parents=True, exist_ok=True)
             manifest_path.write_text(
@@ -316,9 +667,8 @@ class TestAppViewers(unittest.TestCase):
         )
 
     def test_serialize_citation_marks_section_fallback_when_anchor_missing(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            settings = load_settings(root)
+        with self._workspace() as root:
+            settings = self._settings(root)
             manifest_path = settings.source_manifest_path
             manifest_path.parent.mkdir(parents=True, exist_ok=True)
             manifest_path.write_text(
@@ -374,10 +724,9 @@ class TestAppViewers(unittest.TestCase):
 
         self.assertFalse(payload["section_match_exact"])
 
-    def test_internal_viewer_html_requires_playbook_artifact(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            settings = load_settings(root)
+    def test_internal_viewer_html_falls_back_to_normalized_sections_without_playbook_artifact(self) -> None:
+        with self._workspace() as root:
+            settings = self._settings(root)
             normalized_docs_path = settings.normalized_docs_path
             normalized_docs_path.parent.mkdir(parents=True, exist_ok=True)
             normalized_docs_path.write_text(
@@ -417,32 +766,22 @@ class TestAppViewers(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            old_artifacts = os.environ.get("ARTIFACTS_DIR")
-            old_raw = os.environ.get("RAW_HTML_DIR")
-            try:
-                os.environ.pop("ARTIFACTS_DIR", None)
-                os.environ.pop("RAW_HTML_DIR", None)
+            with self._patched_env(removed=("ARTIFACTS_DIR", "RAW_HTML_DIR")):
                 html = _internal_viewer_html(
                     root,
                     "/docs/ocp/4.20/ko/architecture/index.html#overview",
                 )
-            finally:
-                if old_artifacts is None:
-                    os.environ.pop("ARTIFACTS_DIR", None)
-                else:
-                    os.environ["ARTIFACTS_DIR"] = old_artifacts
-                if old_raw is None:
-                    os.environ.pop("RAW_HTML_DIR", None)
-                else:
-                    os.environ["RAW_HTML_DIR"] = old_raw
 
-        self.assertIsNone(html)
+        self.assertIsNotNone(html)
+        assert html is not None
+        self.assertIn("아키텍처", html)
+        self.assertIn('id="overview"', html)
+        self.assertIn('id="control-plane"', html)
+        self.assertIn("oc get nodes", html)
 
     def test_internal_viewer_html_prefers_playbook_artifact_when_available(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            playbook_dir = load_settings(root).playbook_books_dir
-            playbook_dir.mkdir(parents=True, exist_ok=True)
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
             (playbook_dir / "architecture.json").write_text(
                 json.dumps(
                     {
@@ -502,10 +841,8 @@ class TestAppViewers(unittest.TestCase):
         self.assertIn('class="code-block overflow-toggle is-wrapped"', html)
 
     def test_internal_viewer_html_renders_topic_playbook_chrome(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            playbook_dir = load_settings(root).playbook_books_dir
-            playbook_dir.mkdir(parents=True, exist_ok=True)
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
             (playbook_dir / "backup_restore_control_plane.json").write_text(
                 json.dumps(
                     {
@@ -554,11 +891,60 @@ class TestAppViewers(unittest.TestCase):
         self.assertIn("Topic Playbook", html)
         self.assertIn("백업과 quorum 복원 절차만 추린 토픽 플레이북입니다.", html)
 
+    def test_internal_viewer_html_renders_operation_playbook_chrome(self) -> None:
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
+            (playbook_dir / "backup_restore_operations.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "playbook_document_v1",
+                        "source_view_strategy": "playbook_ast_v1",
+                        "book_slug": "backup_restore_operations",
+                        "title": "컨트롤 플레인 백업 운영 플레이북",
+                        "source_uri": "https://example.com/backup-ops",
+                        "topic_summary": "백업 실행, 결과 검증, 보관 원칙만 추린 운영 절차본입니다.",
+                        "source_metadata": {
+                            "source_type": "operation_playbook",
+                            "derived_from_title": "Backup and restore",
+                        },
+                        "sections": [
+                            {
+                                "section_id": "backup_restore_operations:overview",
+                                "section_key": "backup_restore_operations:overview",
+                                "ordinal": 1,
+                                "heading": "개요",
+                                "level": 1,
+                                "path": ["개요"],
+                                "section_path": ["개요"],
+                                "section_path_label": "개요",
+                                "anchor": "overview",
+                                "viewer_path": "/docs/ocp/4.20/ko/backup_restore_operations/index.html#overview",
+                                "semantic_role": "overview",
+                                "block_kinds": ["paragraph"],
+                                "blocks": [
+                                    {"kind": "paragraph", "text": "운영 절차 요약"},
+                                ],
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ) + "\n",
+                encoding="utf-8",
+            )
+
+            html = _internal_viewer_html(
+                root,
+                "/docs/ocp/4.20/ko/backup_restore_operations/index.html#overview",
+            )
+
+        self.assertIsNotNone(html)
+        assert html is not None
+        self.assertIn("Operation Playbook", html)
+        self.assertIn("백업 실행, 결과 검증, 보관 원칙만 추린 운영 절차본입니다.", html)
+
     def test_internal_viewer_html_embed_mode_omits_nested_hero(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            playbook_dir = load_settings(root).playbook_books_dir
-            playbook_dir.mkdir(parents=True, exist_ok=True)
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
             (playbook_dir / "architecture.json").write_text(
                 json.dumps(
                     {
@@ -607,15 +993,13 @@ class TestAppViewers(unittest.TestCase):
         self.assertIn("공식 매뉴얼 원문", html)
         self.assertIn('class="embedded-origin-link"', html)
         self.assertIn("임베드 본문만 보여야 합니다.", html)
-        self.assertIn("--bg: #f3f5f7;", html)
-        self.assertIn("background: linear-gradient(180deg, #f8f9fb 0%, #f1f3f5 100%);", html)
+        self.assertIn("--bg:", html)
+        self.assertIn("body.is-embedded {", html)
         self.assertNotIn("--bg: #f5f1e8;", html)
 
     def test_internal_viewer_html_renders_table_headers_and_code_caption(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            playbook_dir = load_settings(root).playbook_books_dir
-            playbook_dir.mkdir(parents=True, exist_ok=True)
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
             (playbook_dir / "nodes.json").write_text(
                 json.dumps(
                     {
@@ -681,10 +1065,8 @@ class TestAppViewers(unittest.TestCase):
         self.assertIn("<thead><tr><th>이름</th><th>역할</th></tr></thead>", html)
 
     def test_internal_viewer_html_exposes_quick_navigation_and_metrics(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            playbook_dir = load_settings(root).playbook_books_dir
-            playbook_dir.mkdir(parents=True, exist_ok=True)
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
             (playbook_dir / "operations.json").write_text(
                 json.dumps(
                     {
@@ -740,10 +1122,8 @@ class TestAppViewers(unittest.TestCase):
         self.assertIn(">절차 1<", html)
 
     def test_internal_viewer_html_splits_inline_command_paragraph_into_code_box(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            playbook_dir = load_settings(root).playbook_books_dir
-            playbook_dir.mkdir(parents=True, exist_ok=True)
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
             (playbook_dir / "installation_overview.json").write_text(
                 json.dumps(
                     {
@@ -797,10 +1177,8 @@ class TestAppViewers(unittest.TestCase):
         self.assertIn("toggleViewerCodeWrap", html)
 
     def test_internal_viewer_html_renders_procedure_step_command_as_code_box(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            playbook_dir = load_settings(root).playbook_books_dir
-            playbook_dir.mkdir(parents=True, exist_ok=True)
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
             (playbook_dir / "etcd.json").write_text(
                 json.dumps(
                     {
@@ -860,10 +1238,8 @@ class TestAppViewers(unittest.TestCase):
         self.assertIn("copyViewerCode", html)
 
     def test_internal_viewer_html_keeps_ascii_grid_output_unwrapped(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            playbook_dir = load_settings(root).playbook_books_dir
-            playbook_dir.mkdir(parents=True, exist_ok=True)
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
             (playbook_dir / "support.json").write_text(
                 json.dumps(
                     {
@@ -921,10 +1297,8 @@ class TestAppViewers(unittest.TestCase):
         self.assertNotIn('class="code-block preserve-layout overflow-toggle is-wrapped"', html)
 
     def test_internal_viewer_html_preserves_raw_html_tables(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            playbook_dir = load_settings(root).playbook_books_dir
-            playbook_dir.mkdir(parents=True, exist_ok=True)
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
             (playbook_dir / "matrix.json").write_text(
                 json.dumps(
                     {
@@ -970,10 +1344,8 @@ class TestAppViewers(unittest.TestCase):
         self.assertIn("<td>A</td><td>B</td>", html)
 
     def test_internal_viewer_html_renders_structured_table_cells(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            playbook_dir = load_settings(root).playbook_books_dir
-            playbook_dir.mkdir(parents=True, exist_ok=True)
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
             (playbook_dir / "compatibility.json").write_text(
                 json.dumps(
                     {
@@ -1031,10 +1403,8 @@ class TestAppViewers(unittest.TestCase):
         self.assertIn(">버전 호환성<", html)
 
     def test_internal_viewer_html_renders_figure_metadata_strip(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            playbook_dir = load_settings(root).playbook_books_dir
-            playbook_dir.mkdir(parents=True, exist_ok=True)
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
             (playbook_dir / "networking.json").write_text(
                 json.dumps(
                     {
@@ -1085,10 +1455,8 @@ class TestAppViewers(unittest.TestCase):
         self.assertIn('class="section-card section-level-3', html)
 
     def test_internal_viewer_html_strips_heading_number_prefix_from_visible_title(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            playbook_dir = load_settings(root).playbook_books_dir
-            playbook_dir.mkdir(parents=True, exist_ok=True)
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
             (playbook_dir / "cli_reference.json").write_text(
                 json.dumps(
                     {

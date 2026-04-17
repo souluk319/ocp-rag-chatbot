@@ -1,0 +1,39 @@
+{
+  "task_id": "wiki_runtime_completion_20260417",
+  "lane_id": "main",
+  "role": "main",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "src/play_book_studio/app/*",
+    "presentation-ui/src/*",
+    "tests/*",
+    "reports/execution_harness/wiki_runtime_completion_20260417/*"
+  ],
+  "target_outputs": [
+    "entity/figure viewer path contract fixed",
+    "workspace viewer path flow aligned",
+    "five-document smoke evidence"
+  ],
+  "validation_commands": [
+    ".venv\\Scripts\\python.exe -m pytest tests\\test_app_runtime_ui.py tests\\test_app_viewers.py -q",
+    "npm --prefix presentation-ui run build",
+    "http smoke: /api/source-meta, /api/viewer-document, /api/health"
+  ],
+  "major_task": true,
+  "parallel_execution_required": true,
+  "companion_lanes": [
+    {
+      "lane_id": "explorer",
+      "role": "explorer",
+      "focus": "entity/figure path contract and frontend viewer path flow"
+    },
+    {
+      "lane_id": "reviewer",
+      "role": "reviewer",
+      "focus": "runtime smoke verification and residual regressions"
+    }
+  ],
+  "status": "in_progress"
+}

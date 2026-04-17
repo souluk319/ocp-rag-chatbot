@@ -1,0 +1,31 @@
+{
+  "task_id": "repo_bloat_cleanup_20260417",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": false,
+  "parallel_execution_required": false,
+  "companion_lane_plan": [],
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": ".\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    ".gitignore",
+    "src/**",
+    "presentation-ui/src/**",
+    "tests/**",
+    "scripts/**",
+    "reports/execution_harness/repo_bloat_cleanup_20260417/main/*"
+  ],
+  "target_outputs": [
+    "repo bloat inventory",
+    "safe dead-code and dead-test cleanup",
+    "post-clean validation evidence"
+  ],
+  "validation_commands": [
+    "npm --prefix presentation-ui run lint",
+    "npm --prefix presentation-ui run build",
+    "npm --prefix presentation-ui run test",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_app_viewers.py tests/test_app_data_control_room.py tests/test_runtime_catalog_registry.py -q"
+  ],
+  "status": "completed"
+}

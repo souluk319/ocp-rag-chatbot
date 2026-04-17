@@ -1,0 +1,34 @@
+{
+  "task_id": "active_runtime_truth_unification_20260417",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": true,
+  "parallel_execution_required": true,
+  "companion_lane_plan": [
+    "explorer",
+    "worker"
+  ],
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": ".\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "src/play_book_studio/runtime_catalog_registry.py",
+    "src/play_book_studio/app/source_books.py",
+    "src/play_book_studio/app/data_control_room.py",
+    "scripts/materialize_active_runtime_viewers.py",
+    "tests/test_app_viewers.py",
+    "tests/test_app_data_control_room.py",
+    "tests/test_runtime_catalog_registry.py",
+    "reports/execution_harness/active_runtime_truth_unification_20260417/main/*"
+  ],
+  "target_outputs": [
+    "shared official runtime registry",
+    "viewer/control-room unified runtime truth",
+    "served viewer materialization aligned to shared runtime registry"
+  ],
+  "validation_commands": [
+    ".\\.venv\\Scripts\\python.exe -m pytest tests/test_runtime_catalog_registry.py tests/test_app_viewers.py tests/test_app_data_control_room.py -q",
+    ".\\.venv\\Scripts\\python.exe scripts/materialize_active_runtime_viewers.py"
+  ],
+  "status": "done"
+}

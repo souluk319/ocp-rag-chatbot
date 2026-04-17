@@ -28,9 +28,32 @@ class _FakeAnswerer:
 
 
 class CliUiWarmupTests(unittest.TestCase):
-    def test_run_ui_warms_reranker_before_serve(self) -> None:
+    def test_run_ui_skips_reranker_warmup_by_default(self) -> None:
         fake_answerer = _FakeAnswerer(_FakeReranker())
-        args = argparse.Namespace(host="127.0.0.1", port=8765, no_browser=True)
+        args = argparse.Namespace(
+            host="127.0.0.1",
+            port=8765,
+            no_browser=True,
+            warmup_reranker=False,
+        )
+
+        with patch("play_book_studio.cli._build_answerer", return_value=fake_answerer), patch(
+            "play_book_studio.cli.serve"
+        ) as serve_mock:
+            exit_code = cli._run_ui(args)
+
+        self.assertEqual(0, exit_code)
+        self.assertEqual(0, fake_answerer.retriever.reranker.warmup_calls)
+        serve_mock.assert_called_once()
+
+    def test_run_ui_warms_reranker_when_requested(self) -> None:
+        fake_answerer = _FakeAnswerer(_FakeReranker())
+        args = argparse.Namespace(
+            host="127.0.0.1",
+            port=8765,
+            no_browser=True,
+            warmup_reranker=True,
+        )
 
         with patch("play_book_studio.cli._build_answerer", return_value=fake_answerer), patch(
             "play_book_studio.cli.serve"
@@ -49,7 +72,12 @@ class CliUiWarmupTests(unittest.TestCase):
 
     def test_run_ui_continues_when_reranker_warmup_fails(self) -> None:
         fake_answerer = _FakeAnswerer(_FakeReranker(should_raise=True))
-        args = argparse.Namespace(host="127.0.0.1", port=8765, no_browser=True)
+        args = argparse.Namespace(
+            host="127.0.0.1",
+            port=8765,
+            no_browser=True,
+            warmup_reranker=True,
+        )
 
         with patch("play_book_studio.cli._build_answerer", return_value=fake_answerer), patch(
             "play_book_studio.cli.serve"

@@ -1,4 +1,4 @@
-"""playbook viewer / customer-pack helper."""
+"""playbook viewer helper."""
 
 from __future__ import annotations
 
@@ -10,10 +10,43 @@ from urllib.parse import urlparse
 import html
 
 from play_book_studio.config.settings import load_settings
-from play_book_studio.intake import CustomerPackDraftStore
-from play_book_studio.intake.service import evaluate_canonical_book_quality
 
-from .presenters import _default_customer_pack_summary
+from .presenters import (
+    _load_normalized_sections,
+    _manifest_entry_for_book,
+)
+from .source_books_customer_pack import (
+    internal_customer_pack_viewer_html,
+    list_customer_pack_drafts,
+    load_customer_pack_book,
+    parse_customer_pack_viewer_path,
+)
+from .source_books_wiki_relations import (
+    _active_runtime_markdown_path,
+    _book_related_sections,
+    _build_backlinks,
+    _build_entity_backlinks,
+    _candidate_relations,
+    _chat_link_truth_payload,
+    _chat_navigation_aliases,
+    _contains_hangul,
+    _entity_hub_sections,
+    _entity_hubs,
+    _entity_related_sections,
+    _figure_asset_by_name,
+    _figure_asset_filename,
+    _figure_assets,
+    _figure_entity_index,
+    _figure_section_match,
+    _figure_viewer_href,
+    _figure_viewer_sections,
+    _is_final_runtime_href,
+    _link_book_slug,
+    _preferred_book_href,
+    _prefer_korean_book_links,
+    _rewrite_book_href,
+    _wiki_relation_items,
+)
 from .viewer_page import _render_page_overlay_toolbar
 from .viewers import (
     _build_section_metrics,
@@ -23,962 +56,17 @@ from .viewers import (
     _render_study_viewer_html,
 )
 from .wiki_user_overlay import build_wiki_overlay_signal_payload
-from .wiki_relations import load_wiki_relation_assets
 
 
 GOLD_CANDIDATE_BOOK_PREFIX = "/playbooks/gold-candidates/wave1"
 ACTIVE_WIKI_RUNTIME_BOOK_PREFIX = "/playbooks/wiki-runtime/active"
 LEGACY_WIKI_RUNTIME_BOOK_PREFIX = "/playbooks/wiki-runtime/wave1"
 MARKDOWN_VIEWER_PATH_RE = re.compile(r"^/playbooks/gold-candidates/wave1/([^/]+)/index\.html$")
-ACTIVE_RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE = re.compile(r"^/playbooks/wiki-runtime/active/([^/]+)/index\.html$")
+ACTIVE_RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE = re.compile(r"^/playbooks/wiki-runtime/active/([^/]+)(?:/index\.html)?$")
 RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE = re.compile(r"^/playbooks/wiki-runtime/([^/]+)/([^/]+)/index\.html$")
-ENTITY_HUB_VIEWER_PATH_RE = re.compile(r"^/wiki/entities/([^/]+)/index\.html$")
-FIGURE_VIEWER_PATH_RE = re.compile(r"^/wiki/figures/([^/]+)/([^/]+)/index\.html$")
+ENTITY_HUB_VIEWER_PATH_RE = re.compile(r"^/wiki/entities/([^/]+)(?:/index\.html)?$")
+FIGURE_VIEWER_PATH_RE = re.compile(r"^/wiki/figures/([^/]+)/([^/]+)(?:/index\.html)?$")
 BUYER_PACKET_VIEWER_PATH_RE = re.compile(r"^/buyer-packets/([^/]+)$")
-
-DEFAULT_ENTITY_HUBS: dict[str, dict[str, Any]] = {
-    "etcd": {
-        "title": "etcd",
-        "eyebrow": "Entity Hub",
-        "summary": "OpenShift control plane 상태를 보존하는 핵심 key-value store다. 백업, 수동 복구, quorum 이상, static pod health와 직접 연결된다.",
-        "overview": [
-            "etcd 는 control plane 의 사실상 상태 저장소다.",
-            "운영 관점에서는 백업, 수동 복구, member health, snapshot 검증, static pod 상태를 함께 본다.",
-            "이 허브는 관련 운영 북, 장애 대응 경로, 후속 읽기 경로를 하나로 묶는다.",
-        ],
-        "related_books": [
-            {
-                "label": "Backup and Restore",
-                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-                "summary": "etcd 백업, 수동 복구, 복구 후 검증의 기준 문서다.",
-            },
-            {
-                "label": "Machine Configuration",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-                "summary": "복구 이후 node 와 MCO 상태가 정상으로 수렴하는지 확인할 때 이어진다.",
-            },
-            {
-                "label": "Monitoring Troubleshooting",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "복구 후 cluster signal 과 operator 이상 징후를 추적할 때 이어진다.",
-            },
-        ],
-        "next_reading_path": [
-            {
-                "label": "1. 백업 및 복구 절차 확인",
-                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-                "summary": "etcd 를 실제로 다룰 때 가장 먼저 봐야 하는 운영 경로다.",
-            },
-            {
-                "label": "2. node / MCO 안정화 점검",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-                "summary": "복구 이후 control plane node 구성과 rollout 상태를 확인한다.",
-            },
-            {
-                "label": "3. 관측 신호 추적",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "alert, metrics, operator degraded 신호로 후속 이상을 추적한다.",
-            },
-        ],
-    },
-    "machine-config-operator": {
-        "title": "Machine Config Operator",
-        "eyebrow": "Entity Hub",
-        "summary": "노드 설정, MCP rollout, 재부팅, kubelet 구성 반영을 조율하는 핵심 운영 컴포넌트다.",
-        "overview": [
-            "Machine Config Operator 는 node 설정 변경을 클러스터 전체에 안전하게 반영하는 control loop 다.",
-            "운영 관점에서는 MCP 상태, degraded 원인, paused 여부, node rollout, reboot 흐름을 함께 본다.",
-            "이 허브는 구성 변경, 설치 직후 안정화, monitoring 연계 추적을 한 곳에 묶는다.",
-        ],
-        "related_books": [
-            {
-                "label": "Machine Configuration",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-                "summary": "MCO, MCP, node rollout, verify 절차의 기준 문서다.",
-            },
-            {
-                "label": "Installing on Any Platform",
-                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-                "summary": "설치 직후 MCO 수렴과 bootstrap 후속 안정화 점검으로 이어진다.",
-            },
-            {
-                "label": "Monitoring Alerts Admin Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "MCO degraded 와 node alert 를 관측 신호로 추적할 때 같이 본다.",
-            },
-        ],
-        "next_reading_path": [
-            {
-                "label": "1. MCO/MCP 운영 절차 확인",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-                "summary": "상태 확인, verify, failure signal 을 먼저 본다.",
-            },
-            {
-                "label": "2. 설치 후 안정화 확인",
-                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-                "summary": "설치 직후 cluster baseline 이 정상인지 되짚는다.",
-            },
-            {
-                "label": "3. alert 연계 추적",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "구성 변경이 실제 alert 로 이어졌는지 본다.",
-            },
-        ],
-    },
-    "prometheus": {
-        "title": "Prometheus",
-        "eyebrow": "Entity Hub",
-        "summary": "OpenShift monitoring stack 의 핵심 메트릭 수집/질의 컴포넌트다. 경보, 지표 확인, troubleshooting 의 중심점이다.",
-        "overview": [
-            "Prometheus 는 cluster signal 을 수집하고 query 하는 핵심 monitoring 컴포넌트다.",
-            "운영 관점에서는 메트릭 확인, alert 연계, scrape target 이상, operator 문제를 함께 본다.",
-            "이 허브는 metrics, alerts, troubleshooting 문서를 하나의 관측 허브로 연결한다.",
-        ],
-        "related_books": [
-            {
-                "label": "Monitoring Metrics Admin Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "Prometheus 기반 메트릭 확인의 기준 문서다.",
-            },
-            {
-                "label": "Monitoring Alerts Admin Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "메트릭 이상이 alert 로 어떻게 보이는지 연결한다.",
-            },
-            {
-                "label": "Monitoring Troubleshooting Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "scrape target, query, operator 이상을 파고들 때 이어진다.",
-            },
-        ],
-        "next_reading_path": [
-            {
-                "label": "1. 메트릭 확인",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "현재 cluster signal 을 수치로 먼저 본다.",
-            },
-            {
-                "label": "2. alert 상태 연결",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "메트릭 이상이 실제 경보와 연결됐는지 확인한다.",
-            },
-            {
-                "label": "3. troubleshooting 진입",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "원인 분석과 장애 대응 경로로 넘어간다.",
-            },
-        ],
-    },
-    "control-plane-nodes": {
-        "title": "Control Plane Nodes",
-        "eyebrow": "Entity Hub",
-        "summary": "OpenShift control plane 을 실제로 호스팅하는 핵심 노드 집합이다. etcd, static pod, MCO rollout, 복구 후 검증이 모두 여기로 수렴한다.",
-        "overview": [
-            "Control plane node 는 cluster 의 API, scheduler, controller-manager, etcd 같은 핵심 구성요소가 실제로 돌아가는 운영 표면이다.",
-            "운영 관점에서는 SSH 접근, debug shell, static pod 상태, kubelet 상태, MCO rollout, 복구 직후 health check 를 함께 본다.",
-            "이 허브는 backup and restore, machine configuration, monitoring 신호를 node 관점으로 묶는다.",
-        ],
-        "related_books": [
-            {
-                "label": "Backup and Restore",
-                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-                "summary": "etcd 백업과 수동 복구 절차를 control plane node 작업 맥락으로 확인한다.",
-            },
-            {
-                "label": "Machine Configuration",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-                "summary": "MCO, MCP, node rollout 상태를 직접 검증할 때 이어진다.",
-            },
-            {
-                "label": "Monitoring Troubleshooting Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "복구 이후 degraded signal, operator 이상, alert 신호를 node 관점으로 연결한다.",
-            },
-        ],
-        "next_reading_path": [
-            {
-                "label": "1. 복구 절차 확인",
-                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-                "summary": "control plane node 에 들어가 실제 복구를 수행하기 전에 절차를 먼저 고정한다.",
-            },
-            {
-                "label": "2. MCO / node rollout 확인",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-                "summary": "복구나 변경 이후 node 구성이 정상 수렴하는지 확인한다.",
-            },
-            {
-                "label": "3. 관측 신호 추적",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "control plane 이상이 실제 metrics, alerts, operator 상태에 어떻게 나타나는지 추적한다.",
-            },
-        ],
-    },
-    "cluster-wide-proxy": {
-        "title": "Cluster-Wide Proxy",
-        "eyebrow": "Entity Hub",
-        "summary": "클러스터 전역 egress 경로를 제어하는 공통 프록시 설정이다. 설치 준비, debug shell, 백업/복구 전 네트워크 접근성 확인과 직접 연결된다.",
-        "overview": [
-            "Cluster-wide proxy 는 외부 registry, API, mirror, 패키지 접근이 프록시를 거쳐야 하는 환경에서 핵심 전역 설정이다.",
-            "운영 관점에서는 설치 전 준비, debug shell 환경 변수 주입, egress 차단 원인 분석, 복구 절차 중 외부 접근성 확인을 함께 본다.",
-            "이 허브는 설치 준비, 백업/복구, 후속 네트워크 구성을 하나의 탐색 축으로 묶는다.",
-        ],
-        "related_books": [
-            {
-                "label": "Installing on Any Platform",
-                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-                "summary": "프록시와 방화벽을 설치 전 인프라 준비 항목으로 고정할 때 먼저 보는 문서다.",
-            },
-            {
-                "label": "Backup and Restore",
-                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-                "summary": "debug shell 안에서 proxy 환경 변수를 확인하고 복구 절차 전 네트워크 접근성을 점검할 때 이어진다.",
-            },
-            {
-                "label": "Monitoring Troubleshooting Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "프록시 문제로 인한 external scrape, operator degraded, telemetry 이상을 추적할 때 연결한다.",
-            },
-        ],
-        "next_reading_path": [
-            {
-                "label": "1. 설치 전 프록시 준비",
-                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-                "summary": "DNS, 방화벽, 외부 대상 접근 경로와 함께 프록시 기준선을 맞춘다.",
-            },
-            {
-                "label": "2. 복구 절차 중 proxy 확인",
-                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-                "summary": "debug shell 과 수동 복구 절차에서 proxy 변수가 실제로 필요한지 확인한다.",
-            },
-            {
-                "label": "3. 장애 신호 추적",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "프록시 misconfiguration 이 메트릭, alert, operator health 에 어떻게 드러나는지 본다.",
-            },
-        ],
-    },
-}
-
-DEFAULT_CHAT_NAVIGATION_ALIASES: dict[str, list[dict[str, str]]] = {
-    "etcd": [
-        {"label": "etcd", "href": "/wiki/entities/etcd/index.html", "kind": "entity"},
-        {"label": "Backup and Restore", "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html", "kind": "book"},
-    ],
-    "postinstallation_configuration": [
-        {"label": "Cluster-Wide Proxy", "href": "/wiki/entities/cluster-wide-proxy/index.html", "kind": "entity"},
-        {"label": "Backup and Restore", "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html", "kind": "book"},
-    ],
-    "machine_configuration": [
-        {"label": "Machine Config Operator", "href": "/wiki/entities/machine-config-operator/index.html", "kind": "entity"},
-        {"label": "Machine Configuration", "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html", "kind": "book"},
-    ],
-    "nodes": [
-        {"label": "Control Plane Nodes", "href": "/wiki/entities/control-plane-nodes/index.html", "kind": "entity"},
-        {"label": "Machine Configuration", "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html", "kind": "book"},
-    ],
-    "monitoring": [
-        {"label": "Prometheus", "href": "/wiki/entities/prometheus/index.html", "kind": "entity"},
-        {"label": "Monitoring Metrics Admin Book", "href": "/playbooks/wiki-runtime/active/monitoring/index.html", "kind": "book"},
-    ],
-}
-
-
-def _customer_pack_boundary_payload(record: Any) -> dict[str, Any]:
-    truth_label = "Customer Source-First Pack"
-    boundary_badge = "Private Pack Runtime"
-    evidence = {
-        "source_lane": str(getattr(record, "source_lane", "") or "customer_source_first_pack"),
-        "source_fingerprint": str(getattr(record, "source_fingerprint", "") or ""),
-        "parser_route": str(getattr(record, "parser_route", "") or ""),
-        "parser_backend": str(getattr(record, "parser_backend", "") or ""),
-        "parser_version": str(getattr(record, "parser_version", "") or ""),
-        "ocr_used": bool(getattr(record, "ocr_used", False)),
-        "extraction_confidence": float(getattr(record, "extraction_confidence", 0.0) or 0.0),
-        "tenant_id": str(getattr(record, "tenant_id", "") or ""),
-        "workspace_id": str(getattr(record, "workspace_id", "") or ""),
-        "approval_state": str(getattr(record, "approval_state", "") or "unreviewed"),
-        "publication_state": str(getattr(record, "publication_state", "") or "draft"),
-        "boundary_truth": "private_customer_pack_runtime",
-        "runtime_truth_label": truth_label,
-        "boundary_badge": boundary_badge,
-    }
-    return {
-        **evidence,
-        "customer_pack_evidence": evidence,
-    }
-
-DEFAULT_WIKI_CANDIDATE_RELATIONS: dict[str, dict[str, Any]] = {
-    "backup_and_restore": {
-        "entities": [
-            {"label": "etcd", "href": "/wiki/entities/etcd/index.html"},
-            {"label": "Control Plane Nodes", "href": "/wiki/entities/control-plane-nodes/index.html"},
-            {"label": "Machine Configuration", "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html"},
-            {"label": "Cluster-Wide Proxy", "href": "/wiki/entities/cluster-wide-proxy/index.html"},
-        ],
-        "related_docs": [
-            {
-                "label": "Installing on Any Platform",
-                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-                "summary": "UPI 설치 준비와 bootstrap 검증 경로를 먼저 확인할 때 연결한다.",
-            },
-            {
-                "label": "Machine Configuration",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-                "summary": "복구 후 노드 구성과 MCO 상태를 점검할 때 같이 본다.",
-            },
-            {
-                "label": "Monitoring Troubleshooting",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "복구 이후 cluster signal 과 alert 관찰을 이어서 본다.",
-            },
-        ],
-        "next_reading_path": [
-            {
-                "label": "1. 설치/구성 기준 확인",
-                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-                "summary": "복구 전후에 설치 기준선과 인프라 조건을 다시 맞춘다.",
-            },
-            {
-                "label": "2. 노드 구성 안정화",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-                "summary": "MCP, kubelet, daemon rollout 을 점검한다.",
-            },
-            {
-                "label": "3. 복구 후 관측 신호 확인",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "alert, metrics, operator 상태를 기반으로 후속 이상 신호를 추적한다.",
-            },
-        ],
-        "parent_topic": {
-            "label": "Control Plane Recovery",
-            "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-            "summary": "etcd 백업, 수동 복구, 복구 후 검증을 묶는 운영 허브다.",
-        },
-        "siblings": [
-            {
-                "label": "Installing on Any Platform",
-                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-                "summary": "클러스터 기준선과 설치 전후 검증 절차를 같이 본다.",
-            },
-            {
-                "label": "Machine Configuration",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-                "summary": "복구 후 MCO, MCP, node rollout 안정화를 확인한다.",
-            },
-        ],
-    },
-    "installing_on_any_platform": {
-        "entities": [
-            {"label": "Installer", "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html"},
-            {"label": "Bootstrap", "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html#bootstrap-validation"},
-            {"label": "Cluster-Wide Proxy", "href": "/wiki/entities/cluster-wide-proxy/index.html"},
-            {"label": "Machine Configuration", "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html"},
-            {"label": "Monitoring", "href": "/playbooks/wiki-runtime/active/monitoring/index.html"},
-        ],
-        "related_docs": [
-            {
-                "label": "Machine Configuration",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-                "summary": "설치 직후 노드 구성과 MCO 수렴 상태를 점검할 때 같이 본다.",
-            },
-            {
-                "label": "Backup and Restore",
-                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-                "summary": "설치 후 운영 단계에서 control plane 복구 경로를 준비할 때 이어서 본다.",
-            },
-            {
-                "label": "Monitoring Troubleshooting",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "설치 이후 cluster signal 검증과 경보 추적에 연결한다.",
-            },
-        ],
-        "next_reading_path": [
-            {
-                "label": "1. 노드 구성 안정화",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-                "summary": "설치 직후 MCO와 MCP가 정상 수렴하는지 확인한다.",
-            },
-            {
-                "label": "2. 관측 신호 확인",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "메트릭과 operator 상태로 초기 안정성을 확인한다.",
-            },
-            {
-                "label": "3. 복구 경로 준비",
-                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-                "summary": "운영 이전에 etcd 백업과 수동 복구 절차를 익힌다.",
-            },
-        ],
-        "parent_topic": {
-            "label": "Cluster Provisioning",
-            "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-            "summary": "UPI 설치, bootstrap 검증, 설치 후 안정화의 허브다.",
-        },
-        "siblings": [
-            {
-                "label": "Machine Configuration",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-                "summary": "설치 이후 바로 이어지는 node 구성 점검 문서다.",
-            },
-            {
-                "label": "Monitoring Metrics Admin Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "설치 후 cluster health를 수치로 확인할 때 함께 본다.",
-            },
-        ],
-    },
-    "machine_configuration": {
-        "entities": [
-            {"label": "Machine Config Operator", "href": "/wiki/entities/machine-config-operator/index.html"},
-            {"label": "MachineConfigPool", "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html#mcp-status"},
-            {"label": "Control Plane Nodes", "href": "/wiki/entities/control-plane-nodes/index.html"},
-            {"label": "Monitoring", "href": "/playbooks/wiki-runtime/active/monitoring/index.html"},
-        ],
-        "related_docs": [
-            {
-                "label": "Installing on Any Platform",
-                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-                "summary": "설치 직후 MCO 수렴과 bootstrap 후속 점검으로 이어진다.",
-            },
-            {
-                "label": "Backup and Restore",
-                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-                "summary": "복구 후 node 구성과 static pod 상태를 확인할 때 같이 본다.",
-            },
-            {
-                "label": "Monitoring Alerts Admin Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "MCO 관련 alert 와 degraded signal 을 함께 추적한다.",
-            },
-        ],
-        "next_reading_path": [
-            {
-                "label": "1. MCO/MCP 상태 확인",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html#mcp-status",
-                "summary": "degraded, updating, paused 상태를 먼저 확인한다.",
-            },
-            {
-                "label": "2. 경보/메트릭 확인",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "구성 변경이 alert 로 이어지는지 바로 추적한다.",
-            },
-            {
-                "label": "3. 복구 절차 대비",
-                "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-                "summary": "문제가 control plane 전체로 번지기 전 복구 경로를 숙지한다.",
-            },
-        ],
-        "parent_topic": {
-            "label": "Node Configuration",
-            "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-            "summary": "MCO, MCP, node rollout, kubelet 설정을 묶는 허브다.",
-        },
-        "siblings": [
-            {
-                "label": "Monitoring Alerts Admin Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "구성 이상이 실제 alert 로 올라오는지 같이 본다.",
-            },
-            {
-                "label": "Monitoring Troubleshooting Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "MCO degraded 이후 follow-up 문제를 추적할 때 이어진다.",
-            },
-        ],
-    },
-    "monitoring_alerts_admin": {
-        "entities": [
-            {"label": "Alertmanager", "href": "/playbooks/wiki-runtime/active/monitoring/index.html"},
-            {"label": "Prometheus", "href": "/wiki/entities/prometheus/index.html"},
-            {"label": "ClusterOperator", "href": "/docs/ocp/4.20/ko/operators/understanding-operators/olm-understanding-operatorhub.html"},
-            {"label": "Machine Configuration", "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html"},
-        ],
-        "related_docs": [
-            {
-                "label": "Monitoring Metrics Admin Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "경보가 실제 메트릭 이상과 어떻게 연결되는지 이어서 본다.",
-            },
-            {
-                "label": "Monitoring Troubleshooting Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "경보 원인을 더 깊게 파고들 때 연결한다.",
-            },
-            {
-                "label": "Machine Configuration",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-                "summary": "node or MCO 관련 alert 는 구성 문서와 함께 본다.",
-            },
-        ],
-        "next_reading_path": [
-            {
-                "label": "1. 메트릭 확인",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "alert 와 연결된 수치 신호를 바로 확인한다.",
-            },
-            {
-                "label": "2. 원인 추적",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "operator, target, scrape 문제를 세부적으로 추적한다.",
-            },
-            {
-                "label": "3. 구성 점검",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-                "summary": "node configuration 문제인지 연결해서 확인한다.",
-            },
-        ],
-        "parent_topic": {
-            "label": "Monitoring",
-            "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-            "summary": "경보, 메트릭, 트러블슈팅을 묶는 monitoring 허브다.",
-        },
-        "siblings": [
-            {
-                "label": "Monitoring Metrics Admin Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "alerts 와 같이 보는 메트릭 중심 문서다.",
-            },
-            {
-                "label": "Monitoring Troubleshooting Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "경보 원인 분석과 장애 대응 문서다.",
-            },
-        ],
-    },
-    "monitoring_metrics_admin": {
-        "entities": [
-            {"label": "Prometheus", "href": "/wiki/entities/prometheus/index.html"},
-            {"label": "Alertmanager", "href": "/playbooks/wiki-runtime/active/monitoring/index.html"},
-            {"label": "Cluster Metrics", "href": "/playbooks/wiki-runtime/active/monitoring/index.html"},
-            {"label": "Monitoring Troubleshooting", "href": "/playbooks/wiki-runtime/active/monitoring/index.html"},
-        ],
-        "related_docs": [
-            {
-                "label": "Monitoring Alerts Admin Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "메트릭 이상이 alert 로 어떻게 반영되는지 연결한다.",
-            },
-            {
-                "label": "Monitoring Troubleshooting Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "query 결과 이상이나 target missing 상태를 추적한다.",
-            },
-            {
-                "label": "Installing on Any Platform",
-                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-                "summary": "설치 직후 cluster 안정성 검증과 함께 본다.",
-            },
-        ],
-        "next_reading_path": [
-            {
-                "label": "1. Alert 상태 연결",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "수치 이상이 실제 경보와 연결됐는지 본다.",
-            },
-            {
-                "label": "2. 원인 분석",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "scrape target, operator, query 오류를 추적한다.",
-            },
-            {
-                "label": "3. 설치 기준 재확인",
-                "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-                "summary": "초기 cluster baseline 자체가 맞는지 되짚는다.",
-            },
-        ],
-        "parent_topic": {
-            "label": "Monitoring",
-            "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-            "summary": "Prometheus 기반 메트릭 확인과 운영 해석 허브다.",
-        },
-        "siblings": [
-            {
-                "label": "Monitoring Alerts Admin Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "같은 monitoring 축의 경보 문서다.",
-            },
-            {
-                "label": "Monitoring Troubleshooting Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "이상 신호가 있을 때 바로 이어지는 장애 대응 문서다.",
-            },
-        ],
-    },
-    "monitoring_troubleshooting": {
-        "entities": [
-            {"label": "Alertmanager", "href": "/playbooks/wiki-runtime/active/monitoring/index.html"},
-            {"label": "Prometheus", "href": "/wiki/entities/prometheus/index.html"},
-            {"label": "Cluster Monitoring Operator", "href": "/playbooks/wiki-runtime/active/monitoring/index.html"},
-            {"label": "Machine Configuration", "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html"},
-        ],
-        "related_docs": [
-            {
-                "label": "Monitoring Alerts Admin Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "경보에서 들어왔을 때 가장 먼저 이어지는 문서다.",
-            },
-            {
-                "label": "Monitoring Metrics Admin Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "장애 원인을 수치로 검증할 때 같이 본다.",
-            },
-            {
-                "label": "Machine Configuration",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-                "summary": "node or MCO 이슈가 원인일 때 연결된다.",
-            },
-        ],
-        "next_reading_path": [
-            {
-                "label": "1. Alert 상태 확인",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "현재 어떤 경보가 active 인지 다시 확인한다.",
-            },
-            {
-                "label": "2. Metrics 검증",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "원인 후보를 메트릭으로 확인한다.",
-            },
-            {
-                "label": "3. Node/MCO 경로 점검",
-                "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-                "summary": "문제가 monitoring 자체가 아니라 node 구성일 수 있는지 본다.",
-            },
-        ],
-        "parent_topic": {
-            "label": "Monitoring",
-            "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-            "summary": "관측 계층의 장애 원인 분석과 대응 허브다.",
-        },
-        "siblings": [
-            {
-                "label": "Monitoring Alerts Admin Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "경보 상태를 직접 보는 대응 문서다.",
-            },
-            {
-                "label": "Monitoring Metrics Admin Book",
-                "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-                "summary": "메트릭 기반으로 원인을 검증하는 문서다.",
-            },
-        ],
-    },
-}
-
-def _wiki_relation_assets() -> dict[str, dict[str, Any]]:
-    return load_wiki_relation_assets()
-
-
-def _entity_hubs() -> dict[str, dict[str, Any]]:
-    payload = _wiki_relation_assets().get("entity_hubs")
-    return payload if isinstance(payload, dict) else {}
-
-
-def _chat_navigation_aliases() -> dict[str, list[dict[str, str]]]:
-    payload = _wiki_relation_assets().get("chat_navigation_aliases")
-    return payload if isinstance(payload, dict) else {}
-
-
-def _chat_link_truth_payload(root_dir: Path, href: str, kind: str) -> dict[str, str]:
-    normalized_href = str(href or "").strip()
-    normalized_kind = str(kind or "").strip()
-    if normalized_kind == "entity":
-        return {}
-    settings = load_settings(root_dir)
-    if normalized_href.startswith("/playbooks/customer-packs/"):
-        return {
-            "source_lane": "customer_source_first_pack",
-            "boundary_truth": "private_customer_pack_runtime",
-            "runtime_truth_label": "Customer Source-First Pack",
-            "boundary_badge": "Private Runtime",
-        }
-    if normalized_href.startswith("/playbooks/wiki-runtime/active/"):
-        return {
-            "source_lane": "approved_wiki_runtime",
-            "boundary_truth": "official_validated_runtime",
-            "runtime_truth_label": f"{settings.active_pack.pack_label} Runtime",
-            "boundary_badge": "Validated Runtime",
-        }
-    return {}
-
-
-def _contains_hangul(text: str) -> bool:
-    return any("\uac00" <= char <= "\ud7a3" for char in str(text or ""))
-
-
-def _link_book_slug(href: str) -> str:
-    match = RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE.match(str(href or "").strip())
-    if match:
-        return str(match.group(2) or "").strip()
-    return ""
-
-
-def _prefer_korean_book_links(links: list[dict[str, str]]) -> list[dict[str, str]]:
-    korean_books = [
-        link for link in links
-        if str(link.get("kind") or "").strip() == "book" and _contains_hangul(str(link.get("label") or ""))
-    ]
-    if korean_books:
-        return korean_books
-    return links
-
-
-def _is_final_runtime_href(href: str) -> bool:
-    return str(href or "").strip().startswith(f"{ACTIVE_WIKI_RUNTIME_BOOK_PREFIX}/")
-
-
-def _candidate_relations() -> dict[str, dict[str, Any]]:
-    payload = _wiki_relation_assets().get("candidate_relations")
-    return payload if isinstance(payload, dict) else {}
-
-
-def _figure_assets() -> dict[str, list[dict[str, Any]]]:
-    payload = _wiki_relation_assets().get("figure_assets")
-    return payload.get("entries", {}) if isinstance(payload, dict) and isinstance(payload.get("entries"), dict) else {}
-
-
-def _figure_entity_index() -> dict[str, Any]:
-    payload = _wiki_relation_assets().get("figure_entity_index")
-    return payload if isinstance(payload, dict) else {}
-
-
-def _figure_section_index() -> dict[str, Any]:
-    payload = _wiki_relation_assets().get("figure_section_index")
-    return payload if isinstance(payload, dict) else {}
-
-
-def _section_relation_index() -> dict[str, Any]:
-    payload = _wiki_relation_assets().get("section_relation_index")
-    return payload if isinstance(payload, dict) else {}
-
-
-def _figure_asset_filename(asset: dict[str, Any]) -> str:
-    asset_url = str(asset.get("asset_url") or "").strip()
-    return Path(urlparse(asset_url).path).name.strip()
-
-
-def _figure_viewer_href(slug: str, asset: dict[str, Any]) -> str:
-    viewer_path = str(asset.get("viewer_path") or "").strip()
-    if viewer_path:
-        return viewer_path
-    asset_name = _figure_asset_filename(asset)
-    if not slug or not asset_name:
-        return str(asset.get("asset_url") or "").strip()
-    return f"/wiki/figures/{slug}/{asset_name}/index.html"
-
-
-def _figure_asset_by_name(slug: str, asset_name: str) -> dict[str, Any] | None:
-    normalized_slug = str(slug or "").strip()
-    normalized_asset_name = str(asset_name or "").strip()
-    if not normalized_slug or not normalized_asset_name:
-        return None
-    for item in _figure_assets().get(normalized_slug, []):
-        if not isinstance(item, dict):
-            continue
-        if _figure_asset_filename(item) == normalized_asset_name:
-            return item
-    return None
-
-
-def _figure_section_match(slug: str, asset_name: str) -> dict[str, Any] | None:
-    payload = _figure_section_index()
-    by_slug = payload.get("by_slug") if isinstance(payload.get("by_slug"), dict) else {}
-    records = by_slug.get(str(slug or "").strip())
-    if not isinstance(records, list):
-        return None
-    normalized_asset_name = str(asset_name or "").strip()
-    for item in records:
-        if not isinstance(item, dict):
-            continue
-        if str(item.get("asset_name") or "").strip() == normalized_asset_name:
-            return item
-    return None
-
-
-def _book_related_sections(slug: str) -> list[dict[str, Any]]:
-    payload = _section_relation_index()
-    by_book = payload.get("by_book") if isinstance(payload.get("by_book"), dict) else {}
-    items = by_book.get(str(slug or "").strip())
-    return [item for item in items if isinstance(item, dict)] if isinstance(items, list) else []
-
-
-def _entity_related_sections(entity_slug: str) -> list[dict[str, Any]]:
-    payload = _section_relation_index()
-    by_entity = payload.get("by_entity") if isinstance(payload.get("by_entity"), dict) else {}
-    items = by_entity.get(str(entity_slug or "").strip())
-    return [item for item in items if isinstance(item, dict)] if isinstance(items, list) else []
-
-
-def _wiki_relation_items(relation: dict[str, Any], key: str) -> list[dict[str, str]]:
-    return [item for item in relation.get(key, []) if isinstance(item, dict)]
-
-
-def _active_wiki_runtime_manifest_path(root_dir: Path) -> Path:
-    return root_dir / "data" / "wiki_runtime_books" / "active_manifest.json"
-
-
-def _active_wiki_runtime_manifest(root_dir: Path) -> dict[str, Any]:
-    manifest_path = _active_wiki_runtime_manifest_path(root_dir)
-    if not manifest_path.exists() or not manifest_path.is_file():
-        return {}
-    try:
-        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except Exception:  # noqa: BLE001
-        return {}
-    return payload if isinstance(payload, dict) else {}
-
-
-def _runtime_markdown_path_from_entries(entries: list[Any], slug: str) -> Path | None:
-    normalized_slug = str(slug or "").strip()
-    if not normalized_slug:
-        return None
-    for entry in entries:
-        if not isinstance(entry, dict):
-            continue
-        entry_slug = str(entry.get("slug") or "").strip()
-        if entry_slug != normalized_slug:
-            continue
-        runtime_path = Path(str(entry.get("runtime_path") or "")).resolve()
-        if runtime_path.exists() and runtime_path.is_file():
-            return runtime_path
-    return None
-
-
-def _active_runtime_markdown_path(root_dir: Path, slug: str) -> Path | None:
-    payload = _active_wiki_runtime_manifest(root_dir)
-    entries = payload.get("entries") if isinstance(payload.get("entries"), list) else []
-    return _runtime_markdown_path_from_entries(entries, slug)
-
-
-def _approved_wiki_runtime_slugs(root_dir: Path) -> set[str]:
-    payload = _active_wiki_runtime_manifest(root_dir)
-    entries = payload.get("entries") if isinstance(payload, dict) else []
-    approved: set[str] = set()
-    if not isinstance(entries, list):
-        return approved
-    for entry in entries:
-        if not isinstance(entry, dict):
-            continue
-        slug = str(entry.get("slug") or "").strip()
-        if slug:
-            approved.add(slug)
-    return approved
-
-
-def _preferred_book_href(root_dir: Path, slug: str) -> str:
-    normalized = str(slug or "").strip()
-    if not normalized:
-        return ""
-    if normalized in _approved_wiki_runtime_slugs(root_dir):
-        return f"{ACTIVE_WIKI_RUNTIME_BOOK_PREFIX}/{normalized}/index.html"
-    settings = load_settings(root_dir)
-    return f"/docs/ocp/{settings.ocp_version}/{settings.docs_language}/{normalized}/index.html"
-
-
-def _rewrite_book_href(root_dir: Path, href: str) -> str:
-    normalized = str(href or "").strip()
-    if normalized.startswith("/docs/ocp/"):
-        parsed = urlparse(normalized)
-        parts = [part for part in parsed.path.split("/") if part]
-        if len(parts) >= 5 and parts[-1] == "index.html":
-            slug = parts[-2]
-            anchor = parsed.fragment
-            rewritten = _preferred_book_href(root_dir, slug)
-            if anchor:
-                rewritten = f"{rewritten}#{anchor}"
-            return rewritten
-    if normalized.startswith(f"{GOLD_CANDIDATE_BOOK_PREFIX}/") or normalized.startswith(f"{LEGACY_WIKI_RUNTIME_BOOK_PREFIX}/"):
-        parts = [part for part in normalized.split("/") if part]
-        if len(parts) >= 4:
-            slug = parts[-2]
-            return _preferred_book_href(root_dir, slug)
-    return normalized
-
-
-def _relation_href_matches_slug(href: str, slug: str) -> bool:
-    normalized = str(href or "").strip()
-    docs_pattern = re.compile(rf"^/docs/ocp/[^/]+/[^/]+/{re.escape(slug)}/index\.html$")
-    return normalized in {
-        f"{GOLD_CANDIDATE_BOOK_PREFIX}/{slug}/index.html",
-        f"{ACTIVE_WIKI_RUNTIME_BOOK_PREFIX}/{slug}/index.html",
-        f"{LEGACY_WIKI_RUNTIME_BOOK_PREFIX}/{slug}/index.html",
-    } or bool(docs_pattern.match(normalized))
-
-
-def _build_backlinks(root_dir: Path, slug: str) -> list[dict[str, str]]:
-    backlinks: list[dict[str, str]] = []
-    seen: set[str] = set()
-    for source_slug, relation in _candidate_relations().items():
-        if source_slug == slug:
-            continue
-        for item in _wiki_relation_items(relation, "related_docs") + _wiki_relation_items(relation, "next_reading_path") + _wiki_relation_items(relation, "siblings"):
-            href = str(item.get("href") or "").strip()
-            if not _relation_href_matches_slug(href, slug):
-                continue
-            if source_slug in seen:
-                continue
-            seen.add(source_slug)
-            backlinks.append(
-                {
-                    "label": source_slug.replace("_", " ").title(),
-                    "href": _preferred_book_href(root_dir, source_slug),
-                    "summary": str(item.get("summary") or "").strip() or "이 문서에서 현재 문서로 이동한다.",
-                }
-            )
-    return backlinks
-
-
-def _build_entity_backlinks(root_dir: Path, entity_slug: str) -> list[dict[str, str]]:
-    target_path = f"/wiki/entities/{entity_slug}/index.html"
-    backlinks: list[dict[str, str]] = []
-    seen: set[str] = set()
-    for source_slug, relation in _candidate_relations().items():
-        for item in _wiki_relation_items(relation, "entities"):
-            href = str(item.get("href") or "").strip()
-            if href != target_path or source_slug in seen:
-                continue
-            seen.add(source_slug)
-            backlinks.append(
-                {
-                    "label": source_slug.replace("_", " ").title(),
-                    "href": _preferred_book_href(root_dir, source_slug),
-                    "summary": f"{item.get('label') or entity_slug} 엔터티를 이 문서에서 직접 다룬다.",
-                }
-            )
-    return backlinks
-
-
-def _entity_hub_sections(entity_slug: str) -> list[dict[str, Any]]:
-    entity = _entity_hubs().get(entity_slug)
-    if entity is None:
-        return []
-    overview_text = "\n\n".join(
-        str(item).strip() for item in entity.get("overview", []) if str(item).strip()
-    )
-    navigation_text = "\n\n".join(
-        [
-            "이 엔터티는 절차 문서, 장애 대응 문서, 상위 운영 문서 사이의 연결 허브다.",
-            "관련 북, 역참조 문서, 연계 섹션을 함께 볼 수 있다.",
-            "연결 구조를 따라 필요한 문서와 경로를 탐색한다.",
-        ]
-    )
-    title = str(entity.get("title") or entity_slug)
-    return [
-        {
-            "anchor": "overview",
-            "heading": "Overview",
-            "section_path": [title, "Overview"],
-            "text": overview_text,
-            "blocks": [],
-        },
-        {
-            "anchor": "how-to-navigate",
-            "heading": "How To Navigate",
-            "section_path": [title, "How To Navigate"],
-            "text": navigation_text,
-            "blocks": [],
-        },
-    ]
 
 
 def _build_entity_hub_supplementary_blocks(root_dir: Path, entity_slug: str) -> list[str]:
@@ -1529,6 +617,33 @@ def _load_playbook_book(root_dir: Path, book_slug: str) -> dict[str, Any] | None
     return None
 
 
+def _load_normalized_book_sections(root_dir: Path, book_slug: str) -> list[dict[str, Any]]:
+    settings = load_settings(root_dir)
+    for normalized_docs_path in settings.normalized_docs_candidates:
+        if not normalized_docs_path.exists() or not normalized_docs_path.is_file():
+            continue
+        sections_by_book = _load_normalized_sections(
+            str(normalized_docs_path),
+            normalized_docs_path.stat().st_mtime_ns,
+        )
+        sections = sections_by_book.get(book_slug, [])
+        if sections:
+            return [dict(section) for section in sections if isinstance(section, dict)]
+    return []
+
+
+def _normalized_book_summary(sections: list[dict[str, Any]]) -> str:
+    for section in sections:
+        text = str(section.get("text") or "").replace("\r\n", "\n").replace("\r", "\n").strip()
+        if not text:
+            continue
+        paragraph = re.sub(r"\s+", " ", text.split("\n\n", 1)[0]).strip()
+        if len(paragraph) > 200:
+            return paragraph[:197].rstrip() + "..."
+        return paragraph
+    return ""
+
+
 def _playbook_viewer_chrome(playbook_book: dict[str, Any]) -> tuple[str, str]:
     source_metadata = (
         playbook_book.get("source_metadata")
@@ -1536,15 +651,48 @@ def _playbook_viewer_chrome(playbook_book: dict[str, Any]) -> tuple[str, str]:
         else {}
     )
     source_type = str(source_metadata.get("source_type") or "").strip()
+    summary = str(playbook_book.get("topic_summary") or "").strip()
+    parent_title = str(source_metadata.get("derived_from_title") or "").strip()
     if source_type == "topic_playbook":
-        summary = str(playbook_book.get("topic_summary") or "").strip()
         if not summary:
-            parent_title = str(source_metadata.get("derived_from_title") or "").strip()
-            if parent_title:
-                summary = f"{parent_title}에서 실행 절차만 추린 토픽 플레이북입니다."
-            else:
-                summary = "실행 절차 중심으로 다시 엮은 토픽 플레이북입니다."
+            summary = (
+                f"{parent_title}에서 실행 절차만 추린 토픽 플레이북입니다."
+                if parent_title
+                else "실행 절차 중심으로 다시 엮은 토픽 플레이북입니다."
+            )
         return "Topic Playbook", summary
+    if source_type == "operation_playbook":
+        if not summary:
+            summary = (
+                f"{parent_title}에서 운영 절차와 검증만 추린 운영 플레이북입니다."
+                if parent_title
+                else "운영 절차와 검증 중심으로 다시 엮은 운영 플레이북입니다."
+            )
+        return "Operation Playbook", summary
+    if source_type == "troubleshooting_playbook":
+        if not summary:
+            summary = (
+                f"{parent_title}에서 장애 대응 경로만 추린 트러블슈팅 플레이북입니다."
+                if parent_title
+                else "장애 대응 경로 중심으로 다시 엮은 트러블슈팅 플레이북입니다."
+            )
+        return "Troubleshooting Playbook", summary
+    if source_type == "policy_overlay_book":
+        if not summary:
+            summary = (
+                f"{parent_title}에서 제한, 요구 사항, 검증 기준만 다시 묶은 정책 오버레이입니다."
+                if parent_title
+                else "제한, 요구 사항, 검증 기준만 다시 묶은 정책 오버레이입니다."
+            )
+        return "Policy Overlay", summary
+    if source_type == "synthesized_playbook":
+        if not summary:
+            summary = (
+                f"{parent_title}에서 핵심 설명, 절차, 검증만 압축한 합성 플레이북입니다."
+                if parent_title
+                else "핵심 설명, 절차, 검증을 압축한 합성 플레이북입니다."
+            )
+        return "Synthesized Playbook", summary
     return "Manual Book", "정리된 AST 기준의 유저용 매뉴얼북을 보여줍니다."
 
 
@@ -1557,26 +705,56 @@ def internal_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
     embedded = "embed=1" in request.query
     book_slug, target_anchor = parsed
     playbook_book = _load_playbook_book(root_dir, book_slug)
+    manifest_entry = _manifest_entry_for_book(root_dir, book_slug)
     if playbook_book is None:
-        return None
-    sections = [dict(section) for section in (playbook_book.get("sections") or []) if isinstance(section, dict)]
-    if not sections:
-        return None
-    book_title = str(playbook_book.get("title") or book_slug)
-    source_url = str(playbook_book.get("source_uri") or "")
-    eyebrow, summary = _playbook_viewer_chrome(playbook_book)
+        sections = _load_normalized_book_sections(root_dir, book_slug)
+        source_url = (
+            str(manifest_entry.get("source_url") or "").strip()
+            or _preferred_book_href(root_dir, book_slug)
+        )
+        if not sections:
+            markdown_path = _active_runtime_markdown_path(root_dir, book_slug)
+            if markdown_path is None or not markdown_path.exists() or not markdown_path.is_file():
+                return None
+            sections = _markdown_sections(markdown_path.read_text(encoding="utf-8"))
+            if not sections:
+                return None
+            book_title = (
+                str(manifest_entry.get("title") or "").strip()
+                or str(sections[0].get("heading") or "").strip()
+                or book_slug.replace("_", " ").title()
+            )
+            content_sections = _trim_leading_title_section(sections, title=book_title)
+            if not content_sections:
+                content_sections = sections
+        else:
+            book_title = (
+                str(manifest_entry.get("title") or "").strip()
+                or str(sections[0].get("book_title") or "").strip()
+                or book_slug.replace("_", " ").title()
+            )
+            content_sections = sections
+        eyebrow = "Validated Runtime"
+        summary = _normalized_book_summary(content_sections)
+    else:
+        sections = [dict(section) for section in (playbook_book.get("sections") or []) if isinstance(section, dict)]
+        if not sections:
+            return None
+        book_title = str(playbook_book.get("title") or book_slug)
+        source_url = str(playbook_book.get("source_uri") or "")
+        eyebrow, summary = _playbook_viewer_chrome(playbook_book)
 
-    cards = _build_study_section_cards(sections, book_slug=book_slug, target_anchor=target_anchor, embedded=embedded)
+    cards = _build_study_section_cards(content_sections if playbook_book is None else sections, book_slug=book_slug, target_anchor=target_anchor, embedded=embedded)
     return _render_study_viewer_html(
         title=book_title,
         source_url=source_url,
         cards=cards,
-        section_count=len(sections),
+        section_count=len(content_sections if playbook_book is None else sections),
         eyebrow=eyebrow,
         summary=summary,
         embedded=embedded,
-        section_outline=_build_section_outline(sections),
-        section_metrics=_build_section_metrics(sections),
+        section_outline=_build_section_outline(content_sections if playbook_book is None else sections),
+        section_metrics=_build_section_metrics(content_sections if playbook_book is None else sections),
         page_overlay_toolbar=_render_page_overlay_toolbar(
             target_kind="book",
             target_ref=f"book:{book_slug}",
@@ -1963,45 +1141,6 @@ def _build_buyer_packet_supplementary_blocks(bundle: dict[str, Any], packet: dic
     ]
 
 
-def _figure_viewer_sections(slug: str, asset_name: str, asset: dict[str, Any]) -> list[dict[str, Any]]:
-    caption = str(asset.get("caption") or asset.get("alt") or asset_name).strip() or asset_name
-    asset_url = str(asset.get("asset_url") or "").strip()
-    source_file = Path(str(asset.get("source_file") or "").strip()).name
-    source_asset_ref = str(asset.get("source_asset_ref") or "").strip()
-    section_hint = str(asset.get("section_hint") or "").strip()
-    visual_text = "\n".join(
-        [
-            f"![{caption}]({asset_url})" if asset_url else "",
-            "",
-            caption,
-            "",
-            f"이 figure 는 `{slug}` 문서의 시각 자산이다.",
-            f"섹션 힌트: {section_hint or 'unmatched'}",
-        ]
-    ).strip()
-    source_text = "\n".join(
-        [
-            f"원본 파일: `{source_file}`" if source_file else "",
-            f"원본 자산: `{source_asset_ref}`" if source_asset_ref else "",
-        ]
-    ).strip()
-    return [
-        {
-            "anchor": "visual",
-            "heading": "Figure",
-            "section_path": [caption, "Figure"],
-            "text": visual_text,
-            "blocks": [],
-        },
-        {
-            "anchor": "source-trace",
-            "heading": "Source Trace",
-            "section_path": [caption, "Source Trace"],
-            "text": source_text,
-            "blocks": [],
-        },
-    ]
-
 
 def _build_figure_supplementary_blocks(root_dir: Path, slug: str, asset_name: str, asset: dict[str, Any]) -> list[str]:
     relation = _candidate_relations().get(slug, {})
@@ -2260,169 +1399,6 @@ def internal_buyer_packet_viewer_html(root_dir: Path, viewer_path: str) -> str |
             viewer_path=f"/buyer-packets/{packet_id}",
         ),
     )
-
-
-def parse_customer_pack_viewer_path(viewer_path: str) -> tuple[str, str] | None:
-    parsed = urlparse((viewer_path or "").strip())
-    request_path = parsed.path.strip()
-    prefix = "/playbooks/customer-packs/"
-    if not request_path.startswith(prefix):
-        return None
-    remainder = request_path[len(prefix) :]
-    parts = [part for part in remainder.split("/") if part]
-    if len(parts) == 2 and parts[1] == "index.html":
-        return parts[0], parsed.fragment.strip()
-    if len(parts) == 4 and parts[1] == "assets" and parts[3] == "index.html":
-        return f"{parts[0]}::{parts[2]}", parsed.fragment.strip()
-    return None
-
-
-def load_customer_pack_book(root_dir: Path, draft_id: str) -> dict[str, Any] | None:
-    resolved_draft_id = draft_id
-    asset_slug = ""
-    if "::" in draft_id:
-        resolved_draft_id, asset_slug = draft_id.split("::", 1)
-    record = CustomerPackDraftStore(root_dir).get(draft_id)
-    if record is None and resolved_draft_id != draft_id:
-        record = CustomerPackDraftStore(root_dir).get(resolved_draft_id)
-    if record is None or not record.canonical_book_path.strip():
-        return None
-    canonical_path = (
-        load_settings(root_dir).customer_pack_books_dir / f"{asset_slug}.json"
-        if asset_slug
-        else Path(record.canonical_book_path)
-    )
-    if not canonical_path.exists():
-        return None
-    payload = json.loads(canonical_path.read_text(encoding="utf-8"))
-    payload["draft_id"] = record.draft_id
-    payload["target_viewer_path"] = (
-        f"/playbooks/customer-packs/{record.draft_id}/assets/{asset_slug}/index.html"
-        if asset_slug
-        else f"/playbooks/customer-packs/{record.draft_id}/index.html"
-    )
-    payload["target_anchor"] = payload.get("target_anchor") or ""
-    payload["source_origin_url"] = f"/api/customer-packs/captured?draft_id={record.draft_id}"
-    payload.setdefault("source_collection", record.plan.source_collection)
-    payload.setdefault("pack_id", record.plan.pack_id)
-    payload.setdefault("pack_label", record.plan.pack_label)
-    payload.setdefault("inferred_product", record.plan.inferred_product)
-    payload.setdefault("inferred_version", record.plan.inferred_version)
-    payload.update(_customer_pack_boundary_payload(record))
-    payload.update(evaluate_canonical_book_quality(payload))
-    return payload
-
-
-def internal_customer_pack_viewer_html(root_dir: Path, viewer_path: str) -> str | None:
-    parsed = parse_customer_pack_viewer_path(viewer_path)
-    if parsed is None:
-        return None
-
-    request = urlparse((viewer_path or "").strip())
-    embedded = "embed=1" in request.query
-    draft_id, target_anchor = parsed
-    canonical_book = load_customer_pack_book(root_dir, draft_id)
-    if canonical_book is None:
-        return None
-
-    sections = list(canonical_book.get("sections") or [])
-    if not sections:
-        return None
-    cards = _build_study_section_cards(sections, target_anchor=target_anchor, embedded=embedded)
-    family_label = str(canonical_book.get("family_label") or "").strip()
-    family_summary = str(canonical_book.get("family_summary") or "").strip()
-    derived_asset_count = int(canonical_book.get("derived_asset_count") or 0)
-    if family_label:
-        base_summary = family_summary or _default_customer_pack_summary(canonical_book)
-    else:
-        base_summary = _default_customer_pack_summary(canonical_book)
-        if derived_asset_count > 0:
-            base_summary = (
-                f"{base_summary} 이 초안에서 {derived_asset_count}개의 파생 플레이북 자산이 추가로 생성되었습니다."
-            )
-    quality_summary = str(canonical_book.get("quality_summary") or "").strip()
-    summary = f"{base_summary} {quality_summary}".strip() if quality_summary else base_summary
-    if str(canonical_book.get("quality_status") or "ready") != "ready":
-        summary = f"{summary} 이 자산은 아직 review needed 상태입니다."
-    runtime_truth_label = str(canonical_book.get("runtime_truth_label") or "Customer Source-First Pack").strip()
-    approval_state = str(canonical_book.get("approval_state") or "unreviewed").strip()
-    publication_state = str(canonical_book.get("publication_state") or "draft").strip()
-    source_lane = str(canonical_book.get("source_lane") or "customer_source_first_pack").strip()
-    parser_backend = str(canonical_book.get("parser_backend") or "").strip()
-    evidence_badges = [
-        f"approval: {approval_state}",
-        f"publication: {publication_state}",
-    ]
-    if parser_backend:
-        evidence_badges.append(f"parser: {parser_backend}")
-    if source_lane and source_lane != "customer_source_first_pack":
-        evidence_badges.append(f"lane: {source_lane}")
-    supplementary_blocks = [
-        """
-        <section class="wiki-parent-card">
-          <div class="wiki-parent-eyebrow">Pack Runtime Truth</div>
-          <div class="viewer-truth-topline">
-            <span class="viewer-truth-badge">{badge}</span>
-            <a class="viewer-truth-link" href="{source_url}" target="_blank" rel="noreferrer">원본 캡처 열기</a>
-          </div>
-          <div class="viewer-truth-title">{title}</div>
-          <p>Customer pack runtime evidence</p>
-          <div class="wiki-entity-list">{badges}</div>
-        </section>
-        """.format(
-            source_url=html.escape(
-                str(canonical_book.get("source_origin_url") or canonical_book.get("source_uri") or ""),
-                quote=True,
-            ),
-            badge=html.escape(str(canonical_book.get("boundary_badge") or "Private Pack Runtime")),
-            title=html.escape(runtime_truth_label),
-            badges="".join(
-                f'<span class="meta-pill">{html.escape(item)}</span>'
-                for item in evidence_badges
-                if item.strip()
-            ),
-        ).strip()
-    ]
-    return _render_study_viewer_html(
-        title=str(canonical_book.get("title") or draft_id),
-        source_url=str(canonical_book.get("source_origin_url") or canonical_book.get("source_uri") or ""),
-        cards=cards,
-        supplementary_blocks=supplementary_blocks,
-        section_count=len(sections),
-        eyebrow=family_label or "Customer Playbook Draft",
-        summary=summary,
-        embedded=embedded,
-        section_outline=_build_section_outline(sections),
-        section_metrics=_build_section_metrics(sections),
-        page_overlay_toolbar=_render_page_overlay_toolbar(
-            target_kind="book",
-            target_ref=f"book:{str(canonical_book.get('book_slug') or draft_id)}",
-            title=str(canonical_book.get("title") or draft_id),
-            book_slug=str(canonical_book.get("book_slug") or draft_id),
-            viewer_path=str(canonical_book.get("target_viewer_path") or f"/playbooks/customer-packs/{draft_id}/index.html"),
-        ),
-    )
-
-
-def list_customer_pack_drafts(root_dir: Path) -> dict[str, Any]:
-    drafts: list[dict[str, Any]] = []
-    store = CustomerPackDraftStore(root_dir)
-    for record in store.list():
-        summary = record.to_summary()
-        if record.canonical_book_path.strip():
-            payload = load_customer_pack_book(root_dir, record.draft_id)
-            if payload is not None:
-                summary["quality_status"] = payload.get("quality_status")
-                summary["quality_score"] = payload.get("quality_score")
-                summary["quality_summary"] = payload.get("quality_summary")
-                summary["quality_flags"] = payload.get("quality_flags")
-                summary["playable_asset_count"] = payload.get("playable_asset_count", 1)
-                summary["derived_asset_count"] = payload.get("derived_asset_count", 0)
-                summary["derived_assets"] = payload.get("derived_assets", [])
-        drafts.append(summary)
-    return {"drafts": drafts}
-
-
 __all__ = [
     "internal_buyer_packet_viewer_html",
     "build_chat_navigation_links",

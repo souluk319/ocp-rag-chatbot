@@ -1,0 +1,20 @@
+{
+  "task_id": "viewer_113_runtime_20260417",
+  "lane_id": "worker",
+  "role": "worker",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "src/play_book_studio/app/*",
+    "tests/*",
+    "reports/execution_harness/viewer_113_runtime_20260417/worker/*"
+  ],
+  "target_outputs": [
+    "bounded fix for missing viewer-document coverage"
+  ],
+  "validation_commands": [
+    ".venv\\Scripts\\python.exe -m pytest tests\\test_app_viewers.py -q"
+  ],
+  "status": "in_progress"
+}
