@@ -1,0 +1,20 @@
+{
+  "task_id": "runtime_stability_fix_20260417",
+  "lane_id": "reviewer",
+  "role": "reviewer",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "reports/execution_harness/runtime_stability_fix_20260417/reviewer/*"
+  ],
+  "target_outputs": [
+    "verification notes for chat smoke, health, and memory stability"
+  ],
+  "validation_commands": [
+    "focused pytest",
+    "live /api/chat and /api/health smoke",
+    "port 8765 memory measurement"
+  ],
+  "status": "completed"
+}

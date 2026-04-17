@@ -12,7 +12,9 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from play_book_studio.app.presenters import _build_health_payload
 from play_book_studio.app.runtime_report import build_runtime_report, write_runtime_report
+from play_book_studio.config.settings import Settings
 
 TEST_RUNTIME_REPORT_LLM_ENDPOINT = "http://test-runtime-llm.example/v1"
 
@@ -47,6 +49,15 @@ class _FakeLlmClient:
 
     def generate(self, messages) -> str:  # noqa: ANN001
         return "ok"
+
+    def runtime_metadata(self) -> dict[str, object]:
+        return {}
+
+
+class _FakeAnswerer:
+    def __init__(self, settings) -> None:  # noqa: ANN001
+        self.settings = settings
+        self.llm_client = _FakeLlmClient(settings)
 
 
 class RuntimeReportTests(unittest.TestCase):
@@ -231,6 +242,70 @@ class RuntimeReportTests(unittest.TestCase):
                 self.assertTrue(output_path.exists())
                 self.assertEqual(output_path.name, "runtime_report.json")
                 self.assertEqual("Play Book Studio", report["app"]["app_label"])
+
+    def test_runtime_report_and_health_payload_expose_stale_compact_graph_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / ".env").write_text(
+                f"LLM_ENDPOINT={TEST_RUNTIME_REPORT_LLM_ENDPOINT}\n"
+                "QDRANT_URL=http://localhost:6333\n"
+                "QDRANT_COLLECTION=openshift_docs\n",
+                encoding="utf-8",
+            )
+            settings = Settings(root_dir=root)
+            settings.graph_sidecar_compact_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.graph_sidecar_compact_path.write_text(
+                json.dumps(
+                    {
+                        "schema": "graph_sidecar_compact_v1",
+                        "schema_version": "graph_sidecar_compact_v1",
+                        "book_count": 1,
+                        "relation_count": 0,
+                        "books": [{"book_slug": "monitoring", "title": "모니터링"}],
+                        "relations": [],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            settings.chunks_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.chunks_path.write_text(
+                json.dumps({"chunk_id": "monitoring::0", "book_slug": "monitoring"}, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            settings.playbook_documents_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.playbook_documents_path.write_text(
+                json.dumps({"book_slug": "monitoring", "title": "모니터링"}, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+
+            def fake_get(url: str, **kwargs):  # noqa: ANN001
+                del kwargs
+                if url.endswith("/v1/models"):
+                    return _FakeResponse(200, {"data": [{"id": "test"}]})
+                if url.endswith("/collections"):
+                    return _FakeResponse(
+                        200,
+                        {"result": {"collections": [{"name": "openshift_docs"}]}},
+                    )
+                raise AssertionError(url)
+
+            with (
+                patch("play_book_studio.app.runtime_report.requests.get", side_effect=fake_get),
+                patch("play_book_studio.app.runtime_report.requests.post", side_effect=RuntimeError("unused")),
+                patch("play_book_studio.app.runtime_report.LLMClient", _FakeLlmClient),
+            ):
+                report = build_runtime_report(root, sample=False, ui_base_url=None)
+
+            health_payload = _build_health_payload(_FakeAnswerer(settings))
+            compact_runtime = report["runtime"]["graph_compact_artifact"]
+            compact_health = health_payload["runtime"]["graph_compact_artifact"]
+
+            self.assertEqual("stale", compact_runtime["state"])
+            self.assertFalse(compact_runtime["ready"])
+            self.assertEqual("playbook_documents_runtime_fallback", compact_runtime["degrade_mode"])
+            self.assertEqual("stale", compact_health["state"])
+            self.assertFalse(compact_health["ready"])
 
 
 if __name__ == "__main__":

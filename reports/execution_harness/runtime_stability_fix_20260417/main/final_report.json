@@ -1,0 +1,53 @@
+{
+  "task_id": "runtime_stability_fix_20260417",
+  "lane_id": "main",
+  "status": "completed",
+  "current_judgment": "runtime stability fix packet succeeded for the identified local sidecar path: architecture explainer no longer eager-loads the 7.5GB sidecar on request path, and port 8765 stayed healthy through live validation.",
+  "key_evidence": [
+    "LocalGraphSidecar now bypasses full sidecar loads when graph_sidecar.json exceeds 64 MiB and falls back to playbook_documents metadata plus bounded same-book/shared-collection/derived-from relations.",
+    "Focused regression suite passed: .venv\\\\Scripts\\\\python.exe -m pytest tests\\\\test_retrieval_graph_runtime.py tests\\\\test_retrieval_runtime_graph_trace.py -q => 19 passed.",
+    "Live architecture explainer request on April 17, 2026 completed in 5677.8 ms with retrieval_trace.graph.fallback_reason = neo4j_unhealthy:connect failed: timed out|sidecar_eager_load_skipped:file_too_large:7876461484.",
+    "Port 8765 python process stayed stable around 2.14 GB private bytes after live smoke instead of ballooning into the previously observed 17.8 GB range.",
+    "GET /api/health returned ok: true after restart and after live /api/chat validation."
+  ],
+  "artifact_paths": [
+    "src/play_book_studio/retrieval/graph_runtime.py",
+    "tests/test_retrieval_runtime_graph_trace.py",
+    "reports/execution_harness/runtime_stability_fix_20260417/main/worklog.md"
+  ],
+  "validation_results": {
+    "focused_pytest": {
+      "command": ".venv\\Scripts\\python.exe -m pytest tests\\test_retrieval_graph_runtime.py tests\\test_retrieval_runtime_graph_trace.py -q",
+      "result": "passed",
+      "details": "19 passed in 1.78s"
+    },
+    "live_chat_smoke_1": {
+      "query": "OpenShift 아키텍처를 설명해줘",
+      "elapsed_ms": 8694.1,
+      "process_private_bytes_before": 1984827392,
+      "process_private_bytes_after": 2138447872
+    },
+    "live_chat_smoke_2": {
+      "query": "OpenShift 아키텍처를 설명해줘",
+      "elapsed_ms": 5677.8,
+      "graph_adapter_mode": "local_sidecar",
+      "graph_fallback_reason": "neo4j_unhealthy:connect failed: timed out|sidecar_eager_load_skipped:file_too_large:7876461484",
+      "graph_relation_count": 132,
+      "graph_sidecar_relation_count": 0,
+      "process_private_bytes_before": 2138447872,
+      "process_private_bytes_after": 2138447872
+    },
+    "live_health": {
+      "endpoint": "http://127.0.0.1:8765/api/health",
+      "result": "ok"
+    },
+    "listener_state": {
+      "port": 8765,
+      "process_id": 12056,
+      "process_name": "python",
+      "process_private_bytes_final": 2138333184,
+      "process_working_set_final": 1281609728
+    }
+  },
+  "next_action": "materialize a compact graph relation artifact for local fallback so book-level relations can be recovered without relying on chunk-heavy graph_sidecar.json."
+}

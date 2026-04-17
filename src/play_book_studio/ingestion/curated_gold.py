@@ -25,6 +25,10 @@ from play_book_studio.config.settings import Settings
 from play_book_studio.config.validation import read_jsonl
 
 from .chunking import chunk_sections
+from .graph_sidecar import (
+    graph_sidecar_compact_artifact_status,
+    refresh_active_runtime_graph_artifacts,
+)
 from .manifest import read_manifest, write_manifest
 from .models import SOURCE_STATE_BLOCKED, SourceManifestEntry
 from .normalize import project_normalized_sections
@@ -677,6 +681,11 @@ def _apply_curated_gold(
         settings,
         _curated_manifest_entry(spec),
     )
+    graph_refresh = refresh_active_runtime_graph_artifacts(
+        settings,
+        refresh_full_sidecar=False,
+        allow_compact_degrade=True,
+    )
 
     synthesis_report_path = synthesis_lane_report_path(settings)
     synthesis_report = None
@@ -690,6 +699,8 @@ def _apply_curated_gold(
         "chunk_count": len(chunk_rows),
         "manifest_before_count": manifest_before,
         "manifest_after_count": manifest_after,
+        "graph_compact_refresh": dict(graph_refresh.get("compact_sidecar", {})),
+        "graph_compact_artifact": graph_sidecar_compact_artifact_status(settings),
         "output_targets": {
             "normalized_docs": [str(path) for path in settings.normalized_docs_candidates],
             "chunks": [str(path) for path in (settings.chunks_path,)],
@@ -697,6 +708,7 @@ def _apply_curated_gold(
             "playbook_documents": [str(path) for path in (settings.playbook_documents_path,)],
             "playbook_books": [str(path) for path in settings.playbook_book_dirs],
             "approved_manifest_path": str(settings.source_manifest_path),
+            "graph_sidecar_compact_path": str(settings.graph_sidecar_compact_path),
         },
     }
     if synthesis_report is not None:

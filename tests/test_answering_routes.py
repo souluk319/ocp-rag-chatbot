@@ -49,6 +49,52 @@ class TestAnsweringRoutes(unittest.TestCase):
             any(event.get("step") == "context_assembly" for event in result.pipeline_trace["events"])
         )
         self.assertIn("total", result.pipeline_trace["timings_ms"])
+        self.assertIn("llm_provider_round_trip", result.pipeline_trace["timings_ms"])
+        self.assertIn("llm_post_process", result.pipeline_trace["timings_ms"])
+        self.assertIn("provider_round_trip_ms", result.pipeline_trace["llm"])
+        self.assertIn("post_process_ms", result.pipeline_trace["llm"])
+
+    def test_answerer_uses_tighter_generation_budget_for_one_paragraph_explainer(self) -> None:
+        class _BudgetAwareLLMClient:
+            def __init__(self) -> None:
+                self.requested_max_tokens: list[int | None] = []
+
+            def generate(self, messages, trace_callback=None, *, max_tokens=None):  # noqa: ANN001
+                del messages
+                self.requested_max_tokens.append(max_tokens)
+                if trace_callback is not None:
+                    trace_callback(
+                        {
+                            "step": "llm_generate",
+                            "label": "LLM 응답 생성 완료",
+                            "status": "done",
+                            "duration_ms": 2.0,
+                        }
+                    )
+                return "답변: OpenShift는 컨트롤 플레인과 작업자 노드로 구성됩니다. [1]"
+
+            def runtime_metadata(self) -> dict[str, object]:
+                requested = self.requested_max_tokens[-1] if self.requested_max_tokens else None
+                return {
+                    "preferred_provider": "openai-compatible",
+                    "fallback_enabled": False,
+                    "last_provider": "openai-compatible",
+                    "last_fallback_used": False,
+                    "last_attempted_providers": ["openai-compatible"],
+                    "last_requested_max_tokens": requested,
+                }
+
+        llm_client = _BudgetAwareLLMClient()
+        answerer = ChatAnswerer(
+            settings=Settings(root_dir=ROOT),
+            retriever=_FakeRetriever(),
+            llm_client=llm_client,
+        )
+
+        result = answerer.answer("OpenShift 아키텍처를 한 문단으로 설명해줘", mode="learn")
+
+        self.assertEqual([192], llm_client.requested_max_tokens)
+        self.assertEqual(192, result.pipeline_trace["llm"]["requested_max_tokens"])
 
     def test_answerer_routes_greeting_without_retrieval(self) -> None:
         settings = Settings(root_dir=ROOT)

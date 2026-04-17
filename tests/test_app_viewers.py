@@ -31,6 +31,7 @@ from play_book_studio.app.server_routes import (
     handle_viewer_document,
     _viewer_source_meta,
 )
+from play_book_studio.app.presenters import _build_citation_presentation_context
 from play_book_studio.config.settings import load_settings
 
 class TestAppViewers(unittest.TestCase):
@@ -723,6 +724,63 @@ class TestAppViewers(unittest.TestCase):
             )
 
         self.assertFalse(payload["section_match_exact"])
+
+    def test_serialize_citation_reuses_request_local_presentation_context(self) -> None:
+        with self._workspace() as root:
+            settings = self._settings(root)
+            settings.source_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.source_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "entries": [
+                            {
+                                "book_slug": "architecture",
+                                "title": "아키텍처",
+                                "source_url": "https://example.com/architecture",
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            settings.normalized_docs_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.normalized_docs_path.write_text(
+                json.dumps(
+                    {
+                        "book_slug": "architecture",
+                        "book_title": "아키텍처",
+                        "heading": "컨트롤 플레인",
+                        "section_level": 2,
+                        "section_path": ["개요", "컨트롤 플레인"],
+                        "anchor": "overview",
+                        "source_url": "https://example.com/architecture",
+                        "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html#overview",
+                        "text": "본문",
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            with patch("play_book_studio.app.presenters.load_settings", wraps=load_settings) as load_settings_spy:
+                presentation_context = _build_citation_presentation_context(root)
+                first = _serialize_citation(
+                    root,
+                    _citation(1),
+                    presentation_context=presentation_context,
+                )
+                second = _serialize_citation(
+                    root,
+                    _citation(2),
+                    presentation_context=presentation_context,
+                )
+
+        self.assertEqual(first["book_title"], second["book_title"])
+        self.assertEqual(first["source_label"], second["source_label"])
+        self.assertEqual(first["section_path_label"], second["section_path_label"])
+        self.assertEqual(1, load_settings_spy.call_count)
 
     def test_internal_viewer_html_falls_back_to_normalized_sections_without_playbook_artifact(self) -> None:
         with self._workspace() as root:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from play_book_studio.retrieval import SessionContext
@@ -53,10 +54,29 @@ def generate_grounded_answer_text(
     mode: str,
     citations: list[dict],
     trace_callback=None,
-) -> tuple[str, dict[str, Any]]:
+    max_tokens_override: int | None = None,
+) -> tuple[str, dict[str, Any], dict[str, float]]:
+    provider_started_at = time.perf_counter()
+    try:
+        if max_tokens_override is not None:
+            raw_answer_text = llm_client.generate(
+                messages,
+                trace_callback=trace_callback,
+                max_tokens=max_tokens_override,
+            )
+        else:
+            raw_answer_text = llm_client.generate(messages, trace_callback=trace_callback)
+    except TypeError:
+        raw_answer_text = llm_client.generate(messages, trace_callback=trace_callback)
+    provider_round_trip_ms = round(
+        (time.perf_counter() - provider_started_at) * 1000,
+        1,
+    )
+
+    post_process_started_at = time.perf_counter()
     answer_text = reshape_ops_answer_text(
         normalize_answer_text(
-            normalize_answer_markup_blocks(llm_client.generate(messages, trace_callback=trace_callback))
+            normalize_answer_markup_blocks(raw_answer_text)
         ),
         mode=mode,
     )
@@ -127,7 +147,26 @@ def generate_grounded_answer_text(
             "last_attempted_providers": [],
         }
     )
-    return answer_text, llm_runtime_meta
+    post_process_ms = round(
+        (time.perf_counter() - post_process_started_at) * 1000,
+        1,
+    )
+    llm_runtime_meta = {
+        **llm_runtime_meta,
+        "provider_round_trip_ms": provider_round_trip_ms,
+        "post_process_ms": post_process_ms,
+        "raw_output_chars": len(raw_answer_text),
+        "final_output_chars": len(answer_text),
+        "requested_max_tokens": (
+            max_tokens_override
+            if max_tokens_override is not None
+            else llm_runtime_meta.get("last_requested_max_tokens", getattr(llm_client, "max_tokens", None))
+        ),
+    }
+    return answer_text, llm_runtime_meta, {
+        "llm_provider_round_trip": provider_round_trip_ms,
+        "llm_post_process": post_process_ms,
+    }
 
 
 def finalize_deployment_scaling_answer(

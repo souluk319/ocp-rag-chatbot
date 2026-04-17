@@ -18,6 +18,8 @@ from play_book_studio.ingestion.translation_gold_promotion import (
     TRANSLATED_GOLD_PROMOTION_STRATEGY,
     promote_translation_gold,
 )
+from play_book_studio.retrieval.models import RetrievalHit
+from play_book_studio.retrieval.retriever import ChatRetriever
 
 
 def _write_json(path: Path, payload: dict[str, object]) -> None:
@@ -30,6 +32,15 @@ def _write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:
     with path.open("w", encoding="utf-8") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
+class _StubBm25:
+    def __init__(self, hits: list[RetrievalHit]) -> None:
+        self._hits = hits
+
+    def search(self, query: str, top_k: int) -> list[RetrievalHit]:
+        del query, top_k
+        return list(self._hits)
 
 
 def _draft_fixture_rows(*, missing_license: bool = False) -> tuple[list[dict[str, object]], list[dict[str, object]], dict[str, object]]:
@@ -242,6 +253,111 @@ class TranslationGoldPromotionTests(unittest.TestCase):
             self.assertEqual(
                 TRANSLATED_GOLD_PROMOTION_STRATEGY,
                 dossier["current_status"]["promotion_strategy"],
+            )
+            self.assertEqual("ok", report["graph_compact_refresh"]["status"])
+            self.assertTrue(settings.graph_sidecar_compact_path.exists())
+            self.assertTrue(report["graph_compact_artifact"]["ready"])
+
+    def test_promote_translation_gold_refreshes_compact_graph_and_runtime_consumes_it(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            settings = Settings(root_dir=Path(tmpdir))
+            entry = SourceManifestEntry(
+                book_slug="monitoring",
+                title="Monitoring",
+                source_url="https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/monitoring/index",
+                resolved_source_url="https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/monitoring/index",
+                viewer_path="/docs/ocp/4.20/ko/monitoring/index.html",
+                high_value=True,
+                content_status="translated_ko_draft",
+                approval_status="needs_review",
+                translation_source_language="en",
+                translation_source_url="https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/monitoring/index",
+            )
+            write_manifest(settings.translation_draft_manifest_path, [entry])
+            normalized_rows, chunk_rows, playbook_payload = _draft_fixture_rows()
+            chunk_rows[0]["operator_names"] = ["Cluster Monitoring Operator"]
+            playbook_payload["source_metadata"]["source_type"] = "manual_synthesis"
+            _write_jsonl(settings.silver_ko_dir / "translation_drafts" / "normalized_docs.jsonl", normalized_rows)
+            _write_jsonl(settings.silver_ko_dir / "translation_drafts" / "chunks.jsonl", chunk_rows)
+            _write_jsonl(settings.silver_ko_dir / "translation_drafts" / "playbook_documents.jsonl", [playbook_payload])
+            _write_json(
+                settings.silver_ko_dir / "translation_drafts" / "playbooks" / "monitoring.json",
+                playbook_payload,
+            )
+            _write_json(
+                settings.bronze_dir / "source_bundles" / "monitoring" / "dossier.json",
+                {"current_status": {"content_status": "translated_ko_draft", "gap_lane": "translation_first"}},
+            )
+            _write_jsonl(
+                settings.playbook_documents_path,
+                [
+                    {
+                        "book_slug": "monitoring_overview",
+                        "title": "모니터링 개요 플레이북",
+                        "source_uri": "https://example.com/monitoring_overview",
+                        "review_status": "approved",
+                        "source_metadata": {
+                            "source_type": "manual_synthesis",
+                            "source_lane": "applied_playbook",
+                            "source_collection": "core",
+                        },
+                    }
+                ],
+            )
+            _write_jsonl(
+                settings.chunks_path,
+                [
+                    {
+                        "chunk_id": "monitoring-overview::0",
+                        "book_slug": "monitoring_overview",
+                        "book_title": "모니터링 개요 플레이북",
+                        "viewer_path": "/docs/ocp/4.20/ko/monitoring_overview/index.html#overview",
+                        "source_url": "https://example.com/monitoring_overview",
+                        "source_type": "manual_synthesis",
+                        "source_lane": "applied_playbook",
+                        "source_collection": "core",
+                        "operator_names": ["Cluster Monitoring Operator"],
+                    }
+                ],
+            )
+
+            report = promote_translation_gold(
+                settings,
+                refresh_synthesis_report=False,
+                sync_qdrant=False,
+            )
+
+            hit = RetrievalHit(
+                chunk_id="monitoring::overview::0",
+                book_slug="monitoring",
+                chapter="모니터링",
+                section="개요",
+                anchor="overview",
+                source_url="https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/monitoring/index",
+                viewer_path="/docs/ocp/4.20/ko/monitoring/index.html#overview",
+                text="모니터링 개요입니다.",
+                source="bm25",
+                raw_score=1.0,
+                fused_score=1.0,
+                source_collection="customer_pack",
+                source_lane="applied_playbook",
+                source_type="manual_synthesis",
+            )
+            retriever = ChatRetriever(settings, _StubBm25([hit]), vector_retriever=None)
+            result = retriever.retrieve(
+                "모니터링 개요",
+                top_k=1,
+                candidate_k=1,
+                use_vector=False,
+            )
+
+            self.assertEqual("ok", report["graph_compact_refresh"]["status"])
+            self.assertTrue(report["graph_compact_artifact"]["ready"])
+            self.assertEqual(1, report["graph_compact_artifact"]["relation_count"])
+            self.assertEqual(1, result.trace["graph"]["summary"]["sidecar_relation_count"])
+            self.assertIn(
+                "shared_operator_names",
+                [relation["type"] for relation in result.trace["graph"]["hits"][0]["relations"]],
             )
 
     def test_promote_translation_gold_rejects_missing_metadata(self) -> None:

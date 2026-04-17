@@ -21,7 +21,7 @@ from .audit_rules import (
 from .chunking import chunk_sections
 from .collector import collect_entry, entry_with_collected_metadata, raw_html_path
 from .embedding import EmbeddingClient
-from .graph_sidecar import write_graph_sidecar
+from .graph_sidecar import refresh_active_runtime_graph_artifacts
 from .manifest import (
     build_source_catalog_entries,
     build_manifest_update_report,
@@ -329,13 +329,13 @@ def run_ingestion_pipeline(
         bm25_rows,
     )
     log.stage = "graph"
-    graph_payload = write_graph_sidecar(
+    graph_refresh = refresh_active_runtime_graph_artifacts(
         settings,
-        chunks=chunks,
-        playbook_documents=[document.to_dict() for document in playbook_documents],
+        refresh_full_sidecar=True,
     )
-    log.graph_book_count = int(graph_payload.get("book_count", 0) or 0)
-    log.graph_relation_count = int(graph_payload.get("relation_count", 0) or 0)
+    full_sidecar = dict(graph_refresh.get("full_sidecar", {}))
+    log.graph_book_count = int(full_sidecar.get("book_count", 0) or 0)
+    log.graph_relation_count = int(full_sidecar.get("relation_count", 0) or 0)
     _progress(
         "[graph] "
         f"books={log.graph_book_count} relations={log.graph_relation_count}"

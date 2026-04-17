@@ -221,6 +221,9 @@ class TestAppChatApiMultiturn(unittest.TestCase):
                 )
                 self.assertEqual(int(turn["turn"]), payload["history_size"], scenario["id"])
                 self.assertTrue(payload["citations"], scenario["id"])
+                self.assertIn("server_timings_ms", payload, scenario["id"])
+                self.assertIn("payload_build", payload["server_timings_ms"], scenario["id"])
+                self.assertIn("payload_citation_serialize", payload["server_timings_ms"], scenario["id"])
                 self.assertEqual(
                     str((turn["expected_book_slugs"] or ["overview"])[0]),
                     payload["citations"][0]["book_slug"],
@@ -252,6 +255,8 @@ class TestAppChatApiMultiturn(unittest.TestCase):
         payload = events[-1]["payload"]
         self.assertIn("retrieval_trace", payload)
         self.assertIn("pipeline_trace", payload)
+        self.assertIn("server_timings_ms", payload)
+        self.assertIn("server_timings_ms", payload["pipeline_trace"])
         self.assertIn("rewritten_query", payload)
         self.assertEqual("rag", payload["response_kind"])
 

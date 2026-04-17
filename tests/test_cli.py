@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import io
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -87,6 +89,87 @@ class CliUiWarmupTests(unittest.TestCase):
         self.assertEqual(0, exit_code)
         self.assertEqual(1, fake_answerer.retriever.reranker.warmup_calls)
         serve_mock.assert_called_once()
+
+    def test_build_parser_accepts_graph_compact_command(self) -> None:
+        args = cli.build_parser().parse_args(["graph-compact"])
+
+        self.assertEqual("graph-compact", args.command)
+        self.assertIsNone(args.output)
+
+    def test_build_parser_accepts_maintenance_smoke_command(self) -> None:
+        args = cli.build_parser().parse_args(["maintenance-smoke"])
+
+        self.assertEqual("maintenance-smoke", args.command)
+        self.assertIsNone(args.output)
+        self.assertEqual("OpenShift architecture overview", args.query)
+
+    def test_run_graph_compact_writes_summary(self) -> None:
+        args = argparse.Namespace(output=Path("custom-compact.json"))
+        fake_settings = object()
+        stdout = io.StringIO()
+        payload = {
+            "book_count": 2,
+            "relation_count": 1,
+            "summary": {
+                "relation_group_counts": {
+                    "shared_operator_names": 1,
+                }
+            },
+        }
+
+        with (
+            patch("play_book_studio.cli.load_settings", return_value=fake_settings) as load_settings_mock,
+            patch(
+                "play_book_studio.cli.write_graph_sidecar_compact_from_artifacts",
+                return_value=(Path("custom-compact.json"), payload),
+            ) as write_mock,
+            redirect_stdout(stdout),
+        ):
+            exit_code = cli._run_graph_compact(args)
+
+        self.assertEqual(0, exit_code)
+        load_settings_mock.assert_called_once_with(Path(cli.ROOT))
+        write_mock.assert_called_once_with(fake_settings, output_path=Path("custom-compact.json"))
+        rendered = stdout.getvalue()
+        self.assertIn("wrote graph sidecar compact artifact: custom-compact.json", rendered)
+        self.assertIn('"book_count": 2', rendered)
+        self.assertIn('"relation_count": 1', rendered)
+
+    def test_run_maintenance_smoke_writes_summary(self) -> None:
+        args = argparse.Namespace(
+            output=Path("maintenance-smoke.json"),
+            ui_base_url="http://127.0.0.1:8765",
+            query="OpenShift architecture overview",
+        )
+        stdout = io.StringIO()
+        payload = {
+            "summary": {
+                "ok": True,
+                "compact_ready": True,
+                "health_ok": True,
+                "chat_ok": True,
+            }
+        }
+
+        with (
+            patch(
+                "play_book_studio.cli.write_runtime_maintenance_smoke",
+                return_value=(Path("maintenance-smoke.json"), payload),
+            ) as smoke_mock,
+            redirect_stdout(stdout),
+        ):
+            exit_code = cli._run_maintenance_smoke(args)
+
+        self.assertEqual(0, exit_code)
+        smoke_mock.assert_called_once_with(
+            Path(cli.ROOT),
+            output_path=Path("maintenance-smoke.json"),
+            ui_base_url="http://127.0.0.1:8765",
+            query="OpenShift architecture overview",
+        )
+        rendered = stdout.getvalue()
+        self.assertIn("wrote runtime maintenance smoke: maintenance-smoke.json", rendered)
+        self.assertIn('"compact_ready": true', rendered)
 
 
 if __name__ == "__main__":

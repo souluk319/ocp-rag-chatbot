@@ -1,0 +1,59 @@
+{
+  "task_id": "runtime_graph_compact_fallback_20260417",
+  "lane_id": "main",
+  "status": "completed",
+  "current_judgment": "compact local graph fallback is now in place and validated: request-path stability remains intact while book-level relation richness is restored through a 2.53MB compact artifact instead of the 7.5GB sidecar.",
+  "key_evidence": [
+    "Ingestion now writes graph_sidecar_compact.json with books, relations, and summary only.",
+    "Retrieval local sidecar now consumes the compact artifact before considering the full sidecar, and still keeps the oversized-sidecar guard in place.",
+    "Focused regression suite passed: .venv\\\\Scripts\\\\python.exe -m pytest tests\\\\test_ingestion_graph_sidecar.py tests\\\\test_ingestion_pipeline.py tests\\\\test_retrieval_graph_runtime.py tests\\\\test_retrieval_runtime_graph_trace.py -q => 29 passed.",
+    "Current runtime compact artifact was materialized at artifacts/retrieval/graph_sidecar_compact.json with 174 books, 7003 relations, and 2534246 bytes.",
+    "Live /api/chat smoke on April 17, 2026 showed retrieval_trace.graph.summary.sidecar_relation_count = 7003 while fallback_reason still reported full-sidecar eager-load avoidance."
+  ],
+  "artifact_paths": [
+    "src/play_book_studio/config/settings.py",
+    "src/play_book_studio/config/settings_paths.py",
+    "src/play_book_studio/ingestion/graph_sidecar.py",
+    "src/play_book_studio/retrieval/graph_runtime.py",
+    "tests/test_ingestion_graph_sidecar.py",
+    "tests/test_ingestion_pipeline.py",
+    "tests/test_retrieval_graph_runtime.py",
+    "artifacts/retrieval/graph_sidecar_compact.json",
+    "reports/execution_harness/runtime_graph_compact_fallback_20260417/main/worklog.md"
+  ],
+  "validation_results": {
+    "focused_pytest": {
+      "command": ".venv\\Scripts\\python.exe -m pytest tests\\test_ingestion_graph_sidecar.py tests\\test_ingestion_pipeline.py tests\\test_retrieval_graph_runtime.py tests\\test_retrieval_runtime_graph_trace.py -q",
+      "result": "passed",
+      "details": "29 passed in 7.16s"
+    },
+    "compact_artifact_materialization": {
+      "output_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\artifacts\\retrieval\\graph_sidecar_compact.json",
+      "book_count": 174,
+      "relation_count": 7003,
+      "size_bytes": 2534246
+    },
+    "live_chat_smoke": {
+      "query": "OpenShift 아키텍처를 설명해줘",
+      "elapsed_ms": 7391.3,
+      "graph_adapter_mode": "local_sidecar",
+      "graph_fallback_reason": "neo4j_unhealthy:connect failed: timed out|sidecar_eager_load_skipped:file_too_large:7876461484",
+      "graph_relation_count": 1608,
+      "graph_sidecar_relation_count": 7003,
+      "process_private_bytes_before": 1985703936,
+      "process_private_bytes_after": 2147180544
+    },
+    "live_health": {
+      "endpoint": "http://127.0.0.1:8765/api/health",
+      "result": "ok"
+    },
+    "listener_state": {
+      "port": 8765,
+      "process_id": 22312,
+      "process_name": "python",
+      "process_private_bytes_final": 2147180544,
+      "process_working_set_final": 1291153408
+    }
+  },
+  "next_action": "add a small repo-supported backfill command so future runtimes can regenerate graph_sidecar_compact.json from chunks and playbook_documents without relying on an ad hoc script."
+}

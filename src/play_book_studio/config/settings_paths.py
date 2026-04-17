@@ -225,6 +225,10 @@ class SettingsPathMixin:
         return self.retrieval_dir / "graph_sidecar.json"
 
     @property
+    def graph_sidecar_compact_path(self) -> Path:
+        return self.retrieval_dir / "graph_sidecar_compact.json"
+
+    @property
     def benchmark_report_path(self) -> Path:
         return self.retrieval_dir / "benchmark_report.json"
 

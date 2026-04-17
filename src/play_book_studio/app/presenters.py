@@ -17,6 +17,7 @@ from play_book_studio.intake.service import evaluate_canonical_book_quality
 from play_book_studio.config.packs import default_core_pack, resolve_ocp_core_pack
 from play_book_studio.config.settings import Settings, load_settings
 from play_book_studio.config.validation import read_jsonl
+from play_book_studio.ingestion.graph_sidecar import graph_sidecar_compact_artifact_status
 from play_book_studio.runtime_catalog_registry import official_runtime_book_entry
 from play_book_studio.answering.answerer import ChatAnswerer
 from play_book_studio.answering.models import Citation
@@ -155,6 +156,7 @@ def _build_health_payload(answerer: ChatAnswerer) -> dict[str, Any]:
     settings = answerer.settings
     pack = settings.active_pack
     embedding_mode = "remote" if settings.embedding_base_url else "local"
+    compact_graph_artifact = graph_sidecar_compact_artifact_status(settings)
     llm_runtime = (
         answerer.llm_client.runtime_metadata()
         if hasattr(answerer.llm_client, "runtime_metadata")
@@ -191,6 +193,9 @@ def _build_health_payload(answerer: ChatAnswerer) -> dict[str, Any]:
             "reranker_device": settings.reranker_device,
             "qdrant_url": settings.qdrant_url,
             "qdrant_collection": settings.qdrant_collection,
+            "graph_backend": settings.graph_backend,
+            "graph_runtime_mode": settings.graph_runtime_mode,
+            "graph_compact_artifact": compact_graph_artifact,
             "artifacts_dir": str(settings.artifacts_dir),
             "source_manifest_path": str(settings.source_manifest_path),
             "normalized_docs_path": str(settings.normalized_docs_path),
@@ -229,6 +234,58 @@ def _manifest_entry_for_book(root_dir: Path, book_slug: str) -> dict[str, Any]:
     return official_runtime_book_entry(root_dir, book_slug)
 
 
+class _CitationPresentationContext:
+    def __init__(self, root_dir: Path) -> None:
+        self.root_dir = root_dir
+        self.settings = load_settings(root_dir)
+        self.core_pack_payload = _core_pack_payload(
+            version=self.settings.ocp_version,
+            language=self.settings.docs_language,
+        )
+        self._manifest_entries: dict[str, dict[str, Any]] = {}
+        self._normalized_rows: dict[str, tuple[dict[str, Any] | None, bool]] = {}
+        self._customer_pack_meta: dict[str, dict[str, Any] | None] = {}
+
+    def manifest_entry(self, book_slug: str) -> dict[str, Any]:
+        normalized_slug = str(book_slug or "").strip()
+        if normalized_slug not in self._manifest_entries:
+            manifest_path = self.settings.source_manifest_path
+            manifest_entry: dict[str, Any] = {}
+            if manifest_path.exists():
+                manifest_entry = _load_manifest_entries(
+                    str(manifest_path),
+                    manifest_path.stat().st_mtime_ns,
+                ).get(normalized_slug, {})
+            if not manifest_entry:
+                manifest_entry = official_runtime_book_entry(self.root_dir, normalized_slug)
+            self._manifest_entries[normalized_slug] = manifest_entry
+        return self._manifest_entries[normalized_slug]
+
+    def normalized_row(self, viewer_path: str) -> tuple[dict[str, Any] | None, bool]:
+        normalized_viewer_path = str(viewer_path or "").strip()
+        if normalized_viewer_path not in self._normalized_rows:
+            self._normalized_rows[normalized_viewer_path] = _resolve_normalized_row_for_viewer_path(
+                self.root_dir,
+                normalized_viewer_path,
+                settings=self.settings,
+            )
+        return self._normalized_rows[normalized_viewer_path]
+
+    def customer_pack_meta(self, viewer_path: str) -> dict[str, Any] | None:
+        normalized_viewer_path = str(viewer_path or "").strip()
+        if normalized_viewer_path not in self._customer_pack_meta:
+            self._customer_pack_meta[normalized_viewer_path] = _customer_pack_meta_for_viewer_path(
+                self.root_dir,
+                normalized_viewer_path,
+                settings=self.settings,
+            )
+        return self._customer_pack_meta[normalized_viewer_path]
+
+
+def _build_citation_presentation_context(root_dir: Path) -> _CitationPresentationContext:
+    return _CitationPresentationContext(root_dir)
+
+
 @lru_cache(maxsize=1)
 def _load_normalized_sections(
     normalized_docs_path: str,
@@ -264,7 +321,12 @@ def _parse_customer_pack_viewer_path(viewer_path: str) -> tuple[str, str] | None
     return None
 
 
-def _customer_pack_book_for_viewer_path(root_dir: Path, viewer_path: str) -> dict[str, Any] | None:
+def _customer_pack_book_for_viewer_path(
+    root_dir: Path,
+    viewer_path: str,
+    *,
+    settings: Settings | None = None,
+) -> dict[str, Any] | None:
     parsed = _parse_customer_pack_viewer_path(viewer_path)
     if parsed is None:
         return None
@@ -276,8 +338,9 @@ def _customer_pack_book_for_viewer_path(root_dir: Path, viewer_path: str) -> dic
     record = CustomerPackDraftStore(root_dir).get(resolved_draft_id)
     if record is None or not record.canonical_book_path.strip():
         return None
+    active_settings = settings or load_settings(root_dir)
     payload_path = (
-        load_settings(root_dir).customer_pack_books_dir / f"{asset_slug}.json"
+        active_settings.customer_pack_books_dir / f"{asset_slug}.json"
         if asset_slug
         else Path(record.canonical_book_path)
     )
@@ -301,8 +364,13 @@ def _customer_pack_book_for_viewer_path(root_dir: Path, viewer_path: str) -> dic
     return payload
 
 
-def _customer_pack_meta_for_viewer_path(root_dir: Path, viewer_path: str) -> dict[str, Any] | None:
-    payload = _customer_pack_book_for_viewer_path(root_dir, viewer_path)
+def _customer_pack_meta_for_viewer_path(
+    root_dir: Path,
+    viewer_path: str,
+    *,
+    settings: Settings | None = None,
+) -> dict[str, Any] | None:
+    payload = _customer_pack_book_for_viewer_path(root_dir, viewer_path, settings=settings)
     if payload is None:
         return None
     sections = [dict(section) for section in (payload.get("sections") or []) if isinstance(section, dict)]
@@ -388,13 +456,15 @@ def _normalized_row_for_viewer_path(root_dir: Path, viewer_path: str) -> dict[st
 def _resolve_normalized_row_for_viewer_path(
     root_dir: Path,
     viewer_path: str,
+    *,
+    settings: Settings | None = None,
 ) -> tuple[dict[str, Any] | None, bool]:
     parsed = _parse_viewer_path(viewer_path)
     if parsed is None:
         return None, False
     book_slug, anchor = parsed
-    settings = load_settings(root_dir)
-    for normalized_docs_path in settings.normalized_docs_candidates:
+    active_settings = settings or load_settings(root_dir)
+    for normalized_docs_path in active_settings.normalized_docs_candidates:
         if not normalized_docs_path.exists():
             continue
         sections_by_book = _load_normalized_sections(
@@ -414,12 +484,18 @@ def _resolve_normalized_row_for_viewer_path(
     return None, False
 
 
-def _serialize_citation(root_dir: Path, citation: Citation) -> dict[str, Any]:
-    settings = load_settings(root_dir)
+def _serialize_citation(
+    root_dir: Path,
+    citation: Citation,
+    *,
+    presentation_context: _CitationPresentationContext | None = None,
+) -> dict[str, Any]:
+    context = presentation_context or _build_citation_presentation_context(root_dir)
+    settings = context.settings
     href = _citation_href(citation)
-    row, matched_exact = _resolve_normalized_row_for_viewer_path(root_dir, href)
-    customer_pack_meta = _customer_pack_meta_for_viewer_path(root_dir, href)
-    manifest_entry = _manifest_entry_for_book(root_dir, citation.book_slug)
+    row, matched_exact = context.normalized_row(href)
+    customer_pack_meta = context.customer_pack_meta(href)
+    manifest_entry = context.manifest_entry(citation.book_slug)
 
     if row is None and customer_pack_meta is not None:
         book_title = str(customer_pack_meta.get("book_title") or "") or _humanize_book_slug(citation.book_slug)
@@ -485,7 +561,7 @@ def _serialize_citation(root_dir: Path, citation: Citation) -> dict[str, Any]:
         "section_path": section_path,
         "section_path_label": section_label,
         "source_label": f"{book_title} · {section_label}" if section_label else book_title,
-        **_core_pack_payload(version=settings.ocp_version, language=settings.docs_language),
+        **context.core_pack_payload,
         **_official_runtime_truth_payload(settings=settings, manifest_entry=manifest_entry),
         "section_match_exact": matched_exact,
     }

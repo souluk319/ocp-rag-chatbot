@@ -1,0 +1,21 @@
+# runtime_stability_fix_20260417 / main
+
+- scope locked: remove oversized local graph sidecar eager-load from request path or bypass it with bounded fallback
+- do not change UI, branding, unrelated retrieval tuning, or answerer structure
+- validate with focused retrieval tests plus live `/api/chat` and `/api/health` smoke and memory re-measurement on port `8765`
+- option compare:
+  - lazy load / streaming: safer long-term but too large for 1st packet because it needs custom JSON slicing across `books/chunks/relations`
+  - prebuilt compact index: good follow-up, but requires new artifact contract and regeneration path
+  - graph skip fallback only for explainer: smallest code delta, but leaves other local-sidecar requests exposed
+  - selected: bounded local-sidecar fallback for oversized sidecar, keep metadata from `playbook_documents.jsonl`, use request-local fallback relations
+- implementation summary:
+  - `LocalGraphSidecar` now refuses full eager-load when `graph_sidecar.json` exceeds `64 MiB`
+  - metadata now prefers `data/gold_manualbook_ko/playbook_documents.jsonl` over sidecar books
+  - graph trace carries `sidecar_eager_load_skipped:file_too_large:<bytes>` so live evidence stays explicit
+- validation summary:
+  - `pytest tests/test_retrieval_graph_runtime.py tests/test_retrieval_runtime_graph_trace.py -q` => `19 passed`
+  - restarted `8765` with current code via `.venv\Scripts\python.exe -m play_book_studio.cli ui --no-browser --host 0.0.0.0 --port 8765`
+  - live `POST /api/chat` with `OpenShift 아키텍처를 설명해줘` completed in `8694.1 ms`, process private bytes `1984827392 -> 2138447872`
+  - second live `POST /api/chat` completed in `5677.8 ms`, process private bytes `2138447872 -> 2138447872`
+  - retrieval trace fallback evidence: `neo4j_unhealthy:connect failed: timed out|sidecar_eager_load_skipped:file_too_large:7876461484`
+  - live `/api/health` remained `ok: true` after restart and after explainer smoke

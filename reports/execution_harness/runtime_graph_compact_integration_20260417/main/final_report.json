@@ -1,0 +1,33 @@
+{
+  "task_id": "runtime_graph_compact_integration_20260417",
+  "lane_id": "main",
+  "status": "completed",
+  "current_judgment": "graph-compact is now integrated into the first stale-risk maintenance path. Active runtime promotion regenerates the compact artifact automatically, runtime refuses stale compact artifacts, and health/runtime payloads expose freshness so operators can detect drift before relation quality silently degrades.",
+  "key_evidence": [
+    "translation_gold_promotion now calls write_graph_sidecar_compact_from_artifacts() after refreshing active chunks and playbook_documents, and records degraded fallback instead of failing the promotion when compact regeneration fails",
+    "LocalGraphSidecar now checks full and compact artifact freshness before loading either payload, so stale compact data is ignored and runtime falls back to bounded playbook_documents relations",
+    "health payload and runtime report now expose graph_compact_artifact freshness, readiness, and degrade mode",
+    "focused regression suite passed with 27 tests, and the dedicated compact end-to-end promotion smoke passed"
+  ],
+  "artifact_paths": [
+    "src/play_book_studio/ingestion/graph_sidecar.py",
+    "src/play_book_studio/ingestion/translation_gold_promotion.py",
+    "src/play_book_studio/retrieval/graph_runtime.py",
+    "src/play_book_studio/app/presenters.py",
+    "src/play_book_studio/app/runtime_report.py",
+    "tests/test_translation_gold_promotion.py",
+    "tests/test_retrieval_graph_runtime.py",
+    "tests/test_runtime_report.py"
+  ],
+  "validation_results": {
+    "focused_regression": {
+      "command": ".venv\\Scripts\\python.exe -m pytest tests\\test_translation_gold_promotion.py tests\\test_retrieval_graph_runtime.py tests\\test_runtime_report.py tests\\test_foundry_orchestrator.py -q",
+      "result": "27 passed in 9.66s"
+    },
+    "end_to_end_compact_smoke": {
+      "command": ".venv\\Scripts\\python.exe -m pytest tests\\test_translation_gold_promotion.py -k compact -q",
+      "result": "1 passed, 2 deselected in 9.58s"
+    }
+  },
+  "next_action": "If another maintenance path starts mutating active chunks or playbook_documents outside full ingestion, route it through the same artifact freshness helper and compact regeneration contract instead of letting it write runtime state directly."
+}

@@ -19,6 +19,10 @@ from play_book_studio.ingestion.validation import (
 from .audit_rules import hangul_ratio
 from .data_quality import build_playbook_reader_grade_audit_for_dirs
 from .embedding import EmbeddingClient
+from .graph_sidecar import (
+    graph_sidecar_compact_artifact_status,
+    refresh_active_runtime_graph_artifacts,
+)
 from .manifest import read_manifest, write_manifest
 from .models import ChunkRecord, SourceManifestEntry
 from .qdrant_store import upsert_chunks
@@ -476,6 +480,7 @@ def promote_translation_gold(
     promoted_entries: list[SourceManifestEntry] = []
     reports: list[dict[str, object]] = []
     errors: list[dict[str, object]] = []
+    graph_compact_refresh: dict[str, object] = {"status": "skipped"}
 
     for entry in selected_entries:
         slug = entry.book_slug
@@ -578,6 +583,12 @@ def promote_translation_gold(
             key=lambda item: (item.ocp_version, item.docs_language, item.source_kind, item.book_slug)
         )
         write_manifest(settings.source_manifest_path, manifest_entries)
+        graph_refresh = refresh_active_runtime_graph_artifacts(
+            settings,
+            refresh_full_sidecar=False,
+            allow_compact_degrade=True,
+        )
+        graph_compact_refresh = dict(graph_refresh.get("compact_sidecar", {}))
 
     dossier_promoted_count = 0
     for entry in promoted_entries:
@@ -610,9 +621,12 @@ def promote_translation_gold(
             "error_count": len(errors),
             "dossier_promoted_count": dossier_promoted_count,
             "qdrant_upserted_count": qdrant_upserted_count,
+            "graph_compact_ready": bool(graph_sidecar_compact_artifact_status(settings).get("ready")),
         },
         "books": reports,
         "errors": errors,
+        "graph_compact_refresh": graph_compact_refresh,
+        "graph_compact_artifact": graph_sidecar_compact_artifact_status(settings),
         "output_targets": {
             "approved_manifest_path": str(settings.source_manifest_path),
             "normalized_docs": [str(path) for path in settings.normalized_docs_candidates],
@@ -629,6 +643,7 @@ def promote_translation_gold(
                 for path in (settings.playbook_documents_path,)
             ],
             "playbook_books": [str(path) for path in settings.playbook_book_dirs],
+            "graph_sidecar_compact_path": str(settings.graph_sidecar_compact_path),
         },
     }
     if generation_report is not None:

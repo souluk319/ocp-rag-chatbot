@@ -24,13 +24,19 @@ from play_book_studio.retrieval.query import (
     has_mco_concept_intent,
     has_node_drain_intent,
     has_openshift_kubernetes_compare_intent,
+    has_operator_concept_intent,
+    has_pod_lifecycle_concept_intent,
     has_rbac_intent,
+    has_route_ingress_compare_intent,
+    is_explainer_query,
+    is_generic_intro_query,
 )
 
 from .answer_text_commands import (
     build_deployment_scaling_answer,
     build_grounded_command_guide_answer,
     has_sufficient_command_grounding,
+    shape_etcd_backup_answer,
 )
 from .answer_text_formatting import summarize_session_context
 from .citations import (
@@ -227,6 +233,45 @@ def _prune_provenance_noise_citations(*, query: str, citations: list) -> list:
             pruned = [citation for citation in pruned if citation.book_slug in preferred_books]
 
     return pruned or citations
+
+
+def _deterministic_llm_runtime_meta(*, provider: str) -> dict[str, object]:
+    return {
+        "preferred_provider": provider,
+        "fallback_enabled": False,
+        "last_provider": provider,
+        "last_fallback_used": False,
+        "last_attempted_providers": [provider],
+        "last_requested_max_tokens": 0,
+        "provider_round_trip_ms": 0.0,
+        "post_process_ms": 0.0,
+        "raw_output_chars": 0,
+        "final_output_chars": 0,
+        "requested_max_tokens": 0,
+    }
+
+
+def _is_explanation_query(query: str) -> bool:
+    return any(
+        (
+            is_explainer_query(query),
+            is_generic_intro_query(query),
+            has_openshift_kubernetes_compare_intent(query),
+            has_route_ingress_compare_intent(query),
+            has_operator_concept_intent(query),
+            has_mco_concept_intent(query),
+            has_pod_lifecycle_concept_intent(query),
+        )
+    )
+
+
+def _llm_max_tokens_override(*, query: str, default_max_tokens: int) -> int | None:
+    if default_max_tokens <= 0 or not _is_explanation_query(query):
+        return None
+    lowered = str(query or "").lower()
+    if any(token in lowered for token in ("한 문단", "한문단", "one paragraph", "single paragraph")):
+        return min(default_max_tokens, 192)
+    return min(default_max_tokens, 256)
 
 
 class ChatAnswerer:
@@ -748,59 +793,115 @@ class ChatAnswerer:
                 selected_hits=selected_hits,
             )
 
-        prompt_started_at = time.perf_counter()
-        emit(
-            {
-                "step": "prompt_build",
-                "label": "프롬프트 조립 중",
-                "status": "running",
-            }
-        )
-        messages = build_messages(
-            query=query,
-            mode=mode,
-            context_bundle=context_bundle,
-            session_summary=summarize_session_context(context),
-        )
-        pipeline_timings_ms["prompt_build"] = round(
-            (time.perf_counter() - prompt_started_at) * 1000,
-            1,
-        )
-        emit(
-            {
-                "step": "prompt_build",
-                "label": "프롬프트 조립 완료",
-                "status": "done",
-                "detail": f"messages {len(messages)}개",
-                "duration_ms": pipeline_timings_ms["prompt_build"],
-            }
-        )
+        answer_text = ""
+        llm_runtime_meta: dict[str, object]
+        etcd_fast_path_answer = ""
+        if has_backup_restore_intent(query):
+            etcd_fast_path_answer = shape_etcd_backup_answer(
+                "",
+                query=query,
+                citations=context_bundle.citations,
+            )
 
-        llm_started_at = time.perf_counter()
-        answer_text, llm_runtime_meta = generate_grounded_answer_text(
-            self.llm_client,
-            messages,
-            query=query,
-            mode=mode,
-            citations=context_bundle.citations,
-            trace_callback=emit,
-        )
-        pipeline_timings_ms["llm_generate_total"] = round(
-            (time.perf_counter() - llm_started_at) * 1000,
-            1,
-        )
-        emit(
-            {
-                "step": "llm_runtime",
-                "label": "LLM 런타임 확인",
-                "status": "done",
-                "detail": (
-                    f"provider={llm_runtime_meta.get('last_provider') or llm_runtime_meta.get('preferred_provider')} "
-                    f"fallback={str(bool(llm_runtime_meta.get('last_fallback_used', False))).lower()}"
-                ),
-                "meta": llm_runtime_meta,
-            }
-        )
+        if etcd_fast_path_answer:
+            answer_text = etcd_fast_path_answer
+            pipeline_timings_ms["prompt_build"] = 0.0
+            pipeline_timings_ms["llm_generate_total"] = 0.0
+            pipeline_timings_ms["llm_provider_round_trip"] = 0.0
+            pipeline_timings_ms["llm_post_process"] = 0.0
+            llm_runtime_meta = _deterministic_llm_runtime_meta(
+                provider="deterministic-fast-path",
+            )
+            emit(
+                {
+                    "step": "deterministic_answer",
+                    "label": "전용 절차 답변 생성 완료",
+                    "status": "done",
+                    "detail": "pre-llm etcd backup/restore fast path",
+                }
+            )
+            emit(
+                {
+                    "step": "prompt_build",
+                    "label": "프롬프트 조립 생략",
+                    "status": "done",
+                    "detail": "deterministic etcd backup/restore fast path",
+                    "duration_ms": pipeline_timings_ms["prompt_build"],
+                }
+            )
+            emit(
+                {
+                    "step": "llm_runtime",
+                    "label": "LLM 호출 생략",
+                    "status": "done",
+                    "detail": (
+                        f"provider={llm_runtime_meta.get('last_provider') or llm_runtime_meta.get('preferred_provider')} "
+                        f"fallback={str(bool(llm_runtime_meta.get('last_fallback_used', False))).lower()}"
+                    ),
+                    "meta": llm_runtime_meta,
+                }
+            )
+        else:
+            prompt_started_at = time.perf_counter()
+            emit(
+                {
+                    "step": "prompt_build",
+                    "label": "프롬프트 조립 중",
+                    "status": "running",
+                }
+            )
+            messages = build_messages(
+                query=query,
+                mode=mode,
+                context_bundle=context_bundle,
+                session_summary=summarize_session_context(context),
+            )
+            pipeline_timings_ms["prompt_build"] = round(
+                (time.perf_counter() - prompt_started_at) * 1000,
+                1,
+            )
+            emit(
+                {
+                    "step": "prompt_build",
+                    "label": "프롬프트 조립 완료",
+                    "status": "done",
+                    "detail": f"messages {len(messages)}개",
+                    "duration_ms": pipeline_timings_ms["prompt_build"],
+                }
+            )
+
+            llm_started_at = time.perf_counter()
+            max_tokens_override = _llm_max_tokens_override(
+                query=query,
+                default_max_tokens=self.settings.llm_max_tokens,
+            )
+            answer_text, llm_runtime_meta, llm_phase_timings = generate_grounded_answer_text(
+                self.llm_client,
+                messages,
+                query=query,
+                mode=mode,
+                citations=context_bundle.citations,
+                trace_callback=emit,
+                max_tokens_override=max_tokens_override,
+            )
+            pipeline_timings_ms["llm_generate_total"] = round(
+                (time.perf_counter() - llm_started_at) * 1000,
+                1,
+            )
+            pipeline_timings_ms["llm_provider_round_trip"] = llm_phase_timings["llm_provider_round_trip"]
+            pipeline_timings_ms["llm_post_process"] = llm_phase_timings["llm_post_process"]
+            emit(
+                {
+                    "step": "llm_runtime",
+                    "label": "LLM 런타임 확인",
+                    "status": "done",
+                    "detail": (
+                        f"provider={llm_runtime_meta.get('last_provider') or llm_runtime_meta.get('preferred_provider')} "
+                        f"fallback={str(bool(llm_runtime_meta.get('last_fallback_used', False))).lower()}"
+                    ),
+                    "meta": llm_runtime_meta,
+                }
+            )
 
         finalize_started_at = time.perf_counter()
         emit(

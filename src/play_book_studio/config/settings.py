@@ -214,6 +214,10 @@ class Settings(SettingsPathMixin):
             self.retrieval_dir / "graph_sidecar.json",
         )
 
+    @property
+    def graph_sidecar_compact_path(self) -> Path:
+        return self.graph_sidecar_path.with_name("graph_sidecar_compact.json")
+
 def load_effective_env(root_dir: str | Path) -> dict[str, str]:
     """`.env` overlay를 반영한 환경 맵을 반환한다.
 

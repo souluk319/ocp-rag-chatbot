@@ -111,6 +111,7 @@ class IngestionPipelineTests(unittest.TestCase):
             self.assertTrue(settings.bm25_corpus_path.exists())
             self.assertTrue(settings.playbook_documents_path.exists())
             self.assertTrue(settings.graph_sidecar_path.exists())
+            self.assertTrue(settings.graph_sidecar_compact_path.exists())
             self.assertTrue((settings.playbook_books_dir / "machine_configuration.json").exists())
 
             normalized_row = _read_jsonl(settings.normalized_docs_path)[0]
@@ -193,6 +194,10 @@ class IngestionPipelineTests(unittest.TestCase):
                 "machine_configuration",
                 graph_payload["books"][0]["book_slug"],
             )
+            compact_graph_payload = json.loads(settings.graph_sidecar_compact_path.read_text(encoding="utf-8"))
+            self.assertEqual("graph_sidecar_compact_v1", compact_graph_payload["schema_version"])
+            self.assertEqual(graph_payload["relation_count"], compact_graph_payload["relation_count"])
+            self.assertNotIn("chunks", compact_graph_payload)
 
     def test_run_ingestion_pipeline_downgrades_fallback_book_to_needs_review(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -505,10 +510,12 @@ class IngestionPipelineTests(unittest.TestCase):
                 )
 
             graph_payload = json.loads(settings.graph_sidecar_path.read_text(encoding="utf-8"))
+            compact_payload = json.loads(settings.graph_sidecar_compact_path.read_text(encoding="utf-8"))
             self.assertEqual(2, log.graph_book_count)
             self.assertGreaterEqual(log.graph_relation_count, 1)
             self.assertEqual(2, graph_payload["book_count"])
             self.assertGreaterEqual(graph_payload["relation_count"], 1)
+            self.assertEqual(graph_payload["relation_count"], compact_payload["relation_count"])
             relation_types = {
                 relation_type
                 for relation in graph_payload["relations"]

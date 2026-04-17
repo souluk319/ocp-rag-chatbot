@@ -10,6 +10,10 @@ from urllib.parse import urlparse
 import requests
 
 from play_book_studio.config.settings import Settings
+from play_book_studio.ingestion.graph_sidecar import (
+    graph_sidecar_artifact_status,
+    graph_sidecar_compact_artifact_status,
+)
 
 from .models import RetrievalHit, SessionContext
 from .trace import duration_ms as _duration_ms, emit_trace_event as _emit_trace_event
@@ -29,6 +33,7 @@ GARBAGE_RELATION_SLUGS = {
 GRAPH_HEALTH_CACHE_TTL_SECONDS = 15.0
 GRAPH_PROBE_MAX_TIMEOUT_SECONDS = 1.0
 GRAPH_PROBE_MIN_TIMEOUT_SECONDS = 0.2
+LOCAL_SIDECAR_EAGER_LOAD_MAX_BYTES = 64 * 1024 * 1024
 
 def _safe_read_json(path: Path) -> dict[str, Any]:
     if not path.exists() or not path.is_file():
@@ -180,6 +185,18 @@ def _payload_graph_flags(*, enabled: bool, adapter_mode: str) -> dict[str, Any]:
     }
 
 
+def _join_fallback_reasons(*reasons: str) -> str:
+    joined: list[str] = []
+    seen: set[str] = set()
+    for reason in reasons:
+        normalized = str(reason or "").strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        joined.append(normalized)
+    return "|".join(joined)
+
+
 def _resolved_mode(settings: Settings) -> str:
     explicit = (settings.graph_runtime_mode or "").strip().lower()
     if explicit in {"local", "local_sidecar", "remote", "endpoint", "neo4j"}:
@@ -313,26 +330,86 @@ class LocalGraphSidecar:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self._payload: dict[str, Any] | None = None
+        self._compact_payload: dict[str, Any] | None = None
         self._book_index: dict[str, dict[str, Any]] | None = None
         self._relation_index: dict[str, list[dict[str, Any]]] | None = None
+        self._allow_full_payload_load: bool | None = None
+        self._payload_skip_reason = ""
+        self._payload_status: dict[str, Any] | None = None
+        self._compact_status: dict[str, Any] | None = None
+
+    def _should_allow_full_payload_load(self) -> bool:
+        if self._allow_full_payload_load is not None:
+            return self._allow_full_payload_load
+        try:
+            sidecar_size = self.settings.graph_sidecar_path.stat().st_size
+        except OSError:
+            self._allow_full_payload_load = True
+            self._payload_skip_reason = ""
+            return True
+        if sidecar_size > LOCAL_SIDECAR_EAGER_LOAD_MAX_BYTES:
+            self._allow_full_payload_load = False
+            self._payload_skip_reason = f"sidecar_eager_load_skipped:file_too_large:{sidecar_size}"
+            return False
+        self._allow_full_payload_load = True
+        self._payload_skip_reason = ""
+        return True
+
+    def _payload_bypass_reason(self) -> str:
+        self._should_allow_full_payload_load()
+        return self._payload_skip_reason
 
     def _load_payload(self) -> dict[str, Any]:
+        if not self._should_allow_full_payload_load():
+            return {}
+        if not bool(self._load_payload_status().get("ready")):
+            return {}
         if self._payload is None:
             self._payload = _safe_read_json(self.settings.graph_sidecar_path)
         return self._payload
 
+    def _load_compact_payload(self) -> dict[str, Any]:
+        if not bool(self._load_compact_status().get("ready")):
+            return {}
+        if self._compact_payload is None:
+            self._compact_payload = _safe_read_json(self.settings.graph_sidecar_compact_path)
+        return self._compact_payload
+
+    def _load_payload_status(self) -> dict[str, Any]:
+        if self._payload_status is None:
+            self._payload_status = graph_sidecar_artifact_status(self.settings)
+        return self._payload_status
+
+    def _load_compact_status(self) -> dict[str, Any]:
+        if self._compact_status is None:
+            self._compact_status = graph_sidecar_compact_artifact_status(self.settings)
+        return self._compact_status
+
+    def _relation_summary_payload(self) -> dict[str, Any]:
+        compact_payload = self._load_compact_payload()
+        if compact_payload:
+            return compact_payload
+        return self._load_payload()
+
     def _load_book_index(self) -> dict[str, dict[str, Any]]:
         if self._book_index is not None:
             return self._book_index
-        payload = self._load_payload()
-        index = _book_index_from_sidecar_payload(payload)
+        index = _book_index_from_playbook_documents(self.settings.playbook_documents_path)
         if not index:
-            index = _book_index_from_playbook_documents(self.settings.playbook_documents_path)
+            index = _book_index_from_sidecar_payload(self._load_compact_payload())
+        if not index:
+            index = _book_index_from_sidecar_payload(self._load_payload())
         self._book_index = index
         return index
 
     def _load_relation_index(self) -> dict[str, list[dict[str, Any]]]:
         if self._relation_index is not None:
+            return self._relation_index
+        self._relation_index = _relation_index_from_sidecar_payload(self._load_compact_payload())
+        if self._relation_index:
+            return self._relation_index
+        if not self._should_allow_full_payload_load():
+            self._relation_index = {}
             return self._relation_index
         self._relation_index = _relation_index_from_sidecar_payload(self._load_payload())
         return self._relation_index
@@ -392,9 +469,10 @@ class LocalGraphSidecar:
         fallback_reason: str = "",
     ) -> dict[str, Any]:
         del query, context
-        payload = self._load_payload()
+        relation_summary_payload = self._relation_summary_payload()
         book_index = self._load_book_index()
         relation_index = self._load_relation_index()
+        resolved_fallback_reason = _join_fallback_reasons(fallback_reason, self._payload_bypass_reason())
         graph_hits: list[dict[str, Any]] = []
         relation_count = 0
         for hit in hits:
@@ -428,12 +506,12 @@ class LocalGraphSidecar:
             "configured_mode": _resolved_mode(self.settings),
             "endpoint": self.settings.graph_endpoint or self.settings.graph_uri,
             "sidecar_path": str(self.settings.graph_sidecar_path),
-            "fallback_reason": fallback_reason,
+            "fallback_reason": resolved_fallback_reason,
             "summary": {
                 "hit_count": len(graph_hits),
                 "relation_count": relation_count,
                 "provenance_count": len(graph_hits),
-                "sidecar_relation_count": int(payload.get("relation_count", 0) or 0),
+                "sidecar_relation_count": int(relation_summary_payload.get("relation_count", 0) or 0),
             },
             "hits": graph_hits,
         }

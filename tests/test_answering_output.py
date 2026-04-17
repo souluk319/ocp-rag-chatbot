@@ -478,7 +478,7 @@ class TestAnsweringOutput(unittest.TestCase):
 
         class _EtcdBackupNarrativeLLMClient:
             def generate(self, messages, trace_callback=None):  # noqa: ANN001
-                return "답변: etcd 데이터 백업은 클러스터 전체 프록시가 활성화된 상태에서 수행합니다."
+                raise AssertionError("LLM should be skipped for deterministic etcd backup answers")
 
         settings = Settings(root_dir=ROOT)
         answerer = ChatAnswerer(
@@ -495,6 +495,8 @@ class TestAnsweringOutput(unittest.TestCase):
         self.assertIn("```bash", result.answer)
         self.assertIn("[1]", result.answer)
         self.assertNotIn("inline citations auto-repaired", result.warnings)
+        self.assertEqual(0.0, result.pipeline_trace["timings_ms"]["llm_generate_total"])
+        self.assertEqual("deterministic-fast-path", result.pipeline_trace["llm"]["last_provider"])
 
     def test_answerer_shapes_project_terminating_into_command_first_guide(self) -> None:
         class _ProjectTerminatingRetriever:
@@ -858,7 +860,7 @@ class TestAnsweringOutput(unittest.TestCase):
 
         class _NoCitationRestoreLLMClient:
             def generate(self, messages, trace_callback=None):  # noqa: ANN001
-                return "답변: 각 노드에 백업 디렉터리를 준비한 뒤 상태를 확인하세요."
+                raise AssertionError("LLM should be skipped for deterministic etcd restore answers")
 
         settings = Settings(root_dir=ROOT)
         answerer = ChatAnswerer(
@@ -873,6 +875,8 @@ class TestAnsweringOutput(unittest.TestCase):
         self.assertIn("etcdctl snapshot restore", result.answer)
         self.assertIn("[1]", result.answer)
         self.assertNotEqual([], result.citations)
+        self.assertEqual(0.0, result.pipeline_trace["timings_ms"]["llm_generate_total"])
+        self.assertEqual("deterministic-fast-path", result.pipeline_trace["llm"]["last_provider"])
 
     def test_answerer_shapes_node_drain_answer_even_when_llm_omits_inline_citation(self) -> None:
         class _NodeDrainRetriever:

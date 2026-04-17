@@ -17,6 +17,7 @@ import requests
 from play_book_studio.answering.llm import LLMClient
 from play_book_studio.config.settings import Settings, load_settings
 from play_book_studio.ingestion.embedding import EmbeddingClient
+from play_book_studio.ingestion.graph_sidecar import graph_sidecar_compact_artifact_status
 
 DEFAULT_PLAYBOOK_UI_BASE_URL = "http://127.0.0.1:8765"
 
@@ -260,6 +261,9 @@ def build_runtime_report(
             "embedding_model": settings.embedding_model,
             "qdrant_url": settings.qdrant_url,
             "qdrant_collection": settings.qdrant_collection,
+            "graph_backend": settings.graph_backend,
+            "graph_runtime_mode": settings.graph_runtime_mode,
+            "graph_compact_artifact": graph_sidecar_compact_artifact_status(settings),
             "reranker_enabled": bool(settings.reranker_enabled),
             "reranker_model": settings.reranker_model,
             "reranker_top_n": settings.reranker_top_n,
@@ -270,6 +274,7 @@ def build_runtime_report(
             "normalized_docs": _path_status(settings.normalized_docs_path),
             "chunks": _path_status(settings.chunks_path),
             "bm25_corpus": _path_status(settings.bm25_corpus_path),
+            "graph_sidecar_compact": graph_sidecar_compact_artifact_status(settings),
             "chat_turns": _path_status(settings.chat_log_path),
             "answer_eval_report": _path_status(settings.answer_eval_report_path),
             "ragas_eval_report": _path_status(settings.ragas_eval_report_path),

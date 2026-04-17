@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from dataclasses import fields
 from pathlib import Path
 from typing import Any
 
@@ -10,10 +9,10 @@ from play_book_studio.config.settings import Settings
 
 from .chunking import chunk_sections
 from .collector import collect_entry, entry_with_collected_metadata, raw_html_path
-from .graph_sidecar import write_graph_sidecar
+from .graph_sidecar import refresh_active_runtime_graph_artifacts
 from .manifest import read_manifest, runtime_catalog_entries
 from .metadata_extraction import extract_section_metadata
-from .models import ChunkRecord, NormalizedSection, SourceManifestEntry
+from .models import NormalizedSection, SourceManifestEntry
 from .normalize import extract_document_ast, project_normalized_sections
 from .pipeline import _entry_with_inferred_runtime_status
 from .topic_playbooks import (
@@ -131,21 +130,6 @@ def _bm25_row(chunk_row: dict[str, Any]) -> dict[str, Any]:
         "operator_names": list(chunk_row.get("operator_names", [])),
         "verification_hints": list(chunk_row.get("verification_hints", [])),
     }
-
-
-def _chunk_records(rows: list[dict[str, Any]]) -> list[ChunkRecord]:
-    allowed = {field.name for field in fields(ChunkRecord)}
-    records: list[ChunkRecord] = []
-    for row in rows:
-        payload = {key: value for key, value in row.items() if key in allowed}
-        payload["section_path"] = tuple(payload.get("section_path", []))
-        payload["cli_commands"] = tuple(payload.get("cli_commands", []))
-        payload["error_strings"] = tuple(payload.get("error_strings", []))
-        payload["k8s_objects"] = tuple(payload.get("k8s_objects", []))
-        payload["operator_names"] = tuple(payload.get("operator_names", []))
-        payload["verification_hints"] = tuple(payload.get("verification_hints", []))
-        records.append(ChunkRecord(**payload))
-    return records
 
 
 def _stringify(value: Any) -> str:
@@ -464,11 +448,11 @@ def materialize_runtime_catalog_library(
     _write_jsonl_rows(settings.chunks_path, merged_chunk_rows)
     _write_jsonl_rows(settings.bm25_corpus_path, [_bm25_row(row) for row in merged_chunk_rows])
 
-    graph_payload = write_graph_sidecar(
+    graph_refresh = refresh_active_runtime_graph_artifacts(
         settings,
-        chunks=_chunk_records(merged_chunk_rows),
-        playbook_documents=_read_jsonl_rows(settings.playbook_documents_path),
+        refresh_full_sidecar=True,
     )
+    full_sidecar = dict(graph_refresh.get("full_sidecar", {}))
 
     return {
         "runtime_catalog_count": len(entries),
@@ -482,7 +466,7 @@ def materialize_runtime_catalog_library(
         "derived_chunk_count": len(derived_chunk_rows),
         "content_status_counts": dict(sorted(content_status_counts.items())),
         "derived_summary": derived_summary,
-        "graph_book_count": int(graph_payload.get("book_count", 0) or 0),
-        "graph_relation_count": int(graph_payload.get("relation_count", 0) or 0),
+        "graph_book_count": int(full_sidecar.get("book_count", 0) or 0),
+        "graph_relation_count": int(full_sidecar.get("relation_count", 0) or 0),
         "errors": errors,
     }

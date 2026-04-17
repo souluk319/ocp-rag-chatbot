@@ -77,11 +77,13 @@ class CrossEncoderReranker:
         hits: list[RetrievalHit],
         *,
         top_k: int,
+        top_n_override: int | None = None,
     ) -> list[RetrievalHit]:
         if not hits:
             return []
 
-        rerank_count = min(len(hits), max(top_k, self.top_n))
+        rerank_limit = top_n_override if top_n_override is not None else self.top_n
+        rerank_count = min(len(hits), max(top_k, rerank_limit))
         primary_candidates = [copy.deepcopy(hit) for hit in hits[:rerank_count]]
         remainder = [copy.deepcopy(hit) for hit in hits[rerank_count:]]
 

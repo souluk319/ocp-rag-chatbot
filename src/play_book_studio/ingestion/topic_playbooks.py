@@ -8,6 +8,10 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from play_book_studio.config.settings import Settings
+from play_book_studio.ingestion.graph_sidecar import (
+    graph_sidecar_compact_artifact_status,
+    refresh_active_runtime_graph_artifacts,
+)
 
 
 TOPIC_PLAYBOOK_SOURCE_TYPE = "topic_playbook"
@@ -689,6 +693,11 @@ def materialize_derived_playbooks(settings: Settings) -> dict[str, Any]:
             json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
+    graph_refresh = refresh_active_runtime_graph_artifacts(
+        settings,
+        refresh_full_sidecar=False,
+        allow_compact_degrade=True,
+    )
 
     family_counts = Counter(
         str(((row.get("source_metadata") or {}).get("source_type") or "")).strip()
@@ -705,6 +714,8 @@ def materialize_derived_playbooks(settings: Settings) -> dict[str, Any]:
         "missing_sources": sorted(set(missing_sources)),
         "family_counts": dict(sorted(family_counts.items())),
         "family_summaries": family_summaries,
+        "graph_compact_refresh": dict(graph_refresh.get("compact_sidecar", {})),
+        "graph_compact_artifact": graph_sidecar_compact_artifact_status(settings),
     }
 
 

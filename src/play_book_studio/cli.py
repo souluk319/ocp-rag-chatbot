@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 
 from play_book_studio.answering.answerer import ChatAnswerer
+from play_book_studio.app.runtime_maintenance_smoke import write_runtime_maintenance_smoke
 from play_book_studio.app.runtime_report import (
     DEFAULT_PLAYBOOK_UI_BASE_URL,
     write_runtime_report,
@@ -25,6 +26,7 @@ from play_book_studio.evals.ragas_eval import (
     load_openai_judge_config_from_env,
     read_jsonl,
 )
+from play_book_studio.ingestion.graph_sidecar import write_graph_sidecar_compact_from_artifacts
 from play_book_studio.retrieval.models import SessionContext
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -91,6 +93,23 @@ def build_parser() -> argparse.ArgumentParser:
     runtime_parser.add_argument("--ui-base-url", default=DEFAULT_PLAYBOOK_UI_BASE_URL)
     runtime_parser.add_argument("--recent-turns", type=int, default=3)
     runtime_parser.add_argument("--skip-samples", action="store_true")
+
+    maintenance_smoke_parser = subparsers.add_parser(
+        "maintenance-smoke",
+        help="Refresh graph maintenance artifacts and validate /api/health plus /api/chat",
+    )
+    maintenance_smoke_parser.add_argument("--output", type=Path, default=None)
+    maintenance_smoke_parser.add_argument("--ui-base-url", default=DEFAULT_PLAYBOOK_UI_BASE_URL)
+    maintenance_smoke_parser.add_argument(
+        "--query",
+        default="OpenShift architecture overview",
+    )
+
+    compact_graph_parser = subparsers.add_parser(
+        "graph-compact",
+        help="Rebuild the compact graph fallback artifact from current chunks and playbook documents",
+    )
+    compact_graph_parser.add_argument("--output", type=Path, default=None)
 
     return parser
 
@@ -247,6 +266,42 @@ def _run_runtime(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_maintenance_smoke(args: argparse.Namespace) -> int:
+    output_path, payload = write_runtime_maintenance_smoke(
+        ROOT,
+        output_path=args.output,
+        ui_base_url=args.ui_base_url,
+        query=args.query,
+    )
+    print(f"wrote runtime maintenance smoke: {output_path}")
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    summary = payload.get("summary") if isinstance(payload.get("summary"), dict) else {}
+    return 0 if bool(summary.get("ok")) else 1
+
+
+def _run_graph_compact(args: argparse.Namespace) -> int:
+    settings = load_settings(ROOT)
+    output_path, payload = write_graph_sidecar_compact_from_artifacts(
+        settings,
+        output_path=args.output,
+    )
+    summary = payload.get("summary") if isinstance(payload.get("summary"), dict) else {}
+    print(f"wrote graph sidecar compact artifact: {output_path}")
+    print(
+        json.dumps(
+            {
+                "output_path": str(output_path),
+                "book_count": int(payload.get("book_count") or 0),
+                "relation_count": int(payload.get("relation_count") or 0),
+                "relation_group_counts": summary.get("relation_group_counts", {}),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+    return 0
+
+
 def main() -> int:
     args = build_parser().parse_args()
     if args.command == "ui":
@@ -259,6 +314,10 @@ def main() -> int:
         return _run_ragas(args)
     if args.command == "runtime":
         return _run_runtime(args)
+    if args.command == "maintenance-smoke":
+        return _run_maintenance_smoke(args)
+    if args.command == "graph-compact":
+        return _run_graph_compact(args)
     raise ValueError(f"unsupported command: {args.command}")
 
 

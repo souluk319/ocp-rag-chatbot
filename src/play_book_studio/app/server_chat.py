@@ -6,6 +6,7 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Any
 from datetime import datetime
+import time
 
 from play_book_studio.retrieval.models import SessionContext
 from play_book_studio.app.sessions import RUNTIME_CHAT_MODE, Turn
@@ -74,6 +75,21 @@ def _apply_primary_citation_truth(turn: Turn, response_payload: dict[str, Any]) 
     turn.primary_approval_state = str(summary.get("approval_state") or "")
 
 
+def _attach_server_timings(
+    response_payload: dict[str, Any],
+    *,
+    server_timings_ms: dict[str, float],
+) -> None:
+    rounded = {
+        key: round(float(value), 1)
+        for key, value in server_timings_ms.items()
+    }
+    response_payload["server_timings_ms"] = rounded
+    pipeline_trace = response_payload.get("pipeline_trace")
+    if isinstance(pipeline_trace, dict):
+        pipeline_trace["server_timings_ms"] = rounded
+
+
 def handle_chat(
     handler: Any,
     payload: dict[str, Any],
@@ -91,6 +107,7 @@ def handle_chat(
     build_turn_diagnosis: Any,
     suggest_follow_up_questions: Any | None = None,
 ) -> None:
+    request_started_at = time.perf_counter()
     active_answerer = current_answerer()
     session_id = str(payload.get("session_id") or uuid.uuid4().hex)
     session = store.get(session_id)
@@ -111,7 +128,9 @@ def handle_chat(
         handler._send_json({"error": "Query is required."}, HTTPStatus.BAD_REQUEST)
         return
 
+    server_timings_ms: dict[str, float] = {}
     try:
+        answer_started_at = time.perf_counter()
         result = active_answerer.answer(
             query,
             mode=mode,
@@ -120,7 +139,10 @@ def handle_chat(
             candidate_k=20,
             max_context_chunks=6,
         )
+        server_timings_ms["answerer_runtime"] = (time.perf_counter() - answer_started_at) * 1000
+        answer_log_started_at = time.perf_counter()
         active_answerer.append_log(result)
+        server_timings_ms["answer_log_persist"] = (time.perf_counter() - answer_log_started_at) * 1000
     except Exception as exc:  # noqa: BLE001
         handler._send_json(
             {"error": f"답변 생성 중 오류가 발생했습니다: {exc}"},
@@ -157,18 +179,32 @@ def handle_chat(
     session.history = session.history[-20:]
     session.revision += 1
     session.updated_at = now
+    first_session_persist_started_at = time.perf_counter()
     store.update(session)
+    server_timings_ms["session_persist_pre_payload"] = (
+        (time.perf_counter() - first_session_persist_started_at) * 1000
+    )
+    payload_build_started_at = time.perf_counter()
+    payload_build_breakdown_ms: dict[str, float] = {}
     response_payload = build_chat_payload(
         root_dir=root_dir,
         answerer=active_answerer,
         session=session,
         result=result,
+        timings_sink=payload_build_breakdown_ms,
     )
+    server_timings_ms["payload_build"] = (time.perf_counter() - payload_build_started_at) * 1000
+    server_timings_ms.update(payload_build_breakdown_ms)
     turn.citations = [item for item in response_payload.get("citations") or [] if isinstance(item, dict)]
     turn.related_links = [item for item in response_payload.get("related_links") or [] if isinstance(item, dict)]
     turn.related_sections = [item for item in response_payload.get("related_sections") or [] if isinstance(item, dict)]
     _apply_primary_citation_truth(turn, response_payload)
+    second_session_persist_started_at = time.perf_counter()
     store.update(session)
+    server_timings_ms["session_persist_post_payload"] = (
+        (time.perf_counter() - second_session_persist_started_at) * 1000
+    )
+    chat_audit_started_at = time.perf_counter()
     append_chat_turn_log(
         root_dir,
         answerer=active_answerer,
@@ -181,13 +217,26 @@ def handle_chat(
         related_links=response_payload.get("related_links"),
         related_sections=response_payload.get("related_sections"),
     )
+    server_timings_ms["chat_audit_persist"] = (
+        (time.perf_counter() - chat_audit_started_at) * 1000
+    )
     if result.response_kind == "no_answer":
+        unanswered_log_started_at = time.perf_counter()
         append_unanswered_question_log(
             root_dir,
             session=session,
             query=query,
             result=result,
         )
+        server_timings_ms["unanswered_log_persist"] = (
+            (time.perf_counter() - unanswered_log_started_at) * 1000
+        )
+    server_timings_ms["post_answer_total"] = (
+        (time.perf_counter() - request_started_at) * 1000
+        - server_timings_ms.get("answerer_runtime", 0.0)
+    )
+    server_timings_ms["request_total"] = (time.perf_counter() - request_started_at) * 1000
+    _attach_server_timings(response_payload, server_timings_ms=server_timings_ms)
     handler._send_json(response_payload)
 
 
@@ -207,6 +256,7 @@ def handle_chat_stream(
     build_turn_stages: Any,
     build_turn_diagnosis: Any,
 ) -> None:
+    request_started_at = time.perf_counter()
     active_answerer = current_answerer()
     session_id = str(payload.get("session_id") or uuid.uuid4().hex)
     session = store.get(session_id)
@@ -241,7 +291,9 @@ def handle_chat_stream(
     def emit_trace(event: dict[str, Any]) -> None:
         handler._stream_event(event)
 
+    server_timings_ms: dict[str, float] = {}
     try:
+        answer_started_at = time.perf_counter()
         result = active_answerer.answer(
             query,
             mode=mode,
@@ -251,7 +303,10 @@ def handle_chat_stream(
             max_context_chunks=6,
             trace_callback=emit_trace,
         )
+        server_timings_ms["answerer_runtime"] = (time.perf_counter() - answer_started_at) * 1000
+        answer_log_started_at = time.perf_counter()
         active_answerer.append_log(result)
+        server_timings_ms["answer_log_persist"] = (time.perf_counter() - answer_log_started_at) * 1000
     except Exception as exc:  # noqa: BLE001
         handler._stream_event({"type": "error", "error": f"답변 생성 중 오류가 발생했습니다: {exc}"})
         return
@@ -285,18 +340,32 @@ def handle_chat_stream(
     session.history = session.history[-20:]
     session.revision += 1
     session.updated_at = now
+    first_session_persist_started_at = time.perf_counter()
     store.update(session)
+    server_timings_ms["session_persist_pre_payload"] = (
+        (time.perf_counter() - first_session_persist_started_at) * 1000
+    )
+    payload_build_started_at = time.perf_counter()
+    payload_build_breakdown_ms: dict[str, float] = {}
     response_payload = build_chat_payload(
         root_dir=root_dir,
         answerer=active_answerer,
         session=session,
         result=result,
+        timings_sink=payload_build_breakdown_ms,
     )
+    server_timings_ms["payload_build"] = (time.perf_counter() - payload_build_started_at) * 1000
+    server_timings_ms.update(payload_build_breakdown_ms)
     turn.citations = [item for item in response_payload.get("citations") or [] if isinstance(item, dict)]
     turn.related_links = [item for item in response_payload.get("related_links") or [] if isinstance(item, dict)]
     turn.related_sections = [item for item in response_payload.get("related_sections") or [] if isinstance(item, dict)]
     _apply_primary_citation_truth(turn, response_payload)
+    second_session_persist_started_at = time.perf_counter()
     store.update(session)
+    server_timings_ms["session_persist_post_payload"] = (
+        (time.perf_counter() - second_session_persist_started_at) * 1000
+    )
+    chat_audit_started_at = time.perf_counter()
     append_chat_turn_log(
         root_dir,
         answerer=active_answerer,
@@ -309,13 +378,26 @@ def handle_chat_stream(
         related_links=response_payload.get("related_links"),
         related_sections=response_payload.get("related_sections"),
     )
+    server_timings_ms["chat_audit_persist"] = (
+        (time.perf_counter() - chat_audit_started_at) * 1000
+    )
     if result.response_kind == "no_answer":
+        unanswered_log_started_at = time.perf_counter()
         append_unanswered_question_log(
             root_dir,
             session=session,
             query=query,
             result=result,
         )
+        server_timings_ms["unanswered_log_persist"] = (
+            (time.perf_counter() - unanswered_log_started_at) * 1000
+        )
+    server_timings_ms["post_answer_total"] = (
+        (time.perf_counter() - request_started_at) * 1000
+        - server_timings_ms.get("answerer_runtime", 0.0)
+    )
+    server_timings_ms["request_total"] = (time.perf_counter() - request_started_at) * 1000
+    _attach_server_timings(response_payload, server_timings_ms=server_timings_ms)
     handler._stream_event(
         {
             "type": "result",

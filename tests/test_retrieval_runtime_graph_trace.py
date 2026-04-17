@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = ROOT / "tests"
@@ -159,6 +160,68 @@ class TestRetrievalGraphRuntime(unittest.TestCase):
 
             self.assertEqual("operation_playbook", provenance["source_type"])
             self.assertEqual("monitoring", provenance["derived_from_book_slug"])
+
+    def test_retrieve_graph_trace_skips_oversized_sidecar_eager_load(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            settings = Settings(root_dir=Path(tmpdir))
+            self._write_playbook_documents(
+                settings,
+                {
+                    "book_slug": "architecture_topic_playbook",
+                    "title": "아키텍처 토픽 플레이북",
+                    "translation_status": "approved_ko",
+                    "review_status": "approved",
+                    "source_metadata": {
+                        "source_type": "topic_playbook",
+                        "source_lane": "applied_playbook",
+                        "source_collection": "core",
+                        "derived_from_book_slug": "architecture",
+                        "topic_key": "architecture_topic_playbook",
+                    },
+                },
+            )
+            settings.graph_sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.graph_sidecar_path.write_text("{}", encoding="utf-8")
+            retriever = self._retriever(
+                settings,
+                [
+                    self._make_hit(
+                        chunk_id="architecture-topic",
+                        book_slug="architecture_topic_playbook",
+                        source_collection="core",
+                        source_lane="applied_playbook",
+                        source_type="topic_playbook",
+                    )
+                ],
+            )
+            from play_book_studio.retrieval import graph_runtime as graph_runtime_module
+
+            original_safe_read_json = graph_runtime_module._safe_read_json
+
+            def _guarded_safe_read_json(path: Path):
+                if path == settings.graph_sidecar_path:
+                    raise AssertionError("oversized local sidecar should not be eager-loaded")
+                return original_safe_read_json(path)
+
+            with (
+                patch("play_book_studio.retrieval.graph_runtime.LOCAL_SIDECAR_EAGER_LOAD_MAX_BYTES", 1),
+                patch(
+                    "play_book_studio.retrieval.graph_runtime._safe_read_json",
+                    side_effect=_guarded_safe_read_json,
+                ),
+            ):
+                result = retriever.retrieve("아키텍처 설명", top_k=1, candidate_k=1, use_vector=False)
+
+            provenance = result.trace["graph"]["hits"][0]["provenance"]
+            self.assertEqual("topic_playbook", provenance["source_type"])
+            self.assertEqual("architecture", provenance["derived_from_book_slug"])
+            self.assertEqual(
+                "sidecar_eager_load_skipped:file_too_large:2",
+                result.trace["graph"]["fallback_reason"],
+            )
+            self.assertTrue(
+                any(item["type"] == "derived_from_book" for item in result.trace["graph"]["hits"][0]["relations"])
+            )
 
     def test_retrieve_graph_trace_records_same_book_relations(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

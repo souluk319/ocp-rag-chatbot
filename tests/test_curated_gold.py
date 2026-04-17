@@ -241,6 +241,12 @@ class CuratedGoldTests(unittest.TestCase):
             self.assertGreater(report["chunk_count"], 0)
             self.assertEqual(1, report["manifest_before_count"])
             self.assertEqual(2, report["manifest_after_count"])
+            self.assertEqual("ok", report["graph_compact_refresh"]["status"])
+            self.assertTrue(report["graph_compact_artifact"]["ready"])
+            self.assertEqual(
+                str(settings.graph_sidecar_compact_path),
+                report["output_targets"]["graph_sidecar_compact_path"],
+            )
 
             normalized_rows = read_jsonl(settings.normalized_docs_path)
             chunk_rows = read_jsonl(settings.chunks_path)

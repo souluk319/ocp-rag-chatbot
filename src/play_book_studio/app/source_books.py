@@ -283,11 +283,29 @@ def build_chat_navigation_links(
     direct_slug_seen: set[str] = set()
     href_scores, ref_scores = _overlay_recent_target_scores(root_dir, user_id=user_id)
     direct_counts: dict[str, int] = {}
+    rewritten_href_cache: dict[str, str] = {}
+    truth_payload_cache: dict[tuple[str, str], dict[str, str]] = {}
+
+    def _rewrite_cached(href: str) -> str:
+        normalized_href = str(href or "").strip()
+        if normalized_href not in rewritten_href_cache:
+            rewritten_href_cache[normalized_href] = _rewrite_book_href(root_dir, normalized_href)
+        return rewritten_href_cache[normalized_href]
+
+    def _truth_payload_cached(href: str, kind: str) -> dict[str, str]:
+        cache_key = (str(href or "").strip(), str(kind or "").strip())
+        if cache_key not in truth_payload_cache:
+            truth_payload_cache[cache_key] = _chat_link_truth_payload(
+                root_dir,
+                cache_key[0],
+                cache_key[1],
+            )
+        return truth_payload_cache[cache_key]
 
     for citation in citations:
         if not isinstance(citation, dict):
             continue
-        href = _rewrite_book_href(root_dir, str(citation.get("href") or "").strip())
+        href = _rewrite_cached(str(citation.get("href") or "").strip())
         if not _is_final_runtime_href(href):
             continue
         book_slug = str(citation.get("book_slug") or _link_book_slug(href)).strip()
@@ -311,7 +329,7 @@ def build_chat_navigation_links(
                 "href": href,
                 "kind": "book",
                 "summary": summary,
-                **_chat_link_truth_payload(root_dir, href, "book"),
+                **_truth_payload_cached(href, "book"),
             }
         )
 
@@ -364,7 +382,7 @@ def build_chat_navigation_links(
                     continue
                 href = str(item.get("href") or "").strip()
                 label = str(item.get("label") or "").strip()
-                rewritten_href = _rewrite_book_href(root_dir, href)
+                rewritten_href = _rewrite_cached(href)
                 book_slug = _link_book_slug(rewritten_href)
                 if (
                     not href
@@ -383,7 +401,7 @@ def build_chat_navigation_links(
                         "label": label,
                         "href": rewritten_href,
                         "kind": kind,
-                        **_chat_link_truth_payload(root_dir, rewritten_href, kind),
+                        **_truth_payload_cached(rewritten_href, kind),
                     }
                 )
         relation = relation_map.get(slug) if slug else None
@@ -404,7 +422,7 @@ def build_chat_navigation_links(
         for item in _wiki_relation_items(relation, "related_docs")[:2]:
             href = str(item.get("href") or "").strip()
             label = str(item.get("label") or "").strip()
-            rewritten_href = _rewrite_book_href(root_dir, href)
+            rewritten_href = _rewrite_cached(href)
             book_slug = _link_book_slug(rewritten_href)
             if (
                 not href
@@ -423,7 +441,7 @@ def build_chat_navigation_links(
                     "label": label,
                     "href": rewritten_href,
                     "kind": "book",
-                    **_chat_link_truth_payload(root_dir, rewritten_href, "book"),
+                    **_truth_payload_cached(rewritten_href, "book"),
                 }
             )
         if len(links) >= 2:
@@ -509,6 +527,21 @@ def build_chat_section_links(
     slug_seen: set[str] = set()
     href_scores, ref_scores = _overlay_recent_target_scores(root_dir, user_id=user_id)
     direct_candidate_count = 0
+    rewritten_href_cache: dict[str, str] = {}
+    related_sections_cache: dict[str, list[dict[str, Any]]] = {}
+
+    def _rewrite_cached(href: str) -> str:
+        normalized_href = str(href or "").strip()
+        if normalized_href not in rewritten_href_cache:
+            rewritten_href_cache[normalized_href] = _rewrite_book_href(root_dir, normalized_href)
+        return rewritten_href_cache[normalized_href]
+
+    def _related_sections_cached(slug: str) -> list[dict[str, Any]]:
+        normalized_slug = str(slug or "").strip()
+        if normalized_slug not in related_sections_cache:
+            related_sections_cache[normalized_slug] = list(_book_related_sections(normalized_slug))
+        return related_sections_cache[normalized_slug]
+
     for citation in citations:
         if not isinstance(citation, dict):
             continue
@@ -518,7 +551,7 @@ def build_chat_section_links(
         citation_href = str(citation.get("href") or "").strip()
         citation_section = str(citation.get("section") or "").strip()
         if citation_href and citation_section:
-            rewritten_citation_href = _rewrite_book_href(root_dir, citation_href)
+            rewritten_citation_href = _rewrite_cached(citation_href)
             if _is_final_runtime_href(rewritten_citation_href) and _contains_hangul(citation_section):
                 direct_candidate = {
                     "label": citation_section,
@@ -533,14 +566,14 @@ def build_chat_section_links(
                 direct_candidate_count += 1
         if direct_candidate_count > 0:
             continue
-        for item in _book_related_sections(slug):
+        for item in _related_sections_cached(slug):
             href = str(item.get("href") or "").strip()
             label = str(item.get("label") or "").strip()
             if not href or not label:
                 continue
             score = _section_link_score(item, citation)
             current = candidates.get(href)
-            rewritten_href = _rewrite_book_href(root_dir, href)
+            rewritten_href = _rewrite_cached(href)
             if not _is_final_runtime_href(rewritten_href) or not _contains_hangul(label):
                 continue
             if current is None or score > int(current.get("_score", 0)):

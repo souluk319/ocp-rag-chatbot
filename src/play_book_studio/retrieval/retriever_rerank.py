@@ -19,6 +19,7 @@ from .query import (
     has_operator_concept_intent,
     has_pod_lifecycle_concept_intent,
     has_route_ingress_compare_intent,
+    is_explainer_query,
     is_generic_intro_query,
 )
 from .ranking import summarize_hit_list as _summarize_hit_list
@@ -139,6 +140,59 @@ def _is_heuristic_first_query(query: str) -> bool:
     )
 
 
+def _is_explanation_query(query: str) -> bool:
+    return any(
+        (
+            is_explainer_query(query),
+            is_generic_intro_query(query),
+            has_openshift_kubernetes_compare_intent(query),
+            has_route_ingress_compare_intent(query),
+            has_operator_concept_intent(query),
+            has_mco_concept_intent(query),
+            has_pod_lifecycle_concept_intent(query),
+        )
+    )
+
+
+def _has_confident_hybrid_top_hit(hits: list[RetrievalHit]) -> bool:
+    if not hits:
+        return False
+    top_hit = hits[0]
+    top_score = float(top_hit.fused_score or top_hit.raw_score or 0.0)
+    if top_score <= 0:
+        return False
+    component_scores = getattr(top_hit, "component_scores", {}) or {}
+    has_dual_support = any(key in component_scores for key in ("bm25_score", "overlay_bm25_score")) and (
+        "vector_score" in component_scores
+    )
+    if len(hits) == 1:
+        return has_dual_support or top_score >= 0.9
+    runner_up_score = max(float(hit.fused_score or hit.raw_score or 0.0) for hit in hits[1:3])
+    if not has_dual_support:
+        return False
+    return runner_up_score < (top_score * 0.88)
+
+
+def _rerank_candidate_budget(
+    query: str,
+    *,
+    top_k: int,
+    reranker_top_n: int,
+) -> int | None:
+    if reranker_top_n <= 0 or not _is_explanation_query(query):
+        return None
+    cap = 6 if any(
+        (
+            has_openshift_kubernetes_compare_intent(query),
+            has_route_ingress_compare_intent(query),
+        )
+    ) else 5
+    budget = min(reranker_top_n, max(top_k, cap))
+    if budget >= reranker_top_n:
+        return None
+    return budget
+
+
 def _needs_semantic_model_rerank(query: str) -> bool:
     return any(
         (
@@ -166,6 +220,9 @@ def _should_apply_reranker_model(
         return True, "follow_up_reference"
     if _is_heuristic_first_query(query):
         return False, "heuristic_first_intent"
+    if _is_explanation_query(query) and not _has_cross_book_ambiguity(hybrid_hits):
+        if _has_confident_hybrid_top_hit(hybrid_hits):
+            return False, "confident_explanation_hybrid_top_hit"
     if _needs_semantic_model_rerank(query):
         return True, "semantic_intent"
     if len(hybrid_hits) <= 2:
@@ -179,6 +236,26 @@ def _should_apply_reranker_model(
     if _has_cross_book_ambiguity(hybrid_hits):
         return True, "cross_book_ambiguity"
     return True, "default_model_rerank"
+
+
+def _call_reranker(
+    reranker,
+    *,
+    query: str,
+    hybrid_hits: list[RetrievalHit],
+    top_k: int,
+    top_n_override: int | None,
+) -> list[RetrievalHit]:
+    rerank_kwargs: dict[str, Any] = {"top_k": top_k}
+    if top_n_override is not None:
+        rerank_kwargs["top_n_override"] = top_n_override
+    try:
+        return reranker.rerank(query, hybrid_hits, **rerank_kwargs)
+    except TypeError:
+        if "top_n_override" not in rerank_kwargs:
+            raise
+        rerank_kwargs.pop("top_n_override", None)
+        return reranker.rerank(query, hybrid_hits, **rerank_kwargs)
 
 
 def _preferred_derived_family(query: str) -> str | None:
@@ -1130,6 +1207,7 @@ def maybe_rerank_hits(
         "top1_changed": False,
         "rebalance_reasons": [],
         "decision_reason": "",
+        "candidate_budget": getattr(retriever.reranker, "top_n", 0),
     }
     if retriever.reranker is None or not hybrid_hits:
         return hits, reranker_trace
@@ -1139,6 +1217,13 @@ def maybe_rerank_hits(
             hybrid_hits=hybrid_hits,
         )
         reranker_trace["decision_reason"] = decision_reason
+        candidate_budget = _rerank_candidate_budget(
+            query,
+            top_k=top_k,
+            reranker_top_n=getattr(retriever.reranker, "top_n", 0),
+        )
+        if candidate_budget is not None:
+            reranker_trace["candidate_budget"] = candidate_budget
         rerank_started_at = time.perf_counter()
         if apply_model:
             _emit_trace_event(
@@ -1147,10 +1232,12 @@ def maybe_rerank_hits(
                 label="리랭킹 중",
                 status="running",
             )
-            reranked_hits = retriever.reranker.rerank(
-                query,
-                hybrid_hits,
+            reranked_hits = _call_reranker(
+                retriever.reranker,
+                query=query,
+                hybrid_hits=hybrid_hits,
                 top_k=top_k,
+                top_n_override=candidate_budget,
             )
             reranker_trace["top1_after_model"] = _top_book_slug(reranked_hits)
             reranker_trace["model_applied"] = True
@@ -1175,7 +1262,12 @@ def maybe_rerank_hits(
                 "applied": bool(apply_model or rebalance_reasons or reranker_trace["top1_changed"]),
                 "candidate_count": len(hybrid_hits),
                 "reranked_count": (
-                    min(len(hybrid_hits), max(top_k, retriever.reranker.top_n))
+                    min(
+                        len(hybrid_hits),
+                        candidate_budget
+                        if candidate_budget is not None
+                        else max(top_k, retriever.reranker.top_n),
+                    )
                     if apply_model
                     else len(hybrid_hits)
                 ),
@@ -1201,6 +1293,7 @@ def maybe_rerank_hits(
                 "rebalance_reasons": reranker_trace["rebalance_reasons"],
                 "mode": reranker_trace["mode"],
                 "decision_reason": reranker_trace["decision_reason"],
+                "candidate_budget": reranker_trace["candidate_budget"],
             },
         )
     except Exception as exc:  # noqa: BLE001

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import tempfile
 import time
@@ -351,6 +352,210 @@ class RetrievalGraphRuntimeTests(unittest.TestCase):
             )
             self.assertIn("derived_from_book", topic_hit.graph_relations)
             self.assertEqual("local_sidecar", result.trace["graph"]["adapter_mode"])
+
+    def test_retrieve_reads_compact_graph_relations_when_full_sidecar_is_skipped(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            settings = Settings(
+                root_dir=Path(tmpdir),
+                graph_sidecar_path_override="artifacts/retrieval/custom_graph_sidecar.json",
+                graph_boost_top_n=2,
+            )
+            settings.graph_sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.graph_sidecar_path.write_text("{}", encoding="utf-8")
+            settings.graph_sidecar_compact_path.write_text(
+                json.dumps(
+                    {
+                        "schema": "graph_sidecar_compact_v1",
+                        "schema_version": "graph_sidecar_compact_v1",
+                        "book_count": 2,
+                        "relation_count": 1,
+                        "books": [
+                            {
+                                "book_slug": "backup_restore_control_plane",
+                                "title": "컨트롤 플레인 백업/복구 플레이북",
+                                "source_type": "topic_playbook",
+                                "source_lane": "applied_playbook",
+                                "source_collection": "core",
+                            },
+                            {
+                                "book_slug": "backup_and_restore",
+                                "title": "백업 및 복구",
+                                "source_type": "manual_synthesis",
+                                "source_lane": "applied_playbook",
+                                "source_collection": "core",
+                            }
+                        ],
+                        "relations": [
+                            {
+                                "source_book_slug": "backup_restore_control_plane",
+                                "target_book_slug": "backup_and_restore",
+                                "relation_types": ["shared_operator_names"],
+                                "signal_values": ["Machine Config Operator"],
+                                "weight": 2
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            hit = RetrievalHit(
+                chunk_id="backup-hit",
+                book_slug="backup_restore_control_plane",
+                chapter="backup",
+                section="컨트롤 플레인 백업 절차",
+                anchor="control-plane-backup",
+                source_url="https://example.com/backup",
+                viewer_path="/docs/ocp/4.20/ko/backup_restore_control_plane/index.html#control-plane-backup",
+                text="cluster-backup.sh /home/core/assets/backup",
+                source="bm25",
+                raw_score=1.0,
+                fused_score=1.0,
+                source_collection="core",
+                source_lane="applied_playbook",
+                source_type="topic_playbook",
+                semantic_role="procedure",
+                block_kinds=("code",),
+            )
+            retriever = ChatRetriever(settings, _StubBm25([hit]), vector_retriever=None)
+
+            with patch("play_book_studio.retrieval.graph_runtime.LOCAL_SIDECAR_EAGER_LOAD_MAX_BYTES", 1):
+                result = retriever.retrieve(
+                    "컨트롤 플레인 백업 절차",
+                    top_k=1,
+                    candidate_k=1,
+                    use_vector=False,
+                )
+
+            self.assertEqual("local_sidecar", result.trace["graph"]["adapter_mode"])
+            self.assertEqual(1, result.trace["graph"]["summary"]["sidecar_relation_count"])
+            graph_relations = result.trace["graph"]["hits"][0]["relations"]
+            self.assertIn("shared_operator_names", [relation["type"] for relation in graph_relations])
+
+    def test_retrieve_ignores_stale_compact_graph_artifact_and_falls_back_locally(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            settings = Settings(root_dir=Path(tmpdir))
+            settings.graph_sidecar_compact_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.graph_sidecar_compact_path.write_text(
+                json.dumps(
+                    {
+                        "schema": "graph_sidecar_compact_v1",
+                        "schema_version": "graph_sidecar_compact_v1",
+                        "book_count": 2,
+                        "relation_count": 1,
+                        "books": [
+                            {"book_slug": "monitoring", "title": "모니터링"},
+                            {"book_slug": "alerting", "title": "알림"},
+                        ],
+                        "relations": [
+                            {
+                                "source_book_slug": "monitoring",
+                                "target_book_slug": "alerting",
+                                "relation_types": ["shared_operator_names"],
+                                "signal_values": ["Cluster Monitoring Operator"],
+                                "weight": 1,
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            settings.playbook_documents_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.playbook_documents_path.write_text(
+                "\n".join(
+                    [
+                        json.dumps(
+                            {
+                                "book_slug": "monitoring",
+                                "title": "모니터링",
+                                "review_status": "approved",
+                                "source_metadata": {
+                                    "source_type": "manual_synthesis",
+                                    "source_lane": "applied_playbook",
+                                    "source_collection": "core",
+                                },
+                            },
+                            ensure_ascii=False,
+                        ),
+                        json.dumps(
+                            {
+                                "book_slug": "alerting",
+                                "title": "알림",
+                                "review_status": "approved",
+                                "source_metadata": {
+                                    "source_type": "manual_synthesis",
+                                    "source_lane": "applied_playbook",
+                                    "source_collection": "core",
+                                },
+                            },
+                            ensure_ascii=False,
+                        ),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            settings.chunks_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.chunks_path.write_text(
+                json.dumps({"chunk_id": "monitoring::0", "book_slug": "monitoring"}, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            stale_time = time.time() - 60
+            os.utime(settings.graph_sidecar_compact_path, (stale_time, stale_time))
+
+            hits = [
+                RetrievalHit(
+                    chunk_id="monitoring-hit",
+                    book_slug="monitoring",
+                    chapter="monitoring",
+                    section="개요",
+                    anchor="overview",
+                    source_url="https://example.com/monitoring",
+                    viewer_path="/docs/monitoring.html#overview",
+                    text="모니터링 개요",
+                    source="bm25",
+                    raw_score=1.0,
+                    fused_score=1.0,
+                    source_collection="core",
+                    source_lane="applied_playbook",
+                    source_type="manual_synthesis",
+                ),
+                RetrievalHit(
+                    chunk_id="alerting-hit",
+                    book_slug="alerting",
+                    chapter="alerting",
+                    section="경고",
+                    anchor="alerts",
+                    source_url="https://example.com/alerting",
+                    viewer_path="/docs/alerting.html#alerts",
+                    text="경고 개요",
+                    source="bm25",
+                    raw_score=0.9,
+                    fused_score=0.9,
+                    source_collection="core",
+                    source_lane="applied_playbook",
+                    source_type="manual_synthesis",
+                ),
+            ]
+            retriever = ChatRetriever(settings, _StubBm25(hits), vector_retriever=None)
+
+            result = retriever.retrieve(
+                "모니터링 경고",
+                top_k=2,
+                candidate_k=2,
+                use_vector=False,
+            )
+
+            self.assertEqual(0, result.trace["graph"]["summary"]["sidecar_relation_count"])
+            self.assertIn(
+                "shared_collection",
+                [relation["type"] for relation in result.trace["graph"]["hits"][0]["relations"]],
+            )
+            self.assertNotIn(
+                "shared_operator_names",
+                [relation["type"] for relation in result.trace["graph"]["hits"][0]["relations"]],
+            )
 
     def test_retrieve_uses_local_graph_runtime_even_without_sidecar_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

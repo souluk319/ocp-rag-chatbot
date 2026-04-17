@@ -130,6 +130,141 @@ class RerankerPerformanceTests(unittest.TestCase):
         self.assertIn("etcd_backup_restore_intent", trace["rebalance_reasons"])
         self.assertEqual("backup_and_restore", hits[0].book_slug)
 
+    def test_reranker_skips_model_for_confident_explanation_query(self) -> None:
+        hybrid_hits = [
+            RetrievalHit(
+                chunk_id="architecture-hit",
+                book_slug="architecture",
+                chapter="architecture",
+                section="OpenShift 아키텍처 개요",
+                anchor="overview",
+                source_url="https://example.com/architecture",
+                viewer_path="/docs/architecture.html#overview",
+                text="OpenShift는 컨트롤 플레인과 작업자 노드로 구성됩니다.",
+                source="hybrid",
+                raw_score=0.98,
+                fused_score=0.98,
+                component_scores={"bm25_score": 0.91, "vector_score": 0.94},
+            ),
+            RetrievalHit(
+                chunk_id="overview-hit",
+                book_slug="overview",
+                chapter="overview",
+                section="플랫폼 개요",
+                anchor="platform-overview",
+                source_url="https://example.com/overview",
+                viewer_path="/docs/overview.html#platform-overview",
+                text="플랫폼 기본 개요입니다.",
+                source="hybrid",
+                raw_score=0.74,
+                fused_score=0.74,
+                component_scores={"bm25_score": 0.62},
+            ),
+        ]
+
+        class _CountingReranker:
+            def __init__(self) -> None:
+                self.calls = 0
+                self.model_name = "counting-reranker"
+                self.top_n = 8
+
+            def rerank(self, query: str, hits: list[RetrievalHit], *, top_k: int) -> list[RetrievalHit]:
+                del query, hits, top_k
+                self.calls += 1
+                raise AssertionError("confident explanation query should skip model rerank")
+
+        reranker = _CountingReranker()
+        retriever = SimpleNamespace(
+            reranker=reranker,
+            settings=SimpleNamespace(root_dir=ROOT),
+        )
+
+        hits, trace = maybe_rerank_hits(
+            retriever,
+            query="OpenShift 아키텍처를 설명해줘",
+            hybrid_hits=hybrid_hits,
+            top_k=2,
+            trace_callback=None,
+            timings_ms={},
+            context=None,
+        )
+
+        self.assertEqual(0, reranker.calls)
+        self.assertFalse(trace["model_applied"])
+        self.assertEqual("heuristic_only", trace["mode"])
+        self.assertEqual("confident_explanation_hybrid_top_hit", trace["decision_reason"])
+        self.assertEqual("architecture", hits[0].book_slug)
+
+    def test_reranker_caps_candidate_budget_for_compare_queries(self) -> None:
+        hybrid_hits = [
+            RetrievalHit(
+                chunk_id=f"compare-{index}",
+                book_slug=book_slug,
+                chapter=book_slug,
+                section=f"{book_slug} section",
+                anchor=f"anchor-{index}",
+                source_url=f"https://example.com/{book_slug}",
+                viewer_path=f"/docs/{book_slug}.html#anchor-{index}",
+                text=f"{book_slug} 관련 설명입니다.",
+                source="hybrid",
+                raw_score=score,
+                fused_score=score,
+                component_scores={"bm25_score": score - 0.05, "vector_score": score - 0.03},
+            )
+            for index, (book_slug, score) in enumerate(
+                [
+                    ("networking", 0.96),
+                    ("ingress_and_load_balancing", 0.95),
+                    ("architecture", 0.82),
+                    ("overview", 0.80),
+                    ("operators", 0.78),
+                    ("nodes", 0.76),
+                ],
+                start=1,
+            )
+        ]
+
+        class _BudgetCapturingReranker:
+            def __init__(self) -> None:
+                self.calls: list[dict[str, int | None]] = []
+                self.model_name = "capturing-reranker"
+                self.top_n = 10
+
+            def rerank(
+                self,
+                query: str,
+                hits: list[RetrievalHit],
+                *,
+                top_k: int,
+                top_n_override: int | None = None,
+            ) -> list[RetrievalHit]:
+                del query, hits
+                self.calls.append({"top_k": top_k, "top_n_override": top_n_override})
+                return hybrid_hits
+
+        reranker = _BudgetCapturingReranker()
+        retriever = SimpleNamespace(
+            reranker=reranker,
+            settings=SimpleNamespace(root_dir=ROOT),
+        )
+
+        hits, trace = maybe_rerank_hits(
+            retriever,
+            query="Route와 Ingress 차이를 설명해줘",
+            hybrid_hits=hybrid_hits,
+            top_k=3,
+            trace_callback=None,
+            timings_ms={},
+            context=None,
+        )
+
+        self.assertEqual(1, len(reranker.calls))
+        self.assertEqual(6, reranker.calls[0]["top_n_override"])
+        self.assertTrue(trace["model_applied"])
+        self.assertEqual("model", trace["mode"])
+        self.assertEqual(6, trace["candidate_budget"])
+        self.assertEqual(3, len(hits))
+
 
 if __name__ == "__main__":
     unittest.main()

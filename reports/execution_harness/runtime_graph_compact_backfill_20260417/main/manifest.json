@@ -1,0 +1,39 @@
+{
+  "task_id": "runtime_graph_compact_backfill_20260417",
+  "lane_id": "main",
+  "role": "main",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "src/play_book_studio/cli.py",
+    "src/play_book_studio/ingestion/graph_sidecar.py",
+    "tests/test_cli.py",
+    "tests/test_ingestion_graph_sidecar.py",
+    "reports/execution_harness/runtime_graph_compact_backfill_20260417/*"
+  ],
+  "target_outputs": [
+    "repo-supported command that rebuilds graph_sidecar_compact.json from current chunks and playbook documents",
+    "streaming compact backfill path that avoids ad hoc full sidecar reconstruction",
+    "validation evidence for parser, writer, and real CLI materialization"
+  ],
+  "validation_commands": [
+    ".venv\\Scripts\\python.exe -m pytest tests\\test_cli.py tests\\test_ingestion_graph_sidecar.py tests\\test_ingestion_pipeline.py tests\\test_retrieval_graph_runtime.py tests\\test_retrieval_runtime_graph_trace.py -q",
+    ".venv\\Scripts\\python.exe -m play_book_studio.cli graph-compact"
+  ],
+  "major_task": true,
+  "parallel_execution_required": true,
+  "companion_lanes": [
+    {
+      "lane_id": "explorer",
+      "role": "explorer",
+      "focus": "confirm CLI integration and artifact-derived compact payload contract"
+    },
+    {
+      "lane_id": "reviewer",
+      "role": "reviewer",
+      "focus": "verify backfill path preserves compact schema and request-path stability assumptions"
+    }
+  ],
+  "status": "completed"
+}

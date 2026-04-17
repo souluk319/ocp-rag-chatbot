@@ -62,6 +62,7 @@ from play_book_studio.app.chat_debug import (
     write_recent_chat_session_snapshot as _write_recent_chat_session_snapshot,
 )
 from play_book_studio.app.presenters import (
+    _build_citation_presentation_context,
     _build_health_payload,
     _llm_runtime_signature,
     _refresh_answerer_llm_settings,
@@ -179,12 +180,41 @@ def _build_chat_payload(
     answerer: ChatAnswerer | None = None,
     session: ChatSession,
     result: AnswerResult,
+    timings_sink: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     # UI 응답과 재현성 로그에 쓰는 chat payload serialization helper.
+    presentation_context = _build_citation_presentation_context(root_dir)
+    citation_started_at = time.perf_counter()
     serialized_citations = [
-        _serialize_citation(root_dir, citation)
+        _serialize_citation(
+            root_dir,
+            citation,
+            presentation_context=presentation_context,
+        )
         for citation in result.citations
     ]
+    if timings_sink is not None:
+        timings_sink["payload_citation_serialize"] = (time.perf_counter() - citation_started_at) * 1000
+    related_links_started_at = time.perf_counter()
+    related_links = _build_chat_navigation_links(
+        root_dir,
+        serialized_citations,
+        user_id=session.context.user_id,
+    )
+    if timings_sink is not None:
+        timings_sink["payload_related_links"] = (time.perf_counter() - related_links_started_at) * 1000
+    related_sections_started_at = time.perf_counter()
+    related_sections = _build_chat_section_links(
+        root_dir,
+        serialized_citations,
+        user_id=session.context.user_id,
+    )
+    if timings_sink is not None:
+        timings_sink["payload_related_sections"] = (time.perf_counter() - related_sections_started_at) * 1000
+    suggested_queries_started_at = time.perf_counter()
+    suggested_queries = _suggest_follow_up_questions(session=session, result=result)
+    if timings_sink is not None:
+        timings_sink["payload_suggested_queries"] = (time.perf_counter() - suggested_queries_started_at) * 1000
     payload = {
         "session_id": session.session_id,
         "mode": session.mode,
@@ -194,17 +224,9 @@ def _build_chat_payload(
         "warnings": list(result.warnings),
         "cited_indices": list(result.cited_indices),
         "citations": serialized_citations,
-        "related_links": _build_chat_navigation_links(
-            root_dir,
-            serialized_citations,
-            user_id=session.context.user_id,
-        ),
-        "related_sections": _build_chat_section_links(
-            root_dir,
-            serialized_citations,
-            user_id=session.context.user_id,
-        ),
-        "suggested_queries": _suggest_follow_up_questions(session=session, result=result),
+        "related_links": related_links,
+        "related_sections": related_sections,
+        "suggested_queries": suggested_queries,
         "context": session.context.to_dict(),
         "history_size": len(session.history),
         "retrieval_trace": dict(result.retrieval_trace),
@@ -220,7 +242,10 @@ def _build_chat_payload(
             "repository_query": (result.rewritten_query or result.query or "").strip(),
         }
     if answerer is not None:
+        runtime_started_at = time.perf_counter()
         payload["runtime"] = _build_health_payload(answerer)["runtime"]
+        if timings_sink is not None:
+            timings_sink["payload_runtime"] = (time.perf_counter() - runtime_started_at) * 1000
     return payload
 
 

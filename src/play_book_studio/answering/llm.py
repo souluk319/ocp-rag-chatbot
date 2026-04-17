@@ -29,6 +29,7 @@ class LLMClient:
             "last_provider": None,
             "last_fallback_used": False,
             "last_attempted_providers": [],
+            "last_requested_max_tokens": self.max_tokens,
         }
 
     def _headers(self) -> dict[str, str]:
@@ -43,12 +44,13 @@ class LLMClient:
         messages: list[dict[str, str]],
         *,
         include_reasoning_controls: bool,
+        max_tokens: int | None = None,
     ) -> requests.Response:
         payload = {
             "model": self.model,
             "messages": messages,
             "temperature": self.temperature,
-            "max_tokens": self.max_tokens,
+            "max_tokens": max_tokens if max_tokens is not None else self.max_tokens,
         }
         if include_reasoning_controls:
             payload["reasoning"] = False
@@ -76,12 +78,25 @@ class LLMClient:
             return content.strip()
         raise ValueError("LLM response is missing message content")
 
-    def _generate_openai(self, messages: list[dict[str, str]]) -> str:
-        response = self._post_openai(messages, include_reasoning_controls=True)
+    def _generate_openai(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        max_tokens: int | None = None,
+    ) -> str:
+        response = self._post_openai(
+            messages,
+            include_reasoning_controls=True,
+            max_tokens=max_tokens,
+        )
         if response.status_code == 400:
             response_text = response.text.lower()
             if "reasoning" in response_text or "chat_template_kwargs" in response_text:
-                response = self._post_openai(messages, include_reasoning_controls=False)
+                response = self._post_openai(
+                    messages,
+                    include_reasoning_controls=False,
+                    max_tokens=max_tokens,
+                )
         response.raise_for_status()
         try:
             payload = response.json()
@@ -89,7 +104,15 @@ class LLMClient:
             raise ValueError("LLM response is not valid JSON") from exc
         return self._parse_openai_payload(payload)
 
-    def generate(self, messages: list[dict[str, str]], trace_callback=None) -> str:
+    def generate(
+        self,
+        messages: list[dict[str, str]],
+        trace_callback=None,
+        *,
+        max_tokens: int | None = None,
+    ) -> str:
+        requested_max_tokens = max_tokens if max_tokens is not None else self.max_tokens
+
         def emit(
             *,
             step: str,
@@ -121,16 +144,26 @@ class LLMClient:
                 step="llm_generate",
                 label="LLM 응답 생성 중",
                 status="running",
-                detail=f"provider=openai-compatible model={self.model}",
+                detail=(
+                    f"provider=openai-compatible model={self.model} "
+                    f"max_tokens={requested_max_tokens}"
+                ),
             )
-            content = self._generate_openai(messages)
+            content = self._generate_openai(messages, max_tokens=requested_max_tokens)
             emit(
                 step="llm_generate",
                 label="LLM 응답 생성 완료",
                 status="done",
-                detail=f"provider=openai-compatible model={self.model}",
+                detail=(
+                    f"provider=openai-compatible model={self.model} "
+                    f"max_tokens={requested_max_tokens}"
+                ),
                 duration_ms=(time.perf_counter() - openai_started_at) * 1000,
-                meta={"provider": "openai-compatible", "model": self.model},
+                meta={
+                    "provider": "openai-compatible",
+                    "model": self.model,
+                    "requested_max_tokens": requested_max_tokens,
+                },
             )
             return content
 
@@ -143,6 +176,7 @@ class LLMClient:
                 "last_provider": "openai-compatible",
                 "last_fallback_used": False,
                 "last_attempted_providers": attempted_providers,
+                "last_requested_max_tokens": requested_max_tokens,
             }
             return content
         except Exception:
@@ -152,6 +186,7 @@ class LLMClient:
                 "last_provider": None,
                 "last_fallback_used": False,
                 "last_attempted_providers": attempted_providers,
+                "last_requested_max_tokens": requested_max_tokens,
             }
             raise
 
