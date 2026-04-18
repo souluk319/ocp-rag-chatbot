@@ -1,0 +1,9 @@
+{
+  "task_id": "official_source_parser_binding_and_clean_rebuild_20260418",
+  "lane_id": "explorer",
+  "role": "explorer",
+  "status": "pending",
+  "code_paths": [],
+  "artifacts": [],
+  "validation": []
+}

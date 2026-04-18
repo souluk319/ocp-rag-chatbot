@@ -23,6 +23,12 @@ STEPS = [
         "verify_cmd": "batch a+b full rebuild assets exist",
     },
     {
+        "step_id": "quarantine_old_full_rebuild_outputs",
+        "script": ROOT / "scripts" / "quarantine_old_official_rebuild_artifacts.py",
+        "write_scope": "data/quarantine + reports/build_logs/official_rebuild_quarantine_report.json",
+        "verify_cmd": "contaminated full rebuild outputs quarantined before fresh materialization",
+    },
+    {
         "step_id": "materialize_full_rebuild_books",
         "script": ROOT / "scripts" / "materialize_ocp420_full_rebuild_books.py",
         "write_scope": "scripts + data/gold_candidate_books/full_rebuild + data/wiki_runtime_books/full_rebuild + reports/build_logs",

@@ -4,9 +4,7 @@ import json
 import re
 import shutil
 import sys
-import urllib.request
 from datetime import datetime, timezone
-from html import unescape
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -15,7 +13,11 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
-from play_book_studio.config.settings import load_settings
+from play_book_studio.ingestion.official_rebuild import (
+    normalize_inline_text_fragment,
+    primary_heading_from_path,
+    render_bound_markdown,
+)
 
 
 def _utc_now() -> str:
@@ -78,8 +80,6 @@ ASCIIDOC_IMAGE_RE = re.compile(r"^\s*image::(?P<target>[^\[]+)\[(?P<attrs>[^\]]*
 ASCIIDOC_INCLUDE_RE = re.compile(r"^\s*include::(?P<target>[^\[]+)\[[^\]]*\]", re.MULTILINE)
 HTML_IMG_RE = re.compile(r"<img(?P<attrs>[^>]+)>", re.IGNORECASE)
 HTML_ATTR_RE = re.compile(r'([a-zA-Z:_-]+)\s*=\s*"([^"]*)"')
-HTML_HEADING_TOKEN_RE = re.compile(r"(?is)<h(?P<level>[1-6])(?P<attrs>[^>]*)>(?P<body>.*?)</h[1-6]>|<img(?P<img_attrs>[^>]+)>")
-HTML_TAG_RE = re.compile(r"<[^>]+>")
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -98,9 +98,11 @@ def _resolve_include_path(source_file: Path, include_target: str) -> Path | None
     normalized = include_target.strip()
     if not normalized or "{" in normalized or "}" in normalized:
         return None
-    candidate = (source_file.parent / normalized).resolve()
-    if candidate.exists() and candidate.is_file():
-        return candidate
+    candidates = [(source_file.parent / normalized).resolve()]
+    candidates.append((SOURCE_MIRROR_ROOT / normalized).resolve())
+    for candidate in candidates:
+        if candidate.exists() and candidate.is_file():
+            return candidate
     return None
 
 
@@ -123,8 +125,8 @@ def _resolve_image_asset(source_file: Path, asset_target: str) -> Path | None:
 def _figure_caption(attrs: str, fallback_name: str) -> str:
     tokens = [token.strip() for token in (attrs or "").split(",") if token.strip()]
     if tokens:
-        return tokens[0]
-    return fallback_name
+        return normalize_inline_text_fragment(tokens[0]).strip() or fallback_name
+    return normalize_inline_text_fragment(fallback_name).strip() or fallback_name
 
 
 DIAGRAM_KEYWORDS = (
@@ -182,7 +184,7 @@ def _render_figure_marker(figure: dict[str, str], index: int) -> list[str]:
     return [marker, "", source_line, ""]
 
 
-def _extract_asciidoc_figures_from_file(path: Path, seen: set[Path]) -> list[dict[str, str]]:
+def _extract_asciidoc_figures_from_file(path: Path, seen: set[Path], *, section_hint: str) -> list[dict[str, str]]:
     if path in seen or not path.exists() or not path.is_file():
         return []
     seen.add(path)
@@ -201,6 +203,7 @@ def _extract_asciidoc_figures_from_file(path: Path, seen: set[Path]) -> list[dic
                 "asset_path": str(asset_path.resolve()),
                 "caption": caption,
                 "alt": caption,
+                "section_hint": section_hint,
             }
         )
     for match in ASCIIDOC_INCLUDE_RE.finditer(text):
@@ -208,28 +211,33 @@ def _extract_asciidoc_figures_from_file(path: Path, seen: set[Path]) -> list[dic
         include_path = _resolve_include_path(path, include_target)
         if include_path is None:
             continue
-        figures.extend(_extract_asciidoc_figures_from_file(include_path, seen))
+        figures.extend(_extract_asciidoc_figures_from_file(include_path, seen, section_hint=section_hint))
     return figures
 
 
 def _materialize_figures(
     *,
     slug: str,
-    source_relative_path: str,
+    source_relative_paths: list[str],
     asset_group: str,
 ) -> list[dict[str, str]]:
-    source_path = (SOURCE_MIRROR_ROOT / source_relative_path).resolve()
-    extracted = _extract_asciidoc_figures_from_file(source_path, set())
+    extracted: list[dict[str, str]] = []
+    for source_relative_path in source_relative_paths:
+        source_path = (SOURCE_MIRROR_ROOT / source_relative_path).resolve()
+        section_hint = primary_heading_from_path(source_path)
+        extracted.extend(_extract_asciidoc_figures_from_file(source_path, set(), section_hint=section_hint))
     if not extracted:
         return []
     deduped: list[dict[str, str]] = []
-    seen_captions: set[str] = set()
+    seen_assets: set[tuple[str, str]] = set()
     for figure in extracted:
-        caption_key = re.sub(r"\s+", " ", str(figure.get("caption") or "")).strip().lower()
-        if caption_key and caption_key in seen_captions:
+        dedupe_key = (
+            str(figure.get("source_asset_ref") or "").strip().lower(),
+            re.sub(r"\s+", " ", str(figure.get("caption") or "")).strip().lower(),
+        )
+        if dedupe_key in seen_assets:
             continue
-        if caption_key:
-            seen_captions.add(caption_key)
+        seen_assets.add(dedupe_key)
         deduped.append(figure)
     slug_asset_root = _wiki_asset_root() / slug
     slug_asset_root.mkdir(parents=True, exist_ok=True)
@@ -250,6 +258,7 @@ def _materialize_figures(
                 "alt": figure["alt"],
                 "source_file": figure["source_file"],
                 "source_asset_ref": figure["source_asset_ref"],
+                "section_hint": str(figure.get("section_hint") or "").strip(),
                 "asset_path": str(target_path.resolve()),
                 "asset_url": f"/playbooks/wiki-assets/{asset_group}/{slug}/{target_name}",
             }
@@ -281,99 +290,6 @@ def _normalize_heading_key(text: str) -> str:
     return normalized
 
 
-def _html_attrs(raw_attrs: str) -> dict[str, str]:
-    attrs: dict[str, str] = {}
-    for key, value in HTML_ATTR_RE.findall(raw_attrs or ""):
-        attrs[key.strip().lower()] = value.strip()
-    return attrs
-
-
-def _is_meaningful_html_figure(src: str) -> bool:
-    normalized = (src or "").strip().lower()
-    if not normalized:
-        return False
-    if normalized.startswith("data:image/"):
-        return False
-    if "/images/" not in normalized:
-        return False
-    if "logo" in normalized or "reddit" in normalized or "kebab" in normalized or "icon" in normalized:
-        return False
-    return normalized.endswith((".png", ".jpg", ".jpeg", ".svg", ".webp"))
-
-
-def _download_remote_asset(url: str, target_path: Path) -> bool:
-    try:
-        with urllib.request.urlopen(url) as response:
-            body = response.read()
-    except Exception:  # noqa: BLE001
-        return False
-    target_path.parent.mkdir(parents=True, exist_ok=True)
-    target_path.write_bytes(body)
-    return True
-
-
-def _materialize_html_fallback_figures(*, slug: str, asset_group: str) -> list[dict[str, str]]:
-    html_path = ROOT / "data" / "bronze" / "raw_html" / f"{slug}.html"
-    if not html_path.exists() or not html_path.is_file():
-        return []
-    text = html_path.read_text(encoding="utf-8", errors="ignore")
-    rendered: list[dict[str, str]] = []
-    seen_srcs: set[str] = set()
-    slug_asset_root = _wiki_asset_root() / slug
-    for match in HTML_IMG_RE.finditer(text):
-        attrs = _html_attrs(match.group("attrs"))
-        src = str(attrs.get("src") or "").strip()
-        if not _is_meaningful_html_figure(src):
-            continue
-        if src in seen_srcs:
-            continue
-        seen_srcs.add(src)
-        parsed = urlparse(src)
-        filename = Path(parsed.path).name or f"{slug}-figure-{len(rendered) + 1}.png"
-        target_name = _safe_asset_name(filename)
-        target_path = slug_asset_root / target_name
-        if not _download_remote_asset(src, target_path):
-            continue
-        caption = str(attrs.get("alt") or Path(filename).stem.replace("_", " ")).strip()
-        rendered.append(
-            {
-                "caption": caption,
-                "alt": caption,
-                "source_file": str(html_path.resolve()),
-                "source_asset_ref": src,
-                "asset_path": str(target_path.resolve()),
-                "asset_url": f"/playbooks/wiki-assets/{asset_group}/{slug}/{target_name}",
-            }
-        )
-    return rendered
-
-
-def _extract_html_section_hints(slug: str) -> dict[str, str]:
-    html_path = ROOT / "data" / "bronze" / "raw_html" / f"{slug}.html"
-    if not html_path.exists() or not html_path.is_file():
-        return {}
-    text = html_path.read_text(encoding="utf-8", errors="ignore")
-    current_heading = ""
-    hints: dict[str, str] = {}
-    for match in HTML_HEADING_TOKEN_RE.finditer(text):
-        img_attrs = match.group("img_attrs")
-        if img_attrs is not None:
-            attrs = _html_attrs(img_attrs)
-            src = str(attrs.get("src") or "").strip()
-            if not _is_meaningful_html_figure(src):
-                continue
-            basename = Path(urlparse(src).path).name
-            if basename and current_heading and basename not in hints:
-                hints[basename] = current_heading
-            continue
-        heading_body = match.group("body") or ""
-        heading_text = unescape(HTML_TAG_RE.sub(" ", heading_body))
-        heading_text = re.sub(r"\s+", " ", heading_text).strip()
-        if heading_text:
-            current_heading = heading_text
-    return hints
-
-
 def _inline_figure_markdown(figure: dict[str, str], index: int) -> list[str]:
     return _render_figure_marker(figure, index)
 
@@ -402,7 +318,7 @@ def _place_figures_inline(
     insertions: dict[int, list[str]] = {}
     for idx, figure in enumerate(figures, start=1):
         asset_basename = Path(str(figure.get("source_asset_ref") or "")).name
-        hint = section_hints.get(asset_basename, "")
+        hint = str(figure.get("section_hint") or section_hints.get(asset_basename, "")).strip()
         hint_key = _normalize_heading_key(hint)
         if not hint_key:
             continue
@@ -557,15 +473,21 @@ def _load_relation_entities() -> dict[str, list[dict[str, str]]]:
 
 
 def main() -> int:
-    settings = load_settings(ROOT)
-    if not settings.allow_stale_full_rebuild_export:
+    manifest = _load_json(_manifest_path())
+    manifest_entries = manifest.get("entries") if isinstance(manifest.get("entries"), list) else []
+    blocked_manifest_entries = [
+        {
+            "book_slug": str(entry.get("book_slug") or "").strip(),
+            "rebuild_admission": str(entry.get("rebuild_admission") or "").strip(),
+        }
+        for entry in manifest_entries
+        if isinstance(entry, dict) and str(entry.get("rebuild_admission") or "").strip() != "repo_source_ready"
+    ]
+    if str(manifest.get("status") or "").strip() == "blocked" or blocked_manifest_entries:
         blocked_payload = {
             "status": "blocked",
-            "reason": (
-                "stale_full_rebuild_export_uses_existing_playbook_payloads_and_html_fallback_assets; "
-                "blocked until repo AsciiDoc parser binding lands or explicit override is granted"
-            ),
-            "override_env": "PBS_ALLOW_STALE_FULL_REBUILD_EXPORT=1",
+            "reason": "full rebuild manifest still contains entries without repo/AsciiDoc source binding",
+            "blocked_entries": blocked_manifest_entries or list(manifest.get("blocked_entries") or []),
         }
         _report_out().parent.mkdir(parents=True, exist_ok=True)
         _report_out().write_text(
@@ -574,7 +496,6 @@ def main() -> int:
         )
         print(json.dumps(blocked_payload, ensure_ascii=False, indent=2))
         return 2
-    manifest = _load_json(_manifest_path())
 
     _gold_candidate_root().mkdir(parents=True, exist_ok=True)
     _wiki_runtime_root().mkdir(parents=True, exist_ok=True)
@@ -583,7 +504,7 @@ def main() -> int:
 
     candidate_entries: list[dict[str, str]] = []
     runtime_entries: list[dict[str, str]] = []
-    generation_mode_counter = {"generic_export": 0}
+    generation_mode_counter = {"repo_source_binding": 0}
     figure_stats: dict[str, int] = {}
     diagram_stats: dict[str, int] = {}
     inline_placed_stats: dict[str, int] = {}
@@ -594,7 +515,7 @@ def main() -> int:
     relation_entities_by_slug = _load_relation_entities()
     generated_at = _utc_now()
 
-    for entry in manifest.get("entries") or []:
+    for entry in manifest_entries:
         if not isinstance(entry, dict):
             continue
         slug = str(entry.get("book_slug") or "").strip()
@@ -608,36 +529,44 @@ def main() -> int:
         candidate_path.parent.mkdir(parents=True, exist_ok=True)
         runtime_path.parent.mkdir(parents=True, exist_ok=True)
 
-        source_kind = "generic_manualbook_export"
-        promotion_strategy = "full_rebuild_generic_export"
-        playbook_json_path = ROOT / "data" / "gold_manualbook_ko" / "playbooks" / f"{slug}.json"
-        playbook_payload = _load_json(playbook_json_path)
-        markdown_text = _generic_markdown_from_playbook(playbook_payload, title_override=title)
-        generation_mode_counter["generic_export"] += 1
+        source_kind = "official_repo_asciidoc_binding"
+        promotion_strategy = "full_rebuild_source_repo_binding"
+        source_binding_kind = str(entry.get("source_binding_kind") or "file").strip() or "file"
+        source_relative_paths = [
+            str(item).strip()
+            for item in (entry.get("source_relative_paths") or [])
+            if str(item).strip()
+        ]
+        if not source_relative_paths:
+            source_relative_path = str(entry.get("source_relative_path") or "").strip()
+            if source_relative_path.endswith(".adoc"):
+                source_relative_paths = [source_relative_path]
+        source_paths = [(SOURCE_MIRROR_ROOT / relative_path).resolve() for relative_path in source_relative_paths]
+        markdown_text = render_bound_markdown(
+            title=title,
+            source_paths=source_paths,
+            binding_kind=source_binding_kind,
+        )
+        generation_mode_counter["repo_source_binding"] += 1
 
-        source_relative_path = str(entry.get("source_relative_path") or "").strip()
-        figures: list[dict[str, str]] = []
-        if source_relative_path:
-            figures = _materialize_figures(
-                slug=slug,
-                source_relative_path=source_relative_path,
-                asset_group="full_rebuild",
-            )
-        if not figures:
-            figures = _materialize_html_fallback_figures(slug=slug, asset_group="full_rebuild")
+        figures = _materialize_figures(
+            slug=slug,
+            source_relative_paths=source_relative_paths,
+            asset_group="full_rebuild",
+        )
         for figure in figures:
             asset_kind, diagram_type = _classify_figure_asset(
                 caption=str(figure.get("caption") or ""),
                 alt=str(figure.get("alt") or ""),
                 source_asset_ref=str(figure.get("source_asset_ref") or ""),
-                section_hint=_extract_html_section_hints(slug).get(Path(str(figure.get("source_asset_ref") or "")).name, ""),
+                section_hint=str(figure.get("section_hint") or ""),
             )
             figure["asset_kind"] = asset_kind
             figure["diagram_type"] = diagram_type
         markdown_text, placement_stats, visible_figures = _place_figures_inline(
             markdown_text,
             figures=figures,
-            section_hints=_extract_html_section_hints(slug),
+            section_hints={},
             drop_unmatched=False,
         )
         figure_stats[slug] = int(placement_stats.get("figure_count", 0))
@@ -655,7 +584,7 @@ def main() -> int:
                 "viewer_path": _figure_viewer_path(slug, str(figure.get("asset_url") or "").strip()),
                 "source_file": str(figure.get("source_file") or "").strip(),
                 "source_asset_ref": str(figure.get("source_asset_ref") or "").strip(),
-                "section_hint": _extract_html_section_hints(slug).get(Path(str(figure.get("source_asset_ref") or "")).name, ""),
+                "section_hint": str(figure.get("section_hint") or "").strip(),
                 "related_entities": relation_entities_by_slug.get(slug, []),
             }
             for figure in visible_figures
@@ -675,6 +604,7 @@ def main() -> int:
                 "slug": slug,
                 "title": title,
                 "source_kind": source_kind,
+                "source_binding_kind": source_binding_kind,
                 "source_lane": str(entry.get("source_lane") or ""),
                 "source_manifest_path": str(_manifest_path().resolve()),
                 "promoted_path": str(candidate_path.resolve()),

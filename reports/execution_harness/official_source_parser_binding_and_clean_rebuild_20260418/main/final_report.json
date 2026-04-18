@@ -1,0 +1,31 @@
+{
+  "status": "completed",
+  "current_judgment": "official rebuild mainline is now bound to repo/AsciiDoc sources end to end for all 29 working-set slugs; stale full_rebuild outputs are quarantined before rematerialization",
+  "key_evidence": [
+    "build_ocp420_full_rebuild_manifest.py now emits source_binding_kind + source_relative_paths and reports 29 source-first entries with 0 blocked fallback entries",
+    "materialize_ocp420_full_rebuild_books.py now reads only repo-bound AsciiDoc sources, expands includes, materializes figures from repo assets, and no longer reads gold_manualbook_ko or raw_html",
+    "run_ocp420_one_click_runtime.py now inserts quarantine_old_official_rebuild_artifacts.py before fresh materialization so contaminated full_rebuild outputs do not mix with the clean rebuild surface"
+  ],
+  "outputs": [
+    "src/play_book_studio/ingestion/source_first.py",
+    "src/play_book_studio/ingestion/official_rebuild.py",
+    "scripts/build_ocp420_full_rebuild_manifest.py",
+    "scripts/materialize_ocp420_full_rebuild_books.py",
+    "scripts/quarantine_old_official_rebuild_artifacts.py",
+    "scripts/run_ocp420_one_click_runtime.py",
+    "tests/test_official_rebuild.py",
+    "manifests/ocp420_source_first_full_rebuild_manifest.json",
+    "reports/build_logs/official_rebuild_quarantine_report.json",
+    "reports/build_logs/ocp420_full_rebuild_materialization_report.json",
+    "data/gold_candidate_books/full_rebuild_manifest.json",
+    "data/wiki_runtime_books/full_rebuild_manifest.json"
+  ],
+  "validation": {
+    "py_compile": "passed",
+    "pytest": "12 passed",
+    "manifest": "29 source-first entries, 0 blocked fallback entries",
+    "quarantine": "old contaminated full_rebuild outputs moved under data/quarantine/official_source_parser_binding_and_clean_rebuild_20260418",
+    "materialization": "29 candidate/runtime books materialized from repo bindings"
+  },
+  "next_action": "translation completion packet for English-body official rebuild outputs"
+}

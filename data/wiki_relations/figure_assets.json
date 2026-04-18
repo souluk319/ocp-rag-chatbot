@@ -1,18 +1,39 @@
 {
-  "generated_at_utc": "2026-04-16T12:59:58+00:00",
+  "generated_at_utc": "2026-04-18T13:45:38+00:00",
   "book_count": 29,
   "entries": {
     "advanced_networking": [
       {
-        "caption": "BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
-        "alt": "BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "caption": "OVS `balance-slb` mode ` operating on a localnet with two NADs",
+        "alt": "OVS `balance-slb` mode ` operating on a localnet with two NADs",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/552_OpenShift_slb_mode_0625.png",
+        "viewer_path": "/wiki/figures/advanced_networking/552_OpenShift_slb_mode_0625.png/index.html",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\enabling-OVS-balance-slb-mode.adoc",
+        "source_asset_ref": "552_OpenShift_slb_mode_0625.png",
+        "section_hint": "Network bonding considerations",
+        "related_entities": [
+          {
+            "label": "Cluster Wide Proxy",
+            "href": "/wiki/entities/cluster-wide-proxy/index.html"
+          },
+          {
+            "label": "Networking and Connectivity",
+            "href": "/wiki/entities/networking/index.html"
+          }
+        ]
+      },
+      {
+        "caption": "Advertising pod IPs from a cluster user-defined network over BGP",
+        "alt": "Advertising pod IPs from a cluster user-defined network over BGP",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/524-openshift-bgp-ovn-k8s-no-vpn-0325.png",
         "viewer_path": "/wiki/figures/advanced_networking/524-openshift-bgp-ovn-k8s-no-vpn-0325.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\advanced_networking.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Advanced_networking-ko-KR/images/165d490fe578e346140de7b712caf5c7/524-openshift-bgp-ovn-k8s-no-vpn-0325.png",
-        "section_hint": "6.1.3.2. BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\nw-routeadvertisements-example.adoc",
+        "source_asset_ref": "524-openshift-bgp-ovn-k8s-no-vpn-0325.png",
+        "section_hint": "About route advertisements",
         "related_entities": [
           {
             "label": "Cluster Wide Proxy",
@@ -25,15 +46,15 @@
         ]
       },
       {
-        "caption": "VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
-        "alt": "VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고",
+        "caption": "Advertising pod IPs from a cluster user-defined network over BGP with VPN",
+        "alt": "Advertising pod IPs from a cluster user-defined network over BGP with VPN",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/524-openshift-bgp-ovn-k8s-vrf-lite-0325.png",
         "viewer_path": "/wiki/figures/advanced_networking/524-openshift-bgp-ovn-k8s-vrf-lite-0325.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\advanced_networking.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Advanced_networking-ko-KR/images/bdc0fd4c0dd6cb5bbbd2f1102cb5497d/524-openshift-bgp-ovn-k8s-vrf-lite-0325.png",
-        "section_hint": "6.1.3.3. VPN을 사용하여 BGP를 통해 클러스터 사용자 정의 네트워크에서 Pod IP 광고 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\nw-routeadvertisements-example.adoc",
+        "source_asset_ref": "524-openshift-bgp-ovn-k8s-vrf-lite-0325.png",
+        "section_hint": "About route advertisements",
         "related_entities": [
           {
             "label": "Cluster Wide Proxy",
@@ -46,15 +67,15 @@
         ]
       },
       {
-        "caption": "PTP 할 마스터 클록을 보여주는 다이어그램",
-        "alt": "PTP 할 마스터 클록을 보여주는 다이어그램",
+        "caption": "Diagram showing a PTP grandmaster clock",
+        "alt": "Diagram showing a PTP grandmaster clock",
         "asset_kind": "diagram",
         "diagram_type": "semantic_diagram",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1123_PTP_network.png",
         "viewer_path": "/wiki/figures/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1123_PTP_network.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\advanced_networking.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Advanced_networking-ko-KR/images/856d5ea9436ee3f775fb0dffb913534f/319_OpenShift_PTP_bare-metal_OCP_nodes_1123_PTP_network.png",
-        "section_hint": "7.1.1. PTP 도메인의 요소 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\nw-ptp-introduction.adoc",
+        "source_asset_ref": "319_OpenShift_PTP_bare-metal_OCP_nodes_1123_PTP_network.png",
+        "section_hint": "About PTP in OpenShift cluster nodes",
         "related_entities": [
           {
             "label": "Cluster Wide Proxy",
@@ -67,15 +88,15 @@
         ]
       },
       {
-        "caption": "GNSS 및 T-GM 시스템 아키텍처",
-        "alt": "GNSS 및 T-GM 시스템 아키텍처",
+        "caption": "GNSS and T-GM system architecture",
+        "alt": "GNSS and T-GM system architecture",
         "asset_kind": "diagram",
         "diagram_type": "semantic_diagram",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1023_PTP.png",
         "viewer_path": "/wiki/figures/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_1023_PTP.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\advanced_networking.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Advanced_networking-ko-KR/images/093c31cf4bb480146b063570d4cbb976/319_OpenShift_PTP_bare-metal_OCP_nodes_1023_PTP.png",
-        "section_hint": "7.1.3. PTP 할 마스터 클록에 대한 GNSS 타이밍 개요 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\ptp-overview-of-gnss-grandmaster-clock.adoc",
+        "source_asset_ref": "319_OpenShift_PTP_bare-metal_OCP_nodes_1023_PTP.png",
+        "section_hint": "About PTP in OpenShift cluster nodes",
         "related_entities": [
           {
             "label": "Cluster Wide Proxy",
@@ -88,15 +109,15 @@
         ]
       },
       {
-        "caption": "GNSS 타이밍 소스 및 다운스트림 PTP 경계 및 일반 클럭에 연결된 듀얼 NIC PTP 마스터 클럭",
-        "alt": "GNSS 타이밍 소스 및 다운스트림 PTP 경계 및 일반 클럭에 연결된 듀얼 NIC PTP 마스터 클럭",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
+        "caption": "Dual NIC PTP grandmaster clock connected to GNSS timing source and downstream PTP boundary and ordinary clocks",
+        "alt": "Dual NIC PTP grandmaster clock connected to GNSS timing source and downstream PTP boundary and ordinary clocks",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/openshift-ptp-using-dual-nic-ptp.png",
         "viewer_path": "/wiki/figures/advanced_networking/openshift-ptp-using-dual-nic-ptp.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\advanced_networking.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Advanced_networking-ko-KR/images/9dfce0e5e2968f44f7f3960f26791673/openshift-ptp-using-dual-nic-ptp.png",
-        "section_hint": "7.1.5. 2 카드 E810 NIC 구성 참조 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\ptp-dual-nics.adoc",
+        "source_asset_ref": "openshift-ptp-using-dual-nic-ptp.png",
+        "section_hint": "About PTP in OpenShift cluster nodes",
         "related_entities": [
           {
             "label": "Cluster Wide Proxy",
@@ -109,15 +130,15 @@
         ]
       },
       {
-        "caption": "GNSS 타이밍 소스 및 다운스트림 PTP 경계 및 일반 클럭에 연결된 3- 카드 PTP 할 마스터 클럭",
-        "alt": "GNSS 타이밍 소스 및 다운스트림 PTP 경계 및 일반 클럭에 연결된 3- 카드 PTP 할 마스터 클럭",
+        "caption": "3-card PTP grandmaster clock connected to GNSS timing source and downstream PTP boundary and ordinary clocks",
+        "alt": "3-card PTP grandmaster clock connected to GNSS timing source and downstream PTP boundary and ordinary clocks",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/openshift-ptp-3-card-grandmaster.png",
         "viewer_path": "/wiki/figures/advanced_networking/openshift-ptp-3-card-grandmaster.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\advanced_networking.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Advanced_networking-ko-KR/images/6e29e49f2a41893e66c8cab5ddbbc16e/openshift-ptp-3-card-grandmaster.png",
-        "section_hint": "7.1.7. 3-card Intel E810 PTP grandmaster 클록 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\ptp-three-card-grandmaster.adoc",
+        "source_asset_ref": "openshift-ptp-3-card-grandmaster.png",
+        "section_hint": "About PTP in OpenShift cluster nodes",
         "related_entities": [
           {
             "label": "Cluster Wide Proxy",
@@ -130,15 +151,15 @@
         ]
       },
       {
-        "caption": "GNSS를 소스로 사용하는 T-GM 클록의 홀드오버",
-        "alt": "GNSS를 소스로 사용하는 T-GM 클록의 홀드오버",
+        "caption": "Holdover in a T-GM clock with GNSS as the source",
+        "alt": "Holdover in a T-GM clock with GNSS as the source",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/openshift-ptp-holdover-tgm-clock-with-gnss.png",
         "viewer_path": "/wiki/figures/advanced_networking/openshift-ptp-holdover-tgm-clock-with-gnss.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\advanced_networking.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Advanced_networking-ko-KR/images/2f9b8ca1e24780ff73ac4afcef8b9256/openshift-ptp-holdover-tgm-clock-with-gnss.png",
-        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\nw-ptp-holdover-in-a-grandmaster-clock.adoc",
+        "source_asset_ref": "openshift-ptp-holdover-tgm-clock-with-gnss.png",
+        "section_hint": "Configuring PTP devices",
         "related_entities": [
           {
             "label": "Cluster Wide Proxy",
@@ -151,141 +172,15 @@
         ]
       },
       {
-        "caption": "20",
-        "alt": "20",
+        "caption": "Overview of consuming PTP fast events from the PTP event producer REST API",
+        "alt": "Overview of consuming PTP fast events from the PTP event producer REST API",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-1.png",
-        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-1.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\advanced_networking.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Advanced_networking-ko-KR/images/066d390945eb233d66d1b10310fec9e7/darkcircle-1.png",
-        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Cluster Wide Proxy",
-            "href": "/wiki/entities/cluster-wide-proxy/index.html"
-          },
-          {
-            "label": "Networking and Connectivity",
-            "href": "/wiki/entities/networking/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-2.png",
-        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-2.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\advanced_networking.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Advanced_networking-ko-KR/images/dffcf5a2ed44061a19f38d92a8a3d1bb/darkcircle-2.png",
-        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Cluster Wide Proxy",
-            "href": "/wiki/entities/cluster-wide-proxy/index.html"
-          },
-          {
-            "label": "Networking and Connectivity",
-            "href": "/wiki/entities/networking/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-3.png",
-        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-3.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\advanced_networking.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Advanced_networking-ko-KR/images/e4171dd0f615beb50be5dc701259f444/darkcircle-3.png",
-        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Cluster Wide Proxy",
-            "href": "/wiki/entities/cluster-wide-proxy/index.html"
-          },
-          {
-            "label": "Networking and Connectivity",
-            "href": "/wiki/entities/networking/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-4.png",
-        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-4.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\advanced_networking.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Advanced_networking-ko-KR/images/dd170f3f40e17838a75352ca1962f9bb/darkcircle-4.png",
-        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Cluster Wide Proxy",
-            "href": "/wiki/entities/cluster-wide-proxy/index.html"
-          },
-          {
-            "label": "Networking and Connectivity",
-            "href": "/wiki/entities/networking/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-5.png",
-        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-5.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\advanced_networking.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Advanced_networking-ko-KR/images/b86066dfcdf40a6c7ce19b770a9d3868/darkcircle-5.png",
-        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Cluster Wide Proxy",
-            "href": "/wiki/entities/cluster-wide-proxy/index.html"
-          },
-          {
-            "label": "Networking and Connectivity",
-            "href": "/wiki/entities/networking/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/darkcircle-6.png",
-        "viewer_path": "/wiki/figures/advanced_networking/darkcircle-6.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\advanced_networking.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Advanced_networking-ko-KR/images/3355b6bb1a911bd888724ef147bddf81/darkcircle-6.png",
-        "section_hint": "7.2.6. GNSS를 소스로 사용하는 마스터 클록의 홀드오버 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Cluster Wide Proxy",
-            "href": "/wiki/entities/cluster-wide-proxy/index.html"
-          },
-          {
-            "label": "Networking and Connectivity",
-            "href": "/wiki/entities/networking/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "PTP 이벤트 생산자 REST API의 PTP 빠른 이벤트 사용 개요",
-        "alt": "PTP 이벤트 생산자 REST API의 PTP 빠른 이벤트 사용 개요",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_0323_4.17.png",
         "viewer_path": "/wiki/figures/advanced_networking/319_OpenShift_PTP_bare-metal_OCP_nodes_0323_4.17.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\advanced_networking.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Advanced_networking-ko-KR/images/ae8f8ceef9bfbe28b158ea6eeabe9118/319_OpenShift_PTP_bare-metal_OCP_nodes_0323_4.17.png",
-        "section_hint": "7.3.2. PTP 이벤트 REST API v2를 사용하여 PTP 이벤트 검색 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\cnf-about-ptp-events-using-ptp-event-producer-with-o-ran-api.adoc",
+        "source_asset_ref": "319_OpenShift_PTP_bare-metal_OCP_nodes_0323_4.17.png",
+        "section_hint": "Developing PTP events consumer applications with the REST API v2",
         "related_entities": [
           {
             "label": "Cluster Wide Proxy",
@@ -298,487 +193,24 @@
         ]
       }
     ],
-    "architecture": [
-      {
-        "caption": "Red Hat OpenShift Kubernetes Engine",
-        "alt": "Red Hat OpenShift Kubernetes Engine",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/525-OpenShift-arch-012025.png",
-        "viewer_path": "/wiki/figures/architecture/525-OpenShift-arch-012025.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\architecture.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Architecture-ko-KR/images/da833bed922281c223c40750ff6276ff/525-OpenShift-arch-012025.png",
-        "section_hint": "2.1. OpenShift Container Platform 소개 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Platform Foundation",
-            "href": "/wiki/entities/platform-foundation/index.html"
-          },
-          {
-            "label": "Control Plane Nodes",
-            "href": "/wiki/entities/control-plane-nodes/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "상위 레벨 OpenShift Container Platform 플로우",
-        "alt": "상위 레벨 OpenShift Container Platform 플로우",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/ocp_arch_lifecycle.png",
-        "viewer_path": "/wiki/figures/architecture/ocp_arch_lifecycle.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\architecture.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Architecture-ko-KR/images/81d412906026bcfe261fe3fc8c77327b/ocp_arch_lifecycle.png",
-        "section_hint": "2.1.3.4. OpenShift Container Platform 라이프사이클 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Platform Foundation",
-            "href": "/wiki/entities/platform-foundation/index.html"
-          },
-          {
-            "label": "Control Plane Nodes",
-            "href": "/wiki/entities/control-plane-nodes/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "OpenShift Container Platform 설치 대상 및 종속 항목",
-        "alt": "OpenShift Container Platform 설치 대상 및 종속 항목",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/targets-and-dependencies.png",
-        "viewer_path": "/wiki/figures/architecture/targets-and-dependencies.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\architecture.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Architecture-ko-KR/images/6527feee3673861daba1c8118bcfa1b6/targets-and-dependencies.png",
-        "section_hint": "3.1.1. 설치 프로그램 정보 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Platform Foundation",
-            "href": "/wiki/entities/platform-foundation/index.html"
-          },
-          {
-            "label": "Control Plane Nodes",
-            "href": "/wiki/entities/control-plane-nodes/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "부트스트랩 생성",
-        "alt": "부트스트랩 생성",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/create-nodes.png",
-        "viewer_path": "/wiki/figures/architecture/create-nodes.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\architecture.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Architecture-ko-KR/images/9fb14e59171a618c486862da6b1ae17b/create-nodes.png",
-        "section_hint": "3.1.4.5. 설치 프로세스 세부사항 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Platform Foundation",
-            "href": "/wiki/entities/platform-foundation/index.html"
-          },
-          {
-            "label": "Control Plane Nodes",
-            "href": "/wiki/entities/control-plane-nodes/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "컨테이너화된 애플리케이션 생성 및 푸시",
-        "alt": "컨테이너화된 애플리케이션 생성 및 푸시",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/create-push-app.png",
-        "viewer_path": "/wiki/figures/architecture/create-push-app.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\architecture.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Architecture-ko-KR/images/7cb0013c7080c715e106f482eab98065/create-push-app.png",
-        "section_hint": "7.2. 간단한 컨테이너 빌드 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Platform Foundation",
-            "href": "/wiki/entities/platform-foundation/index.html"
-          },
-          {
-            "label": "Control Plane Nodes",
-            "href": "/wiki/entities/control-plane-nodes/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "OpenShift Container Platform 개발자 카탈로그",
-        "alt": "OpenShift Container Platform 개발자 카탈로그",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/developer-catalog.png",
-        "viewer_path": "/wiki/figures/architecture/developer-catalog.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\architecture.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Architecture-ko-KR/images/ebd637c83a7291a7dc4aef2b8f1bab7e/developer-catalog.png",
-        "section_hint": "7.2.2. 기본 이미지 옵션 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Platform Foundation",
-            "href": "/wiki/entities/platform-foundation/index.html"
-          },
-          {
-            "label": "Control Plane Nodes",
-            "href": "/wiki/entities/control-plane-nodes/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "API 승인 스테이지",
-        "alt": "API 승인 스테이지",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/architecture/api-admission-chain.png",
-        "viewer_path": "/wiki/figures/architecture/api-admission-chain.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\architecture.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Architecture-ko-KR/images/e2115419a4f5ded9dcc282b79e84a8b2/api-admission-chain.png",
-        "section_hint": "9.3. Webhook 승인 플러그인 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Platform Foundation",
-            "href": "/wiki/entities/platform-foundation/index.html"
-          },
-          {
-            "label": "Control Plane Nodes",
-            "href": "/wiki/entities/control-plane-nodes/index.html"
-          }
-        ]
-      }
-    ],
-    "authentication_and_authorization": [
-      {
-        "caption": "OpenShift Container Platform RBAC",
-        "alt": "OpenShift Container Platform RBAC",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/authentication_and_authorization/rbac.png",
-        "viewer_path": "/wiki/figures/authentication_and_authorization/rbac.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\authentication_and_authorization.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Authentication_and_authorization-ko-KR/images/fad3132dbc5f65494508926853094025/rbac.png",
-        "section_hint": "9.1.1. 기본 클러스터 역할 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "클러스터에 대해 구성된 CCO 인증 정보 모드를 결정하는 방법을 보여주는 의사 결정 트리입니다.",
-        "alt": "클러스터에 대해 구성된 CCO 인증 정보 모드를 결정하는 방법을 보여주는 의사 결정 트리입니다.",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/authentication_and_authorization/334_OpenShift_cluster_updating_and_CCO_workflows_0923_4.11_A_AliCloud_patch.png",
-        "viewer_path": "/wiki/figures/authentication_and_authorization/334_OpenShift_cluster_updating_and_CCO_workflows_0923_4.11_A_AliCloud_patch.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\authentication_and_authorization.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Authentication_and_authorization-ko-KR/images/27ae973be2d249c0733c33d2bf4c8fae/334_OpenShift_cluster_updating_and_CCO_workflows_0923_4.11_A_AliCloud_patch.png",
-        "section_hint": "20.1.2. Cloud Credential Operator 모드 확인 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "AWS STS를 사용할 때 AWS와 클러스터 간의 자세한 인증 흐름",
-        "alt": "AWS STS를 사용할 때 AWS와 클러스터 간의 자세한 인증 흐름",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_0623_AWS.png",
-        "viewer_path": "/wiki/figures/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_0623_AWS.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\authentication_and_authorization.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Authentication_and_authorization-ko-KR/images/a187100d4a49b9308142d59828ee16fd/347_OpenShift_credentials_with_STS_updates_0623_AWS.png",
-        "section_hint": "20.5.1.1.1. AWS STS의 인증 흐름 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "Google Cloud 워크로드 ID를 사용할 때 Google Cloud와 클러스터 간의 자세한 인증 흐름",
-        "alt": "Google Cloud 워크로드 ID를 사용할 때 Google Cloud와 클러스터 간의 자세한 인증 흐름",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_0623_GCP.png",
-        "viewer_path": "/wiki/figures/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_0623_GCP.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\authentication_and_authorization.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Authentication_and_authorization-ko-KR/images/b1951689e1229704bfae2fbc196336ae/347_OpenShift_credentials_with_STS_updates_0623_GCP.png",
-        "section_hint": "20.5.2.1. Google Cloud 워크로드 ID 인증 프로세스 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "Workload ID를 사용할 때 Azure와 클러스터 간의 자세한 인증 흐름",
-        "alt": "Workload ID를 사용할 때 Azure와 클러스터 간의 자세한 인증 흐름",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_1023_Azure.png",
-        "viewer_path": "/wiki/figures/authentication_and_authorization/347_OpenShift_credentials_with_STS_updates_1023_Azure.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\authentication_and_authorization.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Authentication_and_authorization-ko-KR/images/c4749ac419c575e47ceedd45e1cfa029/347_OpenShift_credentials_with_STS_updates_1023_Azure.png",
-        "section_hint": "20.5.3.1. Microsoft Entra Workload ID 인증 프로세스 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      }
-    ],
-    "backup_and_restore": [
-      {
-        "caption": "must-gather markdown output",
-        "alt": "must-gather markdown output",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-must-gather-markdown-output.png",
-        "viewer_path": "/wiki/figures/backup_and_restore/oadp-must-gather-markdown-output.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\backup_and_restore.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Backup_and_restore-en-US/images/56a024e21900e41938c3a1c9581fafbf/oadp-must-gather-markdown-output.png",
-        "section_hint": "5.26.11.1. Using the must-gather tool 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Etcd",
-            "href": "/wiki/entities/etcd/index.html"
-          },
-          {
-            "label": "Control Plane Nodes",
-            "href": "/wiki/entities/control-plane-nodes/index.html"
-          },
-          {
-            "label": "Cluster Wide Proxy",
-            "href": "/wiki/entities/cluster-wide-proxy/index.html"
-          },
-          {
-            "label": "Control Plane and Node Operations",
-            "href": "/wiki/entities/control-plane-ops/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "OADP metrics targets",
-        "alt": "OADP metrics targets",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-targets.png",
-        "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-targets.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\backup_and_restore.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Backup_and_restore-en-US/images/47240306a8c205165d320ea66e151979/oadp-metrics-targets.png",
-        "section_hint": "5.26.12.2. Creating OADP service monitor 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Etcd",
-            "href": "/wiki/entities/etcd/index.html"
-          },
-          {
-            "label": "Control Plane Nodes",
-            "href": "/wiki/entities/control-plane-nodes/index.html"
-          },
-          {
-            "label": "Cluster Wide Proxy",
-            "href": "/wiki/entities/cluster-wide-proxy/index.html"
-          },
-          {
-            "label": "Control Plane and Node Operations",
-            "href": "/wiki/entities/control-plane-ops/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "OADP backup failing alert",
-        "alt": "OADP backup failing alert",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-backup-failing-alert.png",
-        "viewer_path": "/wiki/figures/backup_and_restore/oadp-backup-failing-alert.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\backup_and_restore.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Backup_and_restore-en-US/images/19940971950304402ec9c77d698f6dda/oadp-backup-failing-alert.png",
-        "section_hint": "5.26.12.3. Creating an alerting rule 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Etcd",
-            "href": "/wiki/entities/etcd/index.html"
-          },
-          {
-            "label": "Control Plane Nodes",
-            "href": "/wiki/entities/control-plane-nodes/index.html"
-          },
-          {
-            "label": "Cluster Wide Proxy",
-            "href": "/wiki/entities/cluster-wide-proxy/index.html"
-          },
-          {
-            "label": "Control Plane and Node Operations",
-            "href": "/wiki/entities/control-plane-ops/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "OADP metrics query",
-        "alt": "OADP metrics query",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/backup_and_restore/oadp-metrics-query.png",
-        "viewer_path": "/wiki/figures/backup_and_restore/oadp-metrics-query.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\backup_and_restore.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Backup_and_restore-en-US/images/4a108c848630a508c6b0aef32ab58404/oadp-metrics-query.png",
-        "section_hint": "5.26.12.5. Viewing metrics using the Observe UI 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Etcd",
-            "href": "/wiki/entities/etcd/index.html"
-          },
-          {
-            "label": "Control Plane Nodes",
-            "href": "/wiki/entities/control-plane-nodes/index.html"
-          },
-          {
-            "label": "Cluster Wide Proxy",
-            "href": "/wiki/entities/cluster-wide-proxy/index.html"
-          },
-          {
-            "label": "Control Plane and Node Operations",
-            "href": "/wiki/entities/control-plane-ops/index.html"
-          }
-        ]
-      }
-    ],
-    "cli_tools": [
-      {
-        "caption": "물음표를 클릭합니다.",
-        "alt": "물음표를 클릭합니다.",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/cli_tools/click-question-mark.png",
-        "viewer_path": "/wiki/figures/cli_tools/click-question-mark.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\cli_tools.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-CLI_tools-ko-KR/images/f0c1646f62eeee179a9093cf3d794ab3/click-question-mark.png",
-        "section_hint": "2.1.2.2.1. 웹 콘솔을 사용하여 Linux에 OpenShift CLI 설치 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Operators and Tooling",
-            "href": "/wiki/entities/operators-and-tooling/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "CLI 목록",
-        "alt": "CLI 목록",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/cli_tools/CLI-list.png",
-        "viewer_path": "/wiki/figures/cli_tools/CLI-list.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\cli_tools.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-CLI_tools-ko-KR/images/af5ebcca8d086078c0ea2821b491e9b3/CLI-list.png",
-        "section_hint": "2.1.2.2.1. 웹 콘솔을 사용하여 Linux에 OpenShift CLI 설치 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Operators and Tooling",
-            "href": "/wiki/entities/operators-and-tooling/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "redcircle 1",
-        "alt": "redcircle 1",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/cli_tools/redcircle-1.png",
-        "viewer_path": "/wiki/figures/cli_tools/redcircle-1.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\cli_tools.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-CLI_tools-ko-KR/images/e6e80b7e9c4b03038c3528b5a02c6c87/redcircle-1.png",
-        "section_hint": "2.3.1. oc 바이너리 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Operators and Tooling",
-            "href": "/wiki/entities/operators-and-tooling/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "redcircle 3",
-        "alt": "redcircle 3",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/cli_tools/redcircle-3.png",
-        "viewer_path": "/wiki/figures/cli_tools/redcircle-3.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\cli_tools.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-CLI_tools-ko-KR/images/303956f5d0c12798adfa653218555f12/redcircle-3.png",
-        "section_hint": "2.3.1. oc 바이너리 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Operators and Tooling",
-            "href": "/wiki/entities/operators-and-tooling/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "redcircle 2",
-        "alt": "redcircle 2",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/cli_tools/redcircle-2.png",
-        "viewer_path": "/wiki/figures/cli_tools/redcircle-2.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\cli_tools.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-CLI_tools-ko-KR/images/fe0c835a883b665da7d112e7e6d32d8c/redcircle-2.png",
-        "section_hint": "2.3.1. oc 바이너리 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Operators and Tooling",
-            "href": "/wiki/entities/operators-and-tooling/index.html"
-          }
-        ]
-      }
-    ],
-    "disconnected_environments": [
-      {
-        "caption": "Enclave 지원",
-        "alt": "Enclave 지원",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/disconnected_environments/445_OpenShift_Enclave_support_0724.png",
-        "viewer_path": "/wiki/figures/disconnected_environments/445_OpenShift_Enclave_support_0724.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\disconnected_environments.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Disconnected_environments-ko-KR/images/8cc1807490d35edf67c1f15ef8f62d1e/445_OpenShift_Enclave_support_0724.png",
-        "section_hint": "5.8.1. Enclave 미러링 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Cluster Wide Proxy",
-            "href": "/wiki/entities/cluster-wide-proxy/index.html"
-          },
-          {
-            "label": "Networking and Connectivity",
-            "href": "/wiki/entities/networking/index.html"
-          },
-          {
-            "label": "Storage, Registry, and Images",
-            "href": "/wiki/entities/storage-and-content/index.html"
-          }
-        ]
-      }
-    ],
+    "architecture": [],
+    "authentication_and_authorization": [],
+    "backup_and_restore": [],
+    "cli_tools": [],
+    "disconnected_environments": [],
     "etcd": [],
     "images": [],
     "ingress_and_load_balancing": [
       {
-        "caption": "경로가 속하는 네임스페이스와 관계없이 지정된 경로 선택기와 일치하는 라벨을 포함하는 모든 경로를 제공하는 다른 경로 선택기가 있는 여러 Ingress 컨트롤러를 보여주는 다이어그램",
-        "alt": "경로가 속하는 네임스페이스와 관계없이 지정된 경로 선택기와 일치하는 라벨을 포함하는 모든 경로를 제공하는 다른 경로 선택기가 있는 여러 Ingress 컨트롤러를 보여주는 다이어그램",
+        "caption": "A diagram showing multiple Ingress Controllers with different route selectors serving any route containing a label that matches a given route selector regardless of the namespace a route belongs to",
+        "alt": "A diagram showing multiple Ingress Controllers with different route selectors serving any route containing a label that matches a given route selector regardless of the namespace a route belongs to",
         "asset_kind": "diagram",
         "diagram_type": "semantic_diagram",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/nw-sharding-route-labels.png",
         "viewer_path": "/wiki/figures/ingress_and_load_balancing/nw-sharding-route-labels.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\ingress_and_load_balancing.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Ingress_and_load_balancing-ko-KR/images/88e02b6d127bf165fed27d7c18366e6a/nw-sharding-route-labels.png",
-        "section_hint": "2.3.6.5. 경로 라벨을 사용하여 Ingress 컨트롤러 분할 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\nw-ingress-sharding-route-labels.adoc",
+        "source_asset_ref": "nw-sharding-route-labels.png",
+        "section_hint": "Configuring ingress cluster traffic by using an Ingress Controller",
         "related_entities": [
           {
             "label": "Cluster Wide Proxy",
@@ -791,15 +223,15 @@
         ]
       },
       {
-        "caption": "지정된 네임스페이스 선택기와 일치하는 라벨이 포함된 네임스페이스에 속하는 경로가 다른 네임스페이스 선택기가 있는 여러 Ingress 컨트롤러를 표시하는 다이어그램",
-        "alt": "지정된 네임스페이스 선택기와 일치하는 라벨이 포함된 네임스페이스에 속하는 경로가 다른 네임스페이스 선택기가 있는 여러 Ingress 컨트롤러를 표시하는 다이어그램",
+        "caption": "A diagram showing multiple Ingress Controllers with different namespace selectors serving routes that belong to the namespace containing a label that matches a given namespace selector",
+        "alt": "A diagram showing multiple Ingress Controllers with different namespace selectors serving routes that belong to the namespace containing a label that matches a given namespace selector",
         "asset_kind": "diagram",
         "diagram_type": "semantic_diagram",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/nw-sharding-namespace-labels.png",
         "viewer_path": "/wiki/figures/ingress_and_load_balancing/nw-sharding-namespace-labels.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\ingress_and_load_balancing.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Ingress_and_load_balancing-ko-KR/images/afe594e8499d327fa587b8ca4f61a2cd/nw-sharding-namespace-labels.png",
-        "section_hint": "2.3.6.6. 네임스페이스 라벨을 사용하여 Ingress 컨트롤러 분할 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\nw-ingress-sharding-namespace-labels.adoc",
+        "source_asset_ref": "nw-sharding-namespace-labels.png",
+        "section_hint": "Configuring ingress cluster traffic by using an Ingress Controller",
         "related_entities": [
           {
             "label": "Cluster Wide Proxy",
@@ -812,15 +244,15 @@
         ]
       },
       {
-        "caption": "OpenShift Container Platform Ingress NodePort 끝점 게시 전략",
-        "alt": "OpenShift Container Platform Ingress NodePort 끝점 게시 전략",
+        "caption": "OpenShift Container Platform Ingress NodePort endpoint publishing strategy",
+        "alt": "OpenShift Container Platform Ingress NodePort endpoint publishing strategy",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/202_OpenShift_Ingress_0222_node_port.png",
         "viewer_path": "/wiki/figures/ingress_and_load_balancing/202_OpenShift_Ingress_0222_node_port.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\ingress_and_load_balancing.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Ingress_and_load_balancing-ko-KR/images/5b5c971559bcbb827169ef0452f4c9b9/202_OpenShift_Ingress_0222_node_port.png",
-        "section_hint": "2.4.1. Ingress 컨트롤러 끝점 게시 전략 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\nw-ingress-controller-endpoint-publishing-strategies.adoc",
+        "source_asset_ref": "202_OpenShift_Ingress_0222_node_port.png",
+        "section_hint": "Configuring the Ingress Controller endpoint publishing strategy",
         "related_entities": [
           {
             "label": "Cluster Wide Proxy",
@@ -833,15 +265,15 @@
         ]
       },
       {
-        "caption": "OpenShift Container Platform 환경에서 작동하는 Ingress 컨트롤러의 네트워크 워크플로 예제를 보여주는 이미지입니다.",
-        "alt": "OpenShift Container Platform 환경에서 작동하는 Ingress 컨트롤러의 네트워크 워크플로 예제를 보여주는 이미지입니다.",
+        "caption": "An image that shows an example network workflow of an Ingress Controller operating in an OpenShift Container Platform environment.",
+        "alt": "An image that shows an example network workflow of an Ingress Controller operating in an OpenShift Container Platform environment.",
         "asset_kind": "diagram",
         "diagram_type": "semantic_diagram",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/external-load-balancer-default.png",
         "viewer_path": "/wiki/figures/ingress_and_load_balancing/external-load-balancer-default.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\ingress_and_load_balancing.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Ingress_and_load_balancing-ko-KR/images/c35799e5c44cc8a51b928b5494bd9f84/external-load-balancer-default.png",
-        "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\nw-osp-services-external-load-balancer.adoc",
+        "source_asset_ref": "external-load-balancer-default.png",
+        "section_hint": "Load balancing on {rh-openstack}",
         "related_entities": [
           {
             "label": "Cluster Wide Proxy",
@@ -854,15 +286,15 @@
         ]
       },
       {
-        "caption": "OpenShift Container Platform 환경에서 작동하는 OpenShift API의 네트워크 워크플로 예제를 보여주는 이미지입니다.",
-        "alt": "OpenShift Container Platform 환경에서 작동하는 OpenShift API의 네트워크 워크플로 예제를 보여주는 이미지입니다.",
+        "caption": "An image that shows an example network workflow of an OpenShift API operating in an OpenShift Container Platform environment.",
+        "alt": "An image that shows an example network workflow of an OpenShift API operating in an OpenShift Container Platform environment.",
         "asset_kind": "diagram",
         "diagram_type": "semantic_diagram",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/external-load-balancer-openshift-api.png",
         "viewer_path": "/wiki/figures/ingress_and_load_balancing/external-load-balancer-openshift-api.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\ingress_and_load_balancing.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Ingress_and_load_balancing-ko-KR/images/20b274ff0baf5743ab5f1a57d2dfdc40/external-load-balancer-openshift-api.png",
-        "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\nw-osp-services-external-load-balancer.adoc",
+        "source_asset_ref": "external-load-balancer-openshift-api.png",
+        "section_hint": "Load balancing on {rh-openstack}",
         "related_entities": [
           {
             "label": "Cluster Wide Proxy",
@@ -875,15 +307,15 @@
         ]
       },
       {
-        "caption": "OpenShift Container Platform 환경에서 작동하는 OpenShift MachineConfig API의 네트워크 워크플로 예제를 보여주는 이미지입니다.",
-        "alt": "OpenShift Container Platform 환경에서 작동하는 OpenShift MachineConfig API의 네트워크 워크플로 예제를 보여주는 이미지입니다.",
+        "caption": "An image that shows an example network workflow of an OpenShift MachineConfig API operating in an OpenShift Container Platform environment.",
+        "alt": "An image that shows an example network workflow of an OpenShift MachineConfig API operating in an OpenShift Container Platform environment.",
         "asset_kind": "diagram",
         "diagram_type": "semantic_diagram",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/external-load-balancer-machine-config-api.png",
         "viewer_path": "/wiki/figures/ingress_and_load_balancing/external-load-balancer-machine-config-api.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\ingress_and_load_balancing.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Ingress_and_load_balancing-ko-KR/images/647ca6d4bc4b5c847872ccda34e79ce5/external-load-balancer-machine-config-api.png",
-        "section_hint": "3.3. 사용자 관리 로드 밸런서의 서비스 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\nw-osp-services-external-load-balancer.adoc",
+        "source_asset_ref": "external-load-balancer-machine-config-api.png",
+        "section_hint": "Load balancing on {rh-openstack}",
         "related_entities": [
           {
             "label": "Cluster Wide Proxy",
@@ -896,15 +328,15 @@
         ]
       },
       {
-        "caption": "MetalLB와 함께 VRF를 사용하여 대칭 라우팅 관리에 대한 네트워크 개요",
-        "alt": "MetalLB와 함께 VRF를 사용하여 대칭 라우팅 관리에 대한 네트워크 개요",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
+        "caption": "Network overview of managing symmetric routing by using VRFs with MetalLB",
+        "alt": "Network overview of managing symmetric routing by using VRFs with MetalLB",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/357_OpenShift_MetalLB_VRF_0823.png",
         "viewer_path": "/wiki/figures/ingress_and_load_balancing/357_OpenShift_MetalLB_VRF_0823.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\ingress_and_load_balancing.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Ingress_and_load_balancing-ko-KR/images/5f6abd1e005b06e55a04fcd3bc85366d/357_OpenShift_MetalLB_VRF_0823.png",
-        "section_hint": "4.7.2. MetalLB와 함께 VRF를 사용하여 대칭 라우팅 관리 개요 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\overview-of-managing-symmetric-routing-using-vrf-based-networks-with-metallb.adoc",
+        "source_asset_ref": "357_OpenShift_MetalLB_VRF_0823.png",
+        "section_hint": "Managing symmetric routing with MetalLB",
         "related_entities": [
           {
             "label": "Cluster Wide Proxy",
@@ -917,15 +349,15 @@
         ]
       },
       {
-        "caption": "FRR과의 MetalLB 통합",
-        "alt": "FRR과의 MetalLB 통합",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
+        "caption": "MetalLB integration with FRR",
+        "alt": "MetalLB integration with FRR",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/ingress_and_load_balancing/695_OpenShift_MetalLB_FRRK8s_integration_0624.png",
         "viewer_path": "/wiki/figures/ingress_and_load_balancing/695_OpenShift_MetalLB_FRRK8s_integration_0624.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\ingress_and_load_balancing.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Ingress_and_load_balancing-ko-KR/images/76f6fc7e2474f19025af76e8d6a6402d/695_OpenShift_MetalLB_FRRK8s_integration_0624.png",
-        "section_hint": "4.8. MetalLB 및 FRR-K8의 통합 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\networking\\ingress_load_balancing\\metallb\\metallb-frr-k8s.adoc",
+        "source_asset_ref": "695_OpenShift_MetalLB_FRRK8s_integration_0624.png",
+        "section_hint": "Configuring the integration of MetalLB and FRR-K8s",
         "related_entities": [
           {
             "label": "Cluster Wide Proxy",
@@ -940,15 +372,15 @@
     ],
     "installation_overview": [
       {
-        "caption": "OpenShift Container Platform 설치 대상 및 종속 항목",
-        "alt": "OpenShift Container Platform 설치 대상 및 종속 항목",
+        "caption": "OpenShift Container Platform installation targets and dependencies",
+        "alt": "OpenShift Container Platform installation targets and dependencies",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/installation_overview/targets-and-dependencies.png",
         "viewer_path": "/wiki/figures/installation_overview/targets-and-dependencies.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\installation_overview.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Installation_overview-ko-KR/images/6527feee3673861daba1c8118bcfa1b6/targets-and-dependencies.png",
-        "section_hint": "1.1.1. 설치 프로그램 정보 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\installation-overview.adoc",
+        "source_asset_ref": "targets-and-dependencies.png",
+        "section_hint": "OpenShift Container Platform installation overview",
         "related_entities": [
           {
             "label": "Platform Foundation",
@@ -961,15 +393,36 @@
         ]
       },
       {
-        "caption": "부트스트랩 생성",
-        "alt": "부트스트랩 생성",
+        "caption": "Creating bootstrap",
+        "alt": "Creating bootstrap",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/installation_overview/create-nodes.png",
         "viewer_path": "/wiki/figures/installation_overview/create-nodes.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\installation_overview.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Installation_overview-ko-KR/images/9fb14e59171a618c486862da6b1ae17b/create-nodes.png",
-        "section_hint": "1.1.4.5. 설치 프로세스 세부사항 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\installation-process.adoc",
+        "source_asset_ref": "create-nodes.png",
+        "section_hint": "OpenShift Container Platform installation overview",
+        "related_entities": [
+          {
+            "label": "Platform Foundation",
+            "href": "/wiki/entities/platform-foundation/index.html"
+          },
+          {
+            "label": "Installation and Day-2",
+            "href": "/wiki/entities/installation-day2/index.html"
+          }
+        ]
+      },
+      {
+        "caption": "Creating bootstrap",
+        "alt": "Creating bootstrap",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/installation_overview/150_OpenShift_VMware_on_AWS_1021_installer_FCOS.png",
+        "viewer_path": "/wiki/figures/installation_overview/150_OpenShift_VMware_on_AWS_1021_installer_FCOS.png/index.html",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\installation-process.adoc",
+        "source_asset_ref": "150_OpenShift_VMware_on_AWS_1021_installer_FCOS.png",
+        "section_hint": "OpenShift Container Platform installation overview",
         "related_entities": [
           {
             "label": "Platform Foundation",
@@ -982,36 +435,86 @@
         ]
       }
     ],
-    "installing_on_any_platform": [],
-    "logging": [],
-    "machine_configuration": [],
-    "machine_management": [
+    "installing_on_any_platform": [
       {
-        "caption": "시스템 'Deleting' 단계의 이벤트 시퀀스입니다.",
-        "alt": "시스템 'Deleting' 단계의 이벤트 시퀀스입니다.",
+        "caption": "OpenShift Container Platform installation targets and dependencies",
+        "alt": "OpenShift Container Platform installation targets and dependencies",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/machine_management/310_OpenShift_machine_deletion_hooks_0223.png",
-        "viewer_path": "/wiki/figures/machine_management/310_OpenShift_machine_deletion_hooks_0223.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\machine_management.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Machine_management-ko-KR/images/7072018272ecd1a19846843f926ad414/310_OpenShift_machine_deletion_hooks_0223.png",
-        "section_hint": "6.2.2. 머신 삭제 처리 순서 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/installing_on_any_platform/targets-and-dependencies.png",
+        "viewer_path": "/wiki/figures/installing_on_any_platform/targets-and-dependencies.png/index.html",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\installation-overview.adoc",
+        "source_asset_ref": "targets-and-dependencies.png",
+        "section_hint": "OpenShift Container Platform installation overview",
         "related_entities": [
+          {
+            "label": "Cluster Wide Proxy",
+            "href": "/wiki/entities/cluster-wide-proxy/index.html"
+          },
           {
             "label": "Machine Config Operator",
             "href": "/wiki/entities/machine-config-operator/index.html"
           },
           {
-            "label": "Control Plane Nodes",
-            "href": "/wiki/entities/control-plane-nodes/index.html"
+            "label": "Installation and Day-2",
+            "href": "/wiki/entities/installation-day2/index.html"
+          }
+        ]
+      },
+      {
+        "caption": "Creating bootstrap",
+        "alt": "Creating bootstrap",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/installing_on_any_platform/create-nodes.png",
+        "viewer_path": "/wiki/figures/installing_on_any_platform/create-nodes.png/index.html",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\installation-process.adoc",
+        "source_asset_ref": "create-nodes.png",
+        "section_hint": "OpenShift Container Platform installation overview",
+        "related_entities": [
+          {
+            "label": "Cluster Wide Proxy",
+            "href": "/wiki/entities/cluster-wide-proxy/index.html"
           },
           {
-            "label": "Control Plane and Node Operations",
-            "href": "/wiki/entities/control-plane-ops/index.html"
+            "label": "Machine Config Operator",
+            "href": "/wiki/entities/machine-config-operator/index.html"
+          },
+          {
+            "label": "Installation and Day-2",
+            "href": "/wiki/entities/installation-day2/index.html"
+          }
+        ]
+      },
+      {
+        "caption": "Creating bootstrap",
+        "alt": "Creating bootstrap",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/installing_on_any_platform/150_OpenShift_VMware_on_AWS_1021_installer_FCOS.png",
+        "viewer_path": "/wiki/figures/installing_on_any_platform/150_OpenShift_VMware_on_AWS_1021_installer_FCOS.png/index.html",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\installation-process.adoc",
+        "source_asset_ref": "150_OpenShift_VMware_on_AWS_1021_installer_FCOS.png",
+        "section_hint": "OpenShift Container Platform installation overview",
+        "related_entities": [
+          {
+            "label": "Cluster Wide Proxy",
+            "href": "/wiki/entities/cluster-wide-proxy/index.html"
+          },
+          {
+            "label": "Machine Config Operator",
+            "href": "/wiki/entities/machine-config-operator/index.html"
+          },
+          {
+            "label": "Installation and Day-2",
+            "href": "/wiki/entities/installation-day2/index.html"
           }
         ]
       }
     ],
+    "logging": [],
+    "machine_configuration": [],
+    "machine_management": [],
     "monitoring": [],
     "networking_overview": [],
     "nodes": [
@@ -1024,7 +527,32 @@
         "viewer_path": "/wiki/figures/nodes/295_OpenShift_Nodes_Overview_1222.png/index.html",
         "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\nodes\\index.adoc",
         "source_asset_ref": "295_OpenShift_Nodes_Overview_1222.png",
-        "section_hint": "1.1. 노드 정보 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "section_hint": "Overview of nodes",
+        "related_entities": [
+          {
+            "label": "Control Plane Nodes",
+            "href": "/wiki/entities/control-plane-nodes/index.html"
+          },
+          {
+            "label": "Machine Config Operator",
+            "href": "/wiki/entities/machine-config-operator/index.html"
+          },
+          {
+            "label": "Control Plane and Node Operations",
+            "href": "/wiki/entities/control-plane-ops/index.html"
+          }
+        ]
+      },
+      {
+        "caption": "Overview of control plane and worker node",
+        "alt": "Overview of control plane and worker node",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/nodes/ROSA-HCP-overview-of-nodes-487.png",
+        "viewer_path": "/wiki/figures/nodes/ROSA-HCP-overview-of-nodes-487.png/index.html",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\nodes\\index.adoc",
+        "source_asset_ref": "ROSA-HCP-overview-of-nodes-487.png",
+        "section_hint": "Overview of nodes",
         "related_entities": [
           {
             "label": "Control Plane Nodes",
@@ -1042,128 +570,25 @@
       }
     ],
     "observability_overview": [],
-    "operators": [
-      {
-        "caption": "Operator 완성 모델",
-        "alt": "Operator 완성 모델",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/operator-maturity-model.png",
-        "viewer_path": "/wiki/figures/operators/operator-maturity-model.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\operators.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Operators-ko-KR/images/e38967efb4c184f997b0d177edfb868f/operator-maturity-model.png",
-        "section_hint": "2.1.3. Operator 완성 모델 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Operators and Tooling",
-            "href": "/wiki/entities/operators-and-tooling/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "olm 워크플로",
-        "alt": "olm 워크플로",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-workflow.png",
-        "viewer_path": "/wiki/figures/operators/olm-workflow.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\operators.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Operators-ko-KR/images/c8a00bac5df42a702ff1b826333610d0/olm-workflow.png",
-        "section_hint": "2.4.1.1. OLM(Operator Lifecycle Manager) Classic이란 무엇입니까? 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Operators and Tooling",
-            "href": "/wiki/entities/operators-and-tooling/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "olm catalogsource",
-        "alt": "olm catalogsource",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-catalogsource.png",
-        "viewer_path": "/wiki/figures/operators/olm-catalogsource.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\operators.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Operators-ko-KR/images/a4756a206580a0a1ab0e6a170ddc75e3/olm-catalogsource.png",
-        "section_hint": "2.4.3.1. OLM의 Operator 설치 및 업그레이드 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Operators and Tooling",
-            "href": "/wiki/entities/operators-and-tooling/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "olm channels",
-        "alt": "olm channels",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-channels.png",
-        "viewer_path": "/wiki/figures/operators/olm-channels.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\operators.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Operators-ko-KR/images/52025648e55a627b8be314426148fb97/olm-channels.png",
-        "section_hint": "2.4.3.1. OLM의 Operator 설치 및 업그레이드 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Operators and Tooling",
-            "href": "/wiki/entities/operators-and-tooling/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "OLM 대체",
-        "alt": "OLM 대체",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-replaces.png",
-        "viewer_path": "/wiki/figures/operators/olm-replaces.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\operators.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Operators-ko-KR/images/6990efb545ef499e93732227bbe7df68/olm-replaces.png",
-        "section_hint": "2.4.3.1. OLM의 Operator 설치 및 업그레이드 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Operators and Tooling",
-            "href": "/wiki/entities/operators-and-tooling/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "업데이트를 건너뛰는 OLM",
-        "alt": "업데이트를 건너뛰는 OLM",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-skipping-updates.png",
-        "viewer_path": "/wiki/figures/operators/olm-skipping-updates.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\operators.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Operators-ko-KR/images/da1fe891cee5ba712308b9d0e08b91e0/olm-skipping-updates.png",
-        "section_hint": "2.4.3.1.2. 업그레이드 건너뛰기 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Operators and Tooling",
-            "href": "/wiki/entities/operators-and-tooling/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "olm z 스트림",
-        "alt": "olm z 스트림",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/operators/olm-z-stream.png",
-        "viewer_path": "/wiki/figures/operators/olm-z-stream.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\operators.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Operators-ko-KR/images/9d8f445a920be612fe82454a3a545e70/olm-z-stream.png",
-        "section_hint": "2.4.3.1.4. z-stream 지원 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Operators and Tooling",
-            "href": "/wiki/entities/operators-and-tooling/index.html"
-          }
-        ]
-      }
-    ],
+    "operators": [],
     "overview": [
+      {
+        "caption": "OpenShift Container Platform",
+        "alt": "OpenShift Container Platform",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/overview/291_OpenShift_on_AWS_Intro_1122_docs.png",
+        "viewer_path": "/wiki/figures/overview/291_OpenShift_on_AWS_Intro_1122_docs.png/index.html",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\welcome\\index.adoc",
+        "source_asset_ref": "291_OpenShift_on_AWS_Intro_1122_docs.png",
+        "section_hint": "OpenShift Container Platform 4.20 Documentation",
+        "related_entities": [
+          {
+            "label": "Platform Foundation",
+            "href": "/wiki/entities/platform-foundation/index.html"
+          }
+        ]
+      },
       {
         "caption": "Red Hat OpenShift Kubernetes Engine",
         "alt": "Red Hat OpenShift Kubernetes Engine",
@@ -1171,9 +596,9 @@
         "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/overview/oke-about-ocp-stack-image.png",
         "viewer_path": "/wiki/figures/overview/oke-about-ocp-stack-image.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\overview.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Overview-ko-KR/images/785227c5bdddf26566a9c43c0ddfcab6/oke-about-ocp-stack-image.png",
-        "section_hint": "2.1. OpenShift Container Platform 이해 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\understanding-openshift.adoc",
+        "source_asset_ref": "oke-about-ocp-stack-image.png",
+        "section_hint": "Introduction to OpenShift Container Platform",
         "related_entities": [
           {
             "label": "Platform Foundation",
@@ -1182,15 +607,15 @@
         ]
       },
       {
-        "caption": "247 OpenShift Kubernetes 개요",
-        "alt": "247 OpenShift Kubernetes 개요",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
+        "caption": "247-OpenShift-Kubernetes-Overview",
+        "alt": "247-OpenShift-Kubernetes-Overview",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/overview/247-OpenShift-Kubernetes-Overview.png",
         "viewer_path": "/wiki/figures/overview/247-OpenShift-Kubernetes-Overview.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\overview.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Overview-ko-KR/images/57e7cf27848f5d30a70a61ea778c1101/247-OpenShift-Kubernetes-Overview.png",
-        "section_hint": "4장. Kubernetes 개요 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\welcome\\kubernetes-overview.adoc",
+        "source_asset_ref": "247-OpenShift-Kubernetes-Overview.png",
+        "section_hint": "Kubernetes overview",
         "related_entities": [
           {
             "label": "Platform Foundation",
@@ -1199,32 +624,32 @@
         ]
       },
       {
-        "caption": "247 OpenShift Kubernetes 개요 1",
-        "alt": "247 OpenShift Kubernetes 개요 1",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/overview/247_OpenShift_Kubernetes_Overview-1.png",
-        "viewer_path": "/wiki/figures/overview/247_OpenShift_Kubernetes_Overview-1.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\overview.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Overview-ko-KR/images/16b84090439adc71ef80265d0ed0ef48/247_OpenShift_Kubernetes_Overview-1.png",
-        "section_hint": "4.2. Kubernetes 리소스 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Platform Foundation",
-            "href": "/wiki/entities/platform-foundation/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "247 OpenShift Kubernetes 개요 2",
-        "alt": "247 OpenShift Kubernetes 개요 2",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
+        "caption": "247 OpenShift Kubernetes Overview-2",
+        "alt": "247 OpenShift Kubernetes Overview-2",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/overview/247_OpenShift_Kubernetes_Overview-2.png",
         "viewer_path": "/wiki/figures/overview/247_OpenShift_Kubernetes_Overview-2.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\overview.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Overview-ko-KR/images/c8d00fda77932b65f092760ad269d15c/247_OpenShift_Kubernetes_Overview-2.png",
-        "section_hint": "4.2. Kubernetes 리소스 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\welcome\\kubernetes-overview.adoc",
+        "source_asset_ref": "247_OpenShift_Kubernetes_Overview-2.png",
+        "section_hint": "Kubernetes overview",
+        "related_entities": [
+          {
+            "label": "Platform Foundation",
+            "href": "/wiki/entities/platform-foundation/index.html"
+          }
+        ]
+      },
+      {
+        "caption": "247 OpenShift Kubernetes Overview-1",
+        "alt": "247 OpenShift Kubernetes Overview-1",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/overview/247_OpenShift_Kubernetes_Overview-1.png",
+        "viewer_path": "/wiki/figures/overview/247_OpenShift_Kubernetes_Overview-1.png/index.html",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\kubernetes-resources.adoc",
+        "source_asset_ref": "247_OpenShift_Kubernetes_Overview-1.png",
+        "section_hint": "Kubernetes overview",
         "related_entities": [
           {
             "label": "Platform Foundation",
@@ -1233,759 +658,38 @@
         ]
       }
     ],
-    "postinstallation_configuration": [
-      {
-        "caption": "결정 워크플로",
-        "alt": "결정 워크플로",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/postinstallation_configuration/node-tuning-operator-workflow-revised.png",
-        "viewer_path": "/wiki/figures/postinstallation_configuration/node-tuning-operator-workflow-revised.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\postinstallation_configuration.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Postinstallation_configuration-ko-KR/images/b350c395f7c7262cec5e5d9d7404ce73/node-tuning-operator-workflow-revised.png",
-        "section_hint": "5.13.2. 사용자 정의 튜닝 사양 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Cluster Wide Proxy",
-            "href": "/wiki/entities/cluster-wide-proxy/index.html"
-          },
-          {
-            "label": "Machine Config Operator",
-            "href": "/wiki/entities/machine-config-operator/index.html"
-          },
-          {
-            "label": "Installation and Day-2",
-            "href": "/wiki/entities/installation-day2/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "OpenShift Container Platform RBAC",
-        "alt": "OpenShift Container Platform RBAC",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/postinstallation_configuration/rbac.png",
-        "viewer_path": "/wiki/figures/postinstallation_configuration/rbac.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\postinstallation_configuration.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Postinstallation_configuration-ko-KR/images/fad3132dbc5f65494508926853094025/rbac.png",
-        "section_hint": "9.2.1.1. 기본 클러스터 역할 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Cluster Wide Proxy",
-            "href": "/wiki/entities/cluster-wide-proxy/index.html"
-          },
-          {
-            "label": "Machine Config Operator",
-            "href": "/wiki/entities/machine-config-operator/index.html"
-          },
-          {
-            "label": "Installation and Day-2",
-            "href": "/wiki/entities/installation-day2/index.html"
-          }
-        ]
-      }
-    ],
+    "postinstallation_configuration": [],
     "registry": [],
     "release_notes": [],
-    "security_and_compliance": [
-      {
-        "caption": "trustedsupplychain",
-        "alt": "trustedsupplychain",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/trustedsupplychain.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/trustedsupplychain.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/fb24f4bab3af9ca7be8bfa0c17e69e1a/trustedsupplychain.png",
-        "section_hint": "2.8.1. 한 번 빌드하여 어디에나 배포 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "소스-이미지 빌드",
-        "alt": "소스-이미지 빌드",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/build_process1.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/build_process1.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/e0638ed7f3db92b8ace1aaa85ef6acd8/build_process1.png",
-        "section_hint": "2.8.2. 빌드 관리 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "빌드 프로세스 설계",
-        "alt": "빌드 프로세스 설계",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/build_process2.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/build_process2.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/02f7a10ce12e6eda9fdb2b08ff589754/build_process2.png",
-        "section_hint": "2.8.4. 빌드 프로세스 설계 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "안전한 배포",
-        "alt": "안전한 배포",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/secure_deployments.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/secure_deployments.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/58398ce097ac705459624130e73c1082/secure_deployments.png",
-        "section_hint": "2.9.1. 트리거를 사용하여 컨테이너 배포 제어 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-0.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-0.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/1f6a7d5c77035f587ab16d2072b67d80/darkcircle-0.png",
-        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-1.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-1.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/066d390945eb233d66d1b10310fec9e7/darkcircle-1.png",
-        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-2.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-2.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/dffcf5a2ed44061a19f38d92a8a3d1bb/darkcircle-2.png",
-        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-3.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-3.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/e4171dd0f615beb50be5dc701259f444/darkcircle-3.png",
-        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-4.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-4.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/dd170f3f40e17838a75352ca1962f9bb/darkcircle-4.png",
-        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-5.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-5.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/b86066dfcdf40a6c7ce19b770a9d3868/darkcircle-5.png",
-        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-6.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-6.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/3355b6bb1a911bd888724ef147bddf81/darkcircle-6.png",
-        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-7.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-7.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/c375237f874aa152901afcfc636b49aa/darkcircle-7.png",
-        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-8.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-8.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/a6d6413c1aa40b05d8373cb664db1913/darkcircle-8.png",
-        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-9.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-9.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/03e302a74ada37da40eee80ede633c6e/darkcircle-9.png",
-        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-10.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-10.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/df532c957f233ffca7c47f1341e1e491/darkcircle-10.png",
-        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "20",
-        "alt": "20",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/darkcircle-11.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/darkcircle-11.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/a31e8b5875a5bdeae5cad6dd5f4d261f/darkcircle-11.png",
-        "section_hint": "4.11.3. 워크플로 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "소프트웨어 카탈로그의 NBDE Tang Server Operator",
-        "alt": "소프트웨어 카탈로그의 NBDE Tang Server Operator",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-01-operatorhub.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-01-operatorhub.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/83c00746ec22ba3d557d58787e60f06d/nbde-tang-server-operator-01-operatorhub.png",
-        "section_hint": "8.4.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator 설치 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "NBDE Tang Server Operator 설치 확인",
-        "alt": "NBDE Tang Server Operator 설치 확인",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-03-confirmation.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-03-confirmation.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/99b80a9d09455aeb0362604c65210ff6/nbde-tang-server-operator-03-confirmation.png",
-        "section_hint": "8.4.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator 설치 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "NBDE Tang Server Operator 상태",
-        "alt": "NBDE Tang Server Operator 상태",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-05-succeeded.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-05-succeeded.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/89689feb45b48b9e83f858f6198bddd0/nbde-tang-server-operator-05-succeeded.png",
-        "section_hint": "8.4.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator 설치 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "웹 콘솔에서 프로젝트 생성",
-        "alt": "웹 콘솔에서 프로젝트 생성",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-07-create-project.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-07-create-project.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/5c18fe4af4c5278bc84520eac6149577/nbde-tang-server-operator-07-create-project.png",
-        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "프로젝트 생성 페이지의 값 예",
-        "alt": "프로젝트 생성 페이지의 값 예",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-09-project-values.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-09-project-values.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/a6a880d64a79dbb996b12c5ce2ae8dcd/nbde-tang-server-operator-09-project-values.png",
-        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "Storage 메뉴의 PersistentVolumeClaims",
-        "alt": "Storage 메뉴의 PersistentVolumeClaims",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-11-pvc.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-11-pvc.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/eb00c8f14a19d006efe6eb61428cd9de/nbde-tang-server-operator-11-pvc.png",
-        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "PersistentVolumeClaims 페이지 생성",
-        "alt": "PersistentVolumeClaims 페이지 생성",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-13-create-pvc.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-13-create-pvc.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/e544d77f4bdf708ec1f341a795ae555c/nbde-tang-server-operator-13-create-pvc.png",
-        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "NBDE Tang 서버 인스턴스 생성",
-        "alt": "NBDE Tang 서버 인스턴스 생성",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-15-create-instance.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-15-create-instance.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/6960212ac71f6abf259abab7278d8802/nbde-tang-server-operator-15-create-instance.png",
-        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "TangServer 페이지 생성",
-        "alt": "TangServer 페이지 생성",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-17-create-tangserver.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-17-create-tangserver.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/f106d49f37570ba038a7875195f8752d/nbde-tang-server-operator-17-create-tangserver.png",
-        "section_hint": "8.5.1. NBDE Tang Server Operator를 사용하여 Tang 서버 배포 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "NBDE Tang Server Operator 세부 정보",
-        "alt": "NBDE Tang Server Operator 세부 정보",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-19-tangserver-details.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-19-tangserver-details.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/f7764b939f8d836f58a5e48f6c2ae10e/nbde-tang-server-operator-19-tangserver-details.png",
-        "section_hint": "8.6.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator의 URL 확인 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "Tang 서버의 NBDE Tang Server Operator 개요",
-        "alt": "Tang 서버의 NBDE Tang Server Operator 개요",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/nbde-tang-server-operator-21-tangserver-overview.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/nbde-tang-server-operator-21-tangserver-overview.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/4e68b22420a623d8fe0ff5b7e2fd056b/nbde-tang-server-operator-21-tangserver-overview.png",
-        "section_hint": "8.6.1. 웹 콘솔을 사용하여 NBDE Tang Server Operator의 URL 확인 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "NBDE 배포 모델",
-        "alt": "NBDE 배포 모델",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/179_OpenShift_NBDE_implementation_0821_1.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/179_OpenShift_NBDE_implementation_0821_1.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/6730655fe574055b7907c92ba2b6dea4/179_OpenShift_NBDE_implementation_0821_1.png",
-        "section_hint": "18.1.1.3. NBDE(Network-Bound Disk Encryption) 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "NBDE 재부팅 동작",
-        "alt": "NBDE 재부팅 동작",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/179_OpenShift_NBDE_implementation_0821_2.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/179_OpenShift_NBDE_implementation_0821_2.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/0c98a4380aa04f7838df462a51a2c266/179_OpenShift_NBDE_implementation_0821_2.png",
-        "section_hint": "18.1.1.3. NBDE(Network-Bound Disk Encryption) 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "NBDE(Network-Bound Disk Encryption)",
-        "alt": "NBDE(Network-Bound Disk Encryption)",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/179_OpenShift_NBDE_implementation_0821_3.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/179_OpenShift_NBDE_implementation_0821_3.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/ac88796341834a81c9a37f80ce6dd121/179_OpenShift_NBDE_implementation_0821_3.png",
-        "section_hint": "18.1.2. Tang 서버 디스크 암호화 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "Tang 서버 키 다시 지정",
-        "alt": "Tang 서버 키 다시 지정",
-        "asset_kind": "figure",
-        "diagram_type": "image_figure",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/security_and_compliance/179_OpenShift_NBDE_implementation_0821_4.png",
-        "viewer_path": "/wiki/figures/security_and_compliance/179_OpenShift_NBDE_implementation_0821_4.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\security_and_compliance.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Security_and_compliance-ko-KR/images/7ca99379d14d14d75c8d2f49f6cf0d5c/179_OpenShift_NBDE_implementation_0821_4.png",
-        "section_hint": "18.3.3. Tang 서버 키 다시 지정 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Security and Access",
-            "href": "/wiki/entities/security-and-auth/index.html"
-          }
-        ]
-      }
-    ],
-    "storage": [
-      {
-        "caption": "CSI 구성 요소의 아키텍처",
-        "alt": "CSI 구성 요소의 아키텍처",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/storage/csi-arch-rev1.png",
-        "viewer_path": "/wiki/figures/storage/csi-arch-rev1.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\storage.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Storage-ko-KR/images/8984f70396bee6fae4a769322f541eab/csi-arch-rev1.png",
-        "section_hint": "6.1.1. CSI 아키텍처 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Storage, Registry, and Images",
-            "href": "/wiki/entities/storage-and-content/index.html"
-          }
-        ]
-      }
-    ],
-    "support": [
-      {
-        "caption": "Telemetry and Insights Operator data flow",
-        "alt": "Telemetry and Insights Operator data flow",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/support/telmetry-and-insights-operator-data-flow.png",
-        "viewer_path": "/wiki/figures/support/telmetry-and-insights-operator-data-flow.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\support.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Support-ko-KR/images/735ba4560f85cf9d981231931c6214cf/telmetry-and-insights-operator-data-flow.png",
-        "section_hint": "4.1.3. Telemetry 및 Insights Operator 데이터 흐름 이해 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Lifecycle and Support",
-            "href": "/wiki/entities/lifecycle-and-support/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "Insights Operator ConfigMap 오브젝트의 예",
-        "alt": "Insights Operator ConfigMap 오브젝트의 예",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/support/insights-operator-configmap-example.png",
-        "viewer_path": "/wiki/figures/support/insights-operator-configmap-example.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\support.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Support-ko-KR/images/a947526447406ecf6d64682ff04b430b/insights-operator-configmap-example.png",
-        "section_hint": "4.5.1. Insights Operator 구성 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Lifecycle and Support",
-            "href": "/wiki/entities/lifecycle-and-support/index.html"
-          }
-        ]
-      }
-    ],
-    "updating_clusters": [
-      {
-        "caption": "Runlevels 순서 및 각 수준 내의 구성 요소의 매니페스트를 표시하는 다이어그램",
-        "alt": "Runlevels 순서 및 각 수준 내의 구성 요소의 매니페스트를 표시하는 다이어그램",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/updating_clusters/update-runlevels.png",
-        "viewer_path": "/wiki/figures/updating_clusters/update-runlevels.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\updating_clusters.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Updating_clusters-ko-KR/images/a66f5c8865f4181d7104390841e3c9ba/update-runlevels.png",
-        "section_hint": "1.2.4. 업데이트 중에 매니페스트가 적용되는 방법 이해 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Installation and Day-2",
-            "href": "/wiki/entities/installation-day2/index.html"
-          },
-          {
-            "label": "Lifecycle and Support",
-            "href": "/wiki/entities/lifecycle-and-support/index.html"
-          },
-          {
-            "label": "Control Plane Nodes",
-            "href": "/wiki/entities/control-plane-nodes/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "OCP 업데이트 중에 클러스터 Operator가 자체 업데이트되는 기간을 표시하는 다이어그램",
-        "alt": "OCP 업데이트 중에 클러스터 Operator가 자체 업데이트되는 기간을 표시하는 다이어그램",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/updating_clusters/update-duration.png",
-        "viewer_path": "/wiki/figures/updating_clusters/update-duration.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\updating_clusters.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Updating_clusters-ko-KR/images/9babfe65dda771f042c65ec3c644a3fb/update-duration.png",
-        "section_hint": "1.4.2.3. 클러스터 Operator 업데이트 기간의 예 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Installation and Day-2",
-            "href": "/wiki/entities/installation-day2/index.html"
-          },
-          {
-            "label": "Lifecycle and Support",
-            "href": "/wiki/entities/lifecycle-and-support/index.html"
-          },
-          {
-            "label": "Control Plane Nodes",
-            "href": "/wiki/entities/control-plane-nodes/index.html"
-          }
-        ]
-      },
-      {
-        "caption": "구성된 CCO 인증 정보 모드에 따라 클러스터에 대한 가능한 업데이트 경로를 표시하는 의사 결정 트리입니다.",
-        "alt": "구성된 CCO 인증 정보 모드에 따라 클러스터에 대한 가능한 업데이트 경로를 표시하는 의사 결정 트리입니다.",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
-        "asset_url": "/playbooks/wiki-assets/full_rebuild/updating_clusters/334_OpenShift_cluster_updating_and_CCO_workflows_0523_4.11_B_AliCloud_patch.png",
-        "viewer_path": "/wiki/figures/updating_clusters/334_OpenShift_cluster_updating_and_CCO_workflows_0523_4.11_B_AliCloud_patch.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\updating_clusters.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Updating_clusters-ko-KR/images/82ebe68b0dcaf8a1442412aee6edc562/334_OpenShift_cluster_updating_and_CCO_workflows_0523_4.11_B_AliCloud_patch.png",
-        "section_hint": "2.2.1.1. 클라우드 인증 정보 구성 옵션 및 플랫폼 유형별 업데이트 요구 사항 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Installation and Day-2",
-            "href": "/wiki/entities/installation-day2/index.html"
-          },
-          {
-            "label": "Lifecycle and Support",
-            "href": "/wiki/entities/lifecycle-and-support/index.html"
-          },
-          {
-            "label": "Control Plane Nodes",
-            "href": "/wiki/entities/control-plane-nodes/index.html"
-          }
-        ]
-      }
-    ],
+    "security_and_compliance": [],
+    "storage": [],
+    "support": [],
+    "updating_clusters": [],
     "validation_and_troubleshooting": [
       {
-        "caption": "대시보드 컴퓨팅 리소스 모니터링",
-        "alt": "대시보드 컴퓨팅 리소스 모니터링",
+        "caption": "monitoring-dashboard-compute-resources",
+        "alt": "monitoring-dashboard-compute-resources",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/validation_and_troubleshooting/monitoring-dashboard-compute-resources.png",
         "viewer_path": "/wiki/figures/validation_and_troubleshooting/monitoring-dashboard-compute-resources.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\validation_and_troubleshooting.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Validation_and_troubleshooting-ko-KR/images/b2d5f6ce1d0581d56b0bf88e26721b63/monitoring-dashboard-compute-resources.png",
-        "section_hint": "1.9. 클러스터 리소스 가용성 및 사용 여부 확인 링크 복사 링크가 클립보드에 복사되었습니다!",
-        "related_entities": [
-          {
-            "label": "Prometheus",
-            "href": "/wiki/entities/prometheus/index.html"
-          },
-          {
-            "label": "Control Plane Nodes",
-            "href": "/wiki/entities/control-plane-nodes/index.html"
-          },
-          {
-            "label": "Observability and Troubleshooting",
-            "href": "/wiki/entities/observability/index.html"
-          }
-        ]
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\checking-cluster-resource-availability-and-utilization.adoc",
+        "source_asset_ref": "monitoring-dashboard-compute-resources.png",
+        "section_hint": "Validating an installation",
+        "related_entities": []
       }
     ],
     "web_console": [
       {
-        "caption": "선택할 수 있는 올바른 콘솔 구성 리소스를 보여주는 설정 페이지의 이미지",
-        "alt": "선택할 수 있는 올바른 콘솔 구성 리소스를 보여주는 설정 페이지의 이미지",
-        "asset_kind": "diagram",
-        "diagram_type": "semantic_diagram",
+        "caption": "Image of the Configuration page showing the correct Console configuration resource to select",
+        "alt": "Image of the Configuration page showing the correct Console configuration resource to select",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/cluster-settings-console.png",
         "viewer_path": "/wiki/figures/web_console/cluster-settings-console.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\web_console.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Web_console-ko-KR/images/415bd51512976c8041fcc74c37166f1a/cluster-settings-console.png",
-        "section_hint": "5.3. 웹 콘솔에서 퀵 스타트 비활성화 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\snippets\\access-cluster-configuration-console.adoc",
+        "source_asset_ref": "cluster-settings-console.png",
+        "section_hint": "Configuring the web console in OpenShift Container Platform",
         "related_entities": [
           {
             "label": "Operators and Tooling",
@@ -1994,15 +698,15 @@
         ]
       },
       {
-        "caption": "사용자 화면 사용자 정의",
-        "alt": "사용자 화면 사용자 정의",
+        "caption": "customizing-user-perspective",
+        "alt": "customizing-user-perspective",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/customizing-user-perspective.png",
         "viewer_path": "/wiki/figures/web_console/customizing-user-perspective.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\web_console.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Web_console-ko-KR/images/9c98a10c5268c5f5803591348963b03b/customizing-user-perspective.png",
-        "section_hint": "6.9.2. 양식 보기를 사용하여 화면 사용자 정의 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\odc-customizing-a-perspective-using-form-view.adoc",
+        "source_asset_ref": "customizing-user-perspective.png",
+        "section_hint": "Customizing the web console in OpenShift Container Platform",
         "related_entities": [
           {
             "label": "Operators and Tooling",
@@ -2011,15 +715,15 @@
         ]
       },
       {
-        "caption": "odc 사용자 지정 개발자 카탈로그",
-        "alt": "odc 사용자 지정 개발자 카탈로그",
+        "caption": "odc customizing developer catalog",
+        "alt": "odc customizing developer catalog",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/odc_customizing_developer_catalog.png",
         "viewer_path": "/wiki/figures/web_console/odc_customizing_developer_catalog.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\web_console.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Web_console-ko-KR/images/e4e3156b9ff5dfbfbe6845fbdd7d47e9/odc_customizing_developer_catalog.png",
-        "section_hint": "6.10.2. 양식 보기를 사용하여 개발자 카탈로그 또는 하위 카탈로그 사용자 정의 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\odc_customizing-a-developer-catalog-or-its-sub-catalogs-using-the-form-view.adoc",
+        "source_asset_ref": "odc_customizing_developer_catalog.png",
+        "section_hint": "Customizing the web console in OpenShift Container Platform",
         "related_entities": [
           {
             "label": "Operators and Tooling",
@@ -2028,15 +732,15 @@
         ]
       },
       {
-        "caption": "웹 콘솔에서 conclusion 퀵 스타트",
-        "alt": "웹 콘솔에서 conclusion 퀵 스타트",
+        "caption": "quick start conclusion in the web console",
+        "alt": "quick start conclusion in the web console",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/quick-start-conclusion.png",
         "viewer_path": "/wiki/figures/web_console/quick-start-conclusion.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\web_console.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Web_console-ko-KR/images/14b1853045f55716968f590d570f761c/quick-start-conclusion.png",
-        "section_hint": "10.4.2.1. conclusion 요소 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\understanding-quick-start-elements.adoc",
+        "source_asset_ref": "quick-start-conclusion.png",
+        "section_hint": "Creating quick start tutorials in the web console",
         "related_entities": [
           {
             "label": "Operators and Tooling",
@@ -2045,15 +749,15 @@
         ]
       },
       {
-        "caption": "웹 콘솔에서 퀵 스타트 설명",
-        "alt": "웹 콘솔에서 퀵 스타트 설명",
+        "caption": "quick start description in the web console",
+        "alt": "quick start description in the web console",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/quick-start-description.png",
         "viewer_path": "/wiki/figures/web_console/quick-start-description.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\web_console.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Web_console-ko-KR/images/8c42497a050b11a695ce290ab035e31a/quick-start-description.png",
-        "section_hint": "10.4.2.2. description 요소 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\understanding-quick-start-elements.adoc",
+        "source_asset_ref": "quick-start-description.png",
+        "section_hint": "Creating quick start tutorials in the web console",
         "related_entities": [
           {
             "label": "Operators and Tooling",
@@ -2062,15 +766,15 @@
         ]
       },
       {
-        "caption": "웹 콘솔에서 퀵 스타트 표시 이름",
-        "alt": "웹 콘솔에서 퀵 스타트 표시 이름",
+        "caption": "quick start display name in the web console",
+        "alt": "quick start display name in the web console",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/quick-start-display-name.png",
         "viewer_path": "/wiki/figures/web_console/quick-start-display-name.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\web_console.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Web_console-ko-KR/images/530e6950f1fad49a87dd721f8656457b/quick-start-display-name.png",
-        "section_hint": "10.4.2.3. displayName 요소 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\understanding-quick-start-elements.adoc",
+        "source_asset_ref": "quick-start-display-name.png",
+        "section_hint": "Creating quick start tutorials in the web console",
         "related_entities": [
           {
             "label": "Operators and Tooling",
@@ -2079,15 +783,15 @@
         ]
       },
       {
-        "caption": "웹 콘솔에서 퀵 스타트 durationMinutes 요소",
-        "alt": "웹 콘솔에서 퀵 스타트 durationMinutes 요소",
+        "caption": "quick start durationMinutes element in the web console",
+        "alt": "quick start durationMinutes element in the web console",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/quick-start-duration.png",
         "viewer_path": "/wiki/figures/web_console/quick-start-duration.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\web_console.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Web_console-ko-KR/images/18cd61484b9c004a0cd15cb41bfea8a0/quick-start-duration.png",
-        "section_hint": "10.4.2.4. durationMinutes 요소 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\understanding-quick-start-elements.adoc",
+        "source_asset_ref": "quick-start-duration.png",
+        "section_hint": "Creating quick start tutorials in the web console",
         "related_entities": [
           {
             "label": "Operators and Tooling",
@@ -2096,15 +800,32 @@
         ]
       },
       {
-        "caption": "웹 콘솔에서 퀵스타트 introduction 요소",
-        "alt": "웹 콘솔에서 퀵스타트 introduction 요소",
+        "caption": "quick start icon element in the web console",
+        "alt": "quick start icon element in the web console",
+        "asset_kind": "figure",
+        "diagram_type": "image_figure",
+        "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/quick-start-icon.png",
+        "viewer_path": "/wiki/figures/web_console/quick-start-icon.png/index.html",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\understanding-quick-start-elements.adoc",
+        "source_asset_ref": "quick-start-icon.png",
+        "section_hint": "Creating quick start tutorials in the web console",
+        "related_entities": [
+          {
+            "label": "Operators and Tooling",
+            "href": "/wiki/entities/operators-and-tooling/index.html"
+          }
+        ]
+      },
+      {
+        "caption": "quick start introduction element in the web console",
+        "alt": "quick start introduction element in the web console",
         "asset_kind": "figure",
         "diagram_type": "image_figure",
         "asset_url": "/playbooks/wiki-assets/full_rebuild/web_console/quick-start-introduction.png",
         "viewer_path": "/wiki/figures/web_console/quick-start-introduction.png/index.html",
-        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\bronze\\raw_html\\web_console.html",
-        "source_asset_ref": "https://access.redhat.com/webassets/avalon/d/OpenShift_Container_Platform-4.20-Web_console-ko-KR/images/cdc65cf85d34b09431f96036bb3b65ac/quick-start-introduction.png",
-        "section_hint": "10.4.2.6. introduction 요소 링크 복사 링크가 클립보드에 복사되었습니다!",
+        "source_file": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tmp_source\\openshift-docs-enterprise-4.20\\modules\\understanding-quick-start-elements.adoc",
+        "source_asset_ref": "quick-start-introduction.png",
+        "section_hint": "Creating quick start tutorials in the web console",
         "related_entities": [
           {
             "label": "Operators and Tooling",

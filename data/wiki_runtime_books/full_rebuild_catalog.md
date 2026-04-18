@@ -4,7 +4,7 @@
 
 이 카탈로그는 OCP 4.20 full rebuild 기준으로 물질화된 md 북만 모아둔 것이다.
 
-- generated_at_utc: `2026-04-16T12:59:58+00:00`
+- generated_at_utc: `2026-04-18T13:45:38+00:00`
 
 ## Entries
 
@@ -14,7 +14,7 @@
 - runtime_path: [advanced_networking.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\advanced_networking.md)
 - source_manifest_slug: `advanced_networking`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `architecture`
 
@@ -22,7 +22,7 @@
 - runtime_path: [architecture.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\architecture.md)
 - source_manifest_slug: `architecture`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `authentication_and_authorization`
 
@@ -30,15 +30,15 @@
 - runtime_path: [authentication_and_authorization.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\authentication_and_authorization.md)
 - source_manifest_slug: `authentication_and_authorization`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `backup_and_restore`
 
-- title: `Backup and restore`
+- title: `백업 및 복구 운영 플레이북`
 - runtime_path: [backup_and_restore.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\backup_and_restore.md)
 - source_manifest_slug: `backup_and_restore`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `cli_tools`
 
@@ -46,7 +46,7 @@
 - runtime_path: [cli_tools.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\cli_tools.md)
 - source_manifest_slug: `cli_tools`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `disconnected_environments`
 
@@ -54,7 +54,7 @@
 - runtime_path: [disconnected_environments.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\disconnected_environments.md)
 - source_manifest_slug: `disconnected_environments`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `etcd`
 
@@ -62,7 +62,7 @@
 - runtime_path: [etcd.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\etcd.md)
 - source_manifest_slug: `etcd`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `images`
 
@@ -70,7 +70,7 @@
 - runtime_path: [images.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\images.md)
 - source_manifest_slug: `images`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `ingress_and_load_balancing`
 
@@ -78,7 +78,7 @@
 - runtime_path: [ingress_and_load_balancing.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\ingress_and_load_balancing.md)
 - source_manifest_slug: `ingress_and_load_balancing`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `installation_overview`
 
@@ -86,31 +86,31 @@
 - runtime_path: [installation_overview.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\installation_overview.md)
 - source_manifest_slug: `installation_overview`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `installing_on_any_platform`
 
-- title: `Installing on any platform`
+- title: `플랫폼 비종속 설치 플레이북`
 - runtime_path: [installing_on_any_platform.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\installing_on_any_platform.md)
 - source_manifest_slug: `installing_on_any_platform`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `logging`
 
-- title: `로깅`
+- title: `클러스터 로깅 운영 플레이북`
 - runtime_path: [logging.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\logging.md)
 - source_manifest_slug: `logging`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `machine_configuration`
 
-- title: `Machine configuration`
+- title: `머신 구성 운영 플레이북`
 - runtime_path: [machine_configuration.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\machine_configuration.md)
 - source_manifest_slug: `machine_configuration`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `machine_management`
 
@@ -118,15 +118,15 @@
 - runtime_path: [machine_management.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\machine_management.md)
 - source_manifest_slug: `machine_management`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `monitoring`
 
-- title: `Monitoring`
+- title: `클러스터 모니터링 운영 플레이북`
 - runtime_path: [monitoring.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\monitoring.md)
 - source_manifest_slug: `monitoring`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `networking_overview`
 
@@ -134,7 +134,7 @@
 - runtime_path: [networking_overview.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\networking_overview.md)
 - source_manifest_slug: `networking_overview`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `nodes`
 
@@ -142,7 +142,7 @@
 - runtime_path: [nodes.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\nodes.md)
 - source_manifest_slug: `nodes`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `observability_overview`
 
@@ -150,7 +150,7 @@
 - runtime_path: [observability_overview.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\observability_overview.md)
 - source_manifest_slug: `observability_overview`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `operators`
 
@@ -158,7 +158,7 @@
 - runtime_path: [operators.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\operators.md)
 - source_manifest_slug: `operators`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `overview`
 
@@ -166,7 +166,7 @@
 - runtime_path: [overview.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\overview.md)
 - source_manifest_slug: `overview`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `postinstallation_configuration`
 
@@ -174,7 +174,7 @@
 - runtime_path: [postinstallation_configuration.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\postinstallation_configuration.md)
 - source_manifest_slug: `postinstallation_configuration`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `registry`
 
@@ -182,7 +182,7 @@
 - runtime_path: [registry.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\registry.md)
 - source_manifest_slug: `registry`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `release_notes`
 
@@ -190,7 +190,7 @@
 - runtime_path: [release_notes.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\release_notes.md)
 - source_manifest_slug: `release_notes`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `security_and_compliance`
 
@@ -198,7 +198,7 @@
 - runtime_path: [security_and_compliance.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\security_and_compliance.md)
 - source_manifest_slug: `security_and_compliance`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `storage`
 
@@ -206,7 +206,7 @@
 - runtime_path: [storage.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\storage.md)
 - source_manifest_slug: `storage`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `support`
 
@@ -214,7 +214,7 @@
 - runtime_path: [support.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\support.md)
 - source_manifest_slug: `support`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `updating_clusters`
 
@@ -222,7 +222,7 @@
 - runtime_path: [updating_clusters.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\updating_clusters.md)
 - source_manifest_slug: `updating_clusters`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `validation_and_troubleshooting`
 
@@ -230,7 +230,7 @@
 - runtime_path: [validation_and_troubleshooting.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\validation_and_troubleshooting.md)
 - source_manifest_slug: `validation_and_troubleshooting`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`
 
 ### `web_console`
 
@@ -238,4 +238,4 @@
 - runtime_path: [web_console.md](C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\data\wiki_runtime_books\full_rebuild\web_console.md)
 - source_manifest_slug: `web_console`
 - source_kind: `runtime_from_candidate`
-- promotion_strategy: `full_rebuild_generic_export`
+- promotion_strategy: `full_rebuild_source_repo_binding`

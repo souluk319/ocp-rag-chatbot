@@ -18,7 +18,7 @@ SOURCE_ROOT = ROOT / "tmp_source" / "openshift-docs-enterprise-4.20"
 from play_book_studio.ingestion.source_first import (
     SOURCE_BRANCH,
     SOURCE_REPO_URL,
-    resolve_repo_path,
+    resolve_repo_binding,
 )
 from play_book_studio.config.settings import load_settings
 
@@ -47,9 +47,9 @@ def main() -> int:
         slug = str(entry.get("book_slug") or "").strip()
         if not slug:
             continue
-        repo_path = resolve_repo_path(ROOT, slug)
-        primary_input_kind = "source_repo" if repo_path else "html_single"
-        if repo_path:
+        binding = resolve_repo_binding(ROOT, slug)
+        primary_input_kind = "source_repo" if binding else "html_single"
+        if binding:
             source_first_count += 1
         else:
             fallback_count += 1
@@ -66,17 +66,19 @@ def main() -> int:
                 "ocp_version": str(entry.get("ocp_version") or "4.20"),
                 "docs_language": str(entry.get("docs_language") or "ko"),
                 "primary_input_kind": primary_input_kind,
-                "source_repo": SOURCE_REPO_URL if repo_path else "",
-                "source_branch": SOURCE_BRANCH if repo_path else "",
-                "source_relative_path": str(repo_path.relative_to(SOURCE_ROOT)).replace("\\", "/") if repo_path else "",
-                "source_mirror_root": str(SOURCE_ROOT) if repo_path else "",
+                "source_repo": SOURCE_REPO_URL if binding else "",
+                "source_branch": SOURCE_BRANCH if binding else "",
+                "source_binding_kind": binding.binding_kind if binding else "",
+                "source_relative_path": binding.root_relative_path if binding else "",
+                "source_relative_paths": list(binding.source_relative_paths) if binding else [],
+                "source_mirror_root": str(SOURCE_ROOT) if binding else "",
                 "fallback_input_kind": "html_single",
                 "fallback_source_url": str(entry.get("resolved_source_url") or entry.get("source_url") or ""),
                 "fallback_viewer_path": str(entry.get("viewer_path") or ""),
                 "fallback_approved": bool(settings.official_html_fallback_allowed),
                 "rebuild_admission": (
                     "repo_source_ready"
-                    if repo_path
+                    if binding
                     else (
                         "html_fallback_approved"
                         if settings.official_html_fallback_allowed

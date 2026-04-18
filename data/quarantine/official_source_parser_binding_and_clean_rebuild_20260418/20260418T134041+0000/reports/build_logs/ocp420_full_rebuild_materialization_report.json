@@ -1,0 +1,5 @@
+{
+  "status": "blocked",
+  "reason": "stale_full_rebuild_export_uses_existing_playbook_payloads_and_html_fallback_assets; blocked until repo AsciiDoc parser binding lands or explicit override is granted",
+  "override_env": "PBS_ALLOW_STALE_FULL_REBUILD_EXPORT=1"
+}

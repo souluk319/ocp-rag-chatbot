@@ -1,506 +1,675 @@
 # 릴리스 노트
 
-## OpenShift Container Platform 릴리스의 새로운 기능 및 주요 변경 사항
+Red Hat OpenShift Container Platform provides developers and IT organizations with a hybrid cloud application platform for deploying both new and existing applications on secure, scalable resources with minimal configuration and management. OpenShift Container Platform supports a wide selection of programming languages and frameworks, such as Java, JavaScript, Python, Ruby, and PHP.
 
-OpenShift Container Platform 릴리스 노트에는 새로운 기능, 향상된 기능, 주요 기술 변경 사항, 이전 버전의 주요 수정 사항, GA 관련 알려진 문제가 요약되어 있습니다.
+Built on {op-system-base-full} and Kubernetes, OpenShift Container Platform provides a more secure and scalable multitenant operating system for today's enterprise-class applications, while delivering integrated application runtimes and libraries. OpenShift Container Platform enables organizations to meet security, privacy, compliance, and governance requirements.
 
-## 1장. OpenShift Container Platform 4.20 릴리스 노트
+### About this release
 
-Red Hat OpenShift Container Platform은 개발자 및 IT 조직에 최소한의 구성 및 관리를 통해 안전하고 확장 가능한 리소스에 신규 및 기존 애플리케이션을 배포할 수 있는 하이브리드 클라우드 애플리케이션 플랫폼을 제공합니다.
+OpenShift Container Platform ([RHSA-2025:9562](https://access.redhat.com/errata/RHSA-2025:9562)) is now available. This release uses [Kubernetes 1.33](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.33.md) with CRI-O runtime. New features, changes, and known issues that pertain to OpenShift Container Platform 4.20 are included in this topic.
 
-OpenShift Container Platform은 Java, JavaScript, Python, Ruby, PHP와 같은 다양한 프로그래밍 언어 및 프레임워크를 지원합니다.
+OpenShift Container Platform 4.20 clusters are available at https://console.redhat.com/openshift. From the {hybrid-console}, you can deploy OpenShift Container Platform clusters to either on-premises or cloud environments.
 
-RHEL(Red Hat Enterprise Linux) 및 Kubernetes를 기반으로 하는 OpenShift Container Platform은 오늘날의 엔터프라이즈급 애플리케이션을 위해 보다 안전하고 확장 가능한 다중 테넌트 운영 체제를 제공하는 동시에 통합된 애플리케이션 런타임 및 라이브러리를 제공합니다.
+You must use {op-system} machines for the control plane and for the compute machines.
 
-조직은 OpenShift Container Platform을 통해 보안, 개인 정보 보호, 컴플라이언스 및 거버넌스 요구 사항을 충족할 수 있습니다.
+Starting from OpenShift Container Platform 4.14, the Extended Update Support (EUS) phase for even-numbered releases increases the total available lifecycle to 24 months on all supported architectures, including `x86_64`, 64-bit ARM (`aarch64`), {ibm-power-name} (`ppc64le`), and {ibm-z-name} (`s390x`) architectures. Beyond this, Red Hat also offers a 12-month additional EUS add-on, denoted as _Additional EUS Term 2_, that extends the total available lifecycle from 24 months to 36 months. The Additional EUS Term 2 is available on all architecture variants of OpenShift Container Platform. For more information about support for all versions, see the [Red Hat OpenShift Container Platform Life Cycle Policy](https://access.redhat.com/support/policy/updates/openshift).
 
-### 1.1. 릴리스 정보
+The support lifecycle for odd-numbered releases, such as OpenShift Container Platform 4.20, on all supported architectures, including `x86_64`, 64-bit ARM (`aarch64`), {ibm-power-name} (`ppc64le`), and {ibm-z-name} (`s390x`) architectures is 18 months. For more information about support for all versions, see the [Red Hat OpenShift Container Platform Life Cycle Policy](https://access.redhat.com/support/policy/updates/openshift).
 
-OpenShift Container Platform (RHSA-2025:9562)을 사용할 수 있습니다. 이 릴리스에서는 Kubernetes 1.33 을 CRI-O 런타임과 함께 사용합니다. 다음은 OpenShift Container Platform 4.20과 관련된 새로운 기능, 변경 사항, 알려진 문제에 대해 설명합니다.
+Commencing with the OpenShift Container Platform 4.14 release, Red Hat is simplifying the administration and management of Red Hat shipped cluster Operators with the introduction of three new life cycle classifications; Platform Aligned, Platform Agnostic, and Rolling Stream. These life cycle classifications provide additional ease and transparency for cluster administrators to understand the life cycle policies of each Operator and form cluster maintenance and upgrade plans with predictable support boundaries. For more information, see [OpenShift Operator Life Cycles](https://access.redhat.com/webassets/avalon/j/includes/session/scribe/?redirectTo=https%3A%2F%2Faccess.redhat.com%2Fsupport%2Fpolicy%2Fupdates%2Fopenshift_operators).
 
-OpenShift Container Platform 4.20 클러스터는 https://console.redhat.com/openshift 에서 사용할 수 있습니다. Red Hat Hybrid Cloud Console에서 OpenShift Container Platform 클러스터를 온프레미스 또는 클라우드 환경에 배포할 수 있습니다.
+OpenShift Container Platform is designed for FIPS. When running {op-system-base-full} or {op-system-first} booted in FIPS mode, OpenShift Container Platform core components use the {op-system-base} cryptographic libraries that have been submitted to NIST for FIPS 140-2/140-3 Validation on only the `x86_64`, `ppc64le`, and `s390x` architectures.
 
-컨트롤 플레인 및 컴퓨팅 머신에 RHCOS 머신을 사용해야 합니다.
+For more information about the NIST validation program, see [Cryptographic Module Validation Program](https://csrc.nist.gov/Projects/cryptographic-module-validation-program/validated-modules). For the latest NIST status for the individual versions of {op-system-base} cryptographic libraries that have been submitted for validation, see [Compliance Activities and Government Standards](https://access.redhat.com/articles/2918071#fips-140-2-and-fips-140-3-2).
 
-OpenShift Container Platform 4.14부터 짝수 릴리스의 EUS (Extended Update Support) 단계는 `x86_64`, 64-bit ARM (`aarch64`), IBM Power® (`ppc64le`), IBM Z® (`s390x`) 아키텍처를 포함하여 지원되는 모든 아키텍처에서 총 라이프사이클을 24 개월로 늘립니다.
+### OpenShift Container Platform layered and dependent component support and compatibility
 
-이 외에도 Red Hat은 추가 EUS 기간 2로 표시된 12개월의 추가 EUS 애드온을 제공하여 사용 가능한 전체 라이프사이클을 24개월에서 36개월로 연장합니다. 추가 EUS 용어 2는 OpenShift Container Platform의 모든 아키텍처 변형에서 사용할 수 있습니다.
+The scope of support for layered and dependent components of OpenShift Container Platform changes independently of the OpenShift Container Platform version. To determine the current support status and compatibility for an add-on, refer to its release notes. For more information, see the [Red Hat OpenShift Container Platform Life Cycle Policy](https://access.redhat.com/support/policy/updates/openshift).
 
-모든 버전 지원에 대한 자세한 내용은 Red Hat OpenShift Container Platform 라이프 사이클 정책을 참조하십시오.
+### New features and enhancements
 
-OpenShift Container Platform은 FIPS용으로 설계되었습니다.
+This release adds improvements related to the following components and concepts:
 
-FIPS 모드로 부팅된 Red Hat Enterprise Linux(RHEL) 또는 Red Hat Enterprise Linux CoreOS(RHCOS)를 실행할 때 OpenShift Container Platform 핵심 구성 요소는 `x86_64`, `ppc64le` 및 `s390x` 아키텍처에서만 FIPS 140-2/140-3 검증을 위해 NIST에 제출된 RHEL 암호화 라이브러리를 사용합니다.
+#### API server
 
-NIST 검증 프로그램에 대한 자세한 내용은 암호화 모듈 유효성 검사 프로그램을 참조하십시오. 검증을 위해 제출된 RHEL 암호화 라이브러리의 개별 버전에 대한 최신 NIST 상태는 규정 준수 활동 및 정부 표준을 참조하세요.
+##### Extended loopback certificate validity to three years for kube-apiserver
 
-### 1.2. OpenShift Container Platform 계층화된 종속 구성 요소 지원 및 호환성
+Before this update, the self-signed loopback certificate for the Kubernetes API Server expired after one year. With this release, the expiration date of the certificate is extended to three years.
 
-OpenShift Container Platform의 계층화된 종속 구성 요소에 대한 지원 범위는 OpenShift Container Platform 버전에 따라 달라집니다. 애드온의 현재 지원 상태 및 호환성을 확인하려면 해당 릴리스 노트를 참조하십시오. 자세한 내용은 Red Hat OpenShift Container Platform 라이프 사이클 정책 을 참조하십시오.
+##### Dry-run option is connected to 'oc delete istag'
 
-### 1.3. 새로운 기능 및 개선 사항
+Before this update, deleting an `istag` resource with the `--dry-run=server` option unintentionally caused actual deletion of the image from the server. This unexpected deletion occurred due to the `dry-run` option being implemented incorrectly in the `oc delete istag` command. With this release, the `dry-run` option is wired to the `oc delete istag` command. As a result, the accidental deletion of image objects is prevented and the `istag` object remains intact when using the `--dry-run=server` option.
 
-이 릴리스에는 다음 구성 요소 및 개념과 관련된 개선 사항이 추가되었습니다.
+##### No service interruptions for certificate-related issues
 
-#### 1.3.1.1. kube-apiserver의 경우 루프백 인증서 유효 기간을 3년으로 연장
+With this update, self-signed loopback certificates in API servers are prevented from expiring, and ensures a stable and secure connection within Kubernetes 4.16.z. This enhancement backports a solution from a newer version, cherry-picks a specific pull request and applies it to the selected version. This reduces the likelihood of service interruptions due to certificate-related issues, providing a more reliable user experience in Kubernetes 4.16.z deployments.
 
-이번 업데이트 이전에는 Kubernetes API 서버의 자체 서명된 루프백 인증서가 1년 후에 만료되었습니다. 이번 릴리스를 통해 인증서의 만료일이 3년으로 연장되었습니다.
+##### Enhanced communication matrix for TCP ports
 
-#### 1.3.1.2. 시험 실행 옵션은 'oc delete istag'에 연결되어 있습니다.
+With this update, the communication flows matrix for OpenShift Container Platform is enhanced. The feature automatically generates services for open ports 17697 (TCP) and 6080 (TCP) on the primary node, and ensures that all open ports have corresponding endpoint slices. This results in accurate and up-to-date communication flows matrixes, improves the overall security and efficiency of the communication matrix, and provides a more comprehensive and reliable communication matrix for users.
 
-이번 업데이트 이전에는 `--dry-run=server` 옵션을 사용하여 `istag` 리소스를 실수로 삭제하여 서버에서 이미지를 실제로 삭제했습니다. 이 예기치 않은 삭제는 아래 명령에서 `시험 실행` 옵션이 잘못 구현되어 발생했습니다.
+#### Edge computing
 
-```shell
-oc delete istag
-```
+##### NetworkPolicy support for the {lvms} Operator
 
-이번 릴리스에서는 옵션이 연결됩니다. 결과적으로 이미지 오브젝트를 실수로 삭제할 수 없으며 `--dry-run=server` 옵션을 사용할 때 `istag` 오브젝트는 그대로 유지됩니다.
+The {lvms} Operator now applies Kubernetes `NetworkPolicy` objects during installation to restrict network communication to only the required components. This feature enforces default network isolation for {lvms} deployments on OpenShift Container Platform clusters.
 
-```shell
-oc delete istag 명령에 시험 실행
-```
+##### Support for hostname labelling for persistent volumes created by using the {lvms} Operator
 
-#### 1.3.1.3. 인증서 관련 문제에 대한 서비스 중단 없음
+When you create a persistent volume (PV) by using the {lvms} Operator, the PV now includes the `kubernetes.io/hostname` label. This label shows which node the PV is located on, making it easier to identify the node associated with a workload. This change only applies to newly created PVs. Existing PVs are not modified.
 
-이번 업데이트를 통해 API 서버의 자체 서명된 루프백 인증서가 만료되지 않으며 Kubernetes 4.16.z 내에서 안정적이고 안전한 연결을 보장합니다. 이번 개선된 기능을 통해 최신 버전의 솔루션을 백포트하고 특정 가져오기 요청을 선택하여 선택한 버전에 적용합니다.
+##### Default namespace for the {lvms} Operator
 
-이렇게 하면 인증서 관련 문제로 인한 서비스 중단 가능성을 줄여 Kubernetes 4.16.z 배포에서 보다 안정적인 사용자 환경을 제공합니다.
+The default namespace for the {lvms} Operator is now `openshift-lvm-storage`. You can still install {lvms} in a custom namespace.
 
-#### 1.3.1.4. TCP 포트를 위한 향상된 통신 매트릭스
+##### SiteConfig CR to ClusterInstance CR migration tool
 
-이번 업데이트를 통해 OpenShift Container Platform의 통신 흐름 매트릭스가 향상되었습니다. 이 기능은 기본 노드에서 열려 있는 포트 17697(TCP) 및 6080(TCP)에 대한 서비스를 자동으로 생성하고 열려 있는 모든 포트에 해당 엔드포인트 슬라이스가 있는지 확인합니다.
+OpenShift Container Platform 4.20 introduces the `siteconfig-converter` tool to help migrate managed clusters from using a `SiteConfig` custom resource (CR) to a `ClusterInstance` CR. Using a `SiteConfig` CR to define a managed cluster is deprecated and will be removed in a future release. The `ClusterInstance` CR provides a more unified and generic approach to defining clusters and is the preferred method for managing cluster deployments in the {ztp} workflow.
 
-이렇게 하면 정확하고 최신 통신 흐름 매트릭스가 생성되고, 통신 매트릭스의 전반적인 보안 및 효율성을 개선하며 사용자에게 보다 포괄적이고 신뢰할 수 있는 통신 매트릭스를 제공합니다.
+Using the `siteconfig-converter` tool, you can convert `SiteConfig` CRs to `ClusterInstance` CRs and then incrementally migrate one or more clusters at a time. Existing and new pipelines run in parallel, so you can migrate clusters in a controlled, phased manner and without downtime.
 
-#### 1.3.2.1. LVM Storage Operator에 대한 NetworkPolicy 지원
+> The `siteconfig-converter` tool does not convert SiteConfig CRs that use the deprecated `spec.clusters.extraManifestPath` field.
 
-LVM Storage Operator는 이제 설치 중에 Kubernetes `NetworkPolicy` 오브젝트를 적용하여 네트워크 통신을 필수 구성 요소로만 제한합니다. 이 기능은 OpenShift Container Platform 클러스터에 LVM Storage 배포에 대해 기본 네트워크 격리를 적용합니다.
+For more information, see Migrating from SiteConfig CRs to ClusterInstance CRs.
 
-#### 1.3.2.2. LVM Storage Operator를 사용하여 생성된 영구 볼륨에 대한 호스트 이름 레이블링 지원
+#### etcd
 
-LVM Storage Operator를 사용하여 PV(영구 볼륨)를 생성하면 이제 PV에 `kubernetes.io/hostname` 레이블이 포함됩니다. 이 레이블은 PV가 있는 노드를 표시하여 워크로드와 관련된 노드를 더 쉽게 식별할 수 있습니다. 이 변경 사항은 새로 생성된 PV에만 적용됩니다. 기존 PV는 수정되지 않습니다.
+With this update, the Cluster etcd Operator introduces alert levels for the `etcdDatabaseQuotaLowSpace` alert, offering administrators timely notifications about low etcd quota usage. This proactive alert system aims to prevent API server instability and allows for effective resource management in managed OpenShift clusters. The alert levels are `info`, `warning`, and `critical`, providing a more granular approach to monitoring etcd quota usage, which results in dynamic etcd quota management and improved overall cluster performance.
 
-#### 1.3.2.3. LVM Storage Operator의 기본 네임스페이스
+##### Configuring a local arbiter node
 
-LVM Storage Operator의 기본 네임스페이스는 이제 `openshift-lvm-storage` 입니다. 사용자 지정 네임스페이스에 LVM 스토리지를 계속 설치할 수 있습니다.
+You can configure an OpenShift Container Platform cluster with two control plane nodes and one local arbiter node to retain high availability (HA) while reducing infrastructure costs for your cluster.
 
-#### 1.3.2.4. siteConfig CR to ClusterInstance CR 마이그레이션 툴
+A local arbiter node is a lower-cost, co-located machine that participates in control plane quorum decisions. Unlike a standard control plane node, the arbiter node does not run the full set of control plane services. You can use this configuration to maintain HA in your cluster with only two fully provisioned control plane nodes instead of three.
 
-OpenShift Container Platform 4.20에는 `SiteConfig` CR(사용자 정의 리소스)을 사용하여 관리 클러스터를 `ClusterInstance` CR로 마이그레이션하는 데 도움이 되는 `siteconfig-converter` 툴이 도입되었습니다.
+This feature is now Generally Available.
 
-`SiteConfig` CR을 사용하여 관리되는 클러스터를 정의하는 것은 더 이상 사용되지 않으며 향후 릴리스에서 제거됩니다. `ClusterInstance` CR은 클러스터를 정의하는 데 보다 통합되고 일반적인 접근 방식을 제공하며 GitOps ZTP 워크플로에서 클러스터 배포를 관리하는 데 권장되는 방법입니다.
+For more information, see Configuring a local arbiter node.
 
-`siteconfig-converter` 툴을 사용하여 `SiteConfig` CR을 `ClusterInstance` CR로 변환한 다음 한 번에 하나 이상의 클러스터를 점진적으로 마이그레이션할 수 있습니다. 기존 파이프라인 및 새 파이프라인이 병렬로 실행되므로 다운타임 없이 제어되고 단계적으로 클러스터를 마이그레이션할 수 있습니다.
+##### Configuring a two-node OpenShift cluster with fencing (Technology Preview)
 
-참고
+A two-node OpenShift cluster with fencing provides high availability (HA) with a reduced hardware footprint. This configuration is designed for distributed or edge environments where deploying a full three-node control plane cluster is not practical.
 
-`siteconfig-converter` 툴은 더 이상 사용되지 않는 `spec.clusters.extraManifestPath` 필드를 사용하는 SiteConfig CR을 변환하지 않습니다.
+A two-node cluster does not include compute nodes. The two control plane machines run user workloads in addition to managing the cluster.
 
-자세한 내용은 SiteConfig CR에서 ClusterInstance CR로 마이그레이션을 참조하십시오.
+> You can deploy a two-node OpenShift cluster with fencing by using either the user-provisioned infrastructure method or the installer-provisioned infrastructure method.
 
-#### 1.3.3. etcd
+For more information, see Preparing to install a two-node OpenShift cluster with fencing.
 
-이번 업데이트를 통해 Cluster etcd Operator는 `etcdDatabaseQuotaLowSpace` 경고에 대한 경고 수준을 도입하여 관리자가 etcd 할당량 사용량에 대한 적절한 알림을 제공합니다.
+#### Extensions ({olmv1})
 
-이 사전 경보 시스템은 API 서버 불안정을 방지하고 관리 OpenShift 클러스터에서 효과적으로 리소스 관리를 가능하게 하는 것을 목표로 합니다. 경고 수준은 `info`, `warning`, `critical` 이므로 etcd 할당량 사용을 모니터링하는 더 세분화된 접근 방식을 제공하여 동적 etcd 할당량 관리 및 전체 클러스터 성능이 향상됩니다.
+##### {olmv1} support for tailored network policies in Operators
 
-#### 1.3.3.1. 로컬 arbiter 노드 구성
+##### Deploying cluster extensions that use webhooks (Technology Preview)
 
-클러스터의 인프라 비용을 줄이면서 HA(고가용성)를 유지하기 위해 두 개의 컨트롤 플레인 노드와 하나의 로컬 arbiter 노드로 OpenShift Container Platform 클러스터를 구성할 수 있습니다.
+With this release, you can deploy cluster extensions that use webhooks on clusters with the `TechPreviewNoUpgrade` feature set enabled.
 
-로컬 arbiter 노드는 컨트롤 플레인 쿼럼 결정에 참여하는 더 낮은 비용의 공동 배치 머신입니다. 표준 컨트롤 플레인 노드와 달리 arbiter 노드는 전체 컨트롤 플레인 서비스 세트를 실행하지 않습니다. 이 구성을 사용하여 3개 대신 완전히 프로비저닝된 컨트롤 플레인 노드 2개만 있는 클러스터에서 HA를 유지 관리할 수 있습니다.
+For more information, see Supported extensions.
 
-이 기능은 이제 일반적으로 사용할 수 있습니다.
+#### Hosted control planes
 
-자세한 내용은 로컬 arbiter 노드 구성을 참조하십시오.
+Because {hcp} releases asynchronously from OpenShift Container Platform, it has its own release notes. For more information, see {hcp-capital} release notes.
 
-#### 1.3.3.2. 펜싱을 사용하여 2-노드 OpenShift 클러스터 구성 (기술 프리뷰)
+#### {ibm-power-title}
 
-펜싱을 사용하는 2-노드 OpenShift 클러스터는 고가용성(HA)으로 하드웨어 풋프린트를 줄일 수 있습니다. 이 구성은 전체 3-노드 컨트롤 플레인 클러스터를 배포하는 것이 실용적이지 않은 분산 또는 에지 환경에 맞게 설계되었습니다.
+The {ibm-power-name} release on OpenShift Container Platform 4.20 adds improvements and new capabilities to OpenShift Container Platform components.
 
-2-노드 클러스터에는 컴퓨팅 노드가 포함되지 않습니다. 두 개의 컨트롤 플레인 시스템은 클러스터 관리 외에도 사용자 워크로드를 실행합니다.
+This release introduces support for the following features on {ibm-power-title}:
 
-참고
+* Enable accelerators on {ibm-power-name}
 
-사용자 프로비저닝 인프라 방법 또는 설치 관리자 프로비저닝 인프라 방법을 사용하여 펜싱을 사용하여 2-노드 OpenShift 클러스터를 배포할 수 있습니다.
+#### {ibm-z-title} and {ibm-linuxone-title}
 
-자세한 내용은 펜싱을 사용하여 2-노드 OpenShift 클러스터 설치 준비를 참조하십시오.
+The {ibm-z-name} and {ibm-linuxone-name} release on OpenShift Container Platform 4.20 adds improvements and new capabilities to OpenShift Container Platform components.
 
-#### 1.3.4.1. Webhook를 사용하는 클러스터 확장 배포 (기술 프리뷰)
+This release introduces support for the following features on {ibm-z-name} and {ibm-linuxone-name}:
 
-이번 릴리스에서는 `TechPreviewNoUpgrade` 기능 세트가 활성화된 클러스터에 Webhook를 사용하는 클러스터 확장을 배포할 수 있습니다.
-
-자세한 내용은 지원되는 확장 기능을 참조하십시오.
-
-#### 1.3.5. 호스팅된 컨트롤 플레인
-
-중요
-
-OpenShift Container Platform 4.20의 호스팅된 컨트롤 플레인은 향후 다중 클러스터 엔진 Operator 릴리스와 함께 제공될 예정입니다. 그동안 OpenShift Container Platform 4.19의 호스팅 컨트롤 플레인 설명서를 참조하십시오.
-
-#### 1.3.6. IBM Power
-
-OpenShift Container Platform 4.20의 IBM Power® 릴리스는 OpenShift Container Platform 구성 요소에 개선 사항 및 새로운 기능을 추가합니다.
-
-이 릴리스에서는 IBM Power에서 다음 기능을 지원합니다.
-
-IBM Power®에서 가속기를 활성화합니다.
-
-#### 1.3.7. IBM Z 및 IBM LinuxONE
-
-OpenShift Container Platform 4.20의 IBM Z® 및 IBM® LinuxONE 릴리스는 OpenShift Container Platform 구성 요소에 향상된 기능과 새로운 기능을 추가합니다.
-
-이번 릴리스에서는 IBM Z® 및 IBM® LinuxONE에서 다음 기능을 지원합니다.
-
-IBM Z®에서 가속기를 활성화합니다.
-
-#### 1.3.8. IBM Power, IBM Z 및 IBM LinuxONE 지원 매트릭스
-
-OpenShift Container Platform 4.14부터 EUS (Extended Update Support)는 IBM Power® 및 IBM Z® 플랫폼으로 확장됩니다. 자세한 내용은 OpenShift EUS 개요 를 참조하십시오.
-
-| 기능 | IBM Power® | IBM Z® 및 IBM® LinuxONE |
-| --- | --- | --- |
-| 복제 | 지원됨 | 지원됨 |
-| 확장 | 지원됨 | 지원됨 |
-| 스냅샷 | 지원됨 | 지원됨 |
+* Enable accelerators on {ibm-z-name}
 
-| 기능 | IBM Power® | IBM Z® 및 IBM® LinuxONE |
-| --- | --- | --- |
-| Bridge | 지원됨 | 지원됨 |
-| Host-device | 지원됨 | 지원됨 |
-| IPAM | 지원됨 | 지원됨 |
-| IPVLAN | 지원됨 | 지원됨 |
+#### {ibm-power-title}, {ibm-z-title}, and {ibm-linuxone-title} support matrix
 
-| 기능 | IBM Power® | IBM Z® 및 IBM® LinuxONE |
-| --- | --- | --- |
-| OpenShift CLI( `oc` )를 사용하여 온프레미스 클러스터에 컴퓨팅 노드 추가 | 지원됨 | 지원됨 |
-| 대체 인증 공급자 | 지원됨 | 지원됨 |
-| 에이전트 기반 설치 관리자 | 지원됨 | 지원됨 |
-| 지원되는 설치 관리자 | 지원됨 | 지원됨 |
-| 로컬 스토리지 Operator를 통한 자동 장치 검색 | 지원되지 않음 | 지원됨 |
-| 시스템 상태 점검으로 손상된 시스템 자동 복구 | 지원되지 않음 | 지원되지 않음 |
-| IBM Cloud®용 클라우드 컨트롤러 관리자 | 지원됨 | 지원되지 않음 |
-| 노드에서 오버 커밋 제어 및 컨테이너 밀도 관리 | 지원되지 않음 | 지원되지 않음 |
-| CPU 관리자 | 지원됨 | 지원됨 |
-| Cron 작업 | 지원됨 | 지원됨 |
-| Descheduler | 지원됨 | 지원됨 |
-| 송신 IP | 지원됨 | 지원됨 |
-| etcd에 저장된 데이터 암호화 | 지원됨 | 지원됨 |
-| FIPS 암호화 | 지원됨 | 지원됨 |
-| Helm | 지원됨 | 지원됨 |
-| 수평 Pod 자동 스케일링 | 지원됨 | 지원됨 |
-| 호스팅된 컨트롤 플레인 | 지원됨 | 지원됨 |
-| IBM Secure Execution | 지원되지 않음 | 지원됨 |
-| IBM Power® Virtual Server용 설치 관리자 프로비저닝 인프라 활성화 | 지원됨 | 지원되지 않음 |
-| 단일 노드에 설치 | 지원됨 | 지원됨 |
-| IPv6 | 지원됨 | 지원됨 |
-| 사용자 정의 프로젝트 모니터링 | 지원됨 | 지원됨 |
-| 다중 아키텍처 컴퓨팅 노드 | 지원됨 | 지원됨 |
-| 다중 아키텍처 컨트롤 플레인 | 지원됨 | 지원됨 |
-| 다중 경로 | 지원됨 | 지원됨 |
-| network-Bound 디스크 암호화 - 외부 Tang 서버 | 지원됨 | 지원됨 |
-| NVMe(Non-volatile Memory express drives) | 지원됨 | 지원되지 않음 |
-| NX-gzip for Power10 (Hardware Acceleration) | 지원됨 | 지원되지 않음 |
-| oc-mirror 플러그인 | 지원됨 | 지원됨 |
-| OpenShift CLI( `oc` ) 플러그인 | 지원됨 | 지원됨 |
-| Operator API | 지원됨 | 지원됨 |
-| OpenShift Virtualization | 지원되지 않음 | 지원됨 |
-| IPsec 암호화를 포함한 OVN-Kubernetes | 지원됨 | 지원됨 |
-| PodDisruptionBudget | 지원됨 | 지원됨 |
-| PTP(Precision Time Protocol) 하드웨어 | 지원되지 않음 | 지원되지 않음 |
-| Red Hat OpenShift Local | 지원되지 않음 | 지원되지 않음 |
-| 스케줄러 프로파일 | 지원됨 | 지원됨 |
-| Secure Boot | 지원되지 않음 | 지원됨 |
-| SCTP(스트림 제어 전송 프로토콜) | 지원됨 | 지원됨 |
-| 다중 네트워크 인터페이스 지원 | 지원됨 | 지원됨 |
-| IBM Power® (Hardware Acceleration)에서 다양한 SMT 수준을 지원하는 `openshift-install` 유틸리티 | 지원됨 | 지원되지 않음 |
-| 3-노드 클러스터 지원 | 지원됨 | 지원됨 |
-| 토폴로지 관리자 | 지원됨 | 지원되지 않음 |
-| SCSI 디스크의 z/VM Emulated FBA 장치 | 지원되지 않음 | 지원됨 |
-| 4K FCP 블록 장치 | 지원됨 | 지원됨 |
+Starting in OpenShift Container Platform 4.14, Extended Update Support (EUS) is extended to the {ibm-power-name} and the {ibm-z-name} platform. For more information, see the [OpenShift EUS Overview](https://access.redhat.com/support/policy/updates/openshift-eus).
 
-| 기능 | IBM Power® | IBM Z® 및 IBM® LinuxONE |
-| --- | --- | --- |
-| cert-manager Operator for Red Hat OpenShift | 지원됨 | 지원됨 |
-| Cluster Logging Operator | 지원됨 | 지원됨 |
-| Cluster Resource Override Operator | 지원됨 | 지원됨 |
-| Compliance Operator | 지원됨 | 지원됨 |
-| Cost Management Metrics Operator | 지원됨 | 지원됨 |
-| File Integrity Operator | 지원됨 | 지원됨 |
-| HyperShift Operator | 지원됨 | 지원됨 |
-| IBM Power® Virtual Server Block CSI Driver Operator | 지원됨 | 지원되지 않음 |
-| Ingress 노드 방화벽 Operator | 지원됨 | 지원됨 |
-| Local Storage Operator | 지원됨 | 지원됨 |
-| MetalLB Operator | 지원됨 | 지원됨 |
-| Network Observability Operator | 지원됨 | 지원됨 |
-| NFD Operator | 지원됨 | 지원됨 |
-| NMState Operator | 지원됨 | 지원됨 |
-| OpenShift Elasticsearch Operator | 지원됨 | 지원됨 |
-| Vertical Pod Autoscaler Operator | 지원됨 | 지원됨 |
+CSI Volumes
+|====
+|Feature |{ibm-power-name} |{ibm-z-name} and {ibm-linuxone-name}
 
-| 기능 | IBM Power® | IBM Z® 및 IBM® LinuxONE |
-| --- | --- | --- |
-| iSCSI를 사용하는 영구 스토리지 | 지원됨 [1] | 지원됨 [1] , [2] |
-| 로컬 볼륨(LSO)을 사용한 영구 스토리지 | 지원됨 [1] | 지원됨 [1] , [2] |
-| hostPath를 사용하는 영구 스토리지 | 지원됨 [1] | 지원됨 [1] , [2] |
-| 파이버 채널을 사용하는 영구 스토리지 | 지원됨 [1] | 지원됨 [1] , [2] |
-| Raw Block을 사용하는 영구 스토리지 | 지원됨 [1] | 지원됨 [1] , [2] |
-| EDEV/FBA를 사용하는 영구 스토리지 | 지원됨 [1] | 지원됨 [1] , [2] |
+|Cloning
+|Supported
+|Supported
 
-영구 공유 스토리지는 Red Hat OpenShift Data Foundation 또는 기타 지원되는 스토리지 프로토콜을 사용하여 프로비저닝해야 합니다.
+|Expansion
+|Supported
+|Supported
 
-영구 비공유 스토리지는 iSCSI, FC와 같은 로컬 스토리지를 사용하거나 DASD, FCP 또는 EDEV/FBA와 LSO를 사용하여 프로비저닝해야 합니다.
+|Snapshot
+|Supported
+|Supported
+|====
 
-#### 1.3.9.1. 클러스터에서 virt-launcher 로그 가져오기 지원
+Multus CNI plugins
+|====
+|Feature |{ibm-power-name} |{ibm-z-name} and {ibm-linuxone-name}
 
-이번 릴리스에서는 `virt-launcher` Pod의 명령줄 로그를 Kubernetes 클러스터 전체에서 수집할 수 있습니다. JSON 인코딩 로그는 경로 `네임스페이스/<namespace-name>/pods/<pod-name>/virt-launcher.json` 에 저장되므로 가상 머신의 문제 해결 및 디버깅이 용이합니다.
+|Bridge
+|Supported
+|Supported
 
-#### 1.3.10.1. CVO 로그 수준 변경 (기술 프리뷰)
+|Host-device
+|Supported
+|Supported
 
-이번 릴리스에서는 CVO(Cluster Version Operator) 로그 수준 세부 정보 표시를 클러스터 관리자가 변경할 수 있습니다.
+|IPAM
+|Supported
+|Supported
 
-자세한 내용은 CVO 로그 수준 변경을 참조하십시오.
+|IPVLAN
+|Supported
+|Supported
+|====
 
-#### 1.3.10.2. 여러 네트워크 인터페이스 컨트롤러를 사용하여 VMware vSphere에 클러스터 설치(일반 사용 가능)
+OpenShift Container Platform features
+|====
+|Feature |{ibm-power-name} |{ibm-z-name} and {ibm-linuxone-name}
 
-OpenShift Container Platform 4.18을 사용하면 노드에 대해 여러 NIC(네트워크 인터페이스 컨트롤러)가 있는 VMware vSphere 클러스터를 기술 프리뷰 기능으로 설치할 수 있었습니다. 이 기능은 이제 일반적으로 사용할 수 있습니다.
+|Adding compute nodes to on-premise clusters using {oc-first}
+|Supported
+|Supported
 
-자세한 내용은 여러 NIC 구성을 참조하십시오.
+|Alternate authentication providers
+|Supported
+|Supported
 
-기존 vSphere 클러스터의 경우 컴퓨팅 머신 세트를 사용하여 여러 서브넷을 추가할 수 있습니다.
+|Agent-based Installer
+|Supported
+|Supported
 
-#### 1.3.10.3. 세 번째 프로젝트의 DNS 프라이빗 영역을 지정하는 공유 VPC에 Google Cloud의 클러스터 설치
+|Assisted Installer
+|Supported
+|Supported
 
-이번 릴리스에서는 Google Cloud의 클러스터를 공유 VPC에 설치할 때 DNS 프라이빗 영역의 위치를 지정할 수 있습니다. 프라이빗 영역은 호스트 프로젝트 또는 기본 서비스 프로젝트와 다른 서비스 프로젝트에 있을 수 있습니다.
+|Automatic Device Discovery with Local Storage Operator
+|Unsupported
+|Supported
 
-자세한 내용은 추가 Google Cloud 구성 매개변수를 참조하십시오.
+|Automatic repair of damaged machines with machine health checking
+|Unsupported
+|Unsupported
 
-#### 1.3.10.4. 가상 네트워크 암호화를 사용하여 Microsoft Azure에 클러스터 설치
+|Cloud controller manager for {ibm-cloud-name}
+|Supported
+|Unsupported
 
-이번 릴리스에서는 암호화된 가상 네트워크를 사용하여 Azure에 클러스터를 설치할 수 있습니다. `premiumIO` 매개변수가 `true` 로 설정된 Azure 가상 머신을 사용해야 합니다. 자세한 내용은 암호화 및 요구 사항 및 제한을 사용하여 가상 네트워크 생성에 대한 Microsoft의 설명서를 참조하십시오.
+|Controlling overcommit and managing container density on nodes
+|Unsupported
+|Unsupported
 
-#### 1.3.10.5. IBM Cloud Paks를 사용하는 클러스터를 설치할 때 방화벽 요구 사항
+|CPU manager
+|Supported
+|Supported
 
-이번 릴리스에서는 IBM Cloud Paks를 사용하여 클러스터를 설치하는 경우 포트 443에서 `icr.io` 다음 명령에 대한 아웃바운드 액세스를 허용해야 합니다. 이 액세스는 IBM Cloud Pak 컨테이너 이미지에 필요합니다. 자세한 내용은 방화벽 구성을 참조하십시오.
+|Cron jobs
+|Supported
+|Supported
 
-```shell
-cp.icr.io
-```
+|Descheduler
+|Supported
+|Supported
 
-#### 1.3.10.6. Intel TDX 기밀 VM을 사용하여 Microsoft Azure에 클러스터 설치
+|Egress IP
+|Supported
+|Supported
 
-이번 릴리스에서는 Intel 기반 기밀 VM을 사용하여 Azure에 클러스터를 설치할 수 있습니다. 이제 다음 머신 크기가 지원됩니다.
+|Encrypting data stored in etcd
+|Supported
+|Supported
 
-DCesv5-series
+|FIPS cryptography
+|Supported
+|Supported
 
-DCedsv5-series
+|Helm
+|Supported
+|Supported
 
-ECesv5-series
+|Horizontal pod autoscaling
+|Supported
+|Supported
 
-ECedsv5-series
+|Hosted control planes
+|Supported
+|Supported
 
-자세한 내용은 기밀 VM 활성화를 참조하십시오.
+|IBM Secure Execution
+|Unsupported
+|Supported
 
-#### 1.3.10.7. Microsoft Azure의 etcd 전용 디스크 (기술 프리뷰)
+|Installer-provisioned Infrastructure Enablement for {ibm-power-server-name}
+|Supported
+|Unsupported
 
-이번 릴리스에서는 `etcd` 용 전용 데이터 디스크를 사용하여 Azure에 OpenShift Container Platform 클러스터를 설치할 수 있습니다. 이 구성은 별도의 관리 디스크를 각 컨트롤 플레인 노드에 연결하고 `etcd` 데이터에만 사용하므로 클러스터 성능과 안정성을 향상시킬 수 있습니다.
+|Installing on a single node
+|Supported
+|Supported
 
-이 기능은 기술 프리뷰로 사용할 수 있습니다. 자세한 내용은 etcd 전용 디스크 구성을 참조하십시오.
+|IPv6
+|Supported
+|Supported
 
-#### 1.3.10.8. 베어 메탈에 대한 다중 아키텍처 지원
+|Monitoring for user-defined projects
+|Supported
+|Supported
 
-이번 릴리스에서는 다중 아키텍처 기능을 지원하는 베어 메탈 환경을 설치할 수 있습니다. 가상 미디어를 사용하여 기존 `x86_64` 클러스터에서 `x86_64` 및 `aarch64` 아키텍처를 프로비저닝할 수 있습니다. 즉, 다양한 하드웨어 환경을 보다 효율적으로 관리할 수 있습니다.
+|Multi-architecture compute nodes
+|Supported
+|Supported
 
-자세한 내용은 다중 아키텍처 컴퓨팅 머신을 사용하여 클러스터 구성 을 참조하십시오.
+|Multi-architecture control plane
+|Supported
+|Supported
 
-#### 1.3.10.9. 베어 메탈의 NIC의 호스트 펌웨어 구성 요소 업데이트 지원
+|Multipathing
+|Supported
+|Supported
 
-이번 릴리스에서는 베어 메탈의 `HostFirmwareComponents` 리소스에서 NIC(네트워크 인터페이스 컨트롤러)를 설명합니다. NIC 호스트 펌웨어 구성 요소를 업데이트하려면 서버에서 Redfish를 지원해야 하며 Redfish를 사용하여 NIC 펌웨어를 업데이트할 수 있어야 합니다.
+|Network-Bound Disk Encryption - External Tang Server
+|Supported
+|Supported
 
-자세한 내용은 HostFirmwareComponents 리소스 정보를 참조하십시오.
+|Non-volatile memory express drives (NVMe)
+|Supported
+|Unsupported
 
-#### 1.3.10.10. OpenShift Container Platform 4.19에서 4.20으로 업데이트할 때 관리자 승인 필요
+|nx-gzip for Power10 (Hardware Acceleration)
+|Supported
+|Unsupported
 
-OpenShift Container Platform 4.17에서 이전에 제거된 Kubernetes API 가 의도치 않게 다시 도입되었습니다. OpenShift Container Platform 4.20에서 다시 제거되었습니다.
+|oc-mirror plugin
+|Supported
+|Supported
 
-OpenShift Container Platform 4.19에서 4.20으로 클러스터를 업데이트하려면 먼저 클러스터 관리자가 수동으로 승인을 제공해야 합니다.
+|OpenShift CLI (`oc`) plugins
+|Supported
+|Supported
 
-이러한 보호 조치는 워크로드, 툴 또는 기타 구성 요소가 OpenShift Container Platform 4.20에서 제거된 Kubernetes API에 의존하는 경우 발생할 수 있는 업데이트 문제를 방지하는 데 도움이 됩니다.
+|Operator API
+|Supported
+|Supported
 
-관리자는 클러스터 업데이트를 진행하기 전에 다음 작업을 수행해야 합니다.
+|OpenShift Virtualization
+|Unsupported
+|Supported
 
-제거할 API 사용을 위해 클러스터를 평가합니다.
+|OVN-Kubernetes, including IPsec encryption
+|Supported
+|Supported
 
-지원되는 API 버전을 사용하도록 영향을 받는 매니페스트, 워크로드 및 API 클라이언트를 마이그레이션합니다.
+|PodDisruptionBudget
+|Supported
+|Supported
 
-관리자에게 필요한 모든 업데이트가 수행되었음을 승인을 제공합니다.
+|Precision Time Protocol (PTP) hardware
+|Unsupported
+|Unsupported
 
-모든 OpenShift Container Platform 4.19 클러스터에는 OpenShift Container Platform 4.20으로 업데이트하기 전에 이 관리자에게 승인해야 합니다.
+|{openshift-local-productname}
+|Unsupported
+|Unsupported
 
-자세한 내용은 Kubernetes API 제거를 참조하십시오.
+|Scheduler profiles
+|Supported
+|Supported
 
-#### 1.3.10.11. Transit Gateway 및 VPC(Virtual Private Cloud)에 UUID 사용
+|Secure Boot
+|Unsupported
+|Supported
 
-이전 버전에서는 IBM Power Virtual Server에 클러스터를 설치할 때 기존 Transit Gateway 또는 VPC(Virtual Private Cloud)의 이름만 지정할 수 있었습니다. 이름의 고유성이 보장되지 않아 이로 인해 충돌이 발생하고 설치 오류가 발생할 수 있습니다.
+|Stream Control Transmission Protocol (SCTP)
+|Supported
+|Supported
 
-이번 릴리스에서는 Transit Gateway 및 VPC에 대해 UUID(Universally Unique Identifier)를 사용할 수 있습니다. 설치 프로그램은 고유 식별자를 사용하여 올바른 Transit Gateway 또는 VPC를 명확하게 식별할 수 있습니다.
+|Support for multiple network interfaces
+|Supported
+|Supported
 
-이렇게 하면 이름 지정 충돌이 방지되고 문제가 해결됩니다.
+|The `openshift-install` utility to support various SMT levels on {ibm-power-name} (Hardware Acceleration)
+|Supported
+|Unsupported
 
-#### 1.3.10.12. 추가 Oracle Distributed Cloud 및 Oracle Edge Cloud 인프라 제품에서 기술 프리뷰로 사용 가능
+|Three-node cluster support
+|Supported
+|Supported
 
-이번 릴리스에서는 새로운 Oracle 인프라 제품에 기술 프리뷰 클러스터를 설치할 수 있습니다.
+|Topology Manager
+|Supported
+|Unsupported
 
-다음의 새로운 Oracle Distributed Cloud 인프라 유형을 사용할 수 있습니다.
+|z/VM Emulated FBA devices on SCSI disks
+|Unsupported
+|Supported
 
-미국 정부 클라우드
+|4K FCP block device
+|Supported
+|Supported
+|====
 
-영국의 가상화 클라우드
+Operators
+|====
+|Feature |{ibm-power-name} |{ibm-z-name} and {ibm-linuxone-name}
 
-EU Sovereign Cloud
+|{cert-manager-operator}
+|Supported
+|Supported
 
-격리된 리전
+|Cluster Logging Operator
+|Supported
+|Supported
 
-Oracle Alloy
+|Cluster Resource Override Operator
+|Supported
+|Supported
 
-다음의 새로운 Oracle Edge Cloud 인프라 유형을 사용할 수 있습니다.
+|Compliance Operator
+|Supported
+|Supported
 
-roving Edge
+|Cost Management Metrics Operator
+|Supported
+|Supported
 
-자세한 내용은 지원 설치 관리자를 사용하여 Oracle Distributed Cloud에 클러스터
+|File Integrity Operator
+|Supported
+|Supported
 
-설치 및 지원 설치 관리자를 사용하여 Oracle Edge Cloud에 클러스터 설치를 참조하십시오.
+|HyperShift Operator
+|Supported
+|Supported
 
-#### 1.3.11.1. vSphere에서 업데이트된 부팅 이미지 지원 (기술 프리뷰)
+|{ibm-power-server-name} Block CSI Driver Operator
+|Supported
+|Unsupported
 
-업데이트된 부팅 이미지가 VMware vSphere 클러스터의 기술 프리뷰 기능으로 지원됩니다. 이 기능을 사용하면 클러스터를 업데이트할 때마다 노드 부팅 이미지를 업데이트하도록 클러스터를 구성할 수 있습니다. 기본적으로 클러스터의 부팅 이미지는 클러스터와 함께 업데이트되지 않습니다. 자세한 내용은 업데이트된 부팅 이미지 업데이트를 참조하십시오.
+|Ingress Node Firewall Operator
+|Supported
+|Supported
 
-#### 1.3.11.2. 클러스터의 이미지 모드 재부팅 개선 사항
+|Local Storage Operator
+|Supported
+|Supported
 
-다음 머신 구성 변경으로 인해 더 이상 클러스터의 사용자 정의 계층화된 이미지가 있는 노드가 재부팅되지 않습니다.
+|MetalLB Operator
+|Supported
+|Supported
 
-`/var` 또는 `/etc` 디렉토리의 구성 파일 수정
+|Network Observability Operator
+|Supported
+|Supported
 
-systemd 서비스 추가 또는 수정
+|NFD Operator
+|Supported
+|Supported
 
-SSH 키 변경
+|NMState Operator
+|Supported
+|Supported
 
-`ICSP`, `ITMS`, `IDMS` 오브젝트에서 미러링 규칙 제거
+|OpenShift Elasticsearch Operator
+|Supported
+|Supported
 
-`openshift-config` 네임스페이스에서 `user-ca-bundle` configmap을 업데이트하여 신뢰할 수 있는 CA 변경
+|Vertical Pod Autoscaler Operator
+|Supported
+|Supported
+|====
 
-자세한 내용은 On-cluster 이미지 모드의 알려진 제한 사항을 참조하십시오.
+Persistent storage options
+|====
+|Feature |{ibm-power-name} |{ibm-z-name} and {ibm-linuxone-name}
+|Persistent storage using iSCSI
+|Supported ^[1]^
+|Supported ^[1]^,^[2]^
 
-#### 1.3.11.3. On-cluster 이미지 모드 상태 보고 개선 사항
+|Persistent storage using local volumes (LSO)
+|Supported ^[1]^
+|Supported ^[1]^,^[2]^
 
-OpenShift의 이미지 모드가 구성되면 다음 변경 사항을 포함하여 오류 보고가 개선되었습니다.
+|Persistent storage using hostPath
+|Supported ^[1]^
+|Supported ^[1]^,^[2]^
 
-사용자 정의 계층 이미지를 빌드하고 내보낸 후 특정 시나리오에서는 오류로 인해 빌드 프로세스가 실패할 수 있습니다. 이 경우 MCO는 오류를 보고하고 `machineosbuild` 오브젝트 및 빌더 Pod가 실패로 보고됩니다.
+|Persistent storage using Fibre Channel
+|Supported ^[1]^
+|Supported ^[1]^,^[2]^
 
-다음 명령출력에는 사용자 정의 계층 이미지 빌드에 실패했는지 보고하는 새로운 `ImageBuildDegraded` status 필드가 있습니다.
+|Persistent storage using Raw Block
+|Supported ^[1]^
+|Supported ^[1]^,^[2]^
 
-```shell
-oc describe mcp
-```
+|Persistent storage using EDEV/FBA
+|Supported ^[1]^
+|Supported ^[1]^,^[2]^
+|====
+--
+1. Persistent shared storage must be provisioned by using either {rh-storage-first} or other supported storage protocols.
+2. Persistent non-shared storage must be provisioned by using local storage, such as iSCSI, FC, or by using LSO with DASD, FCP, or EDEV/FBA.
+--
 
-#### 1.3.11.4. 클러스터의 이미지 모드 노드에서 커널 유형 매개변수 설정이 지원됨
+#### Insights Operator
 
-노드에 실시간 커널을 설치하기 위해 클러스터의 사용자 정의 계층 이미지가 있는 노드의 `MachineConfig` 오브젝트에서 `kernelType` 매개변수를 사용할 수 있습니다. 이전에는 클러스터의 사용자 정의 계층 이미지가 있는 노드에서 `kernelType` 매개변수가 무시되었습니다. 자세한 내용은 노드에 실시간 커널 추가를 참조하십시오.
+##### Support for obtaining `virt-launcher` logs across the cluster
 
-#### 1.3.11.5. 노드에 이미지 고정
+With this release, command line logs from `virt-launcher` pods can be collected across a Kubernetes cluster. JSON-encoded logs are saved at the path `namespaces/<namespace-name>/pods/<pod-name>/virt-launcher.json`, which facilitates troubleshooting and debugging of virtual machines.
 
-이미지 레지스트리에 대한 신뢰할 수 없는 연결이 느리고 신뢰할 수 없는 경우 `PinnedImageSet` 오브젝트를 사용하여 필요한 이미지를 미리 가져온 다음 해당 이미지를 머신 구성 풀과 연결할 수 있습니다. 이렇게 하면 필요한 경우 해당 풀의 노드에서 이미지를 사용할 수 있습니다.
+#### Installation and update
 
-Machine Config Operator의 `must-gather` 에는 클러스터의 모든 `PinnedImageSet` 오브젝트가 포함됩니다. 자세한 내용은 노드에 이미지 고정을 참조하십시오.
+##### Changing the CVO log level (Technology Preview)
 
-#### 1.3.11.6. 이제 MCO 상태 보고 기능이 개선되어 일반적으로 사용 가능
+With this release, the Cluster Version Operator (CVO) log level verbosity can be changed by the cluster administrator.
 
-이제 노드에 대한 머신 구성 업데이트 진행 상황을 모니터링하는 데 사용할 수 있는 머신 구성 노드 사용자 정의 리소스를 사용할 수 있습니다.
+For more information, see Changing CVO log level.
 
-이제 컨트롤 플레인 및 작업자 풀 외에도 사용자 정의 머신 구성 풀에 대한 업데이트 상태를 볼 수 있습니다. 기능의 기능은 변경되지 않았습니다.
+##### Installing a cluster on {vmw-full} with multiple network interface controllers (Generally Available)
 
-그러나 명령 출력 및 `MachineConfigNode` 오브젝트의 status 필드에 있는 일부 정보가 업데이트되었습니다. Machine Config Operator의 `must-gather` 에 클러스터의 모든 `MachineConfigNodes` 오브젝트가 포함됩니다.
+OpenShift Container Platform 4.18 enabled you to install a {vmw-full} cluster with multiple network interface controllers (NICs) for a node as a Technology Preview feature. This feature is now Generally Available.
 
-자세한 내용은 머신 구성 노드 상태 확인 에서 참조하십시오.
+For more information, see Configuring multiple NICs.
 
-#### 1.3.11.7. 직접 활성화
+For an existing {vmw-short} cluster, you can add multiple subnets by using compute machine sets.
 
-이번 릴리스에는 `hostmount-anyuid-v2` 라는 새로운 SCC(보안 컨텍스트 제약 조건)가 포함되어 있습니다. 이 SCC는 `hostmount-anyuid` SCC와 동일한 기능을 제공하지만 `seLinuxContext: RunAsAny` 가 포함되어 있습니다.
+##### Installing a cluster on {gcp-full} into a shared VPC specifying a DNS private zone in a third project
 
-`hostmount-anyuid` SCC가 신뢰할 수 있는 Pod가 호스트의 모든 경로에 액세스할 수 있도록 하지만 SELinux는 컨테이너가 대부분의 경로에 액세스하지 못하도록 하기 때문에 추가되었습니다.
+With this release, you can specify the location of a DNS private zone when installing a cluster on {gcp-short} into a shared VPC. The private zone can be located in a service project that is distinct from the host project or main service project.
 
-`hostmount-anyuid-v2` 를 사용하면 UID 0을 포함하여 모든 UID로 호스트 파일 시스템에 액세스할 수 있으며 `권한이 있는` SCC 대신 사용할 수 있습니다. 주의해서 실행합니다.
+For more information, see Additional {gcp-short} configuration parameters.
 
-#### 1.3.12.1. 추가 AWS 용량 예약 구성 옵션
+##### Dell iDRAC10 supported for bare metal installation using Redfish virtual media
 
-클러스터 API를 사용하여 머신을 관리하는 클러스터에서 추가 제약 조건을 지정하여 컴퓨팅 시스템에서 AWS 용량 예약을 사용하는지 여부를 확인할 수 있습니다. 자세한 내용은 용량 예약 구성 옵션을 참조하십시오.
+Dell iDRAC10 versions 1.20.25.00, 1.20.60.50, and 1.20.70.50 have been tested and verified to work for installer-provisioned OpenShift Container Platform clusters deployed by using Redfish virtual media. iDRAC10 has not been tested with installations that use a provisioning network.
 
-#### 1.3.12.2. 클러스터 자동 스케일러 확장 지연
+For more information, see Firmware requirements for installing with virtual media.
 
-`ClusterAutoscaler` CR의 `spec.scaleUp.newPodScaleUpDelay` 매개변수를 사용하여 클러스터 자동 스케일러가 새로 보류 중인 Pod를 인식하고 새 노드에 Pod를 예약하기 전에 지연을 구성할 수 있습니다. 지연 후 노드가 일정하지 않은 상태로 남아 있으면 클러스터 자동 스케일러가 새 노드를 확장할 수 있습니다.
+##### Installing a cluster on {azure-full} with virtual network encryption
 
-이 지연으로 클러스터 자동 스케일러는 적절한 노드를 찾을 수 있는 추가 시간을 제공하거나 기존 Pod의 공간을 사용할 수 있을 때까지 기다릴 수 있습니다. 자세한 내용은 클러스터 자동 스케일러 구성을 참조하십시오.
+With this release, you can install a cluster on {azure-short} using encrypted virtual networks. You are required to use {azure-short} virtual machines that have the `premiumIO` parameter set to `true`. See Microsoft's documentation about [Creating a virtual network with encryption](https://learn.microsoft.com/en-us/azure/virtual-network/how-to-create-encryption?tabs=portal) and [Requirements and Limitations](https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-encryption-overview#requirements) for more information.
 
-#### 1.3.13. 모니터링
+##### Firewall requirements when installing a cluster that uses {ibm-title} Cloud Paks
 
-이 릴리스의 클러스터 내 모니터링 스택에는 다음과 같은 새로운 수정된 기능이 포함되어 있습니다.
+With this release, if you install a cluster using {ibm-title} Cloud Paks, you must allow outbound access to `icr.io` and `cp.icr.io` on port 443. This access is required for {ibm-title} Cloud Pak container images. For more information, see Configuring your firewall.
 
-#### 1.3.13.1. 모니터링 스택 구성 요소 및 종속 항목에 대한 업데이트
+##### Installing a cluster on {azure-full} using Intel TDX Confidential VMs
 
-이 릴리스에는 클러스터 내 모니터링 스택 구성 요소 및 종속 항목에 대한 다음 버전 업데이트가 포함되어 있습니다.
+With this release, you can install a cluster on {azure-short} using Intel-based Confidential VMs. The following machine sizes are now supported:
 
-Prometheus - 3.5.0
+* DCesv5-series
+* DCedsv5-series
+* ECesv5-series
+* ECedsv5-series
 
-Prometheus Operator to 0.85.0
+For more information, see Enabling confidential VMs.
 
-메트릭 서버 - 0.8.0
+##### Dedicated disk for etcd on {azure-full} (Technology Preview)
 
-Thanos 0.39.2
+With this release, you can install your OpenShift Container Platform cluster on {azure-short} with a dedicated data disk for `etcd`. This configuration attaches a separate managed disk to each control plane node and uses it only for `etcd` data, which can improve cluster performance and stability. This feature is available as a Technology Preview. For more information, see Configuring a dedicated disk for etcd.
 
-kube-state-metrics 에이전트에서 2.16.0으로
+##### Multi-architecture support for bare metal
 
-prom-label-proxy to 0.12.0
+With this release, you can install a bare-metal environment that supports multi-architecture capabilities. You can provision both `x86_64` and `aarch64` architectures from an existing `x86_64` cluster by using virtual media, meaning you can manage a diverse hardware environment more efficiently.
 
-#### 1.3.13.2. 경고 규칙 변경
+For more information, see Configuring your cluster with multi-architecture compute machines.
 
-참고
+##### Support for updating the host firmware components of NICs for bare metal
 
-Red Hat은 규칙 또는 경고 규칙에 대한 이전 버전과의 호환성을 보장하지 않습니다.
+With this release, the `HostFirmwareComponents` resource for bare metal describes network interface controllers (NICs). To update NIC host firmware components, the server must support Redfish and must permit you to use Redfish to update NIC firmware.
 
-`AlertmanagerClusterFailedToSendAlerts` 경고의 표현식이 변경되었습니다. 경고는 이제 `5m` 에서 `15m` 까지 더 긴 기간 동안 속도를 평가합니다.
+For more information, see About the HostFirmwareComponents resource.
 
-#### 1.3.13.3. Metrics Server에 대한 로그 세부 정보 설정 지원
+##### Required administrator acknowledgment when updating from OpenShift Container Platform 4.19 to 4.20
 
-이번 릴리스에서는 Metrics Server에 대한 로그 세부 정보 표시를 구성할 수 있습니다. 숫자 상세 정보 수준을 설정하여 기록된 정보의 양을 제어할 수 있습니다. 여기서 더 많은 숫자가 로깅 세부 정보를 늘립니다.
+In OpenShift Container Platform 4.17, a previously removed Kubernetes API was inadvertently reintroduced. It has been removed again in OpenShift Container Platform 4.20.
 
-자세한 내용은 모니터링 구성 요소의 로그 수준 설정을 참조하십시오.
+Before a cluster can be updated from OpenShift Container Platform 4.19 to 4.20, a cluster administrator must manually provide acknowledgment. This safeguard helps to prevent update issues that could occur if workloads, tools, or other components still depend on the Kubernetes API that has been removed in OpenShift Container Platform 4.20.
 
-#### 1.3.14.1. 게이트웨이 API 유추 확장 지원
+Administrators must take the following actions before proceeding with the cluster update:
 
-OpenShift Container Platform 4.20은 Red Hat OpenShift Service Mesh를 버전 3.1.0으로 업데이트하며 이제 Red Hat OpenShift AI를 지원합니다.
+ Evaluate the cluster for the use of APIs that will be removed.
+ Migrate the affected manifests, workloads, and API clients to use the supported API version.
+ Provide the administrator acknowledgment that all necessary updates have been made.
 
-이 버전 업데이트는 중요한 CVE 수정 사항을 통합하고, 다른 버그를 해결하며, Istio를 1.26.2 버전으로 업그레이드하여 보안 및 성능을 향상시킵니다. 자세한 내용은 Service Mesh 3.1.0 릴리스 노트 를 참조하십시오.
+All OpenShift Container Platform 4.19 clusters require this administrator acknowledgment before they can be updated to OpenShift Container Platform 4.20.
 
-#### 1.3.14.2. BGP 라우팅 프로토콜 지원
+For more information, see Kubernetes API removals.
 
-CNO(Cluster Network Operator)에서 BGP(Border Gateway Protocol) 라우팅 활성화를 지원합니다. BGP를 사용하면 경로를 기본 공급자 네트워크로 가져오고 내보낼 수 있으며 다중 호밍, 링크 중복성 및 빠른 통합 기능을 사용할 수 있습니다.
+##### Using UUIDs for a Transit Gateway and Virtual Private Cloud (VPC)
 
-BGP 구성은 `FRRConfiguration` CR(사용자 정의 리소스)을 사용하여 관리됩니다.
+Previously, when installing a cluster on {ibm-power-server-title}, you could only specify a name for an existing Transit Gateway or Virtual Private Cloud (VPC). As the uniqueness of names was not guaranteed, this could cause conflicts and installation failures. With this release, you can use Universally Unique Identifiers (UUIDs) for a Transit Gateway and VPC. By using unique identifiers, the installation program can unambiguously identify the correct Transit Gateway or VPC. This prevents the naming conflicts and the issue is resolved.
 
-MetalLB Operator를 설치한 이전 버전의 OpenShift Container Platform에서 업그레이드할 때 custom frr-k8s 구성을 `metallb-system` 네임스페이스에서 `openshift-frr-k8s` 네임스페이스로 수동으로 마이그레이션해야 합니다. 이러한 CR을 이동하려면 다음 명령을 입력합니다.
+##### Additional Oracle Distributed Cloud and Oracle Edge Cloud infrastructure offerings available as Technology Preview
 
-`openshift-frr-k8s` 네임스페이스를 생성하려면 다음 명령을 입력합니다.
+With this release, you can install a Technology Preview cluster on new Oracle infrastructure offerings.
 
-```shell-session
+The following new Oracle Distributed Cloud infrastructure types are now available:
+
+* US Government Cloud
+* UK Sovereign Cloud
+* EU Sovereign Cloud
+* Isolated Region
+* Oracle Alloy
+
+The following new Oracle Edge Cloud infrastructure type is now available:
+
+* Roving Edge
+
+For more information, see Installing a cluster on {oci-distributed-no-rt} by using the {ai-full} and Installing a cluster on {oci-edge-no-rt} by using the {ai-full}.
+
+##### Support for {vmw-full} Foundation 9 and VMware Cloud Foundation 9
+
+You can now install OpenShift Container Platform on {vmw-full} Foundation (VVF) 9 and VMware Cloud Foundation (VCF) 9.
+
+> The following additional VCF and VVF components are outside the scope of Red Hat support:
+
+> * Management: VCF Operations, VCF Automation, VCF Fleet Management, and VCF Identity Broker.
+> * Networking: VMware NSX Container Plugin (NCP).
+> * Migration: VMware HCX.
+
+#### Machine Config Operator
+
+##### Updated boot images for vSphere now supported (Technology Preview)
+
+Updated boot images is now supported as a Technology Preview feature for {vmw-first} clusters. This feature allows you configure your cluster to update the node boot image whenever you update your cluster. By default, the boot image in your cluster is not updated along with your cluster. For more information, see Updated boot images.
+
+##### {image-mode-os-on-caps} reboot improvements
+
+The following machine configuration changes no longer cause a reboot of nodes with on-cluster custom layered images:
+
+* Modifying the configuration files in the `/var` or `/etc` directory
+* Adding or modifying a systemd service
+* Changing SSH keys
+* Removing mirroring rules from `ICSP`, `ITMS`, and `IDMS` objects
+* Changing the trusted CA, by updating the `user-ca-bundle` configmap in the `openshift-config` namespace
+
+For more information, see On-cluster image mode known limitations.
+
+##### {image-mode-os-on-caps} status reporting improvements
+
+When {image-mode-os-lower} is configured, there are improvements to error reporting including the following changes:
+
+* In certain scenarios after the custom layered image has been built and pushed, errors could cause the build process to fail. If this happens, the MCO now reports the errors and the `machineosbuild` object and builder pod are reported as failed.
+
+* The `oc describe mcp` output has a new `ImageBuildDegraded` status field that reports if a custom layered image build has failed.
+
+##### Setting the kernel type parameter is now supported on {image-mode-os-on-lower} nodes
+
+You can now use the `kernelType` parameter in a `MachineConfig` object on nodes with on-cluster custom layered images in order to install a realtime kernel on the node. Previously, on nodes with on-cluster custom layered images the `kernelType` parameter was ignored. For information, see Adding a real-time kernel to nodes.
+
+##### Pinning images to nodes
+
+In clusters with slow, unreliable connections to an image registry, you can use a `PinnedImageSet` object to pull the images in advance, before they are needed, then associate those images with a machine config pool. This ensures that the images are available to the nodes in that pool when needed. The `must-gather` for the Machine Config Operator includes all `PinnedImageSet` objects in the cluster. For more information, see Pinning images to nodes.
+
+##### Improved MCO state reporting is now generally available
+
+The machine config nodes custom resource, which you can use to monitor the progress of machine configuration updates to nodes, is now generally available.
+
+You can now view the status of updates to custom machine config pools in addition to the control plane and worker pools. The functionality for the feature has not changed. However, some of the information in the command output and in the status fields in the `MachineConfigNode` object has been updated. The `must-gather` for the Machine Config Operator now includes all `MachineConfigNodes` objects in the cluster. For more information, see About checking machine config node status.
+
+##### Enabling direct
+
+This release includes a new security context constraint (SCC), named `hostmount-anyuid-v2`. This SCC provides the same features as the `hostmount-anyuid` SCC, but contains `seLinuxContext: RunAsAny`. This SCC was added because the `hostmount-anyuid` SCC was intended to allow trusted pods to access any paths on the host, but SELinux prevents containers from accessing most paths. The `hostmount-anyuid-v2` allows host file system access as any UID, including UID 0, and is intended to be used instead of the `privileged` SCC. Grant with caution.
+
+#### Machine management
+
+##### Additional {aws-short} Capacity Reservation configuration options
+
+On clusters that manage machines with the Cluster API, you can specify additional constraints to determine whether your compute machines use {aws-short} capacity reservations. For more information, see Capacity Reservation configuration options.
+
+##### Cluster autoscaler scale up delay
+
+You can now configure a delay before the cluster autoscaler recognizes newly pending pods and schedules the pods to a new node by using the `spec.scaleUp.newPodScaleUpDelay` parameter in the `ClusterAutoscaler` CR. If the node remains unscheduled after the delay, the cluster autoscaler can scale up a new node. This delay gives the cluster autoscaler additional time to locate an appropriate node or it can wait for space on an existing pod to become available. For more information, see Configuring the cluster autoscaler.
+
+#### Monitoring
+
+The in-cluster monitoring stack for this release includes the following new and modified features:
+
+##### Updates to monitoring stack components and dependencies
+
+This release includes the following version updates for in-cluster monitoring stack components and dependencies:
+
+* Prometheus to 3.5.0
+* Prometheus Operator to 0.85.0
+* Metrics Server to 0.8.0
+* Thanos to 0.39.2
+* kube-state-metrics agent to 2.16.0
+* prom-label-proxy to 0.12.0
+
+##### Changes to alerting rules
+
+> Red Hat does not guarantee backward compatibility for recording rules or alerting rules.
+
+* The expression for the `AlertmanagerClusterFailedToSendAlerts` alert has changed. The alert now evaluates the rate over a longer time period, from `5m` to `15m`.
+
+##### Support log verbosity configuration for Metrics Server
+
+With this release, you can configure log verbosity for Metrics Server. You can set a numeric verbosity level to control the amount of logged information, where higher numbers increase the logging detail.
+
+For more information, see [Setting log levels for monitoring components](https://docs.redhat.com/en/documentation/monitoring_stack_for_red_hat_openshift/4.20/html/configuring_core_platform_monitoring/storing-and-recording-data#setting-log-levels-for-monitoring-components_storing-and-recording-data).
+
+#### Networking
+
+##### Support for Gateway API Inference Extension
+
+OpenShift Container Platform 4.20 updates {SMProductName} to version 3.1.0, which now supports {rhoai-full}. This version update incorporates essential CVE fixes, resolves other bugs, and upgrades Istio to version 1.26.2 for improved security and performance. See the [{SMProductShortName} 3.1.0 release notes](https://docs.redhat.com/en/documentation/red_hat_openshift_service_mesh/3.1/html/release_notes/ossm-release-notes) for more information.
+
+##### Support for the BGP routing protocol
+
+The Cluster Network Operator (CNO) now supports enabling Border Gateway Protocol (BGP) routing. With BGP, you can import and export routes to the underlying provider network and use multi-homing, link redundancy, and fast convergence. BGP configuration is managed with the `FRRConfiguration` custom resource (CR).
+
+When upgrading from an earlier version of OpenShift Container Platform in which you installed the MetalLB Operator, you must manually migrate your custom frr-k8s configurations from the `metallb-system` namespace to the `openshift-frr-k8s` namespace. To move these CRs, enter the following commands:
+
+ To create the `openshift-frr-k8s` namespace, enter the following command:
+```terminal
 $ oc create namespace openshift-frr-k8s
 ```
 
-마이그레이션을 자동화하려면 다음 콘텐츠를 사용하여 파일을 생성합니다.
-
-```shell
-migrate.sh
-```
-
+ To automate the migration, create a `migrate.sh` file with the following content:
 ```bash
 #!/bin/bash
 OLD_NAMESPACE="metallb-system"
@@ -512,287 +681,241 @@ oc get frrconfigurations.frrk8s.metallb.io -n "${OLD_NAMESPACE}" -o json |\
   oc create -f -
 ```
 
-마이그레이션 스크립트를 실행하려면 다음 명령을 입력합니다.
-
-```shell-session
+ To run the migration script, enter the following command:
+```terminal
 $ bash migrate.sh
 ```
 
-마이그레이션이 성공했는지 확인하려면 다음 명령을 입력합니다.
-
-```shell-session
+ To verify that the migration succeeded, enter the following command:
+```terminal
 $ oc get frrconfigurations.frrk8s.metallb.io -n openshift-frr-k8s
 ```
 
-마이그레이션이 완료되면 `metallb-system` 네임스페이스에서 `FRR-K8s` 사용자 정의 리소스를 제거할 수 있습니다.
+After the migration is complete, you can remove the `FRR-K8s` custom resources from the `metallb-system` namespace.
 
-자세한 내용은 BGP 라우팅 정보를 참조하십시오.
+For more information, see About BGP routing.
 
-#### 1.3.14.3. BGP(Border Gateway Protocol)를 사용하여 CUDN(클러스터 사용자 정의 네트워크)에 대한 경로 알림 지원
+##### Support for route advertisements for cluster user-defined networks (CUDNs) with Border Gateway Protocol (BGP)
 
-OVN-Kubernetes 네트워크 플러그인은 경로 알림을 활성화하면 클러스터 사용자 정의 네트워크(CUDN)와 연결된 Pod 및 서비스에 대한 경로의 직접 알림을 공급자 네트워크로 지원합니다. 이 기능을 사용하면 다음과 같은 이점이 있습니다.
+With route advertisements enabled, the OVN-Kubernetes network plugin supports the direct advertisement of routes for pods and services associated with cluster user-defined networks (CUDNs) to the provider network. This feature enables some of the following benefits:
 
-Pod로의 경로를 동적으로 알아보기
+- Learns routes to pods dynamically
+- Advertises routes dynamically
+- Enables layer 3 notifications of EgressIP failovers in addition to the layer 2 ones based on gratuitous ARPs.
+- Supports external route reflectors, which reduces the number of BGP connections required in large networks
 
-동적으로 경로 알림
+For more information, see About route advertisements.
 
-적절한 ARP를 기반으로 계층 2 페일오버 외에도 EgressIP 페일오버의 계층 3 알림을 활성화합니다.
+##### Preconfigured user-defined network endpoints only for use with {mtv-first} (Technology Preview)
 
-대규모 네트워크에서 필요한 BGP 연결 수를 줄이는 외부 경로 리플렉터 지원
+Preconfigured user-defined network endpoints is available as a Technology Preview and controlled by the feature gate, `PreconfiguredUDNAddresses`. You can now explicitly control the overlay network configuration including: IP address, MAC address, and default gateway. This feature is available for Layer 2 as part of the `ClusterUserDefinedNetwork` (CUDN) custom resource (CR). Administrators can preconfigure endpoints to migrate KubeVirt virtual machines (VMs) without disruption. To enable the feature use the new fields, `reservedSubnets`, `infrastructureSubnets`, and `defaultGatewayIPs`, found in the CUDN CR. For more information about the configurations, see Additional configuration details for user-defined networks. Currently, static IP addresses are only supported for the `ClusterUserDefinedNetworks` CR and only for use with {mtv-short}.
 
-자세한 내용은 경로 알림 정보를 참조하십시오.
+##### Support for migrating a configured br-ex bridge to NMState
 
-#### 1.3.14.4. MCP(Migration Toolkit for Virtualization)에서만 사용할 수 있도록 사전 구성된 사용자 정의 네트워크 끝점 (기술 프리뷰)
+If you used the `configure-ovs.sh` shell script to set a `br-ex` bridge during cluster installation, you can migrate the `br-ex` bridge to NMState as a postinstallation task. For more information, see Migrating a configured br-ex bridge to NMState.
 
-사전 구성된 사용자 정의 네트워크 끝점은 기술 프리뷰로 사용할 수 있으며 기능 게이트인 `PreconfiguredUDNAddresses` 에서 제어합니다. 이제 IP 주소, MAC 주소 및 기본 게이트웨이를 포함하여 오버레이 네트워크 구성을 명시적으로 제어할 수 있습니다.
+##### Configuring enhanced PTP logging
 
-이 기능은 Layer 2에서 CUDN(`ClusterUserDefinedNetwork`) CR(사용자 정의 리소스)의 일부로 사용할 수 있습니다. 관리자는 중단 없이 KubeVirt VM(가상 머신)을 마이그레이션하도록 끝점을 사전 구성할 수 있습니다.
+You can now configure enhanced log reduction for the PTP Operator to reduce the volume of logs generated by the `linuxptp-daemon`.
 
-기능을 활성화하려면 CUDN CR에 있는 새 필드인 `reservedSubnets`, `infrastructureSubnets`, `defaultGatewayIPs` 를 사용합니다. 구성에 대한 자세한 내용은 사용자 정의 네트워크에 대한 추가 구성 세부 정보를 참조하십시오.
+This feature provides a periodic summary of filtered logs, which is not available with basic log reduction. Optionally, you can set a specific interval for the summary logs and a threshold in nanoseconds for the master offset logs.
 
-현재 고정 IP 주소는 `ClusterUserDefinedNetworks` CR에만 지원되며 MTV에서만 지원됩니다.
+For more information, see Configuring enhanced PTP logging.
 
-#### 1.3.14.5. 구성된 br-ex 브리지를 NMState로 마이그레이션 지원
+##### PTP ordinary clocks with added redundancy on AArch64 nodes (Technology Preview)
 
-다음 명령쉘 스크립트를 사용하여 클러스터 설치 중에 `br-ex` 브리지를 설정하는 경우 `br-ex` 브리지를 postinstallation 작업으로 NMState로 마이그레이션할 수 있습니다. 자세한 내용은 구성된 br-ex 브리지를 NMState로 마이그레이션 을 참조하십시오.
+With this release, you can configure PTP ordinary clocks with added redundancy on AArch64 architecture nodes that use the following dual-port NICs only:
 
-```shell
-configure-ovs.sh
-```
+* NVIDIA ConnectX-7 series
+* NVIDIA BlueField-3 series, in NIC mode
 
-#### 1.3.14.6. 향상된 PTP 로깅 구성
+This feature is available as a Technology Preview. For more information, see Using dual-port NICs to improve redundancy for PTP ordinary clocks.
 
-`linuxptp-daemon` 에서 생성한 로그 볼륨을 줄이기 위해 PTP Operator의 향상된 로그 감소를 구성할 수 있습니다.
+##### Load balancing configuration with bond CNI plugin (Technology Preview)
 
-이 기능은 기본 로그 감소와 함께 사용할 수 없는 필터링된 로그를 주기적으로 요약합니다. 선택적으로 요약 로그에 대한 특정 간격과 마스터 오프셋 로그에 대해 나노초 단위의 임계값을 설정할 수 있습니다.
+In this release you can now specify the transmit hash policy for load balancing across the aggregated interfaces with the `xmitHashPolicy` as part of bond CNI plugin configuration. This feature is available as a Technology Preview.
 
-자세한 내용은 향상된 PTP 로깅 구성을 참조하십시오.
+For more information, see Configuration for a Bond CNI secondary network.
 
-#### 1.3.14.7. AArch64 노드에서 중복성이 추가된 PTP 일반 클록 (기술 프리뷰)
+##### SR-IOV network management in application namespaces
 
-이번 릴리스에서는 다음 듀얼 포트 NIC만 사용하는 AArch64 아키텍처 노드에서 중복성을 추가하여 PTP 일반 클록을 구성할 수 있습니다.
+With OpenShift Container Platform 4.20, you can now create and manage SR-IOV networks directly within your application namespaces. This new feature provides greater control over your network configurations and helps simplify your workflow.
 
-NVIDIA ConnectX-7 시리즈
+Previously, creating an SR-IOV network required a cluster administrator to configure it for you. Now, you can manage these resources directly in your own namespace, which offers several key benefits:
 
-NIC 모드에서 NVIDIA BlueField-3 시리즈
+* Increased autonomy and control: You can now create your own `SriovNetwork` objects, removing the need to involve a cluster administrator for network configuration tasks.
 
-이 기능은 기술 프리뷰로 사용할 수 있습니다. 자세한 내용은 이중 포트 NIC를 사용하여 PTP 일반 클록의 중복성 개선을 참조하십시오.
+* Enhanced security: Managing resources within your own namespace improves security by providing better separation between applications and helps prevent unintentional misconfigurations.
 
-#### 1.3.14.8. 본딩 CNI 플러그인을 사용한 로드 밸런싱 구성 (기술 프리뷰)
+* Simplified permissions: You can now simplify permissions and reduce operational overhead by using namespaced SR-IOV networks.
 
-이 릴리스에서는 본딩 CNI 플러그인 구성의 일부로 `xmitHashPolicy` 를 사용하여 집계된 인터페이스 간에 로드 밸런싱을 위한 전송 해시 정책을 지정할 수 있습니다. 이 기능은 기술 프리뷰로 사용할 수 있습니다.
+For more information, see Configuring namespaced SR-IOV resources.
 
-자세한 내용은 Bond CNI 보조 네트워크의 구성을 참조하십시오.
+##### Unnumbered BGP peering
 
-#### 1.3.14.9. 애플리케이션 네임스페이스에서 SR-IOV 네트워크 관리
+With this release, OpenShift Container Platform includes unnumbered BGP peering.
+This was previously available as a Technology Preview feature.
+You can use the `spec.interface` field of the BGP peer custom resource to configure unnumbered BGP peering.
 
-OpenShift Container Platform 4.20을 사용하면 이제 애플리케이션 네임스페이스 내에서 SR-IOV 네트워크를 직접 생성하고 관리할 수 있습니다. 이 새로운 기능을 사용하면 네트워크 구성을 보다 효과적으로 제어할 수 있으며 워크플로를 단순화할 수 있습니다.
+For more information, see Configuring the integration of MetalLB and FRR-K8s.
 
-이전에는 SR-IOV 네트워크를 생성하려면 클러스터 관리자가 이를 구성해야 했습니다. 이제 몇 가지 주요 이점을 제공하는 자체 네임스페이스에서 이러한 리소스를 직접 관리할 수 있습니다.
+##### High-availability for pod-level bonding on SR-IOV networks (Technology Preview)
 
-자율성 및 제어 증가: 이제 자체 `SriovNetwork` 오브젝트를 생성하여 네트워크 구성 작업을 위한 클러스터 관리자가 필요 없이 수행할 수 있습니다.
+This Technology Preview feature introduces the PF Status Relay Operator. The Operator uses Link Aggregation Control Protocol (LACP) as a health check to detect upstream switch failures, enabling high availability for workloads that use pod-level bonding with SR-IOV network virtual functions (VF).
 
-보안 강화: 자체 네임스페이스 내에서 리소스를 관리하면 애플리케이션을 보다 효과적으로 분리하고 의도하지 않은 잘못된 구성을 방지할 수 있습니다.
+Without this feature, an upstream switch can fail while the underlying physical function (PF) still reports an `up` state. VFs attached to the PF also remain up, causing pods to send traffic to a dead endpoint and leading to packet loss.
 
-간소화된 권한: 네임스페이스가 지정된 SR-IOV 네트워크를 사용하여 권한을 단순화하고 운영 오버헤드를 줄일 수 있습니다.
+The PF Status Relay Operator prevents this by monitoring the LACP status of the PF. When a failure is detected, the Operator forces the link state of the attached VFs down, triggering the pod's bond to fail over to a backup path. This ensures the workload remains available and minimizes packet loss.
 
-자세한 내용은 네임스페이스가 지정된 SR-IOV 리소스 구성을 참조하십시오.
+For more information, see High availability for pod-level bonds on SR-IOV networks.
 
-#### 1.3.14.10. 번호가 지정되지 않은 BGP 피어링
+##### Network policies for additional namespaces
 
-이번 릴리스에서는 OpenShift Container Platform에 번호가 지정되지 않은 BGP 피어링이 포함되어 있습니다. 이전에는 기술 프리뷰 기능으로 사용 가능했습니다. BGP 피어 사용자 정의 리소스의 `spec.interface` 필드를 사용하여 번호가 지정되지 않은 BGP 피어링을 구성할 수 있습니다.
+With this release, OpenShift Container Platform deploys Kubernetes network policies to additional system namespaces to control ingress and egress traffic. It is anticipated that future releases might include network policies for additional system namespaces and Red Hat Operators.
 
-자세한 내용은 MetalLB 및 FRR-K8의 통합 구성 을 참조하십시오.
+##### Unassisted holdover for PTP devices (Technology Preview)
 
-#### 1.3.14.11. SR-IOV 네트워크에서 Pod 수준 본딩에 대한 고가용성 (기술 프리뷰)
+With this release, the PTP Operator provides unassisted holdover as a Technology Preview feature. When the upstream timing signal is lost, the PTP Operator automatically places PTP devices configured as either a boundary clock or a time slave clock into holdover mode. Automatic placement into holdover mode helps to maintain a continuous and stable time source for cluster nodes, minimizing time synchronization disruptions.
 
-이 기술 프리뷰 기능에는 PF Status Relay Operator가 도입되었습니다. Operator는 LACP(Link Aggregation Control Protocol)를 상태 점검으로 사용하여 업스트림 스위치 오류를 탐지하여 SR-IOV 네트워크 VF(가상 기능)와 Pod 수준 본딩을 사용하는 워크로드에 대한 고가용성을 활성화합니다.
+> This feature is available only for nodes with Intel E810-XXVDA4T network interface cards.
 
-이 기능이 없으면 기본 물리적 기능(PF)이 여전히 `up` 상태를 보고하는 동안 업스트림 스위치가 실패할 수 있습니다. PF에 연결된 VFS도 유지되어 Pod가 dead endpoint로 트래픽을 전송하고 패킷 손실이 발생합니다.
+For more information, see Configuring PTP devices.
 
-PF Status Relay Operator는 PF의 LACP 상태를 모니터링하여 이를 방지합니다. 오류가 감지되면 Operator에서 연결된 VF의 링크 상태를 강제 중단하여 Pod의 본딩이 백업 경로로 장애 조치되도록 트리거합니다. 이렇게 하면 워크로드를 계속 사용할 수 있으며 패킷 손실이 최소화됩니다.
+##### NVIDIA BlueField-3 DPU support (Technology Preview)
 
-자세한 내용은 SR-IOV 네트워크에서 Pod 수준 본딩의 고가용성을 참조하십시오.
+With this release, OpenShift Container Platform introduces, as a Technology Preview feature, NVIDIA BlueField-3 Data Processing Unit (DPU) support managed by the Data Center on a Chip Architecture (DOCA) Platform Framework (DPF) Operator for automated provisioning and lifecycle management.
+This solution provides the following key customer benefits:
 
-#### 1.3.14.12. 추가 네임스페이스의 네트워크 정책
+* Data plane acceleration: offloads and speeds up network processing.
+* Security isolation: separates infrastructure and tenant workloads for enhanced security.
+* Compute expansion: frees up host CPU resources by deploying infrastructure workloads such as networking onto the DPU.
 
-이번 릴리스에서는 OpenShift Container Platform에서 Kubernetes 네트워크 정책을 추가 시스템 네임스페이스에 배포하여 수신 및 송신 트래픽을 제어합니다. 향후 릴리스에는 추가 시스템 네임스페이스 및 Red Hat Operator에 대한 네트워크 정책이 포함될 수 있습니다.
+The deployment uses a dual-cluster model comprising infrastructure and tenant clusters. It also paves the way for future DOCA services, for example, Firefly, SNAP, Telemetry, and third-party network functions on the DPU.
 
-#### 1.3.14.13. PTP 장치에 대한 지원 보류 해제 (기술 프리뷰)
+#### Nodes
 
-이번 릴리스에서는 PTP Operator에서 기술 프리뷰 기능으로 보조 보류 기능을 제공합니다. 업스트림 타이밍 신호가 손실되면 PTP Operator는 경계 클럭 또는 시간 슬레이브 클록으로 구성된 PTP 장치를 홀드오버 모드로 자동으로 배치합니다.
+##### sigstore support is now generally available
 
-홀드오버 모드로 자동 배치하면 클러스터 노드의 지속적이고 안정적인 시간 소스를 유지 관리하여 시간 동기화 중단을 최소화할 수 있습니다.
+Support for sigstore `ClusterImagePolicy` and `ImagePolicy` objects is now generally available. The API version is now `config.openshift.io/v1`. For more information, see Manage secure signatures with sigstore.
 
-참고
+> The default `openshift` cluster image policy is Technology Preview and is active only in clusters that have enabled Technology Preview features.
 
-이 기능은 Intel E810-XXVDA4T 네트워크 인터페이스 카드가 있는 노드에서만 사용할 수 있습니다.
+#### Support for sigstore bring your own PKI (BYOPKI) image validation
 
-자세한 내용은 PTP 장치 구성 을 참조하십시오.
+You can now use sigstore `ClusterImagePolicy` and `ImagePolicy` objects to generate BYOPKI config to the `policy.json` file, enabling you to verify image signatures with [BYOPKI](https://developers.redhat.com/articles/2025/09/08/verify-cosign-bring-your-own-pki-signature-openshift?source=sso#configure_openshift_for_pki_verification). For more information, see About cluster and image policy parameters.
 
-#### 1.3.14.14. NVIDIA BlueField-3 DPU 지원 (기술 프리뷰)
+##### Linux user namespace support is now generally available
 
-이번 릴리스에서 OpenShift Container Platform은 자동 프로비저닝 및 라이프사이클 관리를 위해 DPDK(Chip Architecture) 플랫폼 프레임워크(DPF) Operator에서 관리하는 NVIDIA BlueField-3 Data Processing Unit(DPU) 지원으로 기술 프리뷰 기능으로 도입되었습니다.
+Support for deploying pods and containers into Linux user namespaces is now generally available and enabled by default. Running pods and containers in individual user namespaces can mitigate several vulnerabilities that a compromised container can pose to other pods and the node itself. This change also includes two new security context constraints, `restricted-v3` and `nested-container`, that are specifically designed for use with user namespaces. You can also configure the `/proc` file system in pods as `unmasked`. For more information, see Running pods in Linux user namespaces.
 
-이 솔루션은 다음과 같은 주요 고객 이점을 제공합니다.
+##### Adjust pod resource levels without pod disruption
 
-데이터 플레인 가속: 네트워크 처리 오프로드 및 가속화.
+By using the in-place pod resizing feature, you can apply a resize policy to change the CPU and memory resources for containers within a running pod without re-creating or restarting the pod. For more information, see Manually adjust pod resource levels.
 
-보안 격리: 보안을 강화하기 위해 인프라 및 테넌트 워크로드를 분리합니다.
+##### Mounting an OCI image into a pod
 
-컴퓨팅 확장: DPU에 네트워킹과 같은 인프라 워크로드를 배포하여 호스트 CPU 리소스를 확보합니다.
+You can you use an image volume to mount an Open Container Initiative (OCI)-compliant container image directly into a pod. For more information, see Mounting an OCI image into a pod.
 
-배포는 인프라 및 테넌트 클러스터로 구성된 듀얼 클러스터 모델을 사용합니다. 또한 DPU에서 Firefly, SNAP, Telemetry 및 타사 네트워크 기능과 같은 향후 DOCA 서비스도 사용할 수 있습니다.
+##### Allocating specific GPUs to pods (Technology Preview)
 
-#### 1.3.15.1. 이제 Sigstore 지원을 일반적으로 사용할 수 있습니다.
+You can now enable pods to request GPUs based on specific device attributes, such as product name, GPU memory capacity, compute capability, vendor name, and driver version. These attributes are exposed by the by using a third-party DRA resource driver that you install. For more information, see Allocating GPUs to pods.
 
-이제 sigstore `ClusterImagePolicy` 및 `ImagePolicy` 오브젝트에 대한 지원을 일반적으로 사용할 수 있습니다. API 버전은 `config.openshift.io/v1` 입니다. 자세한 내용은 sigstore를 사용하여 보안 서명 관리를 참조하십시오.
+#### OpenShift CLI (oc)
 
-참고
+##### Introducing the oc adm upgrade recommend command (General Availability)
 
-기본 `openshift` 클러스터 이미지 정책은 기술 프리뷰이며 기술 프리뷰 기능을 활성화한 클러스터에서만 활성화됩니다.
+Formerly Technology Preview and now Generally Available, the `oc adm upgrade recommend` command allows system administrators to perform a pre-update check on their OpenShift Container Platform clusters using the command line interface (CLI). The pre-update check helps identify potential issues, enabling users to address them before initiating an update. By running the precheck command and inspecting the output, users can prepare for updating their cluster and make informed decisions about when to start an update.
 
-#### 1.3.16. Sigstore 지원 BYOPKI (BYOPKI) 이미지 검증
+For more information, see Updating a cluster by using the CLI.
 
-이제 sigstore `ClusterImagePolicy` 및 `ImagePolicy` 오브젝트를 사용하여 `policy.json` 파일에 BYOPKI 구성을 생성하여 BYOPKI 를 사용하여 이미지 서명을 확인할 수 있습니다. 자세한 내용은 클러스터 및 이미지 정책 매개변수 정보를 참조하십시오.
+##### Introducing the oc adm upgrade status command (General Availability)
 
-#### 1.3.16.1. 이제 Linux 사용자 네임스페이스 지원을 일반적으로 사용할 수 있습니다.
+Formerly Technology Preview and now Generally Available, the `oc adm upgrade status` command allows cluster administrators to get high-level summary information about the state of their OpenShift Container Platform cluster update using the command line interface (CLI). Three types of information are provided when you enter the command: control plane information, worker node information, and health insights.
 
-이제 Pod 및 컨테이너를 Linux 사용자 네임스페이스에 배포할 수 있으며 기본적으로 활성화되어 있습니다. 개별 사용자 네임스페이스에서 Pod 및 컨테이너를 실행하면 손상된 컨테이너가 다른 Pod 및 노드 자체를 초래할 수 있는 몇 가지 취약점을 완화할 수 있습니다.
+The command is not currently supported on Hosted Control Plane (HCP) clusters.
 
-이 변경에는 사용자 네임스페이스에 사용하도록 특별히 설계된 두 가지 새로운 보안 컨텍스트 제약 조건인 `restricted-v3` 및 `nested-container` 도 포함됩니다. Pod의 `/proc` 파일 시스템을 마스킹되지 않은 것으로 구성할 수도 `있습니다`.
+For more information, see Updating a cluster by using the CLI.
 
-자세한 내용은 Linux 사용자 네임스페이스에서 Pod 실행을 참조하십시오.
+##### oc-mirror v2 mirrors container images in environment variables of deployment templates
 
-#### 1.3.16.2. Pod 중단 없이 Pod 리소스 수준 조정
+Operand images, dynamically deployed by Operator controllers at runtime, are typically referenced by environment variables within the controller’s deployment template.
 
-인플레이스 Pod 크기 조정 기능을 사용하면 Pod를 다시 생성하거나 다시 시작하지 않고 실행 중인 Pod 내의 컨테이너의 CPU 및 메모리 리소스를 변경하는 데 크기 조정 정책을 적용할 수 있습니다. 자세한 내용은 Pod 리소스 수준 수동 조정을 참조하십시오.
+Before OpenShift Container Platform 4.20, while `oc-mirror` plugin v2 could access these environment variables, it attempted to mirror all values, including non-image references, for example, log levels, leading to failures. With this update, OpenShift Container Platform identifies and mirrors only the container images referenced in these environment variables.
 
-#### 1.3.16.3. Pod에 OCI 이미지 마운트
+For more information, see ImageSet configuration parameters for oc-mirror plugin v2.
 
-이미지 볼륨을 사용하여 OCI(Open Container Initiative) 호환 컨테이너 이미지를 Pod에 직접 마운트할 수 있습니다. 자세한 내용은 Pod에 OCI 이미지 마운트를 참조하십시오.
+#### Operator development
 
-#### 1.3.16.4. Pod에 특정 GPU 할당 (기술 프리뷰)
+##### Supported Operator base images
 
-이제 제품 이름, GPU 메모리 용량, 컴퓨팅 기능, 벤더 이름, 드라이버 버전과 같은 특정 장치 특성에 따라 Pod에서 GPU를 요청할 수 있습니다. 이러한 속성은 사용자가 설치하는 타사 DRA 리소스 드라이버를 사용하여 노출됩니다. 자세한 내용은 GPU를 Pod에 할당을 참조하십시오.
+#### Operator lifecycle
 
-#### 1.3.17.1. oc adm upgrade recommend 명령 소개 (일반 가용성)
+##### {olmv0} support for tailored network policies in Operators
 
-이전 버전의 기술 프리뷰 및 이제 아래 명령을 사용하면 시스템 관리자가 CLI(명령줄 인터페이스)를 사용하여 OpenShift Container Platform 클러스터에서 사전 업데이트 검사를 수행할 수 있습니다.
+##### Red Hat Operator catalogs moved from OperatorHub to the software catalog in the console
 
-```shell
-oc adm upgrade recommend
-```
+With this release, the Red Hat-provided Operator catalogs have moved from OperatorHub to the software catalog and the *Operators* navigation item is renamed to *Ecosystem* in the console. The unified software catalog presents Operators, Helm charts, and other installable content in the same console view.
 
-업데이트 전 점검은 잠재적인 문제를 식별하여 사용자가 업데이트를 시작하기 전에 문제를 해결할 수 있도록 지원합니다. precheck 명령을 실행하고 출력을 검사하여 클러스터 업데이트를 준비하고 업데이트를 시작할 시기에 대한 정보에 대한 결정을 내릴 수 있습니다.
+* To access the Red Hat-provided Operator catalogs in the console, select *Ecosystem* -> *Software Catalog*.
+* To manage, update, and remove installed Operators, select *Ecosystem* -> *Installed Operators*.
 
-자세한 내용은 CLI를 사용하여 클러스터 업데이트를 참조하십시오.
+> Currently, the console only supports managing Operators by using {olmv0-first}. If you want to use {olmv1} to install and manage cluster extensions, such as Operators, you must use the CLI.
 
-#### 1.3.17.2. oc adm upgrade status 명령 (일반 가용성) 소개
+To manage the default or custom catalog sources, you still interact with OperatorHub custom resource (CR) in the console or CLI.
 
-이전 버전의 기술 프리뷰 및 이제 아래 명령을 사용하면 클러스터 관리자가 CLI(명령줄 인터페이스)를 사용하여 OpenShift Container Platform 클러스터 업데이트 상태에 대한 고급 요약 정보를 얻을 수 있습니다.
+#### Postinstallation configuration
 
-```shell
-oc adm upgrade status
-```
+##### Enabling {aws-full} {sts-first} on an existing cluster
 
-명령을 입력할 때 컨트롤 플레인 정보, 작업자 노드 정보 및 상태 인사이트의 세 가지 유형의 정보가 제공됩니다.
+With this release, you can configure your {aws-short} OpenShift Container Platform cluster to use {sts-short} even if you did not do so during installation.
 
-이 명령은 현재 HCP(Hosted Control Plane) 클러스터에서 지원되지 않습니다.
+For more information, see Enabling AWS Security Token Service (STS) on an existing cluster.
 
-자세한 내용은 CLI를 사용하여 클러스터 업데이트를 참조하십시오.
+#### {op-system-first}
 
-#### 1.3.17.3. oc-mirror v2 배포 템플릿의 환경 변수에 컨테이너 이미지를 미러링
+##### Investigate kernel crashes with kdump (General Availability)
 
-런타임 시 Operator 컨트롤러에서 동적으로 배포하는 피연산자 이미지는 일반적으로 컨트롤러의 배포 템플릿 내의 환경 변수에서 참조합니다.
+With this update, `kdump` is now Generally Available for all supported architectures, including `x86_64`, `arm64`, `s390x`, and `ppc64le`. This enhancement enables users to diagnose and resolve kernel problems more efficiently.
 
-다음 명령플러그인 v2가 이러한 환경 변수에 액세스할 수 있는 동안 OpenShift Container Platform 4.20 이전에는 이미지 이외의 참조(예: 로그 수준)를 포함하여 모든 값을 미러링하려고 시도하여 오류가 발생했습니다.
+##### Ignition update to version 2.20.0
 
-```shell
-oc-mirror
-```
+{op-system} introduces version 2.20.0 of Ignition. This enhancement supports partitioning disks with mounted partitions using the `partx` utility, which is now included with `dracut` module installations. Additionally, this update adds support for Proxmox Virtual Environment.
 
-이번 업데이트를 통해 OpenShift Container Platform은 이러한 환경 변수에서 참조하는 컨테이너 이미지만 식별하고 미러링합니다.
+##### Butane update to version 0.23.0
 
-자세한 내용은 oc-mirror 플러그인 v2의 이미지 세트 구성 매개변수를 참조하십시오.
+{op-system} now includes Butane version 0.23.0.
 
-#### 1.3.18.1. 지원되는 Operator 기본 이미지
+##### Afterburn update to version 5.7.0
 
-이번 릴리스에서는 OpenShift Container Platform 4.20과의 호환성을 위해 Operator 프로젝트의 다음 기본 이미지가 업데이트됩니다. 이러한 기본 이미지의 런타임 기능 및 구성 API는 버그 수정 및 CVE 문제를 해결하는 데 지원됩니다.
+{op-system} now includes Afterburn version 5.7.0. This update adds support for Proxmox Virtual Environment.
 
-Ansible 기반 Operator 프로젝트의 기본 이미지
+##### `coreos-installer` update to version 0.23.0
 
-Helm 기반 Operator 프로젝트의 기본 이미지
+With this release, the `coreos-installer` utility is updated to version 0.23.0.
 
-자세한 내용은 OpenShift Container Platform 4.19 이상(Red Hat Knowledgebase)의 기존 Ansible 또는 Helm 기반 Operator 프로젝트의 기본 이미지 업데이트를 참조하십시오.
+#### Scalability and performance
 
-#### 1.3.19.1. Red Hat Operator 카탈로그가 OperatorHub에서 콘솔의 소프트웨어 카탈로그로 이동
+##### Configuring NUMA-aware scheduler replicas and high availability (Technology Preview)
 
-이번 릴리스에서는 Red Hat 제공 Operator 카탈로그가 OperatorHub에서 소프트웨어 카탈로그로 이동했으며 Operator 탐색 항목의 이름이 콘솔의 Ecosystem 으로 변경되었습니다. 통합 소프트웨어 카탈로그는 동일한 콘솔 뷰에 Operator, Helm 차트 및 기타 설치 가능한 콘텐츠를 제공합니다.
+In OpenShift Container Platform 4.20, the NUMA Resources Operator automatically enables high availability (HA) mode by default. In this mode, the NUMA Resources Operator creates one scheduler replica for each control-plane node in the cluster to ensure redundancy. This default behavior occurs if the `spec.replicas` field is not specified in the `NUMAResourcesScheduler` custom resource. Alternatively, you can explicitly set a specific number of scheduler replicas to override the default HA behavior or disable the scheduler entirely by setting the `spec.replicas` field to `0`. The maximum number of replicas is 3, even if the number of control plane nodes exceeds 3.
 
-콘솔에서 Red Hat 제공 Operator 카탈로그에 액세스하려면 Ecosystem → Software Catalog 를 선택합니다.
+For more information, see Managing high availability (HA) for the NUMA-aware scheduler.
 
-설치된 Operator를 관리, 업데이트 및 제거하려면 에코시스템 → 설치된 Operator 를 선택합니다.
+##### NUMA Resources Operator now supports schedulable control plane nodes
 
-참고
+With this release, the NUMA Resources Operator can now manage control plane nodes that are configured as schedulable. This capability allows you to deploy topology-aware workloads on control plane nodes, which is especially useful in resource-constrained environments like compact clusters.
 
-현재 콘솔은 OLM(Operator Lifecycle Manager) Classic을 사용하여 Operator 관리를 지원합니다. OLM v1을 사용하여 Operator와 같은 클러스터 확장을 설치하고 관리하려면 CLI를 사용해야 합니다.
+This enhancement helps the NUMA Resources Operator schedule your NUMA-aware pods on the node with the most suitable NUMA topology, even on control plane nodes.
 
-기본 또는 사용자 정의 카탈로그 소스를 관리하려면 콘솔 또는 CLI에서 OperatorHub CR(사용자 정의 리소스)과 상호 작용합니다.
+For more information, see NUMA Resources Operator support for schedulable control-plane nodes.
 
-#### 1.3.20.1. 기존 클러스터에서 Amazon Web Services Security Token Service(STS) 활성화
+##### Receive Packet Steering (RPS) is now disabled by default
 
-이번 릴리스에서는 설치 중에 그렇지 않은 경우에도 STS를 사용하도록 AWS OpenShift Container Platform 클러스터를 구성할 수 있습니다.
+With this release, Receive Packet Steering (RPS) is no longer configured when Performance Profile is applied. The RPS configuration affects containers that perform networking system calls, such as send, directly within latency-sensitive threads. To avoid latency impacts when RPS is not configured, move networking calls to helper threads or processes.
 
-자세한 내용은 기존 클러스터에서 AWS STS(보안 토큰 서비스) 활성화를 참조하십시오.
+The previous RPS configuration resolved latency issues at the expense of overall pod kernel networking performance. The current default configuration promotes transparency by requiring developers to address the underlying application design instead of obscuring performance impacts.
 
-#### 1.3.21.1. kdump를 사용하여 커널 충돌 조사 (일반 가용성)
-
-이번 업데이트를 통해 `x86_64`, `arm64, s390x, ppc64 le` 등 지원되는 모든 아키텍처에 `kdump` 를 일반적으로 사용할 수 있습니다. 이번 개선된 기능을 통해 사용자는 커널 문제를 보다 효율적으로 진단하고 해결할 수 있습니다.
-
-#### 1.3.21.2. Ignition 버전 2.20.0으로 업데이트
-
-RHCOS는 Ignition 버전 2.20.0을 도입했습니다. 이번 개선된 기능을 통해 이제 `dracut` 모듈 설치에 포함된 `partx` 유틸리티를 사용하여 마운트된 파티션이 있는 파티션 파티셔닝을 지원합니다. 또한 이 업데이트에는 Proxmox 가상 환경에 대한 지원이 추가되었습니다.
-
-#### 1.3.21.3. Butane이 0.23.0으로 업데이트
-
-RHCOS에는 Butane 버전 0.23.0이 포함됩니다.
-
-#### 1.3.21.4. Bburn이 버전 5.7.0으로 업데이트 후
-
-RHCOS에는 Afterburn 버전 5.7.0이 포함되어 있습니다. 이번 업데이트에서는 Proxmox 가상 환경에 대한 지원이 추가되었습니다.
-
-#### 1.3.21.5. coreos-installer 를 버전 0.23.0으로 업데이트
-
-이번 릴리스에서는 `coreos-installer` 유틸리티가 버전 0.23.0으로 업데이트되었습니다.
-
-#### 1.3.22.1. NUMA 인식 스케줄러 복제본 및 고가용성 구성 (기술 프리뷰)
-
-OpenShift Container Platform 4.20에서 NUMA Resources Operator는 기본적으로 HA(고가용성) 모드를 자동으로 활성화합니다. 이 모드에서 NUMA Resources Operator는 중복을 보장하기 위해 클러스터의 각 control-plane 노드에 대해 하나의 스케줄러 복제본을 생성합니다.
-
-이 기본 동작은 `spec.replicas` 필드가 `NUMAResourcesScheduler` 사용자 정의 리소스에 지정되지 않은 경우 발생합니다. 또는 `spec.replicas` 필드를 `0` 으로 설정하여 기본 HA 동작을 덮어쓰거나 스케줄러를 완전히 비활성화하도록 특정 수의 스케줄러 복제본을 명시적으로 설정할 수 있습니다.
-
-컨트롤 플레인 노드의 수가 3을 초과하면 최대 복제본 수는 3입니다.
-
-자세한 내용은 NUMA 인식 스케줄러의 HA(고가용성) 관리를 참조하십시오.
-
-#### 1.3.22.2. NUMA 리소스 Operator에서 스케줄링 가능한 컨트롤 플레인 노드 지원
-
-이번 릴리스에서는 NUMA 리소스 Operator에서 예약 가능으로 구성된 컨트롤 플레인 노드를 관리할 수 있습니다. 이 기능을 사용하면 컨트롤 플레인 노드에 토폴로지 인식 워크로드를 배포할 수 있으므로 컴팩트 클러스터와 같은 리소스가 제한적인 환경에서 특히 유용합니다.
-
-이번 개선된 기능을 통해 NUMA Resources Operator는 컨트롤 플레인 노드에서도 가장 적합한 NUMA 토폴로지를 사용하여 노드에서 NUMA 인식 Pod를 예약할 수 있습니다.
-
-자세한 내용은 예약 가능한 컨트롤 플레인 노드에 대한 NUMA 리소스 Operator 지원을 참조하십시오.
-
-#### 1.3.22.3. 수신 패킷 처리(RPS)가 기본적으로 비활성화되어 있습니다.
-
-이번 릴리스에서는 성능 프로필을 적용할 때RPS(Receive Packet Steering)가 더 이상 구성되지 않습니다. RPS 구성은 대기 시간에 민감한 스레드 내에서 직접 send와 같은 네트워킹 시스템 호출을 수행하는 컨테이너에 영향을 미칩니다.
-
-RPS가 구성되지 않은 경우 대기 시간이 미치는 영향을 방지하려면 네트워킹 호출을 도우미 스레드 또는 프로세스로 이동합니다.
-
-이전 RPS 구성을 통해 전체 Pod 커널 네트워킹 성능이 저하되는 대기 시간 문제를 해결했습니다. 현재 기본 구성은 개발자에게 성능에 영향을 미치는 대신 기본 애플리케이션 설계를 해결하도록 하여 투명성을 향상시킵니다.
-
-이전 동작으로 되돌리려면 `performance.openshift.io/enable-rps` 주석을 PerformanceProfile 매니페스트에 추가합니다.
+To revert to the previous behavior, add the `performance.openshift.io/enable-rps` annotation to the PerformanceProfile manifest:
 
 ```yaml
 apiVersion: performance.openshift.io/v2
@@ -803,1902 +926,1665 @@ metadata:
     performance.openshift.io/enable-rps: "enable"
 ```
 
-참고
+> This action restores the prior functionality at the cost of globally reducing networking performance for all pods.
 
-이 작업은 모든 Pod의 네트워킹 성능을 전역적으로 줄이는 대신 이전 기능을 복원합니다.
+##### Performance tuning for worker nodes with Intel Sierra Forest CPUs
 
-#### 1.3.22.4. Intel Cryostat Forest CPU가 있는 작업자 노드의 성능 튜닝
+With this release, you can use the `PerformanceProfile` custom resource to configure worker nodes on machines equipped with Intel Sierra Forest CPUs. These CPUs are supported when configured with a single NUMA domain (NPS=1).
 
-이번 릴리스에서는 `PerformanceProfile` 사용자 정의 리소스를 사용하여 Intel Cryostat Forest CPU가 설치된 시스템에서 작업자 노드를 구성할 수 있습니다. 이러한 CPU는 단일 NUMA 도메인(NPS=1)으로 구성된 경우 지원됩니다.
+##### Performance tuning for worker nodes with AMD Turin CPUs
 
-#### 1.3.22.5. AMD Turin CPU가 있는 작업자 노드의 성능 튜닝
+With this release, you can use the `PerformanceProfile` custom resource to configure worker nodes on machines equipped with AMD Turin CPUs. These CPUs are fully supported when configured with a single NUMA domain (NPS=1).
 
-이번 릴리스에서는 `PerformanceProfile` 사용자 정의 리소스를 사용하여 AMD Turin CPU가 있는 시스템에서 작업자 노드를 구성할 수 있습니다. 이러한 CPU는 단일 NUMA 도메인(NPS=1)으로 구성된 경우 완전히 지원됩니다.
+##### Hitless TLS certificate rotation for the Kubernetes API
 
-#### 1.3.22.6. Kubernetes API에 대한 적중 횟수 없는 TLS 인증서 교체
+This new feature enhances TLS certificate rotations in OpenShift Container Platform, ensuring 95% expected cluster availability. It is particularly beneficial for high-transaction-rate clusters and {sno} deployments, ensuring seamless operation even under heavy loads.
 
-이 새로운 기능은 OpenShift Container Platform에서 TLS 인증서 교체를 개선하여 95%의 클러스터 가용성을 보장합니다. 높은 수준의 클러스터 및 단일 노드 OpenShift 배포를 통해 부하가 많은 경우에도 원활한 작업을 수행하는 데 특히 유용합니다.
+##### Additional cluster latency requirements for etcd
 
-#### 1.3.22.7. etcd에 대한 추가 클러스터 대기 시간 요구 사항
+With this update, the etcd product documentation is updated to include additional requirements for reducing OpenShift Container Platform cluster latency. This update clarifies the prerequisites and setup procedures for using etcd, resulting in an improved user experience. As a result, this feature introduces support for Transport Layer Security (TLS) 1.3 in etcd, which enhances security and performance for data transmission, and enables etcd to comply with the latest security standards, reducing potential vulnerabilities. The improved encryption ensures more secure communication between etcd and its clients. For more information, see Cluster latency requirements for etcd.
 
-이번 업데이트를 통해 OpenShift Container Platform 클러스터 대기 시간을 줄이기 위한 추가 요구 사항을 포함하도록 etcd 제품 문서가 업데이트되었습니다. 이번 업데이트에서는 etcd 사용에 대한 사전 요구 사항 및 설정 절차를 설명하여 사용자 환경이 향상됩니다.
+#### Storage
 
-결과적으로 이 기능은 etcd에서 TLS(Transport Layer Security) 1.3을 지원하여 데이터 전송의 보안 및 성능을 향상시키고 etcd가 최신 보안 표준을 준수하여 잠재적인 취약점을 줄일 수 있습니다. 향상된 암호화를 사용하면 etcd와 해당 클라이언트 간의 보다 안전한 통신을 수행할 수 있습니다.
+##### NetworkPolicy support for the {secrets-store-operator}
 
-자세한 내용은 etcd에 대한 클러스터 대기 시간 요구 사항을 참조하십시오.
+The {secrets-store-operator} version 4.20 is now based on the upstream v1.5.2 release. The {secrets-store-operator} now applies Kubernetes `NetworkPolicy` objects during installation to restrict network communication to only the required components.
 
-#### 1.3.23.1. Secrets Store CSI Driver Operator에 대한 NetworkPolicy 지원
+##### Volume populators are generally available
 
-Secrets Store CSI Driver Operator 버전 4.20은 이제 업스트림 v1.5.2 릴리스를 기반으로 합니다. Secrets Store CSI Driver Operator는 설치 중에 Kubernetes `NetworkPolicy` 오브젝트를 적용하여 네트워크 통신을 필수 구성 요소로만 제한합니다.
+The volume populators feature allows you to create pre-populated volumes.
 
-#### 1.3.23.2. 볼륨 팝업기 사용 가능
+OpenShift Container Platform 4.20 introduces a new field `dataSourceRef` for volume populator functionality that expands the objects that can be used as a data source for pre-population of volumes, from only persistent volume claims (PVC) and snapshots, to any appropriate custom resource (CR).
 
-볼륨 팝업 기능을 사용하면 미리 채워진 볼륨을 만들 수 있습니다.
+OpenShift Container Platform now ships `volume-data-source-validator`, which reports events on PVCs that use a volume populator without a corresponding `VolumePopulator` instance. Previous OpenShift Container Platform versions did not require `VolumePopulator` instances, so if you are upgrading from 4.12, or later, you might receive events about unregistered populators. If you installed `volume-data-source-validator` yourself previously, you can remove your version.
 
-OpenShift Container Platform 4.20에는 PVC(영구 볼륨 클레임) 및 스냅샷에서만 적절한 사용자 정의 리소스(CR)에 볼륨을 미리 채우는 데 사용할 수 있는 오브젝트를 확장하는 볼륨 채우기 기능에 대한 새로운 필드 `dataSourceRef` 가 도입되었습니다.
+The volume populators feature, which was introduced in OpenShift Container Platform 4.12 as a Technology Preview feature, is now supported as generally available.
 
-OpenShift Container Platform에는 해당 `VolumePopulator` 인스턴스 없이 볼륨 팝업기를 사용하는 PVC의 이벤트를 보고하는 `volume-data-source-validator` 가 제공됩니다.
+Volume population is enabled by default. However, OpenShift Container Platform does not ship with any volume populators.
 
-이전 OpenShift Container Platform 버전에는 `VolumePopulator` 인스턴스가 필요하지 않았으므로 4.12 이상에서 업그레이드하는 경우 등록되지 않은 팝업에 대한 이벤트를 수신할 수 있습니다. `volume-data-source-validator` 를 이전에 설치한 경우 버전을 제거할 수 있습니다.
+For more information about volume populators, see Volume populators.
 
-OpenShift Container Platform 4.12에 기술 프리뷰 기능으로 도입된 볼륨 팝업 기능이 이제 일반적으로 지원됩니다.
+##### Performance plus for Azure Disk is generally available
 
-볼륨 수는 기본적으로 활성화되어 있습니다. 그러나 OpenShift Container Platform에는 볼륨 팝업기가 제공되지 않습니다.
+By enabling performance plus, the input/output operations per second (IOPS) and throughput limits can be increased for the following types of disks that are 513 GiB, and larger:
 
-볼륨 팝업기에 대한 자세한 내용은 볼륨 팝업기를 참조하십시오.
+* Azure Premium solid-state drives (SSD)
 
-#### 1.3.23.3. Azure Disk의 성능 추가는 일반적으로 사용 가능
+* Standard SSDs
 
-성능 추가를 활성화하면 513GiB의 다음과 같은 유형의 디스크 유형에 대해 IOPS(초당 입/출력 작업) 및 처리량 제한을 늘릴 수 있습니다.
+* Standard hard disk drives (HDD)
 
-Azure 프리미엄 SSD(Solid-State Drive)
+This feature is generally available in OpenShift Container Platform 4.20.
 
-표준 SSD
+For more information about performance plus, see Performance plus for Azure Disk.
 
-표준 하드 디스크 드라이브(HDD)
+##### Changed block tracking (Developer Preview)
 
-이 기능은 일반적으로 OpenShift Container Platform 4.20에서 사용할 수 있습니다.
+Changed block tracking enables efficient and incremental backups and disaster recovery for persistent volumes (PVs) managed by Container Storage Interface (CSI) drivers that support this feature.
 
-성능 및 성능에 대한 자세한 내용은 Azure Disk의 성능 추가를 참조하십시오.
+Changed block tracking allows consumers to requests a list of blocks that have changed between two snapshots, which is useful for backup solutions vendors. By only backing up changed blocks, rather than entire volumes, back up processes are more efficient.
 
-#### 1.3.23.4. 변경된 블록 추적 (개발자 프리뷰)
+For more information about changed block tracking, see this [KB article](https://access.redhat.com/solutions/7131061).
 
-변경된 블록 추적을 사용하면 이 기능을 지원하는 CSI(Container Storage Interface) 드라이버에서 관리하는 영구 볼륨(PV)에 대해 효율적이고 증분 백업 및 재해 복구가 가능합니다.
+##### AWS EFS One Zone volume support is generally available
 
-변경된 블록 추적을 통해 소비자는 두 개의 스냅샷 간에 변경된 블록 목록을 요청할 수 있으며 백업 솔루션 공급업체에 유용합니다. 전체 볼륨이 아닌 변경된 블록만 백업하면 프로세스를 백업하는 것이 더 효율적입니다.
+OpenShift Container Platform 4.20 introduces AWS Elastic File Storage (EFS) One Zone volume support as generally available. With this feature, if file system Domain Name System (DNS) resolution fails, the EFS CSI driver can fall back to mount targets. A mount target serves as a network endpoint that allows AWS EC2 instances or other AWS compute instances within a Virtual Private Cloud (VPC) to connect to, and mount, an EFS file system.
 
-중요
+For more information about One Zone, see Support for One Zone.
 
-변경된 블록 추적은 개발자 프리뷰 기능 전용입니다. 개발자 프리뷰 기능은 Red Hat에서 지원하지 않으며 기능적으로 완전하거나 프로덕션 준비가 되지 않습니다.
+##### Configuring fsGroupChangePolicy and seLinuxChangePolicy at namespace and pod level
 
-프로덕션 또는 비즈니스 크리티컬 워크로드에는 개발자 프리뷰 기능을 사용하지 마십시오. 개발자 프리뷰 기능을 사용하면 Red Hat 제품 오퍼링에 포함된 제품 기능에 미리 미리 액세스할 수 있으므로 개발 프로세스 중에 기능을 테스트하고 피드백을 제공할 수 있습니다.
+Certain operations of a volume can cause pod startup delays, which might cause pod timeouts.
 
-이러한 기능에는 문서가 없을 수 있으며 언제든지 변경 또는 제거될 수 있으며 테스트는 제한됩니다. Red Hat은 관련 SLA 없이 개발자 프리뷰 기능에 대한 피드백을 제출하는 방법을 제공할 수 있습니다.
+*fsGroup:*
+For volumes with many files, pod startup timeouts can occur because, by default, OpenShift Container Platform recursively changes ownership and permissions for the contents of each volume to match the `fsGroup` specified in a pod’s `securityContext` when that volume is mounted. This can be time consuming, slowing pod startup. You can use the `fsGroupChangePolicy` parameter inside a `securityContext` to control the way that OpenShift Container Platform checks and manages ownership and permissions for a volume.
 
-변경된 블록 추적에 대한 자세한 내용은 이 KB 문서를 참조하십시오.
+Changing this parameter at the pod level was introduced in OpenShift Container Platform 4.10. In 4.20, you can set this parameter at the namespace level, in addition to the pod level, as a generally available feature.
 
-#### 1.3.23.5. AWS EFS One Zone 볼륨 지원을 일반적으로 사용할 수 있습니다.
+*SELinux:*
+SELinux (Security-Enhanced Linux) is a security mechanism that assigns security labels (contexts) to all objects (files, processes, network ports, etc.) on a system. These labels determine what a process can access. When a pod starts, the container runtime recursively relabels all files on a volume to match a pod’s SELinux context. For volumes with a lot of files, this can significantly increase pod startup times. Mount option specifies avoiding recursive relabeling of all files by attempting to mount the volume with the correct SELinux label directly using the -o context mount option, thus helping to avoid pod timeout problems.
 
-OpenShift Container Platform 4.20에는 AWS EBS(Elastic File Storage) One Zone 볼륨 지원이 일반적으로 제공됩니다. 이 기능을 사용하면 파일 시스템 DNS(Domain Name System) 확인이 실패하면 EFS CSI 드라이버가 대상 마운트로 대체될 수 있습니다.
+*RWOP and SELinux mount option:*
+ReadWriteOncePod (RWOP) persistent volumes use the SELinux mount feature by default. Mount option was introduced in OpenShift Container Platform 4.15 as a Technology Preview feature, and became generally available in 4.16.
 
-마운트 대상은 EFS 파일 시스템에 연결하고 마운트할 수 있는 VPC(Virtual Private Cloud) 내의 AWS EC2 인스턴스 또는 기타 AWS 컴퓨팅 인스턴스를 허용하는 네트워크 끝점 역할을 합니다.
+*RWO and RWX and SELinux mount option:*
+ReadWriteOnce (RWO) and ReadWriteMany (RWX) volumes use recursive relabeling by default. Mount option for RWO/RWX was introduced in OpenShift Container Platform 4.17 as a Developer Preview feature, but is now supported in 4.20 as a Technology Preview feature.
 
-하나의 영역에 대한 자세한 내용은 하나의 영역에 대한 지원을 참조하십시오.
+> In a future OpenShift Container Platform version, RWO and RWX volumes will use mount option by default.
 
-#### 1.3.23.6. 네임스페이스 및 Pod 수준에서 fsGroupChangePolicy 및 seLinuxChangePolicy 구성
+To assist you with the upcoming move to the mount option default, OpenShift Container Platform 4.20 reports SELinux-related conflicts when creating pods, and on running pods, to make you aware of potential conflicts, and to help you resolve them. For more information about this reporting, see this [KB article](https://access.redhat.com/solutions/7131398).
 
-볼륨의 특정 작업으로 인해 Pod 시작 지연이 발생하여 Pod가 시간 초과될 수 있습니다.
+If you are unable to resolve the SELinux-related conflicts, you can proactively opt-out of the future move to mount option as default for selected pods or namespaces.
 
-fsGroup: 많은 파일이 있는 볼륨의 경우, 기본적으로 OpenShift Container Platform은 볼륨이 마운트될 때 Pod의 `securityContext` 에 지정된 `fsGroup` 과 일치하도록 각 볼륨의 콘텐츠에 대한 소유권과 권한을 재귀적으로 변경하므로 Pod 시작 시간 초과가 발생할 수 있습니다.
+In OpenShift Container Platform 4.20, you can evaluate the mount option feature for RWO and RWX volumes as a Technology Preview feature.
 
-시간이 오래 걸릴 수 있으며 Pod 시작 속도가 느려질 수 있습니다. `securityContext` 내에서 `fsGroupChangePolicy` 매개변수를 사용하여 OpenShift Container Platform이 볼륨에 대한 소유권 및 권한을 확인하고 관리하는 방법을 제어할 수 있습니다.
+For more information about fsGroup, see Reducing pod timeouts using fsGroup.
 
-Pod 수준에서 이 매개변수를 변경하는 것은 OpenShift Container Platform 4.10에서 도입되었습니다. 4.20에서는 Pod 수준 외에도 네임스페이스 수준에서 이 매개변수를 일반적으로 사용할 수 있는 기능으로 설정할 수 있습니다.
+For more information about SELinux, see Reducing pod timeouts using seLinuxChangePolicy.
 
-SELinux: SELinux(Security-Enhanced Linux)는 시스템의 모든 오브젝트(파일, 프로세스, 네트워크 포트 등)에 보안 레이블(컨텍스트)을 할당하는 보안 메커니즘입니다. 이러한 레이블은 프로세스가 액세스할 수 있는 항목을 결정합니다.
+##### Always honor persistent volume reclaim policy is generally available
 
-Pod가 시작되면 컨테이너 런타임은 Pod의 SELinux 컨텍스트와 일치하도록 볼륨의 모든 파일의 레이블을 재귀적으로 다시 지정합니다. 많은 파일이 있는 볼륨의 경우 Pod 시작 시간이 크게 증가할 수 있습니다.
+Before OpenShift Container Platform 4.18, the persistent volume (PV) reclaim policy was not always applied.
 
-Mount 옵션은 -o 컨텍스트 마운트 옵션을 사용하여 올바른 SELinux 레이블로 볼륨을 직접 마운트하여 모든 파일의 재귀 레이블을 다시 지정하므로 Pod 시간 초과 문제를 방지할 수 있습니다.
+For a bound PV and persistent volume claim (PVC) pair, the ordering of PV-PVC deletion determined whether the PV delete reclaim policy was applied or not. The PV applied the reclaim policy if the PVC was deleted before deleting the PV. However, if the PV was deleted before deleting the PVC, then the reclaim policy was not applied. As a result of that behavior, the associated storage asset in the external infrastructure was not removed.
 
-RWOP 및 SELinux 마운트 옵션: RWOP(ReadWriteOncePod) 영구 볼륨은 기본적으로 SELinux 마운트 기능을 사용합니다. 마운트 옵션은 OpenShift Container Platform 4.15에 기술 프리뷰 기능으로 도입되었으며 4.16에서 일반적으로 사용 가능하게 되었습니다.
+Starting with OpenShift Container Platform 4.18, the PV reclaim policy is consistently always applied as a Technical Preview feature. With OpenShift Container Platform 4.20, this feature is generally available.
 
-RWO 및 RWX 및 SELinux 마운트 옵션: RWO(ReadWriteOnce) 및 ReadWriteMany(RWX) 볼륨은 기본적으로 재귀 재레이블을 사용합니다. RWO/RWX의 마운트 옵션은 OpenShift Container Platform 4.17에서 개발자 프리뷰 기능으로 도입되었지만 이제 4.20에서 기술 프리뷰 기능으로 지원됩니다.
+For more information, see Reclaim policy for persistent volumes.
 
-중요
+##### Manila CSI driver allows multiple CIDRs when creating NFS volumes is generally available
 
-향후 OpenShift Container Platform 버전에서는 RWO 및 RWX 볼륨이 기본적으로 마운트 옵션을 사용합니다.
+By default, OpenShift Container Platform creates Manila storage classes that provide access to all IPv4 clients, with the possibility of updating it to a single IP address or subnet. In OpenShift Container Platform 4.20, you can limit client access by defining custom storage classes that use multiple client IP addresses or subnets by using the `nfs-ShareClient` parameter.
 
-다음 마운트 옵션 이동을 지원하기 위해 OpenShift Container Platform 4.20은 Pod를 생성하고 실행 중인 Pod에서 SELinux 관련 충돌을 보고하여 잠재적인 충돌을 파악하고 문제를 해결하는 데 도움이 됩니다. 이 보고에 대한 자세한 내용은 이 KB 문서를 참조하십시오.
+This feature is generally available in OpenShift Container Platform 4.20.
 
-SELinux 관련 충돌을 확인할 수 없는 경우 선택한 Pod 또는 네임스페이스에 대해 기본적으로 마운트 옵션으로 자동 마운트 해제를 수행할 수 있습니다.
+For more information, see Customizing Manila share access rules.
 
-OpenShift Container Platform 4.20에서는 RWO 및 RWX 볼륨의 마운트 옵션 기능을 기술 프리뷰 기능으로 평가할 수 있습니다.
+##### AWS EFS cross account procedure revision
 
-중요
+To enhance usability and provide both Security Token Service (STS) and non-STS support, the {aws-first} Elastic File Service (EFS) cross account support procedure has been revised.
 
-RWO/RWX SELinux 마운트는 기술 프리뷰 기능 전용입니다. 기술 프리뷰 기능은 Red Hat 프로덕션 서비스 수준 계약(SLA)에서 지원되지 않으며 기능적으로 완전하지 않을 수 있습니다.
+To view the revised procedure, see AWS EFS cross account support.
 
-따라서 프로덕션 환경에서 사용하는 것은 권장하지 않습니다. 이러한 기능을 사용하면 향후 제품 기능을 조기에 이용할 수 있어 개발 과정에서 고객이 기능을 테스트하고 피드백을 제공할 수 있습니다.
+#### Web console
 
-Red Hat 기술 프리뷰 기능의 지원 범위에 대한 자세한 내용은 기술 프리뷰 기능 지원 범위 를 참조하십시오.
+##### Support for custom application icons in the Import flow
 
-fsGroup에 대한 자세한 내용은 fsGroup 을 사용하여 Pod 시간 초과 감소를 참조하십시오.
+Before this update, the *Container image* form flow provided only a limited set of predefined icons for applications.
 
-SELinux에 대한 자세한 내용은 seLinuxChangePolicy를 사용하여 Pod 시간 초과 감소를 참조하십시오.
+With this update, you can add custom icons when you import applications through the *Container image* form. For existing applications, apply the `app.openshift.io/custom-icon` annotation to add a custom icon to the corresponding *Topology* node.
 
-#### 1.3.23.7. 항상 영구 볼륨 회수 정책을 일반적으로 사용할 수 있습니다.
+As a result, you can better identify applications in the *Topology* view and organize your projects more clearly.
 
-OpenShift Container Platform 4.18 이전에는 PV(영구 볼륨) 회수 정책이 항상 적용되지는 않았습니다.
+### Notable technical changes
 
-바인딩된 PV 및 PVC(영구 볼륨 클레임) 쌍의 경우 PV 삭제 회수 정책이 적용되었는지 여부를 PV-PVC 삭제 순서가 결정되었습니다. PV를 삭제하기 전에 PVC가 삭제된 경우 PV가 회수 정책을 적용했습니다.
+#### MachineOSConfig naming changes
 
-그러나 PVC를 삭제하기 전에 PV가 삭제된 경우 회수 정책이 적용되지 않았습니다. 이러한 동작으로 인해 외부 인프라의 연결된 스토리지 자산이 제거되지 않았습니다.
+The name of the `MachineOSConfig` object used with {image-mode-os-on-lower} must now be the same as the machine config pool where you want to deploy the custom layered image. Previously, you could use any name. This change was made to prevent attempts to use multiple `MachineOSConfig` objects with each machine config pool.
 
-OpenShift Container Platform 4.18부터 PV 회수 정책은 항상 기술 프리뷰 기능으로 적용됩니다. OpenShift Container Platform 4.20에서는 이 기능을 일반적으로 사용할 수 있습니다.
+#### oc-mirror plugin v2 verifies credentials and certificates before mirroring operations
 
-자세한 내용은 영구 볼륨에 대한 정책 회수 를 참조하십시오.
+With this update, the oc-mirror plugin v2 now verifies information such as registry credentials, DNS name, and SSL certificates before populating the cache and beginning mirroring operations.
+This prevents users from discovering certain problems only after the cache is populated and mirroring has begun.
 
-#### 1.3.23.8. NFS 볼륨을 생성할 때 Manila CSI 드라이버를 사용하면 일반적으로 여러 CIDR을 사용할 수 있습니다.
+#### {vmw-full} 7 and VMware Cloud Foundation 4 end of general support
 
-기본적으로 OpenShift Container Platform은 모든 IPv4 클라이언트에 대한 액세스를 제공하는 Manila 스토리지 클래스를 생성하여 단일 IP 주소 또는 서브넷으로 업데이트할 수 있습니다.
+Broadcom has ended general support for {vmw-full} 7 and VMware Cloud Foundation (VCF) 4. If your existing OpenShift Container Platform cluster is running on either of these platforms, you must plan to migrate or upgrade your VMware infrastructure to a supported version. OpenShift Container Platform supports installation on {vmw-short} 8 Update 1 or later, or VCF 5 or later.
 
-OpenShift Container Platform 4.20에서는 `nfs-ShareClient` 매개변수를 사용하여 여러 클라이언트 IP 주소 또는 서브넷을 사용하는 사용자 지정 스토리지 클래스를 정의하여 클라이언트 액세스를 제한할 수 있습니다.
+### Deprecated and removed features
 
-이 기능은 일반적으로 OpenShift Container Platform 4.20에서 사용할 수 있습니다.
+#### Images deprecated and removed features
 
-자세한 내용은 Manila 공유 액세스 규칙 사용자 지정을 참조하십시오.
+Images deprecated and removed tracker
+|====
+|Feature |4.18 |4.19 |4.20
 
-#### 1.3.23.9. AWS EFS 계정 간 절차 버전
+|Cluster Samples Operator
+|Deprecated
+|Deprecated
+|Deprecated
+|====
 
-가용성을 개선하고 STS(Security Token Service) 및 비STS 지원을 모두 제공하기 위해 AWS(Amazon Web Services) Elastic File Service(EFS) 교차 계정 지원 절차가 수정되었습니다.
+#### Installation deprecated and removed features
 
-수정된 절차를 보려면 AWS EFS 교차 계정 지원을 참조하십시오.
+Installation deprecated and removed tracker
+|====
+|Feature |4.18 |4.19 |4.20
 
-#### 1.3.24.1. 가져오기 흐름에서 사용자 정의 애플리케이션 아이콘 지원
+|`--cloud` parameter for `oc adm release extract`
+|Deprecated
+|Deprecated
+|Deprecated
 
-이번 업데이트 이전에는 컨테이너 이미지 양식 흐름에 애플리케이션에 대한 제한된 사전 정의된 아이콘 세트만 제공했습니다.
+|CoreDNS wildcard queries for the `cluster.local` domain
+|Deprecated
+|Deprecated
+|Deprecated
 
-이번 업데이트를 통해 컨테이너 이미지 양식을 통해 애플리케이션을 가져올 때 사용자 정의 아이콘을 추가할 수 있습니다. 기존 애플리케이션의 경우 `app.openshift.io/custom-icon` 주석을 적용하여 해당 토폴로지 노드에 사용자 정의 아이콘을 추가합니다.
+|`compute.platform.openstack.rootVolume.type` for {rh-openstack}
+|Deprecated
+|Deprecated
+|Deprecated
 
-결과적으로 토폴로지 보기에서 애플리케이션을 더 잘 식별하고 프로젝트를 보다 명확하게 구성할 수 있습니다.
+|`controlPlane.platform.openstack.rootVolume.type` for {rh-openstack}
+|Deprecated
+|Deprecated
+|Deprecated
 
-#### 1.4.1. MachineOSConfig 이름 지정 변경
+|`ingressVIP` and `apiVIP` settings in the `install-config.yaml` file for installer-provisioned infrastructure clusters
+|Deprecated
+|Deprecated
+|Deprecated
 
-클러스터상의 이미지 모드에서 사용되는 `MachineOSConfig` 오브젝트의 이름은 이제 사용자 정의 계층화된 이미지를 배포하려는 머신 구성 풀과 동일해야 합니다. 이전에는 모든 이름을 사용할 수 있었습니다. 이러한 변경으로 인해 각 머신 구성 풀에서 여러 `MachineOSConfig` 오브젝트를 사용하지 않습니다.
+|Package-based {op-system-base} compute machines
+|Deprecated
+|Removed
+|Removed
 
-#### 1.4.2. oc-mirror 플러그인 v2는 미러링 작업 전에 인증 정보 및 인증서 확인
+|`platform.aws.preserveBootstrapIgnition` parameter for {aws-first}
+|Deprecated
+|Deprecated
+|Deprecated
 
-이번 업데이트를 통해 oc-mirror 플러그인 v2는 이제 캐시를 채우고 미러링 작업을 시작하기 전에 레지스트리 인증 정보, DNS 이름 및 SSL 인증서와 같은 정보를 확인합니다. 이렇게 하면 캐시가 채워지고 미러링이 시작된 후에만 사용자가 특정 문제를 검색하지 못하도록 합니다.
+|Installing a cluster on {aws-short} with compute nodes in {aws-short} Outposts
+|Deprecated
+|Deprecated
+|Deprecated
+|====
 
-#### 1.4.3. VMware vSphere 7 및 VMware Cloud Foundation 4 일반 지원 종료
+#### Machine Management deprecated and removed features
 
-Broadcom은 VMware vSphere 7 및 VMware Cloud Foundation (VCF) 4에 대한 일반 지원을 종료합니다. 기존 OpenShift Container Platform 클러스터가 이러한 플랫폼 중 하나에서 실행 중인 경우 VMware 인프라를 지원되는 버전으로 마이그레이션하거나 업그레이드해야 합니다.
+Machine management deprecated and removed tracker
+|====
+|Feature |4.18 |4.19|4.20
 
-OpenShift Container Platform은 vSphere 8 Update 1 이상 또는 VCF 5 이상에 설치를 지원합니다.
+|Confidential Computing with AMD Secure Encrypted Virtualization for {gcp-first}
+|General Availability
+|General Availability
+|Deprecated
+|====
 
-#### 1.5.1. 더 이상 사용되지 않거나 삭제된 기능 이미지
+#### Networking deprecated and removed features
 
-| 기능 | 4.18 | 4.19 | 4.20 |
+Networking deprecated and removed tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|iptables
+|Deprecated
+|Deprecated
+|Deprecated
+
+|====
+
+#### Node deprecated and removed features
+
+Node deprecated and removed tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|`ImageContentSourcePolicy` (ICSP) objects
+|Deprecated
+|Deprecated
+|Deprecated
+
+|Kubernetes topology label `failure-domain.beta.kubernetes.io/zone`
+|Deprecated
+|Deprecated
+|Deprecated
+
+|Kubernetes topology label `failure-domain.beta.kubernetes.io/region`
+|Deprecated
+|Deprecated
+|Deprecated
+
+|cgroup v1
+|Deprecated
+|Removed
+|Removed
+|====
+
+#### OpenShift CLI (oc) deprecated and removed features
+
+OpenShift CLI (oc) deprecated and removed tracker
+|====
+|Feature |4.18 |4.19|4.20
+
+|oc-mirror plugin v1
+|Deprecated
+|Deprecated
+|Deprecated
+
+|Docker v2 registries
+|General Availability
+|General Availability
+|Deprecated
+|====
+
+#### Operator lifecycle and development deprecated and removed features
+
+Operator lifecycle and development deprecated and removed tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|Operator SDK
+|Deprecated
+|Removed
+|Removed
+
+|Scaffolding tools for Ansible-based Operator projects
+|Deprecated
+|Removed
+|Removed
+
+|Scaffolding tools for Helm-based Operator projects
+|Deprecated
+|Removed
+|Removed
+
+|Scaffolding tools for Go-based Operator projects
+|Deprecated
+|Removed
+|Removed
+
+|Scaffolding tools for Hybrid Helm-based Operator projects
+|Removed
+|Removed
+|Removed
+
+|Scaffolding tools for Java-based Operator projects
+|Removed
+|Removed
+|Removed
+
+|SQLite database format for Operator catalogs
+|Deprecated
+|Deprecated
+|Deprecated
+|====
+
+#### Storage deprecated and removed features
+
+Storage deprecated and removed tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|Shared Resources CSI Driver Operator
+|Removed
+|Removed
+|Removed
+|====
+
+#### Web console deprecated and removed features
+
+Web console deprecated and removed tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|`useModal` hook for dynamic plugin SDK
+|General Availability
+|Deprecated
+|Deprecated
+
+|Patternfly 4
+|Deprecated
+|Removed
+|Removed
+
+|====
+
+#### Workloads deprecated and removed features
+
+Workloads deprecated and removed tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|`DeploymentConfig` objects
+|Deprecated
+|Deprecated
+|Deprecated
+|====
+
+#### Deprecated features
+
+##### Deprecation of AMD Secure Encrypted Virtualization
+
+The use of Confidential Computing with AMD Secure Encrypted Virtualization (AMD SEV) on {gcp-first} has been deprecated and might be removed in a future release.
+
+You can use AMD Secure Encrypted Virtualization Secure Nested Paging (AMD SEV-SNP) instead.
+##### Docker v2 registries deprecated
+
+Support for Docker v2 registries is deprecated and is planned for removal in a future release. A registry that supports the Open Container Initiative (OCI) specification will be required for all mirroring operations in a future release. Additionally, `oc-mirror` v2 now only generates custom catalog images in the OCI format, whereas the deprecated `oc-mirror` v1 still supports the Docker v2 format.
+
+##### Red Hat Marketplace is deprecated
+
+The Red Hat Marketplace is deprecated. Customers who use the partner software from the Marketplace should contact the software vendor about how to migrate from the Marketplace Operator to an Operator in the Red Hat Ecosystem Catalog. It is expected that the Marketplace index will be removed in an upcoming OpenShift Container Platform release. For more information, see [Sunset of the Red Hat Marketplace, operated by IBM](https://access.redhat.com/articles/7130828).
+
+##### {rhq-cso} deprecation
+
+The {rhq-cso} is deprecated and is planned for removal in a future release of OpenShift Container Platform. The official replacement product of the {rhq-cso} is Red Hat Advanced Cluster Security for Kubernetes.
+
+#### Removed features
+
+##### Removed Kubernetes APIs
+
+OpenShift Container Platform 4.20 removed the following Kubernetes APIs. You must migrate your manifests, automation, and API clients to use the new, supported API versions before updating to 4.20. For more information about migrating removed APIs, see the [Kubernetes documentation](https://kubernetes.io/docs/reference/using-api/deprecation-guide/).
+
+Kubernetes APIs removed from OpenShift Container Platform 4.20
+| Resource | Removed API | Migrate to | Notable changes |
 | --- | --- | --- | --- |
-| Cluster Samples Operator | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 |
+| `MutatingWebhookConfiguration` | - | - | - |
+| `admissionregistration.k8s.io/v1beta1` | - | - | - |
+| `admissionregistration.k8s.io/v1` | - | - | - |
+| [Yes](https://kubernetes.io/docs/reference/using-api/deprecation-guide/#webhook-resources-v122) | - | - | - |
+| `ValidatingAdmissionPolicy` | - | - | - |
+| `admissionregistration.k8s.io/v1beta1` | - | - | - |
+| `admissionregistration.k8s.io/v1` | - | - | - |
+| [Yes](https://kubernetes.io/docs/reference/using-api/deprecation-guide/#webhook-resources-v122) | - | - | - |
+| `ValidatingAdmissionPolicyBinding` | - | - | - |
+| `admissionregistration.k8s.io/v1beta1` | - | - | - |
+| `admissionregistration.k8s.io/v1` | - | - | - |
+| [Yes](https://kubernetes.io/docs/reference/using-api/deprecation-guide/#webhook-resources-v122) | - | - | - |
+| `ValidatingWebhookConfiguration` | - | - | - |
+| `admissionregistration.k8s.io/v1beta1` | - | - | - |
+| `admissionregistration.k8s.io/v1` | - | - | - |
+| [Yes](https://kubernetes.io/docs/reference/using-api/deprecation-guide/#webhook-resources-v122) | - | - | - |
+
+### Bug fixes
+
+#### Bare Metal Hardware Provisioning
+
+* Before this update, when installing a dual-stack cluster on bare metal by using installer-provisioned infrastructure, the installation failed because the Virtual Media URL was IPv4 instead of IPv6. As IPv4 was unreachable, the bootstrap failed on the virtual machine (VM) and cluster nodes were not created. With this release, when you install a dual-stack cluster on bare metal for installer-provisioned infrastructure, the dual-stack cluster uses the Virtual Media URL IPv6 and the issue is resolved. ([OCPBUGS-60240](https://issues.redhat.com/browse/OCPBUGS-60240))
+
+* Before this update, when installing a cluster with the bare metal as a service (BMaaS) API, an ambiguous validation error was reported. When you set an image URL without a checksum, BMaaS failed to validate the deployment image source information. With this release, when you do not provide a required checksum for an image, a clear message is reported. ([OCPBUGS-57472](https://issues.redhat.com/browse/OCPBUGS-57472))
+
+* Before this update, when installing a cluster using bare metal, if cleaning was not disabled, the hardware tried to delete any Software RAID configuration before it ran the `coreos-installer` tool. With this release, the issue is resolved. ([OCPBUGS-56029](https://issues.redhat.com/browse/OCPBUGS-56029))
+
+* Before this update, by using a Redfish system ID, such as `redfish://host/redfish/v1/` instead of `redfish://host/redfish/v1/Self`, in a Baseboard Management Console (BMC) URL, a registration error about an invalid JSON was reported. This issue was caused by a bug in the Bare Metal Operator (BMO). With this release, BMO now handles URLs without a Redfish system ID as a valid address without causing a JSON parsing issue. This fix improves the software handling of a missing Redfish system ID in BMC URLs. ([OCPBUGS-55717](https://issues.redhat.com/browse/OCPBUGS-55717))
+
+* Before this update, virtual media boot attempts sometimes failed because some models of SuperMicro such as `ars-111gl-nhr` used a different virtual media device string than other SuperMicro machines. With this release, an extra conditional check is added to sushy library code to check for the specific model affected and to adjust its behavior. As a result, Supermicro `ars-111gl-nhr` can boot from virtual media. ([OCPBUGS-55434](https://issues.redhat.com/browse/OCPBUGS-55434))
+
+* Before this update, RAM Disk logs did not include clear file separators, which occasionally caused the content to overlap on a single line. As a consequence, users could not parse RAM Disk logs. With this release, RAM Disk logs include clear file headers to indicate the boundary between the content of each file. As a result, the readability of RAM Disk logs for users is improved. ([OCPBUGS-55381](https://issues.redhat.com/browse/OCPBUGS-55381))
+
+* Before this update, during Ironic Python Agent (IPA) deployments, the RAM disk logs in the `metal3-ramdisk-logs` container did not include `NetworkManager` logs. The absence of `NetworkManager` logs hindered effective debugging, which affected network issue resolution. With this release, the existing RAM disk logs in the `metal3-ramdisk-logs` container of a metal3 pod include the entire journal from the host rather than just the `dmesg` and IPA logs. As result, IPA logs provide comprehensive `NetworkManager` data for improved debugging. ([OCPBUGS-55350](https://issues.redhat.com/browse/OCPBUGS-55350))
+
+* Before this update, when the provisioning network was disabled in the cluster configuration, you could create a bare-metal host with a driver that required a network boot, for example Intelligent Platform Management Interface (IPMI) or Redfish without virtual media. As a result, boot failures occurred during inspection or provisioning because the correct DHCP options could not be identified. With this release, when you create a bare-metal host in this scenario the host fails to register and the reported error references the disabled provisioning network. To create the host, you must enable the provisioning network or use a virtual-media-based driver, for example, Redfish virtual media. ([OCPBUGS-54965](https://issues.redhat.com/browse/OCPBUGS-54965))
+
+#### Cloud Compute
+
+* Before this update, {aws-short} compute machine sets could include a null value for the `userDataSecret` parameter.
+Using a null value sometimes caused machines to get stuck in the `Provisioning` state. With this release, the `userDataSecret` parameter requires a value.
+([OCPBUGS-55135](https://issues.redhat.com/browse/OCPBUGS-55135))
+
+* Before this update, OpenShift Container Platform clusters on {aws-short} that were created with version 4.13 or earlier could not update to version 4.19.
+Clusters that were created with version 4.14 and later have an {aws-short} `cloud-conf` ConfigMap by default, and this ConfigMap is required starting in OpenShift Container Platform 4.19.
+With this release, the Cloud Controller Manager Operator creates a default `cloud-conf` ConfigMap when none is present on the cluster.
+This change enables clusters that were created with version 4.13 or earlier to update to version 4.19.
+([OCPBUGS-59251](https://issues.redhat.com/browse/OCPBUGS-59251))
+
+* Before this update, a `failed to find machine for node ...` appeared in the logs when the `InternalDNS` address for a machine was not set as expected.
+As a consequence, the user might interpret this error as the machine not existing.
+With this release, the log message reads `failed to find machine with InternalDNS matching ...`.
+As a result, the user has a clearer indication of why the match is failing.
+([OCPBUGS-19856](https://issues.redhat.com/browse/OCPBUGS-19856))
+
+* Before this update, a bug fix altered the availability set configuration by changing the fault domain count to use the maximum available value instead of being fixed at 2.
+This inadvertently caused scaling issues for compute machine sets that were created prior to the bug fix, because the controller attempted to modify immutable availability sets.
+With this release, availability sets are no longer modified after creation, allowing affected compute machine sets to scale properly.
+([OCPBUGS-56380](https://issues.redhat.com/browse/OCPBUGS-56380))
+
+* Before this update, compute machine sets migrating from the Cluster API to the Machine API got stuck in the `Migrating` state.
+As a consequence, the compute machine set could not finish transitioning to use a different authoritative API or perform further reconciliation of the `MachineSet` object status.
+With this release, the migration controllers watch for changes in Cluster API resources and react to authoritative API transitions.
+As a result, compute machine sets successfully transition from the Cluster API to the Machine API.
+([OCPBUGS-56487](https://issues.redhat.com/browse/OCPBUGS-56487))
+
+* Before this update, for the `maxUnhealthy` field in the `MachineHealthCheck` custom resource definition (CRD), it did not document the default value.
+With this release, the CRD documents the default value.
+([OCPBUGS-61314](https://issues.redhat.com/browse/OCPBUGS-61314))
+
+* Before this update, it was possible to specify the use of the `CapacityReservationsOnly` capacity reservation behavior and Spot Instances in the same machine template.
+As a consequence, machines with these two incompatible settings were created.
+With this release, validation of machine templates ensures that these two incompatible settings are not used in the same machine template.
+As a result, machines with these two incompatible settings cannot be created. ([OCPBUGS-60943](https://issues.redhat.com/browse/OCPBUGS-60943))
 
-#### 1.5.2. 더 이상 사용되지 않거나 삭제된 기능 설치
+* Before this update, on clusters that support migrating Machine API resources to Cluster API resources, deleting a nonauthoritative machine did not delete the corresponding authoritative machine.
+As a consequence, orphaned machines that should have been cleaned up remained on the cluster and could cause a resource leak.
+With this release, deleting a nonauthoritative machine triggers propagation of the deletion to the corresponding authoritative machine.
+As a result, deletion requests on nonauthoritative machine correctly cascade, preventing orphaned authoritative machines and ensuring consistency in machine cleanup.
+([OCPBUGS-55985](https://issues.redhat.com/browse/OCPBUGS-55985))
 
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| `oc adm release extract` 의 `--cloud` 매개변수 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 |
-| `cluster.local` 도메인에 대한 CoreDNS 와일드카드 쿼리 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 |
-| `compute.platform.openstack.rootVolume.type` for RHOSP | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 |
-| `controlPlane.platform.openstack.rootVolume.type` for RHOSP | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 |
-| 설치 관리자 프로비저닝 인프라 클러스터의 `install-config.yaml` 파일의 `ingressVIP` 및 `apiVIP` 설정 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 |
-| 패키지 기반 RHEL 컴퓨팅 머신 | 더 이상 사용되지 않음 | 제거됨 | 제거됨 |
-| AWS(Amazon Web Services)의 `platform.aws.preserveBootstrapIgnition` 매개변수 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 |
-| AWS Outposts의 컴퓨팅 노드를 사용하여 AWS에 클러스터 설치 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 |
+* Before this update, on clusters that support migrating Machine API resources to Cluster API resources, the {cluster-capi-operator} could create an authoritative Cluster API compute machine set in the `Paused` state.
+As a consequence, the newly created Cluster API compute machine set could not reconcile or scale machines even though it was using the authoritative API.
+With this release, the Operator now ensures that Cluster API compute machine sets are created in an unpaused state when the Cluster API is authoritative.
+As a result, newly created Cluster API compute machine sets are reconciled immediately and scaling and machine lifecycle operations proceed as intended when the Cluster API is authoritative.
+([OCPBUGS-56604](https://issues.redhat.com/browse/OCPBUGS-56604))
 
-#### 1.5.3. 머신 관리 더 이상 사용되지 않거나 삭제된 기능
+* Before this update, scaling large numbers of nodes was slow because scaling requires reconciling each machine several times and each machine was reconciled individually.
+With this release, up to ten machines can be reconciled concurrently.
+This change improves the processing speed for machines during scaling.
+([OCPBUGS-59376](https://issues.redhat.com/browse/OCPBUGS-59376))
 
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| Google Cloud용 AMD 보안 암호화 가상화를 사용하는 기밀 컴퓨팅 | 정식 출시일 (GA) | 정식 출시일 (GA) | 더 이상 사용되지 않음 |
+* Before this update, the {cluster-capi-operator} status controller used an unsorted list of related objects, leading to status updates when there were no functional changes.
+As a consequence, users would see significant noise in the {cluster-capi-operator} object and in logs due to continuous and unnecessary status updates.
+With this release, the status controller logic sorts the list of related objects before comparing them for changes.
+As a result, a status update only occurs when there is a change to the Operator's state.
+([OCPBUGS-56805](https://issues.redhat.com/browse/OCPBUGS-56805), [OCPBUGS-58880](https://issues.redhat.com/browse/OCPBUGS-58880))
 
-#### 1.5.4. 더 이상 사용되지 않거나 삭제된 네트워킹
+* Before this update, the `config-sync-controller` component of the Cloud Controller Manager Operator did not display logs.
+The issue is resolved in this release.
+([OCPBUGS-56508](https://issues.redhat.com/browse/OCPBUGS-56508))
 
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| iptables | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 |
+* Before this update, the Control Plane Machine Set configuration used availability zones from compute machine sets.
+This is not a valid configuration.
+As a consequence, the Control Plane Machine Set could not be generated when the control plane machines were in a single zone while compute machine sets spanned multiple zones.
+With this release, the Control Plane Machine Set derives an availability zone configuration from existing control plane machines.
+As a result, the Control Plane Machine Set generates a valid zone configuration that accurately reflects the current control plane machines.
+([OCPBUGS-52448](https://issues.redhat.com/browse/OCPBUGS-52448))
 
-#### 1.5.5. 더 이상 사용되지 않거나 삭제된 노드 기능
+* Before this update, the controller that annotates a Machine API compute machine set did not check whether the Machine API was authoritative before adding scale-from-zero annotations.
+As a consequence, the controller repeatedly added these annotations and caused a loop of continuous changes to the `MachineSet` object.
+With this release, the controller checks the value of the `authoritativeAPI` field before adding scale-from-zero annotations.
+As a result, the controller avoids the looping behavior by only adding these annotations to a Machine API compute machine set when the Machine API is authoritative.
+([OCPBUGS-57581](https://issues.redhat.com/browse/OCPBUGS-57581))
 
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| `ImageContentSourcePolicy` (ICSP) 오브젝트 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 |
-| Kubernetes 토폴로지 레이블 `failure-domain.beta.kubernetes.io/zone` | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 |
-| Kubernetes 토폴로지 레이블 `failure-domain.beta.kubernetes.io/region` | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 |
-| cgroup v1 | 더 이상 사용되지 않음 | 제거됨 | 제거됨 |
+* Before this update, the Machine API Operator attempted to reconcile `Machine` resources on platforms other than {aws-short} where the `.status.authoritativeAPI` field was not populated.
+As a consequence, compute machines remained in the `Provisioning` state indefinitely and never became operational.
+With this release, the Machine API Operator now populates the empty `.status.authoritativeAPI` field with the corresponding value in the machine specification.
+A guard is also added to the controllers to handle cases where this field might still be empty.
+As a result, `Machine` and `MachineSet` resources are reconciled properly and compute machines no longer remain in the `Provisioning` state indefinitely.
+([OCPBUGS-56849](https://issues.redhat.com/browse/OCPBUGS-56849))
 
-#### 1.5.6. OpenShift CLI (oc) 더 이상 사용되지 않거나 삭제된 기능
+* Before this update, the Machine API Provider Azure used an old version of the Azure SDK, which used an old API version that did not support referencing a Capacity Reservation group.
+As a consequence, creating a Machine API machine that referenced a Capacity Reservation group in another subscription resulted in an Azure API error.
+With this release, the Machine API Provider Azure uses a version of the Azure SDK that supports this configuration.
+As a result, creating a Machine API machine that references a Capacity Reservation group in another subscription works as expected.
+([OCPBUGS-55372](https://issues.redhat.com/browse/OCPBUGS-55372))
 
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| oc-mirror 플러그인 v1 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 |
-| Docker v2 레지스트리 | 정식 출시일 (GA) | 정식 출시일 (GA) | 더 이상 사용되지 않음 |
+* Before this update, the two-way synchronization controller on clusters that support migrating Machine API resources to Cluster API resources did not correctly compare the machine specification when converting an authoritative Cluster API machine template to a Machine API machine set.
+As a consequence, changes to the Cluster API machine template specification were not synchronized to the Machine API machine set.
+With this release, changes to the comparison logic resolve the issue.
+As a result, the Machine API machine set synchronizes correctly after the Cluster API machine set references the new Cluster API machine template.
+([OCPBUGS-56010](https://issues.redhat.com/browse/OCPBUGS-56010))
 
-#### 1.5.7. Operator 라이프사이클 및 개발 중단 및 제거된 기능
+* Before this update, the two-way synchronization controller on clusters that support migrating Machine API resources to Cluster API resources did not delete the machine template when its corresponding Machine API machine set was deleted.
+As a consequence, unneeded Cluster API machine templates persisted in the cluster and cluttered the `openshift-cluster-api` namespace.
+With this release, the two-way synchronization controller correctly handles deletion synchronization for the machine template.
+As a result, deleting a Machine API authoritative machine set deletes the corresponding Cluster API machine template.
+([OCPBUGS-57195](https://issues.redhat.com/browse/OCPBUGS-57195))
 
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| Operator SDK | 더 이상 사용되지 않음 | 제거됨 | 제거됨 |
-| Ansible 기반 Operator 프로젝트를 위한 Scaffolding 툴 | 더 이상 사용되지 않음 | 제거됨 | 제거됨 |
-| Helm 기반 Operator 프로젝트의 스캐폴딩 툴 | 더 이상 사용되지 않음 | 제거됨 | 제거됨 |
-| Go 기반 Operator 프로젝트를 위한 Scaffolding 툴 | 더 이상 사용되지 않음 | 제거됨 | 제거됨 |
-| 하이브리드 Helm 기반 Operator 프로젝트의 스캐폴딩 툴 | 제거됨 | 제거됨 | 제거됨 |
-| Java 기반 Operator 프로젝트를 위한 Scaffolding 툴 | 제거됨 | 제거됨 | 제거됨 |
-| Operator 카탈로그의 SQLite 데이터베이스 형식 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 |
+* Before this update, the two-way synchronization controller on clusters that support migrating Machine API resources to Cluster API resources prematurely reported a successful migration.
+As a consequence, if any errors occurred when updating the status of related objects, the operation was not retried.
+With this release, the controller ensures that all related object statuses are written before reporting a successful status.
+As a result, the controller handles errors during migration better.
+([OCPBUGS-57040](https://issues.redhat.com/browse/OCPBUGS-57040))
 
-#### 1.5.8. 스토리지 더 이상 사용되지 않거나 삭제된 기능
+#### Cloud Credential Operator
 
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| Shared Resources CSI Driver Operator | 제거됨 | 제거됨 | 제거됨 |
+* Before this update, the `ccoctl` command unnecessarily required the `baseDomainResourceGroupName` parameter when creating the OpenID Connect (OIDC) issuer and managed identities for a private cluster by using {entra-first}. As a consequence, an error displayed when `ccoctl` tried to create private clusters. With this release, the `baseDomainResourceGroupName` parameter is removed as a requirement. As a result, the process for creating a private cluster on {azure-full} is logical and consistent with expectations. ([OCPBUGS-34993](https://issues.redhat.com/browse/OCPBUGS-34993))
 
-#### 1.5.9. 웹 콘솔 더 이상 사용되지 않거나 삭제된 기능
+#### Cluster Autoscaler
 
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| 동적 플러그인 SDK에 `Modal 후크 사용` | 정식 출시일 (GA) | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 |
-| PatternFly 4 | 더 이상 사용되지 않음 | 제거됨 | 제거됨 |
+* Before this update, the cluster autoscaler attempted to include machine objects that were in a deleting state. As a consequence, the cluster autoscaler count of machines was inaccurate. This issue caused the cluster autoscaler to add additional taints that were not needed. With this release, the autoscaler accurately counts the machines. ([OCPBUGS-60035](https://issues.redhat.com/browse/OCPBUGS-60035))
 
-#### 1.5.10. 워크로드 더 이상 사용되지 않거나 삭제된 기능
+* Before this update, when you created a cluster autoscaler object with the Cluster Autoscaler Operator enabled in the cluster, two `cluster-autoscaler-default` pods in the `openshift-machine-api` were sometimes created at the same time and one of the pods was immediately killed. With this release, only one pod is created. ([OCPBUGS-57041](https://issues.redhat.com/browse/OCPBUGS-57041))
 
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| `DeploymentConfig` 오브젝트 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 | 더 이상 사용되지 않음 |
+#### Cluster Version Operator
 
-#### 1.5.11.1. AMD 보안 암호화 가상화 사용 중단
+* Before this update, the status of the `ClusterVersion` condition could incorrectly show `ImplicitlyEnabled` instead of `ImplicitlyEnabledCapabilities`. With this release, the `ClusterVersion` condition type is fixed and changed from `ImplicitlyEnabled` to `ImplicitlyEnabledCapabilities`. ([OCPBUGS-56114](https://issues.redhat.com/browse/OCPBUGS-56114))
 
-Google Cloud에서 AMD Secure Encrypted Virtualization (AMD SEV)에서 기밀 컴퓨팅을 사용하는 것은 더 이상 사용되지 않으며 향후 릴리스에서 제거될 수 있습니다.
+#### config-operator
 
-AMD Secure Encrypted Virtualization Secure Nested Paging(AMD SEV-SNP)을 대신 사용할 수 있습니다.
+* Before this update, the cluster incorrectly switched to the `CustomNoUpgrade` state without the correct `featureGate` configuration. As a consequence, empty `featureGates` and subsequent controller panics occurred. With this release, the `featureGate` configuration for the `CustomNoUpgrade` cluster state matches the default which prevents empty `featureGates` and subsequent controller panics. ([OCPBUGS-57187](https://issues.redhat.com/browse/OCPBUGS-57187))
 
-#### 1.5.11.2. Docker v2 레지스트리 더 이상 사용되지 않음
+#### Dev Console
 
-Docker v2 레지스트리에 대한 지원은 더 이상 사용되지 않으며 향후 릴리스에서 제거될 예정입니다. 향후 릴리스의 모든 미러링 작업에 OCI(Open Container Initiative) 사양을 지원하는 레지스트리가 필요합니다.
+* Before this update, some entries on the *Quick Starts* page displayed duplicate link buttons. With this update, the duplicates are removed, and the link buttons are correctly displayed. ([OCPBUGS-60373](https://issues.redhat.com/browse/OCPBUGS-60373))
 
-또한 v2는 이제 OCI 형식으로만 사용자 정의 카탈로그 이미지를 생성하는 반면 더 이상 사용되지 않는 v1은 여전히 Docker v2 형식을 지원합니다.
+* Before this update, the onboarding modal that displayed when you first logged in was missing visuals and images, which made the modal messaging unclear. With this release, the missing elements are added to the modal. As a result, the onboarding experience provides complete visuals consistent with the overall console design. ([OCPBUGS-57392](https://issues.redhat.com/browse/OCPBUGS-57392))
 
-```shell
-oc-mirror
-```
+* Before this update, importing multiple files in the YAML editor copied the existing content and appended the new file, which created duplicates. With this release, the import behavior is fixed. As a result, the YAML editor displays only the new file content without duplication. ([OCPBUGS-45297](https://issues.redhat.com/browse/OCPBUGS-45297))
+* Before this update, the status of the `ClusterVersion` condition could incorrectly show `ImplicitlyEnabled` instead of `ImplicitlyEnabledCapabilities`. With this release, the `ClusterVersion` condition type is fixed and changed from `ImplicitlyEnabled` to `ImplicitlyEnabledCapabilities`. ([OCPBUGS-56114](https://issues.redhat.com/browse/OCPBUGS-56114))
 
-```shell
-oc-mirror
-```
+#### etcd
 
-#### 1.5.11.3. Red Hat Marketplace가 더 이상 사용되지 않음
+* Before this update, the timeout on one etcd member caused context deadlines to exceed. As a consequence, all members were declared unhealthy, even though some were reachable. With this release, if one member times out, other members are no longer incorrectly marked as unhealthy. ([OCPBUGS-60941](https://issues.redhat.com/browse/OCPBUGS-60941))
 
-Red Hat Marketplace는 더 이상 사용되지 않습니다. Marketplace의 파트너 소프트웨어를 사용하는 고객은 Marketplace Operator에서 Red Hat Ecosystem Catalog의 Operator로 마이그레이션하는 방법에 대한 소프트웨어 공급업체에 문의해야 합니다.
+* Before this update, when you deployed {sno} with many IPs on the primary interface, the IP in the etcd certificate mismatched with the IP in the config map that the API server used to connect to etcd. As a consequence, the API server pod failed during {sno} deployment, which caused cluster initialization issues. With this release, the single IP in the etcd config map matches the IP in the certificate for {sno} deployments. As a result, the API server connects to etcd by using the correct IP included in the etcd certificate, which prevents pod failure during cluster initialization. ([OCPBUGS-55404](https://issues.redhat.com/browse/OCPBUGS-55404))
 
-향후 OpenShift Container Platform 릴리스에서 Marketplace 인덱스가 제거될 것으로 예상됩니다. 자세한 내용은 IBM에서 운영하는 Red Hat Marketplace의 Sunset를 참조하십시오.
+* Before this update, during temporary downtime of the API server, the Cluster etcd Operator reported incorrect information, such as messages that the `openshift-etcd` namespace was non-existent. With this update, the Cluster etcd Operator status message correctly indicates API server unavailability instead of suggesting the absence of the `openshift-etcd` namespace. As a result, the Cluster etcd Operator status accurately reflects the presence of the `openshift-etcd` namespace, enhancing system reliability. ([OCPBUGS-44570](https://issues.redhat.com/browse/OCPBUGS-44570))
 
-#### 1.5.11.4. Red Hat Quay Container Security Operator 사용 중단
+#### Extensions ({olmv1})
 
-Red Hat Quay Container Security Operator는 더 이상 사용되지 않으며 향후 OpenShift Container Platform 릴리스에서 제거될 예정입니다. Red Hat Quay Container Security Operator의 공식 교체 제품은 Red Hat Advanced Cluster Security for Kubernetes입니다.
+* Before this update, the preflight custom resource definition (CRD) safety check in {olmv1} blocked updates if it detected changes in the description fields of a CRD. With this update, the preflight CRD safety check does not block updates when there are changes to documentation fields. ([OCPBUGS-55051](https://issues.redhat.com/browse/OCPBUGS-55051))
 
-#### 1.5.12.1. 제거된 Kubernetes API
+* Before this update, the catalogd and Operator Controller components did not display the correct version and commit information in the {oc-first}. With this update, the correct commit and version information is displayed. ([OCPBUGS-23055](https://issues.redhat.com/browse/OCPBUGS-23055))
 
-OpenShift Container Platform 4.20은 다음 Kubernetes API를 제거했습니다. 4.20으로 업데이트하기 전에 지원되는 새로운 API 버전을 사용하도록 매니페스트, 자동화 및 API 클라이언트를 마이그레이션해야 합니다. 제거된 API 마이그레이션에 대한 자세한 내용은 Kubernetes 설명서 를 참조하십시오.
+#### Installer
 
-| 리소스 | 제거된 API | 마이그레이션 대상 | 주요 변경 사항 |
-| --- | --- | --- | --- |
-| `MutatingWebhookConfiguration` | `admissionregistration.k8s.io/v1beta1` | `admissionregistration.k8s.io/v1` | 제공됨 |
-| `ValidatingAdmissionPolicy` | `admissionregistration.k8s.io/v1beta1` | `admissionregistration.k8s.io/v1` | 제공됨 |
-| `ValidatingAdmissionPolicyBinding` | `admissionregistration.k8s.io/v1beta1` | `admissionregistration.k8s.io/v1` | 제공됨 |
-| `ValidatingWebhookConfiguration` | `admissionregistration.k8s.io/v1beta1` | `admissionregistration.k8s.io/v1` | 제공됨 |
+* Before this update, when you installed a Konflux-built cluster on {ibm-power-server-name}, the installation could fail due to errors in semantic versioning (SemVer) parsing. With this release, the parsing issue has been resolved so that the installation can continue successfully. ([OCPBUGS-61120](https://issues.redhat.com/browse/OCPBUGS-61120))
 
-#### 1.6.1. 베어 메탈 하드웨어 프로비저닝
+* Before this update, when you installed a cluster on {azure-short} Stack Hub with a user-provisioned infrastructure, the API and API-int load balancers could fail to be created. As a consequence, the installation failed. With this release, the user-provisioned infrastructure templates is updated so that the load balancers are created. As a result, installation is successful. ([OCPBUGS-60545](https://issues.redhat.com/browse/OCPBUGS-60545))
 
-이번 업데이트 이전에는 설치 관리자 프로비저닝 인프라를 사용하여 베어 메탈에 듀얼 스택 클러스터를 설치할 때 가상 미디어 URL이 IPv6 대신 IPv4 때문에 설치에 실패했습니다. IPv4에 연결할 수 없기 때문에 VM(가상 머신)에서 부트스트랩이 실패하고 클러스터 노드가 생성되지 않았습니다.
+* Before this update, when you installed a cluster on {gcp-short}, the installation program read and processed the `install-config.yaml` file even when an unrecoverable error was reported about not finding a matching public DNS zone. This error was due to an invalid `baseDomain` parameter. As a consequence, cluster administrators recreated the `install-config.yaml` file unnecessarily. With this release, when the installation program reports this error the installation progam does not read and process the `install-config.yaml` file. ([OCPBUGS-59430](https://issues.redhat.com/browse/OCPBUGS-59430))
 
-이번 릴리스에서는 설치 관리자 프로비저닝 인프라의 베어 메탈에 듀얼 스택 클러스터를 설치할 때 듀얼 스택 클러스터에서 Virtual Media URL IPv6를 사용하고 문제가 해결되었습니다. (OCPBUGS-60240)
+* Before this update, {ibm-cloud-title} was omitted from the list of platforms that supported {sno} installation in the validation code. As a consequence, users could not install a single-node configuration on {ibm-cloud-title} because of a validation error. With this release, {ibm-cloud-title} support for single-node installations is enabled. As a result, users can complete single-node installations on {ibm-cloud-title}. ([OCPBUGS-59220](https://issues.redhat.com/browse/OCPBUGS-59220))
 
-이번 업데이트 이전에는 베어 메탈을 서비스(BMaaS) API로 사용하여 클러스터를 설치할 때 모호한 검증 오류가 보고되었습니다. 체크섬 없이 이미지 URL을 설정하면 BMaaS가 배포 이미지 소스 정보를 검증하지 못했습니다. 이번 릴리스에서는 이미지에 필요한 체크섬을 제공하지 않으면 명확한 메시지가 보고됩니다. (OCPBUGS-57472)
+* Before this update, installing {sno} on `platform: None` with user-provisioned infrastructure was not supported, which led to installation failures. With this release, {sno} installation on `platform: None` is supported. ([OCPBUGS-58216](https://issues.redhat.com/browse/OCPBUGS-58216))
 
-이번 업데이트 이전에는 베어 메탈을 사용하여 클러스터를 설치할 때 정리가 비활성화되지 않은 경우 하드웨어는 `coreos-installer` 도구를 실행하기 전에 소프트웨어 RAID 구성을 삭제하려고 했습니다. 이번 릴리스에서는 문제가 해결되었습니다. (OCPBUGS-56029)
+* Before this update, when you installed OpenShift Container Platform on {aws-first}, the Machine Config Operator (MCO) for disabling boot image management failed to check edge compute machine pools. When determining whether to disable boot image management, the installation program only checked the first compute machine pool entry in the `install-config.yaml`. As a consequence, when you specified multiple compute pools but only the second had a custom Amazon Machine Image (AMI), the installation program did not disable MCO boot image management and the MCO could overwrite the custom AMI. With this release, the installation program checks all edge compute machine pools for custom images. As a result, boot image management is disabled when a custom image is specified in any machine pool. ([OCPBUGS-57803](https://issues.redhat.com/browse/OCPBUGS-57803))
 
-이번 업데이트 이전에는 BMC(Baseboard Management Console) URL에서 `redfish://host/redfish/v1/` S1/ 대신 `redfish://host/redfish/v1/` f와 같은 Redfish 시스템 ID를 사용하여 잘못된 JSON에 대한 등록 오류가 보고되었습니다.
+* Before this update, the Agent-based Installer set the permissions for the etcd directory `/var/lib/etcd/member` as `0755` when using an {sno} deployment instead of `0700`, which is correctly set on a multi-node deployment. With this release, the etcd directory `/var/lib/etcd/member` permissions are set to `0700` for {sno} deployments. ([OCPBUGS-57201](https://issues.redhat.com/browse/OCPBUGS-57021))
 
-이 문제는 Bare Metal Operator (BMO)의 버그로 인해 발생했습니다. 이번 릴리스에서는 이제 BMO에서 Redfish 시스템 ID가 없는 URL을 유효한 주소로 처리하며 JSON 구문 분석 문제를 발생시키지 않습니다.
+* Before this update, when you used the Agent-based Installer, pressing the TAB key immediately after escaping the Network Manager Text User Interface (TUI) sometimes failed to register, which caused the cursor to remain on `Configure Network` instead of moving to `Quit`. As a consequence, you were not able to quit the agent console application that verifies whether the current host can retrieve release images. With this release, the TAB key is always registered. ([OCPBUGS-56934](https://issues.redhat.com/browse/OCPBUGS-56934))
 
-이번 수정을 통해 BMC URL에서 누락된 Redfish 시스템 ID 소프트웨어 처리가 향상되었습니다. (OCPBUGS-55717)
+* Before this update, when you used the Agent-based Installer, exiting the NetworkManager TUI would sometimes result in a blank screen, rather than displaying an error or proceeding with the installation. With this update, the blank screen is not displayed. ([OCPBUGS-56880](https://issues.redhat.com/browse/OCPBUGS-56880))
 
-이번 업데이트 이전에는 `ars-111gl-nhr` 와 같은 SuperMicro의 일부 모델에서 다른 SuperMicro 머신과 다른 가상 미디어 장치 문자열을 사용하므로 가상 미디어 부팅 시도가 실패하는 경우가 있었습니다. 이번 릴리스에서는 sushy 라이브러리 코드에 추가 조건부 검사가 추가되어 영향을 받는 특정 모델을 확인하고 동작을 조정합니다.
+* Before this update, when you installed a cluster on {aws-short}, if you did not configure {aws-short} credentials before running any `openshift-install create` command, the installation program failed. With this update, the installation does not fail if you do not configure {aws-short} credentials before running any `openshift-install create` command. ([OCPBUGS-56658](https://issues.redhat.com/browse/OCPBUGS-56658))
 
-결과적으로 Supermicro `ars-111gl-nhr` 는 가상 미디어에서 부팅할 수 있습니다. (OCPBUGS-55434)
+* Before this update, installing a cluster on {vmw-full} failed when the API VIP and the ingress VIP used one load balancer IP address. With this release, the API VIP and the ingress VIP are now distinct in `machineNetworks` and the issue is resolved. ([OCPBUGS-56601](https://issues.redhat.com/browse/OCPBUGS-56601))
 
-이번 업데이트 이전에는 RAM 디스크 로그에 명확한 파일 구분 기호가 포함되어 있지 않아 한 줄에 콘텐츠가 중복되는 경우가 있었습니다. 결과적으로 사용자가 RAM 디스크 로그를 구문 분석할 수 없었습니다.
+* Before this update, when you use the Agent-based Installer, setting the `additionalTrustBundlePolicy` field would have no effect. As a consequence, other overrides such the `fips` parameter were ignored. With this update, the `additionalTrustBundlePolicy` parameter is correctly imported and other overrides are not ignored. ([OCPBUGS-56596](https://issues.redhat.com/browse/OCPBUGS-56596))
 
-이번 릴리스에서는 RAM 디스크 로그에 각 파일의 콘텐츠 사이의 경계를 나타내는 명확한 파일 헤더가 포함됩니다. 결과적으로 사용자에 대한 RAM 디스크 로그의 가독성이 향상됩니다.
+* Before this update, the lack of detailed logging in the cluster destroy logic for {vmw-full} meant it was unclear why virtual machines (VMs) were not properly removed. Additionally, missing power state information could cause the destroy operation to enter an infinite loop. With this update, logging for the destroy operation is enhanced to indicate when specific cleanup actions begin, include vCenter names, and display a warning if the operation fails to find VMs. As a result, the destroy process provides detailed, actionable logs. ([OCPBUGS-56262](https://issues.redhat.com/browse/OCPBUGS-56262))
 
-(OCPBUGS-55381)
+* Before this update, when you used the Agent-based Installer to install a cluster in a disconnected environment, exiting the NetworkManager Text User Interface (TUI) returned you to the agent console application that checks whether release images can be pulled from a registry. With this update, you are not returned to the agent console application when you exit the NetworkManager TUI. ([OCPBUGS-56223](https://issues.redhat.com/browse/OCPBUGS-56223))
 
-이번 업데이트 이전에는 Ironic Python Agent(IPA) 배포 중에 `metal3-ramdisk-logs` 컨테이너의 RAM 디스크 로그에 `NetworkManager` 로그가 포함되지 않았습니다. `NetworkManager` 로그가 없으면 효과적인 디버깅이 방해되어 네트워크 문제 해결에 영향을 미쳤습니다.
+* Before this update, the Agent-based Installer did not validate the values used to enable disk encryption, which potentially prevented disk encryption from being enabled. With this release, validation for correct disk encryption values is performed during image creation. ([OCPBUGS-54885](https://issues.redhat.com/browse/OCPBUGS-54885))
 
-이번 릴리스에서는 metal3 Pod의 `metal3-ramdisk-logs` 컨테이너에 있는 기존 RAM 디스크 로그에는 `dmesg` 및 IPA 로그뿐만 아니라 호스트의 전체 저널이 포함됩니다. 결과적으로 IPA 로그는 디버깅을 개선하기 위해 포괄적인 `NetworkManager` 데이터를 제공합니다.
+* Before this update, the resources containing the configuration for vSphere connection could get broken due to a mismatch between the UI and API. With this release, the UI uses the updated API definition. ([OCPBUGS-54434](https://issues.redhat.com/browse/OCPBUGS-54434))
 
-(OCPBUGS-55350)
+* Before this update, when you used the Agent-based Installer, some validation checks for the `hostPrefix` parameter were not performed when generating the ISO image. As a consequence, invalid `hostPrefix` values were detected only when users failed to boot using the ISO. With this update, these validation checks are performed during ISO generation and causes an immediate failure. ([OCPBUGS-53473](https://issues.redhat.com/browse/OCPBUGS-53473))
 
-이번 업데이트 이전에는 클러스터 구성에서 프로비저닝 네트워크가 비활성화되면 네트워크 부팅이 필요한 드라이버(예: IPMI(Intelligent Platform Management Interface) 또는 가상 미디어 없이 Redfish)가 포함된 베어 메탈 호스트를 생성할 수 있었습니다.
+* Before this update, some systemd services in the Agent-based Installer continued to run after being stopped, which caused confusing log messages during cluster installation. With this update, these services are correctly stopped. ([OCPBUGS-53107](https://issues.redhat.com/browse/OCPBUGS-53107))
 
-결과적으로 올바른 DHCP 옵션을 확인할 수 없기 때문에 검사 또는 프로비저닝 중에 부팅 오류가 발생했습니다. 이번 릴리스에서는 이 시나리오에서 베어 메탈 호스트를 생성할 때 호스트가 등록하지 못하고 보고된 오류는 비활성화된 프로비저닝 네트워크를 참조합니다.
+* Before this update, if the proxy configuration for an {azure-first} cluster was deleted while installing a cluster, the program reported an unreadable error and the proxy connection timed out. With this release, when the proxy configuration for the cluster is deleted while installing a cluster, the program reports a readable error message and the issue is resolved. ([OCPBUGS-45805](https://issues.redhat.com/browse/OCPBUGS-45805))
 
-호스트를 생성하려면 provisioning 네트워크를 활성화하거나 가상 미디어 기반 드라이버(예: Redfish 가상 미디어)를 사용해야 합니다. (OCPBUGS-54965)
+* Before this update, after an installation was completed, the `kubeconfig` file generated by the Agent-based Installer did not contain the ingress router certificate authority (CA). With this release, the `kubeconfig` file contains the ingress router CA upon the completion of a cluster installation. ([OCPBUGS-45256](https://issues.redhat.com/browse/OCPBUGS-45256))
 
-#### 1.6.2. 클라우드 컴퓨팅
+* Before this update, the Agent-based Installer announced a complete cluster installation without first checking whether Operators were in a stable state. Consequently, messages about a completed installation might have appeared even if there were still issues with any of the Operators. With this release, the Agent-based Installer waits until Operators are in a stable state before declaring the cluster installation to be complete. ([OCPBUGS-18658](https://issues.redhat.com/browse/OCPBUGS-18658))
 
-이번 업데이트 이전에는 AWS 컴퓨팅 머신 세트에 `userDataSecret` 매개변수의 null 값이 포함될 수 있었습니다. null 값을 사용하면 머신이 `Provisioning` 상태가 되는 경우가 있었습니다. 이번 릴리스에서는 `userDataSecret` 매개변수에 값이 필요합니다. (OCPBUGS-55135)
+* Before this update, the installation program did not prevent you from attempting to install {sno} on bare metal on the installer-provisioned infrastructure. As a consequence, the installation failed because it was not supported. With this release, OpenShift Container Platform prevents {sno} cluster installations on unsupported platforms. ([OCPBUGS-6508](https://issues.redhat.com/browse/OCPBUGS-6508))
 
-이번 업데이트 이전에는 4.13 또는 이전 버전으로 생성된 AWS의 OpenShift Container Platform 클러스터는 4.19 버전으로 업데이트할 수 없었습니다.
+#### Kube Controller Manager
 
-버전 4.14 이상으로 생성된 클러스터에는 기본적으로 AWS `cloud-conf` ConfigMap이 있으며 이 ConfigMap은 OpenShift Container Platform 4.19에서 시작해야 합니다.
+* Before this update, the `cluster-policy-controller` was crashing when an invalid volume type was provided. With this release, the code no longer panics. As a result, the `cluster-policy-controller` logs an error to inform about invalidity of a volume type. ([OCPBUGS-62053](https://issues.redhat.com/browse/OCPBUGS-62053))
 
-이번 릴리스에서는 클러스터에 없는 경우 Cloud Controller Manager Operator가 기본 `cloud-conf` ConfigMap을 생성합니다. 이러한 변경으로 버전 4.13 또는 이전 버전으로 생성된 클러스터가 버전 4.19로 업데이트할 수 있습니다.
+* Before this update, the `cluster-policy-controller` container was exposing the `10357` port for all networks (the bind address was set to 0.0.0.0). The port was exposed outside the node's host network because the KCM pod manifest set 'hostNetwork` to `true`. This port is used solely for the container's probe. With this enhancement, the bind address was updated to listen on the localhost only. As result, the node security is improved because the port is not exposed outside the node network. ([OCPBUGS-53290](https://issues.redhat.com/browse/OCPBUGS-53290))
 
-(OCPBUGS-59251)
+#### Kubernetes API Server
 
-이번 업데이트 이전에는 시스템의 `InternalDNS` 주소가 예상대로 설정되지 않은 경우 `노드 …​의 머신을 찾지 못했습니다`. 결과적으로 사용자는 이 오류를 시스템이 존재하지 않으므로 해석할 수 있었습니다.
+* Before this update, concurrent map iteration and kube-apiserver validation caused crashes. As a consequence, API server disruptions and `list watch` storms occurred. With this release, the concurrent map iteration and validation issue is resolved. As a result, API server crashes are prevented, and cluster stability is improved. ([OCPBUGS-61347](https://issues.redhat.com/browse/OCPBUGS-61347))
 
-이번 릴리스에서는 로그 메시지가 `InternalDNS와 일치하는 머신을 찾지 못했습니다...` 결과적으로 사용자는 일치가 실패하는 이유를 더 명확하게 표시할 수 있습니다. (OCPBUGS-19856)
+* Before this update, the resource quantity and `IntOrString` fields validation cost were incorrectly calculated due to improper consideration of maximum field length in the Common Expression Language (CEL) validation. As a consequence, users encountered validation errors due to incorrect string length consideration in CEL validation. With this release, CEL validation correctly accounts for the maximum length of `IntOrString fields`. As a result, users can submit valid resource requests without CEL validation errors. ([OCPBUGS-59756](https://issues.redhat.com/browse/OCPBUGS-59756))
 
-이번 업데이트 이전에는 버그 수정으로 오류 도메인 수를 2로 고정하지 않고 사용 가능한 최대 값을 사용하도록 변경하여 가용성 세트 구성이 변경되었습니다. 이로 인해 컨트롤러에서 변경할 수 없는 가용성 세트를 수정하려고했기 때문에 버그 수정 전에 생성된 컴퓨팅 머신 세트의 확장 문제가 발생했습니다.
+* Before this update, the `node-system-admin-signer` validity was limited to one year and was not extended or refreshed at 2.5 years. This issue prevented issuing the `node-system-admin-client` for two years. With this release, the `node-system-admin-signer` validity is extended to three years, and issuing the `node-system-admin-client` for a two-year period is enabled. ([OCPBUGS-59527](https://issues.redhat.com/browse/OCPBUGS-59527))
 
-이번 릴리스에서는 생성 후 가용성 세트가 더 이상 수정되지 않으므로 영향을 받는 컴퓨팅 머신 세트를 올바르게 확장할 수 있습니다. (OCPBUGS-56380)
+* Before this update, a cluster installation failure occurred on {ibm-title} and {azure-first} systems due to incompatibility with the `ShortCertRotation` feature gate. As a consequence, the cluster installation failed, and caused nodes to remain offline. With this release, the fix removes the `ShortCertRotation`  feature gate during a cluster installation on {ibm-title} and {azure-first} systems. As a result, cluster installations are successful on these platforms. ([OCPBUGS-57202](https://issues.redhat.com/browse/OCPBUGS-57202))
 
-이번 업데이트 이전에는 클러스터 API에서 Machine API로 마이그레이션된 컴퓨팅 머신 세트가 `마이그레이션 상태가 되었습니다`. 결과적으로 컴퓨팅 머신 세트는 다른 권한 있는 API를 사용하도록 전환을 완료하거나 `MachineSet` 오브젝트 상태를 추가로 조정할 수 없었습니다.
+* Before this update, the `admissionregistration.k8s.io/v1beta1` API was served incorrectly in OpenShift Container Platform version 4.17, despite being intended for deprecation and removal. This led to dependency issues for users. With this release, the deprecated API filter is registered for a phased removal, and requires administrative acknowledgment for upgrades. As a result, users do not encounter deprecated API errors in OpenShift Container Platform version 4.20, and the system stability is improved. ([OCPBUGS-55465](https://issues.redhat.com/browse/OCPBUGS-55465))
 
-이번 릴리스에서는 마이그레이션 컨트롤러에서 클러스터 API 리소스의 변경 사항을 조사하고 권한 있는 API 전환에 대응합니다. 결과적으로 컴퓨팅 머신 세트가 Cluster API에서 Machine API로 성공적으로 전환되었습니다.
+* Before this update, the certificate rotation controller copied and rewrote all of their changes, and caused excessive event spamming. As a consequence, users experienced excessive event spamming and potential etcd overload. With this release, the certificate rotation controller conflict is resolved, and reduces excessive event spamming. As a result, excessive event spamming in the certificate rotation controller is resolved, reduces the load on etcd, and improves the system stability.([OCPBUGS-55217](https://issues.redhat.com/browse/OCPBUGS-55217))
 
-(OCPBUGS-56487)
+* Before this update, user secrets were logged in audit logs after enabling `WriteRequestBodies` profile settings. As a consequence, sensitive data was visible in the audit log. With this release, the `MachineConfig` object is removed from the audit log response, and prevents user secrets from being logged. As a result, secrets and credentials do not appear in audit logs. ([OCPBUGS-52466](https://issues.redhat.com/browse/OCPBUGS-52466))
 
-이번 업데이트 이전에는 `MachineHealthCheck` CRD(사용자 정의 리소스 정의)의 `maxUnhealthy` 필드의 경우 기본값을 기록하지 않았습니다. 이번 릴리스에서는 CRD에서 기본값을 문서화합니다. (OCPBUGS-61314)
+* Before this update, testing Operator conditions using synthesized methods instead of deploying and scheduling pods by using the deployment controller caused incorrect test results. As a consequence, users experienced test failures due to the incorrect use of synthesized conditions instead of real pod creation. With this release, the Kubernetes deployment controller is used for testing Operator conditions, and improves pod deployment reliability. ([OCPBUGS-43777](https://issues.redhat.com/browse/OCPBUGS-43777))
 
-이번 업데이트 이전에는 동일한 머신 템플릿에서 `CapacityReservationsOnly` 용량 예약 동작 및 Spot 인스턴스 사용을 지정할 수 있었습니다. 그 결과 두 가지 호환되지 않는 설정이 있는 머신이 생성되었습니다.
+#### Machine Config Operator
 
-이번 릴리스에서는 머신 템플릿의 검증으로 이러한 두 가지 호환되지 않는 설정이 동일한 머신 템플릿에서 사용되지 않습니다. 따라서 두 가지 호환되지 않는 설정이 있는 머신을 생성할 수 없습니다.
+* Before this update, an external actor could uncordon a node that the Machine Config Operator (MCO) was draining. As a consequence, the MCO and the scheduler would schedule and unschedule pods at the same time, prolonging the drain process. With this release, the MCO attempts to recordon the node if an external actor uncordons it during the drain process. As a result, the MCO and scheduler no longer schedule and remove pods at the same time. ([OCPBUGS-61516](https://issues.redhat.com/browse/OCPBUGS-61516))
 
-(OCPBUGS-60943)
+* Before this update, during an update from OpenShift Container Platform 4.18.21 to OpenShift Container Platform 4.19.6, the Machine Config Operator (MCO) failed due to multiple labels in the `capacity.cluster-autoscaler.kubernetes.io/labels` annotation in one or more machine sets. With this release, the MCO now accepts multiple labels in the `capacity.cluster-autoscaler.kubernetes.io/labels` annotation and no longer fails during the update to OpenShift Container Platform 4.19.6. ([OCPBUGS-60119](https://issues.redhat.com/browse/OCPBUGS-60119))
 
-이번 업데이트 이전에는 Machine API 리소스를 클러스터 API 리소스로 마이그레이션하는 것을 지원하는 클러스터에서 권한이 없는 머신을 삭제해도 해당 권한 있는 머신이 삭제되지 않았습니다. 결과적으로 정리해야 하는 고립된 머신이 클러스터에 남아 있어 리소스 누출이 발생할 수 있었습니다.
+* Before this update, the Machine Config Operator (MCO) certificate management failed during an Azure Red Hat OpenShift (ARO) upgrade to 4.19 due to missing infrastructure status fields. As a consequence, certificates were refreshed without required Storage Area Network (SAN) IPs, causing connectivity issues for upgraded ARO clusters. With this release, the MCO now adds and retains SAN IPs during certificate management in ARO, preventing immediate rotation on upgrade to 4.19. ([OCPBUGS-59780](https://issues.redhat.com/browse/OCPBUGS-59780))
 
-이번 릴리스에서는 권한이 없는 머신을 삭제하면 해당 권한 있는 시스템에 대한 삭제 전파가 트리거됩니다. 결과적으로 권한 없는 머신에 대한 삭제 요청이 올바르게 백스케이드되어 고립된 권한 있는 머신을 방지하고 머신 정리에서 일관성을 유지합니다.
+* Before this update, when updating from a version of OpenShift Container Platform prior to 4.15, the `MachineConfigNode` Custom Resource Definitions (CRDs)feature was installed as Technology Preview (TP) causing the update to fail. This feature was fully introduced in OpenShift Container Platform 4.16. With this release, the update no longer deploys the Technology Preview CRDs, ensuring a successful upgrade. ([OCPBUGS-59723](https://issues.redhat.com/browse/OCPBUGS-59723))
 
-(OCPBUGS-55985)
+* Before this update, the Machine Config Operator (MCO) was updating node boot images without checking whether the current boot image was from {gcp-first} or {aws-first} Marketplace. As a consequence, the MCO would override a marketplace boot image with a standard OpenShift Container Platform image. With this release, for {aws-short} images, the MCO has a lookup table that has all of the standard OpenShift Container Platform installer Advanced Metering Infrastructures (AMIs), which it references before updating the boot image. For {gcp-first} images, the MCO checks the URL header before updating the boot image. As a result, the MCO no longer updates machine sets that have a marketplace boot image. ([OCPBUGS-57426](https://issues.redhat.com/browse/OCPBUGS-57426))
 
-이번 업데이트 이전에는 Machine API 리소스를 Cluster API 리소스로 마이그레이션하는 것을 지원하는 클러스터에서 Cluster CAPI Operator가 `Paused` 상태에서 권한 있는 Cluster API 컴퓨팅 머신 세트를 생성할 수 있었습니다.
+* Before this update, OpenShift Container Platform updates that shipped a change to Core DNS templates would restart the `coredns` pod before the image pull for the updated base operating system (OS) image. As a consequence, a race occurred when the operating system update manager failed failed the image pull because of network errors, causing the update to stall. With this release, a retry update operation is added to the Machine Config Operator (MCO) to work around this race condition. https://issues.redhat.com/browse/OCPBUGS-43406[OCPBUGS-43406]
 
-결과적으로 새로 생성된 Cluster API 컴퓨팅 머신 세트는 권한 있는 API를 사용하더라도 머신을 조정하거나 확장할 수 없었습니다. 이번 릴리스에서는 Cluster API에 권한이 있을 때 Operator가 일시 중지되지 않은 상태로 Cluster API 컴퓨팅 머신 세트가 생성됩니다.
+#### Management Console
 
-결과적으로 새로 생성된 Cluster API 컴퓨팅 머신 세트가 즉시 조정되고 확장 및 머신 라이프사이클 작업이 클러스터 API에 권한이 있을 때 의도한 대로 진행됩니다. (OCPBUGS-56604)
+* Before this update, the YAML editor in the web console would default to indenting YAML files with 4 spaces. With this release, the default indentation has changed to 2 spaces to align with recommendations. ([OCPBUGS-61990](https://issues.redhat.com/browse/OCPBUGS-61990))
 
-이번 업데이트 이전에는 각 머신을 여러 번 조정해야 하고 각 머신이 개별적으로 조정되었기 때문에 많은 수의 노드를 스케일링하는 속도가 느렸습니다. 이번 릴리스에서는 최대 10개의 머신을 동시에 조정할 수 있습니다. 이러한 변경으로 인해 확장 중에 머신의 처리 속도가 향상됩니다. (OCPBUGS-59376)
+* Before this update, expanding the terminal in the web console caused the session to close because the OpenShift Container Platform logo and header overlapped the terminal view. With this release, the terminal layout is fixed so that it expands correctly. As a result, you can expand or collapse the terminal without connection loss or input interruption. ([OCPBUGS-61819](https://issues.redhat.com/browse/OCPBUGS-61819))
 
-이번 업데이트 이전에는 Cluster CAPI Operator 상태 컨트롤러에서 관련 오브젝트의 정렬되지 않은 목록을 사용하여 기능 변경 사항이 없는 경우 상태 업데이트를 사용했습니다. 결과적으로 Cluster CAPI Operator 오브젝트 및 연속 및 불필요한 상태 업데이트로 인해 로그에 상당한 노이즈가 발생했습니다.
+* Before this update, visiting the `/auth/error` page without the required state cookie showed a blank page and prevented error details from displaying. With this release, error handling is improved in the front-end code. As a result, the `/auth/error` page displays error content, making it easier to diagnose and resolve problems. ([OCPBUGS-60912](https://issues.redhat.com/browse/OCPBUGS-60912))
 
-이번 릴리스에서는 상태 컨트롤러 논리가 관련 오브젝트 목록을 정렬한 후 변경 사항을 비교합니다. 결과적으로 상태 업데이트가 Operator의 상태가 변경될 때만 발생합니다.
+* Before this update, the order of items in the **PersistentVolumeClaim** action menu was not defined, causing the **Delete PersistentVolumeClaim** option to display in the middle of the list. With this release, the option is reordered so it now displays last in the menu. As a result, the action list is consistent and easier to navigate. ([OCPBUGS-60756](https://issues.redhat.com/browse/OCPBUGS-60756))
 
-(OCPBUGS-56805, OCPBUGS-58880)
+* Before this update, clicking **Download log** on the Build logs page added `undefined` to the downloaded file name, and clicking **Raw logs** did not open the raw log in a new tab. With this release, the file name is corrected ensuring that clicking **Raw logs** opens the raw log as expected. ([OCPBUGS-60753](https://issues.redhat.com/browse/OCPBUGS-60753))
 
-이번 업데이트 이전에는 Cloud Controller Manager Operator의 `config-sync-controller` 구성 요소가 로그를 표시하지 않았습니다. 이번 릴리스에서는 이 문제가 해결되었습니다. (OCPBUGS-56508)
+* Before this update, entering a wrong value in an OpenShift console form field caused multiple exclamation icons to display. With this release, only one icon displays when a field value is invalid. As a result, error messages in all fields now display clearly. ([OCPBUGS-60428](https://issues.redhat.com/browse/OCPBUGS-60428))
 
-이번 업데이트 이전에는 컨트롤 플레인 머신 세트 구성에서 컴퓨팅 머신 세트의 가용성 영역을 사용했습니다. 이는 유효한 구성이 아닙니다.
+* Before this update, some entries on the Quick Starts page displayed duplicate link buttons. With this release, the duplicates are removed, and links now display as intended, resulting in a cleaner and clearer page layout. ([OCPBUGS-60373](https://issues.redhat.com/browse/OCPBUGS-60373))
 
-결과적으로 컴퓨팅 머신 세트는 여러 영역에 걸쳐 컨트롤 플레인 머신이 단일 영역에 있을 때 컨트롤 플레인 머신 세트를 생성할 수 없었습니다. 이번 릴리스에서는 컨트롤 플레인 머신 세트가 기존 컨트롤 플레인 머신의 가용성 영역 구성을 가져옵니다.
+* Before this update, the console included an outdated security instruction `X-XSS-Protection` when sending pages to your browser. With this release, the instruction is removed. As a result, the console runs securely in modern browsers. ([OCPBUGS-60130](https://issues.redhat.com/browse/OCPBUGS-60130))
 
-결과적으로 컨트롤 플레인 머신 세트는 현재 컨트롤 플레인 시스템을 정확하게 반영하는 유효한 영역 구성을 생성합니다. (OCPBUGS-52448)
+* Before this update, the error message in the **events page** would erroneously show the placeholder "{ error }" instead of an error message. With this release, the error message is shown. ([OCPBUGS-60010](https://issues.redhat.com/browse/OCPBUGS-60010))
 
-이번 업데이트 이전에는 Machine API 컴퓨팅 머신 세트에 주석을 추가하는 컨트롤러에서 scale-from-zero 주석을 추가하기 전에 Machine API에 권한이 있는지 확인하지 않았습니다. 결과적으로 컨트롤러는 이러한 주석을 반복적으로 추가하고 `MachineSet` 오브젝트에 대한 지속적인 변경 작업을 반복했습니다.
+* Before this update, the console displayed the **Registry poll interval** drop-down menu for managed `CatalogSource` objects, but any change you made was automatically reverted. With this release, the drop-down menu is hidden for managed sources. As a result, the console no longer shows a menu option that cannot be applied. ([OCPBUGS-59725](https://issues.redhat.com/browse/OCPBUGS-59725))
 
-이번 릴리스에서는 컨트롤러에서 scale-from-zero 주석을 추가하기 전에 `authoritativeAPI` 필드의 값을 확인합니다. 결과적으로 컨트롤러는 Machine API가 권한 있는 경우에만 Machine API 컴퓨팅 머신 세트에 이러한 주석을 추가하여 루프 동작을 방지합니다.
+* Before this update, selecting the **Resource** menu on the Deploy from image page caused the view to jump to the top due to improper focus handling. With this release, the focus behavior is corrected so the page stays in place when you open the menu. As a result, your scroll position is preserved during selection. ([OCPBUGS-59586](https://issues.redhat.com/browse/OCPBUGS-59586))
 
-(OCPBUGS-57581)
+* Before this update, the **Get started** message occupied too much space when you did not have a project, preventing the **No resources found** message from fully displaying. This update reduces the space used by the **Get started** message. As a result, all messages now display completely on the page. ([OCPBUGS-59483](https://issues.redhat.com/browse/OCPBUGS-59483))
 
-이번 업데이트 이전에는 `Machine` API Operator가 `.status.authoritativeAPI` 필드가 채워지지 않은 AWS 이외의 플랫폼에서 머신 리소스를 조정하려고 했습니다. 결과적으로 컴퓨팅 머신은 `프로비저닝` 상태에 무기한 유지되어 작동하지 않았습니다.
+* Before this update, improperly nested `flags` within `properties` in `console-crontab-plugin.json` caused the plugin to break. With this release, the nesting in the JSON file is fixed, resolving the conflict with OCPBUGS-58858. As a result, the plugin now loads and displays the `CronTabs` correctly. ([OCPBUGS-59418](https://issues.redhat.com/browse/OCPBUGS-59418))
 
-이번 릴리스에서는 Machine API Operator가 빈 `.status.authoritativeAPI` 필드를 머신 사양에 해당 값으로 채웁니다. 이 필드가 비어 있을 수 있는 케이스를 처리하기 위해 가드도 컨트롤러에 추가됩니다.
+* Before this update, starting a job from the console always reset its `backoffLimit` to 6, overriding your configured value. With this release, the configured `backoffLimit` is preserved when you start a job in the console. As a result, jobs behave consistently between the console and the CLI. ([OCPBUGS-59382](https://issues.redhat.com/browse/OCPBUGS-59382))
 
-결과적으로 `머신` 및 `MachineSet` 리소스가 올바르게 조정되고 컴퓨팅 머신이 더 이상 `Provisioning` 상태로 유지되지 않습니다. (OCPBUGS-56849)
+* Before this update, the YAML editor component did not handle some edge cases where the content could not be parsed into a JavaScript object, which caused errors in some situations. With this release, the component was updated to handle these edge cases reliably and the errors no longer occur. ([OCPBUGS-59196](https://issues.redhat.com/browse/OCPBUGS-59196))
 
-이번 업데이트 이전에는 Machine API Provider Azure에서 용량 예약 그룹 참조를 지원하지 않는 이전 API 버전을 사용한 Azure SDK의 이전 버전을 사용했습니다. 결과적으로 다른 서브스크립션에서 용량 예약 그룹을 참조하는 Machine API 머신을 생성하면 Azure API 오류가 발생했습니다.
+* Before this update, the **Namespace** column displayed on the MachineSets list page even when you viewed a single project, because the code did not correctly scope the columns. With this release, the column logic is fixed. As a result, the MachineSets list no longer shows the **Namespace** column for project-scoped views. ([OCPBUGS-58334](https://issues.redhat.com/browse/OCPBUGS-58334))
 
-이번 릴리스에서는 Machine API Provider Azure에서 이 구성을 지원하는 Azure SDK 버전을 사용합니다. 결과적으로 다른 서브스크립션의 용량 예약 그룹을 참조하는 Machine API 머신을 생성하는 작업이 예상대로 작동합니다.
+* Before this update, navigating to a storage class page with multiple path elements in the `href` displayed a blank tab. With this release, the plugin is fixed so that the tab content displays correctly after switching. As a result, storage class pages no longer show blank tabs. ([OCPBUGS-58258](https://issues.redhat.com/browse/OCPBUGS-58258))
 
-(OCPBUGS-55372)
+* Before this update, editing a `HorizontalPodAutoscaler` (HPA) with a `ContainerResource` type caused a runtime error because the code did not define the `e.resource` variable. With this release, the `e.resource` is defined and the runtime error is fixed in the form editor. As a result, editing an HPA with the `ContainerResource` type no longer fails. ([OCPBUGS-58208](https://issues.redhat.com/browse/OCPBUGS-58208))
 
-이번 업데이트 이전에는 Machine API 리소스를 Cluster API 리소스로 마이그레이션하는 것을 지원하는 클러스터의 양방향 동기화 컨트롤러에서 권한 있는 Cluster API 머신 템플릿을 Machine API 머신 세트로 변환할 때 머신 사양을 올바르게 비교하지 않았습니다.
+* Before this update, the `TELEMETER_CLIENT_DISABLED` setting in the `ConsoleConfig` ConfigMap caused gaps in the telemetry, which limited troubleshooting. With this release, the telemetry client is temporarily disable to resolve "Too Many Requests" errors. As a result, telemetry data is collected reliably, removing limits on troubleshooting. ([OCPBUGS-58094](https://issues.redhat.com/browse/OCPBUGS-58094))
 
-그 결과 Cluster API 머신 템플릿 사양의 변경 사항이 Machine API 머신 세트에 동기화되지 않았습니다. 이번 릴리스에서는 비교 논리를 변경하면 문제가 해결됩니다.
+* Before this update, clicking **Configure** in `AlertmanagerReceiversNotConfigured` failed with the error `navigate is not a function` because the code did not handle the configuration correctly. With this release, the issue is fixed. As a result, `AlertmanagerReceiversNotConfigured` now opens as expected. ([OCPBUGS-56986](https://issues.redhat.com/browse/OCPBUGS-56986))
 
-결과적으로 Cluster API 머신 세트가 새 Cluster API 머신 템플릿을 참조하는 후 Machine API 머신 세트가 올바르게 동기화됩니다. (OCPBUGS-56010)
+* Before this update, the **CronTab** list page returned an error when a `CronTab` resource was missing optional entries in its `spec` because the console did not validate them properly. with this release, the necessary validation is added. As a result, the **CronTab** list page loads correctly even when some `spec` fields are not defined. ([OCPBUGS-56830](https://issues.redhat.com/browse/OCPBUGS-56830))
 
-이번 업데이트 이전에는 Machine API 리소스를 Cluster API 리소스로 마이그레이션하는 것을 지원하는 클러스터의 양방향 동기화 컨트롤러에서 해당 Machine API 머신 세트가 삭제될 때 머신 템플릿을 삭제하지 않았습니다.
+* Before this update, users without a project saw only part of the Roles list because of insufficient role-based access control (RBAC) permissions. With this release, the access logic is fixed. As a result, these users can no longer open the Roles page, keeping sensitive data secure. ([OCPBUGS-56707](https://issues.redhat.com/browse/OCPBUGS-56707))
 
-그 결과 불필요한 클러스터 API 머신 템플릿이 클러스터에 지속되어 `openshift-cluster-api` 네임스페이스가 혼동되었습니다. 이번 릴리스에서는 양방향 동기화 컨트롤러에서 머신 템플릿의 삭제 동기화를 올바르게 처리합니다.
+* Before this release, when there were no Quick Starts in the **Quick Starts** page, a plain text message was shown. With this release, cluster administrators are given actions to add or manage Quick Starts. ([OCPBUGS-56629)](https://issues.redhat.com/browse/OCPBUGS-56629))
 
-결과적으로 권한 있는 Machine API를 삭제하면 해당 Cluster API 머신 템플릿이 삭제됩니다. (OCPBUGS-57195)
+* Before this update, the generated console dynamic plugin API documentation used the wrong `k8s` utility function names, such as `k8sGetResource` instead of `k8sGet`. With this update, the documentation uses the correct function names with their export name aliases. As a result, the API documentation is clearer for console dynamic plugin developers working with `k8s` utility functions. ([OCPBUGS-56248](https://issues.redhat.com/browse/OCPBUGS-56248))
 
-이번 업데이트 이전에는 머신 API 리소스를 클러스터 API 리소스로 마이그레이션을 지원하는 클러스터의 양방향 동기화 컨트롤러에서 성공적인 마이그레이션을 보고했습니다. 결과적으로 관련 오브젝트의 상태를 업데이트할 때 오류가 발생한 경우 작업을 다시 시도하지 않았습니다.
+* Before this update, unused code in the deployment and deployment configuration menus caused unnecessary menu items to display. With this release, the unused menu item definitions are removed, improving code maintainability and reducing potential issues in future updates. ([OCPBUGS-56245](https://issues.redhat.com/browse/OCPBUGS-56245))
 
-이번 릴리스에서는 컨트롤러에서 성공적인 상태를 보고하기 전에 모든 관련 오브젝트 상태를 작성하도록 합니다. 결과적으로 컨트롤러는 마이그레이션 중에 오류를 더 잘 처리합니다.
+* Before this update, the `/metrics` endpoint was not correctly parsing a bearer token from the authorization header on internal Prometheus scrape requests, which caused `TokenReviews` to fail and all of these requests to be denied with a 401 response. This triggered a `TargetDown` alert for the console metrics endpoint. With this release, the metrics endpoint handler was updated to correctly parse a bearer token from the authorization header for `TokenReview`. This made the `TokenReview` step behave as expected, and resolved the `TargetDown` alert. ([OCPBUGS-56148](https://issues.redhat.com/browse/OCPBUGS-56148))
 
-(OCPBUGS-57040)
+* Before this update, creating a node without a disk triggered a JavaScript `TypeError` when you accessed nodes in the console. With this release, the filter property initializes correctly. As a result, the node list displays without errors. ([OCPBUGS-56050](https://issues.redhat.com/browse/OCPBUGS-56050))
 
-#### 1.6.3. Cloud Credential Operator
+* Before this update, the `VirtualizedTable` hid the `Started` column on smaller screens, which broke default sorting and disrupted the `PipelineRun` list. With this release, the default sorted column adjusts based on screen size, preventing the table from breaking. As a result, the `PipelineRun` list page remains stable and displays correctly on smaller screens. ([OCPBUGS-56044](https://issues.redhat.com/browse/OCPBUGS-56044))
 
-이번 업데이트 이전에는 Microsoft Entra Workload ID를 사용하여 OIDC(OpenID Connect) 발행자를 생성할 때 `ccoctl` 명령에는 `baseDomainResourceGroupName` 매개변수가 불필요하게 필요했습니다. 그 결과 `ccoctl` 이 프라이빗 클러스터를 만들려고 할 때 오류가 표시됩니다.
+* Before this update, the cluster switcher allowed users to access {rh-rhacm-first} by choosing the **All Clusters** option. With this release, the {rh-rhacm} is accessed from the perspective selector by choosing the **Fleet Management** perspective. ([OCPBUGS-55946](https://issues.redhat.com/browse/OCPBUGS-55946))
 
-이번 릴리스에서는 `baseDomainResourceGroupName` 매개변수가 요구 사항으로 제거됩니다. 결과적으로 Microsoft Azure에서 프라이빗 클러스터를 만드는 프로세스는 논리적이고 기대치와 일치합니다.
+* Before this update, the web console displayed an outdated message about a 60-day update limit in versions 4.16 and later, even though the limit was removed. With this update, the outdated message is removed. As a result, the web console shows only current updated information. ([OCPBUGS-55919](https://issues.redhat.com/browse/OCPBUGS-55919))
 
-(OCPBUGS-34993)
+* Before this update, the web console home page showed the wrong icon for `Info` alerts, which caused a mismatch in alert severity. With this release, the severity icons are fixed so they match correctly. As a result, the console shows alert severity clearly. ([OCPBUGS-55806](https://issues.redhat.com/browse/OCPBUGS-55806))
 
-#### 1.6.4. 클러스터 자동 스케일러
+* Before this update, a dependency issue prevented the Console Operator from including the required `FeatureGate` resource for Cloud Service Provider (CSP) APIs. With this release, the missing `FeatureGate` resource is added to the `openshift/api` dependency. As a result, CSP APIs now work as expected in the console. ([OCPBUGS-55698](https://issues.redhat.com/browse/OCPBUGS-55698))
 
-이번 업데이트 이전에는 클러스터 자동 스케일러에서 삭제 상태에 있는 머신 오브젝트를 포함하려고 했습니다. 결과적으로 클러스터 자동 스케일러 머신 수가 부정확했습니다. 이 문제로 인해 클러스터 자동 스케일러가 필요하지 않은 테인트를 추가했습니다. 이번 릴리스에서는 자동 스케일러가 머신을 정확하게 계산합니다. (OCPBUGS-60035)
+* Before this update, clicking the accordian in the **Critical alerts** section of the notification drawer did nothing, so the section stayed expanded. With this release, the accordian is fixed. As a result, you can now collapse the section when critical alerts are present. ([OCPBUGS-55633](https://issues.redhat.com/browse/OCPBUGS-55633))
 
-이번 업데이트 이전에는 클러스터에서 Cluster Autoscaler Operator가 활성화된 클러스터 자동 스케일러 오브젝트를 생성할 때 `openshift-machine-api` 의 `cluster-autoscaler-default` Pod가 동시에 생성되고 Pod 중 하나가 즉시 종료되는 경우가 있었습니다.
+* Before this update, additional HTTP client configurations increased the plugin initial loading time, which slowed overall OpenShift Container Platform performance. With this update, the client configuration is fixed, reducing plugin load time and improving page load speed. ([OCPBUGS-55514](https://issues.redhat.com/browse/OCPBUGS-55514))
 
-이번 릴리스에서는 하나의 Pod만 생성됩니다. (OCPBUGS-57041)
+* Before this update, the custom masthead logo replaced the default OpenShift logo in all themes, even when the light theme was set to use the default. With this release, the correct behavior is restored so the default OpenShift logo displays in the light theme when no custom logo is set. As a result, logos now display correctly in both light and dark themes, improving visual consistency. ([OCPBUGS-55208](https://issues.redhat.com/browse/OCPBUGS-55208))
 
-#### 1.6.5. Cluster Version Operator
+* Before this update, changing or removing a custom logo in the Console Operator configuration left outdated `ConfigMaps` in the `openshift-console` namespace due to delayed synchronization. With this release, the console operator removes these outdated `ConfigMaps` when the custom logo configuration changes. As a result, `ConfigMaps` in the `openshift-console` namespace remain accurate and up-to-date. ([OCPBUGS-54780](https://issues.redhat.com/browse/OCPBUGS-54780))
 
-이번 업데이트 이전에는 `ClusterVersion` 조건의 상태가 `ImplicitlyEnabledCapabilities` 대신 `ImplicitlyEnabled` 가 잘못 표시될 수 있었습니다.
+* Before this update, the **Raw logs** page decoded Chinese log messages incorrectly, making them unreadable. With this release, the decoding is corrected. As a result, the page now displays Chinese log messages correctly. ([OCPBUGS-52165](https://issues.redhat.com/browse/OCPBUGS-52165))
 
-이번 릴리스에서는 `ClusterVersion` 조건 유형이 수정되어 ImplicitlyEnabled 기능에서 `ImplicitlyEnabled Capabilities` 로 변경되었습니다. (OCPBUGS-56114)
+* Before this update, opening a modal on a Networking page caused some web console plugin panels, such as the **OpenShift Lightspeed UI** or the **Troubleshooting** panel, to disappear. With this release, the conflict is resolved between networking modals and web console plugins. As a result, modals on the Networking pages no longer hide other console panels. ([OCPBUGS-49709](https://issues.redhat.com/browse/OCPBUGS-49709))
 
-#### 1.6.6. config-operator
+* Before this update, the console server did not handle Content Security Policy (CSP) directives correctly when run locally with JSON input because it did not support the `MultiValue` type. With this release, the console accepts CSP directives as `MultiValue` instead of JSON for local use. As a result, you can now pass separate CSP directives more easily during console development. ([OCPBUGS-49291](https://issues.redhat.com/browse/OCPBUGS-49291))
 
-이번 업데이트 이전에는 올바른 `featureGate` 구성 없이 클러스터가 `CustomNoUpgrade` 상태로 잘못 전환되었습니다. 그 결과, `featureGates` 및 후속 컨트롤러 패닉이 발생했습니다.
+* Before this update, importing multiple files in the YAML editor copied the existing content and appended the new file, creating duplicates. With this release, the import behavior is fixed. As a result, the YAML editor displays only the new file content without duplication. ([OCPBUGS-45297](https://issues.redhat.com/browse/OCPBUGS-45297))
 
-이번 릴리스에서는 `CustomNoUpgrade` 클러스터 상태의 `featureGate` 구성이 기본값과 일치하여 `featureGates` 및 후속 컨트롤러 패닉을 방지합니다. (OCPBUGS-57187)
+* Before this update, only one plugin using the `CreateProjectModal` extension could display its modal, causing conflicts when multiple plugins used the same extension point. As a result, there was no way to control which plugin extension was rendered. With this release, the plugin extensions resolve in the same order as their definitions in the cluster console Operator configuration. As a result, administrators can control which `CreateProjectModal` extension displays in the console by reordering the list. ([OCPBUGS-43792](https://issues.redhat.com/browse/OCPBUGS-43792))
 
-#### 1.6.7. Dev 콘솔
+* Before this update, the console did not display the header defined by the `ResourceYAMLEditor` property, so the YAML view opened without it. With this release, the property is fixed. As a result, headers such as **Simple pod** now display correctly. ([OCPBUGS-32157](https://issues.redhat.com/browse/OCPBUGS-32157))
 
-이번 업데이트 이전에는 빠른 시작 페이지의 일부 항목에 중복 링크 버튼이 표시되었습니다. 이번 업데이트를 통해 중복이 제거되고 링크 버튼이 올바르게 표시됩니다. (OCPBUGS-60373)
+#### Monitoring
 
-이번 업데이트 이전에는 처음 로그인할 때 표시되는 온보딩 모달이 시각적 개체와 이미지가 누락되어 모달 메시징이 명확하지 않았습니다. 이번 릴리스에서는 누락된 요소가 모달에 추가됩니다. 결과적으로 온보딩 환경은 전체 콘솔 디자인과 일치하는 완전한 시각적 개체를 제공합니다. (OCPBUGS-57392)
+* Before this update, the `KubeNodeNotReady` and `KubeNodeReadinessFlapping` alerts did not filter out cordoned nodes. As a consequence, users received alerts for nodes under maintenance, resulting in false positives. With this release, cordoned nodes are filtered from alerts. As a result, the number of false positives during maintenance is reduced. [OCPBUGS-60692](https://issues.redhat.com/browse/OCPBUGS-60692)
 
-이번 업데이트 이전에는 YAML 편집기에서 여러 파일을 가져올 때 기존 콘텐츠를 복사한 후 새 파일을 추가하여 중복을 생성했습니다. 이번 릴리스에서는 가져오기 동작이 수정되었습니다. 결과적으로 YAML 편집기는 복제 없이 새 파일 콘텐츠만 표시합니다. (OCPBUGS-45297)
+* Before this update, the `KubeAggregatedAPIErrors` alert was based on the sum of errors across all instances of an API. As a consequence, users were more likely to get alerted as the number of instances grew. With this release, alerts are evaluated at the instance level, rather than the API level. As a result, this reduces the number of false alarms due to the API error threshold getting hit sooner due to being evaluated cluster-wise, rather than instance-wise. [OCPBUGS-60691](https://issues.redhat.com/browse/OCPBUGS-60691)
 
-이번 업데이트 이전에는 `ClusterVersion` 조건의 상태가 `ImplicitlyEnabledCapabilities` 대신 `ImplicitlyEnabled` 가 잘못 표시될 수 있었습니다.
+* Before this update, the `KubeStatefulSetReplicasMismatch` alert did not fire when the `StatefulSet` controller failed to create pods. As a consequence, users were not notified when the `StatefulSet` did not reach the desired number of replicas. With this release, the alert now fires correctly when the controller cannot create pods. As a result, users are alerted whenever the `StatefulSet` replicas do not match the configured amount. [OCPBUGS-60689](https://issues.redhat.com/browse/OCPBUGS-60689)
 
-이번 릴리스에서는 `ClusterVersion` 조건 유형이 수정되어 ImplicitlyEnabled 기능에서 `ImplicitlyEnabled Capabilities` 로 변경되었습니다. (OCPBUGS-56114)
+* Before this update, the Cluster Monitoring Operator logged warnings about insecure Transport Layer Security (TLS) ciphers, which could raise concerns about security. With this release, the secure TLS settings are configured, removing the cipher warnings from the logs and ensuring the Operator reports correct, secure TLS configurations. [OCPBUGS-58475](https://issues.redhat.com/browse/OCPBUGS-58475)
 
-#### 1.6.8. etcd
+* Before this update, the monitoring dashboard in the OpenShift Container Platform web console sometimes displayed large negative CPU utilization values due to incorrect assumptions about intermediate results. As a consequence, users could see negative CPU utilization in the web console. With this release, CPU utilization values are properly calculated and the web console no longer shows negative utilization values. [OCPBUGS-57481](https://issues.redhat.com/browse/OCPBUGS-57481)
 
-이번 업데이트 이전에는 한 etcd 멤버의 시간 초과로 인해 컨텍스트 데드라인이 초과되었습니다. 그 결과 일부 멤버에 연결할 수 있어도 모든 멤버가 비정상적으로 선언되었습니다. 이번 릴리스에서는 한 멤버가 시간 초과되면 다른 멤버가 더 이상 비정상으로 잘못 표시되지 않습니다. (OCPBUGS-60941)
+* Before this update, when a new secret was created or updated in any namespace, `Alertmanager` was reconciling even if that secret was not referenced in the `AlertmanagerConfig` resource. As a consequence, the Prometheus Operator generated excessive API calls, causing increased CPU usage on control plane nodes. With this release, `Alertmanager` only reconciles secrets that the `AlertmanagerConfig` resource explicitly references. ([OCPBUGS-56158](https://issues.redhat.com/browse/OCPBUGS-56158))
 
-이번 업데이트 이전에는 기본 인터페이스에 많은 IP가 있는 단일 노드 OpenShift를 배포할 때 etcd 인증서의 IP는 API 서버가 etcd에 연결하는 데 사용된 구성 맵의 IP와 일치하지 않았습니다. 결과적으로 단일 노드 OpenShift 배포 중에 API 서버 pod가 실패하여 클러스터 초기화 문제가 발생했습니다.
-
-이번 릴리스에서는 etcd 구성 맵의 단일 IP가 단일 노드 OpenShift 배포의 인증서의 IP와 일치합니다. 결과적으로 API 서버는 etcd 인증서에 포함된 올바른 IP를 사용하여 etcd에 연결하여 클러스터 초기화 중에 pod 실패를 방지합니다.
-
-(OCPBUGS-55404)
-
-이번 업데이트 이전에는 API 서버의 일시적인 다운 타임 동안 Cluster etcd Operator에서 `openshift-etcd` 네임 스페이스가 존재하지 않는 메시지와 같은 잘못된 정보를 보고했습니다.
-
-이번 업데이트를 통해 Cluster etcd Operator 상태 메시지는 `openshift-etcd` 네임스페이스가 없음을 나타내는 대신 API 서버를 사용할 수 없음을 올바르게 표시합니다. 결과적으로 Cluster etcd Operator 상태가 `openshift-etcd` 네임스페이스의 존재를 정확하게 반영하여 시스템 안정성을 향상시킵니다.
-
-(OCPBUGS-44570)
-
-#### 1.6.9. 확장 (OLM v1)
-
-이번 업데이트 이전에는 OLM v1의 preflight CRD(사용자 정의 리소스 정의) 안전 검사를 통해 CRD의 설명 필드에서 변경 사항이 변경되는 경우 업데이트가 차단되었습니다. 이번 업데이트를 통해 문서 필드가 변경될 때 preflight CRD safety 검사에서 업데이트를 차단하지 않습니다. (OCPBUGS-55051)
-
-이번 업데이트 이전에는 catalogd 및 Operator Controller 구성 요소에 OpenShift CLI()에 올바른 버전 및 커밋 정보가 표시되지 않았습니다. 이번 업데이트를 통해 올바른 커밋 및 버전 정보가 표시됩니다. (OCPBUGS-23055)
-
-```shell
-oc
-```
-
-#### 1.6.10. 설치 프로그램
-
-이번 업데이트 이전에는 IBM Power® Virtual Server에 Konflux 빌드 클러스터를 설치할 때 의미 체계 버전 관리(SemVer) 구문 분석의 오류로 인해 설치에 실패할 수 있었습니다. 이번 릴리스에서는 설치를 계속할 수 있도록 구문 분석 문제가 해결되었습니다. (OCPBUGS-61120)
-
-이번 업데이트 이전에는 사용자 프로비저닝 인프라를 사용하여 Azure Stack Hub에 클러스터를 설치할 때 API 및 API-int 로드 밸런서를 생성하지 못할 수 있었습니다. 이로 인해 설치에 실패했습니다. 이번 릴리스에서는 로드 밸런서가 생성되도록 사용자 프로비저닝 인프라 템플릿이 업데이트됩니다. 결과적으로 설치에 성공합니다. (OCPBUGS-60545)
-
-이번 업데이트 이전에는 Google Cloud에 클러스터를 설치할 때 설치 프로그램은 복구 불가능한 오류가 일치하는 퍼블릭 DNS 영역을 찾지 못하는 경우에도 `install-config.yaml` 파일을 읽고 처리했습니다. 이 오류는 잘못된 `baseDomain` 매개변수로 인해 발생했습니다.
-
-결과적으로 클러스터 관리자는 `install-config.yaml` 파일을 불필요하게 다시 생성합니다. 이번 릴리스에서는 설치 프로그램이 이 오류를 보고할 때 설치 progam이 `install-config.yaml` 파일을 읽고 처리하지 않습니다.
-
-(OCPBUGS-59430)
-
-이번 업데이트 이전에는 검증 코드에서 단일 노드 OpenShift 설치를 지원하는 플랫폼 목록에서 IBM Cloud가 생략되었습니다. 결과적으로 검증 오류로 인해 IBM Cloud에 단일 노드 구성을 설치할 수 없었습니다.
-
-이번 릴리스에서는 단일 노드 설치에 대한 IBM Cloud 지원이 활성화됩니다. 결과적으로 사용자는 IBM Cloud에서 단일 노드 설치를 완료할 수 있습니다.
-
-(OCPBUGS-59220)
-
-이번 업데이트 이전에는 `platform에 단일 노드 OpenShift를 설치합니다. 사용자 프로비저닝 인프라가 있는 None` (없음)이 지원되지 않아 설치에 실패했습니다. 이번 릴리스에서는 `platform: None` 의 단일 노드 OpenShift 설치가 지원됩니다. (OCPBUGS-58216)
-
-이번 업데이트 이전에는 AWS(Amazon Web Services)에 OpenShift Container Platform을 설치할 때 부팅 이미지 관리를 비활성화하는 MCO(Machine Config Operator)가 엣지 컴퓨팅 머신 풀을 확인하지 못했습니다.
-
-부팅 이미지 관리를 비활성화할지 여부를 결정할 때 설치 프로그램은 `install-config.yaml` 에서 첫 번째 컴퓨팅 머신 풀 항목만 확인했습니다.
-
-결과적으로 여러 컴퓨팅 풀을 지정했지만 두 번째에 사용자 지정 AMI(Amazon Machine Image)에만 있는 경우 설치 프로그램에서 MCO 부팅 이미지 관리를 비활성화하지 않았으며 MCO에서 사용자 지정 AMI를 덮어쓸 수 있었습니다. 이번 릴리스에서는 설치 프로그램이 모든 엣지 컴퓨팅 머신 풀에 사용자 지정 이미지가 있는지 확인합니다.
-
-결과적으로 사용자 지정 이미지가 머신 풀에 지정되면 부팅 이미지 관리가 비활성화됩니다. (OCPBUGS-57803)
-
-이번 업데이트 이전에는 다중 노드 배포에 올바르게 설정된 단일 노드 OpenShift 배포를 사용할 때 에이전트 기반 설치 프로그램에서 `/var/lib/etcd/member` 에 대한 권한을 `0755` 로 설정합니다.
-
-이번 릴리스에서는 단일 노드 OpenShift 배포의 경우 etcd 디렉토리 `/var/lib/etcd/member` 권한이 `0700` 으로 설정됩니다. (OCPBUGS-57201)
-
-이번 업데이트 이전에는 에이전트 기반 설치 관리자를 사용할 때 TUI(Network Managertext User Interface)를 이스케이프한 직후 TAB 키를 누른 후 등록하지 못하는 경우가 있었습니다. 이로 인해 `Quit` 로 이동하는 대신 `Configure Network` 에 커서가 남아 있었습니다.
-
-결과적으로 현재 호스트가 릴리스 이미지를 검색할 수 있는지 확인하는 에이전트 콘솔 애플리케이션을 종료할 수 없었습니다. 이번 릴리스에서는 TAB 키가 항상 등록됩니다.
-
-(OCPBUGS-56934)
-
-이번 업데이트 이전에는 에이전트 기반 설치 관리자를 사용하는 경우 NetworkManager TUI를 종료하면 오류가 표시되거나 설치를 진행하는 대신 NetworkManager TUI가 비어 있는 화면이 발생하는 경우가 있습니다. 이번 업데이트를 통해 빈 화면이 표시되지 않습니다. (OCPBUGS-56880)
-
-이번 업데이트 이전에는 `openshift-install create` 명령을 실행하기 전에 AWS 인증 정보를 구성하지 않은 경우 설치 프로그램이 실패했습니다. 이번 업데이트를 통해 `openshift-install create` 명령을 실행하기 전에 AWS 인증 정보를 구성하지 않으면 설치가 실패하지 않습니다. (OCPBUGS-56658)
-
-이번 업데이트 이전에는 API VIP와 Ingress VIP에서 하나의 로드 밸런서 IP 주소를 사용하는 경우 VMware vSphere에 클러스터를 설치하지 못했습니다. 이번 릴리스에서는 이제 API VIP 및 ingress VIP가 `machineNetworks` 에서 구분되어 문제가 해결되었습니다. (OCPBUGS-56601)
-
-이번 업데이트 이전에는 에이전트 기반 설치 관리자를 사용할 때 `additionalTrustBundlePolicy` 필드를 설정해도 적용되지 않았습니다. 그 결과 `fips` 매개변수와 같은 다른 덮어쓰기가 무시되었습니다.
-
-이번 업데이트를 통해 `additionalTrustBundlePolicy` 매개변수가 올바르게 가져오고 다른 덮어쓰기는 무시되지 않습니다. (OCPBUGS-56596)
-
-이번 업데이트 이전에는 VMware vSphere의 클러스터 제거 논리에 대한 자세한 로깅이 없기 때문에 VM(가상 머신)이 제대로 제거되지 않은 이유가 명확하지 않았습니다. 또한 누락된 전원 상태 정보로 인해 제거 작업이 무한 루프가 입력될 수 있습니다.
-
-이번 업데이트를 통해 특정 정리 작업이 시작될 때를 표시하고 vCenter 이름을 포함하고 작업이 VM을 찾지 못하는 경우 경고를 표시하도록 제거 작업에 대한 로깅이 향상됩니다. 결과적으로 제거 프로세스에서 자세한 실행 가능한 로그를 제공합니다.
-
-(OCPBUGS-56262)
-
-이번 업데이트 이전에는 에이전트 기반 설치 관리자를 사용하여 연결이 끊긴 환경에 클러스터를 설치하고 NetworkManager text User Interface(TUI)를 종료하면 레지스트리에서 릴리스 이미지를 가져올 수 있는지 여부를 확인하는 에이전트 콘솔 애플리케이션으로 반환되었습니다.
-
-이번 업데이트를 통해 NetworkManager TUI를 종료할 때 에이전트 콘솔 애플리케이션으로 반환되지 않습니다. (OCPBUGS-56223)
-
-이번 업데이트 이전에는 에이전트 기반 설치 프로그램에서 디스크 암호화를 활성화하는 데 사용되는 값의 유효성을 검사하지 않아 디스크 암호화가 활성화되지 않을 수 있었습니다. 이번 릴리스에서는 이미지 생성 중에 올바른 디스크 암호화 값에 대한 유효성 검사가 수행됩니다. (OCPBUGS-54885)
-
-이번 업데이트 이전에는 UI와 API 간의 불일치로 인해 vSphere 연결 구성이 포함된 리소스가 손상될 수 있었습니다. 이번 릴리스에서는 UI에서 업데이트된 API 정의를 사용합니다. (OCPBUGS-54434)
-
-이번 업데이트 이전에는 에이전트 기반 설치 관리자를 사용할 때 ISO 이미지를 생성할 때 `hostPrefix` 매개변수에 대한 일부 검증 검사가 수행되지 않았습니다. 그 결과 사용자가 ISO를 사용하여 부팅하지 못한 경우에만 잘못된 `hostPrefix` 값이 감지되었습니다.
-
-이번 업데이트를 통해 이러한 검증 검사는 ISO 생성 중에 수행되며 즉시 실패합니다. (OCPBUGS-53473)
-
-이번 업데이트 이전에는 에이전트 기반 설치 관리자의 일부 systemd 서비스가 중지 후 계속 실행되어 클러스터 설치 중에 로그 메시지가 혼동되었습니다. 이번 업데이트를 통해 이러한 서비스가 올바르게 중지됩니다. (OCPBUGS-53107)
-
-이번 업데이트 이전에는 클러스터를 설치하는 동안 Microsoft Azure 클러스터의 프록시 구성이 삭제된 경우 프로그램은 읽을 수 없는 오류와 프록시 연결 시간이 초과되었습니다. 이번 릴리스에서는 클러스터를 설치하는 동안 클러스터의 프록시 구성이 삭제되면 프로그램에서 읽을 수 있는 오류 메시지를 보고하고 문제가 해결되었습니다. (OCPBUGS-45805)
-
-이번 업데이트 이전에는 설치가 완료된 후 에이전트 기반 설치 프로그램에서 생성한 `kubeconfig` 파일에 수신 라우터 CA(인증 기관)가 포함되지 않았습니다. 이번 릴리스에서는 클러스터 설치가 완료되면 `kubeconfig` 파일에 Ingress 라우터 CA가 포함되어 있습니다. (OCPBUGS-45256)
-
-이번 업데이트 이전에는 에이전트 기반 설치 프로그램에서 Operator가 안정적인 상태인지 여부를 먼저 확인하지 않고 전체 클러스터 설치를 발표했습니다. 결과적으로 Operator에 문제가 있는 경우에도 완료된 설치에 대한 메시지가 표시될 수 있었습니다.
-
-이번 릴리스에서는 에이전트 기반 설치 프로그램이 클러스터 설치를 완료하도록 선언하기 전에 Operator가 안정적인 상태가 될 때까지 기다립니다. (OCPBUGS-18658)
-
-이번 업데이트 이전에는 설치 프로그램에서 프로비저닝한 인프라의 베어 메탈에 단일 노드 OpenShift를 설치하지 않도록 하지 않았습니다. 이로 인해 지원되지 않아 설치에 실패했습니다. 이번 릴리스에서는 OpenShift Container Platform에서 지원되지 않는 플랫폼에 단일 노드 OpenShift 클러스터 설치를 방지합니다. (OCPBUGS-6508)
-
-#### 1.6.11. kube Controller Manager
-
-이번 업데이트 이전에는 잘못된 볼륨 유형을 제공할 때 `cluster-policy-controller` 가 충돌했습니다. 이번 릴리스에서는 코드가 더 이상 패닉 상태가 되지 않습니다. 결과적으로 `cluster-policy-controller` 는 오류를 기록하여 볼륨 유형에 대한 잘못된 정보를 알립니다. (OCPBUGS-62053)
-
-이번 업데이트 이전에는 `cluster-policy-controller` 컨테이너가 모든 네트워크에 대해 `10357` 포트를 노출했습니다(바운드 주소는 0.0.0.0으로 설정됨). KCM Pod 매니페스트가 'hostNetwork'를 `true` 로 설정하기 때문에 포트가 노드 호스트 네트워크 외부에 노출되었습니다.
-
-이 포트는 컨테이너의 프로브에만 사용됩니다. 이번 개선된 기능을 통해 바인딩 주소가 localhost에서만 수신 대기하도록 업데이트되었습니다.
-
-결과적으로 포트가 노드 네트워크 외부에 노출되지 않기 때문에 노드 보안이 향상됩니다. (OCPBUGS-53290)
-
-#### 1.6.12. Kubernetes API 서버
-
-이번 업데이트 이전에는 동시 맵 반복 및 kube-apiserver 검증으로 인해 충돌이 발생했습니다. 그 결과 API 서버가 중단되고 `감시가 중단된 상태 목록을 나열` 했습니다. 이번 릴리스에서는 동시 맵 반복 및 검증 문제가 해결되었습니다. 결과적으로 API 서버 충돌을 방지하고 클러스터 안정성이 향상됩니다. (OCPBUGS-61347)
-
-이번 업데이트 이전에는 CEL(Common Expression Language) 검증의 최대 필드 길이를 부적절하게 고려하여 리소스 수량 및 `IntOrString` 필드 검증 비용이 잘못 계산되었습니다. 그 결과 CEL 검증에서 문자열 길이를 잘못 고려하여 사용자가 유효성 검사에 오류가 발생했습니다.
-
-이번 릴리스에서는 CEL 검증이 `IntOrString 필드의 최대 길이를 올바르게 고려합니다`. 결과적으로 사용자는 CEL 검증 오류 없이 유효한 리소스 요청을 제출할 수 있습니다.
-
-(OCPBUGS-59756)
-
-이번 업데이트 이전에는 `node-system-admin-signer` 유효 기간이 1년으로 제한되었으며 2.5년으로 연장되거나 새로 고쳐지지 않았습니다. 이 문제로 인해 2년 동안 `node-system-admin-client` 가 발행되었습니다.
-
-이번 릴리스에서는 `node-system-admin-signer` 유효 기간이 3년으로 연장되고 2년 동안 `node-system-admin-client` 를 발행합니다. (OCPBUGS-59527)
-
-이번 업데이트 이전에는 `ShortCertRotation` 기능 게이트와 호환되지 않기 때문에 IBM 및 Microsoft Azure 시스템에서 클러스터 설치 오류가 발생했습니다. 이로 인해 클러스터 설치에 실패하고 노드가 오프라인 상태로 유지되었습니다.
-
-이번 릴리스에서는 IBM 및 Microsoft Azure 시스템에 클러스터를 설치하는 동안 `ShortCertRotation` 기능 게이트가 제거됩니다. 결과적으로 이러한 플랫폼에서 클러스터 설치가 성공적으로 수행됩니다.
-
-(OCPBUGS-57202)
-
-이번 업데이트 이전에는 사용 중단 및 제거를 위해 OpenShift Container Platform 버전 4.17에서 `admissionregistration.k8s.io/v1beta1` API가 잘못 제공되었습니다. 이로 인해 사용자에게 종속성 문제가 발생했습니다.
-
-이번 릴리스에서는 더 이상 사용되지 않는 API 필터가 단계적 제거에 등록되며 업그레이드를 위해 관리 승인이 필요합니다. 결과적으로 OpenShift Container Platform 버전 4.20에서 더 이상 사용되지 않는 API 오류가 발생하지 않으며 시스템 안정성이 향상되었습니다.
-
-(OCPBUGS-55465)
-
-이번 업데이트 이전에는 인증서 교체 컨트롤러가 모든 변경 사항을 복사하여 다시 로드하고 과도한 이벤트 스팸을 초래했습니다. 결과적으로 사용자는 과도한 이벤트 스팸 및 잠재적인 etcd 과부하를 경험했습니다.
-
-이번 릴리스에서는 인증서 교체 컨트롤러가 충돌하여 과도한 이벤트 스팸이 줄어듭니다. 결과적으로 인증서 교체 컨트롤러에서 과도한 이벤트 스팸이 해결되고 etcd의 부하를 줄이고 시스템 안정성을 향상시킵니다.(OCPBUGS-55217)
-
-이번 업데이트 이전에는 `WriteRequestBodies` 프로필 설정을 활성화한 후 사용자 보안이 감사 로그에 기록되었습니다. 결과적으로 감사 로그에 민감한 데이터가 표시되었습니다.
-
-이번 릴리스에서는 `MachineConfig` 오브젝트가 감사 로그 응답에서 제거되고 사용자 보안이 기록되지 않습니다. 결과적으로 보안 및 인증 정보가 감사 로그에 표시되지 않습니다.
-
-(OCPBUGS-52466)
-
-이번 업데이트 이전에는 배포 컨트롤러를 사용하여 Pod를 배포하고 예약하는 대신 통합 방법을 사용하여 Operator 조건을 테스트하면 잘못된 테스트 결과가 발생했습니다. 결과적으로 실제 Pod 생성 대신 합성된 조건을 잘못 사용하므로 사용자가 테스트 실패가 발생했습니다.
-
-이번 릴리스에서는 Kubernetes 배포 컨트롤러가 Operator 조건을 테스트하는 데 사용되며 Pod 배포 안정성이 향상됩니다. (OCPBUGS-43777)
-
-#### 1.6.13. Machine Config Operator
-
-이번 업데이트 이전에는 외부 작업자가 MCO(Machine Config Operator)가 드레인하는 노드를 차단 해제할 수 있었습니다. 결과적으로 MCO와 스케줄러는 Pod를 예약하고 동시에 예약 해제하여 드레이닝 프로세스를 연장합니다.
-
-이번 릴리스에서는 외부 작업자가 드레이닝 프로세스 중에 노드를 차단 해제하는 경우 MCO가 노드를 기록하려고 합니다. 결과적으로 MCO 및 스케줄러가 더 이상 Pod를 동시에 예약하고 제거하지 않습니다.
-
-(OCPBUGS-61516)
-
-이번 업데이트 이전에는 OpenShift Container Platform 4.18.21에서 OpenShift Container Platform 4.19.6으로 업데이트하는 동안 하나 이상의 머신 세트에서 `capacity.cluster-autoscaler.kubernetes.io/labels` 주석의 여러 레이블로 인해 MCO(Machine Config Operator)가 실패했습니다.
-
-이번 릴리스에서는 MCO에서 `capacity.cluster-autoscaler.kubernetes.io/labels` 주석에서 여러 레이블을 허용하므로 OpenShift Container Platform 4.19.6 업데이트 중에 더 이상 실패하지 않습니다. (OCPBUGS-60119)
-
-이번 업데이트 이전에는 인프라 상태 필드가 누락되어 Azure Red Hat OpenShift (ARO)를 4.19로 업그레이드하는 동안 MCO (Machine Config Operator) 인증서 관리가 실패했습니다.
-
-그 결과 인증서가 필요한 SAN(Storage Area Network) IP 없이 새로 고쳐져 업그레이드된 ARO 클러스터에 대한 연결 문제가 발생했습니다. 이번 릴리스에서는 MCO가 ARO의 인증서 관리 중에 SAN IP를 추가하고 유지하므로 4.19로 업그레이드할 때 즉시 교체되지 않습니다.
-
-(OCPBUGS-59780)
-
-이번 업데이트 이전에는 4.15 이전의 OpenShift Container Platform 버전에서 업데이트할 때 `MachineConfigNode` CRD(Custom Resource Definitions) 기능이 TP(기술 프리뷰)로 설치되어 업데이트가 실패했습니다.
-
-이 기능은 OpenShift Container Platform 4.16에서 완전히 도입되었습니다. 이번 릴리스에서는 업데이트가 더 이상 기술 프리뷰 CRD를 배포하지 않아 업그레이드가 성공적으로 수행됩니다.
-
-(OCPBUGS-59723)
-
-이번 업데이트 이전에는 현재 부팅 이미지가 Google Cloud 또는 AWS(Amazon Web Services) Marketplace에서 사용되었는지 확인하지 않고 MCO(Machine Config Operator)에서 노드 부팅 이미지를 업데이트했습니다.
-
-결과적으로 MCO는 표준 OpenShift Container Platform 이미지로 마켓플레이스 부팅 이미지를 덮어씁니다.
-
-이번 릴리스에서는 AWS 이미지의 경우 MCO에 부팅 이미지를 업데이트하기 전에 참조하는 모든 표준 OpenShift Container Platform 설치 프로그램 Advanced Metering Infrastructures (AMI)가 있는 조회 테이블이 있습니다.
-
-Google Cloud 이미지의 경우 MCO는 부팅 이미지를 업데이트하기 전에 URL 헤더를 확인합니다. 결과적으로 MCO는 Marketplace 부팅 이미지가 있는 머신 세트를 더 이상 업데이트하지 않습니다.
-
-(OCPBUGS-57426)
-
-이번 업데이트 이전에는 Core DNS 템플릿에 대한 변경 사항을 제공하는 OpenShift Container Platform 업데이트가 업데이트된 OS(기본 운영 체제) 이미지를 가져오기 전에 `coredns` Pod를 다시 시작합니다.
-
-그 결과, 운영 체제 업데이트 관리자가 네트워크 오류로 인해 이미지 가져오기에 실패한 경우 경쟁이 발생하여 업데이트가 중지되었습니다. 이번 릴리스에서는 이 경합 상태를 해결하기 위해 MCO(Machine Config Operator)에 재시도 업데이트 작업이 추가되었습니다.
-
-OCPBUGS-43406
-
-#### 1.6.14. 관리 콘솔
-
-이번 업데이트 이전에는 웹 콘솔의 YAML 편집기가 기본적으로 4개의 공백으로 YAML 파일을 들여 쓰기로 했습니다. 이번 릴리스에서는 권장 사항에 맞게 기본 들여쓰기가 2개의 공백으로 변경되었습니다. (OCPBUGS-61990)
-
-이번 업데이트 이전에는 OpenShift Container Platform 로고 및 헤더가 터미널 뷰가 겹쳐서 웹 콘솔에서 터미널을 확장했습니다. 이번 릴리스에서는 터미널 레이아웃이 올바르게 확장되도록 수정되었습니다. 결과적으로 연결 손실 또는 입력 중단 없이 터미널을 확장하거나 축소할 수 있습니다. (OCPBUGS-61819)
-
-이번 업데이트 이전에는 필요한 상태 쿠키 없이 `/auth/error` 페이지를 방문하면 빈 페이지가 표시되고 오류 세부 정보가 표시되지 않습니다. 이번 릴리스에서는 프런트 엔드 코드에서 오류 처리가 향상되었습니다. 결과적으로 `/auth/error` 페이지에 오류 콘텐츠가 표시되어 문제를 더 쉽게 진단하고 해결할 수 있습니다. (OCPBUGS-60912)
-
-이번 업데이트 이전에는 PersistentVolumeClaim 작업 메뉴의 항목 순서가 정의되지 않아 Delete PersistentVolumeClaim 옵션이 목록 중앙에 표시되었습니다. 이번 릴리스에서는 옵션이 다시 정렬되어 이제 메뉴에 마지막으로 표시됩니다. 결과적으로 작업 목록이 일관되고 쉽게 탐색할 수 있습니다. (OCPBUGS-60756)
-
-이번 업데이트 이전에는 다운로드한 파일 이름에 `정의되지 않은` 빌드 로그 페이지에서 Download log 를 클릭하고 Raw logs 를 클릭하여 새 탭에서 원시 로그를 열지 않았습니다. 이번 릴리스에서는 원시 로그를 클릭하여 예상대로 원시 로그를 열 수 있도록 파일 이름이 수정되었습니다. (OCPBUGS-60753)
-
-이번 업데이트 이전에는 OpenShift 콘솔 양식 필드에 잘못된 값을 입력하면 여러 느낌표 아이콘이 표시되었습니다. 이번 릴리스에서는 필드 값이 유효하지 않은 경우 하나의 아이콘만 표시됩니다. 결과적으로 모든 필드의 오류 메시지가 이제 명확하게 표시됩니다. (OCPBUGS-60428)
-
-이번 업데이트 이전에는 빠른 시작 페이지의 일부 항목에 중복 링크 버튼이 표시되었습니다. 이번 릴리스에서는 중복이 제거되고 링크가 의도한 대로 표시되어 더 깔끔하고 명확한 페이지 레이아웃이 생성됩니다. (OCPBUGS-60373)
-
-이번 업데이트 이전에는 콘솔에 페이지를 브라우저로 전송할 때 오래된 보안 명령 `X-XSS-Protection` 이 포함되었습니다. 이번 릴리스에서는 명령이 제거됩니다. 결과적으로 콘솔은 최신 브라우저에서 안전하게 실행됩니다. (OCPBUGS-60130)
-
-이번 업데이트 이전에는 이벤트 페이지의 오류 메시지가 오류 메시지 대신 "{ error}"를 잘못 표시했습니다. 이번 릴리스에서는 오류 메시지가 표시됩니다. (OCPBUGS-60010)
-
-이번 업데이트 이전에는 콘솔에서 관리 `CatalogSource` 오브젝트에 대한 레지스트리 폴링 간격 드롭다운 메뉴를 표시했지만 변경 사항이 자동으로 복원되었습니다. 이번 릴리스에서는 관리 소스에 대해 드롭다운 메뉴가 표시되지 않습니다. 결과적으로 콘솔에 더 이상 적용할 수 없는 메뉴 옵션이 표시되지 않습니다. (OCPBUGS-59725)
-
-이번 업데이트 이전에는 이미지 페이지에서 Deploy from the Resource 메뉴를 선택하면 부적절한 초점 처리로 인해 뷰가 맨 위로 이동되었습니다. 이번 릴리스에서는 강조 동작이 수정되어 메뉴를 열 때 페이지가 그대로 유지됩니다. 결과적으로 선택한 동안 스크롤 위치가 유지됩니다. (OCPBUGS-59586)
-
-이번 업데이트 이전에는 프로젝트가 없을 때 Get started 메시지가 너무 많은 공간을 차지하여 No resources found 메시지가 완전히 표시되지 않도록 합니다. 이번 업데이트에서는 Get started 메시지에서 사용하는 공간을 줄입니다. 결과적으로 모든 메시지가 이제 페이지에 완전히 표시됩니다. (OCPBUGS-59483)
-
-이번 업데이트 이전에는 `console-crontab-plugin.json` 의 `속성` 내에 잘못 중첩된 `플래그` 로 인해 플러그인이 중단되었습니다. 이번 릴리스에서는 JSON 파일의 중첩이 수정되어 OCPBUGS-58858과의 충돌을 해결합니다. 결과적으로 플러그인이 로드되고 `CronTabs` 가 올바르게 표시됩니다. (OCPBUGS-59418)
-
-이번 업데이트 이전에는 콘솔에서 작업을 시작하면 항상 `backoffLimit` 를 6으로 재설정하고 구성된 값을 덮어씁니다. 이번 릴리스에서는 콘솔에서 작업을 시작할 때 구성된 `backoffLimit` 이 유지됩니다. 결과적으로 작업은 콘솔과 CLI 간에 일관되게 작동합니다. (OCPBUGS-59382)
-
-이번 업데이트 이전에는 YAML 편집기 구성 요소에서 콘텐츠를 JavaScript 오브젝트로 구문 분석할 수 없는 일부 에지 케이스를 처리하지 않아 일부 상황에서 오류가 발생했습니다. 이번 릴리스에서는 이러한 에지 케이스를 안정적으로 처리하도록 구성 요소가 업데이트되어 더 이상 오류가 발생하지 않습니다. (OCPBUGS-59196)
-
-이번 업데이트 이전에는 코드가 열의 범위를 올바르게 지정하지 않았기 때문에 단일 프로젝트를 볼 때도 MachineSets 목록 페이지에 네임스페이스 열이 표시되었습니다. 이번 릴리스에서는 열 논리가 수정되었습니다. 결과적으로 MachineSets 목록에 더 이상 프로젝트 범위 보기의 Namespace 열이 표시되지 않습니다. (OCPBUGS-58334)
-
-이번 업데이트 이전에는 `href` 에 여러 경로 요소가 있는 스토리지 클래스 페이지로 이동하면 빈 탭이 표시되었습니다. 이번 릴리스에서는 전환 후 탭 콘텐츠가 올바르게 표시되도록 플러그인이 수정되었습니다. 결과적으로 스토리지 클래스 페이지에 더 이상 빈 탭이 표시되지 않습니다. (OCPBUGS-58258)
-
-이번 업데이트 이전에는 `ContainerResource` 유형으로 `HorizontalPodAutoscaler` (HPA)를 편집하면 코드가 `e.resource` 변수를 정의하지 않았기 때문에 런타임 오류가 발생했습니다. 이번 릴리스에서는 `e.resource` 가 정의되고 런타임 오류가 양식 편집기에서 수정됩니다.
-
-결과적으로 `ContainerResource` 유형으로 HPA를 편집해도 더 이상 실패하지 않습니다. (OCPBUGS-58208)
-
-이번 업데이트 이전에는 `ConsoleConfig` ConfigMap의 `TELEMETER_CLIENT_DISABLED` 설정으로 Telemetry에서 격차가 발생하여 문제 해결이 제한되었습니다. 이번 릴리스에서는 원격 분석 클라이언트가 "요청이 너무 많음" 오류를 해결하기 위해 일시적으로 비활성화됩니다.
-
-결과적으로 원격 분석 데이터가 안정적으로 수집되어 문제 해결에 대한 제한을 제거합니다. (OCPBUGS-58094)
-
-이번 업데이트 이전에는 코드가 구성을 올바르게 처리하지 않았기 때문에 오류 `탐색으로`
-
-`AlertmanagerReceiversNotConfigured` 에서 Configure in AlertmanagerReceiversNotConfigured를 클릭할 수 없습니다. 이번 릴리스에서는 이 문제가 해결되었습니다. 결과적으로 `AlertmanagerReceiversNotConfigured` 가 예상대로 열립니다. (OCPBUGS-56986)
-
-이번 업데이트 이전에는 콘솔이 올바르게 검증되지 않았기 때문에 `spec` 에서 CronTab 리소스에 선택적 항목이 누락되었을 때 `CronTab` 목록 페이지에서 오류를 반환했습니다. 이 릴리스에서는 필요한 검증이 추가되었습니다. 결과적으로 일부 `spec` 필드가 정의되지 않은 경우에도 CronTab 목록 페이지가 올바르게 로드됩니다. (OCPBUGS-56830)
-
-이번 업데이트 이전에는 RBAC(역할 기반 액세스 제어) 권한이 부족하기 때문에 프로젝트가 없는 사용자에게 역할 목록의 일부만 표시되었습니다. 이번 릴리스에서는 액세스 논리가 수정되었습니다. 결과적으로 이러한 사용자는 더 이상 Roles 페이지를 열 수 없으므로 민감한 데이터를 안전하게 유지할 수 있습니다. (OCPBUGS-56707)
-
-이번 릴리스 이전에는 빠른 시작 페이지에 빠른 시작이 없으면 일반 텍스트 메시지가 표시되었습니다. 이번 릴리스에서는 클러스터 관리자에게 빠른 시작을 추가하거나 관리하는 작업이 제공됩니다. (OCPBUGS-56629))
-
-이번 업데이트 이전에는 생성된 콘솔 동적 플러그인 API 설명서에서 `k8sGet` 대신 `k8s GetResource` 와 같은 잘못된 k8s 유틸리티 함수 이름을 사용했습니다. 이번 업데이트를 통해 문서에서는 내보내기 이름 별칭과 올바른 함수 이름을 사용합니다.
-
-결과적으로 `k8s` 유틸리티 기능으로 작업하는 콘솔 동적 플러그인 개발자에게 API 문서가 더 명확해집니다. (OCPBUGS-56248)
-
-이번 업데이트 이전에는 배포 및 배포 구성 메뉴에서 사용되지 않는 코드로 인해 불필요한 메뉴 항목이 표시되었습니다. 이번 릴리스에서는 사용되지 않는 메뉴 항목 정의가 제거되어 코드 유지 관리를 개선하고 향후 업데이트에서 잠재적인 문제를 줄일 수 있습니다. (OCPBUGS-56245)
-
-이번 업데이트 이전에는 내부 Prometheus 스크랩 요청의 인증 헤더에서 전달자 토큰을 올바르게 구문 분석하지 않아 `TokenReviews` 가 실패하고 401 응답으로 이러한 모든 요청이 거부되었습니다. 이로 인해 콘솔 지표 엔드 포인트에 대한 `TargetDown` 경고가 발생했습니다.
-
-이번 릴리스에서는 `TokenReview` 의 권한 부여 헤더에서 전달자 토큰을 올바르게 구문 분석하도록 지표 끝점 처리기가 업데이트되었습니다. 이로 인해 `TokenReview` 단계가 예상대로 작동하고 `TargetDown` 경고가 해결되었습니다.
-
-(OCPBUGS-56148)
-
-이번 업데이트 이전에는 디스크 없이 노드를 생성하면 콘솔의 노드에 액세스할 때 JavaScript `TypeError` 가 트리거되었습니다. 이번 릴리스에서는 filter 속성이 올바르게 초기화됩니다. 결과적으로 노드 목록이 오류 없이 표시됩니다. (OCPBUGS-56050)
-
-이번 업데이트 이전에는 `VirtualizedTable` 이 더 작은 화면에 `Started` 열을 숨기고 기본 정렬이 중단되어 `PipelineRun` 목록이 중단되었습니다. 이번 릴리스에서는 기본 정렬된 열이 화면 크기에 따라 조정되어 테이블이 손상되지 않습니다.
-
-결과적으로 `PipelineRun` 목록 페이지가 안정적으로 유지되어 작은 화면에 올바르게 표시됩니다. (OCPBUGS-56044)
-
-이번 업데이트 이전에는 All Clusters 옵션을 선택하여 클러스터 전환기를 사용하여 RHACM(Red Hat Advanced Cluster Management)에 액세스할 수 있었습니다. 이번 릴리스에서는 Fleet Management 관점을 선택하여 관점 선택기에서 RHACM에 액세스할 수 있습니다. (OCPBUGS-55946)
-
-이번 업데이트 이전에는 제한이 제거된 경우에도 웹 콘솔에 버전 4.16 이상에서 60일 업데이트 제한에 대한 오래된 메시지가 표시되었습니다. 이번 업데이트를 통해 오래된 메시지가 제거됩니다. 결과적으로 웹 콘솔에 현재 업데이트된 정보만 표시됩니다. (OCPBUGS-55919)
-
-이번 업데이트 이전에는 웹 콘솔 홈 페이지에 `정보` 경고에 대한 잘못된 아이콘이 표시되어 경고 심각도가 일치하지 않았습니다. 이번 릴리스에서는 심각도 아이콘이 올바르게 일치하도록 수정되었습니다. 결과적으로 콘솔에 경고 심각도가 명확하게 표시됩니다. (OCPBUGS-55806)
-
-이번 업데이트 이전에는 콘솔 Operator에서 클라우드 서비스 공급자(CSP) API에 필요한 `FeatureGate` 리소스를 포함할 수 없었습니다. 이번 릴리스에서는 누락된 `FeatureGate` 리소스가 `openshift/api` 종속성에 추가됩니다. 결과적으로 CSP API가 콘솔에서 예상대로 작동합니다. (OCPBUGS-55698)
-
-이번 업데이트 이전에는 알림 드라이버의 Critical alerts 섹션에 있는 accordian을 클릭하여 아무 작업도 수행하지 않아 섹션이 확장되었습니다. 이번 개정안은 수정되어 있습니다. 결과적으로 중요한 경고가 있을 때 섹션을 축소할 수 있습니다. (OCPBUGS-55633)
-
-이번 업데이트 이전에는 추가 HTTP 클라이언트 구성으로 플러그인 초기 로드 시간이 증가하여 전체 OpenShift Container Platform 성능이 저하되었습니다. 이번 업데이트를 통해 클라이언트 구성이 수정되어 플러그인 로드 시간이 단축되고 페이지 로드 속도가 향상됩니다. (OCPBUGS-55514)
-
-이번 업데이트 이전에는 Light 테마가 기본값을 사용하도록 설정된 경우에도 사용자 지정 masthead 로고가 모든 주제의 기본 OpenShift 로고를 교체했습니다. 이번 릴리스에서는 사용자 정의 로고가 설정되지 않은 경우 기본 OpenShift 로고가 표시되도록 올바른 동작이 복원됩니다.
-
-결과적으로 로고는 이제 가볍고 어두운 테마 모두에 올바르게 표시되어 시각적 일관성을 향상시킵니다. (OCPBUGS-55208)
-
-이번 업데이트 이전에는 콘솔 Operator 구성에서 사용자 정의 로고를 변경하거나 제거하기 전에 지연된 동기화로 인해 `openshift-console` 네임스페이스에 오래된 `ConfigMap` 이 남아 있었습니다. 이번 릴리스에서는 사용자 정의 로고 구성이 변경되면 콘솔 Operator에서 이러한 오래된 `ConfigMap` 을 제거합니다.
-
-결과적으로 `openshift-console` 네임스페이스의 `ConfigMap` 은 정확하고 최신 상태로 유지됩니다. (OCPBUGS-54780)
-
-이번 업데이트 이전에는 원시 로그 페이지가 중국어 로그 메시지를 잘못 디코딩하여 읽을 수 없게 되었습니다. 이번 릴리스에서는 디코딩이 수정되었습니다. 결과적으로 페이지에 중국어 로그 메시지가 올바르게 표시됩니다. (OCPBUGS-52165)
-
-이번 업데이트 이전에는 네트워킹 페이지에서 모달을 열면 OpenShift Lightspeed UI 또는 문제 해결 패널과 같은 일부 웹 콘솔 플러그인 패널이 사라졌습니다. 이번 릴리스에서는 네트워킹 모달과 웹 콘솔 플러그인 간에 충돌이 해결됩니다. 결과적으로 네트워킹 페이지의 모달이 더 이상 다른 콘솔 패널을 숨기지 않습니다. (OCPBUGS-49709)
-
-이번 업데이트 이전에는 `MultiValue` 유형을 지원하지 않기 때문에 JSON 입력으로 로컬로 실행될 때 콘솔 서버에서 CSP(Content Security Policy) 지시문을 올바르게 처리하지 않았습니다. 이번 릴리스에서는 콘솔에서 로컬 사용을 위해 JSON 대신 CSP 지시문을 `MultiValue` 로 허용합니다.
-
-결과적으로 콘솔 개발 중에 별도의 CSP 지시문을 보다 쉽게 전달할 수 있습니다. (OCPBUGS-49291)
-
-이번 업데이트 이전에는 YAML 편집기에서 여러 파일을 가져오면 기존 콘텐츠를 복사하고 새 파일을 추가하여 중복을 생성합니다. 이번 릴리스에서는 가져오기 동작이 수정되었습니다. 결과적으로 YAML 편집기는 복제 없이 새 파일 콘텐츠만 표시합니다. (OCPBUGS-45297)
-
-이번 업데이트 이전에는 `CreateProjectModal` 확장을 사용하는 하나의 플러그인만 모달을 표시하여 여러 플러그인이 동일한 확장 지점을 사용할 때 충돌을 일으킬 수 있었습니다. 그 결과 렌더링된 플러그인 확장을 제어할 수 있는 방법이 없었습니다.
-
-이번 릴리스에서는 플러그인 확장이 클러스터 콘솔 Operator 구성의 정의와 동일한 순서로 확인됩니다. 결과적으로 관리자는 목록을 다시 정렬하여 콘솔에 표시되는 `CreateProjectModal` 확장을 제어할 수 있습니다.
-
-(OCPBUGS-43792)
-
-이번 업데이트 이전에는 콘솔에서 `ResourceYAMLEditor` 속성에서 정의한 헤더를 표시하지 않았으므로 YAML 뷰가 열린 것입니다. 이번 릴리스에서는 속성이 수정되었습니다. 결과적으로 Simple Pod 와 같은 헤더가 올바르게 표시됩니다. (OCPBUGS-32157)
-
-#### 1.6.15. 모니터링
-
-이번 업데이트 이전에는 `KubeNodeNotReady` 및 `KubeNodeReadinessFlapping` 경고가 차단된 노드를 필터링하지 않았습니다. 결과적으로 사용자는 유지 관리 중인 노드에 대한 경고를 수신하여 false positives가 발생했습니다.
-
-이번 릴리스에서는 차단된 노드가 경고에서 필터링됩니다. 결과적으로 유지 관리 중에 잘못된 긍정 수를 줄일 수 있습니다.
-
-OCPBUGS-60692
-
-이번 업데이트 이전에는 `KubeAggregatedAPIErrors` 경고는 API의 모든 인스턴스에서 오류 합계를 기반으로 했습니다. 결과적으로 인스턴스 수가 증가함에 따라 사용자가 경고를 받을 가능성이 더 높았습니다.
-
-이번 릴리스에서는 API 수준이 아닌 인스턴스 수준에서 경고가 평가됩니다. 결과적으로 instance-wise가 아닌 cluster-wise로 평가되기 때문에 API 오류 임계값으로 인해 잘못된 경보 수가 감소합니다.
-
-OCPBUGS-60691
-
-이번 업데이트 이전에는 `StatefulSet` 컨트롤러가 Pod를 생성하지 못하는 경우 `KubeStatefulSetReplicasMismatch` 경고가 실행되지 않았습니다. 그 결과 `StatefulSet` 이 원하는 수의 복제본에 도달하지 못한 경우 사용자에게 알림이 표시되지 않았습니다.
-
-이번 릴리스에서는 컨트롤러에서 Pod를 생성할 수 없는 경우 경고가 올바르게 실행됩니다. 결과적으로 `StatefulSet` 복제본이 구성된 양과 일치하지 않을 때마다 사용자에게 경고가 표시됩니다.
-
-OCPBUGS-60689
-
-이번 업데이트 이전에는 Cluster Monitoring Operator에서 비보안 TLS(Transport Layer Security) 암호에 대한 경고를 기록하여 보안에 대한 우려를 유발할 수 있었습니다. 이번 릴리스에서는 로그에서 암호화 경고를 제거하고 Operator가 정확하고 안전한 TLS 구성을 보고하도록 보안 TLS 설정이 구성됩니다. OCPBUGS-58475
-
-이번 업데이트 이전에는 OpenShift Container Platform 웹 콘솔의 모니터링 대시보드에 중간 결과에 대한 잘못된 가정으로 인해 큰 음수 CPU 사용률 값이 표시되는 경우가 있었습니다. 결과적으로 사용자는 웹 콘솔에서 음수 CPU 사용률을 볼 수 있었습니다.
-
-이번 릴리스에서는 CPU 사용률 값이 올바르게 계산되고 웹 콘솔에 더 이상 음수 사용률 값이 표시되지 않습니다. OCPBUGS-57481
-
-이번 업데이트 이전에는 네임스페이스에서 새 보안을 생성하거나 업데이트할 때 `Alertmanager` 가 `AlertmanagerConfig` 리소스에서 참조되지 않은 경우에도 Alertmanager를 조정했습니다. 그 결과 Prometheus Operator에서 과도한 API 호출을 생성하여 컨트롤 플레인 노드에서 CPU 사용량이 증가했습니다.
-
-이번 릴리스에서는 `Alertmanager Config` 리소스가 명시적으로 참조하는 시크릿만 조정합니다. (OCPBUGS-56158)
-
-이번 업데이트 이전에는 기능이 영향을 받지 않은 경우에도 Metrics Server에서 다음 경고를 기록했습니다.
-
-```shell-session
+* Before this update, Metrics Server logged the following warning even though functionality was not affected:
+```terminal
 setting componentGlobalsRegistry in SetFallback. We recommend calling componentGlobalsRegistry.Set() right after parsing flags to avoid using feature gates before their final values are set by the flags.
 ```
 
-이번 릴리스에서는 `metrics-server` 로그에 경고 메시지가 더 이상 표시되지 않습니다. OCPBUGS-41851
+With this release, the warning message no longer appears in the `metrics-server` logs. [OCPBUGS-41851](https://issues.redhat.com/browse/OCPBUGS-41851)
 
-이번 업데이트 이전에는 허용된 제한을 통해 CPU 소모가 급증한 후에도 `KubeCPUOvercommit` 경고가 다중 노드 클러스터에서 트리거되지 않았습니다. 이번 릴리스에서는 다중 노드 클러스터를 올바르게 고려하도록 경고 표현식이 조정됩니다. 결과적으로 이러한 인스턴스 후에 `KubeCPUOvercommit` 경고가 올바르게 트리거됩니다. OCPBUGS-35095
+* Before this update, the `KubeCPUOvercommit` alert would not trigger on multi-node clusters even after CPU-consuming spikes over the permitted limits. With this release, the alert expression is adjusted to correctly account for multi-node clusters. As a result, the `KubeCPUOvercommit` alert triggers correctly after such instances. [OCPBUGS-35095](https://issues.redhat.com/browse/OCPBUGS-35095)
 
-이번 업데이트 이전에는 prometheus, `prometheus _replica` 또는 `cluster` 를 `cluster-monitoring-config` 및 `user-workload-monitoring-config` 구성 맵에 대한 Prometheus 외부 라벨로 설정할 수 있었습니다. 이는 권장되지 않으며 클러스터에 문제가 발생할 수 있습니다.
+* Before this update, users could set `prometheus`, `prometheus_replica`, or `cluster` as Prometheus external labels to the `cluster-monitoring-config` and `user-workload-monitoring-config` config maps. This was not recommended and could cause issues with the cluster. With this release, the config maps no longer accept these reserved external labels. [OCPBUGS-18282](https://issues.redhat.com/browse/OCPBUGS-18282)
 
-이번 릴리스에서는 구성 맵에서 이러한 예약된 외부 레이블을 더 이상 허용하지 않습니다. OCPBUGS-18282
+#### Networking
 
-#### 1.6.16. 네트워킹
+* Before this update, an `NMState` service failure occurred in OpenShift Container Platform deployments because of a `NetworkManager-wait-online` dependency issue in baremetal and multiple network interface controller (NIC) environments. As a consequence, an incorrect network configuration caused deployment failures. With this release, the `NetworkManager-wait-online` dependency for baremetal deployments is updated, which reduces deployment failures and ensures `NMState` service stability. ([OCPBUGS-61824](https://issues.redhat.com/browse/OCPBUGS-61824))
 
-이번 업데이트 이전에는 baremetal 및 여러 NIC(네트워크 인터페이스 컨트롤러) 환경의 `NetworkManager-wait-online` 종속성 문제로 인해 OpenShift Container Platform 배포에서 `NMState` 서비스 오류가 발생했습니다. 결과적으로 잘못된 네트워크 구성으로 인해 배포 실패가 발생했습니다.
+* Before this release, the event data was not immediately available when the `cloud-event-proxy` container or pod rebooted. This caused the `getCurrenState` function to incorrectly return a `clockclass` of `0`. With this release, the `getCurrentState` function no longer returns an incorrect `clockclass` and instead returns an HTTP `400 Bad Request` or `404 Not Found Error`. ([OCPBUGS-59969](https://issues.redhat.com/browse/OCPBUGS-59969))
 
-이번 릴리스에서는 baremetal 배포에 대한 `NetworkManager-wait-online` 종속성이 업데이트되어 배포 실패를 줄이고 `NMState` 서비스 안정성을 보장합니다. (OCPBUGS-61824)
+* Before this update, the `HorizontalPodAutoscaler` object temporarily scaled the `istiod-openshift-gateway` deployment to two replicas. This caused a Continuous Integration (CI) failure because the tests expected one replica. With this release, the `HorizontalPodAutoscaler` object scaling verifies that the `istiod-openshift-gateway` resource has at least one replica to continue deployment. ([OCPBUGS-59894](https://issues.redhat.com/browse/OCPBUGS-59894))
 
-이번 릴리스 이전에는 `cloud-event-proxy` 컨테이너 또는 Pod가 재부팅될 때 이벤트 데이터를 즉시 사용할 수 없었습니다. 이로 인해 `getCurrenState` 함수가 `0` 의 `클럭 클래스` 를 잘못 반환했습니다.
+* Previously, the DNS Operator did not set the `readOnlyRootFilesystem` parameter to `true` in its configuration or for the configuration of its operands. As a result, the DNS Operator and its operands had `write` access to root file systems. With this release, the DNS Operator now sets the `readOnlyRootFilesystem` parameter to `true`, so that the DNS Operator and its operands now have `read-only` access to root file systems. This update provides enhanced security for your cluster. ([OCPBUGS-59781](https://issues.redhat.com/browse/OCPBUGS-59781))
 
-이번 릴리스에서는 `getCurrentState` 함수가 더 이상 잘못된 `클럭 클래스` 를 반환하지 않고 HTTP `400 Bad Request` 또는 `404 Not Found Error` 를 반환합니다. (OCPBUGS-59969)
+* Before this update, when the Gateway API feature was enabled, it installed an Istio control plane configured with one pod replica and an associated `PodDisruptionBudget` setting. The `PodDisruptionBudget` setting prevented the only pod replica from being evicted, blocking cluster upgrades. With this release, the Ingress Operator prevents the Istio control plane from being configured with the `PodDisruptionBudget` setting. Cluster upgrades are no longer blocked by the pod replica. ([OCPBUGS-58358](https://issues.redhat.com/browse/OCPBUGS-58358))
 
-이번 업데이트 이전에는 `HorizontalPodAutoscaler` 오브젝트가 `istiod-openshift-gateway` 배포를 두 개의 복제본으로 일시적으로 확장했습니다. 이로 인해 테스트에서 하나의 복제본이 예상되므로 CI(Continuous Integration) 오류가 발생했습니다.
+* Before this update, the Cluster Network Operator (CNO) stopped during a cluster upgrade when the `whereabouts-shim` network attachment was enabled. This issue occurred because of a missing `release.openshift.io/version` annotation in the `openshift-multus` namespace. With this release, the missing annotation is now added to the cluster, so that the CNO no longer stops during a cluster upgrade when the `whereabouts-shim` attached is enabled. The cluster upgrade can now continue as expected. ([OCPBUGS-57643](https://issues.redhat.com/browse/OCPBUGS-57643))
 
-이번 릴리스에서는 `HorizontalPodAutoscaler` 오브젝트 스케일링에서 배포를 계속하기 위해 `istiod-openshift-gateway` 리소스에 하나 이상의 복제본이 있는지 확인합니다. (OCPBUGS-59894)
+* Before this update, the Ingress Operator added resources, most noteably gateway resources, to the `status.relatedObjects` parameter of the Cluster Operator even if the CRDs for those resources did not exist. Additionally, the Ingress Operator specified a namespace for the `istios` and `GatewayClass`resources, which are both cluster-scoped resources. As a result of these configurations, the `relatedObjects` parameter contained misleading information. With this release, an update to the status controller of the Ingress Operator ensures that the controller checks if these resources already exist and also checks the related feature gates before adding any of these resources to the `relatedObjects` parameter . The controller no longer specifies namespaces for the `GatewayClass` and `istio` resources. This update ensures that the `relatedObjects` parameter contains accurate information for the `GatewayClass` and `istio` resources. ([OCPBUGS-57433](https://issues.redhat.com/browse/OCPBUGS-57433))
 
-이전에는 DNS Operator에서 구성 또는 피연산자 구성에 `readOnlyRootFilesystem` 매개변수를 `true` 로 설정하지 않았습니다. 그 결과 DNS Operator와 해당 피연산자에 루트 파일 시스템에 대한 `쓰기` 액세스 권한이 있었습니다.
+* Before this update, a cluster upgrade caused inconsistent egress IP address allocation due to stale Network Address Translation (NAT) handling. This issue occurred only when you deleted an egress IP pod while the OVN-Kubernetes controller for an egress node was down. As a consequence, duplicate Logical Router Policies and egress IP address usage occurred, which caused inconsistent traffic flow and outage. With this release, egress IP address allocation cleanup ensures consistent and reliable egress IP address allocation in OpenShift Container Platform 4.20 clusters. ([OCPBUGS-57179](https://issues.redhat.com/browse/OCPBUGS-57179))
 
-이번 릴리스에서는 DNS Operator가 `readOnlyRootFilesystem` 매개변수를 `true` 로 설정하여 DNS Operator 및 해당 피연산자가 이제 루트 파일 시스템에 대한 `읽기 전용` 액세스 권한을 갖도록 합니다. 이번 업데이트에서는 클러스터에 대한 향상된 보안을 제공합니다.
+* Previously, when on-premise installer-provisioned infrastructure (IPI) deployments used the Cilium container network interface (CNI), the firewall rule that redirected traffic to the load balancer was ineffective. With this release, the rule works with the Cilium CNI and `OVNKubernetes`. ([OCPBUGS-57065](https://issues.redhat.com/browse/OCPBUGS-57065))
 
-(OCPBUGS-59781)
+* Before this update, one of the `keepalived` health check scripts was failing due to missing permissions. This could cause the ingress VIP to be misplaced when shared ingress services were in use. With this release, the necessary permission was added back to the container so the health check now works correctly. ([OCPBUGS-55681](https://issues.redhat.com/browse/OCPBUGS-55681))
 
-이번 업데이트 이전에는 게이트웨이 API 기능이 활성화되면 하나의 Pod 복제본 및 연결된 `PodDisruptionBudget` 설정으로 구성된 Istio 컨트롤 플레인을 설치했습니다. `PodDisruptionBudget` 설정으로 인해 유일한 Pod 복제본이 제거되어 클러스터 업그레이드가 차단됩니다.
+* Before this update, stale IP addresses existed in the `address_set` list of the corresponding DNS rule for the `EgressFirewall` CRD. Instead of being removed, these stale addresses continued to get added to the `address_set`, causing memory leak issues. With this release, when the time-to-live (TTL) expiration for an IP address is reached, the IP address gets removed from the `address_set` list after a 5-second grace period has been reached. ([OCPBUGS-38735](https://issues.redhat.com/browse/OCPBUGS-38735))
 
-이번 릴리스에서는 Ingress Operator에서 Istio 컨트롤 플레인이 `PodDisruptionBudget` 설정으로 구성되지 않도록 합니다. 클러스터 업그레이드는 Pod 복제본에 의해 더 이상 차단되지 않습니다.
+* Before this update, certain traffic patterns with large packets running between OpenShift Container Platform nodes and pods triggered an OpenShift Container Platform host to send Internet Control Message Protocol (ICMP) needs frag to another OpenShift Container Platform host. This situation lowered the viable maximum transmission unit (MTU) in the cluster. As a consequence, executing the `ip route show cache` command displayed a cached route with a lower MTU than the physical link. Packets were dropped and OpenShift Container Platform components were degrading because the host did not send pod-to-pod traffic with the large packets. With this release, the `nftables` rules prevent the OpenShift Container Platform nodes from lowering their MTU in response to these traffic patterns. ([OCPBUGS-37733](https://issues.redhat.com/browse/OCPBUGS-37733))
 
-(OCPBUGS-58358)
+* Before this update, you could not override the node IP address selection process for deployments that ran on installer-provisioned infrastructure. This limitation impacted user-managed load balancers that did not use VIP addresses on a machine network, and this caused problems in environments that had multiple IP addresses. With this release, deployments that run on installer-provisioned infrastructure now support the `NODEIP_HINT ` parameter for the `nodeip-configuration` systemd service. This support update ensures that the correct node IP address is used, even when the VIP addresses are not on the same subnet. ([OCPBUGS-36859](https://issues.redhat.com/browse/OCPBUGS-36859))
 
-이번 업데이트 이전에는 `whereabouts-shim` 네트워크 연결이 활성화된 경우 클러스터 업그레이드 중에 CNO(Cluster Network Operator)가 중지되었습니다. 이 문제는 `openshift-multus` 네임스페이스에서 `release.openshift.io/version` 주석이 누락되어 발생했습니다.
+#### Node
 
-이번 릴리스에서는 이제 누락된 주석이 클러스터에 추가되어 `whereabouts-shim` 이 연결된 경우 클러스터 업그레이드 중에 CNO가 더 이상 중지되지 않습니다. 이제 클러스터 업그레이드가 예상대로 계속될 수 있습니다.
+* Before this update, in certain configurations, the kubelet's `podresources` API might have reported memory that was assigned to both active and terminated pods, instead of reporting memory assigned to only active pods. As a consequence, this inaccurate reporting might have affected workload placement by the NUMA-aware scheduler. With this release, kubelet's `podresources` no longer reports resources for terminated pods, which results in accurate workload placement by the NUMA-aware scheduler. ([OCPBUGS-56785](https://issues.redhat.com/browse/OCPBUGS-56785))
 
-(OCPBUGS-57643)
+* Before this release, the Container Runtime Interface-OpenShift (CRI-O) system failed to recognize the terminated state of a stateful set pod when the backend storage went down, causing the pod to remain in a `Terminating` state due to an inability to detect that the container process no longer existed. This caused resource inefficiency and potential service disruption. With this release, the CRI-O now correctly recognizes terminated pods, improving StatefulSet termination flow. ([OCPBUGS-55485](https://issues.redhat.com/browse/OCPBUGS-55485))
 
-이번 업데이트 이전에는 Ingress Operator에서 해당 리소스의 CRD가 없는 경우에도 Cluster Operator의 `status.relatedObjects` 매개변수에 리소스를 추가했습니다. 또한 Ingress Operator는 `istios` 및 `GatewayClass'resources에 대한 네임스페이스를 지정했습니다.
+* Before this update, if a CPU-pinned container within a Guaranteed QoS pod has cgroups quota defined, rounding and small delays in kernel CPU time accounting could cause throttling of the CPU-pinned process, even if the quota is set to allow 100% consumption for each allocated CPU. With this release, when `cpu-manager-policy=static` and the qualifications for static CPU assignment are satisfied, that is containers have Guaranteed QOS with integer CPU requests, the CFS quota is disabled. ([OCPBUGS-14051](https://issues.redhat.com/browse/OCPBUGS-14051))
 
-이는 클러스터 범위 리소스 모두입니다. 이러한 구성의 결과로 'relatedObjects` 매개변수에 잘못된 정보가 포함되어 있습니다.
+* Before this update, the maximum open files soft limit was reduced in OpenShift Container Platform builds. As a consequence, containers had a reduced maximum open files limit, causing application failures. With this release, the CRI-O configuration has been updated to restore the maximum open files limit. As a result, the maximum open files limit in containers is restored to the previous value, improving the functionality of applications that require higher limits. ([OCPBUGS-62095](https://issues.redhat.com/browse/OCPBUGS-62095))
 
-이번 릴리스에서는 Ingress Operator의 상태 컨트롤러를 업데이트하면 컨트롤러에서 이러한 리소스가 이미 있는지 확인하고 `relatedObjects` 매개변수에 이러한 리소스를 추가하기 전에 관련 기능 게이트도 확인합니다. 컨트롤러는 더 이상 `GatewayClass` 및 `istio` 리소스에 대한 네임스페이스를 지정하지 않습니다.
+#### Node Tuning Operator (NTO)
 
-이번 업데이트를 통해 `relatedObjects` 매개변수에 `GatewayClass` 및 `istio` 리소스에 대한 정확한 정보가 포함되어 있습니다. (OCPBUGS-57433)
+* Before this update, the `iommu.passthrough=1` kernel argument caused an NVIDIA GPU validator failure on Advanced RISC Machine (ARM) CPUs in OpenShift Container Platform 4.18. With this release, the kernel argument is removed from the default `Tuned` CR for ARM-based environments. ([OCPBUGS-52853](https://issues.redhat.com/browse/OCPBUGS-52853))
 
-이번 업데이트 이전에는 클러스터 업그레이드로 오래된 NAT(Network Address Translation) 처리로 인해 일관되지 않은 송신 IP 주소 할당이 발생했습니다. 이 문제는 송신 노드의 OVN-Kubernetes 컨트롤러가 중단된 동안 송신 IP Pod를 삭제한 경우에만 발생했습니다.
+#### Observability
 
-결과적으로 중복 논리 라우터 정책 및 송신 IP 주소 사용이 발생하여 일치하지 않는 트래픽 흐름 및 중단이 발생했습니다. 이번 릴리스에서는 OpenShift Container Platform 4.20 클러스터에서 송신 IP 주소 할당을 일관되고 안정적인 송신 IP 주소 정리를 수행할 수 있습니다.
+* Before this update, the linked URL is in the developer perspective, but the perspective is not switched when you clicked the link. As a consequence, a blank page displayed. With this releae, the perspective changes when you click the link and the page displays correctly. ([OCPBUGS-59215](https://issues.redhat.com/browse/OCPBUGS-59215))
 
-(OCPBUGS-57179)
+* Before this update, the **Troubleshooting** panel only worked in the admin perspective even though you could open the panel in all perspectives. As a consequence, when opening the panel in another perspective, the panel was non-operational. With this release, the **Troubleshooting** panel can only be opened from the admin perspective. ([OCPBUGS-58166](https://issues.redhat.com/browse/OCPBUGS-58166))
 
-이전 버전에서는 온프레미스 설치 관리자 프로비저닝 인프라(IPI) 배포에서 Cilium 컨테이너 네트워크 인터페이스(CNI)를 사용한 경우 트래픽을 로드 밸런서로 리디렉션하는 방화벽 규칙이 효과가 없었습니다. 이번 릴리스에서는 규칙이 Cilium CNI 및 `OVNKubernetes` 에서 작동합니다. (OCPBUGS-57065)
+#### oc-mirror
 
-이번 업데이트 이전에는 `keepalived` 상태 점검 스크립트 중 하나가 누락된 권한으로 인해 실패했습니다. 이로 인해 공유 수신 서비스를 사용 중인 경우 ingress VIP가 잘못 배치될 수 있습니다. 이번 릴리스에서는 필요한 권한이 컨테이너에 다시 추가되어 상태 검사가 올바르게 작동합니다. (OCPBUGS-55681)
+* Before this update, the incorrect count of mirrored Helm images in `oc-mirror` caused a failure to note all mirrored Helm images. As a consequence, an incorrect Helm image count was displayed. With this release, the incorrect Helm image count in `oc-mirror` is fixed, and correctly mirrors all Helm images. As a result, the total mirrored images count for Helm charts in `oc-mirror` is accurate. ([OCPBUGS-59949](https://issues.redhat.com/browse/OCPBUGS-59949))
 
-이번 업데이트 이전에는 `EgressFirewall` CRD에 대한 해당 DNS 규칙의 `address_set` 목록에 오래된 IP 주소가 있었습니다. 제거되는 대신 이러한 오래된 주소가 `address_set` 에 계속 추가되어 메모리 누수 문제가 발생합니다.
+* Before this update, the `--parallel-images` flag accepted invalid input, with a minimum value that was less than 1 or greater than the total number of images. As a consequence, parallel image copy failed with 0 or 100 `--parallel-images` flag, and limited the number of images that could be mirrored. With this release, the issue with invalid `--parallel-images` flags is fixed, and values between 1 and the total number of images are accepted. As a result, users can set the `--parallel-images` flag for any value in the valid range. ([OCPBUGS-58467](https://issues.redhat.com/browse/OCPBUGS-58467))
 
-이번 릴리스에서는 IP 주소에 대한 TTL(Time-to-live) 만료에 도달하면 5초 유예 기간에 도달한 후 IP 주소가 `address_set` 목록에서 제거됩니다. (OCPBUGS-38735)
+* Before this update, high `oc-mirror v2` concurrency defaults caused registry overload and led to request rejections. As a consequence, high concurrency defaults caused registry rejections, and failed container image pushes failed. With this release, concurrency defaults for `oc-mirror v2` are reduced to avoid registry rejections, and the image push success rate is improved. ([OCPBUGS-57370](https://issues.redhat.com/browse/OCPBUGS-57370))
 
-이번 업데이트 이전에는 OpenShift Container Platform 노드와 Pod 간에 실행되는 대규모 패킷이 있는 특정 트래픽 패턴에서 OpenShift Container Platform 호스트를 트리거하여 IMP(Internet Control Message Protocol)를 다른 OpenShift Container Platform 호스트로 보내야 했습니다.
+* Before this update, a bug occurred due to a mismatch between image digests and blocked image tags in the `ImageSetConfig` parameter. This bug caused users to see images from various cloud providers in a mirrored set, although they were blocked. With this release, the `ImageSetConfig` parameter is updated to support regular expression in the `blockedImages` list for more flexible image exclusion, and allows the exclusion of images that match a regular expression pattern in the `blockedImages` list. ([OCPBUGS-56117](https://issues.redhat.com/browse/OCPBUGS-56117))
 
-이 상황은 클러스터에서 실행 가능한 최대 전송 단위(MTU)를 줄였습니다. 그 결과 `ip route show cache` 명령을 실행하면 물리적 링크보다 낮은 MTU가 있는 캐시된 경로가 표시되었습니다.
+* Before this update, the system umask value was set to `0077` for Security Technical Implementation Guide (STIG) compliance, and caused the `disk2mirror` parameter to stop uploading OpenShift Container Platform release images. As a consequence, users could not upload OpenShift Container Platform release images due to the umask command restriction. With this release, `oc-mirror` handles the faulty umask value and alerts the user. The OpenShift Container Platform release images are uploaded correctly when the system umask is set to `0077`. ([OCPBUGS-55374](https://issues.redhat.com/browse/OCPBUGS-55374))
 
-호스트가 대규모 패킷으로 Pod-to-pod 트래픽을 보내지 않았기 때문에 패킷이 삭제되고 OpenShift Container Platform 구성 요소가 저하되었습니다. 이번 릴리스에서는 `nftables` 규칙을 통해 OpenShift Container Platform 노드가 이러한 트래픽 패턴에 따라 MTU를 낮추지 않습니다.
+* Before this update, an invalid Helm chart was incorrectly included in an Internet Systems Consortium (ISC) guideline, and caused an error message while running the `m2d`workflow. With this release, the error message for invalid Helm charts in `m2d` workflows is updated, and error message clarity is improved.  ([OCPBUGS-54473](https://issues.redhat.com/browse/OCPBUGS-54473))
 
-(OCPBUGS-37733)
+* Before this update, multiple release collections occurred due to duplicate channel selection. As a consequence, duplicate release images were collected, and caused unnecessary storage usage. With this release, duplicate release collection is fixed, and each release is collected once. As a result, the duplicate release collection is eliminated, and ensures efficient storage with faster access. ([OCPBUGS-52562](https://issues.redhat.com/browse/OCPBUGS-52562))
 
-이번 업데이트 이전에는 설치 관리자 프로비저닝 인프라에서 실행된 배포의 노드 IP 주소 선택 프로세스를 재정의할 수 없었습니다. 이로 인해 머신 네트워크에서 VIP 주소를 사용하지 않은 사용자 관리 로드 밸런서에 영향을 주었으며 여러 IP 주소가 있는 환경에서 문제가 발생했습니다.
+* Before this update, `oc-mirror` did not check the availability of the specific OpenShift Container Platform version, and caused it to continue with non-existent versions. As a consequence, users assumed that the mirroring was successful because no error messages were received. With this release, `oc-mirror` returns an error when a non-existent OpenShift Container Platform version is specified, in addition to a reason for the issue. As a result, users are aware of unavailable versions and can take appropriate action. ([OCPBUGS-51157](https://issues.redhat.com/browse/OCPBUGS-51157))
 
-이번 릴리스에서는 설치 관리자 프로비저닝 인프라에서 실행되는 배포가 ' `nodeip-configuration systemd 서비스에 대한 NODEIP_HINT ' 매개변수를` 지원합니다. 이번 업데이트에서는 VIP 주소가 동일한 서브넷에 있지 않은 경우에도 올바른 노드 IP 주소를 사용할 수 있습니다.
+#### OpenShift API Server
 
-(OCPBUGS-36859)
+* Before this update, on a cluster upgraded from OpenShift Container Platform 4.16, or earlier, there might be previously generated image pull secrets that cannot be deleted due to the presence of the `openshift.io/legacy-token` finalizer, if the internal Image Registry was removed. With this release, the issue no longer occurs. ([OCPBUGS-52193](https://issues.redhat.com/browse/OCPBUGS-52193))
 
-#### 1.6.17. 노드
+* Before this update, deleting an `istag` resource with the `--dry-run=server` option unintentionally caused actual deletion of the image from the server. This unexpected deletion occurred due to the `dry-run` option being implemented incorrectly in the `oc delete istag` command. With this release, the `dry-run` option is wired to the 'oc delete istag' command. As a result, the accidental deletion of image objects is prevented and the `istag` object remains intact when using the `--dry-run=server` option. ([OCPBUGS-35855](https://issues.redhat.com/browse/OCPBUGS-35855))
 
-이번 업데이트 이전에는 특정 구성에서 kubelet의 `podresources` API가 활성 Pod에만 할당된 메모리를 보고하는 대신 활성 및 종료된 Pod 모두에 할당된 메모리를 보고했을 수 있습니다. 결과적으로 이러한 부정확한 보고가 NUMA 인식 스케줄러의 워크로드 배치에 영향을 미칠 수 있습니다.
+#### OpenShift CLI (oc)
 
-이번 릴리스에서는 kubelet의 `podresources` 에서 종료된 Pod의 리소스를 더 이상 보고하지 않으므로 NUMA 인식 스케줄러에서 정확한 워크로드 배치를 생성합니다. (OCPBUGS-5678 5)
+* Before this update, the `oc adm node-image create` command failed to create an International Organization for Standardization (ISO) image if the target cluster did not have a debug SSH key store in the `99-worker-ssh` config map, which is not a requirement for generating an image. With this release, the ISO image can successfully be created without this key store in the `99-worker-ssh` config map. ([OCPBUGS-60600](https://issues.redhat.com/browse/OCPBUGS-60600))
 
-이번 릴리스 이전에는 CRI-O(Container Runtime Interface-OpenShift) 시스템이 백엔드 스토리지가 중단될 때 상태 저장 세트 Pod의 종료된 상태를 인식하지 못하여 컨테이너 프로세스가 더 이상 존재하지 않음을 감지할 수 없기 때문에 Pod가 `Terminating` 상태로 유지되었습니다.
+* Before this update, a panic occurred during `oc describe templateinstance` due to nil pointer dereference in `TemplateInstanceDescriber`. With this release, nil pointer dereference in the `oc describe templateinstance` command was fixed by checking for nil secret before describing parameters. ([OCPBUGS-60281](https://issues.redhat.com/browse/OCPBUGS-60281))
 
-이로 인해 리소스 비효율 및 잠재적인 서비스 중단이 발생했습니다. 이번 릴리스에서는 CRI-O에서 종료된 Pod를 올바르게 인식하고 StatefulSet 종료 흐름을 개선합니다.
+* Before this update, the `oc login -u` command in external OIDC environments succeeded but removed user credentials, causing subsequent `oc` commands to fail. With this release, the `oc login -u` command no longer modifies kubeconfig, preventing subsequent `oc` commands from failing. As a result, the fix prevents `oc login -u` from removing user credentials, ensuring subsequent "oc" commands work correctly. ([OCPBUGS-58393](https://issues.redhat.com/browse/OCPBUGS-58393))
 
-(OCPBUGS-55485)
+* Before this update, when using the`oc adm node-image create` command, the command would not provide descriptive error messages after failures. With this release, the command provides error messages when it fails. ([OCPBUGS-55048](https://issues.redhat.com/browse/OCPBUGS-55048))
 
-이번 업데이트 이전에는 Guaranteed QoS Pod 내의 CPU 고정 컨테이너에 cgroups 할당량이 정의되어 있는 경우, 커널 CPU 시간 계산에서 반올림 및 작은 지연으로 인해 할당량이 각 할당된 CPU에 대해 100% 사용을 허용하더라도 CPU 고정 프로세스의 제한을 유발할 수 있습니다.
+* Before this update, the must-gather pod could be scheduled on a node marked with a `NotReady` taint, resulting in deployment to an unavailable node and subsequent log collection failures. With this release, the scheduler now accounts for node taints and automatically applies a node selector to the pod specification. This change ensures that must-gather pods are not scheduled on tainted nodes, thereby preventing log collection failures. ([OCPBUGS-50992](https://issues.redhat.com/browse/OCPBUGS-50992))
 
-이번 릴리스에서는 `cpu-manager-policy=static` 및 정적 CPU 할당 자격이 충족되면 컨테이너에 정수 CPU 요청이 있는 QOS가 보장되면 CFS 할당량이 비활성화됩니다. (OCPBUGS-14051)
+* Before this update, when using the `oc adm node-image create` command to add nodes to a cluster, the command erroneously modified the existing permissions of the target assets folder when saving the ISO on disk. With this release, the fix ensures that the copying operation will preserve the destination folder permissions. ([OCPBUGS-49897](https://issues.redhat.com/browse/OCPBUGS-49897))
 
-#### 1.6.18. Node Tuning Operator (NTO)
+#### OpenShift Controller
 
-이번 업데이트 이전에는 `iommu.passthrough=1` 커널 인수로 OpenShift Container Platform 4.18의 Advanced RISC Machine(ARM) CPU에서 NVIDIA GPU 유효성 검사기가 실패했습니다. 이번 릴리스에서는 ARM 기반 환경의 기본 `Tuned` CR에서 커널 인수가 제거됩니다. (OCPBUGS-528 53)
+* Before this update, the build controller looked for secrets that were linked for general use, not specifically for the image pull. With this release, when searching for default image pull secrets, the builds use `ImagePullSecrets` that are linked to the service account. ([OCPBUGS-57918](https://issues.redhat.com/browse/OCPBUGS-57918))
 
-#### 1.6.19. 가시성
+* Before this update, incorrectly formatted proxy environment variables in Build pod led to build failures due to external binary format complaints. With this release, builds no longer fail due to incorrectly formatted proxy environment variables as they are now excluded. ([OCPBUGS-54695](https://issues.redhat.com/browse/OCPBUGS-54695))
 
-이번 업데이트 이전에는 연결된 URL이 개발자 화면에 있지만 링크를 클릭하면 관점이 전환되지 않습니다. 결과적으로 빈 페이지가 표시됩니다. 이 releae를 사용하면 링크를 클릭하면 관점이 변경되고 페이지가 올바르게 표시됩니다. (OCPBUGS-59215)
+#### {olmv0-first}
 
-이번 업데이트 이전에는 모든 화면에서 패널을 열 수 있어도 문제 해결 패널이 관리자 화면에서만 작동했습니다. 그 결과 다른 관점에서 패널을 열 때 패널은 작동하지 않았습니다. 이번 릴리스에서는 관리자 화면에서만 문제 해결 패널을 열 수 있습니다. (OCPBUGS-58166)
+* Before this update, bundle unpack jobs did not inherit control plane tolerances for the catalog Operator when they were created. As a result, bundle unpack jobs ran on worker nodes only. If no worker nodes were available due to taints, cluster administrators could not install or update Operators on the cluster. With this release, {olmv0} adopts control plane tolerations for bundle unpack jobs and the jobs can run as part of the control plane. ([OCPBUGS-58349](//https://issues.redhat.com/browse/OCPBUGS-58349))
 
-#### 1.6.20. oc-mirror
+* Before this update, when an Operator supplied more than one API in an Operator group namespace, {olmv0} made unnecessary update calls to the cluster roles that were created for the Operator group. As a result, these unnecessary calls caused churn for ectd and the API server. With this update, {olmv0} does not make unnecessary update calls to the cluster role objects in Operator groups. ([OCPBUGS-57222](https://issues.redhat.com/browse/OCPBUGS-57222))
 
-이번 업데이트 이전에는 다음 명령에서 미러링된 Helm 이미지의 잘못된 수로 인해 미러링된 모든 Helm 이미지를 기록하지 못했습니다. 그 결과 잘못된 Helm 이미지 수가 표시되었습니다.
+* Before this update, if the `olm-operator` pod crashed during cluster updates due to mislabeled resources, the notification message used the `info` label. With this update, crash notification messages due to mislabeled resources use the `error` label instead. ([OCPBUGS-53161](https://issues.redhat.com/browse/OCPBUGS-53161))
 
-```shell
-oc-mirror
-```
+* Before this update, the catalog Operator scheduled catalog snapshots for every 5 minutes. On clusters with many namespaces and subscriptions, snapshots failed and cascaded across catalog sources. As a result, the spikes in CPU loads effectively blocked installing and updating Operators. With this update, catalog snapshots are scheduled for every 30 minutes to allow enough time for the snapshotes to resolve. ([OCPBUGS-43966](https://issues.redhat.com/browse/OCPBUGS-43966))
 
-이번 릴리스에서는 의 잘못된 Helm 이미지 수가 수정되어 모든 Helm 이미지를 올바르게 미러링합니다. 결과적으로 다음 명령에서 Helm 차트에 대해 미러링된 총 이미지 수가 정확합니다.
+#### Service Catalog
 
-```shell
-oc-mirror
-```
+* Before this update, setting an invalid certificate secret name in the service annotation `service.beta.openshift.io/serving-cert-secret-name` would cause the service Certificate Authority (CA) Operator to hot loop. With this release, the Operator stops retrying to create the secret after 10 tries. The number of retries cannot be changed. ([OCPBUGS-61966](https://issues.redhat.com/browse/OCPBUGS-61966))
 
-```shell
-oc-mirror
-```
+#### Storage
 
-(OCPBUGS-59949)
+* Before this update, resizing or cloning small {gcp-first} Hyperdisk volumes (e.g., from 4Gi to 5Gi) would fail due to an Input/Output Operations Per Second (IOPS) validation error from the {gcp-full} API. This occurred because the Container Storage Interface (CSI) driver did not automatically adjust the provisioned IOPS to meet the minimum requirements of the new volume size. With this release, the driver has been updated to correctly calculate and provide the required IOPS during volume expansion operations. Users can now successfully resize and clone these smaller Hyperdisk volumes. ([OCPBUGS-62117](https://issues.redhat.com/browse/OCPBUGS-62117))
 
-이번 업데이트 이전에는 `--parallel-images` 플래그에서 유효하지 않은 입력을 허용했으며 최소 값은 1보다 작거나 총 이미지 수보다 큽니다. 결과적으로 병렬 이미지 사본이 0 또는 100 `--parallel-images` 플래그로 실패하고 미러링할 수 있는 이미지 수를 제한했습니다.
+* Before this update, a race condition would sometimes cause an intermittent failure, or _flake_, when a Persistent Volume Claim (PVC) was resized too quickly after being created. This resulted in an error where the system would incorrectly report that the bound Persistent Volume (PV) could not be found. With this release, the timing issue was fixed, so resizing a PVC right after its creation works. ([OCPBUGS-61546](https://issues.redhat.com/browse/OCPBUGS-61546))
 
-이번 릴리스에서는 유효하지 않은 `--parallel-images` 플래그의 문제가 수정되었으며 1과 총 이미지 수 간의 값이 허용됩니다. 결과적으로 사용자는 유효한 범위의 모든 값에 대해 `--parallel-images` 플래그를 설정할 수 있습니다.
+### Technology Preview features status
 
-(OCPBUGS-58467)
+Some features in this release are currently in Technology Preview. These experimental features are not intended for production use. Note the following scope of support on the Red Hat Customer Portal for these features:
 
-이번 업데이트 이전에는 동시성 기본값이 레지스트리 과부하가 발생하여 거부를 요청했습니다. 결과적으로 높은 동시성 기본값으로 인해 레지스트리 거부가 발생하여 컨테이너 이미지 푸시에 실패했습니다.
+[Technology Preview Features Support Scope](https://access.redhat.com/support/offerings/techpreview)
 
-```shell
-oc-mirror v2
-```
+In the following tables, features are marked with the following statuses:
 
-```shell
-oc-mirror v2
-```
+* _Not Available_
+* _Technology Preview_
+* _General Availability_
+* _Deprecated_
+* _Removed_
 
-이번 업데이트 이전에는 `ImageSetConfig` 매개변수에서 이미지 다이제스트와 차단된 이미지 태그 간에 불일치로 인해 버그가 발생했습니다. 이 버그로 인해 사용자가 차단되었지만 미러링된 세트의 다양한 클라우드 공급자의 이미지를 볼 수 있었습니다.
+#### Authentication and authorization Technology Preview features
 
-이번 릴리스에서는 더 유연한 이미지 제외를 위해 `blockedImages` 목록에서 정규식을 지원하도록 `ImageSetConfig` 매개변수가 업데이트되고 `blockedImages` 목록의 정규식 패턴과 일치하는 이미지를 제외할 수 있습니다. (OCPBUGS-56117)
+Authentication and authorization Technology Preview tracker
+|====
+|Feature |4.18 |4.19 |4.20
 
-이번 업데이트 이전에는STIG(Security Technical Implementation Guide) 규정 준수의 경우 system Cryostat 값이 `0077` 로 설정되었으며 `disk2mirror` 매개변수가 OpenShift Container Platform 릴리스 이미지 업로드를 중지했습니다.
+|Pod security admission restricted enforcement
+|Technology Preview
+|Technology Preview
+|Technology Preview
 
-결과적으로 사용자가 Cryostat 명령 제한으로 인해 OpenShift Container Platform 릴리스 이미지를 업로드할 수 없었습니다. 이번 릴리스에서는 다음 명령에서 결함이 있는 Cryostat 값을 처리하고 사용자에게 경고합니다.
+|Direct authentication with an external OIDC identity provider
+|Not Available
+|Technology Preview
+|General Availability ^1^
 
-```shell
-oc-mirror
-```
+|====
 
-시스템이 `0077` 로 설정된 경우 OpenShift Container Platform 릴리스 이미지가 올바르게 업로드됩니다. (OCPBUGS-55374)
+ This feature is GA starting in OpenShift Container Platform 4.20.5. Earlier 4.20.z versions remain in Technology Preview.
 
-이번 업데이트 이전에는 잘못된 Helm 차트가 인터넷 시스템 컨소시엄(ISC) 가이드 라인에 잘못 포함되었으며 `m2d'workflow를 실행하는 동안 오류 메시지가 발생했습니다. 이번 릴리스에서는 'm2d` 워크플로우에서 잘못된 Helm 차트에 대한 오류 메시지가 업데이트되고 오류 메시지가 명확하게 표시됩니다. (OCPBUGS-54473)
+#### Edge computing Technology Preview features
 
-이번 업데이트 이전에는 중복 채널 선택으로 인해 여러 릴리스 컬렉션이 발생했습니다. 그 결과 중복 릴리스 이미지가 수집되어 불필요한 스토리지 사용량이 발생했습니다. 이번 릴리스에서는 중복 릴리스 컬렉션이 수정되고 각 릴리스가 한 번 수집됩니다. 결과적으로 중복 릴리스 컬렉션이 제거되고 더 빨리 액세스할 수 있는 효율적인 스토리지가 보장됩니다. (OCPBUGS-52562)
+Edge computing Technology Preview tracker
+|====
+|Feature |4.18 |4.19 |4.20
 
-이번 업데이트 이전에는 다음 명령에서 특정 OpenShift Container Platform 버전의 가용성을 확인하지 않아 존재하지 않는 버전이 계속되었습니다. 결과적으로 사용자는 오류 메시지가 수신되지 않았기 때문에 미러링에 성공했다고 가정합니다.
+|Accelerated provisioning of {ztp}
+|Technology Preview
+|Technology Preview
+|Technology Preview
 
-```shell
-oc-mirror
-```
+|Enabling disk encryption with TPM and PCR protection
+|Technology Preview
+|Technology Preview
+|Technology Preview
 
-이번 릴리스에서는 문제의 이유 외에도 다음 명령에서 존재하지 않는 OpenShift Container Platform 버전이 지정된 경우 오류를 반환합니다. 결과적으로 사용자는 사용할 수 없는 버전을 인식하고 적절한 조치를 취할 수 있습니다.
+|Configuring a local arbiter node
+|Not Available
+|Technology Preview
+|General Availability
 
-```shell
-oc-mirror
-```
+|Configuring a two-node OpenShift cluster with fencing
+|Not Available
+|Not Available
+|Technology Preview
+|====
 
-(OCPBUGS-51157)
+#### Extensions Technology Preview features
 
-#### 1.6.21. OpenShift API Server
+Extensions Technology Preview tracker
+|====
+|Feature |4.18 |4.19 |4.20
 
-이번 업데이트 이전에는 내부 이미지 레지스트리가 제거된 경우 OpenShift Container Platform 4.16 이상에서 업그레이드한 클러스터에서 `openshift.io/legacy-token` 종료자가 있기 때문에 삭제할 수 없는 이전에 생성된 이미지 풀 시크릿이 있을 수 있습니다. 이번 릴리스에서는 더 이상 문제가 발생하지 않습니다.
+|{olmv1-first}
+|General Availability
+|General Availability
+|General Availability
 
-(OCPBUGS-52193)
+|{olmv1} runtime validation of container images using sigstore signatures
+|Technology Preview
+|Technology Preview
+|Technology Preview
 
-이번 업데이트 이전에는 `--dry-run=server` 옵션을 사용하여 `istag` 리소스를 실수로 삭제하여 서버에서 이미지를 실제로 삭제했습니다. 이 예기치 않은 삭제는 아래 명령에서 `시험 실행` 옵션이 잘못 구현되어 발생했습니다.
+|{olmv1} permissions preflight check for cluster extensions
+|Not Available
+|Technology Preview
+|Technology Preview
 
-```shell
-oc delete istag
-```
+|{olmv1} deploying a cluster extension in a specified namespace
+|Not Available
+|Technology Preview
+|Technology Preview
 
-이번 릴리스에서는 `'oc delete istag' 명령에 시험 실행` 옵션이 연결됩니다. 결과적으로 이미지 오브젝트를 실수로 삭제할 수 없으며 `--dry-run=server` 옵션을 사용할 때 `istag` 오브젝트는 그대로 유지됩니다.
+|{olmv1} deploying a cluster extension that uses webhooks
+|Not Available
+|Not Available
+|Technology Preview
+|====
 
-(OCPBUGS-35855)
+#### Installation Technology Preview features
 
-#### 1.6.22. OpenShift CLI(oc)
+Installation Technology Preview tracker
+|====
+|Feature |4.18 |4.19 |4.20
 
-이번 업데이트 이전에는 대상 클러스터에 이미지 생성 요구 사항이 아닌 `99-worker-ssh` 구성 맵에 디버그 SSH 키 저장소가 없는 경우 아래 명령에서 ISO(International Organization for Standardization) 이미지를 생성하지 못했습니다.
+|Adding kernel modules to nodes with kvc
+|Technology Preview
+|Technology Preview
+|Technology Preview
 
-```shell
-oc adm node-image create
-```
+|Enabling NIC partitioning for SR-IOV devices
+|General Availability
+|General Availability
+|General Availability
 
-이번 릴리스에서는 `99-worker-ssh` 구성 맵의 이 키 저장소 없이 ISO 이미지를 성공적으로 생성할 수 있습니다. (OCPBUGS-60600)
+|User-defined labels and tags for {gcp-first}
+|General Availability
+|General Availability
+|General Availability
 
-이번 업데이트 이전에는 `TemplateInstanceDescriber` 의 nil 포인터 역참조로 인해 중에 패닉이 발생했습니다. 이번 릴리스에서는 아래 명령의 nil 포인터 역참조가 매개 변수를 설명하기 전에 nil 시크릿을 확인하여 수정되었습니다.
+|Installing a cluster on Alibaba Cloud by using Assisted Installer
+|Technology Preview
+|Technology Preview
+|Technology Preview
 
-```shell
-oc describe templateinstance
-```
+|Installing a cluster on {azure-first} with confidential VMs
+|Technology Preview
+|General Availability
+|General Availability
 
-```shell
-oc describe templateinstance
-```
+|Dedicated disk for etcd on {azure-full}
+|Not Available
+|Not Available
+|Technology Preview
 
-(OCPBUGS-60281)
+|Mount shared entitlements in BuildConfigs in RHEL
+|Technology Preview
+|Technology Preview
+|Technology Preview
 
-이번 업데이트 이전에는 외부 OIDC 환경의 아래 명령이 성공했지만 사용자 인증 정보가 제거되어 후속 아래 명령이 실패합니다. 이번 릴리스에서는 아래 명령이 더 이상 kubeconfig를 수정하지 않아 후속 아래 명령이 실패하지 않습니다.
+|OpenShift zones support for vSphere host groups
+|Not Available
+|Technology Preview
+|Technology Preview
 
-```shell
-oc login -u
-```
-
-```shell
-oc
-```
-
-```shell
-oc login -u
-```
-
-```shell
-oc
-```
-
-```shell
-oc login -u
-```
-
-이번 업데이트 이전에는 'oc adm node-image create' 명령을 사용할 때 실패 후 명령에서 설명 오류 메시지를 제공하지 않았습니다. 이번 릴리스에서는 명령이 실패할 때 오류 메시지를 제공합니다. (OCPBUGS-55048)
-
-이번 업데이트 이전에는 `NotReady` 테인트가 표시된 노드에 must-gather Pod를 예약하여 사용할 수 없는 노드에 배포 및 후속 로그 수집 오류가 발생할 수 있었습니다. 이번 릴리스에서는 스케줄러에서 노드 테인트를 고려하여 노드 선택기를 Pod 사양에 자동으로 적용합니다.
-
-이 변경으로 인해 테인트된 노드에 must-gather Pod가 예약되지 않아 로그 수집 실패가 발생하지 않습니다. (OCPBUGS-50992)
-
-이번 업데이트 이전에는 아래 명령을 사용하여 클러스터에 노드를 추가할 때 ISO를 디스크에 저장할 때 대상 자산 폴더의 기존 권한을 잘못 수정했습니다. 이번 릴리스에서는 복사 작업에서 대상 폴더 권한이 유지되도록 합니다. (OCPBUGS-49897)
-
-```shell
-oc adm node-image create
-```
-
-#### 1.6.23. OpenShift Controller
-
-이번 업데이트 이전에는 특히 이미지 가져오기를 위한 것이 아니라 일반적인 사용을 위해 연결된 보안을 빌드 컨트롤러에서 찾아냈습니다. 이번 릴리스에서는 기본 이미지 가져오기 보안을 검색할 때 빌드에서 서비스 계정에 연결된 `ImagePullSecrets` 를 사용합니다. (OCPBUGS-57918)
-
-이번 업데이트 이전에는 빌드 Pod에서 프록시 환경 변수를 잘못 포맷하여 외부 바이너리 형식 불만으로 인해 빌드 오류가 발생했습니다. 이번 릴리스에서는 이제 제외되므로 프록시 환경 변수가 잘못 포맷되어 빌드가 실패하지 않습니다. (OCPBUGS-54695)
-
-#### 1.6.24. OLM(Operator Lifecycle Manager) Classic
-
-이번 업데이트 이전에는 번들 압축 해제 작업이 카탈로그 Operator가 생성될 때 컨트롤 플레인 허용 범위를 상속하지 않았습니다. 결과적으로 번들의 압축 해제 작업이 작업자 노드에서만 실행되었습니다.
-
-테인트로 인해 사용 가능한 작업자 노드가 없는 경우 클러스터 관리자는 클러스터에 Operator를 설치하거나 업데이트할 수 없습니다. 이번 릴리스에서는 OLM(Classic)에서 번들 압축 해제 작업에 대한 컨트롤 플레인 허용 오차를 채택하고 작업은 컨트롤 플레인의 일부로 실행할 수 있습니다.
-
-(OCPBUGS-58349)
-
-이번 업데이트 이전에는 Operator가 Operator group 네임스페이스에 두 개 이상의 API를 제공하면 OLM(Classic)에서 Operator group에 대해 생성된 클러스터 역할에 대한 불필요한 업데이트 호출을 수행했습니다. 결과적으로 이러한 불필요한 호출로 인해 ectd 및 API 서버의 churn이 발생했습니다.
-
-이번 업데이트를 통해 OLM(Classic)은 Operator 그룹의 클러스터 역할 오브젝트에 대한 불필요한 업데이트 호출을 수행하지 않습니다. (OCPBUGS-57222)
-
-이번 업데이트 이전에는 레이블이 잘못 지정된 리소스로 인해 클러스터 업데이트 중에 `olm-operator` Pod가 충돌하면 알림 메시지에서 `info` 레이블을 사용했습니다. 이번 업데이트를 통해 리소스가 잘못 지정된 리소스로 인해 크래시 알림 메시지가 대신 `오류` 레이블을 사용합니다. (OCPBUGS-53161)
-
-이번 업데이트 이전에는 카탈로그 Operator에서 5분마다 카탈로그 스냅샷을 예약했습니다. 네임스페이스 및 서브스크립션이 많은 클러스터에서 스냅샷이 실패하고 카탈로그 소스 간에 캐스케이드되었습니다.
-
-결과적으로 CPU 로드의 급증으로 인해 Operator 설치 및 업데이트가 효과적으로 차단되었습니다. 이번 업데이트를 통해 스냅샷이 해결될 수 있도록 30분마다 카탈로그 스냅샷이 예약됩니다.
-
-(OCPBUGS-43966)
-
-#### 1.6.25. Service Catalog
-
-이번 업데이트 이전에는 서비스 주석 `service.beta.openshift.io/serving-cert-secret-name` 에서 유효하지 않은 인증서 보안 이름을 설정하면 CA(서비스 인증 기관) Operator가 핫 루프가 됩니다. 이번 릴리스에서는 Operator가 10번 시도한 후 시크릿 생성을 중지했습니다.
-
-재시도 횟수는 변경할 수 없습니다. (OCPBUGS-61966)
-
-#### 1.6.26. 스토리지
-
-이번 업데이트 이전에는 Google Cloud API의 Input/Output Operations Per Second (IOPS) 검증 오류로 인해 소규모 Google Cloud Hyperdisk 볼륨(예: 4Gi에서 5Gi)의 크기 조정 또는 복제가 실패했습니다.
-
-CSI(Container Storage Interface) 드라이버가 새 볼륨 크기의 최소 요구 사항을 충족하도록 프로비저닝된 IOPS를 자동으로 조정하지 않았기 때문에 발생했습니다. 이번 릴리스에서는 볼륨 확장 작업 중에 필요한 IOPS를 올바르게 계산하고 제공하도록 드라이버가 업데이트되었습니다.
-
-이제 이러한 작은 Hyperdisk 볼륨의 크기를 조정하고 복제할 수 있습니다. (OCPBUGS-62117)
-
-이번 업데이트 이전에는 생성된 후 PVC(영구 볼륨 클레임)의 크기를 너무 빨리 조정할 때 경쟁 조건으로 인해 간헐적인 실패 또는 디스크가 발생하는 경우가 있었습니다. 이로 인해 시스템에서 바인딩된 PV(영구 볼륨)를 찾을 수 없다고 잘못 보고하는 오류가 발생했습니다.
-
-이번 릴리스에서는 타이밍 문제가 해결되어 생성이 작동하는 직후 PVC 크기 조정이 수정되었습니다. (OCPBUGS-61546)
-
-### 1.7. 기술 프리뷰 기능 상태
-
-이 릴리스의 일부 기능은 현재 기술 프리뷰 단계에 있습니다. 이러한 실험적 기능은 프로덕션용이 아닙니다. 다음 기능은 Red Hat 고객 포털에서 다음 지원 범위를 참조하십시오.
-
-기술 프리뷰 기능 지원 범위
-
-다음 표에서 기능은 다음 상태로 표시됩니다.
-
-사용할 수 없음
-
-기술 프리뷰
-
-정식 출시일 (GA)
-
-더 이상 사용되지 않음
-
-제거됨
-
-#### 1.7.1. 인증 및 권한 부여 기술 프리뷰 기능
-
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| Pod 보안 승인 제한 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| 외부 OIDC ID 공급자를 통한 직접 인증 | 사용할 수 없음 | 기술 프리뷰 | 기술 프리뷰 |
-
-#### 1.7.2. 엣지 컴퓨팅 기술 프리뷰 기능
-
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| GitOps ZTP 프로비저닝 가속화 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| TPM 및 PCR 보호로 디스크 암호화 활성화 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| 로컬 arbiter 노드 구성 | 사용할 수 없음 | 기술 프리뷰 | 정식 출시일 (GA) |
-| 펜싱을 사용하여 2-노드 OpenShift 클러스터 구성 | 사용할 수 없음 | 사용할 수 없음 | 기술 프리뷰 |
-
-#### 1.7.3. 기술 프리뷰 기능 확장
-
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| Operator Lifecycle Manager (OLM) v1 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| sigstore 서명을 사용하여 컨테이너 이미지의 OLM v1 런타임 검증 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| 클러스터 확장을 위한 OLM v1 권한 사전 검사 | 사용할 수 없음 | 기술 프리뷰 | 기술 프리뷰 |
-| 지정된 네임스페이스에 클러스터 확장을 배포하는 OLM v1 | 사용할 수 없음 | 기술 프리뷰 | 기술 프리뷰 |
-| Webhook를 사용하는 클러스터 확장 배포 OLM v1 | 사용할 수 없음 | 사용할 수 없음 | 기술 프리뷰 |
-
-#### 1.7.4. 설치 기술 프리뷰 기능
-
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| kvc로 노드에 커널 모듈 추가 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| SR-IOV 장치의 NIC 파티셔닝 활성화 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| Google Cloud의 사용자 정의 레이블 및 태그 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| 지원 설치 관리자를 사용하여 Alibaba Cloud에 클러스터 설치 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| 기밀 VM을 사용하여 Microsoft Azure에 클러스터 설치 | 기술 프리뷰 | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| Microsoft Azure의 etcd 전용 디스크 | 사용할 수 없음 | 사용할 수 없음 | 기술 프리뷰 |
-| RHEL의 BuildConfig에 공유 인타이틀먼트 마운트 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| vSphere 호스트 그룹에 대한 OpenShift 영역 지원 | 사용할 수 없음 | 기술 프리뷰 | 기술 프리뷰 |
-| 선택 가능한 Cluster Inventory | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| 클러스터 API 구현을 사용하여 Google Cloud에 클러스터 설치 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| Google Cloud에서 사용자 프로비저닝 DNS 활성화 | 사용할 수 없음 | 기술 프리뷰 | 기술 프리뷰 |
-| 여러 네트워크 인터페이스 컨트롤러를 사용하여 VMware vSphere에 클러스터 설치 | 기술 프리뷰 | 기술 프리뷰 | 정식 출시일 (GA) |
-| 베어메탈을 서비스로 사용하기 | 사용할 수 없음 | 기술 프리뷰 | 기술 프리뷰 |
-| CVO 로그 수준 변경 | 사용할 수 없음 | 사용할 수 없음 | 기술 프리뷰 |
-
-#### 1.7.5. Machine Config Operator 기술 프리뷰 기능
-
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| MCO 상태 보고 개선 ( `oc get machineconfignode` ) | 기술 프리뷰 | 기술 프리뷰 | 정식 출시일 (GA) |
-| AWS 및 Google Cloud용 OpenShift/On-cluster RHCOS 이미지 계층화의 이미지 모드 | 기술 프리뷰 | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| vSphere용 OpenShift/On-cluster RHCOS 이미지 계층화의 이미지 모드 | 사용할 수 없음 | 사용할 수 없음 | 기술 프리뷰 |
-
-#### 1.7.6. 머신 관리 기술 프리뷰 기능
-
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| Amazon Web Services용 클러스터 API로 머신 관리 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| Google Cloud용 클러스터 API로 머신 관리 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| IBM Power® Virtual Server용 클러스터 API로 머신 관리 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| Microsoft Azure용 클러스터 API로 머신 관리 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| RHOSP용 클러스터 API로 머신 관리 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| VMware vSphere용 클러스터 API로 머신 관리 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| 베어 메탈의 클러스터 API로 머신 관리 | 사용할 수 없음 | 기술 프리뷰 | 기술 프리뷰 |
-| IBM Power® Virtual Server용 클라우드 컨트롤러 관리자 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| 컴퓨팅 머신 세트를 사용하여 기존 VMware vSphere 클러스터에 여러 서브넷 추가 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| 머신 세트를 사용하여 신뢰할 수 있는 Microsoft Azure 가상 머신에 대한 신뢰할 수 있는 시작 구성 | 기술 프리뷰 | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| 머신 세트를 사용하여 Azure 기밀 가상 머신 구성 | 기술 프리뷰 | 정식 출시일 (GA) | 정식 출시일 (GA) |
-
-#### 1.7.7. 기술 프리뷰 기능 모니터링
-
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| 메트릭 컬렉션 프로필 | 기술 프리뷰 | 정식 출시일 (GA) | 정식 출시일 (GA) |
-
-#### 1.7.8. 다중 아카이브 기술 프리뷰 기능
-
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| `arm64` 아키텍처의 `kdump` | 기술 프리뷰 | 기술 프리뷰 | 정식 출시일 (GA) |
-| `s390x` 아키텍처의 `kdump` | 기술 프리뷰 | 기술 프리뷰 | 정식 출시일 (GA) |
-| `ppc64le` 아키텍처의 `kdump` | 기술 프리뷰 | 기술 프리뷰 | 정식 출시일 (GA) |
-| 이미지 스트림 가져오기 모드 동작 구성 지원 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-
-#### 1.7.9. 네트워킹 기술 프리뷰 기능
-
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| eBPF 관리자 Operator | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| L2 모드를 사용하여 특정 IP 주소 풀을 사용하여 노드 하위 집합에서 MetalLB 서비스를 알립니다. | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| 인터페이스별 안전한 sysctl 목록 업데이트 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| 송신 서비스 사용자 정의 리소스 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| `BGPPeer` 사용자 정의 리소스의 VRF 사양 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| `NodeNetworkConfigurationPolicy` 사용자 정의 리소스의 VRF 사양 | 기술 프리뷰 | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| SR-IOV VF의 호스트 네트워크 설정 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| MetalLB 및 FRR-K8s 통합 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| PTP 할 마스터 클록에 대한 자동 윤초 처리 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| PTP 이벤트 REST API v2 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| 베어 메탈에서 OVN-Kubernetes 사용자 지정 `br-ex` 브리지 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| vSphere 및 RHOSP에서 OVN-Kubernetes 사용자 지정 `br-ex` 브리지 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| OpenShift SDN에서 OVN-Kubernetes로 실시간 마이그레이션 | 사용할 수 없음 | 사용할 수 없음 | 사용할 수 없음 |
-| 사용자 정의 네트워크 분할 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| 동적 구성 관리자 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| Intel C741 Emmitsberg Chipset에 대한 SR-IOV Network Operator 지원 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| ARM 아키텍처에서 SR-IOV Network Operator 지원 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| Ingress 관리를 위한 게이트웨이 API 및 Istio | 기술 프리뷰 | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| PTP 일반 클록을 위한 듀얼 포트 NIC | 사용할 수 없음 | 기술 프리뷰 | 기술 프리뷰 |
-| DPU Operator | 사용할 수 없음 | 기술 프리뷰 | 기술 프리뷰 |
-| Whereabouts IPAM CNI 플러그인에 대한 빠른 IPAM | 사용할 수 없음 | 기술 프리뷰 | 기술 프리뷰 |
-| 번호가 지정되지 않은 BGP 피어링 | 사용할 수 없음 | 기술 프리뷰 | 정식 출시일 (GA) |
-| xmitHashPolicy를 사용하여 집계된 인터페이스 전체의 로드 밸런싱 | 사용할 수 없음 | 사용할 수 없음 | 기술 프리뷰 |
-| SR-IOV 네트워크를 통한 고가용성을 위한 PF Status Relay Operator | 사용할 수 없음 | 사용할 수 없음 | 기술 프리뷰 |
-| MTV를 사용하여 사전 구성된 사용자 정의 네트워크 엔드 포인트 | 사용할 수 없음 | 사용할 수 없음 | 기술 프리뷰 |
-| PTP 장치에 대한 지원 보류 해제 | 사용할 수 없음 | 사용할 수 없음 | 기술 프리뷰 |
-| NVIDIA BlueField-3 DPU 지원 | 사용할 수 없음 | 사용할 수 없음 | 기술 프리뷰 |
-
-#### 1.7.10. 노드 기술 프리뷰 기능
-
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| `MaxUnavailableStatefulSet` 기능 세트 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| Sigstore 지원 | 기술 프리뷰 | 기술 프리뷰 | 정식 출시일 (GA) |
-| 기본 sigstore `openshift` 클러스터 이미지 정책 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| Linux 사용자 네임스페이스 지원 | 기술 프리뷰 | 기술 프리뷰 | 정식 출시일 (GA) |
-| 특성 기반 GPU 할당 | 사용할 수 없음 | 사용할 수 없음 | 기술 프리뷰 |
-
-#### 1.7.11. OpenShift CLI (oc) 기술 프리뷰 기능
-
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| oc-mirror 플러그인 v2 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| oc-mirror 플러그인 v2 enclave 지원 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| oc-mirror 플러그인 v2 삭제 기능 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-
-#### 1.7.12. Operator 라이프사이클 및 개발 기술 프리뷰 기능
-
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| Operator Lifecycle Manager (OLM) v1 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| 하이브리드 Helm 기반 Operator 프로젝트의 스캐폴딩 툴 | 제거됨 | 제거됨 | 제거됨 |
-| Java 기반 Operator 프로젝트를 위한 Scaffolding 툴 | 제거됨 | 제거됨 | 제거됨 |
-
-#### 1.7.13. RHOSP(Red Hat OpenStack Platform) 기술 프리뷰 기능
-
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| Cluster CAPI Operator에 RHOSP 통합 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| 로컬 디스크에 `rootVolumes` 및 `etcd` 가 있는 컨트롤 플레인 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| RHOSP 17.1에서 호스팅되는 컨트롤 플레인 | 사용할 수 없음 | 기술 프리뷰 | 기술 프리뷰 |
-
-#### 1.7.14. 확장성 및 성능 기술 프리뷰 기능
-
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| factory-precaching-cli 툴 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| 하이퍼 스레딩 인식 CPU 관리자 정책 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| 마운트 네임스페이스 캡슐화 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| Node Observability Operator | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| etcd 데이터베이스 크기 증가 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| RHACM `PolicyGenerator` 리소스를 사용하여 GitOps ZTP 클러스터 정책 관리 | 기술 프리뷰 | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| 고정된 이미지 세트 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| NUMA 인식 스케줄러 복제본 및 고가용성 구성 | 사용할 수 없음 | 사용할 수 없음 | 기술 프리뷰 |
-
-#### 1.7.15. 스토리지 기술 프리뷰 기능
-
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| AWS EFS 하나의 영역 볼륨 | 사용할 수 없음 | 사용할 수 없음 | 정식 출시일 (GA) |
-| Local Storage Operator를 통한 자동 장치 검색 및 프로비저닝 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| Azure File CSI 스냅샷 지원 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| Azure 파일 간 서브스크립션 지원 | 사용할 수 없음 | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| Azure Disk 성능 추가 | 사용할 수 없음 | 사용할 수 없음 | 정식 출시일 (GA) |
-| 네임스페이스당 fsGroupChangePolicy 구성 | 사용할 수 없음 | 사용할 수 없음 | 정식 출시일 (GA) |
-| OpenShift 빌드의 공유 리소스 CSI 드라이버 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| secrets Store CSI Driver Operator | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| CIFS/SMB CSI Driver Operator | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| VMware vSphere 다중 vCenter 지원 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| vSphere에서 스토리지 비활성화/활성화 | 기술 프리뷰 | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| vSphere의 노드당 최대 볼륨 수 증가 | 사용할 수 없음 | 기술 프리뷰 | 기술 프리뷰 |
-| RWX/RWO SELinux 마운트 옵션 | 개발자 프리뷰 | 개발자 프리뷰 | 기술 프리뷰 |
-| 데이터 저장소 간에 CNS 볼륨 마이그레이션 | 개발자 프리뷰 | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| CSI 볼륨 그룹 스냅샷 | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-| GCP PD는 C3/N4 인스턴스 유형 및 하이퍼 디스크 분산 디스크를 지원 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| CSI 크기 조정에 대한 OpenStack Manila 지원 | 정식 출시일 (GA) | 정식 출시일 (GA) | 정식 출시일 (GA) |
-| 볼륨 속성 클래스 | 사용할 수 없음 | 기술 프리뷰 | 기술 프리뷰 |
-| 볼륨 팝업기 | 기술 프리뷰 | 기술 프리뷰 | 정식 출시일 (GA) |
-
-#### 1.7.16. 웹 콘솔 기술 프리뷰 기능
-
-| 기능 | 4.18 | 4.19 | 4.20 |
-| --- | --- | --- | --- |
-| OpenShift Container Platform 웹 콘솔의 Red Hat OpenShift Lightspeed | 기술 프리뷰 | 기술 프리뷰 | 기술 프리뷰 |
-
-### 1.8. 확인된 문제
-
-게이트웨이 API 및 AWS(Amazon Web Services), Google Cloud 및 Microsoft Azure 프라이빗 클러스터에 알려진 문제가 있습니다. 게이트웨이용으로 프로비저닝된 로드 밸런서는 항상 외부로 구성되어 오류 또는 예기치 않은 동작이 발생할 수 있습니다.
-
-AWS 프라이빗 클러스터에서 로드 밸런서는 `보류 중` 상태가 되어 로드 밸런서를 `동기화하는 오류 오류: 로드 밸런서를 확인하지 못했습니다. ELB를 생성하기 위한 적절한 서브넷을 찾을 수 없습니다`.
-
-Google Cloud 및 Azure 프라이빗 클러스터에서 로드 밸런서는 외부 IP 주소가 없어야 하는 경우 외부 IP 주소로 프로비저닝됩니다.
-
-이 문제에 대해 지원되는 해결방법이 없습니다. (OCPBUGS-57440)
-
-분리된 사용자 네임스페이스에서 Pod를 실행하는 경우 Pod 컨테이너 내부의 UID/GID가 더 이상 호스트의 UID/GID와 일치하지 않습니다. 파일 시스템 소유권이 올바르게 작동하려면 Linux 커널은 ID 매핑 마운트를 사용하여 컨테이너와 가상 파일 시스템(VFS) 계층에서 사용자 ID를 변환합니다.
-
-그러나 현재 모든 파일 시스템이 NFS(Network File Systems) 및 기타 네트워크 또는 분산 파일 시스템과 같은 ID 매핑 마운트를 지원하는 것은 아닙니다. 이러한 파일 시스템은 ID 매핑 마운트를 지원하지 않으므로 사용자 네임스페이스 내에서 실행되는 Pod가 마운트된 NFS 볼륨에 액세스하지 못할 수 있습니다.
-
-이 동작은 OpenShift Container Platform에만 국한되지 않습니다. Kubernetes v1.33 이상에서 모든 Kubernetes 배포에 적용됩니다.
-
-OpenShift Container Platform 4.20으로 업그레이드할 때 사용자 네임스페이스를 선택할 때까지 클러스터는 영향을 받지 않습니다. 사용자 네임스페이스를 활성화한 후 ID 매핑 마운트를 지원하지 않는 벤더의 NFS 지원 영구 볼륨을 사용하는 모든 Pod에 액세스 또는 권한 문제가 발생할 수 있습니다.
-
-사용자 네임스페이스 활성화에 대한 자세한 내용은 Linux 사용자 네임스페이스 지원 구성을 참조하십시오.
-
-참고
-
-기존 OpenShift Container Platform 4.19 클러스터는 OpenShift Container Platform 4.19의 기술 프리뷰 기능인 사용자 네임스페이스를 명시적으로 활성화할 때까지 영향을 받지 않습니다.
-
-Azure에 클러스터를 설치할 때 `compute.platform.azure.identity.type`, `controlplane.platform.identity.type 또는 platform.
-
-azure.defaultMachinePlatform.identity.type` 필드 값을 `None` 으로 설정하면 클러스터가 Azure Container Registry에서 이미지를 가져올 수 없습니다. 사용자가 할당한 ID를 제공하거나 identity 필드를 비워 두면 이 문제를 방지할 수 있습니다.
-
-두 경우 모두 설치 프로그램은 사용자가 할당한 ID를 생성합니다. (OCPBUGS-56008)
-
-콘솔의 통합 소프트웨어 카탈로그 뷰에는 알려진 문제가 있습니다. Ecosystem → Software Catalog 를 선택할 때 기존 프로젝트 이름을 입력하거나 소프트웨어 카탈로그를 보려면 새 프로젝트를 생성해야 합니다.
-
-프로젝트 선택 필드는 카탈로그 콘텐츠가 클러스터에 설치된 방법에 영향을 미치지 않습니다. 이 문제를 해결하려면 기존 프로젝트 이름을 입력하여 소프트웨어 카탈로그를 확인합니다.
-
-(OCPBUGS-61870)
-
-OCP 4.20부터는 컨테이너의 기본 열려 있는 파일 소프트 제한이 감소합니다. 결과적으로 최종 사용자에게 애플리케이션 오류가 발생할 수 있습니다. 이 문제를 해결하려면 컨테이너 런타임(CRI-O) ulimit 구성을 늘립니다. (OCPBUGS-62095)
-
-BlueField-3 NIC를 사용하여 테스트 워크로드를 삭제하고 다시 생성하면 일관성 없는 PTP 동기화로 인해 클럭이 이동됩니다. 이렇게 하면 테스트 워크로드의 시간 동기화가 중단됩니다. 시간 동기화는 워크로드가 안정될 때 안정화됩니다. (RHEL-93579)
-
-GNR-D 인터페이스의 이벤트 로그는 동일한 3자 접두사("eno")로 인해 모호합니다. 결과적으로 상태 변경 중에 영향을 받는 인터페이스가 명확하게 식별되지 않습니다.
-
-이 문제를 해결하려면 ptp-operator에서 "경로" 이름 지정 규칙을 따르도록 사용하는 인터페이스를 변경하여 인터페이스 이름을 기반으로 클럭 이벤트별로 올바르게 식별되고 상태 변경의 영향을 받는 클록을 명확하게 나타냅니다. 자세한 내용은 네트워크 인터페이스 이름 지정 정책을 참조하십시오.
-
-(OCPBUGS-62817)
-
-Telecom Time Synchronous Clock (T-TSC) 구성을 사용하면 ts2phc 메트릭이 "잠금" 대신 "잠금 해제"를 보고합니다. 결과적으로 부정확한 PTP(Precision Time Protocol) 클럭 상태 보고가 발생할 수 있습니다. 이 문제를 해결하려면 `ts2phc` 메트릭을 제거하십시오. (OCPBUGS-63158)
-
-Dell XR8620에서 iDRAC 펌웨어를 업데이트하면 OS와 iDRAC 재부팅 간의 간섭으로 인해 서버가 실패할 수 있습니다. 이는 서비스를 중단할 수 있습니다. 이 문제를 해결하려면 OpenShift 외부의 서버에서 iDRAC 펌웨어를 업데이트합니다. (OCPBUGS-60876)
-
-AWS에 클러스터를 설치할 때 `openshift-install create` 명령을 실행하기 전에 AWS 인증 정보를 구성하지 않으면 설치 프로그램이 실패합니다. (OCPBUGS-56658)
-
-특정 AMD EPYC 프로세서를 사용하는 시스템에서 일부 하위 수준 시스템 인터럽트(예: `AMD-Vi`)는 CPU 고정 워크로드와 겹치는 CPU 마스크의 CPU를 포함할 수 있습니다. 이 동작은 하드웨어 설계 때문입니다. 이러한 특정 오류 보고 인터럽트는 일반적으로 비활성화되어 있으며 현재 알려진 성능에 영향을 미치지 않습니다. (OCPBUGS-57787)
-
-현재 `보장된` QoS 클래스를 사용하고 전체 CPU를 요청하는 Pod는 노드 재부팅 또는 kubelet 재시작 후 자동으로 다시 시작되지 않을 수 있습니다.
-
-이 문제는 정적 CPU 관리자 정책으로 구성되고 `전체-pcpus 전용` 사양으로 구성된 노드에서 발생할 수 있으며 노드의 대부분의 CPU 또는 모든 CPU가 이미 이러한 워크로드에 의해 할당되는 경우 문제가 발생할 수 있습니다. 이 문제를 해결하려면 영향을 받는 Pod를 수동으로 삭제하고 다시 생성합니다.
-
-(OCPBUGS-43280)
-
-아카이브에 접미사 `노드로` 끝나는 사용자 정의 네임스페이스 디렉터리가 포함된 경우 Performance Profile Creator 툴에서 `must-gather` 아카이브를 분석하지 못합니다. 여러 일치 항목에 대한 오류를 잘못 보고하는 도구의 검색 논리로 인해 오류가 발생합니다.
-
-이 문제를 해결하려면 사용자 정의 네임스페이스 디렉터리의 이름을 바꿔 `노드` 접미사로 끝나지 않고 툴을 다시 실행합니다. (OCPBUGS-60218)
-
-현재 SR-IOV 네트워크 가상 기능이 구성된 클러스터에서는 네트워크 장치 이름을 담당하는 시스템 서비스와 Node Tuning Operator에서 관리하는 TuneD 서비스 간에 경쟁 조건이 발생할 수 있습니다. 결과적으로 노드가 재시작된 후 TuneD 프로필의 성능이 저하될 수 있었습니다.
-
-이 문제를 해결하려면 TuneD Pod를 다시 시작하여 프로필 상태를 복원합니다. (OCPBUGS-41934)
-
-현재 알려진 대기 시간 문제는 4th#159 Intel Xeon 프로세서에서 실행되는 시스템에 영향을 미칩니다. (OCPBUGS-46528)
-
-SuperMicro ARS-111GL-NHR 서버는 IPv6 주소를 통해 가상 미디어 이미지가 제공되면 부팅 중에 가상 미디어에 액세스할 수 없습니다. 결과적으로 IPv6 네트워크 구성과 함께 SuperMicro ARS-111GL-NHR 서버 모델에서 가상 미디어를 사용할 수 없습니다. (OCPBUGS-60070)
-
-Hewlett Packard Enterprise (HPE) DL110G11 서버에서 펌웨어 업데이트 및 'NetworkAdapters' 리소스가 구현되는 방식으로 인해 이 하드웨어에 특정한 버그로 인해 실패할 수 있습니다. 업데이트 중에 사용할 수 없게 되어 업데이트가 실패할 수 있습니다.
-
-이 문제를 해결하려면 Ironic 외부에서 BMC(Baseboard Management Controller) 펌웨어를 수동으로 업데이트하여 서비스 중단을 방지합니다. (OCPBUGS-60708)
-
-`Baremetalhost` 오브젝트를 올바른 `운영 체제로` 반복적으로 부팅하면 SuperMicro ARS-111GL-NHR 서버를 가상 미디어 대신 기존 하드 드라이브로 부팅하여 특정 BMC 펌웨어 버전에서 반복적으로 실패합니다.
-
-이 문제는 업데이트된 BIOS 및 베어 메탈 호스트 펌웨어에서 발생하며 USB CD가 작동하는 동안 CD가 지원되지 않습니다. 결과적으로 노드 검사에 실패합니다.
-
-영향을 받는 경우 이 문제를 해결하려면 수동으로 `BootSourceOverrideTarget` 을 CD 대신 USB CD로 설정하고 올바른 가상 미디어에서 노드를 부팅합니다. (OCPBUGS-61851)
-
-Dell 서버 BMC 펌웨어를 업데이트할 때 Redfish API가 일시적으로 중단됩니다. 이로 인해 연결 오류가 발생하고 Ironic에서 업데이트를 실패로 표시할 수 있습니다. 이 문제를 해결하려면 Ironic 외부에서 BMC 펌웨어를 수동으로 업데이트하여 서비스 중단을 방지합니다. (OCPBUGS-61871)
-
-Dell R740에서 동시에 BIOS 및 BMC 펌웨어 업데이트를 시도할 때 BMC 업데이트가 실패하고 서버의 전원이 꺼지고 응답하지 않을 수 있습니다. 이 문제는 업데이트 프로세스가 성공적으로 완료되지 않아 시스템이 작동하지 않는 상태로 유지됩니다. (OCPBUGS-62009)
-
-잘못된 네트워크 공유 위치 또는 잘못된 인증 정보로 서버를 구성하여 서버의 전원이 꺼져 복구할 수 없는 경우 BMC 펌웨어를 업데이트할 수 없습니다. (OCPBUGS-62010)
-
-업스트림 클럭 연결이 손실되면 클럭 저하 논리의 버그로 인해 모든 클럭 상태 메트릭의 성능이 저하되지 않습니다. 결과적으로 'ptp4l' 및 'ts2phc' 클럭 상태 메트릭이 'unlocked' 상태로 저하된 후 예상대로 성능이 저하되어 시간 동기화 상태 보고가 일관되지 않을 수 있었습니다.
-
-이 문제를 해결하려면 'dpll' 및 'T-BC' 클럭 상태 메트릭만 사용하고 'ptp4l' 및 'ts2phc' 메트릭을 무시합니다. (OCPBUGS-62719)
-
-### 1.9. 비동기 에라타 업데이트
-
-OpenShift Container Platform 4.20의 보안, 버그 수정 및 개선 사항 업데이트는 Red Hat Network를 통해 비동기 에라타로 릴리스됩니다. 모든 OpenShift Container Platform 4.20 에라타는 Red Hat Customer Portal을 통해 제공됩니다.
-
-비동기 에라타에 대한 자세한 내용은 OpenShift Container Platform 라이프 사이클 에서 참조하십시오.
-
-Red Hat Customer Portal 사용자는 RHSM(Red Hat Subscription Management) 계정 설정에서 에라타 알림을 활성화할 수 있습니다. 에라타 알림이 활성화되면 사용자는 등록된 시스템과 관련된 새 에라타가 릴리스될 때마다 이메일을 통해 통지를 받습니다.
-
-참고
-
-Red Hat Customer Portal 사용자 계정에는 OpenShift Container Platform 에라타 알림 이메일을 생성하기 위해 OpenShift Container Platform에 대한 등록된 시스템 및 사용 권한이 있어야 합니다.
-
-이 섹션은 향후 OpenShift Container Platform 4.20의 비동기 에라타 릴리스의 개선 사항 및 버그 수정에 대한 정보 제공을 위해 지속적으로 업데이트됩니다. OpenShift Container Platform 4.20.z와 같은 비동기 버전 릴리스 정보는 하위 섹션에 자세히 설명되어 있습니다.
-
-또한 공간 제한으로 인해 릴리스 정보에 포함되지 않은 에라타 컨텐츠도 다음 하위 섹션에 자세히 설명되어 있습니다.
-
-중요
-
-OpenShift Container Platform 릴리스의 경우 항상 클러스터 업데이트 지침을 검토하십시오.
-
-#### 1.9.1. RHBA-2025:21811 - OpenShift Container Platform 4.20.5 버그 수정 권고
-
-출시 날짜: 2025년 11월 25일
-
-OpenShift Container Platform 릴리스 4.20.5가 공개되었습니다. 업데이트에 포함된 버그 수정 목록은 RHBA-2025:21811 권고에 설명되어 있습니다. 업데이트에 포함된 RPM 패키지는 RHBA-2025:21809 권고를 통해 제공됩니다.
-
-권고에 이 릴리스의 모든 컨테이너 이미지에 대한 설명은 제외되어 있습니다.
-
-다음 명령을 실행하여 이 릴리스에서 컨테이너 이미지를 볼 수 있습니다.
-
-```shell-session
-$ oc adm release info 4.20.5 --pullspecs
-```
-
-#### 1.9.2. 기능 개선
-
-외부 OpenID Connect(OIDC) ID 공급자와의 직접 인증을 위한 다음과 같은 향상된 기능이 이 z-stream 릴리스에 포함되어 있습니다.
-
-외부 OIDC ID 공급자를 통한 직접 인증의 일반 가용성
-
-이제 외부 OIDC ID 공급자와 직접 인증을 사용할 수 있습니다. 이 인증 방법은 내장 OAuth 서버를 무시하고 외부 ID 공급자를 직접 사용합니다.
-
-추가 ID 공급자 지원
-
-다음 OIDC ID 공급자는 이제 직접 인증에 대해 지원됩니다.
-
-Windows Server용 Active Directory Federation Services
-
-GitLab
-
-Google
-
-Okta
-
-Ping Identity
-
-Red Hat Single Sign-On
-
-OAuth 서비스 비활성화
-
-이제 직접 인증을 구성할 때 다음 내부 OAuth 리소스가 비활성화됩니다.
-
-OpenShift OAuth 서버 및 OpenShift OAuth API 서버
-
-사용자 및 그룹 API (`*.user.openshift.io`)
-
-OAuth API (`*.oauth.openshift.io`)
-
-OAuth 서버 및 클라이언트 구성
-
-중요
-
-직접 인증을 구성하기 전에 이러한 제거된 리소스에 의존하지 않아야 합니다.
-
-추가 클레임 매핑 지원
-
-직접 인증을 위해 외부 OIDC 공급자를 구성할 때 `uid` 및 `추가` 클레임 매핑 필드를 사용할 수 있습니다.
-
-자세한 내용은 외부 OIDC ID 공급자로 직접 인증 활성화를 참조하십시오.
-
-#### 1.9.3. 확인된 문제
-
-이 릴리스에는 다음과 같은 알려진 문제가 포함되어 있습니다.
-
-직접 인증을 위해 외부 OIDC ID 공급자로 GitLab 또는 Google을 사용하는 경우 OpenShift Container Platform 웹 콘솔에서 로그아웃 해도 콘솔에서 로그아웃되지 않습니다. (OCPBUGS-61649)
-
-직접 인증을 위해 외부 OIDC ID 공급자로 Windows Server용 Active Directory Federation Services를 사용하는 경우 처음으로 OpenShift Container Platform 웹 콘솔에 로그인하면 인증 오류가 발생합니다. 이 문제를 해결하려면 웹 콘솔이 올바르게 표시될 때까지 다시 로드합니다. (OCPBUGS-62142)
-
-외부 OIDC 공급자를 사용하여 직접 인증을 구성하고 OIDC 공급자 구성에서 발행자의 `issuerCertificateAuthority` 값을 제공하지 않으면 Machine Config Operator가 성능이 저하됩니다. 이로 인해 Console Operator의 성능이 저하되고 일부 컨트롤 플레인 노드를 사용할 수 없게 될 수 있습니다.
-
-이 문제를 해결하려면 발급자의 `issuerCertificateAuthority` 값을 설정합니다. (OCPBUGS-62011)
-
-#### 1.9.4. 버그 수정
-
-이 릴리스에 대해 다음 버그가 수정되었습니다.
-
-이번 업데이트 이전에는 해당 pod가 실행 중이거나 사용할 수 없는 경우 `openshift-authentication` 네임스페이스의 `oauth` Pod가 변경 사항을 롤아웃하는 동안 중단될 수 있었습니다. 이로 인해 차단된 롤아웃이 종료될 때까지 인증이 완전히 중지되었습니다.
-
-이번 릴리스에서는 비정상 노드가 다운되거나 사용할 수 없는 경우에도 Pod는 롤링 업데이트를 진행할 수 있습니다(OCPBUGS-61896)
-
-이번 업데이트 이전에는 애플리케이션이 잘못된 API를 쿼리했기 때문에 프로젝트 개요의 경고가 표시되지 않았습니다. 이번 릴리스에서는 애플리케이션이 올바른 API를 쿼리하고 프로젝트 경고를 표시합니다. (OCPBUGS-63125)
-
-이번 업데이트 이전에는 OpenShift Container Platform에서 집계된 API 서버가 1년 동안 유효한 `메모리 내` 루프백 인증서를 사용하여 프로비저닝되었습니다. 이번 릴리스에서는 OpenShift Container Platform에서 집계된 API 서버가 3년 동안 유효한 `메모리 내` 루프백 인증서를 사용하여 프로비저닝됩니다.
-
-(OCPBUGS-63532)
-
-이번 업데이트 이전에는 웹 콘솔 동적 플러그인에서 생성한 페이지로 직접 이동할 때 웹 콘솔이 다른 URL로 리디렉션될 수 있습니다. 이번 릴리스에서는 URL 리디렉션이 제거되었습니다. (OCPBUGS-63616)
-
-이번 릴리스 이전에는 `netpol` 리소스에 대한 관련이 없는 변경으로 인해 규칙 삭제 및 재추가를 포함하여 오브젝트의 전체 조정이 트리거되었습니다. 이번 릴리스에서는 `netpol` 오브젝트가 필요한 경우 완전히 조정됩니다. 그렇지 않으면 건너뜁니다. (OCPBUGS-64590)
-
-이번 업데이트 이전에는 HPA(Horizontal Pod Autoscaler) 양식에 CPU 및 메모리 값이 잘못되어 사용자가 단일 지표 HPA(예: 메모리 전용)에 YAML을 사용하거나 기본 CPU 설정을 사용해야 했습니다.
-
-이번 릴리스에서는 양식이 업데이트되고 필드를 비워 두면 해당 메트릭이 올바르게 생략되어 사용자가 웹 양식에서 CPU 전용, 메모리 전용 또는 기본 80% CPU HPA를 생성할 수 있습니다. (OCPBUGS-64639)
-
-이번 업데이트 이전에는 --node-name 인수가 컨트롤 플레인 노드만 허용했기 때문에 `--node-name` 인수가 사용될 때 `must-gather` Pod를 특정 작업자 노드에 예약할 수 없었습니다. 이번 릴리스에서는 `--node-name` 인수가 설정된 경우 노드 유사성을 설정하지 않도록 `must-gather` 논리가 업데이트됩니다.
-
-(OCPBUGS-65523)
-
-#### 1.9.5. 업데이트
-
-OpenShift Container Platform 4.20 클러스터를 최신 릴리스로 업데이트하려면 CLI를 사용하여 클러스터 업데이트를 참조하십시오.
-
-#### 1.9.6. RHSA-2025:21228 - OpenShift Container Platform 4.20.4 이미지 릴리스, 버그 수정 및 보안 업데이트 권고
-
-출시 날짜: 2025년 11월 18일
-
-보안 업데이트가 포함된 OpenShift Container Platform 릴리스 4.20.4를 사용할 수 있습니다. 업데이트에 포함된 버그 수정 목록은 RHBA-2025:21228 권고에 설명되어 있습니다. 업데이트에 포함된 RPM 패키지는 RHBA-2025:21223 권고를 통해 제공됩니다.
-
-권고에 이 릴리스의 모든 컨테이너 이미지에 대한 설명은 제외되어 있습니다.
-
-다음 명령을 실행하여 이 릴리스에서 컨테이너 이미지를 볼 수 있습니다.
-
-```shell-session
-$ oc adm release info 4.20.4 --pullspecs
-```
-
-#### 1.9.6.1. 버그 수정
-
-이번 업데이트 이전에는 API에서 단일 메트릭 또는 메트릭 없이(API 기본값)를 사용하여 HPA를 생성할 수 있더라도 웹 콘솔의 HPA(Horizontal Pod Autoscaler) 양식에서 CPU 및 메모리 사용률 모두에 대한 값을 잘못 제공해야 했습니다.
-
-그 결과 API 기본값(80% CPU)에 의존하는 메모리 전용 또는 HPA와 같은 단일 지표 HPA를 생성하는 데 이 양식을 사용할 수 없었습니다. 이 문제는 이러한 일반적인 구성에 YAML 보기를 사용해야 했습니다.
-
-이번 릴리스에서는 사용자 인터페이스에 더 이상 두 필드를 모두 완료할 필요가 없도록 HPA 양식 논리가 API에 맞게 업데이트됩니다. 결과적으로 빈 사용률 필드는 HPA 매니페스트에서 HPA 메트릭을 올바르게 생략하여 API에서 기본 동작을 적용하거나 단일 지표 HPA를 생성할 수 있습니다.
-
-HPA 양식을 사용하여 CPU 전용 또는 메모리 전용과 같은 단일 지표 HPA를 생성할 수 있습니다. 두 사용률 필드가 모두 비어 있으면 HPA가 생성되고 API 기본값인 80% CPU 사용률로 올바르게 대체됩니다.
-
-(OCPBUGS-63339)
-
-이번 업데이트 이전에는 etcd 3.5.19에서 3.6 릴리스로 클러스터 업데이트를 수행하는 동안 잘못된 멤버십 데이터를 새 멤버로 전파할 수 있었습니다. 이로 인해 클러스터에서 학습자가 너무 많은 멤버를 나타내는 오류로 인해 클러스터 업데이트에 실패했습니다.
-
-이번 릴리스에서는 etcd가 3.5.24로 업데이트되어 멤버십 관련 오류를 방지하는 수정 사항이 포함됩니다. (OCPBUGS-63474)
-
-이번 업데이트 이전에는 사용자가 문서화된 보안 절차에 따라 공개 키만 의도적으로 제공한 경우에도 개인 키를 찾을 수 없는 경우 `ccoctl` 유틸리티에서 새 키 쌍을 자동으로 생성합니다. 이 동작으로 인해 새로 생성된 키가 클러스터의 키와 일치하지 않아 올바른 프로세스를 따르는 사용자에게 서비스가 중단되었습니다.
-
-이번 업데이트를 통해 `--public-key-file` 매개변수가 지정될 때 새 키 쌍이 생성되지 않도록 유틸리티가 변경되었으며 이 매개변수는 일관성을 위해 모든 create-all 함수에 추가되었습니다. 결과적으로 공개 키 파일을 지정하면 제공된 키가 사용되므로 클러스터가 중단되지 않고 예상대로 계속 작동합니다.
-
-(OCPBUGS-63546)
-
-이번 업데이트 이전에는 Kubernetes 바이너리의 바이너리 버전 데이터가 `v0.0.0` 으로 잘못 설정되어 취약점 검사 툴에 문제가 발생했습니다. 이번 릴리스에서는 빌드 문제가 해결되었습니다. 결과적으로 최신 업스트림 `kube` 버전 (예: `v1.33.5`)이 표시됩니다. (OCPBUGS-63749)
-
-#### 1.9.6.2. 업데이트
-
-OpenShift Container Platform 4.20 클러스터를 최신 릴리스로 업데이트하려면 CLI를 사용하여 클러스터 업데이트를 참조하십시오.
-
-#### 1.9.7. RHSA-2025:19890 - OpenShift Container Platform 4.20.3 이미지 릴리스, 버그 수정 및 보안 업데이트 권고
-
-출시 날짜: 2025년 11월 11일
-
-보안 업데이트가 포함된 OpenShift Container Platform 릴리스 4.20.3을 사용할 수 있습니다. 업데이트에 포함된 버그 수정 목록은 RHSA-2025:19890 권고에 설명되어 있습니다. 업데이트에 포함된 RPM 패키지는 RHBA-2025:19888 권고를 통해 제공됩니다.
-
-권고에 이 릴리스의 모든 컨테이너 이미지에 대한 설명은 제외되어 있습니다.
-
-다음 명령을 실행하여 이 릴리스에서 컨테이너 이미지를 볼 수 있습니다.
-
-```shell-session
-$ oc adm release info 4.20.3 --pullspecs
-```
-
-#### 1.9.7.1. 버그 수정
-
-이번 업데이트 이전에는 서비스 연결이 누락되어 통신 매트릭스 프로젝트에서 열려 있는 포트 9193 및 9194에 대한 EndPointSlice 오브젝트를 생성하지 못했습니다. 결과적으로 부정확한 통신 매트릭스가 발생했습니다.
-
-이번 릴리스에서는 서비스가 포트 9193 및 9194에 연결되어 누락된 EndPointSlice 개체를 해결합니다. 결과적으로 기본 노드에서 열려 있는 포트 9193 및 9194가 서비스와 연결되어 OpenShift Container Platform 사용자에게 정확한 통신 매트릭스가 생성됩니다.
-
-(OCPBUGS-63587)
-
-이번 업데이트 이전에는 메트릭 거부 목록에 `kube_customresource` 의 정규식을 잘못 포맷하여 `annotations` 필드를 생략했습니다. 결과적으로 잘못된 거부 목록 구성으로 인해 사용자에게 메트릭이 누락되었습니다.
-
-이번 릴리스에서는 지표 거부 목록에서 불필요한 항목이 제거됩니다. 결과적으로 레지스트리 지표에 누락된 주석이 포함되어 데이터 정확성을 향상시킵니다.
-
-(OCPBUGS-64577)
-
-#### 1.9.7.2. 업데이트
-
-OpenShift Container Platform 4.20 클러스터를 최신 릴리스로 업데이트하려면 CLI를 사용하여 클러스터 업데이트를 참조하십시오.
-
-#### 1.9.8. RHSA-2025:19296 - OpenShift Container Platform 4.20.2 이미지 릴리스, 버그 수정 및 보안 업데이트 권고
-
-출시 날짜: 2025년 11월 4일
-
-보안 업데이트가 포함된 OpenShift Container Platform 릴리스 4.20.2를 사용할 수 있습니다. 업데이트에 포함된 버그 수정 목록은 RHSA-2025:19296 권고에 설명되어 있습니다. 업데이트에 포함된 RPM 패키지는 RHBA-2025:19294 권고를 통해 제공됩니다.
-
-권고에 이 릴리스의 모든 컨테이너 이미지에 대한 설명은 제외되어 있습니다.
-
-다음 명령을 실행하여 이 릴리스에서 컨테이너 이미지를 볼 수 있습니다.
-
-```shell-session
-$ oc adm release info 4.20.2 --pullspecs
-```
-
-#### 1.9.8.1. 기능 개선
-
-이번 업데이트를 통해 `adm upgrade recommend` 명령은 이제 클러스터 관리자가 클러스터 업데이트에 사용할 수 있는 중요 및 중요하지 않은 경고를 검색하고 표시합니다. 클러스터 관리자는 `--version` 명령에 새 `--accept` 옵션을 사용하여 특정 허용 가능한 문제를 허용할 수도 있습니다.
-
-이 명령은 승인되지 않은 문제가 감지되면 0을 종료합니다. (OCPBUGS-61757)
-
-#### 1.9.8.2. 버그 수정
-
-이번 업데이트 이전에는 NMState에서 관리하는 `br-ex` 인터페이스가 있는 노드에서 NetworkManager를 다시 시작하거나 충돌하면 노드가 네트워크 연결이 끊어졌습니다.
-
-이번 릴리스에서는 표준 `br-ex` 브리지 ID가 없는 경우 `br- ex-br` 브리지 ID를 확인하여 NMState-managed br-ex 인터페이스를 감지하기 위해 디스패처 스크립트의 폴백 검사가 추가되었습니다. 결과적으로 NetworkManager가 다시 시작되거나 충돌하면 이 인터페이스 유형의 노드는 네트워크 연결이 손실되지 않습니다.
-
-(OCPBUGS-62167)
-
-이번 업데이트 이전에는 Go 임의의 맵 반복 순서로 인해 구성 맵 콘텐츠의 `driver-config` 매개변수가 중단되었습니다. 그 결과 실제 데이터가 변경되지 않은 경우에도 각 조정 루프의 다양한 순서로 스토리지 클래스 및 관련 구성 요소가 표시되었습니다.
-
-호스팅된 클러스터 네임스페이스에서 자주 불필요한 구성 맵 업데이트로 인해 불안정성 및 성능 문제가 발생할 수 있습니다. 이번 릴리스에서는 스토리지 그룹, 각 그룹 내의 스토리지 클래스, 각 그룹 내의 볼륨 스냅샷 클래스, `allowList` 배열에 대해 일관된 알파벳 정렬이 구현되어 결정적 출력을 보장합니다.
-
-결과적으로 `driver-config` 구성 맵에 콘텐츠 플롯이 발생하지 않으므로 불필요한 업데이트를 제거하고 안정성을 개선할 수 있습니다. (OCPBUGS-62806)
-
-이번 업데이트 이전에는 릴리스에서 매니페스트 파일이 누락되어 `TechPreviewNoUpgrade` 클러스터에서 클러스터에 CVO(Cluster Version Operator) API 오브젝트가 표시되지 않았습니다. 결과적으로 클러스터 관리자itrator는 `TechPreviewNoUpgrade` 클러스터에서 CVO의 로그 수준을 변경할 수 없었습니다.
-
-이번 릴리스에서는 누락된 매니페스트 파일이 추가됩니다. 결과적으로 CVO 로그 수준은 `TechPreviewNoUpgrade` 클러스터에서 변경할 수 있습니다.
-
-(OCPBUGS-63001)
-
-이번 업데이트 이전에는 Node Tuning Operator(NTO)가 소유한 `ocp-tuned-one-shot.service` systemd 장치를 실행할 때 kubelet에 대한 종속성 오류가 발생할 수 있었습니다. 그 결과 kubelet이 시작되지 않았습니다.
-
-이번 릴리스에서는 `ocp-tuned-one-shot.service` 장치를 실행하면 종속성 실패가 발생하지 않습니다. 결과적으로 장치를 실행할 때 kubelet이 시작됩니다.
-
-(OCPBUGS-63334)
-
-이번 업데이트 이전에는 클러스터 전체 메트릭 API 권한이 없는 경우에도 Observe → Metric 페이지에서 클러스터 전체 메트릭 API를 사용했습니다. 그 결과 쿼리 입력에 오류가 표시되고 쿼리 입력의 자동 입력이 클러스터 전체 메트릭 API 액세스 없이는 작동하지 않았습니다.
-
-이번 릴리스에서는 클러스터 전체 메트릭 API 권한이 없는 경우 `네임스페이스 테넌시` 메트릭 API가 사용됩니다. 결과적으로 오류가 발생하지 않고 선택한 네임스페이스 내의 메트릭에 대해 자동 채우기를 사용할 수 있습니다.
-
-(OCPBUGS-63440)
-
-이번 업데이트 이전에는 노드 로그 길이가 무제한이었습니다. 결과적으로 매우 큰 로그로 인해 로그가 표시되지 않거나 브라우저가 충돌할 수 있었습니다. 이번 릴리스에서는 노드 로그 길이가 1,000행으로 제한됩니다. 결과적으로 로그가 올바르게 표시됩니다. (OCPBUGS-63470)
-
-이번 업데이트 이전에는 Azure 머신 공급자가 `MachineSet` 사양의 `dataDisks` 구성을 Azure Stack Hub의 가상 머신 생성 API 요청에 전달하지 않았습니다. 결과적으로 VM 생성 프로세스 중에 구성이 자동으로 무시되었기 때문에 지정된 데이터 디스크 없이 새 머신이 생성되었습니다.
-
-이번 릴리스에서는 `dataDisks` 구성을 포함하도록 Azure Stack Hub의 VM 생성이 업데이트되었습니다. 추가 업데이트는 Azure Stack Hub에서 기본적으로 이 옵션을 지원하지 않기 때문에 컨트롤러에서 `deletionPolicy: Delete` 매개변수의 동작을 수동으로 구현합니다.
-
-결과적으로 Azure Stack Hub VM에 데이터 디스크가 올바르게 프로비저닝됩니다. `Delete` 정책도 기능적으로 지원되므로 머신이 제거될 때 디스크가 올바르게 제거됩니다.
-
-(OCPBUGS-63535)
-
-이번 업데이트 이전에는 기본적으로 `internalUser` 매개변수가 `true` 였습니다. 결과적으로 CR(사용자 정의 리소스)을 만들거나 업데이트할 때 이 값을 지정하지 않은 경우 외부 사용자에 대한 기본값이 `true` 였습니다.
-
-이번 릴리스에서는 기본값이 `false` 로 변경되었습니다. 결과적으로 외부 사용자가 내부 사용자 인증 정보를 사용하여 https://sftp.access.redhat.com 에 액세스하려고 하면 매개변수 값은 `internalUser=false` 입니다.
-
-(OCPBUGS-63579)
-
-#### 1.9.8.3. 업데이트
-
-OpenShift Container Platform 4.20 클러스터를 최신 릴리스로 업데이트하려면 CLI를 사용하여 클러스터 업데이트를 참조하십시오.
-
-#### 1.9.9. RHSA-2025:19003 - OpenShift Container Platform 4.20.1 이미지 릴리스, 버그 수정 및 보안 업데이트 권고
-
-출시 날짜: 2025년 10월 28일
-
-보안 업데이트가 포함된 OpenShift Container Platform 릴리스 4.20.1을 사용할 수 있습니다. 업데이트에 포함된 버그 수정 목록은 RHSA-2025:19003 권고에 설명되어 있습니다. 업데이트에 포함된 RPM 패키지는 RHEA-2025:1 Cryostat 권고를 통해 제공됩니다.
-
-권고에 이 릴리스의 모든 컨테이너 이미지에 대한 설명은 제외되어 있습니다.
-
-다음 명령을 실행하여 이 릴리스에서 컨테이너 이미지를 볼 수 있습니다.
-
-```shell-session
-$ oc adm release info 4.20.1 --pullspecs
-```
-
-#### 1.9.9.1. 확인된 문제
-
-OpenShift Container Platform 4.20부터는 컨테이너의 기본 최대 열려 있는 파일 소프트 제한이 감소합니다. 결과적으로 최종 사용자에게 애플리케이션 오류가 발생할 수 있습니다. 이 문제를 해결하려면 컨테이너 런타임(CRI-O) ulimit 구성을 늘립니다. (OCPBUGS-62095)
-
-#### 1.9.9.2. 버그 수정
-
-이번 업데이트 이전에는 OEM(Dell Cryostat Equipment Manufacturer) `Target` 속성의 잘못된 데이터 유형과 잘못된 가상 미디어 슬롯을 사용하기 때문에 iDRAC10 하드웨어 프로비저닝이 실패했습니다. 결과적으로 사용자는 Dell iDRAC10 서버를 프로비저닝할 수 없었습니다.
-
-이번 릴리스에서는 Dell iDRAC10을 프로비저닝할 수 있습니다. (OCPBUGS-52427)
-
-이번 릴리스 이전에는 동일한 컨트롤러의 두 동일한 사본이 `configmap` 에서 동일한 CA(인증 기관) 번들을 업데이트하여 서로 다른 메타데이터 입력을 수신하고, 서로의 변경 사항을 다시 작성하고, 중복 이벤트를 생성했습니다.
-
-이번 릴리스에서는 컨트롤러에서 optimistic update 및 server-side apply를 사용하여 업데이트 이벤트를 방지하고 업데이트 충돌을 처리합니다. 결과적으로 메타데이터 업데이트는 더 이상 중복 이벤트를 트리거하지 않으며 예상되는 메타데이터가 올바르게 설정됩니다.
-
-(OCPBUGS-55217)
-
-이번 업데이트 이전에는 IBM Power Virtual Server에 클러스터를 설치할 때 기존 Transit Gateway 또는 VPC(가상 프라이빗 클라우드)의 이름만 지정할 수 있었습니다. 이름의 고유성이 보장되지 않아 이로 인해 충돌이 발생하고 설치 오류가 발생할 수 있습니다.
-
-이번 릴리스에서는 Transit Gateway 및 VPC에 대해 UUID(Universally Unique Identifier)를 사용할 수 있습니다. 설치 프로그램은 고유 식별자를 사용하여 올바른 Transit Gateway 또는 VPC를 명확하게 식별할 수 있습니다.
-
-이렇게 하면 이름 지정 충돌이 방지되고 문제가 해결됩니다. (OCPBUGS-59678)
-
-이번 업데이트 이전에는 PTP(Precision Time Protocol) Operator의 Cloud 이벤트 프록시에서 BF3 NIC(Network Interface Card) 이름을 잘못 구문 분석하여 인터페이스 별칭을 잘못 포맷했습니다. 결과적으로 잘못된 구문 분석으로 인해 최종 사용자가 클라우드 이벤트를 잘못 해석했습니다.
-
-이번 릴리스에서는 PTP Operator에서 BF3 NIC 이름을 올바르게 구문 분석하도록 Cloud 이벤트 프록시가 업데이트되었습니다. 결과적으로 수정을 통해 BF3 NIC 이름의 구문 분석이 개선되어 PTP Operator에 대한 올바른 이벤트 게시가 보장됩니다.
-
-(OCPBUGS-60466)
-
-이번 업데이트 이전에는 OVN-Kubernetes Localnet 네트워크(br-ex 브릿지에 매핑됨)의 보조 인터페이스가 있는 Pod는 Localnet IP 주소가 호스트 네트워크와 동일한 서브넷에 있는 경우에만 기본 네트워크를 사용하는 동일한 노드의 Pod와 통신할 수 있었습니다.
-
-이번 릴리스에서는 모든 서브넷에서 localnet IP 주소를 가져올 수 있습니다. 이 일반 사례에서는 클러스터 외부의 외부 라우터가 localnet 서브넷을 호스트 네트워크에 연결해야 합니다.
-
-(OCPBUGS-61453)
-
-이번 업데이트 이전에는 PTP(Precision Time Protocol) Operator에서 NIC(네트워크 인터페이스 컨트롤러) 이름을 잘못 구문 분석했습니다. 그 결과 인터페이스 별칭이 잘못 포맷되었으며 M Cryostatonox 카드를 사용하여 클럭 상태 이벤트를 보낼 때 PTP 하드웨어 클럭(PHC)을 식별하는 데 영향을 미쳤습니다.
-
-이번 릴리스에서는 PTP에서 NIC 이름을 올바르게 구문 분석하여 생성된 별칭이 Mellanox 이름 지정 규칙과 일치하도록 합니다. Mellanox 카드는 클럭 상태 이벤트를 보낼 때 CryostatC를 정확하게 식별할 수 있습니다.
-
-(OCPBUGS-61581)
-
-이번 업데이트 이전에는 `token-auth-azure` 주석만 설정된 경우 `워크로드 ID 모드 경고의 클러스터` 가 누락되어 구성이 잘못될 수 있었습니다. 이번 업데이트에서는 경고를 표시할 때 `token-auth-azure` 주석에 대한 검사가 추가되었습니다.
-
-결과적으로 Azure 워크로드 ID만 사용하는 클러스터에 이제 "워크로드 ID 모드의 클러스터(cluster in workload identity mode)" 경고가 예상대로 표시됩니다. (OCPBUGS-61861)
-
-이번 업데이트 이전에는 웹 콘솔의 YAML 편집기가 기본적으로 4개의 공백으로 YAML 파일을 들여 쓰기로 했습니다. 이번 릴리스에서는 권장 사항에 맞게 기본 들여쓰기가 2개의 공백으로 변경되었습니다. (OCPBUGS-61990)
-
-이번 업데이트 이전에는 `disable-pki-reconciliation 주석` 과 함께 user-supplied `ignition-server-serving-cert` 및 `ignition-server-ca-cert` 시크릿을 사용하여 버전 4.20 이상에 호스트된 컨트롤 플레인을 배포하여 시스템이 사용자가 제공한 ignition 시크릿과 `ignition-server` Pod를 제거했습니다.
-
-이번 릴리스에서는 `ignition-server` pod가 시작되는 `disable-pki-reconciliation` 주석 삭제 작업을 제거한 후 조정 중에 ignition-server 보안이 유지됩니다. (OCPBUGS-62006)
-
-이번 업데이트 이전에는 노드의 `OVNKube-controller` 가 업데이트를 처리하고 로컬 OVN 데이터베이스를 구성하지 못하면 `OVN-controller` 가 이 오래된 데이터베이스에 연결할 수 있었습니다.
-
-이로 인해 `OVN-controller` 에서 오래된 `EgressIP` 구성을 사용하고 이미 다른 노드로 이동했을 수 있는 IP 주소에 대해 잘못된 양의 ARP(GARP)를 전송했습니다.
-
-이번 릴리스에서는 `OVNKube-controller` 가 업데이트를 처리하지 않는 동안 `OVN-controller` 가 이러한 GARP를 보내지 못하도록 차단되었습니다. 결과적으로 GARP가 오래된 데이터베이스 정보를 기반으로 전송되지 않도록함으로써 네트워크 중단이 방지됩니다.
-
-(OCPBUGS-62273)
-
-이번 업데이트 이전에는 처리되지 않은 CRD(Customer Resource Definition) 변경 시 `ClusterExtension` 을 업그레이드하면 검증 상태에 대한 대규모 JSON diff가 발생할 수 있었습니다.
-
-이 diff는 종종 Kubernetes 32 KB 제한을 초과하여 상태 업데이트가 실패하고 사용자가 업그레이드가 발생하지 않은 이유에 대한 정보가 없습니다. 이번 릴리스에서는 diff 출력이 잘린 후 전체 JSON diff를 포함하는 대신 처리되지 않은 시나리오에 대해 요약됩니다.
-
-이렇게 하면 상태 업데이트가 크기 제한 내에 유지되므로 성공적으로 게시하고 사용자에게 명확하고 실행 가능한 오류 메시지를 제공할 수 있습니다. (OCPBUGS-62722)
-
-이번 업데이트 이전에는 gRPC 연결 로그가 매우 자세한 로그 수준으로 설정되었습니다. 이로 인해 과도한 수의 메시지가 생성되어 로그가 오버플로되었습니다. 이번 릴리스에서는 gRPC 연결 로그가 V(4) 로그 수준으로 이동되었습니다. 결과적으로 이러한 특정 메시지가 기본적으로 세부 정보가 줄어들기 때문에 로그가 더 이상 오버플로되지 않습니다. (OCPBUGS-62844)
-
-이번 업데이트 이전에는 버전이 표시되지 않고 다음 명령을 실행하면 필요한 수정 사항이 있는 올바른 버전을 알 수 없기 때문에 디버깅에 지연이 발생했습니다. 결과적으로 사용자는 버전을 식별할 수 없어 효율적인 디버깅을 방해했습니다.
-
-```shell
-oc-mirror
-```
-
-```shell
-oc-mirror
-```
-
-```shell
-oc-mirror
-```
-
-이번 업데이트 이전에는 token 값이 완전히 채워지기 전에 `cluster-api-operator` kubeconfig 컨트롤러에서 재생성된 인증 토큰 시크릿을 사용하려고 할 때 버그가 발생했습니다. 이로 인해 30분마다 사용자가 반복적인 일시적인 조정 오류가 발생하여 Operator가 성능이 저하된 상태가 되었습니다.
-
-이번 릴리스에서는 컨트롤러가 진행하기 전에 보안 내에 인증 토큰을 채울 때까지 대기하여 Operator가 성능이 저하된 상태로 전환되지 않고 반복적인 오류가 제거됩니다. (OCPBUGS-62755)
-
-이번 업데이트 이전에는 OpenShift Container Platform 4.19.9에서 CVO(Cluster Version Operator)에서 메트릭 요청에 전달자 토큰 인증이 필요하기 시작했습니다. 그 결과 스크랩에서 클라이언트 인증을 제공하지 않았기 때문에 호스팅된 컨트롤 플레인 클러스터에서 메트릭 스크랩이 중단되었습니다.
-
-이번 릴리스에서는 CVO가 호스팅된 컨트롤 플레인 클러스터의 메트릭 요청에 대한 클라이언트 인증이 더 이상 필요하지 않습니다. (OCPBUGS-62867)
-
-이번 업데이트 이전에는 장애 조치 중에 연결이 끊어진 경우 시스템의 중복 주소 감지(DAD)에서 두 노드에 간단히 존재하는 경우 Egress IPv6 주소를 잘못 비활성화할 수 있었습니다.
-
-이번 릴리스에서는 장애 조치 중에 DAD 검사를 건너뛰도록 Egress IPv6가 구성되어 Egress IP 주소가 다른 노드로 성공적으로 이동하여 네트워크 안정성이 증가한 후 중단되지 않는 송신 IPv6 트래픽을 보장합니다. (OCPBUGS-62913)
-
-#### 1.9.9.3. 업데이트
-
-OpenShift Container Platform 4.20 클러스터를 최신 릴리스로 업데이트하려면 CLI를 사용하여 클러스터 업데이트를 참조하십시오.
-
-#### 1.9.10. RHSA-2025:9562 - OpenShift Container Platform 4.20.0 이미지 릴리스, 버그 수정 및 보안 업데이트 권고
-
-출시 날짜: 2025년 10월 21일
-
-보안 업데이트가 포함된 OpenShift Container Platform 릴리스 4.20.0을 사용할 수 있습니다. 업데이트에 포함된 버그 수정 목록은 RHSA-2025:9562 권고에 설명되어 있습니다. 업데이트에 포함된 RPM 패키지는 RHEA-2025:4782 권고를 통해 제공됩니다.
-
-권고에 이 릴리스의 모든 컨테이너 이미지에 대한 설명은 제외되어 있습니다.
-
-다음 명령을 실행하여 이 릴리스에서 컨테이너 이미지를 볼 수 있습니다.
-
-```shell-session
-$ oc adm release info 4.20.0 --pullspecs
-```
-
-#### 1.9.10.1. 업데이트
-
-OpenShift Container Platform 4.20 클러스터를 최신 릴리스로 업데이트하려면 CLI를 사용하여 클러스터 업데이트를 참조하십시오.
-
-## 2장. 추가 릴리스 정보
-
-핵심 OpenShift Container Platform 4.20 릴리스 노트에 포함되지 않은 추가 관련 구성 요소 및 제품의 릴리스 노트는 다음 문서에서 확인할 수 있습니다.
-
-중요
-
-다음 릴리스 노트는 Red Hat 제품 다운스트림용입니다. 관련 제품의 업스트림 또는 커뮤니티 릴리스 노트는 포함되어 있지 않습니다.
-
-A
-
-AWS Load Balancer Operator
-
-B
-
-Red Hat OpenShift 빌드
-
-C
-
-cert-manager Operator for Red Hat OpenShift
-
-Cluster Observability Operator (COO)
-
-Compliance Operator
-
-사용자 정의 지표 Autoscaler Operator
-
-D
-
-Red Hat Developer Hub Operator
-
-E
-
-외부 DNS Operator
-
-External Secrets Operator for Red Hat OpenShift
-
-F
-
-File Integrity Operator
-
-K
-
-kube Descheduler Operator
-
-Red Hat build of Kueue
-
-L
-
-leader Worker Set Operator
-
-로깅
-
-M
-
-Migration Toolkit for Containers (MTC)
-
-N
-
-Network Observability Operator
-
-NBDE(Network-bound Disk Encryption) Tang Server Operator
-
-O
-
-OADP(OpenShift API for Data Protection)
-
-Red Hat OpenShift Dev Spaces
-
-Red Hat OpenShift Distributed Tracing Platform
-
-Red Hat OpenShift GitOps
-
-Red Hat OpenShift Local (Upstream CRC 문서)
-
-Red Hat OpenShift Pipelines
-
-OpenShift 샌드박스 컨테이너
-
-Red Hat OpenShift Serverless
-
-Red Hat OpenShift Service Mesh 2.x
-
-Red Hat OpenShift Service Mesh 3.x
-
-Red Hat OpenShift Virtualization
-
-Red Hat build of OpenTelemetry
-
-P
-
-Red Hat OpenShift의 전원 모니터링
-
-R
-
-Run Once Duration Override Operator
-
-S
-
-Secondary Scheduler Operator for Red Hat OpenShift
-
-Security Profiles Operator
-
-Z
-
-Zero Trust Workload Identity Manager
+|Selectable Cluster Inventory
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Installing a cluster on {gcp-short} using the Cluster API implementation
+|General Availability
+|General Availability
+|General Availability
+
+|Enabling a user-provisioned DNS on {gcp-short}
+|Not Available
+|Technology Preview
+|Technology Preview
+
+|Installing a cluster on {vmw-full} with multiple network interface controllers
+|Technology Preview
+|Technology Preview
+|General Availability
+
+|Using bare metal as a service
+|Not Available
+|Technology Preview
+|Technology Preview
+
+|Changing the CVO log level
+|Not Available
+|Not Available
+|Technology Preview
+|====
+
+#### Machine Config Operator Technology Preview features
+
+Machine Config Operator Technology Preview tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|Boot image management for {vmw-short}
+|Not available
+|Not available
+|Technology Preview
+
+|Improved MCO state reporting (oc get machineconfignode)
+|Technology Preview
+|General Availability
+|General Availability
+
+|Pinned Image Sets
+|Technology Preview
+|General Availability ^1^
+|General Availability
+
+|Image mode for OpenShift/On-cluster RHCOS image layering
+|General Availability ^2^
+|General Availability
+|General Availability
+
+|====
+--
+ This feature is GA starting in OpenShift Container Platform 4.19.12. Earlier 4.19.x versions remain in Technology Preview.
+ This feature is GA starting in OpenShift Container Platform 4.18.20. Earlier 4.18.x versions remain in Technology Preview.
+--
+
+#### Machine management Technology Preview features
+
+Machine management Technology Preview tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|Managing machines with the Cluster API for {aws-full}
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Managing machines with the Cluster API for {gcp-full}
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Managing machines with the Cluster API for {ibm-power-server-name}
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Managing machines with the Cluster API for {azure-full}
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Managing machines with the Cluster API for {rh-openstack}
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Managing machines with the Cluster API for {vmw-full}
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Managing machines with the Cluster API for bare metal
+|Not Available
+|Technology Preview
+|Technology Preview
+
+|Cloud controller manager for {ibm-power-server-name}
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Adding multiple subnets to an existing {vmw-full} cluster by using compute machine sets
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Configuring Trusted Launch for {azure-full} virtual machines by using machine sets
+|Technology Preview
+|General Availability
+|General Availability
+
+|Configuring {azure-short} confidential virtual machines by using machine sets
+|Technology Preview
+|General Availability
+|General Availability
+|====
+
+#### Monitoring Technology Preview features
+
+Monitoring Technology Preview tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|Metrics Collection Profiles
+|Technology Preview
+|General Availability
+|General Availability
+
+|====
+
+#### Multi-Architecture Technology Preview features
+
+Multi-Architecture Technology Preview tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|`kdump` on `arm64` architecture
+|Technology Preview
+|Technology Preview
+|General Availability
+
+|`kdump` on `s390x` architecture
+|Technology Preview
+|Technology Preview
+|General Availability
+
+|`kdump` on `ppc64le` architecture
+|Technology Preview
+|Technology Preview
+|General Availability
+
+|Support for configuring the image stream import mode behavior
+|Technology Preview
+|Technology Preview
+|Technology Preview
+|====
+
+#### Networking Technology Preview features
+
+Networking Technology Preview tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|eBPF manager Operator
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Advertise using L2 mode the MetalLB service from a subset of nodes, using a specific pool of IP addresses
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Updating the interface-specific safe sysctls list
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Egress service custom resource
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|VRF specification in `BGPPeer` custom resource
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|VRF specification in `NodeNetworkConfigurationPolicy` custom resource
+|Technology Preview
+|General Availability
+|General Availability
+
+|Host network settings for SR-IOV VFs
+|General Availability
+|General Availability
+|General Availability
+
+|Integration of MetalLB and FRR-K8s
+|General Availability
+|General Availability
+|General Availability
+
+|Automatic leap seconds handling for PTP grandmaster clocks
+|General Availability
+|General Availability
+|General Availability
+
+|PTP events REST API v2
+|General Availability
+|General Availability
+|General Availability
+
+|OVN-Kubernetes customized `br-ex` bridge on bare metal
+|General Availability
+|General Availability
+|General Availability
+
+|OVN-Kubernetes customized `br-ex` bridge on {vmw-short} and {rh-openstack}
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Live migration to OVN-Kubernetes from OpenShift SDN
+|Not Available
+|Not Available
+|Not Available
+
+|User-defined network segmentation
+|General Availability
+|General Availability
+|General Availability
+
+|Dynamic configuration manager
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|SR-IOV Network Operator support for Intel C741 Emmitsburg Chipset
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|SR-IOV Network Operator support on ARM architecture
+|General Availability
+|General Availability
+|General Availability
+
+|Gateway API and Istio for Ingress management
+|Technology Preview
+|General Availability
+|General Availability
+
+|Dual-port NIC for PTP ordinary clock
+|Not Available
+|Technology Preview
+|Technology Preview
+
+|DPU Operator
+|Not Available
+|Technology Preview
+|Technology Preview
+
+|Fast IPAM for the Whereabouts IPAM CNI plugin
+|Not Available
+|Technology Preview
+|Technology Preview
+
+|Unnumbered BGP peering
+|Not Available
+|Technology Preview
+|General Availability
+
+|Load balancing across the aggregated bonded interface with xmitHashPolicy
+|Not Available
+|Not Available
+|Technology Preview
+
+|PF Status Relay Operator for high availability with SR-IOV networks
+|Not Avaialable
+|Not Available
+|Technology Preview
+
+|Preconfigured user-defined network end points using {mtv-short}
+|Not Available
+|Not Available
+|Technology Preview
+
+|Unassisted holdover for PTP devices
+|Not Available
+|Not Available
+|Technology Preview
+
+|NVIDIA BlueField-3 DPU support
+|Not Available
+|Not Available
+|Technology Preview
+|====
+
+#### Node Technology Preview features
+
+Nodes Technology Preview tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|`MaxUnavailableStatefulSet` featureset
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|sigstore support
+|Technology Preview
+|Technology Preview
+|General Availability
+
+|Default sigstore `openshift` cluster image policy
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Linux user namespace support
+|Technology Preview
+|Technology Preview
+|General Availability
+
+|Attribute-Based GPU Allocation
+|Not Available
+|Not Available
+|Technology Preview
+|====
+
+#### OpenShift CLI (oc) Technology Preview features
+
+OpenShift CLI (`oc`) Technology Preview tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|oc-mirror plugin v2
+|General Availability
+|General Availability
+|General Availability
+
+|oc-mirror plugin v2 enclave support
+|General Availability
+|General Availability
+|General Availability
+
+|oc-mirror plugin v2 delete functionality
+|General Availability
+|General Availability
+|General Availability
+|====
+
+#### Operator lifecycle and development Technology Preview features
+
+Operator lifecycle and development Technology Preview tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|{olmv1-first}
+|General Availability
+|General Availability
+|General Availability
+
+|Scaffolding tools for Hybrid Helm-based Operator projects
+|Removed
+|Removed
+|Removed
+
+|Scaffolding tools for Java-based Operator projects
+|Removed
+|Removed
+|Removed
+|====
+
+#### {rh-openstack-first} Technology Preview features
+
+{rh-openstack} Technology Preview tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|{rh-openstack} integration into the {cluster-capi-operator}
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Control plane with `rootVolumes` and `etcd` on local disk
+|General Availability
+|General Availability
+|General Availability
+
+|Hosted control planes on {rh-openstack} 17.1
+|Not Available
+|Technology Preview
+|Technology Preview
+|====
+
+#### Scalability and performance Technology Preview features
+
+Scalability and performance Technology Preview tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|{factory-prestaging-tool}
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Hyperthreading-aware CPU manager policy
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Mount namespace encapsulation
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Node Observability Operator
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Increasing the etcd database size
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Using {rh-rhacm} `PolicyGenerator` resources to manage {ztp} cluster policies
+|Technology Preview
+|General Availability
+|General Availability
+
+|Pinned Image Sets
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Configuring NUMA-aware scheduler replicas and high availability
+|Not available
+|Not available
+|Technology Preview
+|====
+
+#### Storage Technology Preview features
+
+Storage Technology Preview tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|AWS EFS One Zone volume
+|Not Available
+|Not Available
+|General Availability
+
+|Automatic device discovery and provisioning with Local Storage Operator
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Azure File CSI snapshot support
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|Azure File cross-subscription support
+|Not Available
+|General Availability
+|General Availability
+
+|Azure Disk performance plus
+|Not Available
+|Not Available
+|General Availability
+
+|Configuring fsGroupChangePolicy per namespace
+|Not Available
+|Not Available
+|General Availability
+
+|Shared Resources CSI Driver in OpenShift Builds
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|{secrets-store-operator}
+|General Availability
+|General Availability
+|General Availability
+
+|CIFS/SMB CSI Driver Operator
+|General Availability
+|General Availability
+|General Availability
+
+|VMware vSphere multiple vCenter support
+|General Availability
+|General Availability
+|General Availability
+
+|Disabling/enabling storage on vSphere
+|Technology Preview
+|General Availability
+|General Availability
+
+|Increasing max number of volumes per node for vSphere
+|Not Available
+|Technology Preview
+|Technology Preview
+
+|RWX/RWO SELinux mount option
+|Developer Preview
+|Developer Preview
+|Technology Preview
+
+|Migrating CNS Volumes Between Datastores
+|Developer Preview
+|General Availability
+|General Availability
+
+|CSI volume group snapshots
+|Technology Preview
+|Technology Preview
+|Technology Preview
+
+|GCP PD supports C3/N4 instance types and hyperdisk-balanced disks
+|General Availability
+|General Availability
+|General Availability
+
+|OpenStack Manila support for CSI resize
+|General Availability
+|General Availability
+|General Availability
+
+|Volume Attribute Classes
+|Not Available
+|Technology Preview
+|Technology Preview
+
+|Volume populators
+|Technology Preview
+|Technology Preview
+|General Availability
+|====
+
+#### Web console Technology Preview features
+
+Web console Technology Preview tracker
+|====
+|Feature |4.18 |4.19 |4.20
+
+|{ols-official} in the OpenShift Container Platform web console
+|Technology Preview
+|Technology Preview
+|Technology Preview
+|====
+
+### Known issues
+
+* There is a known issue with Gateway API and {aws-first}, {gcp-first}, and {azure-first} private clusters. The load balancer that is provisioned for a gateway is always configured to be external, which can cause errors or unexpected behavior:
+--
+** In an {aws-short} private cluster, the load balancer becomes stuck in the `pending` state and reports the error: `Error syncing load balancer: failed to ensure load balancer: could not find any suitable subnets for creating the ELB`.
+
+** In {gcp-short} and {azure-short} private clusters, the load balancer is provisioned with an external IP address, when it should not have an external IP address.
+--
+There is no supported workaround for this issue. ([OCPBUGS-57440](https://issues.redhat.com/browse/OCPBUGS-57440))
+
+* When running a pod in an isolated user namespace, the UID/GID inside a pod container no longer matches the UID/GID on the host. For file system ownership to work correctly, the Linux kernel uses ID-mapped mounts, which translate user IDs between the container and the host at the virtual file system (VFS) layer.
+However, not all file systems currently support ID-mapped mounts, such as Network File Systems (NFS) and other network or distributed file systems. Because such file systems do not support ID-mapped mounts, pods running within user namespaces can fail to access mounted NFS volumes. This behavior is not specific to OpenShift Container Platform. It applies to all Kubernetes distributions from Kubernetes v1.33 and later.
+When upgrading to OpenShift Container Platform 4.20, clusters are unaffected until you opt in to user namespaces. After enabling user namespaces, any pod that is using an NFS-backed persistent volume from a vendor that does not support ID-mapped mounts might experience access or permission issues when running in a user namespace. For more information about enabling user namespaces, see Configuring Linux user namespace support.
+> Existing OpenShift Container Platform 4.19 clusters are unaffected until you explicitly enable user namespaces, which is a Technology Preview feature in OpenShift Container Platform 4.19.
+
+* When installing a cluster on {azure-short}, if you set any of the `compute.platform.azure.identity.type`, `controlplane.platform.azure.identity.type`, or `platform.azure.defaultMachinePlatform.identity.type` field values to `None`, your cluster is unable to pull images from the Azure Container Registry.
+You can avoid this issue by providing a user-assigned identity or by leaving the identity field blank.
+In both cases, the installation program generates a user-assigned identity. ([OCPBUGS-56008](https://issues.redhat.com/browse/OCPBUGS-56008))
+
+* There is a known issue in the unified software catalog view of the console. When you select *Ecosystem* -> *Software Catalog*, you must enter an existing project name or create a new project to view the software catalog. The project selection field does not effect how catalog content is installed on the cluster. As a workaround, enter any existing project name to view the software catalog. ([OCPBUGS-61870](https://issues.redhat.com/browse/OCPBUGS-61870))
+
+* Deleting and recreating test workloads with a BlueField-3 NIC causes clock jumps due to inconsistent PTP synchronization. This disrupts time synchronization in test workloads. The time synchronization stabilizes when the workloads are stable. ([RHEL-93579](https://issues.redhat.com/browse/RHEL-93579))
+
+* Event logs for GNR-D interfaces are ambiguous due to identical three-letter prefixes ("eno"). As a consequence, affected interfaces are not clearly identified during state changes. To work around this problem, change interfaces used by ptp-operator to follow the "path" naming convention, ensuring per clock events are identified correctly based on interface names and clearly indicate which clock is affected by state changes. For more information, see [Network interface naming policies](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/configuring_and_managing_networking/consistent-network-interface-device-naming_configuring-and-managing-networking#network-interface-naming-policies_consistent-network-interface-device-naming). ([OCPBUGS-62817](https://issues.redhat.com/browse/OCPBUGS-62817))
+
+* Using a Telecom Time Synchronous Clock (T-TSC) configuration causes the ts2phc metrics to report "unlocked" instead of "locked". As a result, you might encounter inaccurate Precision Time Protocol (PTP) clock state reporting. To work around this issue, remove the `ts2phc` metric. ([OCPBUGS-63158](https://issues.redhat.com/browse/OCPBUGS-63158))
+
+* Updating iDRAC firmware on Dell XR8620 may cause servers to fail, due to interference between the OS and iDRAC reboots. This may interrupt the service. To work around this problem, update iDRAC firmware on the server outside of OpenShift. ([OCPBUGS-60876](https://issues.redhat.com/browse/OCPBUGS-60876))
+
+* The `istiod` component, which supports Gateway API, previously created an `istio-ca-root-cert` ConfigMap in all namespaces watched by OpenShift Service Mesh (OSSM). A fix is included in OSSM 3.0.1 (part of OpenShift Container Platform 4.20) that limits this behavior, so ConfigMaps are only created in namespaces that contain a Gateway API resource. However, this fix does not automatically clean up existing ConfigMaps from namespaces that do not contain a Gateway. As a result, clusters might still contain numerous unnecessary `istio-ca-root-cert` ConfigMaps after an upgrade. These extra ConfigMaps are benign and can be safely ignored, or they can be manually deleted from namespaces that do not host a Gateway. ([OCPBUGS-43093](http://issues.redhat.com/browse/OCPBUGS-43093))
+
+* When the same hostname is specified in two or more different `Gateway` resources, the system does not report a conflict. The upstream Gateway API specification treats each `Gateway` as a separate independent proxy. This is the intended behavior of the upstream Gateway API specification. The cluster will not prevent this configuration. The routing of traffic to a specific Gateway is determined by external configuration, such as which Gateway's service IP address is used in the DNS record for the hostname. ([NE-2180](http://issues.redhat.com/browse/NE-2180))
+
+* Gateway API is not supported on on-premise platforms, including Bare Metal, vSphere, Nutanix, KubeVirt, and clusters using the `None` platform type. The Gateway API implementation automatically creates a service of `type: LoadBalancer`. On-premise platforms do not have a default cloud controller manager or other provisioner to assign an external IP address to this service. As a result, the `Gateway` resource will never be marked as "accepted" and will remain inaccessible from outside the cluster. ([OCPBUGS-37385](http://issues.redhat.com/browse/OCPBUGS-37385))
+
+* If the `appProtocol` field is not explicitly defined in a Kubernetes `Service`, the Gateway API implementation infers the network protocol from the `Service` port name. For example, a port named `https-web` is interpreted as using the HTTPS protocol. If the port name does not match the actual protocol used by the application, this inference can cause unexpected traffic behavior or connection failures. To avoid this issue, explicitly define the `appProtocol` field in your `Service` resources or ensure that port names strictly match the protocol in use. ([OSSM-7231](http://issues.redhat.com/browse/OSSM-7231))
+
+* The reverse proxy implementation for Gateway API (based on Istio and Envoy) currently demonstrates lower performance compared to the default HAProxy-based Ingress Controller. HAProxy has been extensively tuned for OpenShift Container Platform over many releases. Consequently, users might observe higher latency or lower throughput when using Gateway API compared to standard OpenShift Routes. Performance optimizations for the Gateway API implementation are ongoing. ([OSSM-6842](http://issues.redhat.com/browse/OSSM-6842))
+
+* OpenShift Service Mesh (OSSM) 3.x, which provides the Gateway API implementation, cannot coexist with OSSM 2.x on the same cluster, except during a supported migration process. Installing both versions simultaneously for standard operations is not supported and might lead to resource conflicts; for example, the Ingress Operator might report a `degraded` status. Additionally, the Network Observability Operator (NID) no longer supports OSSM 2.x. It is recommended that users use OSSM 3.x for ongoing support and compatibility. Users must choose a single Service Mesh version for their cluster or follow the official migration procedure when moving from 2.x to 3.x. ([OSSM-5407](https://issues.redhat.com/browse/OSSM-5407))
+
+* The Gateway API implementation currently does not support the automatic idling of services. Unlike standard OpenShift Routes, which can idle services to conserve resources when they are not in use, workloads managed by Gateway API do not automatically scale to zero or enter an idle state based on traffic inactivity.
+
+* The Gateway API implementation currently lacks dedicated integration with the OpenShift Container Platform web console and the OpenShift CLI (`oc`). Consequently, Gateway API resources, such as `Gateway`, `GatewayClass`, and `HTTPRoute`, do not appear in specific console dashboards or views. To manage these resources, users must utilize standard `oc` commands (for example, `oc get gateway` or `oc edit httproute`) and apply configurations using YAML manifests.
+
+* The Gateway API implementation currently does not provide a mechanism for users to configure advanced Istio or Envoy options. Specifically, capabilities such as configuring access logs or tuning low-level proxy settings are not exposed. Users must rely on the default configuration provided by the Gateway API controller.
+
+* The Gateway API implementation currently does not support Cluster User-Defined Networks (CUDNs). Gateway API resources can only be used with the default cluster network and cannot be attached to user-defined secondary networks.
+
+* The `HTTPRoute` resource in the Gateway API implementation currently does not support `Passthrough` or `Re-encrypt` TLS termination strategies. Unlike standard OpenShift Routes, which offer flexible termination options, `HTTPRoute` currently supports only Edge termination (terminating TLS at the gateway). Users requiring `Passthrough` or `Re-encrypt` functionality cannot currently achieve this using `HTTPRoute` resources.
+
+* When you install a cluster on {aws-short}, if you do not configure {aws-short} credentials before running any `openshift-install create` command, the installation program fails. ([OCPBUGS-56658](https://issues.redhat.com/browse/OCPBUGS-56658))
+
+* On systems using specific AMD EPYC processors, some low-level system interrupts, for example `AMD-Vi`, might contain CPUs in the CPU mask that overlaps with CPU-pinned workloads. This behavior is because of the hardware design. These specific error-reporting interrupts are generally inactive and there is currently no known performance impact.([OCPBUGS-57787](https://issues.redhat.com/browse/OCPBUGS-57787))
+
+* Currently, pods that use a `guaranteed` QoS class and request whole CPUs might not restart automatically after a node reboot or kubelet restart. The issue might occur in nodes configured with a static CPU Manager policy and using the `full-pcpus-only` specification, and when most or all CPUs on the node are already allocated by such workloads. As a workaround, manually delete and re-create the affected pods. ([*OCPBUGS-43280*](https://issues.redhat.com/browse/OCPBUGS-43280))
+
+* The Performance Profile Creator tool fails to analyze a `must-gather` archive if the archive contains a custom namespace directory that ends with the suffix `nodes`. The failure occurs because of the tool's search logic, which incorrectly reports an error for multiple matches. As a workaround, rename the custom namespace directory so that it does not end with the `nodes` suffix, and run the tool again. ([*OCPBUGS-60218*](https://issues.redhat.com/browse/OCPBUGS-60218))
+
+* Currently, on clusters with SR-IOV network virtual functions configured, a race condition might occur between system services responsible for network device renaming and the TuneD service managed by the Node Tuning Operator. As a consequence, the TuneD profile might become degraded after the node restarts, leading to performance degradation. As a workaround, restart the TuneD pod to restore the profile state. ([*OCPBUGS-41934*](https://issues.redhat.com/browse/OCPBUGS-41934))
+
+* A known latency issue currently affects systems running on 4th Gen Intel Xeon processors. ([*OCPBUGS-46528*](https://issues.redhat.com/browse/OCPBUGS-46528))
+
+* The SuperMicro ARS-111GL-NHR server is unable to access virtual media during boot when the virtual media image is served through an IPv6 address. As a consequence, you cannot use virtual media on the SuperMicro ARS-111GL-NHR server model with an IPv6 network configuration. ([*OCPBUGS-60070*](https://issues.redhat.com/browse/OCPBUGS-60070))
+
+* Firmware updates on Hewlett Packard Enterprise (HPE) DL110G11 servers and similar models may fail due to a  bug that is specific to this hardware, caused by the way the 'NetworkAdapters' resource is implemented. It may become unavailable during the update and cause the update to fail. To work around this issue, manually update the Baseboard Management Controller (BMC) firmware outside Ironic to avoid service disruption. ([*OCPBUGS-60708*](https://issues.redhat.com/browse/OCPBUGS-60708))
+
+* Booting the `Baremetalhost` object into the correct `operating system` repeatedly fails on certain BMC firmware versions due to the SuperMicro ARS-111GL-NHR server booting into an existing hard drive instead of virtual media. This issue arises from an updated BIOS and bare metal host firmware, making CD unsupported while USB CD works. Consequently, the node inspection fails. If impacted, to work around this problem, manually set the `BootSourceOverrideTarget` to be USB CD instead of CD, and boot the node from the correct virtual media. ([*OCPBUGS-61851*](https://issues.redhat.com/browse/OCPBUGS-61851))
+
+* When updating a Dell server BMC firmware, the Redfish API is temporarily disrupted. This may cause connection failures and trigger Ironic to mark the update as failed. To work around this issue, manually update the BMC firmware outside Ironic to avoid service disruption. ([*OCPBUGS-61871*](https://issues.redhat.com/browse/OCPBUGS-61871))
+
+* When attempting simultaneous BIOS and BMC firmware update on Dell R740, the BMC update might fail, leaving the server powered down and unresponsive. This issue occurs when the update process does not complete successfully, causing the system to remain in a non-operational state. ([*OCPBUGS-62009*](https://issues.redhat.com/browse/OCPBUGS-62009))
+
+* Updating the BMC firmware might fail if you configure the server with an incorrect network share location or invalid credentials, causing the server to remain powered off and unable to recover. ([*OCPBUGS-62010*](https://issues.redhat.com/browse/OCPBUGS-62010))
+
+* The loss of the upstream clock connection does not trigger the degradation of all clock state metrics due to a bug in the clock degradation logic. Consequently, 'ptp4l' and 'ts2phc' clock state metrics might not degrade as expected after degrading to the 'unlocked' state, leading to inconsistent time synchronization state reporting. To work around this issue, rely on 'dpll' and 'T-BC' clock state metrics only, and disregard 'ptp4l' and 'ts2phc' metrics. ([*OCPBUGS-62719*](https://issues.redhat.com/browse/OCPBUGS-62719))
