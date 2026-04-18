@@ -14,6 +14,16 @@ from play_book_studio.runtime_catalog_registry import official_runtime_books
 
 from .wiki_user_overlay import build_wiki_overlay_signal_payload
 
+LATEST_RUNTIME_BRONZE_SOURCE_TYPES = frozenset(
+    {
+        "topic_playbook",
+        "operation_playbook",
+        "troubleshooting_playbook",
+        "policy_overlay_book",
+        "synthesized_playbook",
+    }
+)
+
 
 def _iso_now() -> str:
     return datetime.now().astimezone().isoformat(timespec="seconds")
@@ -102,6 +112,23 @@ def _translation_runtime_blocked_slugs(translation_lane_report: dict[str, Any]) 
     return blocked
 
 
+def _latest_runtime_grade(entry: dict[str, Any]) -> str:
+    if bool(entry.get("active_runtime")):
+        return "Gold"
+    source_type = str(entry.get("source_type") or "").strip()
+    if source_type in LATEST_RUNTIME_BRONZE_SOURCE_TYPES:
+        return "Bronze"
+    return "Silver"
+
+
+def _latest_runtime_review_status(entry: dict[str, Any], *, grade: str) -> str:
+    if grade == "Gold":
+        return "active_runtime"
+    if grade == "Bronze":
+        return "derived_runtime_output"
+    return "latest_pipeline_output"
+
+
 def _build_approved_wiki_runtime_book_bucket(root: Path, *, translation_lane_report: dict[str, Any]) -> dict[str, Any]:
     manifest_path = root / "data" / "wiki_runtime_books" / "active_manifest.json"
     blocked_slugs = _translation_runtime_blocked_slugs(translation_lane_report)
@@ -129,12 +156,13 @@ def _build_approved_wiki_runtime_book_bucket(root: Path, *, translation_lane_rep
             runtime_paths.append(runtime_path)
             section_count = max(section_count, _markdown_heading_count(runtime_path))
             code_block_count = max(code_block_count, _markdown_code_block_count(runtime_path))
+        grade = _latest_runtime_grade(entry)
         books.append(
             {
                 "book_slug": slug,
                 "title": str(entry.get("title") or slug),
-                "grade": "Approved Wiki Runtime",
-                "review_status": "approved_wiki_runtime",
+                "grade": grade,
+                "review_status": _latest_runtime_review_status(entry, grade=grade),
                 "source_type": str(entry.get("source_type") or "reader_grade_md"),
                 "source_lane": str(entry.get("source_lane") or "approved_wiki_runtime"),
                 "section_count": section_count,
@@ -142,6 +170,10 @@ def _build_approved_wiki_runtime_book_bucket(root: Path, *, translation_lane_rep
                 "viewer_path": str(entry.get("viewer_path") or entry.get("docs_viewer_path") or ""),
                 "source_url": str(entry.get("source_url") or entry.get("source_candidate_path") or ""),
                 "updated_at": str(entry.get("updated_at") or ""),
+                "approval_state": str(entry.get("approval_state") or ""),
+                "publication_state": str(entry.get("publication_state") or ""),
+                "runtime_truth_label": "Latest pipeline PlayBook",
+                "boundary_badge": grade,
             }
         )
     if runtime_paths:

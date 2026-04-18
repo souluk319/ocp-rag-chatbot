@@ -913,3 +913,25 @@ class TestAppDataControlRoom(unittest.TestCase):
             },
             {book["viewer_path"] for book in payload["approved_wiki_runtime_books"]["books"]},
         )
+        self.assertEqual(
+            {
+                "architecture": "Silver",
+                "backup_restore_operations": "Bronze",
+                "support": "Gold",
+            },
+            {
+                book["book_slug"]: book["grade"]
+                for book in payload["approved_wiki_runtime_books"]["books"]
+            },
+        )
+        self.assertEqual(
+            {
+                "architecture": "latest_pipeline_output",
+                "backup_restore_operations": "derived_runtime_output",
+                "support": "active_runtime",
+            },
+            {
+                book["book_slug"]: book["review_status"]
+                for book in payload["approved_wiki_runtime_books"]["books"]
+            },
+        )

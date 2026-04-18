@@ -18,10 +18,13 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from _support_app_ui import _customer_pack_meta_for_viewer_path, _ingest_customer_pack
-from play_book_studio.app.customer_pack_read_boundary import sanitize_customer_pack_draft_payload
+from play_book_studio.app.customer_pack_read_boundary import (
+    sanitize_customer_pack_draft_payload,
+    sanitize_customer_pack_mutation_payload,
+)
 from play_book_studio.config.settings import load_settings
 from play_book_studio.intake.private_corpus import customer_pack_private_manifest_path
-from scripts.build_pipeline_quality_outlier_report import build_reports
+from scripts.build_pipeline_quality_outlier_report import build_reports, _raw_heading_count
 
 
 class PipelineQualityHardeningTests(unittest.TestCase):
@@ -208,6 +211,67 @@ class PipelineQualityHardeningTests(unittest.TestCase):
         self.assertNotIn("fallback_status", sanitized)
         self.assertNotIn("fallback_reason", sanitized)
 
+    def test_sanitize_customer_pack_mutation_payload_sanitizes_nested_book_and_private_corpus(self) -> None:
+        sanitized = sanitize_customer_pack_mutation_payload(
+            {
+                "draft_id": "dtb-review",
+                "status": "normalized",
+                "request": {"source_type": "md"},
+                "plan": {"title": "demo"},
+                "book": {
+                    "title": "Demo",
+                    "source_origin_url": "/api/customer-packs/captured?draft_id=dtb-review",
+                    "sections": [
+                        {
+                            "heading": "ConfigMap Secret",
+                            "source_url": "/tmp/demo.md",
+                        }
+                    ],
+                    "customer_pack_evidence": {"parser_backend": "surya"},
+                    "quality_score": 41,
+                    "degraded_reason": "too_many_heading_only_sections",
+                },
+                "private_corpus": {
+                    "artifact_version": "customer_private_corpus_v1",
+                    "materialization_error": "vector timeout",
+                    "boundary_fail_reasons": ["approval_not_read_ready"],
+                    "chunk_count": 3,
+                },
+            }
+        )
+
+        self.assertNotIn("request", sanitized)
+        self.assertNotIn("plan", sanitized)
+        self.assertIn("book", sanitized)
+        self.assertNotIn("customer_pack_evidence", sanitized["book"])
+        self.assertNotIn("quality_score", sanitized["book"])
+        self.assertNotIn("degraded_reason", sanitized["book"])
+        self.assertEqual(
+            "/api/customer-packs/captured?draft_id=dtb-review",
+            sanitized["book"]["source_uri"],
+        )
+        self.assertIn("private_corpus", sanitized)
+        self.assertNotIn("materialization_error", sanitized["private_corpus"])
+        self.assertNotIn("boundary_fail_reasons", sanitized["private_corpus"])
+        self.assertEqual(3, sanitized["private_corpus"]["chunk_count"])
+
+    def test_raw_heading_count_ignores_docs_shell_headings(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            html_path = Path(tmpdir) / "raw.html"
+            html_path.write_text(
+                (
+                    "<h2>OpenShift Container Platform</h2>"
+                    "<h2>OpenShift Container Platform의 관찰 기능에 대한 정보 포함</h2>"
+                    "<h2>1장. Observability 정보 링크 복사 링크가 클립보드에 복사되었습니다!</h2>"
+                    "<h3>1.1. 모니터링 링크 복사 링크가 클립보드에 복사되었습니다!</h3>"
+                    "<h2>Legal Notice 링크 복사 링크가 클립보드에 복사되었습니다!</h2>"
+                    "<h3>커뮤니티</h3>"
+                ),
+                encoding="utf-8",
+            )
+
+            self.assertEqual(3, _raw_heading_count(html_path))
+
     def test_build_pipeline_quality_outlier_report_identifies_active_outliers(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = Path(tmpdir) / "outliers.json"
@@ -226,9 +290,9 @@ class PipelineQualityHardeningTests(unittest.TestCase):
             }
             self.assertNotIn("logging", outlier_map)
             self.assertNotIn("monitoring", outlier_map)
-            self.assertEqual("section split problem", outlier_map["observability_overview"]["classification"])
+            self.assertNotIn("observability_overview", outlier_map)
             self.assertEqual([], checklist["blocker"])
-            self.assertLessEqual(len(checklist["warning"]), 5)
+            self.assertEqual([], checklist["warning"])
 
 
 if __name__ == "__main__":

@@ -24,13 +24,11 @@ export function resolveWorkspaceSourceBooks(room: WorkspaceSourceRoom | null | u
     return [];
   }
 
-  const preferredBooks = room.known_books?.length
-    ? room.known_books
+  const preferredBooks = room.approved_wiki_runtime_books?.books?.length
+    ? room.approved_wiki_runtime_books.books
     : room.manualbooks?.books?.length
       ? room.manualbooks.books
-      : room.approved_wiki_runtime_books?.books?.length
-        ? room.approved_wiki_runtime_books.books
-        : room.gold_books ?? [];
+      : room.gold_books ?? [];
 
   return dedupeBooks(preferredBooks);
 }

@@ -753,6 +753,30 @@
   background: rgba(255, 255, 255, 0.02);
 }
 
+.outline-library-family {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.outline-library-family.active {
+  transform: translateX(0);
+}
+
+.outline-library-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.outline-library-variant-count {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
 .outline-library-title {
   color: #eefcff;
   font-size: 0.8rem;
@@ -764,6 +788,50 @@
   color: rgba(255, 255, 255, 0.5);
   font-size: 0.72rem;
   line-height: 1.4;
+}
+
+.outline-library-variants {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 12px;
+}
+
+.outline-library-variant {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.015);
+  border-radius: 9px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.outline-library-variant:hover {
+  border-color: rgba(0, 209, 255, 0.14);
+  background: rgba(0, 209, 255, 0.05);
+}
+
+.outline-library-variant.active {
+  border-color: rgba(0, 209, 255, 0.18);
+  background: rgba(0, 209, 255, 0.08);
+}
+
+.outline-library-variant-label {
+  color: #dff8ff;
+  font-size: 0.75rem;
+  font-weight: 610;
+  line-height: 1.35;
+}
+
+.outline-library-variant-meta {
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 0.69rem;
+  line-height: 1.35;
 }
 
 .outline-group {

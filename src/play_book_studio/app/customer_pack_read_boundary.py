@@ -90,6 +90,12 @@ _DEBUG_AUDIT_DROP_FIELDS = {
     "snapshot_path",
     "recent_session_path",
 }
+_PRIVATE_CORPUS_DROP_FIELDS = {
+    "manifest_path",
+    "vector_error",
+    "materialization_error",
+    "boundary_fail_reasons",
+}
 
 
 def customer_pack_draft_id_from_viewer_path(viewer_path: str) -> str | None:
@@ -206,10 +212,28 @@ def sanitize_customer_pack_draft_payload(payload: dict[str, Any]) -> dict[str, A
     elif "capture_artifact_path" in sanitized:
         sanitized["capture_artifact_path"] = ""
     if "private_corpus" in sanitized and isinstance(sanitized["private_corpus"], dict):
-        private_corpus = dict(sanitized["private_corpus"])
-        private_corpus.pop("manifest_path", None)
-        private_corpus.pop("vector_error", None)
-        sanitized["private_corpus"] = private_corpus
+        sanitized["private_corpus"] = sanitize_customer_pack_private_corpus_payload(
+            sanitized["private_corpus"]
+        )
+    return sanitized
+
+
+def sanitize_customer_pack_private_corpus_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: value
+        for key, value in dict(payload).items()
+        if key not in _PRIVATE_CORPUS_DROP_FIELDS
+    }
+
+
+def sanitize_customer_pack_mutation_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    sanitized = sanitize_customer_pack_draft_payload(payload)
+    if "book" in sanitized and isinstance(sanitized["book"], dict):
+        sanitized["book"] = sanitize_customer_pack_book_payload(sanitized["book"])
+    if "private_corpus" in sanitized and isinstance(sanitized["private_corpus"], dict):
+        sanitized["private_corpus"] = sanitize_customer_pack_private_corpus_payload(
+            sanitized["private_corpus"]
+        )
     return sanitized
 
 
@@ -316,6 +340,8 @@ __all__ = [
     "load_customer_pack_read_boundary",
     "sanitize_customer_pack_book_payload",
     "sanitize_customer_pack_draft_payload",
+    "sanitize_customer_pack_mutation_payload",
+    "sanitize_customer_pack_private_corpus_payload",
     "sanitize_customer_pack_source_meta_payload",
     "sanitize_debug_chat_log_entry",
     "summarize_customer_pack_read_boundary",

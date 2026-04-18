@@ -6,7 +6,6 @@ import {
   Activity,
   Database,
   Layers,
-  Globe,
   Cpu,
   ShieldCheck,
   ShieldAlert,
@@ -635,7 +634,7 @@ const PlaybookLibraryPage: React.FC = () => {
     setPreviewViewerDocument(null);
   };
 
-  const openMetricPopover = (kind: 'known' | 'approved' | 'manual' | 'customerPack' | 'candidate' | 'wikiRuntime' | 'navBacklog' | 'wikiUsage' | 'buyerGate' | 'buyerPackets' | 'derived') => {
+  const openMetricPopover = (kind: 'known' | 'approved' | 'latestNonGold' | 'manual' | 'customerPack' | 'candidate' | 'wikiRuntime' | 'navBacklog' | 'wikiUsage' | 'buyerGate' | 'buyerPackets' | 'derived') => {
     if (!controlRoom) return;
     const cr = controlRoom;
     let title = '';
@@ -647,11 +646,15 @@ const PlaybookLibraryPage: React.FC = () => {
         books = [...(cr.known_books ?? [])];
         break;
       case 'approved':
-        title = 'Operational Shortlist';
+        title = 'Gold PlayBooks';
         books = [...(cr.gold_books ?? [])];
         break;
+      case 'latestNonGold':
+        title = 'Silver · Bronze PlayBooks';
+        books = [...(cr.approved_wiki_runtime_books?.books ?? [])].filter((book) => book.grade !== 'Gold');
+        break;
       case 'manual':
-        title = 'Catalog Playbooks';
+        title = 'Gold Source Books';
         books = [...(cr.manualbooks?.books ?? [])];
         break;
       case 'customerPack':
@@ -659,7 +662,7 @@ const PlaybookLibraryPage: React.FC = () => {
         books = [...((cr.user_library_books ?? cr.customer_pack_runtime_books)?.books ?? [])];
         break;
       case 'wikiRuntime':
-        title = 'Live Operational Wiki';
+        title = 'Latest Pipeline PlayBooks';
         books = [...(cr.approved_wiki_runtime_books?.books ?? [])];
         break;
       case 'navBacklog':
@@ -738,7 +741,6 @@ const PlaybookLibraryPage: React.FC = () => {
 
   const summary = controlRoom?.summary;
   const userLibraryBucket = controlRoom?.user_library_books ?? controlRoom?.customer_pack_runtime_books;
-  const knownSourceBooks = summary?.known_book_count ?? controlRoom?.known_books?.length ?? 0;
   const approvedRuntimeBooks = summary?.approved_runtime_count ?? summary?.gold_book_count ?? controlRoom?.gold_books?.length ?? 0;
   const materializedManualBooks = summary?.manualbook_count ?? controlRoom?.manualbooks?.books?.length ?? 0;
   const userLibraryBooks = [...(userLibraryBucket?.books ?? [])];
@@ -747,6 +749,12 @@ const PlaybookLibraryPage: React.FC = () => {
     ?? userLibraryBooks.length;
   const approvedWikiRuntimeBooks = summary?.approved_wiki_runtime_book_count ?? controlRoom?.approved_wiki_runtime_books?.books?.length ?? 0;
   const allOperationalWikiBooks = [...(controlRoom?.approved_wiki_runtime_books?.books ?? [])];
+  const goldOperationalWikiBooks = allOperationalWikiBooks.filter((book) => book.grade === 'Gold');
+  const latestNonGoldOperationalWikiBooks = allOperationalWikiBooks.filter((book) => book.grade !== 'Gold');
+  const goldPlaybookCount = allOperationalWikiBooks.length ? goldOperationalWikiBooks.length : approvedRuntimeBooks;
+  const latestNonGoldPlaybookCount = allOperationalWikiBooks.length
+    ? latestNonGoldOperationalWikiBooks.length
+    : Math.max(approvedWikiRuntimeBooks - approvedRuntimeBooks, 0);
   const operationalWikiBooks = allOperationalWikiBooks.slice(0, 8);
   const wikiNavigationBacklog = summary?.wiki_navigation_backlog_count ?? controlRoom?.wiki_navigation_backlog?.books?.length ?? 0;
   const wikiUsageSignals = summary?.wiki_usage_signal_count ?? controlRoom?.wiki_usage_signals?.books?.length ?? 0;
@@ -1159,7 +1167,7 @@ const PlaybookLibraryPage: React.FC = () => {
                         className="operational-book-card"
                         onClick={() => setBookViewer(book)}
                       >
-                        <span className="operational-book-badge">Live Wiki</span>
+                        <span className="operational-book-badge">{book.grade}</span>
                         <strong>{book.title}</strong>
                         <span>{book.book_slug.replace(/_/g, ' ')}</span>
                       </button>
@@ -1186,7 +1194,7 @@ const PlaybookLibraryPage: React.FC = () => {
                       className="operational-library-card"
                       onClick={() => setBookViewer(book)}
                     >
-                      <span className="operational-library-card-badge">Live Wiki</span>
+                      <span className="operational-library-card-badge">{book.grade}</span>
                       <strong>{book.title}</strong>
                       <span>{book.book_slug.replace(/_/g, ' ')}</span>
                     </button>
@@ -1257,29 +1265,29 @@ const PlaybookLibraryPage: React.FC = () => {
             )}
 
             <section className="metrics-grid metrics-grid-primary">
-              <div className="metric-card metric-card-priority metric-clickable" onClick={() => openMetricPopover('known')}>
-                <div className="metric-icon"><Globe size={24} /></div>
-                <div className="metric-data">
-                  <h3>{knownSourceBooks.toLocaleString()}</h3>
-                  <p>Full Source Catalog</p>
-                </div>
-                <div className="metric-status online">Catalog</div>
-              </div>
               <div className="metric-card metric-card-priority metric-clickable" onClick={() => openMetricPopover('approved')}>
                 <div className="metric-icon"><ShieldCheck size={24} /></div>
                 <div className="metric-data">
-                  <h3>{approvedRuntimeBooks.toLocaleString()}</h3>
-                  <p>Operational Shortlist</p>
+                  <h3>{goldPlaybookCount.toLocaleString()}</h3>
+                  <p>Gold PlayBooks</p>
+                </div>
+                <div className="metric-status online">Gold</div>
+              </div>
+              <div className="metric-card metric-card-priority metric-clickable" onClick={() => openMetricPopover('latestNonGold')}>
+                <div className="metric-icon"><Layers size={24} /></div>
+                <div className="metric-data">
+                  <h3>{latestNonGoldPlaybookCount.toLocaleString()}</h3>
+                  <p>Silver · Bronze PlayBooks</p>
                 </div>
                 <div className="metric-trend positive">
-                  <BookOpen size={14} /> <span>Selected</span>
+                  <BookOpen size={14} /> <span>Latest</span>
                 </div>
               </div>
               <div className="metric-card metric-card-priority metric-clickable" onClick={() => openMetricPopover('wikiRuntime')}>
                 <div className="metric-icon"><CheckCircle2 size={24} /></div>
                 <div className="metric-data">
                   <h3>{approvedWikiRuntimeBooks.toLocaleString()}</h3>
-                  <p>Live Operational Wiki</p>
+                  <p>Latest Pipeline PlayBooks</p>
                 </div>
                 <div className="metric-status online">Runtime</div>
               </div>
@@ -1299,7 +1307,7 @@ const PlaybookLibraryPage: React.FC = () => {
                   <div className="metric-icon"><Layers size={24} /></div>
                   <div className="metric-data">
                     <h3>{materializedManualBooks.toLocaleString()}</h3>
-                    <p>Catalog Playbooks</p>
+                    <p>Gold Source Books</p>
                   </div>
                   <div className="metric-status online">Materialized</div>
                 </div>

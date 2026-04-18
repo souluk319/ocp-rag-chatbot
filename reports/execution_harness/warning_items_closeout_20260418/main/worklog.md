@@ -1,0 +1,21 @@
+# warning_items_closeout_20260418
+
+- kickoff: warning 3개만 닫는 default packet으로 잠금
+- target warnings:
+  - observability_overview_split
+  - customer_pack_post_response_sanitize_gap
+  - workspace_trace_raw_dump
+- non-goals:
+  - new features
+  - graph experiments
+  - Surya expansion
+  - viewer UX redesign
+- implementation:
+  - customer-pack browser mutation payloads now reuse shared sanitize path
+  - Workspace forensic view now emits structured audit summaries instead of raw retrieval/pipeline dumps
+  - outlier audit strips docs shell/footer headings before comparing raw heading density
+- validation:
+  - pytest tests/test_pipeline_quality_hardening.py tests/test_app_intake_ui.py tests/test_app_runtime_ui.py -q
+  - pytest tests/test_private_lane_smoke.py -q
+  - npm run build
+  - guarded report rebuild via scripts/codex_python.ps1

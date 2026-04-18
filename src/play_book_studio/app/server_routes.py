@@ -15,6 +15,7 @@ from play_book_studio.app.customer_pack_read_boundary import (
     load_customer_pack_read_boundary,
     sanitize_customer_pack_book_payload,
     sanitize_customer_pack_draft_payload,
+    sanitize_customer_pack_mutation_payload,
     sanitize_customer_pack_source_meta_payload,
     sanitize_debug_chat_log_entry,
 )
@@ -755,7 +756,7 @@ def handle_customer_pack_draft_create(handler: Any, payload: dict[str, Any], *, 
     except ValueError as exc:
         handler._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
         return
-    handler._send_json(draft, HTTPStatus.CREATED)
+    handler._send_json(sanitize_customer_pack_mutation_payload(draft), HTTPStatus.CREATED)
 
 
 def handle_customer_pack_upload_draft(handler: Any, payload: dict[str, Any], *, root_dir: Path) -> None:
@@ -770,7 +771,7 @@ def handle_customer_pack_upload_draft(handler: Any, payload: dict[str, Any], *, 
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
         return
-    handler._send_json(draft, HTTPStatus.CREATED)
+    handler._send_json(sanitize_customer_pack_mutation_payload(draft), HTTPStatus.CREATED)
 
 
 def handle_customer_pack_ingest(handler: Any, payload: dict[str, Any], *, root_dir: Path) -> None:
@@ -788,7 +789,7 @@ def handle_customer_pack_ingest(handler: Any, payload: dict[str, Any], *, root_d
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
         return
-    handler._send_json(draft, HTTPStatus.CREATED)
+    handler._send_json(sanitize_customer_pack_mutation_payload(draft), HTTPStatus.CREATED)
 
 
 def handle_customer_pack_capture(handler: Any, payload: dict[str, Any], *, root_dir: Path) -> None:
@@ -806,7 +807,7 @@ def handle_customer_pack_capture(handler: Any, payload: dict[str, Any], *, root_
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
         return
-    handler._send_json(draft, HTTPStatus.CREATED)
+    handler._send_json(sanitize_customer_pack_mutation_payload(draft), HTTPStatus.CREATED)
 
 
 def handle_customer_pack_delete_draft(handler: Any, payload: dict[str, Any], *, root_dir: Path) -> None:
@@ -836,4 +837,4 @@ def handle_customer_pack_normalize(handler: Any, payload: dict[str, Any], *, roo
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
         return
-    handler._send_json(draft, HTTPStatus.CREATED)
+    handler._send_json(sanitize_customer_pack_mutation_payload(draft), HTTPStatus.CREATED)

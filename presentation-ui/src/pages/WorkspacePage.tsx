@@ -79,6 +79,7 @@ import type {
   WorkspaceManualBook,
   WorkspaceTestTrace,
 } from './workspaceTypes';
+import { buildOutlineBookFamilies, describeOutlineVariant } from './workspaceOutline';
 
 interface OverlayTargetDescriptor {
   kind: WikiOverlayTargetKind;
@@ -164,6 +165,7 @@ function makeId(prefix: string): string {
 
 function summarizeBookMeta(book: WorkspaceManualBook): string {
   const parts = [
+    book.grade,
     book.library_group_label,
     book.family_label,
     book.source_type,
@@ -2460,6 +2462,13 @@ export default function WorkspacePage() {
         return leftIndex - rightIndex;
       });
   }, [manualBooks]);
+  const outlineCategoryFamilies = useMemo(
+    () =>
+      new Map(
+        outlineCategoryGroups.map((group) => [group.key, buildOutlineBookFamilies(group.books)]),
+      ),
+    [outlineCategoryGroups],
+  );
   const autoOutlineCategoryKey = useMemo(() => {
     if (activeBookSlug) {
       const matched = outlineCategoryGroups.find((group) => group.books.some((book) => book.book_slug === activeBookSlug));
@@ -2750,15 +2759,7 @@ export default function WorkspacePage() {
                       <div className="outline-category-list">
                         {outlineCategoryGroups.map((group) => {
                           const isActive = group.key === resolvedOutlineCategoryKey;
-                          const groupItems = group.books.slice(0, 14).map((book) => ({
-                            id: `outline-book:${book.book_slug}`,
-                            label: book.title,
-                            meta: summarizeBookMeta(book),
-                            action: () => {
-                              void openManualPreview(book);
-                            },
-                            tone: activeBookSlug === book.book_slug ? 'default' : 'muted',
-                          }));
+                          const groupFamilies = (outlineCategoryFamilies.get(group.key) ?? []).slice(0, 14);
                           return (
                             <div key={group.key} className={`outline-category-card${isActive ? ' active' : ''}`}>
                               <button
@@ -2771,23 +2772,56 @@ export default function WorkspacePage() {
                                   <span className="outline-category-description">{group.description}</span>
                                 </div>
                                 <div className="outline-category-side">
-                                  <span className="outline-category-count">{group.books.length}</span>
+                                  <span className="outline-category-count">{groupFamilies.length}</span>
                                   {isActive ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                                 </div>
                               </button>
                               {isActive && (
                                 <div className="outline-category-expand">
-                                  {groupItems.map((item) => (
-                                    <button
-                                      key={item.id}
-                                      type="button"
-                                      className={`outline-library-item ${item.tone === 'muted' ? 'muted' : 'active'}`}
-                                      onClick={item.action}
-                                    >
-                                      <span className="outline-library-title">{item.label}</span>
-                                      {item.meta && <span className="outline-library-meta">{item.meta}</span>}
-                                    </button>
-                                  ))}
+                                  {groupFamilies.map((family) => {
+                                    const familyActive = [family.primary, ...family.variants].some(
+                                      (book) => book.book_slug === activeBookSlug,
+                                    );
+                                    return (
+                                      <div
+                                        key={family.key}
+                                        className={`outline-library-family${familyActive ? ' active' : ''}`}
+                                      >
+                                        <button
+                                          type="button"
+                                          className={`outline-library-item ${family.primary.book_slug === activeBookSlug ? 'active' : 'muted'}`}
+                                          onClick={() => {
+                                            void openManualPreview(family.primary);
+                                          }}
+                                        >
+                                          <div className="outline-library-title-row">
+                                            <span className="outline-library-title">{family.primary.title}</span>
+                                            {family.variants.length > 0 && (
+                                              <span className="outline-library-variant-count">+{family.variants.length}</span>
+                                            )}
+                                          </div>
+                                          <span className="outline-library-meta">{summarizeBookMeta(family.primary)}</span>
+                                        </button>
+                                        {family.variants.length > 0 && (
+                                          <div className="outline-library-variants">
+                                            {family.variants.map((variant) => (
+                                              <button
+                                                key={`outline-book:${variant.book_slug}`}
+                                                type="button"
+                                                className={`outline-library-variant ${variant.book_slug === activeBookSlug ? 'active' : ''}`}
+                                                onClick={() => {
+                                                  void openManualPreview(variant);
+                                                }}
+                                              >
+                                                <span className="outline-library-variant-label">{describeOutlineVariant(variant)}</span>
+                                                <span className="outline-library-variant-meta">{summarizeBookMeta(variant)}</span>
+                                              </button>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               )}
                             </div>

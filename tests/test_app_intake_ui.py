@@ -30,7 +30,14 @@ from _support_app_ui import (
     _upload_customer_pack_draft,
     _serialize_citation,
 )
-from play_book_studio.app.server_routes import handle_customer_pack_support_matrix
+from play_book_studio.app.server_routes import (
+    handle_customer_pack_capture,
+    handle_customer_pack_draft_create,
+    handle_customer_pack_ingest,
+    handle_customer_pack_normalize,
+    handle_customer_pack_support_matrix,
+    handle_customer_pack_upload_draft,
+)
 from play_book_studio.config.settings import load_settings
 from play_book_studio.intake.private_corpus import customer_pack_private_manifest_path
 
@@ -100,6 +107,80 @@ class TestAppIntakeUi(unittest.TestCase):
         self.assertEqual(1, len(payloads))
         self.assertEqual("customer_pack_format_support_matrix_v1", payloads[0]["matrix_version"])
         self.assertIn("entries", payloads[0])
+
+    def test_customer_pack_mutation_routes_return_sanitized_browser_payloads(self) -> None:
+        class _Handler:
+            def __init__(self) -> None:
+                self.payload: dict[str, object] | None = None
+                self.status = None
+
+            def _send_json(self, payload, status=None):  # noqa: ANN001
+                self.payload = dict(payload)
+                self.status = status
+
+        def _assert_sanitized(payload: dict[str, object]) -> None:
+            self.assertNotIn("request", payload)
+            self.assertNotIn("plan", payload)
+            self.assertNotIn("source_fingerprint", payload)
+            self.assertNotIn("parser_route", payload)
+            self.assertNotIn("parser_version", payload)
+            self.assertNotIn("quality_score", payload)
+            self.assertNotIn("degraded_reason", payload)
+            if isinstance(payload.get("book"), dict):
+                book = payload["book"]
+                self.assertNotIn("customer_pack_evidence", book)
+                self.assertNotIn("quality_score", book)
+                self.assertNotIn("degraded_reason", book)
+                self.assertIn("source_uri", book)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source_md = root / "runbook.md"
+            source_md.write_text(
+                "# 운영 런북\n\n## ConfigMap Secret\n\nConfigMap Secret values must be synchronized before rollout.\n",
+                encoding="utf-8",
+            )
+            base_payload = {
+                "source_type": "md",
+                "uri": str(source_md),
+                "title": "운영 런북",
+            }
+
+            create_handler = _Handler()
+            handle_customer_pack_draft_create(create_handler, dict(base_payload), root_dir=root)
+            assert create_handler.payload is not None
+            _assert_sanitized(create_handler.payload)
+            draft_id = str(create_handler.payload["draft_id"])
+
+            capture_handler = _Handler()
+            handle_customer_pack_capture(capture_handler, {"draft_id": draft_id}, root_dir=root)
+            assert capture_handler.payload is not None
+            _assert_sanitized(capture_handler.payload)
+
+            normalize_handler = _Handler()
+            handle_customer_pack_normalize(normalize_handler, {"draft_id": draft_id}, root_dir=root)
+            assert normalize_handler.payload is not None
+            _assert_sanitized(normalize_handler.payload)
+
+            upload_handler = _Handler()
+            handle_customer_pack_upload_draft(
+                upload_handler,
+                {
+                    "source_type": "md",
+                    "uri": "runbook.md",
+                    "title": "업로드 런북",
+                    "file_name": "runbook.md",
+                    "content_base64": base64.b64encode(source_md.read_bytes()).decode("ascii"),
+                },
+                root_dir=root,
+            )
+            assert upload_handler.payload is not None
+            _assert_sanitized(upload_handler.payload)
+
+            ingest_handler = _Handler()
+            handle_customer_pack_ingest(ingest_handler, dict(base_payload), root_dir=root)
+            assert ingest_handler.payload is not None
+            _assert_sanitized(ingest_handler.payload)
 
     def test_create_customer_pack_draft_persists_payload(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

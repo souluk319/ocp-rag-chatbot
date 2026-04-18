@@ -6,6 +6,7 @@ import math
 import re
 from collections import Counter
 from datetime import datetime, timezone
+from html import unescape
 from pathlib import Path
 from typing import Any
 
@@ -17,8 +18,25 @@ ACTIVE_MANIFEST = ROOT / "data" / "wiki_runtime_books" / "active_manifest.json"
 SOURCE_APPROVAL_REPORT = ROOT / "artifacts" / "corpus" / "source_approval_report.json"
 PLAYBOOK_DIR = ROOT / "data" / "gold_manualbook_ko" / "playbooks"
 RAW_HTML_DIR = ROOT / "data" / "bronze" / "raw_html"
+SERVER_ROUTES_PATH = ROOT / "src" / "play_book_studio" / "app" / "server_routes.py"
+TRACE_PANEL_PATH = ROOT / "presentation-ui" / "src" / "components" / "WorkspaceTracePanel.tsx"
 
 _RAW_HEADING_RE = re.compile(r"<h[234]\b", re.IGNORECASE)
+_RAW_HEADING_BLOCK_RE = re.compile(r"<h([234])\b[^>]*>(.*?)</h\1>", re.IGNORECASE | re.DOTALL)
+_RAW_TAG_RE = re.compile(r"<[^>]+>")
+_RAW_HEADING_COPY_SUFFIX = "링크 복사"
+_RAW_HEADING_STOP_TEXTS = {"legal notice"}
+_RAW_HEADING_DROP_TEXTS = {
+    "openshift container platform",
+    "theme",
+    "자세한 정보",
+    "평가판, 구매 및 판매",
+    "커뮤니티",
+    "red hat 문서 정보",
+    "보다 포괄적 수용을 위한 오픈 소스 용어 교체",
+    "red hat 소개",
+    "red hat legal and privacy links",
+}
 
 
 def _utc_now() -> str:
@@ -43,7 +61,42 @@ def _section_count(path: Path) -> int:
 def _raw_heading_count(path: Path) -> int:
     if not path.exists():
         return 0
-    return len(_RAW_HEADING_RE.findall(path.read_text(encoding="utf-8")))
+    heading_count = 0
+    for match in _RAW_HEADING_BLOCK_RE.finditer(path.read_text(encoding="utf-8")):
+        text = unescape(_RAW_TAG_RE.sub(" ", str(match.group(2) or "")))
+        text = " ".join(text.split()).strip()
+        if _RAW_HEADING_COPY_SUFFIX in text:
+            text = text.split(_RAW_HEADING_COPY_SUFFIX, 1)[0].strip()
+        lowered = text.lower()
+        if not lowered:
+            continue
+        if lowered in _RAW_HEADING_STOP_TEXTS:
+            break
+        if lowered in _RAW_HEADING_DROP_TEXTS:
+            continue
+        heading_count += 1
+    return heading_count
+
+
+def _customer_pack_post_response_sanitize_gap_present() -> bool:
+    source = SERVER_ROUTES_PATH.read_text(encoding="utf-8")
+    return any(
+        raw_pattern in source
+        for raw_pattern in (
+            "handler._send_json(draft, HTTPStatus.CREATED)",
+        )
+    ) or "sanitize_customer_pack_mutation_payload" not in source
+
+
+def _workspace_trace_raw_dump_present() -> bool:
+    source = TRACE_PANEL_PATH.read_text(encoding="utf-8")
+    raw_markers = (
+        "raw runtime payload",
+        "Copy turn JSON",
+        "JSON.stringify(result.retrieval_trace, null, 2)",
+        "JSON.stringify(result.pipeline_trace, null, 2)",
+    )
+    return any(marker in source for marker in raw_markers)
 
 
 def _percentile_floor(values: list[int], percentile: float) -> int:
@@ -144,8 +197,11 @@ def build_reports(
         book_report = dict(book_reports.get(slug) or {})
         runtime_excerpt = runtime_path.read_text(encoding="utf-8")[:2000] if runtime_path.exists() else ""
         curated_manual_synthesis = _is_curated_manual_synthesis(book_report)
+        manual_synthesis = str(book_report.get("source_type") or "").strip() == "manual_synthesis"
         is_low_section = section_count <= low_section_threshold
         weak_structure = raw_heading_count > 0 and split_ratio < 0.50
+        if manual_synthesis and raw_heading_count > 0 and section_count >= raw_heading_count:
+            is_low_section = False
         if curated_manual_synthesis and section_count > 2:
             is_low_section = False
             weak_structure = False
@@ -217,21 +273,30 @@ def build_reports(
             }
         )
     blockers = blockers[:3]
-    warnings = [
-        {
-            "id": "observability_overview_split",
-            "summary": "observability_overview remains structurally thin versus raw heading density",
-            "book_slug": "observability_overview",
-        },
-        {
-            "id": "customer_pack_post_response_sanitize_gap",
-            "summary": "browser-facing upload/capture/normalize/ingest POST responses still carry raw draft payloads",
-        },
-        {
-            "id": "workspace_trace_raw_dump",
-            "summary": "Workspace forensic trace still exposes raw retrieval/pipeline payload dumps for browser users",
-        },
-    ][:5]
+    warnings: list[dict[str, str]] = []
+    if "observability_overview" in outlier_map:
+        warnings.append(
+            {
+                "id": "observability_overview_split",
+                "summary": "observability_overview remains structurally thin versus raw heading density",
+                "book_slug": "observability_overview",
+            }
+        )
+    if _customer_pack_post_response_sanitize_gap_present():
+        warnings.append(
+            {
+                "id": "customer_pack_post_response_sanitize_gap",
+                "summary": "browser-facing upload/capture/normalize/ingest POST responses still carry raw draft payloads",
+            }
+        )
+    if _workspace_trace_raw_dump_present():
+        warnings.append(
+            {
+                "id": "workspace_trace_raw_dump",
+                "summary": "Workspace forensic trace still exposes raw retrieval/pipeline payload dumps for browser users",
+            }
+        )
+    warnings = warnings[:5]
     later = [
         {
             "id": "asset_ownership_boundary",

@@ -33,7 +33,7 @@ function makeRoom(overrides: Partial<WorkspaceSourceRoom> = {}): WorkspaceSource
 }
 
 describe('resolveWorkspaceSourceBooks', () => {
-  it('prefers the full known source catalog over the runtime subset', () => {
+  it('prefers latest pipeline playbooks over the broader source catalog', () => {
     const room = makeRoom({
       known_books: [makeBook('networking'), makeBook('storage'), makeBook('security')],
       manualbooks: {
@@ -42,22 +42,31 @@ describe('resolveWorkspaceSourceBooks', () => {
       },
       approved_wiki_runtime_books: {
         selected_dir: '',
-        books: [makeBook('networking')],
+        books: [
+          makeBook('networking', { grade: 'Gold' }),
+          makeBook('backup_restore_operations', { grade: 'Bronze' }),
+        ],
       },
     });
 
     expect(resolveWorkspaceSourceBooks(room).map((book) => book.book_slug)).toEqual([
       'networking',
-      'storage',
-      'security',
+      'backup_restore_operations',
     ]);
   });
 
-  it('dedupes repeated source books by slug', () => {
+  it('dedupes repeated latest pipeline playbooks by slug', () => {
     const room = makeRoom({
+      approved_wiki_runtime_books: {
+        selected_dir: '',
+        books: [
+          makeBook('networking'),
+          makeBook('networking', { title: 'Networking Duplicate', grade: 'Silver' }),
+          makeBook('storage', { grade: 'Silver' }),
+        ],
+      },
       known_books: [
         makeBook('networking'),
-        makeBook('networking', { title: 'Networking Duplicate' }),
         makeBook('storage'),
       ],
     });

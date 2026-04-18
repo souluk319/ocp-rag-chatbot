@@ -2,11 +2,29 @@
 
 PBS runtime repository입니다.
 
-이 저장소의 실행 기준은 아래 3가지입니다.
+이 문서는 `reference README` 이다.  
+현재 실행 계약은 아래 active root 문서를 우선한다.
+
+- `AGENTS.md`
+- `PROJECT.md`
+- `RUNTIME_ARCHITECTURE_CONTRACT.md`
+- `EXECUTION_HARNESS_CONTRACT.md`
+- `SECURITY_BOUNDARY_CONTRACT.md`
+
+제품 표면은 아래 3가지로 본다.
 
 - `Playbook Library`
 - `Wiki Runtime Viewer`
-- `Studio`
+- `Chat Workspace`
+
+공식 문서 lane 의 기준은 아래다.
+
+- `repo/AsciiDoc first`
+- `published HTML` 은 `reader benchmark / verification / fallback`
+- `published PDF` 는 `reader verification / fallback`
+
+`Playbook` 은 최신 고정 파이프라인을 통과한 문서 중,
+`원문 충실도 + 챗봇 상호작용성` 을 동시에 만족하는 위키 단위다.
 
 ## Requirements
 

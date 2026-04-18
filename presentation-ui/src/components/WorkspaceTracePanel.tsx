@@ -3,8 +3,6 @@ import {
   AlertTriangle,
   Check,
   CheckCircle2,
-  ChevronDown,
-  ChevronRight,
   ClipboardCopy,
   Loader2,
   Minus,
@@ -231,6 +229,26 @@ function formatShift(fromRank: number | null, toRank: number | null): string {
   return `#${fromRank}→#${toRank}`;
 }
 
+function truncateText(value: string, max = 72): string {
+  return value.length > max ? `${value.slice(0, max - 1)}…` : value;
+}
+
+function summarizeUnknown(value: unknown): string {
+  if (typeof value === 'string') return truncateText(value, 72);
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  if (Array.isArray(value)) return `array(${value.length})`;
+  if (value && typeof value === 'object') return `object(${Object.keys(asRecord(value)).length})`;
+  if (value === null) return 'null';
+  return String(value);
+}
+
+function summarizeMeta(meta: Record<string, unknown>, limit = 8): string[] {
+  return Object.entries(meta)
+    .slice(0, limit)
+    .map(([key, value]) => `${key}=${summarizeUnknown(value)}`);
+}
+
 function stageWidthFor(durationMs: number | null, maxDuration: number): number {
   const MIN = 92;
   const MAX = 220;
@@ -346,11 +364,57 @@ export default function WorkspaceTracePanel({
       severity,
       signals,
       scorecard,
-      citations: result?.citations ?? [],
+      citations: (result?.citations ?? []).map((citation) => ({
+        book_slug: citation.book_slug,
+        section: citation.section,
+        section_path: citation.section_path,
+        viewer_path: citation.viewer_path,
+        source_lane: citation.source_lane,
+        boundary_truth: citation.boundary_truth,
+      })),
       warnings: result?.warnings ?? [],
-      pipeline_trace: result?.pipeline_trace ?? null,
-      retrieval_trace: result?.retrieval_trace ?? null,
-      events,
+      timeline: timelineStages.map((stage) => ({
+        step: stage.step,
+        status: stage.status,
+        label: stage.label,
+        detail: stage.detail,
+        duration_ms: stage.durationMs,
+      })),
+      retrieval_summary: {
+        decomposed_queries: decomposed,
+        metrics,
+        reranker: {
+          enabled: Boolean(reranker.enabled),
+          applied: Boolean(reranker.applied),
+          mode: asString(reranker.mode),
+          decision_reason: asString(reranker.decision_reason),
+          top1_changed: Boolean(reranker.top1_changed),
+          rebalance_reasons: asArray(reranker.rebalance_reasons).map(String),
+        },
+        graph: asRecord(retrievalTrace.graph),
+        selected_hits: selectedHits.slice(0, 5).map((hit) => ({
+          book_slug: asString(hit.book_slug),
+          section: asString(hit.section),
+          fused_score: asNumber(hit.fused_score),
+        })),
+      },
+      pipeline_summary: {
+        timings_ms: timings,
+        llm: {
+          provider: asString(llm.last_provider) ?? asString(llm.preferred_provider),
+          fallback_used: Boolean(llm.last_fallback_used),
+          attempted_providers: asArray(llm.last_attempted_providers).map(String),
+        },
+      },
+      events: events.map((event) => ({
+        step: event.step,
+        status: event.status,
+        label: event.label,
+        detail: event.detail,
+        duration_ms: event.duration_ms ?? null,
+        timestamp_ms: event.timestamp_ms ?? null,
+        meta_summary: summarizeMeta(asRecord(event.meta)),
+      })),
     };
     try {
       await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
@@ -713,7 +777,7 @@ export default function WorkspaceTracePanel({
         <div className="wtp-forensic">
           <div className="wtp-forensic-head">
             <span className="wtp-section-title">
-              Forensic <strong>raw runtime payload</strong>
+              Forensic <strong>structured runtime audit</strong>
             </span>
             <button
               type="button"
@@ -723,7 +787,7 @@ export default function WorkspaceTracePanel({
               disabled={!hasAnyEvent}
             >
               {isCopied ? <CheckCircle2 size={14} /> : <ClipboardCopy size={14} />}
-              {isCopied ? 'Copied' : 'Copy turn JSON'}
+              {isCopied ? 'Copied' : 'Copy audit summary'}
             </button>
           </div>
 
@@ -739,7 +803,7 @@ export default function WorkspaceTracePanel({
               </span>
             ) : (
               events.map((event, idx) => {
-                const metaEntries = Object.entries(event.meta ?? {});
+                const metaSummary = summarizeMeta(asRecord(event.meta));
                 const statusClass = event.status === 'error'
                   ? 'is-error'
                   : event.status === 'running'
@@ -766,15 +830,10 @@ export default function WorkspaceTracePanel({
                           {event.detail}
                         </>
                       ) : null}
-                      {metaEntries.length > 0 ? (
-                        <details>
-                          <summary style={{ cursor: 'pointer', fontSize: '0.66rem', color: 'var(--text-dim)' }}>
-                            meta · {metaEntries.length}
-                          </summary>
-                          <pre style={{ margin: 0, padding: '6px 0', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-                            {JSON.stringify(event.meta, null, 2)}
-                          </pre>
-                        </details>
+                      {metaSummary.length > 0 ? (
+                        <div style={{ marginTop: 6, color: 'var(--text-dim)', fontSize: '0.68rem' }}>
+                          {metaSummary.join(' · ')}
+                        </div>
                       ) : null}
                     </span>
                   </Fragment>
@@ -844,23 +903,6 @@ export default function WorkspaceTracePanel({
             </div>
           ) : null}
 
-          {/* Raw blocks */}
-          {result?.retrieval_trace ? (
-            <details className="wtp-raw-block">
-              <summary>
-                <ChevronRight size={12} /> retrieval_trace
-              </summary>
-              <pre>{JSON.stringify(result.retrieval_trace, null, 2)}</pre>
-            </details>
-          ) : null}
-          {result?.pipeline_trace ? (
-            <details className="wtp-raw-block">
-              <summary>
-                <ChevronDown size={12} /> pipeline_trace
-              </summary>
-              <pre>{JSON.stringify(result.pipeline_trace, null, 2)}</pre>
-            </details>
-          ) : null}
           {result?.warnings && result.warnings.length > 0 ? (
             <div className="wtp-card">
               <div className="wtp-card-header">
