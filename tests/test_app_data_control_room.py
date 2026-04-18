@@ -748,9 +748,14 @@ class TestAppDataControlRoom(unittest.TestCase):
             self.assertEqual(0, payload["manual_book_library"]["core_count"])
             self.assertEqual(1, payload["manual_book_library"]["extra_count"])
             self.assertEqual(1, payload["summary"]["extra_manualbook_count"])
+            self.assertEqual(1, payload["summary"]["user_library_book_count"])
             self.assertEqual(5, payload["summary"]["derived_playbook_count"])
             self.assertEqual(6, payload["summary"]["playable_asset_count"])
             self.assertEqual([str(normalized["draft_id"])], [book["book_slug"] for book in payload["extra_manualbook_status"]])
+            self.assertEqual(
+                [str(normalized["draft_id"])],
+                [book["book_slug"] for book in payload["user_library_books"]["books"]],
+            )
             self.assertEqual(
                 f"/playbooks/customer-packs/{normalized['draft_id']}/index.html",
                 payload["manual_book_library"]["books"][0]["viewer_path"],

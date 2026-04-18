@@ -1,0 +1,43 @@
+{
+  "task_id": "private_lane_boundary_hardening_20260418",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": true,
+  "parallel_execution_required": true,
+  "cwd": "C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio",
+  "python_path": "C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/.venv/Scripts/python.exe",
+  "worktree_path": "C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio",
+  "write_scope": [
+    "reports/execution_harness/private_lane_boundary_hardening_20260418/**",
+    "src/play_book_studio/intake/**",
+    "src/play_book_studio/retrieval/**",
+    "src/play_book_studio/app/**",
+    "tests/**"
+  ],
+  "target_outputs": [
+    "private lane boundary helper and fail-close gating for incomplete/default envelope and unreviewed runtime exposure",
+    "retrieval/runtime path blocks selected private draft usage when boundary is not runtime-eligible",
+    "private lane smoke and focused tests updated to approved boundary baseline"
+  ],
+  "validation_commands": [
+    ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_private_lane_smoke.py tests\\test_retrieval_query_core.py tests\\test_app_intake_ui.py tests\\test_server_chat.py -q"
+  ],
+  "companion_lanes": [
+    {
+      "lane_id": "explorer_boundary_map",
+      "agent_id": "019d9f91-2cf5-7db3-8d5a-bb56356fb1c4",
+      "role": "explorer"
+    },
+    {
+      "lane_id": "worker_test_impact",
+      "agent_id": "019d9f91-2d2b-7423-a005-5e4161c9079e",
+      "role": "worker"
+    },
+    {
+      "lane_id": "reviewer_security",
+      "agent_id": "019d9f91-2d56-7e43-8aa2-c1fbb6e17d5e",
+      "role": "reviewer"
+    }
+  ],
+  "status": "completed"
+}

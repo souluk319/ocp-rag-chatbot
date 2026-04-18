@@ -1,0 +1,29 @@
+# customer_pack_read_surface_fail_close_20260418
+
+- scope locked: customer-pack read surfaces only
+- target surfaces:
+  - `/api/customer-packs/captured`
+  - `/api/customer-packs/book`
+  - `/api/viewer-document`
+  - `/api/source-meta`
+  - `/api/customer-packs/drafts`
+  - `/api/sessions/load`
+  - `/api/debug/session`
+  - `/api/debug/chat-log`
+- fail-close rule:
+  - block `approval_state=unreviewed`
+  - block placeholder `tenant_id=default-tenant`
+  - block placeholder `workspace_id=default-workspace`
+- preserve:
+  - approved non-default envelope
+  - private lane smoke green
+- implementation:
+  - added shared route gate + payload sanitizer in `src/play_book_studio/app/customer_pack_read_boundary.py`
+  - applied gate to captured/book/viewer-document/source-meta/drafts/sessions/debug in `server_routes.py`
+  - added HTTP-level regression matrix in `tests/test_customer_pack_read_boundary.py`
+- validation:
+  - `.\.venv\Scripts\python.exe -m py_compile src\play_book_studio\app\customer_pack_read_boundary.py src\play_book_studio\app\server_routes.py src\play_book_studio\app\source_books_customer_pack.py src\play_book_studio\app\presenters.py src\play_book_studio\app\chat_debug.py tests\test_customer_pack_read_boundary.py tests\test_app_intake_ui.py tests\test_private_lane_smoke.py tests\test_server_chat.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_customer_pack_read_boundary.py -q`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_customer_pack_read_boundary.py tests\test_app_intake_ui.py tests\test_private_lane_smoke.py tests\test_server_chat.py -q`
+- remaining gap:
+  - customer-pack asset ownership proof for `draft_id::asset_slug` is still not enforced; current gate trusts the draft envelope after path parse

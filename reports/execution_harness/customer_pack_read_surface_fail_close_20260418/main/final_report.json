@@ -1,0 +1,40 @@
+{
+  "task_id": "customer_pack_read_surface_fail_close_20260418",
+  "lane_id": "main",
+  "status": "completed",
+  "summary": "customer-pack read surfaces now fail-close for unreviewed or placeholder private drafts; approved non-default envelope remains readable and debug payloads are sanitized.",
+  "surfaces_blocked": [
+    "/api/customer-packs/captured",
+    "/api/customer-packs/book",
+    "/api/viewer-document",
+    "/api/source-meta",
+    "/api/customer-packs/drafts",
+    "/api/sessions/load",
+    "/api/debug/session",
+    "/api/debug/chat-log"
+  ],
+  "allowed_envelope": {
+    "tenant_id": "non-placeholder",
+    "workspace_id": "non-placeholder",
+    "approval_state": "approved",
+    "publication_state": "present",
+    "private_manifest_rule": "if present, it must remain runtime_eligible"
+  },
+  "remaining_boundary_gaps": [
+    "customer-pack asset ownership proof for draft_id::asset_slug is still not enforced; route gate trusts the draft envelope after viewer path parse"
+  ],
+  "validation": [
+    {
+      "command": ".\\.venv\\Scripts\\python.exe -m py_compile src\\play_book_studio\\app\\customer_pack_read_boundary.py src\\play_book_studio\\app\\server_routes.py src\\play_book_studio\\app\\source_books_customer_pack.py src\\play_book_studio\\app\\presenters.py src\\play_book_studio\\app\\chat_debug.py tests\\test_customer_pack_read_boundary.py tests\\test_app_intake_ui.py tests\\test_private_lane_smoke.py tests\\test_server_chat.py",
+      "result": "passed"
+    },
+    {
+      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_customer_pack_read_boundary.py -q",
+      "result": "3 passed"
+    },
+    {
+      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_customer_pack_read_boundary.py tests\\test_app_intake_ui.py tests\\test_private_lane_smoke.py tests\\test_server_chat.py -q",
+      "result": "27 passed, 4 subtests passed"
+    }
+  ]
+}

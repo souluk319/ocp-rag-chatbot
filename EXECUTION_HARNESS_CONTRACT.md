@@ -9,7 +9,7 @@ supersedes:
   - EXECUTION_HARNESS_CONTRACT.md (legacy version)
   - CODEX_OPERATING_CHARTER.md
   - HARNESS_ENGINEERING_CONTRACT.md
-last_updated: 2026-04-17
+last_updated: 2026-04-18
 ---
 
 # EXECUTION HARNESS CONTRACT
@@ -36,17 +36,35 @@ PBS 는 이미 검증된 제품이므로, renewal 기간의 기본 packet 목표
 - `reinvention-only rename or doctrine reset without order/quality reason`
 - `temporary demo fork used as delivery path`
 
+## Packet Modes
+
+기본 packet 모드는 아래 셋 중 하나다.
+
+- `micro packet`
+- `default packet`
+- `major task`
+
+micro packet 이 아니면 default packet 으로 본다.  
+major task 는 default packet 위에 병렬 lane 요구가 추가된 형태다.
+
+작업 중 범위가 커지면 아래 순서로 즉시 승격한다.
+
+- `micro packet -> default packet`
+- `default packet -> major task`
+
 ## Harness Package
 
-모든 milestone 은 아래 하네스 자산을 가진다.
+`default packet` 과 `major task` 는 아래 하네스 자산을 가진다.
 
 - `reports/execution_harness/<task_id>/<lane_id>/manifest.json`
 - `reports/execution_harness/<task_id>/<lane_id>/worklog.md`
 - `reports/execution_harness/<task_id>/<lane_id>/final_report.json`
 
+`micro packet` 은 이 세 파일이 선택이다.
+
 ## Manifest Minimum
 
-manifest 에는 시작 전에 아래를 고정한다.
+`default packet` 과 `major task` 의 manifest 에는 시작 전에 아래를 고정한다.
 
 - `task_id`
 - `lane_id`
@@ -61,11 +79,51 @@ manifest 에는 시작 전에 아래를 고정한다.
 
 validation commands 는 구현 전에 먼저 잠근다.
 
+## Micro Packet Exception
+
+작업 범위가 작고 단일 surface 또는 단일 기능 조정에 머물면 `micro packet` 으로 처리할 수 있다.
+
+### Conditions
+
+아래를 모두 만족해야 한다.
+
+- subsystem 두 개 이상 동시 수정 아님
+- corpus / retrieval / viewer / runtime contract 재정의 아님
+- cleanup / archive / release gate 작업 아님
+- 병렬 lane 필수 작업 아님
+
+### Kickoff Lock
+
+micro packet 은 시작 전에 아래 네 개만 잠근다.
+
+- `goal`
+- `change_scope`
+- `non_goals`
+- `validation_commands`
+
+### Micro Rules
+
+- `main` 단독 실행 가능
+- focused validation 을 `1개 이상` 수행한다
+- manifest / worklog / final_report 는 선택이다
+- closeout 은 `결과 + validation` 위주로 짧게 보고한다
+- 검증 없는 closeout 은 허용하지 않는다
+
+### Promotion Rule
+
+아래 중 하나라도 발생하면 즉시 `default packet` 또는 `major task` 로 승격한다.
+
+- 수정 subsystem 이 두 개 이상으로 늘어남
+- corpus / retrieval / viewer / runtime contract 판단이 새로 걸림
+- cleanup / archive / release gate 성격으로 커짐
+- 병렬 탐색/구현/검증이 필요해짐
+
 ## Lane Model
 
 기본 규칙은 아래다.
 
-- 작은 단일 파일 수정이면 `main` 단독 가능
+- `micro packet` 은 `main` 단독 가능
+- `default packet` 의 작은 단일 파일 수정은 `main` 단독 가능
 - subsystem 두 개 이상을 건드리거나, 탐색/구현/검증이 분리되면 병렬 lane 사용
 - 병렬 기준 기본형:
   - `main`
@@ -94,7 +152,7 @@ Main lane 은 통합과 최종 verdict 를 맡는다.
 
 ## Bootstrap Order
 
-모든 milestone 은 아래 순서로 시작한다.
+`default packet` 과 `major task` 는 아래 순서로 시작한다.
 
 1. `task scope 잠금`
 2. `prepare_execution_harness`
@@ -104,6 +162,13 @@ Main lane 은 통합과 최종 verdict 를 맡는다.
 6. `검증`
 7. `final_report 작성`
 8. `closeout`
+
+`micro packet` 은 아래 순서로 시작한다.
+
+1. `goal / change_scope / non_goals / validation_commands 잠금`
+2. `구현`
+3. `focused validation`
+4. `짧은 closeout`
 
 ## Validation Loop
 
@@ -172,6 +237,12 @@ closeout 에는 아래를 포함한다.
 
 중간 시도, 복구, 실험 메모는 worklog 로만 남긴다.
 
+`micro packet` 은 closeout 을 더 짧게 할 수 있다.
+
+- `결과`
+- `검증`
+- 필요 시 `다음 행동`
+
 ## Escalation Rules
 
 아래 경우만 사용자 판단을 요청한다.
@@ -192,7 +263,8 @@ closeout 에는 아래를 포함한다.
 2. target output 이 생성 또는 갱신됐다.
 3. validation command 결과가 남아 있다.
 4. 필요한 smoke evidence 가 남아 있다.
-5. final_report.json 이 채워졌다.
-6. 사용자가 다음 행동을 바로 이해할 수 있다.
+5. `default packet` / `major task` 는 `final_report.json` 이 채워졌다.
+6. `micro packet` 은 packet mode 에 맞는 짧은 closeout 이 남아 있다.
+7. 사용자가 다음 행동을 바로 이해할 수 있다.
 
 `거의 됐다`, `대충 된다`, `아마 맞다` 같은 문장은 closeout verdict 로 쓰지 않는다.

@@ -1,0 +1,11 @@
+{
+  "task_id": "ocp420_corpus_multiturn_20260418",
+  "lane_id": "worker_checklist",
+  "role": "worker",
+  "agent_id": "019d9c20-1249-7bb3-98ae-b7e118f562ab",
+  "cwd": "C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio",
+  "write_scope": [
+    "reports/execution_harness/ocp420_corpus_multiturn_20260418/worker_checklist/**"
+  ],
+  "status": "assigned"
+}

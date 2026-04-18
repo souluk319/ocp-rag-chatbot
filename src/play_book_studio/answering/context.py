@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from play_book_studio.app.wiki_user_overlay import build_wiki_overlay_signal_payload
+from play_book_studio.retrieval.intake_overlay import has_active_customer_pack_selection
 from play_book_studio.retrieval.models import RetrievalHit
 from play_book_studio.retrieval.models import SessionContext
 from play_book_studio.retrieval.query import (
@@ -452,6 +453,7 @@ def _select_hits(
     hits: list[RetrievalHit],
     *,
     query: str = "",
+    session_context: SessionContext | None = None,
     max_chunks: int,
 ) -> list[RetrievalHit]:
     # context 조립은 raw retrieval보다 의도적으로 더 보수적이다.
@@ -1009,6 +1011,7 @@ def _select_hits(
     top_uploaded_score = max((_hit_score(hit) for hit in uploaded_hits), default=0.0)
     should_seed_uploaded = bool(uploaded_hits) and (
         uploaded_explicit
+        or has_active_customer_pack_selection(session_context)
         or (top_score > 0 and top_uploaded_score >= top_score * (0.82 if is_procedure_query else 0.9))
     )
 
@@ -1116,7 +1119,12 @@ def assemble_context(
         user_id=str(getattr(session_context, "user_id", "") or ""),
     )
     overlay_exact_scores, overlay_book_scores = _overlay_target_ref_scores(overlay_payload)
-    selected_hits = _select_hits(hits, query=query, max_chunks=max_chunks)
+    selected_hits = _select_hits(
+        hits,
+        query=query,
+        session_context=session_context,
+        max_chunks=max_chunks,
+    )
     if overlay_exact_scores or overlay_book_scores:
         selected_hits = sorted(
             selected_hits,

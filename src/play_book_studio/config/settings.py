@@ -131,6 +131,10 @@ class Settings(SettingsPathMixin):
     graph_api_key: str = ""
     graph_timeout_seconds: float = 5.0
     graph_sidecar_path_override: str = ""
+    customer_pack_pdf_fallback_backend: str = ""
+    surya_ocr_endpoint: str = ""
+    surya_health_endpoint: str = ""
+    surya_timeout_seconds: float = 30.0
 
     @property
     def app_id(self) -> str:
@@ -326,4 +330,11 @@ def load_settings(root_dir: str | Path) -> Settings:
         graph_api_key=effective_env.get("GRAPH_API_KEY", "").strip(),
         graph_timeout_seconds=float(effective_env.get("GRAPH_TIMEOUT_SECONDS", "5")),
         graph_sidecar_path_override=effective_env.get("GRAPH_SIDECAR_PATH", "").strip(),
+        customer_pack_pdf_fallback_backend=effective_env.get(
+            "PBS_CUSTOMER_PACK_PDF_FALLBACK_BACKEND",
+            "",
+        ).strip().lower(),
+        surya_ocr_endpoint=effective_env.get("SURYA_OCR", "").strip().rstrip("/"),
+        surya_health_endpoint=effective_env.get("SURYA_HEALTH", "").strip().rstrip("/"),
+        surya_timeout_seconds=float(effective_env.get("SURYA_TIMEOUT_SECONDS", "30")),
     )

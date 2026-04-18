@@ -727,6 +727,54 @@ class Part1AuditTests(unittest.TestCase):
         self.assertEqual(1, report["manualbook_audit"]["failing_book_count"])
         self.assertEqual("monitoring", report["manualbook_audit"]["failing_books"][0]["book_slug"])
 
+    def test_build_data_quality_report_downgrades_manual_synthesis_english_headings_to_warning(self) -> None:
+        with self._workspace() as root:
+            manifests, part1, raw_html = self._audit_layout(root)
+            playbooks = self._ensure_dir(part1 / "playbooks")
+
+            (manifests / "ocp_ko_4_20_html_single.json").write_text(
+                json.dumps({"entries": []}, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            (part1 / "normalized_docs.jsonl").write_text("", encoding="utf-8")
+            (part1 / "chunks.jsonl").write_text("", encoding="utf-8")
+            (part1 / "bm25_corpus.jsonl").write_text("", encoding="utf-8")
+            (part1 / "preprocessing_log.json").write_text(
+                json.dumps({}, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            (playbooks / "monitoring.json").write_text(
+                json.dumps(
+                    {
+                        "book_slug": "monitoring",
+                        "title": "Monitoring",
+                        "translation_status": "approved_ko",
+                        "source_metadata": {
+                            "source_type": "manual_synthesis",
+                            "source_lane": "applied_playbook",
+                        },
+                        "sections": [
+                            {"heading": "Overview", "semantic_role": "procedure", "blocks": []},
+                            {"heading": "Alerting", "semantic_role": "reference", "blocks": []},
+                        ],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+
+            settings = self._audit_settings(root, playbook_books_dir=playbooks)
+
+            report = build_data_quality_report(settings)
+
+        self.assertTrue(report["checks"]["playbook_semantic_roles_valid"])
+        self.assertTrue(report["checks"]["playbook_korean_headings_valid"])
+        self.assertEqual(0, report["manualbook_audit"]["failing_book_count"])
+        self.assertEqual(1, report["manualbook_audit"]["warning_book_count"])
+        self.assertEqual("monitoring", report["manualbook_audit"]["warning_books"][0]["book_slug"])
+        self.assertTrue(report["manualbook_audit"]["warning_books"][0]["heading_gate_exempt"])
+
     def test_build_data_quality_report_allows_command_and_extension_headings(self) -> None:
         with self._workspace() as root:
             manifests, part1, raw_html = self._audit_layout(root)
@@ -1735,14 +1783,20 @@ class Part1AuditTests(unittest.TestCase):
                 playbook_documents_path=gold_manualbook / "playbook_documents.jsonl",
             )
 
+            report = build_source_approval_report(settings)
             entries = build_approved_manifest(settings)
 
+        self.assertEqual(1, report["summary"]["approved_ko_count"])
+        self.assertEqual(0, report["summary"]["high_value_issue_count"])
+        self.assertEqual("backup_and_restore", report["books"][0]["book_slug"])
+        self.assertEqual("approved_ko", report["books"][0]["content_status"])
+        self.assertEqual("manual_synthesis", report["books"][0]["source_type"])
         self.assertEqual(1, len(entries))
         self.assertEqual("backup_and_restore", entries[0].book_slug)
         self.assertEqual("manual_synthesis", entries[0].source_type)
         self.assertEqual("approved", entries[0].approval_status)
 
-    def test_source_approval_report_demotes_reader_grade_failed_manualbook(self) -> None:
+    def test_source_approval_report_preserves_manual_synthesis_with_heading_warning(self) -> None:
         with self._workspace() as root:
             manifests, corpus, raw_html = self._audit_layout(root, corpus_dir_name="corpus")
             playbooks = self._ensure_dir(corpus / "playbooks")
@@ -1819,10 +1873,14 @@ class Part1AuditTests(unittest.TestCase):
                         "book_slug": "monitoring",
                         "title": "Monitoring",
                         "translation_status": "approved_ko",
+                        "source_metadata": {
+                            "source_type": "manual_synthesis",
+                            "source_lane": "applied_playbook",
+                        },
                         "sections": [
                             {
                                 "heading": "Overview",
-                                "semantic_role": "unknown",
+                                "semantic_role": "procedure",
                                 "blocks": [],
                             }
                         ],
@@ -1843,13 +1901,14 @@ class Part1AuditTests(unittest.TestCase):
             report = build_source_approval_report(settings)
             entries = build_approved_manifest(settings)
 
-        self.assertEqual(0, report["summary"]["approved_ko_count"])
-        self.assertEqual(1, report["summary"]["high_value_issue_count"])
-        self.assertEqual("blocked", report["books"][0]["content_status"])
-        self.assertEqual("needs_review", report["books"][0]["approval_status"])
-        self.assertEqual("needs_review", report["books"][0]["review_status"])
-        self.assertTrue(report["books"][0]["manualbook_reader_grade_failed"])
-        self.assertEqual([], entries)
+        self.assertEqual(1, report["summary"]["approved_ko_count"])
+        self.assertEqual(0, report["summary"]["high_value_issue_count"])
+        self.assertEqual("approved_ko", report["books"][0]["content_status"])
+        self.assertEqual("approved", report["books"][0]["approval_status"])
+        self.assertEqual("approved", report["books"][0]["review_status"])
+        self.assertFalse(report["books"][0]["manualbook_reader_grade_failed"])
+        self.assertEqual(1, len(entries))
+        self.assertEqual("monitoring", entries[0].book_slug)
 
     def test_source_approval_report_respects_bundle_dossier_over_generated_korean_artifacts(self) -> None:
         with self._workspace() as root:

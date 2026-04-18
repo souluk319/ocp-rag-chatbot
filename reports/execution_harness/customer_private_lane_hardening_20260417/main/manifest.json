@@ -1,0 +1,43 @@
+{
+  "task_id": "customer_private_lane_hardening_20260417",
+  "lane_id": "main",
+  "role": "main",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "src/play_book_studio/app/*",
+    "src/play_book_studio/intake/*",
+    "src/play_book_studio/retrieval/*",
+    "src/play_book_studio/answering/*",
+    "presentation-ui/src/pages/*",
+    "presentation-ui/src/lib/*",
+    "tests/*",
+    "reports/execution_harness/customer_private_lane_hardening_20260417/*"
+  ],
+  "target_outputs": [
+    "product-grade packet sequence for customer/private upload lane hardening",
+    "canonical private lane smoke report at reports/build_logs/private_lane_smoke.json",
+    "CLI command private-lane-smoke and end-to-end gate across ingest/book/viewer/chat/cleanup"
+  ],
+  "validation_commands": [
+    ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_private_lane_smoke.py tests\\test_cli.py tests\\test_app_intake_ui.py::TestAppIntakeUi::test_ingest_customer_pack_materializes_private_corpus_artifacts tests\\test_server_chat.py -q",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_retrieval_query_core.py::TestRetrievalQueryCore::test_retriever_uses_private_customer_corpus_bm25_artifact_when_selected_draft_is_active tests\\test_retrieval_query_core.py::TestRetrievalQueryCore::test_retriever_uses_private_customer_corpus_vector_artifact_without_official_qdrant tests\\test_retrieval_runtime.py::TestRetrievalRuntime::test_reranker_rescues_uploaded_customer_pack_for_selected_draft_snippet_query tests\\test_answering_context.py::ContextAssemblyTests::test_assemble_context_seeds_uploaded_customer_pack_for_selected_draft_scope -q",
+    "private-lane-smoke CLI run against a fresh temp server with deterministic answerer"
+  ],
+  "major_task": true,
+  "parallel_execution_required": true,
+  "companion_lanes": [
+    {
+      "lane_id": "explorer",
+      "role": "explorer",
+      "focus": "audit PDF table fidelity path from capture through normalization to viewer rendering and identify smallest product-grade packet sequence"
+    },
+    {
+      "lane_id": "reviewer",
+      "role": "reviewer",
+      "focus": "audit customer/private retrieval path, corpus boundary, and chatbot coverage gaps against runtime and security contracts"
+    }
+  ],
+  "status": "packet_4_completed"
+}

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
 import time
@@ -25,6 +25,7 @@ from .data_quality import build_data_quality_report, playbook_reader_grade_failu
 from .manifest import read_manifest
 from .models import SourceManifestEntry
 from .pipeline import ensure_manifest, run_ingestion_pipeline
+from .runtime_catalog_library import materialize_runtime_corpus_from_playbooks
 from .source_bundle import harvest_source_bundle
 from .source_bundle_quality import build_source_bundle_quality_report
 from .source_discovery import default_dossier_slugs
@@ -439,15 +440,27 @@ def _run_high_value_ingestion(settings: Settings, report_dir: Path, _: str) -> d
 
 
 def _run_approved_runtime_rebuild(settings: Settings, report_dir: Path, _: str) -> dict[str, Any]:
+    rebuild_settings = replace(settings, graph_backend="local")
     log = run_ingestion_pipeline(
-        settings,
+        rebuild_settings,
         refresh_manifest=False,
         collect_subset="all",
         process_subset="all",
-        skip_embeddings=False,
-        skip_qdrant=False,
+        skip_embeddings=True,
+        skip_qdrant=True,
     )
     payload = log.to_dict()
+    runtime_corpus = materialize_runtime_corpus_from_playbooks(
+        rebuild_settings,
+        sync_qdrant=True,
+        recreate_qdrant=True,
+    )
+    payload["runtime_corpus_materialization"] = runtime_corpus
+    payload["graph_build_backend"] = rebuild_settings.graph_backend
+    payload["chunk_count"] = int(runtime_corpus.get("runtime_chunk_count", payload.get("chunk_count", 0)) or 0)
+    payload["qdrant_upserted_count"] = int(
+        runtime_corpus.get("qdrant_upserted_count", payload.get("qdrant_upserted_count", 0)) or 0
+    )
     payload["output_targets"] = {
         "normalized_docs_path": str(settings.normalized_docs_path),
         "chunks_path": str(settings.chunks_path),
@@ -668,6 +681,7 @@ def _run_validation_gate(settings: Settings, report_dir: Path, _: str) -> dict[s
     payload = build_validation_report(
         settings,
         expected_process_subset="high-value",
+        artifact_expectation_mode="runtime_baseline",
         include_qdrant_id_check=True,
     )
     report_path = _write_job_report(report_dir, "validation_report", payload)

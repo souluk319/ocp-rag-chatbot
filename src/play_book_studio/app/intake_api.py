@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import re
 import uuid
+import json
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,11 @@ from play_book_studio.intake import (
 )
 from play_book_studio.intake.capture.service import CustomerPackCaptureService
 from play_book_studio.intake.normalization.service import CustomerPackNormalizeService
+from play_book_studio.intake.private_boundary import summarize_private_runtime_boundary
+from play_book_studio.intake.private_corpus import (
+    customer_pack_private_manifest_path,
+    delete_customer_pack_private_corpus,
+)
 from play_book_studio.config.settings import load_settings
 
 SUPPORTED_CUSTOMER_PACK_SOURCE_TYPES = {
@@ -30,6 +36,93 @@ SUPPORTED_CUSTOMER_PACK_SOURCE_TYPES = {
     "xlsx",
     "image",
 }
+
+
+def _private_corpus_payload(root_dir: Path, draft_id: str) -> dict[str, Any] | None:
+    settings = load_settings(root_dir)
+    path = customer_pack_private_manifest_path(settings, draft_id)
+    if not path.exists():
+        return None
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    boundary_summary = summarize_private_runtime_boundary(manifest)
+    return {
+        "artifact_version": str(manifest.get("artifact_version") or "").strip(),
+        "draft_id": str(manifest.get("draft_id") or "").strip(),
+        "tenant_id": str(manifest.get("tenant_id") or "").strip(),
+        "workspace_id": str(manifest.get("workspace_id") or "").strip(),
+        "pack_id": str(manifest.get("pack_id") or "").strip(),
+        "pack_version": str(manifest.get("pack_version") or "").strip(),
+        "classification": str(manifest.get("classification") or "").strip(),
+        "access_groups": list(manifest.get("access_groups") or []),
+        "provider_egress_policy": str(manifest.get("provider_egress_policy") or "").strip(),
+        "approval_state": str(manifest.get("approval_state") or "").strip(),
+        "publication_state": str(manifest.get("publication_state") or "").strip(),
+        "redaction_state": str(manifest.get("redaction_state") or "").strip(),
+        "source_lane": str(manifest.get("source_lane") or "").strip(),
+        "source_collection": str(manifest.get("source_collection") or "").strip(),
+        "boundary_truth": str(manifest.get("boundary_truth") or "").strip(),
+        "runtime_truth_label": str(manifest.get("runtime_truth_label") or "").strip(),
+        "boundary_badge": str(manifest.get("boundary_badge") or "").strip(),
+        "book_count": int(manifest.get("book_count") or 0),
+        "section_count": int(manifest.get("section_count") or 0),
+        "chunk_count": int(manifest.get("chunk_count") or 0),
+        "bm25_ready": bool(manifest.get("bm25_ready")),
+        "vector_status": str(manifest.get("vector_status") or "").strip(),
+        "vector_chunk_count": int(manifest.get("vector_chunk_count") or 0),
+        "runtime_eligible": bool(manifest.get("runtime_eligible") or False),
+        "boundary_fail_reasons": list(
+            manifest.get("boundary_fail_reasons")
+            or boundary_summary.get("fail_reasons")
+            or []
+        ),
+        "updated_at": str(manifest.get("updated_at") or "").strip(),
+    }
+
+
+def _normalized_access_groups(value: Any, *, tenant_id: str, workspace_id: str) -> tuple[str, ...]:
+    if isinstance(value, str):
+        items = [item.strip() for item in value.split(",")]
+    else:
+        items = [str(item).strip() for item in (value or [])]
+    normalized = tuple(item for item in items if item)
+    if normalized:
+        return normalized
+    fallback = (
+        str(workspace_id or "").strip(),
+        str(tenant_id or "").strip(),
+    )
+    return tuple(item for item in fallback if item)
+
+
+def _apply_private_runtime_overrides(root_dir: Path, record, payload: dict[str, Any]):
+    store = CustomerPackDraftStore(root_dir)
+    changed = False
+    for field_name in ("tenant_id", "workspace_id", "approval_state", "publication_state"):
+        value = str(payload.get(field_name) or "").strip()
+        if value and getattr(record, field_name, "") != value:
+            setattr(record, field_name, value)
+            changed = True
+    for field_name in ("classification", "provider_egress_policy", "redaction_state"):
+        value = str(payload.get(field_name) or "").strip()
+        if value and getattr(record, field_name, "") != value:
+            setattr(record, field_name, value)
+            changed = True
+    explicit_access_groups = "access_groups" in payload
+    normalized_access_groups = _normalized_access_groups(
+        payload.get("access_groups"),
+        tenant_id=str(record.tenant_id or "").strip(),
+        workspace_id=str(record.workspace_id or "").strip(),
+    )
+    if explicit_access_groups:
+        if tuple(record.access_groups or ()) != normalized_access_groups:
+            record.access_groups = normalized_access_groups
+            changed = True
+    elif changed and tuple(record.access_groups or ()) != normalized_access_groups:
+        record.access_groups = normalized_access_groups
+        changed = True
+    if changed:
+        store.save(record)
+    return record
 
 
 def _select_support_entry(matrix: dict[str, Any], source_type: str) -> dict[str, Any]:
@@ -92,6 +185,7 @@ def customer_pack_request_from_payload(payload: dict[str, Any]) -> DocSourceRequ
 def create_customer_pack_draft(root_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
     request = customer_pack_request_from_payload(payload)
     record = CustomerPackDraftStore(root_dir).create(request)
+    record = _apply_private_runtime_overrides(root_dir, record, payload)
     return record.to_dict()
 
 
@@ -145,6 +239,7 @@ def upload_customer_pack_draft(root_dir: Path, payload: dict[str, Any]) -> dict[
     record.uploaded_file_path = str(target)
     record.uploaded_byte_size = len(content)
     store.save(record)
+    record = _apply_private_runtime_overrides(root_dir, record, payload)
     return record.to_dict()
 
 
@@ -158,6 +253,9 @@ def load_customer_pack_draft(root_dir: Path, draft_id: str) -> dict[str, Any] | 
         payload["playable_asset_count"] = canonical_payload.get("playable_asset_count", 1)
         payload["derived_asset_count"] = canonical_payload.get("derived_asset_count", 0)
         payload["derived_assets"] = canonical_payload.get("derived_assets", [])
+    private_corpus = _private_corpus_payload(root_dir, record.draft_id)
+    if private_corpus is not None:
+        payload["private_corpus"] = private_corpus
     return payload
 
 
@@ -172,6 +270,7 @@ def delete_customer_pack_draft(root_dir: Path, draft_id: str) -> bool:
     if books_dir.is_dir():
         for path in books_dir.glob(f"{draft_id}*.json"):
             path.unlink(missing_ok=True)
+    delete_customer_pack_private_corpus(root_dir, draft_id)
     # Clean up capture artifacts
     capture_dir = settings.customer_pack_capture_dir / draft_id
     if capture_dir.is_dir():
@@ -184,6 +283,7 @@ def capture_customer_pack_draft(root_dir: Path, payload: dict[str, Any]) -> dict
     draft_id = str(payload.get("draft_id") or "").strip()
     request = None if draft_id else customer_pack_request_from_payload(payload)
     record = CustomerPackCaptureService(root_dir).capture(draft_id=draft_id, request=request)
+    record = _apply_private_runtime_overrides(root_dir, record, payload)
     return record.to_dict()
 
 
@@ -198,6 +298,9 @@ def normalize_customer_pack_draft(root_dir: Path, payload: dict[str, Any]) -> di
         result["playable_asset_count"] = canonical_payload.get("playable_asset_count", 1)
         result["derived_asset_count"] = canonical_payload.get("derived_asset_count", 0)
         result["derived_assets"] = canonical_payload.get("derived_assets", [])
+    private_corpus = _private_corpus_payload(root_dir, record.draft_id)
+    if private_corpus is not None:
+        result["private_corpus"] = private_corpus
     return result
 
 
@@ -218,6 +321,9 @@ def ingest_customer_pack(root_dir: Path, payload: dict[str, Any]) -> dict[str, A
     canonical_payload = load_customer_pack_book(root_dir, str(captured["draft_id"]))
     if canonical_payload is not None:
         normalized["book"] = canonical_payload
+    private_corpus = _private_corpus_payload(root_dir, str(captured["draft_id"]))
+    if private_corpus is not None:
+        normalized["private_corpus"] = private_corpus
     return normalized
 
 

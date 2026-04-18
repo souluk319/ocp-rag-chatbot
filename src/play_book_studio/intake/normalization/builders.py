@@ -230,6 +230,32 @@ _NUMERIC_HEADING_RE = re.compile(r"^(\d+(?:\.\d+){0,5})\.?\s+(.*?)\s*$")
 _FENCED_CODE_START_RE = re.compile(r"^\s*(?P<fence>`{3,}|~{3,})(?P<language>[\w.+-]*)\s*$")
 _TABLE_SEPARATOR_CELL_RE = re.compile(r"^:?-{3,}:?$")
 _PDF_INLINE_PAGE_MARKER_RE = re.compile(r"^[가-힣A-Za-z][가-힣A-Za-z0-9\s()./_-]{1,24}\s+\d+$")
+_TABLE_PLACEHOLDER_RE = re.compile(r"^[-–—=:./\\|]+$")
+_GENERIC_TABLE_HEADER_TOKENS = {
+    "이름",
+    "항목",
+    "용도",
+    "값",
+    "설명",
+    "구분",
+    "유형",
+    "종류",
+    "키",
+    "비고",
+    "예시",
+    "플랫폼",
+    "지원",
+    "절차",
+    "명령어",
+    "name",
+    "item",
+    "type",
+    "value",
+    "description",
+    "purpose",
+    "notes",
+    "command",
+}
 
 
 def _slug_anchor(value: str, *, ordinal: int) -> str:
@@ -443,6 +469,7 @@ def _build_structured_text_canonical_book(
     current_body: list[str] = []
     path_stack: list[str] = [current_heading]
     rows: list[dict[str, object]] = []
+    active_block_end = ""
 
     def flush() -> None:
         ordinal = len(rows) + 1
@@ -467,6 +494,24 @@ def _build_structured_text_canonical_book(
         )
 
     for line in normalized.splitlines():
+        stripped_line = line.strip()
+        if active_block_end:
+            current_body.append(line)
+            if stripped_line == active_block_end:
+                active_block_end = ""
+            continue
+        if stripped_line.startswith("[CODE"):
+            active_block_end = "[/CODE]"
+            current_body.append(line)
+            continue
+        if stripped_line.startswith("[TABLE"):
+            active_block_end = "[/TABLE]"
+            current_body.append(line)
+            continue
+        if stripped_line.startswith("[FIGURE"):
+            active_block_end = "[/FIGURE]"
+            current_body.append(line)
+            continue
         heading = _text_heading_match(
             source_type,
             line,
@@ -492,15 +537,115 @@ def _build_structured_text_canonical_book(
 
 
 def _table_to_tagged_text(rows: list[list[str]]) -> str:
-    cleaned_rows = [
-        [cell.strip() for cell in row]
+    normalized_rows = [
+        [_normalize_table_cell_text(cell) for cell in row]
         for row in rows
-        if any(cell.strip() for cell in row)
+        if any(_table_cell_has_value(cell) for cell in row)
     ]
-    if not cleaned_rows:
+    if not normalized_rows:
         return ""
-    rendered_rows = [" | ".join(cell or "-" for cell in row) for row in cleaned_rows]
-    return "[TABLE]\n" + "\n".join(rendered_rows) + "\n[/TABLE]"
+    rendered_rows, has_header = _repair_table_rows_for_storage(normalized_rows)
+    attrs = "" if has_header else ' header="false"'
+    return f"[TABLE{attrs}]\n" + "\n".join(rendered_rows) + "\n[/TABLE]"
+
+
+def _normalize_table_cell_text(cell: str) -> str:
+    normalized = " ".join(str(cell or "").replace("\u00a0", " ").split()).strip()
+    if _TABLE_PLACEHOLDER_RE.fullmatch(normalized):
+        return ""
+    return normalized
+
+
+def _table_cell_has_value(cell: str) -> bool:
+    return bool(_normalize_table_cell_text(cell))
+
+
+def _trim_sparse_table_columns(rows: list[list[str]]) -> list[list[str]]:
+    normalized_rows = [
+        [_normalize_table_cell_text(cell) for cell in row]
+        for row in rows
+        if any(_table_cell_has_value(cell) for cell in row)
+    ]
+    if not normalized_rows:
+        return []
+    width = max(len(row) for row in normalized_rows)
+    padded_rows = [row + [""] * (width - len(row)) for row in normalized_rows]
+    keep_indexes = [
+        index
+        for index in range(width)
+        if any(_table_cell_has_value(row[index]) for row in padded_rows)
+    ]
+    if not keep_indexes:
+        keep_indexes = [0]
+    return [[row[index] for index in keep_indexes] for row in padded_rows]
+
+
+def _table_meaningful_cells(row: list[str]) -> list[str]:
+    return [cell for cell in (_normalize_table_cell_text(item) for item in row) if cell]
+
+
+def _looks_like_sparse_pdf_table(rows: list[list[str]]) -> bool:
+    if len(rows) < 2:
+        return False
+    total_cells = sum(len(row) for row in rows)
+    if total_cells <= 0:
+        return False
+    emptyish_cells = sum(
+        1
+        for row in rows
+        for cell in row
+        if not _table_cell_has_value(cell)
+    )
+    max_cols = max(len(row) for row in rows)
+    compact_rows = sum(1 for row in rows if len(_table_meaningful_cells(row)) <= 4)
+    return max_cols >= 4 and (emptyish_cells / total_cells) >= 0.35 and compact_rows >= max(2, len(rows) - 1)
+
+
+def _collapse_sparse_table_rows(rows: list[list[str]]) -> list[list[str]]:
+    collapsed: list[list[str]] = []
+    for row in rows:
+        meaningful = _table_meaningful_cells(row)
+        if not meaningful:
+            continue
+        key = meaningful[0].rstrip(":").strip()
+        remainder = " ".join(meaningful[1:]).strip()
+        if remainder:
+            collapsed.append([key, remainder])
+        else:
+            collapsed.append([key])
+    return collapsed
+
+
+def _collapsed_rows_have_header(rows: list[list[str]]) -> bool:
+    if len(rows) < 2:
+        return False
+    header = rows[0]
+    if len(header) < 2:
+        return False
+    first = header[0].strip().lower()
+    second = header[1].strip().lower()
+    if first in _GENERIC_TABLE_HEADER_TOKENS or second in _GENERIC_TABLE_HEADER_TOKENS:
+        return True
+    if len(first) <= 12 and len(second) <= 16 and not first.endswith(":") and not second.endswith(":"):
+        return first in {"field", "key", "setting"} or second in {"value", "description", "purpose"}
+    return False
+
+
+def _repair_table_rows_for_storage(rows: list[list[str]]) -> tuple[list[str], bool]:
+    normalized_rows = _trim_sparse_table_columns(rows)
+    if not normalized_rows:
+        return [], False
+    has_header = True
+    render_rows = normalized_rows
+    if _looks_like_sparse_pdf_table(rows):
+        collapsed_rows = _collapse_sparse_table_rows(normalized_rows)
+        if collapsed_rows:
+            render_rows = collapsed_rows
+            has_header = _collapsed_rows_have_header(collapsed_rows)
+    if len(render_rows) <= 1:
+        has_header = False
+    rendered = [" | ".join(cell or "-" for cell in row) for row in render_rows]
+    return rendered, has_header
 
 
 def _iter_docx_blocks(document: Any):
@@ -599,6 +744,29 @@ def extract_image_markdown_with_docling(path: Path) -> str:
     return str(markdown or "").strip()
 
 
+def image_markdown_is_low_confidence(markdown: str) -> bool:
+    normalized = _normalize_text_block("md", str(markdown or ""))
+    if not normalized:
+        return True
+    body_lines = []
+    for line in normalized.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        body_lines.append(stripped)
+    body = " ".join(body_lines).strip() or normalized
+    token_count = len([token for token in re.split(r"\s+", body) if token])
+    alnum_count = len(re.findall(r"[A-Za-z가-힣0-9]", body))
+    return token_count < 3 and alnum_count < 12
+
+
+def build_image_canonical_book_from_markdown(record: CustomerPackDraftRecord, markdown: str):
+    normalized = _normalize_text_block("md", str(markdown or ""))
+    if not normalized:
+        raise ValueError("이미지 OCR에서 canonical section을 만들지 못했습니다.")
+    return _build_structured_text_canonical_book(record, source_type="md", normalized=normalized)
+
+
 def _build_docx_canonical_book(record: CustomerPackDraftRecord):
     capture_path = Path(record.capture_artifact_path)
     if not capture_path.exists():
@@ -633,7 +801,7 @@ def _build_image_canonical_book(record: CustomerPackDraftRecord):
     capture_path = Path(record.capture_artifact_path)
     if not capture_path.exists():
         raise FileNotFoundError(f"captured artifact를 찾을 수 없습니다: {capture_path}")
-    normalized = _normalize_text_block("md", extract_image_markdown_with_docling(capture_path))
-    if not normalized:
-        raise ValueError("이미지 OCR에서 canonical section을 만들지 못했습니다.")
-    return _build_structured_text_canonical_book(record, source_type="md", normalized=normalized)
+    return build_image_canonical_book_from_markdown(
+        record,
+        extract_image_markdown_with_docling(capture_path),
+    )

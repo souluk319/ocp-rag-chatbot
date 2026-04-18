@@ -1,0 +1,42 @@
+{
+  "task_id": "cleanup_surface_seams_20260418",
+  "lane_id": "main",
+  "role": "main",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "presentation-ui/src/pages/WorkspacePage.tsx",
+    "presentation-ui/src/components/workspace/*",
+    "src/play_book_studio/app/source_books.py",
+    "src/play_book_studio/app/source_books_*",
+    "tests/test_app_viewers.py",
+    "tests/test_app_viewers_*",
+    "tests/_support_app_viewers.py",
+    "reports/execution_harness/cleanup_surface_seams_20260418/*"
+  ],
+  "target_outputs": [
+    "WorkspacePage shell plus feature island split without runtime behavior change",
+    "source_books viewer builder versus source/meta resolver seam split",
+    "viewer tests split by surface around the new seams"
+  ],
+  "validation_commands": [
+    "cd presentation-ui; npm run build",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_app_viewers.py tests\\test_app_viewers_routes.py tests\\test_app_viewers_citations.py tests\\test_app_viewers_runtime.py -q"
+  ],
+  "major_task": true,
+  "parallel_execution_required": true,
+  "companion_lanes": [
+    {
+      "lane_id": "explorer",
+      "role": "explorer",
+      "focus": "audit WorkspacePage.tsx seam candidates for shell and feature-island extraction with minimal behavior risk"
+    },
+    {
+      "lane_id": "worker",
+      "role": "worker",
+      "focus": "audit source_books.py and test_app_viewers.py seam candidates for viewer/meta split and surface-based test partition"
+    }
+  ],
+  "status": "scope_locked"
+}

@@ -1,0 +1,19 @@
+{
+  "task_id": "ocp420_corpus_multiturn_20260418",
+  "lane_id": "worker",
+  "role": "worker",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "reports/execution_harness/ocp420_corpus_multiturn_20260418/worker/**"
+  ],
+  "target_outputs": [
+    "Packet A / Packet B execution checklist with evidence paths and validation commands"
+  ],
+  "validation_commands": [
+    "Test-Path reports\\execution_harness\\ocp420_corpus_multiturn_20260418\\worker\\packet_execution_checklist.md",
+    "Get-Content -Raw reports\\execution_harness\\ocp420_corpus_multiturn_20260418\\worker\\packet_execution_checklist.md"
+  ],
+  "status": "completed"
+}

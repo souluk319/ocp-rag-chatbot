@@ -9,7 +9,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from play_book_studio.retrieval.models import RetrievalHit
+from play_book_studio.retrieval.models import RetrievalHit, SessionContext
 from play_book_studio.answering.context import _should_force_clarification, assemble_context
 
 
@@ -72,6 +72,39 @@ class ContextAssemblyTests(unittest.TestCase):
                 ),
             ],
             query="업로드 문서 기준으로 backup 절차를 알려줘",
+            max_chunks=4,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertEqual("customer-backup-runbook", bundle.citations[0].book_slug)
+
+    def test_assemble_context_seeds_uploaded_customer_pack_for_selected_draft_scope(self) -> None:
+        bundle = assemble_context(
+            [
+                _hit(
+                    "uploaded-1",
+                    "customer-backup-runbook",
+                    "OpenShift Backup Restore Runbook",
+                    "1. Enter debug shell\n/usr/local/bin/cluster-backup.sh /home/core/assets/backup",
+                    score=0.02,
+                    source_collection="uploaded",
+                ),
+                _hit(
+                    "core-1",
+                    "postinstallation_configuration",
+                    "4.12.5. etcd 데이터 백업",
+                    "공식 문서의 etcd 백업 절차입니다.",
+                    score=0.026,
+                    chunk_type="command",
+                    semantic_role="procedure",
+                    cli_commands=("oc debug --as-root node/<node_name>",),
+                ),
+            ],
+            query="backup 절차를 알려줘",
+            session_context=SessionContext(
+                selected_draft_ids=["dtb-demo"],
+                restrict_uploaded_sources=True,
+            ),
             max_chunks=4,
         )
 

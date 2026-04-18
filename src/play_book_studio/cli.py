@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 
 from play_book_studio.answering.answerer import ChatAnswerer
+from play_book_studio.app.private_lane_smoke import write_private_lane_smoke
 from play_book_studio.app.runtime_maintenance_smoke import write_runtime_maintenance_smoke
 from play_book_studio.app.runtime_report import (
     DEFAULT_PLAYBOOK_UI_BASE_URL,
@@ -103,6 +104,17 @@ def build_parser() -> argparse.ArgumentParser:
     maintenance_smoke_parser.add_argument(
         "--query",
         default="OpenShift architecture overview",
+    )
+
+    private_lane_smoke_parser = subparsers.add_parser(
+        "private-lane-smoke",
+        help="Ingest a synthetic private markdown pack and validate library plus chat boundary handling",
+    )
+    private_lane_smoke_parser.add_argument("--output", type=Path, default=None)
+    private_lane_smoke_parser.add_argument("--ui-base-url", default=DEFAULT_PLAYBOOK_UI_BASE_URL)
+    private_lane_smoke_parser.add_argument(
+        "--query-template",
+        default="{token} 문서를 보여줘",
     )
 
     compact_graph_parser = subparsers.add_parser(
@@ -279,6 +291,19 @@ def _run_maintenance_smoke(args: argparse.Namespace) -> int:
     return 0 if bool(summary.get("ok")) else 1
 
 
+def _run_private_lane_smoke(args: argparse.Namespace) -> int:
+    output_path, payload = write_private_lane_smoke(
+        ROOT,
+        output_path=args.output,
+        ui_base_url=args.ui_base_url,
+        query_template=args.query_template,
+    )
+    print(f"wrote private lane smoke: {output_path}")
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    summary = payload.get("summary") if isinstance(payload.get("summary"), dict) else {}
+    return 0 if bool(summary.get("ok")) else 1
+
+
 def _run_graph_compact(args: argparse.Namespace) -> int:
     settings = load_settings(ROOT)
     output_path, payload = write_graph_sidecar_compact_from_artifacts(
@@ -316,6 +341,8 @@ def main() -> int:
         return _run_runtime(args)
     if args.command == "maintenance-smoke":
         return _run_maintenance_smoke(args)
+    if args.command == "private-lane-smoke":
+        return _run_private_lane_smoke(args)
     if args.command == "graph-compact":
         return _run_graph_compact(args)
     raise ValueError(f"unsupported command: {args.command}")

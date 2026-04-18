@@ -1,0 +1,141 @@
+{
+  "status": "completed",
+  "packet": "ocp420_gap_closure",
+  "completed_at": "2026-04-18T14:40:00+09:00",
+  "judgment": {
+    "high_value_gap_closure": "closed",
+    "canonical_approved_manifest_count": 29,
+    "high_value_issue_count": 0,
+    "fresh_runtime_live_probe_status": "passed",
+    "release_gate_status": "blocked"
+  },
+  "core_findings": [
+    {
+      "type": "approval",
+      "detail": "backup_and_restore, installing_on_any_platform, machine_configuration, monitoring are now approved_ko + approval_status=approved + citation_eligible=true in source_approval_report."
+    },
+    {
+      "type": "materialization",
+      "detail": "approved manifest, active runtime, and fresh runtime summary now align at 29 active Korean books."
+    },
+    {
+      "type": "live_retrieval",
+      "detail": "fresh runtime on port 8879 passed general retrieval probes 5/5 and targeted four-book live probes 4/4."
+    },
+    {
+      "type": "gate_blocker",
+      "detail": "morning_gate latest remains blocked because validation still sees derived playbook families in chunks/playbook artifacts and chunk/qdrant id drift (duplicate_chunk_ids=5646, qdrant_missing_ids=6978)."
+    }
+  ],
+  "high_value_books": [
+    {
+      "book_slug": "backup_and_restore",
+      "content_status": "approved_ko",
+      "approval_status": "approved",
+      "citation_eligible": true,
+      "source_type": "manual_synthesis",
+      "source_lane": "applied_playbook",
+      "chunk_count": 5176,
+      "section_count": 8
+    },
+    {
+      "book_slug": "installing_on_any_platform",
+      "content_status": "approved_ko",
+      "approval_status": "approved",
+      "citation_eligible": true,
+      "source_type": "manual_synthesis",
+      "source_lane": "applied_playbook",
+      "chunk_count": 712,
+      "section_count": 8
+    },
+    {
+      "book_slug": "machine_configuration",
+      "content_status": "approved_ko",
+      "approval_status": "approved",
+      "citation_eligible": true,
+      "source_type": "manual_synthesis",
+      "source_lane": "applied_playbook",
+      "chunk_count": 1390,
+      "section_count": 8
+    },
+    {
+      "book_slug": "monitoring",
+      "content_status": "approved_ko",
+      "approval_status": "approved",
+      "citation_eligible": true,
+      "source_type": "manual_synthesis",
+      "source_lane": "applied_playbook",
+      "chunk_count": 15,
+      "section_count": 8
+    }
+  ],
+  "fresh_runtime_summary": {
+    "source_inventory": {
+      "input_doc_count": 113,
+      "source_catalog_entries": 113
+    },
+    "corpus_materialization": {
+      "success_doc_count": 29,
+      "failure_doc_count": 84,
+      "approved_manifest_count": 29,
+      "chunk_count": 39348,
+      "failure_types": {
+        "blocked:missing_normalized_sections_or_chunks": 84
+      },
+      "high_value_translation_gaps": []
+    },
+    "library_materialization": {
+      "library_visible_count": 174,
+      "active_library_visible_count": 29,
+      "runtime_eligible_count": 29,
+      "active_manifest_count": 29,
+      "approved_runtime_count": 29
+    },
+    "runtime_live_state": {
+      "health_ok": true,
+      "gate_status": "blocked",
+      "release_blocking": true,
+      "corpus_book_count": 29,
+      "manualbook_count": 29
+    },
+    "retrieval_live_probes": {
+      "probe_count": 5,
+      "pass_count": 5,
+      "pass_rate": 1.0
+    },
+    "targeted_live_probes": {
+      "probe_count": 4,
+      "pass_count": 4
+    }
+  },
+  "validation_snapshot": {
+    "manifest_count": 29,
+    "expected_book_count": 29,
+    "normalized_book_count": 174,
+    "chunk_book_count": 174,
+    "playbook_book_count": 174,
+    "qdrant_count": 26724,
+    "duplicate_chunk_ids": 5646,
+    "qdrant_missing_ids": 6978,
+    "qdrant_extra_ids": 0,
+    "failed_checks": [
+      "artifact_books_match_expected_subset",
+      "chunks_have_unique_ids",
+      "qdrant_matches_chunks_by_count",
+      "qdrant_matches_chunks_by_ids",
+      "qdrant_books_match_chunks"
+    ]
+  },
+  "evidence": {
+    "source_approval_report": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\artifacts\\corpus\\source_approval_report.json",
+    "approved_manifest": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\manifests\\ocp_ko_4_20_approved_ko.json",
+    "curated_batch_report": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\reports\\build_logs\\curated_all_gold_2026-04-10.json",
+    "foundry_latest": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\reports\\build_logs\\foundry_runs\\profiles\\morning_gate\\latest.json",
+    "active_runtime_viewers": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\reports\\build_logs\\active_runtime_viewer_serving_report.json",
+    "materialization_summary": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\reports\\build_logs\\ocp420_gap_closure_summary.json",
+    "targeted_live_probes": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\reports\\build_logs\\ocp420_gap_closure_live_probes.json",
+    "runtime_snapshot": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\reports\\build_logs\\ocp420_gap_closure_runtime_snapshot.json",
+    "validation_report": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\artifacts\\corpus\\validation_report.json"
+  },
+  "next_action": "Separate the remaining release blocker into a validation-contract packet: decide whether derived playbook families belong in the validator subset, then rebuild chunks/qdrant on a clean snapshot so gate checks compare like-for-like."
+}

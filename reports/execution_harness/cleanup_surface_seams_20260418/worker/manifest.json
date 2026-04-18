@@ -1,0 +1,14 @@
+{
+  "task_id": "cleanup_surface_seams_20260418",
+  "lane_id": "worker",
+  "role": "worker",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [],
+  "target_outputs": [
+    "source_books.py and viewer-test seam audit"
+  ],
+  "validation_commands": [],
+  "status": "spawned"
+}

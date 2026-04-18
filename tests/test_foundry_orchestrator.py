@@ -31,7 +31,7 @@ def _write_json(path: Path, payload: dict[str, object]) -> None:
 
 
 class FoundryOrchestratorTests(unittest.TestCase):
-    def test_run_source_approval_does_not_readd_reader_grade_failed_manual_synthesis(self) -> None:
+    def test_run_source_approval_keeps_manual_synthesis_with_heading_warning(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             settings = Settings(root_dir=root)
@@ -109,10 +109,14 @@ class FoundryOrchestratorTests(unittest.TestCase):
                     "book_slug": "monitoring",
                     "title": "Monitoring",
                     "translation_status": "approved_ko",
+                    "source_metadata": {
+                        "source_type": "manual_synthesis",
+                        "source_lane": "applied_playbook",
+                    },
                     "sections": [
                         {
                             "heading": "Overview",
-                            "semantic_role": "unknown",
+                            "semantic_role": "procedure",
                             "blocks": [],
                         }
                     ],
@@ -121,10 +125,10 @@ class FoundryOrchestratorTests(unittest.TestCase):
 
             payload = _run_source_approval(settings, root / "reports" / "build_logs" / "foundry_runs", "demo")
 
-            self.assertEqual(0, payload["approved_manifest_count"])
-            self.assertEqual([], payload["approved_book_slugs"])
+            self.assertEqual(1, payload["approved_manifest_count"])
+            self.assertEqual(["monitoring"], payload["approved_book_slugs"])
             approved_manifest = json.loads(settings.source_manifest_path.read_text(encoding="utf-8"))
-            self.assertEqual([], approved_manifest["entries"])
+            self.assertEqual(["monitoring"], [entry["book_slug"] for entry in approved_manifest["entries"]])
 
     def test_run_source_approval_materializes_topic_playbooks(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -302,6 +306,8 @@ class FoundryOrchestratorTests(unittest.TestCase):
         self.assertEqual(15, profiles["runtime_smoke_hourly"].minute)
         self.assertEqual(1, profiles["runtime_smoke_hourly"].interval_hours)
         self.assertEqual("08:30", profiles["morning_gate"].time)
+        self.assertEqual("approved_runtime_rebuild", profiles["morning_gate"].jobs[0])
+        self.assertIn("approved_runtime_rebuild", profiles["morning_gate"].jobs)
 
     def test_build_release_verdict_marks_needs_promotion_for_remaining_queues(self) -> None:
         verdict = build_release_verdict(
@@ -837,11 +843,19 @@ class FoundryOrchestratorTests(unittest.TestCase):
                     "qdrant_upserted_count": 100,
                 }
             )
+            runtime_materialization = {
+                "runtime_chunk_count": 245,
+                "qdrant_upserted_count": 245,
+                "derived_playbook_count": 5,
+            }
 
             with patch(
                 "play_book_studio.ingestion.foundry_orchestrator.run_ingestion_pipeline",
                 return_value=fake_log,
-            ) as mocked_run:
+            ) as mocked_run, patch(
+                "play_book_studio.ingestion.foundry_orchestrator.materialize_runtime_corpus_from_playbooks",
+                return_value=runtime_materialization,
+            ) as mocked_materialize:
                 payload = JOB_RUNNERS["approved_runtime_rebuild"](
                     settings,
                     settings.root_dir / "reports",
@@ -849,14 +863,22 @@ class FoundryOrchestratorTests(unittest.TestCase):
                 )
 
             mocked_run.assert_called_once_with(
-                settings,
+                Settings(root_dir=Path(tmpdir), graph_backend="local"),
                 refresh_manifest=False,
                 collect_subset="all",
                 process_subset="all",
-                skip_embeddings=False,
-                skip_qdrant=False,
+                skip_embeddings=True,
+                skip_qdrant=True,
             )
+            materialize_args, materialize_kwargs = mocked_materialize.call_args
+            self.assertEqual("local", materialize_args[0].graph_backend)
+            self.assertEqual(settings.root_dir, materialize_args[0].root_dir)
+            self.assertEqual({"sync_qdrant": True, "recreate_qdrant": True}, materialize_kwargs)
             self.assertEqual("done", payload["stage"])
+            self.assertEqual(245, payload["chunk_count"])
+            self.assertEqual(245, payload["qdrant_upserted_count"])
+            self.assertEqual(5, payload["runtime_corpus_materialization"]["derived_playbook_count"])
+            self.assertEqual("local", payload["graph_build_backend"])
             self.assertEqual(str(settings.playbook_books_dir), payload["output_targets"]["playbook_books_dir"])
             self.assertEqual(settings.qdrant_collection, payload["output_targets"]["qdrant_collection"])
 

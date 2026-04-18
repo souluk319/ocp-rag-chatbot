@@ -166,14 +166,22 @@ def _playbook_book_paths(settings) -> tuple[Path, ...]:
     return _playbook_book_paths_from_dirs(candidate_dirs)
 
 
+def _reader_grade_heading_gate_exempt(*, source_type: str, source_lane: str) -> bool:
+    return source_type == "manual_synthesis" or source_lane == "applied_playbook"
+
+
 def _build_playbook_reader_grade_audit_from_paths(paths: tuple[Path, ...]) -> dict[str, object]:
     per_book: list[dict[str, object]] = []
     failing_books: list[dict[str, object]] = []
+    warning_books: list[dict[str, object]] = []
     for path in paths:
         payload = json.loads(path.read_text(encoding="utf-8"))
         book_slug = str(payload.get("book_slug") or path.stem)
         title = str(payload.get("title") or book_slug)
         translation_status = str(payload.get("translation_status") or "")
+        source_metadata = dict(payload.get("source_metadata") or {})
+        source_type = str(source_metadata.get("source_type") or "").strip()
+        source_lane = str(source_metadata.get("source_lane") or "").strip()
         sections = [dict(section) for section in (payload.get("sections") or []) if isinstance(section, dict)]
         section_count = len(sections)
         unknown_count = 0
@@ -199,11 +207,18 @@ def _build_playbook_reader_grade_audit_from_paths(paths: tuple[Path, ...]) -> di
         procedure_section_share = round(procedure_count / max(section_count, 1), 4)
         english_heading_ratio = round(english_heading_count / max(section_count, 1), 4)
         semantic_role_coverage_ok = known_semantic_role_count > 0 and unknown_section_share <= 0.5
-        heading_language_ok = translation_status != "approved_ko" or english_heading_ratio <= 0.5
+        heading_language_warning = translation_status == "approved_ko" and english_heading_ratio > 0.5
+        heading_gate_exempt = _reader_grade_heading_gate_exempt(
+            source_type=source_type,
+            source_lane=source_lane,
+        )
+        heading_language_ok = not heading_language_warning or heading_gate_exempt
         row = {
             "book_slug": book_slug,
             "title": title,
             "translation_status": translation_status,
+            "source_type": source_type,
+            "source_lane": source_lane,
             "section_count": section_count,
             "known_semantic_role_count": known_semantic_role_count,
             "unknown_section_share": unknown_section_share,
@@ -212,19 +227,31 @@ def _build_playbook_reader_grade_audit_from_paths(paths: tuple[Path, ...]) -> di
             "code_block_count": code_block_count,
             "semantic_role_coverage_ok": semantic_role_coverage_ok,
             "heading_language_ok": heading_language_ok,
+            "heading_language_warning": heading_language_warning,
+            "heading_gate_exempt": heading_gate_exempt,
         }
         per_book.append(row)
         if not semantic_role_coverage_ok or not heading_language_ok:
             failing_books.append(row)
+        elif heading_language_warning:
+            warning_books.append(row)
     return {
         "book_count": len(per_book),
         "failing_book_count": len(failing_books),
+        "warning_book_count": len(warning_books),
         "failing_books": sorted(
             failing_books,
             key=lambda item: (
                 item["semantic_role_coverage_ok"],
                 item["heading_language_ok"],
                 -float(item["unknown_section_share"]),
+                -float(item["english_heading_ratio"]),
+                item["book_slug"],
+            ),
+        )[:20],
+        "warning_books": sorted(
+            warning_books,
+            key=lambda item: (
                 -float(item["english_heading_ratio"]),
                 item["book_slug"],
             ),

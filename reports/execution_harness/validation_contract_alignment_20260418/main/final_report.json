@@ -1,0 +1,60 @@
+{
+  "status": "completed",
+  "current_judgment": "validation-contract alignment is closed. morning_gate now validates against the runtime baseline and returns release_ready.",
+  "key_findings": [
+    "The correct artifact contract is runtime baseline: 29 approved source books plus 145 derived/runtime books.",
+    "The qdrant/chunk drift class is resolved after rebuilding runtime artifacts from the approved manifest and re-syncing Qdrant.",
+    "The remaining blocker was source approval and data quality treating approved manual_synthesis English headings as a release blocker instead of a quality warning.",
+    "Source approval and approved manifest generation now share the same manual_synthesis overlay source from playbook_documents.jsonl."
+  ],
+  "changed_files": [
+    "src/play_book_studio/ingestion/topic_playbooks.py",
+    "src/play_book_studio/ingestion/validation.py",
+    "src/play_book_studio/ingestion/runtime_catalog_library.py",
+    "src/play_book_studio/ingestion/foundry_orchestrator.py",
+    "src/play_book_studio/ingestion/data_quality.py",
+    "src/play_book_studio/ingestion/approval_report.py",
+    "pipelines/foundry_routines.json",
+    "tests/test_ingestion_validation.py",
+    "tests/test_ingestion_audit.py",
+    "tests/test_foundry_orchestrator.py",
+    "tests/test_synthesis_lane.py"
+  ],
+  "validation": {
+    "targeted_pytest": "40 passed",
+    "source_approval_summary": {
+      "approved_ko_count": 29,
+      "high_value_issue_count": 0
+    },
+    "validation_gate": {
+      "expected_book_count": 174,
+      "expected_source_book_count": 29,
+      "expected_derived_book_count": 145,
+      "chunk_book_count": 174,
+      "qdrant_count": 33635,
+      "failed_checks": []
+    },
+    "runtime_smoke": {
+      "health_status": 200,
+      "qdrant_collection_present": true,
+      "graph_compact_ready": true
+    },
+    "morning_gate_verdict": {
+      "status": "release_ready",
+      "release_blocking": false,
+      "approved_runtime_count": 29,
+      "translation_ready_count": 0,
+      "manual_review_ready_count": 0,
+      "high_value_issue_count": 0,
+      "failed_validation_checks": [],
+      "failed_data_quality_checks": []
+    }
+  },
+  "evidence": [
+    "reports/build_logs/foundry_runs/profiles/morning_gate/latest.json",
+    "reports/build_logs/foundry_runs/validation_gate/latest.json",
+    "reports/build_logs/foundry_runs/runtime_smoke/latest.json",
+    "artifacts/corpus/source_approval_report.json"
+  ],
+  "next_action": "Move to the next ordered packet. This packet no longer blocks release/readiness."
+}

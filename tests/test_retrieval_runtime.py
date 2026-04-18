@@ -318,6 +318,71 @@ class TestRetrievalRuntime(unittest.TestCase):
         self.assertEqual("customer-backup-runbook", hits[0].book_slug)
         self.assertEqual("uploaded", hits[0].source_collection)
 
+    def test_reranker_rescues_uploaded_customer_pack_for_selected_draft_snippet_query(self) -> None:
+        hybrid_hits = [
+            RetrievalHit(
+                chunk_id="uploaded-configmap-secret",
+                book_slug="customer-config-guide",
+                chapter="Customer Config Guide",
+                section="ConfigMap Secret",
+                anchor="snippet",
+                source_url="/tmp/customer.pdf",
+                viewer_path="/playbooks/customer-packs/draft-a/index.html#snippet",
+                text="ConfigMap Secret values must be synchronized before rollout.",
+                source="hybrid",
+                raw_score=0.87,
+                fused_score=0.87,
+                source_collection="uploaded",
+            ),
+            RetrievalHit(
+                chunk_id="core-configmap-secret",
+                book_slug="authentication_and_authorization",
+                chapter="auth",
+                section="ConfigMap and Secret defaults",
+                anchor="configmap-secret",
+                source_url="https://example.com/core",
+                viewer_path="/docs/core.html#configmap-secret",
+                text="ConfigMap Secret handling in OpenShift",
+                source="hybrid",
+                raw_score=0.92,
+                fused_score=0.92,
+            ),
+        ]
+        reranked_hits = [
+            RetrievalHit(
+                chunk_id="core-configmap-secret",
+                book_slug="authentication_and_authorization",
+                chapter="auth",
+                section="ConfigMap and Secret defaults",
+                anchor="configmap-secret",
+                source_url="https://example.com/core",
+                viewer_path="/docs/core.html#configmap-secret",
+                text="ConfigMap Secret handling in OpenShift",
+                source="hybrid_reranked",
+                raw_score=4.8,
+                fused_score=4.8,
+                component_scores={"pre_rerank_fused_score": 0.92, "reranker_score": 4.8},
+            ),
+        ]
+
+        hits, trace = maybe_rerank_hits(
+            _FakeRetrieverWithReranker(reranked_hits),
+            query="ConfigMap Secret",
+            hybrid_hits=hybrid_hits,
+            top_k=2,
+            trace_callback=None,
+            timings_ms={},
+            context=SessionContext(
+                selected_draft_ids=["draft-a"],
+                restrict_uploaded_sources=True,
+            ),
+        )
+
+        self.assertTrue(trace["applied"])
+        self.assertEqual("customer-config-guide", hits[0].book_slug)
+        self.assertEqual("uploaded", hits[0].source_collection)
+        self.assertIn("uploaded_customer_pack_priority", trace["rebalance_reasons"])
+
     def test_reranker_keeps_etcd_backup_companion_when_rerank_returns_only_postinstall_hits(self) -> None:
         hybrid_hits = [
             RetrievalHit(

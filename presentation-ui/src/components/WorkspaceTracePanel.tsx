@@ -20,6 +20,7 @@ import {
   evaluateScorecard,
   summarizeScorecard,
 } from './scorecardEval';
+import { deriveWorkspaceExplain } from './workspaceExplain';
 import './WorkspaceTracePanel.css';
 
 interface WorkspaceTracePanelProps {
@@ -29,7 +30,7 @@ interface WorkspaceTracePanelProps {
   isSending: boolean;
 }
 
-type ViewMode = 'overview' | 'forensic';
+type ViewMode = 'explain' | 'overview' | 'forensic';
 
 /**
  * Backend whitelist of step IDs we know how to render. Other steps still show
@@ -281,7 +282,7 @@ export default function WorkspaceTracePanel({
   result,
   isSending,
 }: WorkspaceTracePanelProps) {
-  const [view, setView] = useState<ViewMode>('overview');
+  const [view, setView] = useState<ViewMode>('explain');
   const [activeStep, setActiveStep] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -310,6 +311,7 @@ export default function WorkspaceTracePanel({
   const reranker = asRecord(retrievalTrace.reranker);
   const plan = asRecord(retrievalTrace.plan);
   const forensicHitRows = deriveForensicHitRows(retrievalTrace);
+  const explain = useMemo(() => deriveWorkspaceExplain({ query, result }), [query, result]);
   const decomposed = asArray(retrievalTrace.decomposed_queries)
     .map((q) => (typeof q === 'string' ? q : ''))
     .filter(Boolean);
@@ -389,6 +391,13 @@ export default function WorkspaceTracePanel({
           <div className="wtp-toggle" role="group" aria-label="View mode">
             <button
               type="button"
+              aria-pressed={view === 'explain'}
+              onClick={() => setView('explain')}
+            >
+              Explain
+            </button>
+            <button
+              type="button"
               aria-pressed={view === 'overview'}
               onClick={() => setView('overview')}
             >
@@ -411,13 +420,13 @@ export default function WorkspaceTracePanel({
           <span className="wtp-question-label">Question</span>
           <span className="wtp-question-text">{query || '아직 질문이 없습니다.'}</span>
         </div>
-        {showRewritten ? (
+        {view !== 'explain' && showRewritten ? (
           <div className="wtp-question-row">
             <span className="wtp-question-label">Rewritten</span>
             <span className="wtp-question-text is-rewritten">{rewritten}</span>
           </div>
         ) : null}
-        {decomposed.length > 0 ? (
+        {view !== 'explain' && decomposed.length > 0 ? (
           <div className="wtp-question-row" style={{ alignItems: 'flex-start' }}>
             <span className="wtp-question-label">Subqueries</span>
             <div className="wtp-subqueries">
@@ -429,216 +438,275 @@ export default function WorkspaceTracePanel({
         ) : null}
       </div>
 
-      {/* --- Stage timeline ------------------------------------------ */}
-      <div className="wtp-timeline-wrap">
-        <div className="wtp-timeline-head">
-          <span className="wtp-section-title">
-            Pipeline <strong>{timelineStages.length}/{TIMELINE_STEPS.length} stages</strong>
-          </span>
-          {isSending ? (
-            <span className="wtp-pill" data-tone="info" aria-live="polite">
-              <span className="wtp-pulse" aria-hidden="true" /> 스트리밍 중…
-            </span>
-          ) : null}
-        </div>
-
-        {timelineStages.length === 0 ? (
-          <div className="wtp-empty">
-            <strong>대기 중</strong>
-            <span>질문을 보내면 백엔드 트레이스가 단계별로 채워집니다.</span>
+      {view === 'explain' ? (
+        <div className="wtp-explain">
+          <div className="wtp-explain-head">
+            <span className="wtp-section-title">Explain</span>
           </div>
-        ) : (
-          <div className="wtp-timeline">
-            {timelineStages.map((stage) => (
-              <button
-                key={stage.step}
-                type="button"
-                className="wtp-stage"
-                data-status={stage.status}
-                data-active={selectedStep === stage.step}
-                style={{ width: stageWidthFor(stage.durationMs, maxDuration) }}
-                onClick={() => toggleStage(stage.step)}
-                aria-pressed={selectedStep === stage.step}
-                aria-label={`${stage.label} ${stage.status} ${formatMs(stage.durationMs)}`}
-              >
-                <span className="wtp-stage-top">
-                  <span className="wtp-stage-status" aria-hidden="true" />
-                  <span className="wtp-stage-time">{formatMs(stage.durationMs)}</span>
-                </span>
-                <span className="wtp-stage-label">{stage.label}</span>
-                <span className="wtp-stage-bar" aria-hidden="true">
-                  <span
-                    style={{
-                      width: `${Math.min(100, Math.max(8, ((stage.durationMs ?? 0) / Math.max(1, maxDuration)) * 100))}%`,
-                    }}
-                  />
-                </span>
-              </button>
+          <div className="wtp-explain-stages">
+            {explain.stages.map((stage, index) => (
+              <article key={stage.id} className="wtp-explain-stage">
+                <span className="wtp-explain-stage-step">{index + 1}</span>
+                <div className="wtp-explain-stage-body">
+                  <h3 className="wtp-explain-stage-title">{stage.title}</h3>
+                  <p className="wtp-explain-stage-summary">{stage.summary}</p>
+                </div>
+              </article>
             ))}
           </div>
-        )}
 
-        {selectedStep ? (() => {
-          const stage = stageMap.get(selectedStep);
-          if (!stage) return null;
-          const metaEntries = Object.entries(stage.meta);
-          return (
-            <div className="wtp-stage-detail">
-              <div className="wtp-stage-detail-title">{stage.step} · {stage.status}</div>
-              {stage.detail ? <div style={{ marginBottom: 10, color: '#f0f4fa' }}>{stage.detail}</div> : null}
-              {metaEntries.length === 0 ? (
-                <div className="wtp-stage-detail-empty">메타 데이터 없음</div>
-              ) : (
-                <dl className="wtp-stage-detail-body">
-                  {metaEntries.map(([key, value]) => (
-                    <Fragment key={key}>
-                      <dt>{key}</dt>
-                      <dd>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</dd>
-                    </Fragment>
-                  ))}
-                </dl>
-              )}
-            </div>
-          );
-        })() : null}
-      </div>
+          <div className="wtp-explain-grid">
+            <article className="wtp-explain-card">
+              <div className="wtp-explain-card-title">질문 분류</div>
+              <h3>{explain.questionTypeLabel}</h3>
+              <p className="wtp-explain-card-body">{explain.questionTypeBody}</p>
+            </article>
 
-      {/* --- Cards ----------------------------------------------------- */}
-      <div className="wtp-grid">
-        {/* Citations */}
-        <article className="wtp-card">
-          <div className="wtp-card-header">
-            <span className="wtp-card-title">Citations · 근거</span>
-            <span className="wtp-card-meta">selected {selectedHits.length}</span>
-          </div>
-          {selectedHits.length === 0 ? (
-            <p>아직 선택된 근거가 없습니다.</p>
-          ) : (
-            <div className="wtp-citations">
-              {selectedHits.slice(0, 3).map((hit, idx) => {
-                const matchingCitation = (result?.citations ?? []).find(
-                  (c) => c.book_slug === hit.book_slug && (c.section_path ?? c.section) === hit.section,
-                );
-                const lane = (matchingCitation?.source_lane ?? 'official').toLowerCase();
-                return (
-                  <div key={`${hit.book_slug}-${idx}`} className="wtp-citation">
-                    <div className="wtp-citation-top">
-                      <span className="wtp-citation-index">#{idx + 1}</span>
-                      <span className="wtp-citation-book">{String(hit.book_slug ?? 'unknown')}</span>
-                      <span className="wtp-lane-badge" data-lane={lane}>
-                        {lane}
-                      </span>
-                      <span className="wtp-citation-score">
-                        score {asNumber(hit.fused_score)?.toFixed(3) ?? '–'}
-                      </span>
+            <article className="wtp-explain-card">
+              <div className="wtp-explain-card-title">Rewrite</div>
+              <p className="wtp-explain-card-body">{explain.rewriteBody}</p>
+            </article>
+
+            <article className="wtp-explain-card">
+              <div className="wtp-explain-card-title">검색 전략</div>
+              <p className="wtp-explain-card-body">{explain.searchBody}</p>
+            </article>
+
+            <article className="wtp-explain-card">
+              <div className="wtp-explain-card-title">Graph / Rerank</div>
+              <p className="wtp-explain-card-body">{explain.decisionBody}</p>
+            </article>
+
+            <article className="wtp-explain-card">
+              <div className="wtp-explain-card-title">최종 근거</div>
+              <p className="wtp-explain-card-body">{explain.evidenceBody}</p>
+              {explain.evidenceItems.length > 0 ? (
+                <div className="wtp-explain-evidence">
+                  {explain.evidenceItems.map((item) => (
+                    <div key={item.label} className="wtp-explain-evidence-item">
+                      <strong className="wtp-explain-evidence-label">{item.label}</strong>
+                      <span className="wtp-explain-evidence-reason">{item.reason}</span>
                     </div>
-                    <span className="wtp-citation-section">{String(hit.section ?? '')}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </article>
-
-        {/* Retrieval & Reranker */}
-        <article className="wtp-card">
-          <div className="wtp-card-header">
-            <span className="wtp-card-title">Retrieval · 검색</span>
-            <span className="wtp-card-meta">
-              {asNumber(plan.decomposed_query_count) ? `subq ${plan.decomposed_query_count}` : 'single q'}
-            </span>
-          </div>
-          <div className="wtp-metric-row">
-            <span>BM25 <strong>{asNumber(asRecord(metrics.bm25).count) ?? 0}</strong></span>
-            <span>Vector <strong>{asNumber(asRecord(metrics.vector).count) ?? 0}</strong></span>
-            <span>Hybrid <strong>{asNumber(asRecord(metrics.hybrid).count) ?? 0}</strong></span>
-            <span>Reranked <strong>{asNumber(asRecord(metrics.reranked).count) ?? 0}</strong></span>
-          </div>
-          {reranker.applied ? (
-            <div className="wtp-rerank">
-              <div className="wtp-rerank-top">
-                {String(reranker.top1_before ?? '?')}
-                <span className="wtp-rerank-arrow">→</span>
-                <strong>{String(reranker.top1_after ?? '?')}</strong>
-                <span className="wtp-card-meta">
-                  {reranker.top1_changed ? 'changed' : 'unchanged'}
-                </span>
-              </div>
-              {asArray(reranker.rebalance_reasons).length > 0 ? (
-                <div className="wtp-rerank-reasons">
-                  {asArray(reranker.rebalance_reasons).slice(0, 6).map((reason, i) => (
-                    <span key={`${String(reason)}-${i}`} className="wtp-reason-chip">
-                      {String(reason)}
-                    </span>
                   ))}
                 </div>
               ) : null}
+            </article>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* --- Stage timeline ------------------------------------------ */}
+          <div className="wtp-timeline-wrap">
+            <div className="wtp-timeline-head">
+              <span className="wtp-section-title">
+                Pipeline <strong>{timelineStages.length}/{TIMELINE_STEPS.length} stages</strong>
+              </span>
+              {isSending ? (
+                <span className="wtp-pill" data-tone="info" aria-live="polite">
+                  <span className="wtp-pulse" aria-hidden="true" /> 스트리밍 중…
+                </span>
+              ) : null}
             </div>
-          ) : (
-            <p>리랭커 비활성 또는 미적용.</p>
-          )}
-        </article>
 
-        {/* Generation */}
-        <article className="wtp-card">
-          <div className="wtp-card-header">
-            <span className="wtp-card-title">Generation · 생성</span>
-            <span className="wtp-card-meta">
-              {formatMs(timings.llm_generate_total ?? timings.deterministic_total)}
-            </span>
-          </div>
-          <h3>
-            {String(llm.last_provider ?? llm.preferred_provider ?? (stageMap.has('deterministic_answer') ? 'Deterministic (rule)' : 'pending'))}
-          </h3>
-          <div className="wtp-metric-row">
-            <span>Fallback <strong>{llm.last_fallback_used ? 'used' : 'no'}</strong></span>
-            <span>
-              Attempted <strong>{asArray(llm.last_attempted_providers).length || (llm.last_provider ? 1 : 0)}</strong>
-            </span>
-          </div>
-          {asArray(llm.last_attempted_providers).length > 1 ? (
-            <p>경로: {asArray(llm.last_attempted_providers).map(String).join(' → ')}</p>
-          ) : null}
-        </article>
-
-        {/* Product Gate */}
-        <article className="wtp-card">
-          <div className="wtp-card-header">
-            <span className="wtp-card-title">Product Gate · 계약 채점</span>
-            <span className="wtp-card-meta">
-              {scorecardSummary.pass}/{scorecardSummary.pass + scorecardSummary.fail} pass
-              {scorecardSummary.na > 0 ? ` · ${scorecardSummary.na} n/a` : ''}
-            </span>
-          </div>
-          <div className="wtp-scorecard">
-            {scorecard.map((item) => (
-              <div key={item.id} className="wtp-scoreitem" data-outcome={item.outcome}>
-                <span className="wtp-score-icon" aria-hidden="true">
-                  <ScoreIcon outcome={item.outcome} />
-                </span>
-                <span className="wtp-score-body">
-                  <span className="wtp-score-label">
-                    <span className="wtp-score-id">{item.id}</span>
-                    {item.label}
-                  </span>
-                  <span className="wtp-score-rationale" title={item.question}>
-                    {item.rationale}
-                  </span>
-                </span>
-                <span className="wtp-score-mode">{item.mode}</span>
+            {timelineStages.length === 0 ? (
+              <div className="wtp-empty">
+                <strong>대기 중</strong>
+                <span>질문을 보내면 백엔드 트레이스가 단계별로 채워집니다.</span>
               </div>
-            ))}
+            ) : (
+              <div className="wtp-timeline">
+                {timelineStages.map((stage) => (
+                  <button
+                    key={stage.step}
+                    type="button"
+                    className="wtp-stage"
+                    data-status={stage.status}
+                    data-active={selectedStep === stage.step}
+                    style={{ width: stageWidthFor(stage.durationMs, maxDuration) }}
+                    onClick={() => toggleStage(stage.step)}
+                    aria-pressed={selectedStep === stage.step}
+                    aria-label={`${stage.label} ${stage.status} ${formatMs(stage.durationMs)}`}
+                  >
+                    <span className="wtp-stage-top">
+                      <span className="wtp-stage-status" aria-hidden="true" />
+                      <span className="wtp-stage-time">{formatMs(stage.durationMs)}</span>
+                    </span>
+                    <span className="wtp-stage-label">{stage.label}</span>
+                    <span className="wtp-stage-bar" aria-hidden="true">
+                      <span
+                        style={{
+                          width: `${Math.min(100, Math.max(8, ((stage.durationMs ?? 0) / Math.max(1, maxDuration)) * 100))}%`,
+                        }}
+                      />
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {selectedStep ? (() => {
+              const stage = stageMap.get(selectedStep);
+              if (!stage) return null;
+              const metaEntries = Object.entries(stage.meta);
+              return (
+                <div className="wtp-stage-detail">
+                  <div className="wtp-stage-detail-title">{stage.step} · {stage.status}</div>
+                  {stage.detail ? <div style={{ marginBottom: 10, color: '#f0f4fa' }}>{stage.detail}</div> : null}
+                  {metaEntries.length === 0 ? (
+                    <div className="wtp-stage-detail-empty">메타 데이터 없음</div>
+                  ) : (
+                    <dl className="wtp-stage-detail-body">
+                      {metaEntries.map(([key, value]) => (
+                        <Fragment key={key}>
+                          <dt>{key}</dt>
+                          <dd>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</dd>
+                        </Fragment>
+                      ))}
+                    </dl>
+                  )}
+                </div>
+              );
+            })() : null}
           </div>
-          <div className="wtp-score-summary">
-            <strong>
-              {scorecardSummary.passRate === null
-                ? '평가 대기'
-                : `${Math.round(scorecardSummary.passRate * 100)}% pass`}
-            </strong>
-            <span>· product gate ≥ 90% (5턴 누적)</span>
+
+          {/* --- Cards ----------------------------------------------------- */}
+          <div className="wtp-grid">
+            {/* Citations */}
+            <article className="wtp-card">
+              <div className="wtp-card-header">
+                <span className="wtp-card-title">Citations · 근거</span>
+                <span className="wtp-card-meta">selected {selectedHits.length}</span>
+              </div>
+              {selectedHits.length === 0 ? (
+                <p>아직 선택된 근거가 없습니다.</p>
+              ) : (
+                <div className="wtp-citations">
+                  {selectedHits.slice(0, 3).map((hit, idx) => {
+                    const matchingCitation = (result?.citations ?? []).find(
+                      (c) => c.book_slug === hit.book_slug && (c.section_path ?? c.section) === hit.section,
+                    );
+                    const lane = (matchingCitation?.source_lane ?? 'official').toLowerCase();
+                    return (
+                      <div key={`${hit.book_slug}-${idx}`} className="wtp-citation">
+                        <div className="wtp-citation-top">
+                          <span className="wtp-citation-index">#{idx + 1}</span>
+                          <span className="wtp-citation-book">{String(hit.book_slug ?? 'unknown')}</span>
+                          <span className="wtp-lane-badge" data-lane={lane}>
+                            {lane}
+                          </span>
+                          <span className="wtp-citation-score">
+                            score {asNumber(hit.fused_score)?.toFixed(3) ?? '–'}
+                          </span>
+                        </div>
+                        <span className="wtp-citation-section">{String(hit.section ?? '')}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </article>
+
+            {/* Retrieval & Reranker */}
+            <article className="wtp-card">
+              <div className="wtp-card-header">
+                <span className="wtp-card-title">Retrieval · 검색</span>
+                <span className="wtp-card-meta">
+                  {asNumber(plan.decomposed_query_count) ? `subq ${plan.decomposed_query_count}` : 'single q'}
+                </span>
+              </div>
+              <div className="wtp-metric-row">
+                <span>BM25 <strong>{asNumber(asRecord(metrics.bm25).count) ?? 0}</strong></span>
+                <span>Vector <strong>{asNumber(asRecord(metrics.vector).count) ?? 0}</strong></span>
+                <span>Hybrid <strong>{asNumber(asRecord(metrics.hybrid).count) ?? 0}</strong></span>
+                <span>Reranked <strong>{asNumber(asRecord(metrics.reranked).count) ?? 0}</strong></span>
+              </div>
+              {reranker.applied ? (
+                <div className="wtp-rerank">
+                  <div className="wtp-rerank-top">
+                    {String(reranker.top1_before ?? '?')}
+                    <span className="wtp-rerank-arrow">→</span>
+                    <strong>{String(reranker.top1_after ?? '?')}</strong>
+                    <span className="wtp-card-meta">
+                      {reranker.top1_changed ? 'changed' : 'unchanged'}
+                    </span>
+                  </div>
+                  {asArray(reranker.rebalance_reasons).length > 0 ? (
+                    <div className="wtp-rerank-reasons">
+                      {asArray(reranker.rebalance_reasons).slice(0, 6).map((reason, i) => (
+                        <span key={`${String(reason)}-${i}`} className="wtp-reason-chip">
+                          {String(reason)}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <p>리랭커 비활성 또는 미적용.</p>
+              )}
+            </article>
+
+            {/* Generation */}
+            <article className="wtp-card">
+              <div className="wtp-card-header">
+                <span className="wtp-card-title">Generation · 생성</span>
+                <span className="wtp-card-meta">
+                  {formatMs(timings.llm_generate_total ?? timings.deterministic_total)}
+                </span>
+              </div>
+              <h3>
+                {String(llm.last_provider ?? llm.preferred_provider ?? (stageMap.has('deterministic_answer') ? 'Deterministic (rule)' : 'pending'))}
+              </h3>
+              <div className="wtp-metric-row">
+                <span>Fallback <strong>{llm.last_fallback_used ? 'used' : 'no'}</strong></span>
+                <span>
+                  Attempted <strong>{asArray(llm.last_attempted_providers).length || (llm.last_provider ? 1 : 0)}</strong>
+                </span>
+              </div>
+              {asArray(llm.last_attempted_providers).length > 1 ? (
+                <p>경로: {asArray(llm.last_attempted_providers).map(String).join(' → ')}</p>
+              ) : null}
+            </article>
+
+            {/* Product Gate */}
+            <article className="wtp-card">
+              <div className="wtp-card-header">
+                <span className="wtp-card-title">Product Gate · 계약 채점</span>
+                <span className="wtp-card-meta">
+                  {scorecardSummary.pass}/{scorecardSummary.pass + scorecardSummary.fail} pass
+                  {scorecardSummary.na > 0 ? ` · ${scorecardSummary.na} n/a` : ''}
+                </span>
+              </div>
+              <div className="wtp-scorecard">
+                {scorecard.map((item) => (
+                  <div key={item.id} className="wtp-scoreitem" data-outcome={item.outcome}>
+                    <span className="wtp-score-icon" aria-hidden="true">
+                      <ScoreIcon outcome={item.outcome} />
+                    </span>
+                    <span className="wtp-score-body">
+                      <span className="wtp-score-label">
+                        <span className="wtp-score-id">{item.id}</span>
+                        {item.label}
+                      </span>
+                      <span className="wtp-score-rationale" title={item.question}>
+                        {item.rationale}
+                      </span>
+                    </span>
+                    <span className="wtp-score-mode">{item.mode}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="wtp-score-summary">
+                <strong>
+                  {scorecardSummary.passRate === null
+                    ? '평가 대기'
+                    : `${Math.round(scorecardSummary.passRate * 100)}% pass`}
+                </strong>
+                <span>· product gate ≥ 90% (5턴 누적)</span>
+              </div>
+            </article>
           </div>
-        </article>
-      </div>
+        </>
+      )}
 
       {/* --- Forensic view ------------------------------------------- */}
       {view === 'forensic' ? (

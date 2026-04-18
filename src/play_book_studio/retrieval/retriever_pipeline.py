@@ -6,6 +6,7 @@ import time
 from functools import lru_cache
 from pathlib import Path
 
+from .intake_overlay import has_active_customer_pack_selection
 from .models import RetrievalHit, RetrievalResult, SessionContext
 from .retriever_plan import build_retrieval_plan
 from .retriever_rerank import maybe_rerank_hits
@@ -56,8 +57,14 @@ def _preserve_uploaded_customer_pack_candidate(
     *,
     hybrid_hits: list[RetrievalHit],
     overlay_hits: list[RetrievalHit],
+    context: SessionContext | None,
 ) -> list[RetrievalHit]:
-    if not _is_customer_pack_explicit_query(query) or not overlay_hits:
+    if not overlay_hits:
+        return hybrid_hits
+    if not (
+        _is_customer_pack_explicit_query(query)
+        or has_active_customer_pack_selection(context)
+    ):
         return hybrid_hits
 
     uploaded_sources: list[tuple[str, int, RetrievalHit]] = [
@@ -326,6 +333,7 @@ def execute_retrieval_pipeline(
     if use_vector:
         vector_search = search_vector_candidates(
             retriever,
+            context=context,
             rewritten_queries=plan.rewritten_queries,
             effective_candidate_k=effective_candidate_k,
             trace_callback=trace_callback,
@@ -361,6 +369,7 @@ def execute_retrieval_pipeline(
         plan.rewritten_query,
         hybrid_hits=hybrid_hits,
         overlay_hits=overlay_bm25_hits,
+        context=context,
     )
     hybrid_hits = _filter_latest_only_hits(retriever, hybrid_hits)
     timings_ms["fusion"] = _duration_ms(fusion_started_at)
@@ -439,6 +448,7 @@ def execute_retrieval_pipeline(
         plan.rewritten_query,
         hybrid_hits=graph_enriched_hits,
         overlay_hits=overlay_bm25_hits,
+        context=context,
     )
     graph_enriched_hits = _filter_latest_only_hits(retriever, graph_enriched_hits)
     hits, reranker_trace = maybe_rerank_hits(

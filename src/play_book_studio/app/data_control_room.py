@@ -978,6 +978,15 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
         if str(book.get("source_type") or "").strip() not in DATA_CONTROL_ROOM_DERIVED_PLAYBOOK_SOURCE_TYPE_SET
         and str(book.get("book_slug") or "").strip() not in manifest_slugs
     ]
+    user_library_books = _apply_viewer_path_fallback(
+        [
+            book
+            for book in extra_manualbooks
+            if str(book.get("boundary_truth") or "").strip() == "private_customer_pack_runtime"
+            or str(book.get("source_lane") or "").strip() == "customer_source_first_pack"
+        ],
+        root=root,
+    )
     customer_pack_runtime_books = _apply_viewer_path_fallback(
         [
             book
@@ -1149,6 +1158,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
             "manualbook_count": len(materialized_core_manualbook_slugs),
             "core_manualbook_count": len(materialized_core_manualbook_slugs),
             "customer_pack_runtime_book_count": len(customer_pack_runtime_books),
+            "user_library_book_count": len(user_library_books),
             "gold_candidate_book_count": len(gold_candidate_books.get("books") or []),
             "approved_wiki_runtime_book_count": len(approved_wiki_runtime_books.get("books") or []),
             "wiki_navigation_backlog_count": len(navigation_backlog.get("books") or []),
@@ -1246,6 +1256,10 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
             "selected_dir": str(settings.customer_pack_books_dir.resolve()),
             "books": customer_pack_runtime_books,
         },
+        "user_library_books": {
+            "selected_dir": str(settings.customer_pack_books_dir.resolve()),
+            "books": user_library_books,
+        },
         "gold_candidate_books": gold_candidate_books,
         "approved_wiki_runtime_books": approved_wiki_runtime_books,
         "wiki_navigation_backlog": navigation_backlog,
@@ -1285,6 +1299,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
             "manualbook_book_count": len(core_manualbooks),
             "core_manualbook_book_count": len(core_manualbooks),
             "customer_pack_runtime_book_count": len(customer_pack_runtime_books),
+            "user_library_book_count": len(user_library_books),
             "topic_playbook_book_count": len(topic_playbooks),
             "operation_playbook_book_count": len(operation_playbooks),
             "troubleshooting_playbook_book_count": len(troubleshooting_playbooks),

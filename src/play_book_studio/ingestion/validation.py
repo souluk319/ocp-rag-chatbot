@@ -10,6 +10,7 @@ import requests
 from play_book_studio.config.settings import Settings
 
 from .manifest import read_manifest
+from .topic_playbooks import build_expected_derived_playbook_outputs
 
 
 HANGUL_RE = re.compile(r"[가-힣]")
@@ -236,13 +237,20 @@ def build_validation_report(
     settings: Settings,
     *,
     expected_process_subset: str = "high-value",
+    artifact_expectation_mode: str = "runtime_baseline",
     include_qdrant_id_check: bool = True,
 ) -> dict:
     manifest_payload = json.loads(settings.source_manifest_path.read_text(encoding="utf-8"))
     manifest_rows = list(manifest_payload.get("entries", []))
     manifest = read_manifest(settings.source_manifest_path)
-    expected_slugs = _expected_subset_slugs(manifest, expected_process_subset)
-    expected_slug_set = set(expected_slugs)
+    expected_source_slugs = _expected_subset_slugs(manifest, expected_process_subset)
+    expected_source_slug_set = set(expected_source_slugs)
+    expected_derived_outputs = build_expected_derived_playbook_outputs(settings)
+    expected_derived_slugs = list(expected_derived_outputs.get("generated_slugs", []))
+    if artifact_expectation_mode == "source_subset":
+        expected_artifact_slug_set = set(expected_source_slugs)
+    else:
+        expected_artifact_slug_set = set(expected_source_slugs) | set(expected_derived_slugs)
 
     raw_html_files = sorted(settings.raw_html_dir.glob("*.html"))
     raw_html_slugs = {path.stem for path in raw_html_files}
@@ -405,8 +413,8 @@ def build_validation_report(
         1 for row in chunks if NOISE_SECTION_RE.match(str(row["section"]).strip())
     )
 
-    missing_expected_books = sorted(expected_slug_set - chunk_book_set)
-    unexpected_books = sorted(chunk_book_set - expected_slug_set)
+    missing_expected_books = sorted(expected_artifact_slug_set - chunk_book_set)
+    unexpected_books = sorted(chunk_book_set - expected_artifact_slug_set)
 
     qdrant_missing_ids = None
     qdrant_extra_ids = None
@@ -419,11 +427,14 @@ def build_validation_report(
 
     return {
         "expected_process_subset": expected_process_subset,
+        "artifact_expectation_mode": artifact_expectation_mode,
         "manifest_count": len(manifest),
         "manifest_high_value_count": sum(1 for entry in manifest if entry.high_value),
-        "expected_book_count": len(expected_slugs),
+        "expected_book_count": len(expected_artifact_slug_set),
+        "expected_source_book_count": len(expected_source_slug_set),
+        "expected_derived_book_count": len(expected_derived_slugs),
         "raw_html_count": len(raw_html_files),
-        "raw_html_expected_subset_count": len(raw_html_slugs & expected_slug_set),
+        "raw_html_expected_subset_count": len(raw_html_slugs & expected_source_slug_set),
         "normalized_doc_count": len(normalized_docs),
         "normalized_book_count": len(normalized_book_set),
         "chunk_count": len(chunks),
@@ -447,6 +458,7 @@ def build_validation_report(
         "legal_notice_sections": legal_sections,
         "legal_notice_chunks": legal_chunks,
         "missing_expected_books": missing_expected_books,
+        "expected_derived_missing_sources": list(expected_derived_outputs.get("missing_sources", [])),
         "unexpected_books": unexpected_books,
         "low_hangul_books": low_hangul_books,
         "manifest_missing_metadata_rows": manifest_missing_rows,
@@ -479,12 +491,12 @@ def build_validation_report(
             },
         },
         "checks": {
-            "raw_html_covers_expected_subset": len(raw_html_slugs & expected_slug_set) == len(expected_slug_set),
+            "raw_html_covers_expected_subset": len(raw_html_slugs & expected_source_slug_set) == len(expected_source_slug_set),
             "artifact_books_match_expected_subset": (
-                normalized_book_set == expected_slug_set
-                and chunk_book_set == expected_slug_set
-                and bm25_book_set == expected_slug_set
-                and playbook_book_set == expected_slug_set
+                normalized_book_set == expected_artifact_slug_set
+                and chunk_book_set == expected_artifact_slug_set
+                and bm25_book_set == expected_artifact_slug_set
+                and playbook_book_set == expected_artifact_slug_set
             ),
             "chunks_have_unique_ids": unique_chunk_ids == len(chunks),
             "bm25_matches_chunks": len(bm25_rows) == len(chunks) and missing_bm25_ids == 0,

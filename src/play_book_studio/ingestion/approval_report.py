@@ -333,6 +333,8 @@ def _runtime_manifest_with_translation_overlay(settings) -> list[SourceManifestE
     if approved_manifest_path is not None and Path(approved_manifest_path).exists():
         for entry in read_manifest(Path(approved_manifest_path)):
             overlay_map[_entry_identity(entry)] = entry
+    for entry in _approved_manual_synthesis_entries_from_playbooks(settings):
+        overlay_map.setdefault(_entry_identity(entry), entry)
 
     if not overlay_map:
         return manifest

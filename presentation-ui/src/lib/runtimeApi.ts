@@ -1,5 +1,6 @@
 export const RUNTIME_ORIGIN = (import.meta.env.VITE_RUNTIME_ORIGIN ?? '').trim().replace(/\/$/, '');
 export const RUNTIME_EXTERNAL_ORIGIN = RUNTIME_ORIGIN || 'http://127.0.0.1:8765';
+export const CUSTOMER_PACK_UPLOAD_ACCEPT = '.pdf,.md,.markdown,.docx,.pptx,.xlsx,.txt,.adoc,.asciidoc,.html,.htm,.png,.jpg,.jpeg,.webp';
 
 export interface LibraryBook {
   book_slug: string;
@@ -80,6 +81,7 @@ export interface DataControlRoomSummary {
   gold_book_count: number;
   manualbook_count: number;
   customer_pack_runtime_book_count?: number;
+  user_library_book_count?: number;
   gold_candidate_book_count?: number;
   approved_wiki_runtime_book_count?: number;
   wiki_navigation_backlog_count?: number;
@@ -124,6 +126,7 @@ export interface DataControlRoomResponse {
   gold_books: LibraryBook[];
   manualbooks: LibraryBucket;
   customer_pack_runtime_books?: LibraryBucket;
+  user_library_books?: LibraryBucket;
   gold_candidate_books?: LibraryBucket;
   approved_wiki_runtime_books?: LibraryBucket;
   wiki_navigation_backlog?: LibraryBucket;
@@ -853,6 +856,9 @@ function inferSourceType(file: File): string {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
   if (['md', 'markdown'].includes(extension)) {
     return 'md';
+  }
+  if (['html', 'htm'].includes(extension)) {
+    return 'web';
   }
   if (['adoc', 'asciidoc'].includes(extension)) {
     return 'asciidoc';

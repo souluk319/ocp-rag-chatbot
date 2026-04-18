@@ -650,12 +650,19 @@ def _family_summary(
     }
 
 
-def materialize_derived_playbooks(settings: Settings) -> dict[str, Any]:
-    rows = _read_jsonl_rows(settings.playbook_documents_path)
-    existing_derived_slugs = _existing_derived_slugs(settings, rows)
+def build_expected_derived_playbook_outputs(
+    settings: Settings,
+    *,
+    rows: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    source_rows = (
+        [dict(row) for row in rows]
+        if rows is not None
+        else _read_jsonl_rows(settings.playbook_documents_path)
+    )
     retained_rows = [
         row
-        for row in rows
+        for row in source_rows
         if not _is_derived_playbook_row(row)
     ]
     source_payloads = _resolved_source_payloads(settings, retained_rows)
@@ -674,6 +681,23 @@ def materialize_derived_playbooks(settings: Settings) -> dict[str, Any]:
             continue
         generated_rows.append(derived_payload)
         generated_slugs.append(spec.derived_slug)
+
+    return {
+        "retained_rows": retained_rows,
+        "generated_rows": generated_rows,
+        "generated_slugs": sorted(generated_slugs),
+        "missing_sources": sorted(set(missing_sources)),
+    }
+
+
+def materialize_derived_playbooks(settings: Settings) -> dict[str, Any]:
+    rows = _read_jsonl_rows(settings.playbook_documents_path)
+    existing_derived_slugs = _existing_derived_slugs(settings, rows)
+    expected_outputs = build_expected_derived_playbook_outputs(settings, rows=rows)
+    retained_rows = list(expected_outputs["retained_rows"])
+    generated_rows = list(expected_outputs["generated_rows"])
+    generated_slugs = list(expected_outputs["generated_slugs"])
+    missing_sources = list(expected_outputs["missing_sources"])
 
     _write_jsonl_rows(
         settings.playbook_documents_path,

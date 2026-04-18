@@ -10,6 +10,14 @@ SourceType = Literal["web", "pdf", "md", "asciidoc", "txt", "docx", "pptx", "xls
 SupportStatus = Literal["supported", "staged", "rejected"]
 
 
+def _default_private_access_groups(tenant_id: str, workspace_id: str) -> tuple[str, ...]:
+    values = [
+        str(workspace_id or "").strip(),
+        str(tenant_id or "").strip(),
+    ]
+    return tuple(item for item in values if item)
+
+
 @dataclass(slots=True)
 class DocSourceRequest:
     source_type: SourceType
@@ -242,13 +250,29 @@ class CustomerPackDraftRecord:
     parser_version: str = ""
     ocr_used: bool = False
     extraction_confidence: float = 0.0
+    degraded_pdf: bool = False
+    degraded_reason: str = ""
+    fallback_used: bool = False
+    fallback_backend: str = ""
+    fallback_status: str = ""
+    fallback_reason: str = ""
     tenant_id: str = "default-tenant"
     workspace_id: str = "default-workspace"
+    classification: str = "private"
+    access_groups: tuple[str, ...] = field(
+        default_factory=lambda: _default_private_access_groups("default-tenant", "default-workspace")
+    )
+    provider_egress_policy: str = "local_only"
     approval_state: str = "unreviewed"
     publication_state: str = "draft"
+    redaction_state: str = "raw"
     capture_error: str = ""
     canonical_book_path: str = ""
     normalized_section_count: int = 0
+    private_corpus_manifest_path: str = ""
+    private_corpus_status: str = ""
+    private_corpus_chunk_count: int = 0
+    private_corpus_vector_status: str = ""
     normalize_error: str = ""
 
     def to_dict(self) -> dict[str, object]:
@@ -284,13 +308,27 @@ class CustomerPackDraftRecord:
             "parser_version": self.parser_version,
             "ocr_used": self.ocr_used,
             "extraction_confidence": self.extraction_confidence,
+            "degraded_pdf": self.degraded_pdf,
+            "degraded_reason": self.degraded_reason,
+            "fallback_used": self.fallback_used,
+            "fallback_backend": self.fallback_backend,
+            "fallback_status": self.fallback_status,
+            "fallback_reason": self.fallback_reason,
             "tenant_id": self.tenant_id,
             "workspace_id": self.workspace_id,
+            "classification": self.classification,
+            "access_groups": list(self.access_groups),
+            "provider_egress_policy": self.provider_egress_policy,
             "approval_state": self.approval_state,
             "publication_state": self.publication_state,
+            "redaction_state": self.redaction_state,
             "capture_error": self.capture_error,
             "canonical_book_path": self.canonical_book_path,
             "normalized_section_count": self.normalized_section_count,
+            "private_corpus_manifest_path": self.private_corpus_manifest_path,
+            "private_corpus_status": self.private_corpus_status,
+            "private_corpus_chunk_count": self.private_corpus_chunk_count,
+            "private_corpus_vector_status": self.private_corpus_vector_status,
             "normalize_error": self.normalize_error,
         }
 
@@ -325,13 +363,27 @@ class CustomerPackDraftRecord:
             "parser_version": self.parser_version,
             "ocr_used": self.ocr_used,
             "extraction_confidence": self.extraction_confidence,
+            "degraded_pdf": self.degraded_pdf,
+            "degraded_reason": self.degraded_reason,
+            "fallback_used": self.fallback_used,
+            "fallback_backend": self.fallback_backend,
+            "fallback_status": self.fallback_status,
+            "fallback_reason": self.fallback_reason,
             "tenant_id": self.tenant_id,
             "workspace_id": self.workspace_id,
+            "classification": self.classification,
+            "access_groups": list(self.access_groups),
+            "provider_egress_policy": self.provider_egress_policy,
             "approval_state": self.approval_state,
             "publication_state": self.publication_state,
+            "redaction_state": self.redaction_state,
             "capture_error": self.capture_error,
             "canonical_book_path": self.canonical_book_path,
             "normalized_section_count": self.normalized_section_count,
+            "private_corpus_manifest_path": self.private_corpus_manifest_path,
+            "private_corpus_status": self.private_corpus_status,
+            "private_corpus_chunk_count": self.private_corpus_chunk_count,
+            "private_corpus_vector_status": self.private_corpus_vector_status,
             "normalize_error": self.normalize_error,
         }
 
@@ -383,12 +435,36 @@ class CustomerPackDraftRecord:
             parser_version=str(payload.get("parser_version") or "").strip(),
             ocr_used=bool(payload.get("ocr_used") or False),
             extraction_confidence=float(payload.get("extraction_confidence") or 0.0),
+            degraded_pdf=bool(payload.get("degraded_pdf") or False),
+            degraded_reason=str(payload.get("degraded_reason") or "").strip(),
+            fallback_used=bool(payload.get("fallback_used") or False),
+            fallback_backend=str(payload.get("fallback_backend") or "").strip(),
+            fallback_status=str(payload.get("fallback_status") or "").strip(),
+            fallback_reason=str(payload.get("fallback_reason") or "").strip(),
             tenant_id=str(payload.get("tenant_id") or "default-tenant").strip() or "default-tenant",
             workspace_id=str(payload.get("workspace_id") or "default-workspace").strip() or "default-workspace",
+            classification=str(payload.get("classification") or "private").strip() or "private",
+            access_groups=tuple(
+                str(item).strip()
+                for item in (
+                    payload.get("access_groups")
+                    or _default_private_access_groups(
+                        str(payload.get("tenant_id") or "default-tenant"),
+                        str(payload.get("workspace_id") or "default-workspace"),
+                    )
+                )
+                if str(item).strip()
+            ),
+            provider_egress_policy=str(payload.get("provider_egress_policy") or "local_only").strip() or "local_only",
             approval_state=str(payload.get("approval_state") or "unreviewed").strip() or "unreviewed",
             publication_state=str(payload.get("publication_state") or "draft").strip() or "draft",
+            redaction_state=str(payload.get("redaction_state") or "raw").strip() or "raw",
             capture_error=str(payload.get("capture_error") or "").strip(),
             canonical_book_path=str(payload.get("canonical_book_path") or "").strip(),
             normalized_section_count=int(payload.get("normalized_section_count") or 0),
+            private_corpus_manifest_path=str(payload.get("private_corpus_manifest_path") or "").strip(),
+            private_corpus_status=str(payload.get("private_corpus_status") or "").strip(),
+            private_corpus_chunk_count=int(payload.get("private_corpus_chunk_count") or 0),
+            private_corpus_vector_status=str(payload.get("private_corpus_vector_status") or "").strip(),
             normalize_error=str(payload.get("normalize_error") or "").strip(),
         )

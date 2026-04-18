@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { Group, Panel, Separator, usePanelRef, useDefaultLayout } from 'react-resizable-panels';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
-  Upload,
   FileText,
   ChevronDown,
   ChevronRight,
@@ -14,7 +13,6 @@ import {
   Sparkles,
   Bot,
   Link as LinkIcon,
-  Languages,
   LogOut,
   Settings,
   Plus,
@@ -33,10 +31,10 @@ import gsap from 'gsap';
 import './WorkspacePage.css';
 import ViewerDocumentStage, { type ViewerDocumentPayload } from '../components/ViewerDocumentStage';
 import {
+  CUSTOMER_PACK_UPLOAD_ACCEPT,
   type ChatResponse,
   type ChatCitation,
   type ChatRelatedLink,
-  type ChatTraceEvent,
   type CustomerPackBook,
   type CustomerPackDraft,
   type DerivedAsset,
@@ -73,59 +71,14 @@ import {
 import { WIKI_VISION_MODES, loadStoredVisionMode, persistVisionMode, type VisionMode } from '../lib/wikiVision';
 import { resolveWorkspaceSourceBooks } from '../lib/workspaceSourceCatalog';
 import WorkspaceTracePanel from '../components/WorkspaceTracePanel';
-
-type WorkspaceManualBook = LibraryBook & {
-  library_group?: string;
-  library_group_label?: string;
-  family?: string;
-  family_label?: string;
-};
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  citations?: ChatCitation[];
-  suggestedQueries?: string[];
-  relatedLinks?: ChatRelatedLink[];
-  relatedSections?: ChatRelatedLink[];
-  responseKind?: string;
-  acquisition?: {
-    kind: string;
-    title: string;
-    body: string;
-    checkbox_label: string;
-    confirm_label: string;
-    repository_query: string;
-  };
-  primarySourceLane?: string;
-  primaryBoundaryTruth?: string;
-  primaryRuntimeTruthLabel?: string;
-  primaryBoundaryBadge?: string;
-  primaryPublicationState?: string;
-  primaryApprovalState?: string;
-  rewrittenQuery?: string;
-  retrievalTrace?: Record<string, unknown>;
-  pipelineTrace?: Record<string, unknown>;
-  traceEvents?: ChatTraceEvent[];
-}
-
-interface WorkspaceTestTrace {
-  query: string;
-  sessionId: string;
-  events: ChatTraceEvent[];
-  result?: ChatResponse | null;
-}
-
-interface SourceEntry {
-  id: string;
-  kind: 'manual' | 'draft';
-  name: string;
-  meta: string;
-  viewerPath?: string;
-  book?: LibraryBook;
-  draft?: CustomerPackDraft;
-}
+import WorkspaceHeader from './workspace/WorkspaceHeader';
+import WorkspaceViewerPanel from './workspace/WorkspaceViewerPanel';
+import type {
+  Message,
+  SourceEntry,
+  WorkspaceManualBook,
+  WorkspaceTestTrace,
+} from './workspaceTypes';
 
 interface OverlayTargetDescriptor {
   kind: WikiOverlayTargetKind;
@@ -2624,68 +2577,31 @@ export default function WorkspacePage() {
     : preview.kind === 'viewer'
       ? (visionMode === 'guided_tour' ? 'Guided Tour Viewer' : 'Wiki Viewer')
       : (visionMode === 'guided_tour' ? 'Guided Tour Document' : 'Document Viewer');
+  const viewerVisionLabel = testMode ? 'TEST' : visionMode === 'guided_tour' ? 'Guided Tour Active' : activeVision.label;
+  const viewerSourcesLabel = visionMode === 'guided_tour' ? 'Tour Sources' : 'Sources';
+  const viewerUploadLabel = isUploading
+    ? (visionMode === 'guided_tour' ? 'Adding source...' : 'Uploading...')
+    : (visionMode === 'guided_tour' ? 'Add Source' : 'Upload Pack');
   return (
     <div className="workspace-wrapper" ref={containerRef} data-lenis-prevent>
       <div className="bokeh-bg bokeh-1"></div>
       <div className="bokeh-bg bokeh-2"></div>
 
-      {/* ── Header ── */}
-      <header className="workspace-nav">
-        <div className="nav-left">
-          <Link to="/" className="nav-logo-link">
-            <div className="logo-icon">
-              <Sparkles size={20} />
-            </div>
-          </Link>
-          <span className="logo-text">Playbook Studio</span>
-          <span className="header-divider">|</span>
-          <div className="pack-selector-wrapper">
-            <button
-              className="pack-selector-trigger"
-              type="button"
-              onClick={() => setPackDropdownOpen((prev) => !prev)}
-            >
-              <span>{packLabel}</span>
-              <ChevronDown size={14} className={`pack-chevron ${packDropdownOpen ? 'open' : ''}`} />
-            </button>
-            {packDropdownOpen && (
-              <div className="pack-dropdown">
-                {PACK_OPTIONS.map((label) => (
-                  <button
-                    key={label}
-                    type="button"
-                    className={`pack-dropdown-item ${label === packLabel ? 'active' : ''}`}
-                    onClick={() => {
-                      setPackLabel(label);
-                      setPackDropdownOpen(false);
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="nav-right">
-          <div className="status-indicator" onClick={resetSession} title="Click to start a new session">
-            <div className="status-dot"></div>
-            <span className="session-id-text">{sessionId}</span>
-          </div>
-          <button
-            className={`nav-btn test-mode-btn ${testMode ? 'active' : ''}`}
-            onClick={() => setTestMode((current) => !current)}
-            type="button"
-          >
-            TEST
-          </button>
-          <button className="nav-btn" onClick={() => navigate('/playbook-library')} type="button">Playbook Library</button>
-          <button className="nav-btn lang-btn" type="button">
-            <Languages size={18} />
-            <span>KOR</span>
-          </button>
-        </div>
-      </header>
+      <WorkspaceHeader
+        packDropdownOpen={packDropdownOpen}
+        packLabel={packLabel}
+        packOptions={PACK_OPTIONS}
+        sessionId={sessionId}
+        testMode={testMode}
+        onOpenLibrary={() => navigate('/playbook-library')}
+        onResetSession={resetSession}
+        onSelectPack={(label) => {
+          setPackLabel(label);
+          setPackDropdownOpen(false);
+        }}
+        onTogglePackDropdown={() => setPackDropdownOpen((prev) => !prev)}
+        onToggleTestMode={() => setTestMode((current) => !current)}
+      />
 
       <main className="workspace-content">
         <Group
@@ -3282,307 +3198,258 @@ export default function WorkspacePage() {
           </Separator>
 
           {/* ── Right Panel: Runtime Sources + Overlay ── */}
-          <Panel
-            id="workspace-right"
+          <WorkspaceViewerPanel
             panelRef={rightPanelRef}
-            defaultSize={40}
-            minSize={24}
-            collapsible={true}
-            collapsedSize={0}
-            onResize={(panelSize) => setRightCollapsed(panelSize.asPercentage <= 0.5)}
-            className="workspace-panel-item"
+            rightCollapsed={rightCollapsed}
+            testMode={testMode}
+            viewerSurfaceTitle={viewerSurfaceTitle}
+            viewerVisionLabel={viewerVisionLabel}
+            sourcesDrawerOpen={sourcesDrawerOpen}
+            totalSourceCount={totalSourceCount}
+            visionSourcesLabel={viewerSourcesLabel}
+            visionUploadLabel={viewerUploadLabel}
+            isUploading={isUploading}
+            fileInputRef={fileInputRef}
+            uploadAccept={CUSTOMER_PACK_UPLOAD_ACCEPT}
+            onRightPanelCollapsedChange={setRightCollapsed}
+            onToggleRightPanel={toggleRightPanel}
+            onToggleSourcesDrawer={() => setSourcesDrawerOpen((prev) => !prev)}
+            onTriggerUpload={() => fileInputRef.current?.click()}
+            onUploadSelection={(event) => {
+              void handleUploadSelection(event);
+            }}
+            drawerContent={(
+              <div className="source-list">
+                <div className={`source-section ${collapsedSections.manuals ? 'collapsed' : ''}`}>
+                  <button className="section-header-btn" onClick={() => toggleSection('manuals')} type="button">
+                    <div className="header-label-group">
+                      {collapsedSections.manuals ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                      <span className="list-title">{visionMode === 'guided_tour' ? 'Tour Books' : 'Source Books'}</span>
+                    </div>
+                    <span className="item-count-badge">{manualSources.length}</span>
+                  </button>
+                  {!collapsedSections.manuals && (
+                    <div className="section-items-container">
+                      {manualSources.map((file) => (
+                        <div
+                          key={file.id}
+                          className={`source-item ${activeSourceId === file.id ? 'selected' : ''}`}
+                          onClick={() => { void handleSourceClick(file); }}
+                        >
+                          <div className="item-main">
+                            <FileText size={16} className="file-icon" />
+                            <span className="file-name">{file.name}</span>
+                          </div>
+                          <div className="item-meta">{file.meta}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className={`source-section ${collapsedSections.drafts ? 'collapsed' : ''}`}>
+                  <button className="section-header-btn" onClick={() => toggleSection('drafts')} type="button">
+                    <div className="header-label-group">
+                      {collapsedSections.drafts ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                      <span className="list-title">{visionMode === 'guided_tour' ? 'Added Sources' : 'Customer Packs'}</span>
+                    </div>
+                    <span className="item-count-badge">{draftSources.length}</span>
+                  </button>
+                  {!collapsedSections.drafts && (
+                    <div className="section-items-container">
+                      {draftSources.map((file) => (
+                        <div
+                          key={file.id}
+                          className={`source-item ${activeSourceId === file.id ? 'selected' : ''}`}
+                          onClick={() => { void handleSourceClick(file); }}
+                        >
+                          <div className="item-main">
+                            <FileText size={16} className="file-icon" />
+                            <span className="file-name">{file.name}</span>
+                          </div>
+                          <div className="item-meta">{file.meta}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           >
-            <div className={`panel-inner workspace-viewer-panel no-border-radius-left ${rightCollapsed ? 'panel-collapsed-inner' : ''}`}>
-              <div className={`panel-header ${testMode ? '' : 'viewer-panel-toolbar'}`} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                <div className="panel-header-copy" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px' }}>
-                  {testMode && <div className="header-icon"><BookOpen size={18} /></div>}
-                  <h3 style={{ margin: 0 }}>{viewerSurfaceTitle}</h3>
-                  <span className={`viewer-vision-badge ${testMode ? 'viewer-vision-badge-test' : ''}`} style={{ marginTop: 0 }}>
-                    {testMode ? 'TEST' : visionMode === 'guided_tour' ? 'Guided Tour Active' : activeVision.label}
-                  </span>
-                </div>
-
-                <div className={`viewer-utility-bar ${testMode ? '' : 'viewer-utility-bar-minimal'}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: 0, border: 'none', background: 'transparent' }}>
-                  <button
-                    className={`viewer-utility-btn ${sourcesDrawerOpen ? 'active' : ''}`}
-                    type="button"
-                    onClick={() => setSourcesDrawerOpen((prev) => !prev)}
-                  >
-                    <FileText size={13} />
-                    <span>{visionMode === 'guided_tour' ? `Tour Sources (${totalSourceCount})` : `Sources (${totalSourceCount})`}</span>
-                    <ChevronDown size={11} className={`sources-chevron ${sourcesDrawerOpen ? 'open' : ''}`} />
-                  </button>
-                  <button
-                    className="viewer-utility-btn"
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                  >
-                    <Upload size={13} />
-                    <span>{isUploading ? (visionMode === 'guided_tour' ? 'Adding source...' : 'Uploading...') : (visionMode === 'guided_tour' ? 'Add Source' : 'Upload Pack')}</span>
-                  </button>
-                  <button className="header-action-btn" type="button" onClick={toggleRightPanel} title="Close panel">
-                    <PanelRightClose size={14} />
-                  </button>
-                </div>
-              </div>
-
-              <input
-                ref={fileInputRef}
-                className="file-input-hidden"
-                type="file"
-                onChange={(event) => {
-                  void handleUploadSelection(event);
-                }}
+            {testMode && (
+              <WorkspaceTracePanel
+                query={activeTestTrace?.query ?? query}
+                events={activeTestTrace?.events ?? []}
+                result={activeTestTrace?.result}
+                isSending={isSending}
               />
+            )}
 
-              {/* Sources Drawer — absolute overlay above the viewer */}
-              {sourcesDrawerOpen && (
-                <>
-                  <div
-                    className="sources-drawer-scrim"
-                    onClick={() => setSourcesDrawerOpen(false)}
-                    aria-hidden="true"
-                  />
-                  <div className="sources-drawer-overlay" role="dialog" aria-label="Sources">
-                    <div className="source-list">
-                      <div className={`source-section ${collapsedSections.manuals ? 'collapsed' : ''}`}>
-                        <button className="section-header-btn" onClick={() => toggleSection('manuals')} type="button">
-                          <div className="header-label-group">
-                            {collapsedSections.manuals ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                            <span className="list-title">{visionMode === 'guided_tour' ? 'Tour Books' : 'Source Books'}</span>
-                          </div>
-                          <span className="item-count-badge">{manualSources.length}</span>
-                        </button>
-                        {!collapsedSections.manuals && (
-                          <div className="section-items-container">
-                            {manualSources.map((file) => (
-                              <div
-                                key={file.id}
-                                className={`source-item ${activeSourceId === file.id ? 'selected' : ''}`}
-                                onClick={() => { void handleSourceClick(file); }}
-                              >
-                                <div className="item-main">
-                                  <FileText size={16} className="file-icon" />
-                                  <span className="file-name">{file.name}</span>
-                                </div>
-                                <div className="item-meta">{file.meta}</div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className={`source-section ${collapsedSections.drafts ? 'collapsed' : ''}`}>
-                        <button className="section-header-btn" onClick={() => toggleSection('drafts')} type="button">
-                          <div className="header-label-group">
-                            {collapsedSections.drafts ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                            <span className="list-title">{visionMode === 'guided_tour' ? 'Added Sources' : 'Customer Packs'}</span>
-                          </div>
-                          <span className="item-count-badge">{draftSources.length}</span>
-                        </button>
-                        {!collapsedSections.drafts && (
-                          <div className="section-items-container">
-                            {draftSources.map((file) => (
-                              <div
-                                key={file.id}
-                                className={`source-item ${activeSourceId === file.id ? 'selected' : ''}`}
-                                onClick={() => { void handleSourceClick(file); }}
-                              >
-                                <div className="item-main">
-                                  <FileText size={16} className="file-icon" />
-                                  <span className="file-name">{file.name}</span>
-                                </div>
-                                <div className="item-meta">{file.meta}</div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <div className="source-viewer-content viewer-surface">
-                {testMode && (
-                  <WorkspaceTracePanel
-                    query={activeTestTrace?.query ?? query}
-                    events={activeTestTrace?.events ?? []}
-                    result={activeTestTrace?.result}
-                    isSending={isSending}
-                  />
-                )}
-
-                {!testMode && preview.kind === 'empty' && (
-                  <div className="empty-state">
-                    <div className="empty-icon"><BookOpen size={48} className="text-dim" /></div>
-                    <h4>{visionMode === 'guided_tour' ? '투어 문서를 여세요' : '문서를 선택하세요'}</h4>
-                  </div>
-                )}
-
-                {!testMode && preview.kind === 'loading' && (
-                  <div className="empty-state">
-                    <div className="loading-spinner-small"></div>
-                    <h4>{preview.title}</h4>
-                    <p>{visionMode === 'guided_tour' ? 'Tour is opening' : 'Loading'}</p>
-                  </div>
-                )}
-
-                {!testMode && currentOverlayTarget && (
-                  <div className="reader-stage-rail">
-                    <div className="viewer-stage-topline">
-                      <div className="viewer-stage-actions">
-                        {preview.kind === 'viewer' && preview.meta?.source_url && (
-                          <a href={toRuntimeUrl(preview.meta.source_url)} className="doc-inline-link viewer-stage-link" target="_blank" rel="noreferrer">
-                            원문 열기
-                          </a>
-                        )}
-                        <div className="wiki-overlay-toolbar inline">
-                          <button
-                            type="button"
-                            className={`wiki-overlay-action ${currentFavorite ? 'active' : ''}`}
-                            onClick={() => { void handleToggleFavoriteCurrent(); }}
-                            disabled={isOverlaySaving}
-                            title={currentFavorite ? 'Saved' : 'Save'}
-                          >
-                            <Star size={14} />
-                          </button>
-                          {currentOverlayTarget.kind === 'section' && (
-                            <button
-                              type="button"
-                              className={`wiki-overlay-action ${currentSectionCheck ? 'active' : ''}`}
-                              onClick={() => { void handleToggleSectionCheckCurrent(); }}
-                              disabled={isOverlaySaving}
-                              title={currentSectionCheck ? 'Done' : 'Mark Done'}
-                            >
-                              <Check size={14} />
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            className={`wiki-overlay-action ${noteOpen ? 'active' : ''}`}
-                            onClick={() => setNoteOpen((value) => !value)}
-                            title="Note"
-                          >
-                            <NotebookPen size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    {noteOpen && (
-                      <div className="wiki-note-panel viewer-stage-note-panel">
-                        <textarea
-                          className="wiki-note-input"
-                          value={noteDraft}
-                          onChange={(event) => setNoteDraft(event.target.value)}
-                          placeholder="메모"
-                        />
-                        <div className="wiki-note-actions">
-                          <button
-                            type="button"
-                            className="outline-btn"
-                            onClick={() => { void handleSaveCurrentNote(); }}
-                            disabled={isOverlaySaving}
-                          >
-                            {currentNote ? 'Update Note' : 'Save Note'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {!testMode && preview.kind === 'viewer' && (() => {
-                  return (
-                    <section className="reader-stage animate-in">
-                      {preview.viewerDocument?.html ? (
-                        <ViewerDocumentStage
-                          viewerDocument={preview.viewerDocument}
-                          onNavigateViewerPath={(viewerPath) => {
-                            void openViewerPreview(viewerPath, preview.title);
-                          }}
-                          className="playbook-reader-shadow-host"
-                        />
-                      ) : (
-                        <div className="playbook-reader-empty">문서 본문을 불러오지 못했습니다.</div>
-                      )}
-                    </section>
-                  );
-                })()}
-
-                {!testMode && preview.kind === 'draft' && (() => {
-                  const draftTruth = truthSurfaceCopy(preview.book ?? preview.draft);
-                  return (
-                    <section className="reader-stage reader-stage-draft animate-in">
-                      <div className="doc-header">
-                        <div className="doc-header-text">
-                          <span className="doc-kicker">{draftTruth.label}</span>
-                          <h2>{preview.title}</h2>
-                        </div>
-                      </div>
-                      <p className="doc-summary">{preview.subtitle}</p>
-                      <div className="doc-metadata">
-                        <span>Quality {preview.draft.quality_score}</span>
-                        <span>{preview.draft.playable_asset_count} assets</span>
-                      </div>
-                      {draftTruth.meta.length > 0 && (
-                        <div className="doc-chip-row">
-                          {draftTruth.meta.map((item) => (
-                            <span key={item} className="doc-evidence-chip">{item}</span>
-                          ))}
-                        </div>
-                      )}
-                      {preview.derivedAssets.length > 0 && (
-                        <div className="doc-chip-row">
-                          {preview.derivedAssets.map((asset) => (
-                            <button
-                              key={asset.asset_slug}
-                              className="citation-tag"
-                              onClick={() => handleDerivedAssetOpen(asset)}
-                              type="button"
-                            >
-                              <LinkIcon size={12} />
-                              {asset.family_label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      {preview.viewerDocument?.html ? (
-                        <ViewerDocumentStage
-                          viewerDocument={preview.viewerDocument}
-                          onNavigateViewerPath={(viewerPath) => {
-                            void openViewerPreview(viewerPath, preview.title);
-                          }}
-                          className="playbook-reader-shadow-host"
-                        />
-                      ) : (
-                        <div className="doc-section">
-                          <h4>Status</h4>
-                          <p>{preview.draft.status}</p>
-                        </div>
-                      )}
-                    </section>
-                  );
-                })()}
+            {!testMode && preview.kind === 'empty' && (
+              <div className="empty-state">
+                <div className="empty-icon"><BookOpen size={48} className="text-dim" /></div>
+                <h4>{visionMode === 'guided_tour' ? '투어 문서를 여세요' : '문서를 선택하세요'}</h4>
               </div>
+            )}
 
-              {activeDraft && (
-                <div className="panel-footer viewer-build-actions">
-                  <div className="footer-actions">
-                    <button className="outline-btn" onClick={() => { void handleCapture(); }} type="button" disabled={!canCapture}>
-                      <Cpu size={14} />
-                      <span>{isCapturing ? 'Preparing...' : 'Prepare Pack'}</span>
-                    </button>
-                    <button className="primary-btn" onClick={() => { void handleNormalize(); }} type="button" disabled={!canNormalize}>
-                      <span>{isNormalizing ? 'Saving...' : 'Save to Wiki'}</span>
-                      <ArrowRight size={14} />
-                    </button>
+            {!testMode && preview.kind === 'loading' && (
+              <div className="empty-state">
+                <div className="loading-spinner-small"></div>
+                <h4>{preview.title}</h4>
+                <p>{visionMode === 'guided_tour' ? 'Tour is opening' : 'Loading'}</p>
+              </div>
+            )}
+
+            {!testMode && currentOverlayTarget && (
+              <div className="reader-stage-rail">
+                <div className="viewer-stage-topline">
+                  <div className="viewer-stage-actions">
+                    {preview.kind === 'viewer' && preview.meta?.source_url && (
+                      <a href={toRuntimeUrl(preview.meta.source_url)} className="doc-inline-link viewer-stage-link" target="_blank" rel="noreferrer">
+                        원문 열기
+                      </a>
+                    )}
+                    <div className="wiki-overlay-toolbar inline">
+                      <button
+                        type="button"
+                        className={`wiki-overlay-action ${currentFavorite ? 'active' : ''}`}
+                        onClick={() => { void handleToggleFavoriteCurrent(); }}
+                        disabled={isOverlaySaving}
+                        title={currentFavorite ? 'Saved' : 'Save'}
+                      >
+                        <Star size={14} />
+                      </button>
+                      {currentOverlayTarget.kind === 'section' && (
+                        <button
+                          type="button"
+                          className={`wiki-overlay-action ${currentSectionCheck ? 'active' : ''}`}
+                          onClick={() => { void handleToggleSectionCheckCurrent(); }}
+                          disabled={isOverlaySaving}
+                          title={currentSectionCheck ? 'Done' : 'Mark Done'}
+                        >
+                          <Check size={14} />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className={`wiki-overlay-action ${noteOpen ? 'active' : ''}`}
+                        onClick={() => setNoteOpen((value) => !value)}
+                        title="Note"
+                      >
+                        <NotebookPen size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              )}
-            </div>
-          </Panel>
+                {noteOpen && (
+                  <div className="wiki-note-panel viewer-stage-note-panel">
+                    <textarea
+                      className="wiki-note-input"
+                      value={noteDraft}
+                      onChange={(event) => setNoteDraft(event.target.value)}
+                      placeholder="메모"
+                    />
+                    <div className="wiki-note-actions">
+                      <button
+                        type="button"
+                        className="outline-btn"
+                        onClick={() => { void handleSaveCurrentNote(); }}
+                        disabled={isOverlaySaving}
+                      >
+                        {currentNote ? 'Update Note' : 'Save Note'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!testMode && preview.kind === 'viewer' && (
+              <section className="reader-stage animate-in">
+                {preview.viewerDocument?.html ? (
+                  <ViewerDocumentStage
+                    viewerDocument={preview.viewerDocument}
+                    onNavigateViewerPath={(viewerPath) => {
+                      void openViewerPreview(viewerPath, preview.title);
+                    }}
+                    className="playbook-reader-shadow-host"
+                  />
+                ) : (
+                  <div className="playbook-reader-empty">문서 본문을 불러오지 못했습니다.</div>
+                )}
+              </section>
+            )}
+
+            {!testMode && preview.kind === 'draft' && (() => {
+              const draftTruth = truthSurfaceCopy(preview.book ?? preview.draft);
+              return (
+                <section className="reader-stage reader-stage-draft animate-in">
+                  <div className="doc-header">
+                    <div className="doc-header-text">
+                      <span className="doc-kicker">{draftTruth.label}</span>
+                      <h2>{preview.title}</h2>
+                    </div>
+                  </div>
+                  <p className="doc-summary">{preview.subtitle}</p>
+                  <div className="doc-metadata">
+                    <span>Quality {preview.draft.quality_score}</span>
+                    <span>{preview.draft.playable_asset_count} assets</span>
+                  </div>
+                  {draftTruth.meta.length > 0 && (
+                    <div className="doc-chip-row">
+                      {draftTruth.meta.map((item) => (
+                        <span key={item} className="doc-evidence-chip">{item}</span>
+                      ))}
+                    </div>
+                  )}
+                  {preview.derivedAssets.length > 0 && (
+                    <div className="doc-chip-row">
+                      {preview.derivedAssets.map((asset) => (
+                        <button
+                          key={asset.asset_slug}
+                          className="citation-tag"
+                          onClick={() => handleDerivedAssetOpen(asset)}
+                          type="button"
+                        >
+                          <LinkIcon size={12} />
+                          {asset.family_label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {preview.viewerDocument?.html ? (
+                    <ViewerDocumentStage
+                      viewerDocument={preview.viewerDocument}
+                      onNavigateViewerPath={(viewerPath) => {
+                        void openViewerPreview(viewerPath, preview.title);
+                      }}
+                      className="playbook-reader-shadow-host"
+                    />
+                  ) : (
+                    <div className="doc-section">
+                      <h4>Status</h4>
+                      <p>{preview.draft.status}</p>
+                    </div>
+                  )}
+                </section>
+              );
+            })()}
+
+            {activeDraft && (
+              <div className="panel-footer viewer-build-actions">
+                <div className="footer-actions">
+                  <button className="outline-btn" onClick={() => { void handleCapture(); }} type="button" disabled={!canCapture}>
+                    <Cpu size={14} />
+                    <span>{isCapturing ? 'Preparing...' : 'Prepare Pack'}</span>
+                  </button>
+                  <button className="primary-btn" onClick={() => { void handleNormalize(); }} type="button" disabled={!canNormalize}>
+                    <span>{isNormalizing ? 'Saving...' : 'Save to Wiki'}</span>
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </WorkspaceViewerPanel>
         </Group>
       </main>
     </div>

@@ -1,0 +1,17 @@
+{
+  "task_id": "customer_private_lane_hardening_20260417",
+  "lane_id": "reviewer",
+  "role": "reviewer",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "reports/execution_harness/customer_private_lane_hardening_20260417/reviewer/*"
+  ],
+  "target_outputs": [
+    "current-state audit for private chatbot corpus coverage, retrieval path, and boundary risks",
+    "packet boundaries for private retrieval hardening under the active security contract"
+  ],
+  "validation_commands": [],
+  "status": "in_progress"
+}

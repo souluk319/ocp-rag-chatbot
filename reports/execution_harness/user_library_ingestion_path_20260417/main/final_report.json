@@ -1,0 +1,27 @@
+{
+  "task_id": "user_library_ingestion_path_20260417",
+  "lane_id": "main",
+  "status": "completed",
+  "current_judgment": "The Control Tower ingestion panel and Studio upload entry now converge on the same customer-pack pipeline contract, and normalized private uploads are exposed as an explicit User Library path instead of only as a forensic customer-pack runtime bucket.",
+  "key_evidence": [
+    "runtimeApi.ts now exposes CUSTOMER_PACK_UPLOAD_ACCEPT, user_library_book_count, and user_library_books while keeping the existing customer_pack_runtime fields intact",
+    "data_control_room.py now emits user_library_books as the narrowed uploaded-source bucket from the private customer lane, while customer_pack_runtime_books stays as the broader forensic/runtime bucket",
+    "PlaybookLibraryPage.tsx now labels the metric, popover, completion log, and ready step as User Library and renders a dedicated user-library card section above Uploaded Drafts",
+    "WorkspacePage.tsx now reuses the same upload accept-contract constant so Studio and Control Tower advertise the same supported file extensions",
+    "tests/test_app_data_control_room.py and tests/test_app_runtime_ui.py lock the backend alias contract and the user-facing UI/accept wiring"
+  ],
+  "artifact_paths": [
+    "src/play_book_studio/app/data_control_room.py",
+    "presentation-ui/src/lib/runtimeApi.ts",
+    "presentation-ui/src/pages/PlaybookLibraryPage.tsx",
+    "presentation-ui/src/pages/PlaybookLibraryPage.css",
+    "presentation-ui/src/pages/WorkspacePage.tsx",
+    "tests/test_app_data_control_room.py",
+    "tests/test_app_runtime_ui.py"
+  ],
+  "validation_results": {
+    "pytest": "10 passed in 7.89s",
+    "frontend_build": "npm run build passed; Vite emitted the existing chunk-size warning only"
+  },
+  "next_action": "If the next packet stays on product polish, run one live upload from Control Tower and one from Studio to verify the same private book lands in User Library with the expected viewer path and draft lifecycle."
+}

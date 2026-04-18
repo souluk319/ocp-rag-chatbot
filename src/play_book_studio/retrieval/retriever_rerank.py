@@ -7,6 +7,7 @@ from typing import Any
 from play_book_studio.app.wiki_user_overlay import build_wiki_overlay_signal_payload
 
 from .followups import has_follow_up_reference
+from .intake_overlay import has_active_customer_pack_selection
 from .models import RetrievalHit, SessionContext
 from .query import (
     has_backup_restore_intent,
@@ -469,8 +470,12 @@ def _rebalance_uploaded_customer_pack_hits(
     *,
     hybrid_hits: list[RetrievalHit],
     reranked_hits: list[RetrievalHit],
+    context: SessionContext | None,
 ) -> list[RetrievalHit]:
-    if not _is_customer_pack_explicit_query(query):
+    if not (
+        _is_customer_pack_explicit_query(query)
+        or has_active_customer_pack_selection(context)
+    ):
         return reranked_hits
     if not any(str(hit.source_collection or "").strip() == "uploaded" for hit in hybrid_hits):
         return reranked_hits
@@ -1149,14 +1154,6 @@ def _apply_rebalance_rules(
         rebalance_reasons=rebalance_reasons,
     )
     reranked_hits = _apply_rebalance_rule(
-        rule_name="uploaded_customer_pack_priority",
-        query=query,
-        hybrid_hits=hybrid_hits,
-        reranked_hits=reranked_hits,
-        rule_fn=_rebalance_uploaded_customer_pack_hits,
-        rebalance_reasons=rebalance_reasons,
-    )
-    reranked_hits = _apply_rebalance_rule(
         rule_name="etcd_backup_restore_intent",
         query=query,
         hybrid_hits=hybrid_hits,
@@ -1178,6 +1175,19 @@ def _apply_rebalance_rules(
         hybrid_hits=hybrid_hits,
         reranked_hits=reranked_hits,
         rule_fn=_rebalance_generic_intro_hits,
+        rebalance_reasons=rebalance_reasons,
+    )
+    reranked_hits = _apply_rebalance_rule(
+        rule_name="uploaded_customer_pack_priority",
+        query=query,
+        hybrid_hits=hybrid_hits,
+        reranked_hits=reranked_hits,
+        rule_fn=lambda rebalance_query, *, hybrid_hits, reranked_hits: _rebalance_uploaded_customer_pack_hits(
+            rebalance_query,
+            hybrid_hits=hybrid_hits,
+            reranked_hits=reranked_hits,
+            context=context,
+        ),
         rebalance_reasons=rebalance_reasons,
     )
     return reranked_hits, rebalance_reasons

@@ -546,7 +546,7 @@ class SynthesisLaneTests(unittest.TestCase):
             translated_entries = read_manifest(settings.translation_draft_manifest_path)
             self.assertEqual(["machine_configuration"], [entry.book_slug for entry in translated_entries])
 
-    def test_write_synthesis_lane_outputs_requeues_reader_grade_failed_books(self) -> None:
+    def test_write_synthesis_lane_outputs_keeps_manual_synthesis_with_heading_warning(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             settings = Settings(root_dir=Path(tmpdir))
             catalog_entries = [
@@ -573,10 +573,14 @@ class SynthesisLaneTests(unittest.TestCase):
                     "book_slug": "monitoring",
                     "title": "Monitoring",
                     "translation_status": "approved_ko",
+                    "source_metadata": {
+                        "source_type": "manual_synthesis",
+                        "source_lane": "applied_playbook",
+                    },
                     "sections": [
                         {
                             "heading": "Overview",
-                            "semantic_role": "unknown",
+                            "semantic_role": "procedure",
                             "blocks": [],
                         }
                     ],
@@ -585,15 +589,11 @@ class SynthesisLaneTests(unittest.TestCase):
 
             report = write_synthesis_lane_outputs(settings)
 
-            self.assertEqual(0, report["summary"]["approved_runtime_count"])
-            self.assertEqual(1, report["summary"]["manual_review_ready_count"])
-            self.assertEqual(["monitoring"], [item["book_slug"] for item in report["manual_review_ready"]])
-            self.assertEqual(
-                "manualbook_reader_grade_failed",
-                report["manual_review_ready"][0]["queue_reason"],
-            )
+            self.assertEqual(1, report["summary"]["approved_runtime_count"])
+            self.assertEqual(0, report["summary"]["manual_review_ready_count"])
+            self.assertEqual([], report["manual_review_ready"])
             working_entries = read_manifest(settings.corpus_working_manifest_path)
-            self.assertEqual([], working_entries)
+            self.assertEqual(["monitoring"], [entry.book_slug for entry in working_entries])
 
 
 if __name__ == "__main__":

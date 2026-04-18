@@ -25,6 +25,7 @@ class SettingsPathMixin:
         self.customer_pack_drafts_dir.mkdir(parents=True, exist_ok=True)
         self.customer_pack_capture_dir.mkdir(parents=True, exist_ok=True)
         self.customer_pack_books_dir.mkdir(parents=True, exist_ok=True)
+        self.customer_pack_corpus_dir.mkdir(parents=True, exist_ok=True)
         self.playbook_books_dir.mkdir(parents=True, exist_ok=True)
         self.raw_html_dir.mkdir(parents=True, exist_ok=True)
 
@@ -155,6 +156,10 @@ class SettingsPathMixin:
     @property
     def customer_pack_books_dir(self) -> Path:
         return self.customer_packs_dir / "books"
+
+    @property
+    def customer_pack_corpus_dir(self) -> Path:
+        return self.customer_packs_dir / "corpus"
 
     @property
     def normalized_docs_path(self) -> Path:

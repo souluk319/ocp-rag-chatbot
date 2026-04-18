@@ -1,0 +1,11 @@
+{
+  "task_id": "ocp420_corpus_multiturn_20260418",
+  "lane_id": "reviewer_packet_a",
+  "role": "strict_reviewer",
+  "agent_id": "019d9be9-23cb-7651-b0ee-6228b27decc6",
+  "cwd": "C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio",
+  "write_scope": [
+    "reports/execution_harness/ocp420_corpus_multiturn_20260418/reviewer_packet_a/**"
+  ],
+  "status": "assigned"
+}

@@ -1,0 +1,14 @@
+{
+  "task_id": "customer_pack_read_surface_fail_close_20260418",
+  "lane_id": "worker-gauss",
+  "role": "worker",
+  "agent_id": "019d9f91-2d2b-7423-a005-5e4161c9079e",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [],
+  "target_outputs": [
+    "minimal regression test impact plan"
+  ],
+  "validation_commands": [],
+  "status": "completed"
+}

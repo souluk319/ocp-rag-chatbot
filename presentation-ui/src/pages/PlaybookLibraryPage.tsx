@@ -30,6 +30,7 @@ import gsap from 'gsap';
 import './PlaybookLibraryPage.css';
 import ViewerDocumentStage, { type ViewerDocumentPayload } from '../components/ViewerDocumentStage';
 import {
+  CUSTOMER_PACK_UPLOAD_ACCEPT,
   type CustomerPackDraft,
   type BuyerPacket,
   type DataControlRoomResponse,
@@ -452,7 +453,7 @@ const PlaybookLibraryPage: React.FC = () => {
       addLog('success', `Normalized: ${draft.playable_asset_count} playable assets, ${draft.derived_asset_count} derived${qualityLine}`);
 
       setPipelineStage('done');
-      addLog('success', `'${draft.title}' ready in library.`);
+      addLog('success', `'${draft.title}' saved to User Library.`);
       refreshData();
       setTimeout(() => { setPipelineStage('idle'); setCurrentFile(''); }, 6000);
     } catch (error: unknown) {
@@ -654,8 +655,8 @@ const PlaybookLibraryPage: React.FC = () => {
         books = [...(cr.manualbooks?.books ?? [])];
         break;
       case 'customerPack':
-        title = 'Customer Pack Runtime Books';
-        books = [...(cr.customer_pack_runtime_books?.books ?? [])];
+        title = 'User Library';
+        books = [...((cr.user_library_books ?? cr.customer_pack_runtime_books)?.books ?? [])];
         break;
       case 'wikiRuntime':
         title = 'Live Operational Wiki';
@@ -736,10 +737,14 @@ const PlaybookLibraryPage: React.FC = () => {
   const isProcessing = ['uploading', 'capturing', 'normalizing'].includes(pipelineStage);
 
   const summary = controlRoom?.summary;
+  const userLibraryBucket = controlRoom?.user_library_books ?? controlRoom?.customer_pack_runtime_books;
   const knownSourceBooks = summary?.known_book_count ?? controlRoom?.known_books?.length ?? 0;
   const approvedRuntimeBooks = summary?.approved_runtime_count ?? summary?.gold_book_count ?? controlRoom?.gold_books?.length ?? 0;
   const materializedManualBooks = summary?.manualbook_count ?? controlRoom?.manualbooks?.books?.length ?? 0;
-  const customerPackRuntimeBooks = summary?.customer_pack_runtime_book_count ?? controlRoom?.customer_pack_runtime_books?.books?.length ?? 0;
+  const userLibraryBooks = [...(userLibraryBucket?.books ?? [])];
+  const userLibraryBookCount = summary?.user_library_book_count
+    ?? summary?.customer_pack_runtime_book_count
+    ?? userLibraryBooks.length;
   const approvedWikiRuntimeBooks = summary?.approved_wiki_runtime_book_count ?? controlRoom?.approved_wiki_runtime_books?.books?.length ?? 0;
   const allOperationalWikiBooks = [...(controlRoom?.approved_wiki_runtime_books?.books ?? [])];
   const operationalWikiBooks = allOperationalWikiBooks.slice(0, 8);
@@ -1301,10 +1306,10 @@ const PlaybookLibraryPage: React.FC = () => {
                 <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('customerPack')}>
                   <div className="metric-icon"><HardDrive size={24} /></div>
                   <div className="metric-data">
-                    <h3>{customerPackRuntimeBooks.toLocaleString()}</h3>
-                    <p>Customer Pack Runtime</p>
+                    <h3>{userLibraryBookCount.toLocaleString()}</h3>
+                    <p>User Library</p>
                   </div>
-                  <div className="metric-status optimized">Pack</div>
+                  <div className="metric-status optimized">Private</div>
                 </div>
                 <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('navBacklog')}>
                   <div className="metric-icon"><Search size={24} /></div>
@@ -1361,7 +1366,7 @@ const PlaybookLibraryPage: React.FC = () => {
                     ref={fileInputRef}
                     type="file"
                     hidden
-                    accept=".pdf,.md,.docx,.pptx,.xlsx,.txt,.adoc,.html,.png,.jpg,.jpeg,.webp"
+                    accept={CUSTOMER_PACK_UPLOAD_ACCEPT}
                     onChange={handleUpload}
                   />
                   <button
@@ -1454,8 +1459,8 @@ const PlaybookLibraryPage: React.FC = () => {
                   <div className="step-badge">Ready</div>
                   <div className="step-icon"><BookOpen /></div>
                   <div className="step-info">
-                    <h4>Library Ready</h4>
-                    <p>5 Playbook Families</p>
+                    <h4>User Library Ready</h4>
+                    <p>Saved source book + derived playbooks</p>
                   </div>
                 </div>
               </div>
@@ -1476,6 +1481,54 @@ const PlaybookLibraryPage: React.FC = () => {
                 </div>
               </div>
             </section>
+            )}
+
+            {userLibraryBooks.length > 0 && visionMode !== 'guided_tour' && (
+              <section className="draft-management user-library-section box-container">
+                <div className="section-header">
+                  <div>
+                    <h2>User Library ({userLibraryBookCount})</h2>
+                    <p className="text-muted">Normalized uploads that are ready to open from the private library.</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="operational-shelf-link"
+                    onClick={() => openMetricPopover('customerPack')}
+                  >
+                    Open All
+                  </button>
+                </div>
+                <div className="draft-grid">
+                  {userLibraryBooks.map((book) => (
+                    <button
+                      type="button"
+                      className="draft-card user-library-card"
+                      key={book.book_slug}
+                      onClick={() => setBookViewer(book)}
+                    >
+                      <div className="draft-card-top">
+                        <span className="draft-type">User Library</span>
+                        <span className={`draft-status-badge status-${book.review_status === 'approved' ? 'green' : 'cyan'}`}>
+                          {book.review_status}
+                        </span>
+                      </div>
+                      <h4 className="draft-title">{book.title}</h4>
+                      <div className="draft-meta">
+                        <span>{customerPackBookTruth(book) || book.source_lane}</span>
+                        <span>{book.section_count} sections</span>
+                        <span>{book.grade}</span>
+                      </div>
+                      {customerPackBookEvidenceBits(book).length > 0 && (
+                        <div className="preview-chip-row">
+                          {customerPackBookEvidenceBits(book).slice(0, 3).map((item) => (
+                            <span key={item} className="preview-chip">{item}</span>
+                          ))}
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </section>
             )}
 
             {/* Draft Management */}

@@ -23,6 +23,7 @@ if str(TESTS) not in sys.path:
 
 from _support_app_ui import _build_customer_pack_plan, _upload_customer_pack_draft
 from play_book_studio.intake import CustomerPackPlanner, DocSourceRequest
+from play_book_studio.intake.books.store import CustomerPackDraftStore
 from play_book_studio.intake.capture.service import CustomerPackCaptureService
 from play_book_studio.intake.normalization.service import CustomerPackNormalizeService
 
@@ -426,6 +427,163 @@ class IntakeMultiformatTests(unittest.TestCase):
         self.assertEqual("normalized", normalized.status)
         self.assertEqual("복구 절차", payload["sections"][0]["heading"])
 
+    def test_normalize_service_marks_degraded_pdf_and_blocks_remote_surya_without_approved_boundary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source_pdf = root / "degraded.pdf"
+            source_pdf.write_bytes(b"%PDF-1.4 sample")
+            (root / ".env").write_text("SURYA_OCR=http://127.0.0.1:8765/ocr\n", encoding="utf-8")
+
+            captured = CustomerPackCaptureService(root).capture(
+                request=DocSourceRequest(source_type="pdf", uri=str(source_pdf), title="문제 PDF")
+            )
+
+            with patch(
+                "play_book_studio.intake.normalization.builders.convert_with_markitdown",
+                return_value=(
+                    "# 문제 PDF\n\n"
+                    "## 온프레미스\n\n"
+                    "온프레미스\n\n"
+                    "## 설치\n\n"
+                    "설치\n\n"
+                    "## 네트워크\n\n"
+                    "네트워크"
+                ),
+            ):
+                normalized = CustomerPackNormalizeService(root).normalize(draft_id=captured.draft_id)
+                payload = json.loads(Path(normalized.canonical_book_path).read_text(encoding="utf-8"))
+
+        self.assertEqual("normalized", normalized.status)
+        self.assertTrue(normalized.degraded_pdf)
+        self.assertIn("too_many_heading_only_sections", normalized.degraded_reason)
+        self.assertFalse(normalized.fallback_used)
+        self.assertEqual("surya", normalized.fallback_backend)
+        self.assertEqual("blocked", normalized.fallback_status)
+        self.assertEqual("surya_remote_egress_not_allowed", normalized.fallback_reason)
+        self.assertTrue(payload["degraded_pdf"])
+        self.assertIn("too_many_heading_only_sections", payload["degraded_reason"])
+        self.assertEqual("surya", payload["fallback_backend"])
+        self.assertEqual("blocked", payload["fallback_status"])
+        self.assertFalse(payload["fallback_used"])
+
+    def test_normalize_service_applies_surya_fallback_for_degraded_pdf_when_boundary_allows_remote_ocr(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source_pdf = root / "degraded.pdf"
+            source_pdf.write_bytes(b"%PDF-1.4 sample")
+            (root / ".env").write_text("SURYA_OCR=http://127.0.0.1:8765/ocr\n", encoding="utf-8")
+
+            captured = CustomerPackCaptureService(root).capture(
+                request=DocSourceRequest(source_type="pdf", uri=str(source_pdf), title="문제 PDF")
+            )
+            captured.tenant_id = "tenant-a"
+            captured.workspace_id = "workspace-a"
+            captured.access_groups = ("workspace-a", "tenant-a")
+            captured.approval_state = "approved"
+            captured.publication_state = "draft"
+            captured.provider_egress_policy = "surya_remote_ocr"
+            captured.redaction_state = "reviewed_safe"
+            CustomerPackDraftStore(root).save(captured)
+
+            with patch(
+                "play_book_studio.intake.normalization.builders.convert_with_markitdown",
+                return_value=(
+                    "# 문제 PDF\n\n"
+                    "## 온프레미스\n\n"
+                    "온프레미스\n\n"
+                    "## 설치\n\n"
+                    "설치\n\n"
+                    "## 네트워크\n\n"
+                    "네트워크"
+                ),
+            ), patch(
+                "play_book_studio.intake.normalization.surya_adapter.extract_pdf_markdown_with_surya",
+                return_value="# 문제 PDF\n\n## ConfigMap Secret\n\nConfigMap Secret values are synchronized before rollout.",
+            ):
+                normalized = CustomerPackNormalizeService(root).normalize(draft_id=captured.draft_id)
+                payload = json.loads(Path(normalized.canonical_book_path).read_text(encoding="utf-8"))
+
+        self.assertEqual("normalized", normalized.status)
+        self.assertTrue(normalized.degraded_pdf)
+        self.assertTrue(normalized.fallback_used)
+        self.assertEqual("surya", normalized.fallback_backend)
+        self.assertEqual("applied", normalized.fallback_status)
+        self.assertEqual("ConfigMap Secret", payload["sections"][0]["heading"])
+        self.assertIn("synchronized before rollout", payload["sections"][0]["text"])
+
+    def test_normalize_service_uses_surya_for_low_confidence_image_when_boundary_allows_remote_ocr(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source_png = root / "runbook.png"
+            image = Image.new("RGB", (320, 100), color="white")
+            draw = ImageDraw.Draw(image)
+            draw.text((20, 30), "ConfigMap Secret", fill="black")
+            image.save(source_png)
+            (root / ".env").write_text("SURYA_OCR=http://127.0.0.1:8765/ocr\n", encoding="utf-8")
+
+            captured = CustomerPackCaptureService(root).capture(
+                request=DocSourceRequest(source_type="image", uri=str(source_png), title="런북")
+            )
+            captured.tenant_id = "tenant-a"
+            captured.workspace_id = "workspace-a"
+            captured.access_groups = ("workspace-a", "tenant-a")
+            captured.approval_state = "approved"
+            captured.publication_state = "draft"
+            captured.provider_egress_policy = "surya_remote_ocr"
+            captured.redaction_state = "reviewed_safe"
+            CustomerPackDraftStore(root).save(captured)
+
+            with patch(
+                "play_book_studio.intake.normalization.service.extract_image_markdown_with_docling",
+                return_value="x",
+            ), patch(
+                "play_book_studio.intake.normalization.surya_adapter.extract_image_markdown_with_surya",
+                return_value="# 런북\n\n## OCR\n\nConfigMap Secret values are synchronized before rollout.",
+            ):
+                normalized = CustomerPackNormalizeService(root).normalize(draft_id=captured.draft_id)
+                payload = json.loads(Path(normalized.canonical_book_path).read_text(encoding="utf-8"))
+
+        self.assertEqual("normalized", normalized.status)
+        self.assertFalse(normalized.degraded_pdf)
+        self.assertTrue(normalized.fallback_used)
+        self.assertEqual("surya", normalized.fallback_backend)
+        self.assertEqual("applied", normalized.fallback_status)
+        self.assertIn("ConfigMap Secret values are synchronized", payload["sections"][0]["text"])
+
+    def test_normalize_service_does_not_flag_healthy_pdf_as_degraded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source_pdf = root / "healthy.pdf"
+            source_pdf.write_bytes(b"%PDF-1.4 sample")
+
+            captured = CustomerPackCaptureService(root).capture(
+                request=DocSourceRequest(source_type="pdf", uri=str(source_pdf), title="정상 PDF")
+            )
+
+            with patch(
+                "play_book_studio.intake.normalization.builders.convert_with_markitdown",
+                return_value=(
+                    "# 정상 PDF\n\n"
+                    "## 백업 절차\n\n"
+                    "cluster-backup.sh 실행 후 상태를 확인합니다.\n\n"
+                    "## 검증\n\n"
+                    "완료 상태와 관련 로그를 함께 검토합니다."
+                ),
+            ):
+                normalized = CustomerPackNormalizeService(root).normalize(draft_id=captured.draft_id)
+                payload = json.loads(Path(normalized.canonical_book_path).read_text(encoding="utf-8"))
+
+        self.assertEqual("normalized", normalized.status)
+        self.assertFalse(normalized.degraded_pdf)
+        self.assertEqual("", normalized.degraded_reason)
+        self.assertFalse(normalized.fallback_used)
+        self.assertEqual("", normalized.fallback_backend)
+        self.assertEqual("not_needed", normalized.fallback_status)
+        self.assertFalse(payload["degraded_pdf"])
+        self.assertEqual("", payload["degraded_reason"])
+        self.assertEqual("ready", payload["quality_status"])
+        self.assertEqual("not_needed", payload["fallback_status"])
+
     def test_normalize_service_cleans_pdf_markitdown_page_markers_and_tableish_headings(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -461,6 +619,69 @@ class IntakeMultiformatTests(unittest.TestCase):
         self.assertFalse(any("|" in heading for heading in headings))
         self.assertFalse(any("\x00" in text for text in texts))
         self.assertFalse(any("스토리지 10" in text or "스토리지 11" in text for text in texts))
+
+    def test_normalize_service_repairs_sparse_pdf_markdown_tables_into_compact_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source_pdf = root / "configmap-secret.pdf"
+            source_pdf.write_bytes(b"%PDF-1.4 sample")
+
+            captured = CustomerPackCaptureService(root).capture(
+                request=DocSourceRequest(source_type="pdf", uri=str(source_pdf), title="ConfigMap Secret")
+            )
+
+            with patch(
+                "play_book_studio.intake.normalization.builders.convert_with_markitdown",
+                return_value=(
+                    "# ConfigMap Secret\n\n"
+                    "## ConfigMap Secret 비교\n\n"
+                    "| ConfigMap: | | | 일반 | 설정 데이터 | 저장 | | | |\n"
+                    "| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n"
+                    "| Secret: | | 민감한 | 정보 | 저장 | | | | |\n"
+                ),
+            ):
+                normalized = CustomerPackNormalizeService(root).normalize(draft_id=captured.draft_id)
+                payload = json.loads(Path(normalized.canonical_book_path).read_text(encoding="utf-8"))
+
+        self.assertEqual("normalized", normalized.status)
+        section_text = payload["sections"][0]["text"]
+        self.assertIn('[TABLE header="false"]', section_text)
+        self.assertIn("ConfigMap | 일반 설정 데이터 저장", section_text)
+        self.assertIn("Secret | 민감한 정보 저장", section_text)
+        self.assertNotIn("| - | - |", section_text)
+
+    def test_normalize_service_does_not_split_numeric_table_rows_into_headings(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source_pdf = root / "secret-yaml.pdf"
+            source_pdf.write_bytes(b"%PDF-1.4 sample")
+
+            captured = CustomerPackCaptureService(root).capture(
+                request=DocSourceRequest(source_type="pdf", uri=str(source_pdf), title="Secret YAML")
+            )
+
+            with patch(
+                "play_book_studio.intake.normalization.builders.convert_with_markitdown",
+                return_value=(
+                    "# Secret YAML\n\n"
+                    "## Secret 생성\n\n"
+                    "| 단계 | 설명 |\n"
+                    "| --- | --- |\n"
+                    "| 7.1 YAML | Secret 생성 |\n"
+                    "| 7.2 CLI | 명령 예시 |\n\n"
+                    "다음 단계 설명\n\n"
+                    "## 검증\n\n"
+                    "완료 여부를 확인합니다.\n"
+                ),
+            ):
+                normalized = CustomerPackNormalizeService(root).normalize(draft_id=captured.draft_id)
+                payload = json.loads(Path(normalized.canonical_book_path).read_text(encoding="utf-8"))
+
+        self.assertEqual("normalized", normalized.status)
+        headings = [section["heading"] for section in payload["sections"]]
+        self.assertEqual(["Secret 생성", "검증"], headings)
+        self.assertIn("7.1 YAML | Secret 생성", payload["sections"][0]["text"])
+        self.assertIn("[/TABLE]\n\n다음 단계 설명", payload["sections"][0]["text"])
 
     def test_docx_source_is_honestly_rejected(self) -> None:
         payload = _build_customer_pack_plan({"source_type": "docx", "uri": "/tmp/demo.docx"})
@@ -553,7 +774,7 @@ class IntakeMultiformatTests(unittest.TestCase):
             )
 
             with patch(
-                "play_book_studio.intake.normalization.builders.extract_image_markdown_with_docling",
+                "play_book_studio.intake.normalization.service.extract_image_markdown_with_docling",
                 return_value="## OCR 절차\n\ncluster-backup.sh",
             ):
                 normalized = CustomerPackNormalizeService(root).normalize(draft_id=captured.draft_id)

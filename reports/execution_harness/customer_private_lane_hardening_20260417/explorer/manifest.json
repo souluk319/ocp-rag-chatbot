@@ -1,0 +1,17 @@
+{
+  "task_id": "customer_private_lane_hardening_20260417",
+  "lane_id": "explorer",
+  "role": "explorer",
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "reports/execution_harness/customer_private_lane_hardening_20260417/explorer/*"
+  ],
+  "target_outputs": [
+    "current-state audit for PDF table fidelity from normalize to viewer",
+    "smallest safe packet boundaries for table fidelity hardening"
+  ],
+  "validation_commands": [],
+  "status": "in_progress"
+}

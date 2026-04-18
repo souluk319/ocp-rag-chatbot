@@ -1,0 +1,43 @@
+{
+  "task_id": "customer_private_lane_hardening_20260417",
+  "lane_id": "main",
+  "status": "packet_4_completed",
+  "current_judgment": "Packet 4 is complete. Private customer-pack uploads now have a canonical maintenance gate that proves private corpus readiness, customer-pack library/viewer availability, selected-draft private citation behavior, unselected no-leak behavior, and cleanup through the standard CLI entrypoint.",
+  "key_evidence": [
+    "The new private-lane smoke follows the same build/write/summary.ok contract as maintenance-smoke, so private-lane validation is now a first-class maintenance routine instead of an ad hoc script.",
+    "The smoke verifies the required private security envelope and boundary labels on the private corpus manifest before proceeding to book, viewer, chat, and cleanup probes.",
+    "Smoke output is redacted down to boundary metadata, counts, and truth labels, so the maintenance report no longer dumps raw ingest payload paths or local artifact layout details.",
+    "The canonical CLI now exposes `private-lane-smoke`, and its exit code is driven directly by `summary.ok`, matching the runtime maintenance pattern.",
+    "Focused end-to-end temp-server regression plus selected-draft retrieval regressions passed, so packet 4 adds the maintenance gate without regressing packet 3 private retrieval behavior."
+  ],
+  "artifact_paths": [
+    "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\src\\play_book_studio\\app\\private_lane_smoke.py",
+    "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\src\\play_book_studio\\cli.py",
+    "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tests\\test_private_lane_smoke.py",
+    "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\tests\\test_cli.py",
+    "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\reports\\build_logs\\private_lane_smoke.json"
+  ],
+  "validation_results": {
+    "syntax_check": ".\\.venv\\Scripts\\python.exe -m py_compile src/play_book_studio/app/private_lane_smoke.py tests/test_private_lane_smoke.py -> passed",
+    "packet_4_pytest": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_private_lane_smoke.py tests/test_cli.py tests/test_app_intake_ui.py::TestAppIntakeUi::test_ingest_customer_pack_materializes_private_corpus_artifacts tests/test_server_chat.py -q -> 13 passed",
+    "private_retrieval_regression_pytest": ".\\.venv\\Scripts\\python.exe -m pytest tests/test_retrieval_query_core.py::TestRetrievalQueryCore::test_retriever_uses_private_customer_corpus_bm25_artifact_when_selected_draft_is_active tests/test_retrieval_query_core.py::TestRetrievalQueryCore::test_retriever_uses_private_customer_corpus_vector_artifact_without_official_qdrant tests/test_retrieval_runtime.py::TestRetrievalRuntime::test_reranker_rescues_uploaded_customer_pack_for_selected_draft_snippet_query tests/test_answering_context.py::ContextAssemblyTests::test_assemble_context_seeds_uploaded_customer_pack_for_selected_draft_scope -q -> 4 passed",
+    "cli_smoke": "fresh temp server with deterministic answerer + patched local embedding models -> play_book_studio.cli private-lane-smoke -> exit_code=0, summary.ok=true, report written to reports/build_logs/private_lane_smoke.json",
+    "smoke_summary": {
+      "ok": true,
+      "ingest_ok": true,
+      "private_corpus_ready": true,
+      "boundary_fields_complete": true,
+      "book_ok": true,
+      "viewer_ok": true,
+      "selected_chat_private_hit": true,
+      "selected_chat_private_boundary": true,
+      "no_leak_ok": true,
+      "cleanup_ok": true
+    }
+  },
+  "residual_risks": [
+    "Intake API responses still expose internal filesystem paths such as uploaded_file_path, capture_artifact_path, canonical_book_path, and private_corpus_manifest_path. Packet 4 removed those paths from the smoke report, but the underlying API redaction remains a separate follow-up.",
+    "Retrieval hard scope is still selected-draft PoC scope. tenant_id/workspace_id/pack_version hard scope and placeholder-default rejection are not implemented in this packet."
+  ],
+  "next_action": "Close the customer/private lane hardening sequence here and choose the next axis. If the next axis stays on private boundary hardening, the highest-value follow-up is API payload redaction plus tenant/workspace/pack-version hard scope promotion."
+}

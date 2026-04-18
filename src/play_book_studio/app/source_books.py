@@ -2,44 +2,50 @@
 
 from __future__ import annotations
 
-import json
 import re
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
-import html
 
-from play_book_studio.config.settings import load_settings
-
-from .presenters import (
-    _load_normalized_sections,
-    _manifest_entry_for_book,
-)
+from . import source_books_viewer_payloads as _viewer_payloads
+from . import source_books_viewer_resolver as _viewer_resolver
 from .source_books_customer_pack import (
     internal_customer_pack_viewer_html,
     list_customer_pack_drafts,
     load_customer_pack_book,
     parse_customer_pack_viewer_path,
 )
+from .source_books_viewer_payloads import (
+    internal_active_runtime_markdown_viewer_html,
+    internal_buyer_packet_viewer_html,
+    internal_entity_hub_viewer_html,
+    internal_figure_viewer_html,
+    internal_viewer_html,
+)
+from .source_books_viewer_resolver import (
+    ACTIVE_RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE,
+    ACTIVE_WIKI_RUNTIME_BOOK_PREFIX,
+    BUYER_PACKET_VIEWER_PATH_RE,
+    ENTITY_HUB_VIEWER_PATH_RE,
+    FIGURE_VIEWER_PATH_RE,
+    GOLD_CANDIDATE_BOOK_PREFIX,
+    LEGACY_WIKI_RUNTIME_BOOK_PREFIX,
+    MARKDOWN_VIEWER_PATH_RE,
+    RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE,
+    parse_active_runtime_markdown_viewer_path,
+    parse_buyer_packet_viewer_path,
+    parse_entity_hub_viewer_path,
+    parse_figure_viewer_path,
+)
 from .source_books_wiki_relations import (
-    _active_runtime_markdown_path,
     _book_related_sections,
-    _build_backlinks,
-    _build_entity_backlinks,
     _candidate_relations,
     _chat_link_truth_payload,
     _chat_navigation_aliases,
     _contains_hangul,
-    _entity_hub_sections,
     _entity_hubs,
-    _entity_related_sections,
     _figure_asset_by_name,
-    _figure_asset_filename,
-    _figure_assets,
-    _figure_entity_index,
     _figure_section_match,
-    _figure_viewer_href,
-    _figure_viewer_sections,
     _is_final_runtime_href,
     _link_book_slug,
     _preferred_book_href,
@@ -47,160 +53,10 @@ from .source_books_wiki_relations import (
     _rewrite_book_href,
     _wiki_relation_items,
 )
-from .viewer_page import _render_page_overlay_toolbar
 from .viewers import (
-    _build_section_metrics,
-    _build_section_outline,
-    _build_study_section_cards,
     _parse_viewer_path,
-    _render_study_viewer_html,
 )
 from .wiki_user_overlay import build_wiki_overlay_signal_payload
-
-
-GOLD_CANDIDATE_BOOK_PREFIX = "/playbooks/gold-candidates/wave1"
-ACTIVE_WIKI_RUNTIME_BOOK_PREFIX = "/playbooks/wiki-runtime/active"
-LEGACY_WIKI_RUNTIME_BOOK_PREFIX = "/playbooks/wiki-runtime/wave1"
-MARKDOWN_VIEWER_PATH_RE = re.compile(r"^/playbooks/gold-candidates/wave1/([^/]+)/index\.html$")
-ACTIVE_RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE = re.compile(r"^/playbooks/wiki-runtime/active/([^/]+)(?:/index\.html)?$")
-RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE = re.compile(r"^/playbooks/wiki-runtime/([^/]+)/([^/]+)/index\.html$")
-ENTITY_HUB_VIEWER_PATH_RE = re.compile(r"^/wiki/entities/([^/]+)(?:/index\.html)?$")
-FIGURE_VIEWER_PATH_RE = re.compile(r"^/wiki/figures/([^/]+)/([^/]+)(?:/index\.html)?$")
-BUYER_PACKET_VIEWER_PATH_RE = re.compile(r"^/buyer-packets/([^/]+)$")
-
-
-def _build_entity_hub_supplementary_blocks(root_dir: Path, entity_slug: str) -> list[str]:
-    entity = _entity_hubs().get(entity_slug)
-    if entity is None:
-        return []
-    related_books = "".join(
-        """
-        <div class="wiki-links">
-          <a href="{href}">{label}</a>
-          <span>{summary}</span>
-        </div>
-        """.format(
-            href=html.escape(_rewrite_book_href(root_dir, str(item.get("href") or "")), quote=True),
-            label=html.escape(str(item.get("label") or "")),
-            summary=html.escape(str(item.get("summary") or "")),
-        ).strip()
-        for item in entity.get("related_books", [])
-        if isinstance(item, dict)
-    )
-    next_path_links = "".join(
-        """
-        <div class="wiki-path">
-          <a href="{href}">{label}</a>
-          <span>{summary}</span>
-        </div>
-        """.format(
-            href=html.escape(_rewrite_book_href(root_dir, str(item.get("href") or "")), quote=True),
-            label=html.escape(str(item.get("label") or "")),
-            summary=html.escape(str(item.get("summary") or "")),
-        ).strip()
-        for item in entity.get("next_reading_path", [])
-        if isinstance(item, dict)
-    )
-    backlinks = _build_entity_backlinks(root_dir, entity_slug)
-    figure_index = _figure_entity_index()
-    related_figures = figure_index.get("by_entity", {}).get(entity_slug, []) if isinstance(figure_index.get("by_entity"), dict) else []
-    related_sections = _entity_related_sections(entity_slug)
-    backlink_links = "".join(
-        """
-        <div class="wiki-links">
-          <a href="{href}">{label}</a>
-          <span>{summary}</span>
-        </div>
-        """.format(
-            href=html.escape(str(item.get("href") or ""), quote=True),
-            label=html.escape(str(item.get("label") or "")),
-            summary=html.escape(str(item.get("summary") or "")),
-        ).strip()
-        for item in backlinks
-    )
-    figure_links = "".join(
-        """
-        <div class="wiki-links">
-          <a href="{href}">{label}</a>
-          <span>{summary}</span>
-        </div>
-        """.format(
-            href=html.escape(str(item.get("viewer_path") or item.get("asset_url") or ""), quote=True),
-            label=html.escape(str(item.get("caption") or "Figure")),
-            summary=html.escape(
-                "{book} · {section}".format(
-                    book=str(item.get("book_title") or item.get("book_slug") or "").strip() or "related book",
-                    section=str(item.get("section_hint") or "unmatched").strip() or "unmatched",
-                )
-            ),
-        ).strip()
-        for item in related_figures[:6]
-        if isinstance(item, dict)
-    )
-    section_links = "".join(
-        """
-        <div class="wiki-links">
-          <a href="{href}">{label}</a>
-          <span>{summary}</span>
-        </div>
-        """.format(
-            href=html.escape(_rewrite_book_href(root_dir, str(item.get("href") or "")), quote=True),
-            label=html.escape(str(item.get("label") or "")),
-            summary=html.escape(str(item.get("summary") or "")),
-        ).strip()
-        for item in related_sections[:6]
-        if isinstance(item, dict)
-    )
-    return [
-        """
-        <section class="wiki-parent-card">
-          <div class="wiki-parent-eyebrow">Entity Hub</div>
-          <a href="/wiki/entities/{entity_slug}/index.html">{title}</a>
-          <p>{summary}</p>
-        </section>
-        <section class="wiki-grid wiki-grid-primary">
-          <article class="wiki-card wiki-card-primary">
-            <h3>Recommended Path</h3>
-            {next_path_links}
-          </article>
-          <article class="wiki-card wiki-card-primary">
-            <h3>Connections</h3>
-            <div class="wiki-card-stack">
-              <div>
-                <h4>Books</h4>
-                {related_books}
-              </div>
-              <div>
-                <h4>Referenced By</h4>
-                {backlink_links}
-              </div>
-            </div>
-          </article>
-        </section>
-        <details class="wiki-details">
-          <summary>More</summary>
-          <section class="wiki-grid wiki-grid-secondary">
-            <article class="wiki-card">
-              <h3>Related Figures</h3>
-              {figure_links}
-            </article>
-            <article class="wiki-card">
-              <h3>Related Sections</h3>
-              {section_links}
-            </article>
-          </section>
-        </details>
-        """.format(
-            entity_slug=html.escape(entity_slug, quote=True),
-            title=html.escape(str(entity.get("title") or entity_slug)),
-            summary=html.escape(str(entity.get("summary") or "")),
-            related_books=related_books or '<div class="wiki-empty">연결된 북이 아직 없습니다.</div>',
-            next_path_links=next_path_links or '<div class="wiki-empty">연결된 경로가 아직 없습니다.</div>',
-            backlink_links=backlink_links or '<div class="wiki-empty">이 엔터티를 참조하는 문서가 아직 없습니다.</div>',
-            figure_links=figure_links or '<div class="wiki-empty">연결된 figure 자산이 아직 없습니다.</div>',
-            section_links=section_links or '<div class="wiki-empty">연결된 절차 섹션이 아직 없습니다.</div>',
-        ).strip()
-    ]
 
 
 def _overlay_recent_target_scores(
@@ -1432,7 +1288,47 @@ def internal_buyer_packet_viewer_html(root_dir: Path, viewer_path: str) -> str |
             viewer_path=f"/buyer-packets/{packet_id}",
         ),
     )
+
+
+# Cleanup packet compatibility barrel:
+# route callers still import from source_books.py, but the actual viewer payload
+# and resolver implementations now live in dedicated modules.
+_playbook_book_candidates = _viewer_resolver._playbook_book_candidates
+_load_playbook_book = _viewer_resolver._load_playbook_book
+_load_normalized_book_sections = _viewer_resolver._load_normalized_book_sections
+_load_buyer_packet_entry = _viewer_resolver._load_buyer_packet_entry
+parse_active_runtime_markdown_viewer_path = _viewer_resolver.parse_active_runtime_markdown_viewer_path
+parse_buyer_packet_viewer_path = _viewer_resolver.parse_buyer_packet_viewer_path
+parse_entity_hub_viewer_path = _viewer_resolver.parse_entity_hub_viewer_path
+parse_figure_viewer_path = _viewer_resolver.parse_figure_viewer_path
+ACTIVE_RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE = _viewer_resolver.ACTIVE_RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE
+ACTIVE_WIKI_RUNTIME_BOOK_PREFIX = _viewer_resolver.ACTIVE_WIKI_RUNTIME_BOOK_PREFIX
+BUYER_PACKET_VIEWER_PATH_RE = _viewer_resolver.BUYER_PACKET_VIEWER_PATH_RE
+ENTITY_HUB_VIEWER_PATH_RE = _viewer_resolver.ENTITY_HUB_VIEWER_PATH_RE
+FIGURE_VIEWER_PATH_RE = _viewer_resolver.FIGURE_VIEWER_PATH_RE
+GOLD_CANDIDATE_BOOK_PREFIX = _viewer_resolver.GOLD_CANDIDATE_BOOK_PREFIX
+LEGACY_WIKI_RUNTIME_BOOK_PREFIX = _viewer_resolver.LEGACY_WIKI_RUNTIME_BOOK_PREFIX
+MARKDOWN_VIEWER_PATH_RE = _viewer_resolver.MARKDOWN_VIEWER_PATH_RE
+RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE = _viewer_resolver.RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE
+internal_viewer_html = _viewer_payloads.internal_viewer_html
+internal_active_runtime_markdown_viewer_html = _viewer_payloads.internal_active_runtime_markdown_viewer_html
+internal_entity_hub_viewer_html = _viewer_payloads.internal_entity_hub_viewer_html
+internal_figure_viewer_html = _viewer_payloads.internal_figure_viewer_html
+internal_buyer_packet_viewer_html = _viewer_payloads.internal_buyer_packet_viewer_html
+
 __all__ = [
+    "ACTIVE_RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE",
+    "ACTIVE_WIKI_RUNTIME_BOOK_PREFIX",
+    "BUYER_PACKET_VIEWER_PATH_RE",
+    "ENTITY_HUB_VIEWER_PATH_RE",
+    "FIGURE_VIEWER_PATH_RE",
+    "GOLD_CANDIDATE_BOOK_PREFIX",
+    "LEGACY_WIKI_RUNTIME_BOOK_PREFIX",
+    "MARKDOWN_VIEWER_PATH_RE",
+    "RUNTIME_WIKI_MARKDOWN_VIEWER_PATH_RE",
+    "_entity_hubs",
+    "_figure_asset_by_name",
+    "_figure_section_match",
     "internal_buyer_packet_viewer_html",
     "build_chat_navigation_links",
     "internal_customer_pack_viewer_html",
@@ -1444,4 +1340,5 @@ __all__ = [
     "parse_customer_pack_viewer_path",
     "parse_entity_hub_viewer_path",
     "parse_active_runtime_markdown_viewer_path",
+    "parse_figure_viewer_path",
 ]

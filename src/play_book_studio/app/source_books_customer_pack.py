@@ -36,6 +36,12 @@ def _customer_pack_boundary_payload(record: Any) -> dict[str, Any]:
         "parser_version": str(getattr(record, "parser_version", "") or ""),
         "ocr_used": bool(getattr(record, "ocr_used", False)),
         "extraction_confidence": float(getattr(record, "extraction_confidence", 0.0) or 0.0),
+        "degraded_pdf": bool(getattr(record, "degraded_pdf", False)),
+        "degraded_reason": str(getattr(record, "degraded_reason", "") or ""),
+        "fallback_used": bool(getattr(record, "fallback_used", False)),
+        "fallback_backend": str(getattr(record, "fallback_backend", "") or ""),
+        "fallback_status": str(getattr(record, "fallback_status", "") or ""),
+        "fallback_reason": str(getattr(record, "fallback_reason", "") or ""),
         "tenant_id": str(getattr(record, "tenant_id", "") or ""),
         "workspace_id": str(getattr(record, "workspace_id", "") or ""),
         "approval_state": str(getattr(record, "approval_state", "") or "unreviewed"),
@@ -204,6 +210,12 @@ def list_customer_pack_drafts(root_dir: Path) -> dict[str, Any]:
                 summary["quality_score"] = payload.get("quality_score")
                 summary["quality_summary"] = payload.get("quality_summary")
                 summary["quality_flags"] = payload.get("quality_flags")
+                summary["degraded_pdf"] = payload.get("degraded_pdf")
+                summary["degraded_reason"] = payload.get("degraded_reason")
+                summary["fallback_used"] = payload.get("fallback_used")
+                summary["fallback_backend"] = payload.get("fallback_backend")
+                summary["fallback_status"] = payload.get("fallback_status")
+                summary["fallback_reason"] = payload.get("fallback_reason")
                 summary["playable_asset_count"] = payload.get("playable_asset_count", 1)
                 summary["derived_asset_count"] = payload.get("derived_asset_count", 0)
                 summary["derived_assets"] = payload.get("derived_assets", [])

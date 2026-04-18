@@ -103,6 +103,14 @@ class CliUiWarmupTests(unittest.TestCase):
         self.assertIsNone(args.output)
         self.assertEqual("OpenShift architecture overview", args.query)
 
+    def test_build_parser_accepts_private_lane_smoke_command(self) -> None:
+        args = cli.build_parser().parse_args(["private-lane-smoke"])
+
+        self.assertEqual("private-lane-smoke", args.command)
+        self.assertIsNone(args.output)
+        self.assertEqual("http://127.0.0.1:8765", args.ui_base_url)
+        self.assertEqual("{token} 문서를 보여줘", args.query_template)
+
     def test_run_graph_compact_writes_summary(self) -> None:
         args = argparse.Namespace(output=Path("custom-compact.json"))
         fake_settings = object()
@@ -170,6 +178,42 @@ class CliUiWarmupTests(unittest.TestCase):
         rendered = stdout.getvalue()
         self.assertIn("wrote runtime maintenance smoke: maintenance-smoke.json", rendered)
         self.assertIn('"compact_ready": true', rendered)
+
+    def test_run_private_lane_smoke_writes_summary(self) -> None:
+        args = argparse.Namespace(
+            output=Path("private-lane-smoke.json"),
+            ui_base_url="http://127.0.0.1:8878",
+            query_template="{token} 문서를 보여줘",
+        )
+        stdout = io.StringIO()
+        payload = {
+            "summary": {
+                "ok": True,
+                "ingest_ok": True,
+                "selected_chat_private_hit": True,
+                "no_leak_ok": True,
+            }
+        }
+
+        with (
+            patch(
+                "play_book_studio.cli.write_private_lane_smoke",
+                return_value=(Path("private-lane-smoke.json"), payload),
+            ) as smoke_mock,
+            redirect_stdout(stdout),
+        ):
+            exit_code = cli._run_private_lane_smoke(args)
+
+        self.assertEqual(0, exit_code)
+        smoke_mock.assert_called_once_with(
+            Path(cli.ROOT),
+            output_path=Path("private-lane-smoke.json"),
+            ui_base_url="http://127.0.0.1:8878",
+            query_template="{token} 문서를 보여줘",
+        )
+        rendered = stdout.getvalue()
+        self.assertIn("wrote private lane smoke: private-lane-smoke.json", rendered)
+        self.assertIn('"selected_chat_private_hit": true', rendered)
 
 
 if __name__ == "__main__":

@@ -360,6 +360,23 @@ def _customer_pack_book_for_viewer_path(
     payload.setdefault("pack_label", record.plan.pack_label)
     payload.setdefault("inferred_product", record.plan.inferred_product)
     payload.setdefault("inferred_version", record.plan.inferred_version)
+    payload.setdefault("source_lane", record.source_lane)
+    payload.setdefault("approval_state", record.approval_state)
+    payload.setdefault("publication_state", record.publication_state)
+    payload.setdefault("parser_backend", record.parser_backend)
+    payload.setdefault("parser_route", record.parser_route)
+    payload.setdefault("parser_version", record.parser_version)
+    payload.setdefault("ocr_used", record.ocr_used)
+    payload.setdefault("extraction_confidence", record.extraction_confidence)
+    payload.setdefault("degraded_pdf", record.degraded_pdf)
+    payload.setdefault("degraded_reason", record.degraded_reason)
+    payload.setdefault("fallback_used", record.fallback_used)
+    payload.setdefault("fallback_backend", record.fallback_backend)
+    payload.setdefault("fallback_status", record.fallback_status)
+    payload.setdefault("fallback_reason", record.fallback_reason)
+    payload.setdefault("boundary_truth", "private_customer_pack_runtime")
+    payload.setdefault("runtime_truth_label", "Customer Source-First Pack")
+    payload.setdefault("boundary_badge", "Private Pack Runtime")
     payload.update(evaluate_canonical_book_quality(payload))
     return payload
 
@@ -406,15 +423,14 @@ def _customer_pack_meta_for_viewer_path(
         "approval_state": str(payload.get("approval_state") or "unreviewed"),
         "publication_state": str(payload.get("publication_state") or "draft"),
         "parser_backend": str(payload.get("parser_backend") or ""),
+        "fallback_used": bool(payload.get("fallback_used") or False),
         "boundary_truth": str(payload.get("boundary_truth") or "private_customer_pack_runtime"),
         "runtime_truth_label": str(payload.get("runtime_truth_label") or "Customer Source-First Pack"),
         "boundary_badge": str(payload.get("boundary_badge") or "Private Pack Runtime"),
         "inferred_product": str(payload.get("inferred_product") or "unknown"),
         "inferred_version": str(payload.get("inferred_version") or "unknown"),
         "quality_status": str(payload.get("quality_status") or "ready"),
-        "quality_score": int(payload.get("quality_score") or 0),
         "quality_summary": str(payload.get("quality_summary") or ""),
-        "quality_flags": list(payload.get("quality_flags") or []),
         "section_match_exact": matched_exact,
     }
 
@@ -529,6 +545,8 @@ def _serialize_citation(
             "approval_state": str(customer_pack_meta.get("approval_state") or "unreviewed"),
             "publication_state": str(customer_pack_meta.get("publication_state") or "draft"),
             "parser_backend": str(customer_pack_meta.get("parser_backend") or ""),
+            "fallback_used": bool(customer_pack_meta.get("fallback_used") or False),
+            "quality_status": str(customer_pack_meta.get("quality_status") or "ready"),
             "boundary_truth": str(customer_pack_meta.get("boundary_truth") or "private_customer_pack_runtime"),
             "runtime_truth_label": str(customer_pack_meta.get("runtime_truth_label") or "Customer Source-First Pack"),
             "boundary_badge": str(customer_pack_meta.get("boundary_badge") or "Private Pack Runtime"),

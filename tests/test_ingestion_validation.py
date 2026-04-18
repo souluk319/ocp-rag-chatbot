@@ -245,6 +245,118 @@ class ValidationGateTests(unittest.TestCase):
         self.assertIn("parsed_artifact_id", report["metadata_missing_by_field"]["normalized_parsed"])
         self.assertIn("tenant_id", report["metadata_missing_by_field"]["manifest_security"])
 
+    def test_build_validation_report_uses_runtime_baseline_for_derived_playbooks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = Settings(root_dir=root)
+            settings.raw_html_dir.mkdir(parents=True, exist_ok=True)
+            (settings.raw_html_dir / "backup_and_restore.html").write_text("<html></html>", encoding="utf-8")
+
+            entry = SourceManifestEntry(
+                **{
+                    **_base_entry().to_dict(),
+                    "book_slug": "backup_and_restore",
+                    "title": "백업 및 복구",
+                    "source_url": "https://example.com/backup_and_restore",
+                    "resolved_source_url": "https://example.com/backup_and_restore",
+                    "viewer_path": "/docs/ocp/4.20/ko/backup_and_restore/index.html",
+                    "source_id": "ocp-4.20-ko-backup-and-restore",
+                    "original_title": "Backup and restore",
+                }
+            )
+            write_manifest(settings.source_manifest_path, [entry])
+
+            normalized_row = {
+                **_base_section().to_contract_dict(),
+                "book_slug": "backup_and_restore",
+                "book_title": "백업 및 복구",
+                "source_url": "https://example.com/backup_and_restore",
+                "viewer_path": "/docs/ocp/4.20/ko/backup_and_restore/index.html#overview",
+                "section_id": "backup_and_restore:overview",
+                "source_id": "ocp-4.20-ko-backup-and-restore",
+                "original_title": "Backup and restore",
+            }
+            chunk_row = {
+                **_base_chunk().to_dict(),
+                "chunk_id": "backup-and-restore:chunk-1",
+                "book_slug": "backup_and_restore",
+                "book_title": "백업 및 복구",
+                "chapter": "백업 및 복구",
+                "source_url": "https://example.com/backup_and_restore",
+                "viewer_path": "/docs/ocp/4.20/ko/backup_and_restore/index.html#overview",
+                "source_id": "ocp-4.20-ko-backup-and-restore",
+                "original_title": "Backup and restore",
+            }
+            playbook_row = {
+                **_base_playbook_row(),
+                "book_slug": "backup_and_restore",
+                "title": "백업 및 복구",
+                "translation_status": "approved_ko",
+                "source_uri": "https://example.com/backup_and_restore",
+                "source_metadata": {
+                    **dict(_base_playbook_row()["source_metadata"]),
+                    "source_id": "ocp-4.20-ko-backup-and-restore",
+                    "source_type": "official_doc",
+                    "original_url": "https://example.com/backup_and_restore",
+                    "original_title": "Backup and restore",
+                },
+                "sections": [
+                    {
+                        "section_id": "backup_and_restore:overview",
+                        "section_key": "backup_and_restore:overview",
+                        "ordinal": 1,
+                        "heading": "개요",
+                        "anchor": "overview",
+                        "semantic_role": "overview",
+                        "path": ["개요"],
+                        "section_path": ["개요"],
+                        "viewer_path": "/docs/ocp/4.20/ko/backup_and_restore/index.html#overview",
+                        "blocks": [{"kind": "paragraph", "text": "백업과 복구 절차 개요"}],
+                    },
+                    {
+                        "section_id": "backup_and_restore:procedure",
+                        "section_key": "backup_and_restore:procedure",
+                        "ordinal": 2,
+                        "heading": "백업 절차",
+                        "anchor": "backup-procedure",
+                        "semantic_role": "procedure",
+                        "path": ["운영", "백업 절차"],
+                        "section_path": ["운영", "백업 절차"],
+                        "viewer_path": "/docs/ocp/4.20/ko/backup_and_restore/index.html#backup-procedure",
+                        "blocks": [{"kind": "code", "code": "cluster-backup.sh /backup"}],
+                    },
+                ],
+            }
+
+            _write_jsonl(settings.normalized_docs_path, [normalized_row])
+            _write_jsonl(settings.chunks_path, [chunk_row])
+            _write_jsonl(settings.bm25_corpus_path, [dict(chunk_row)])
+            _write_jsonl(settings.playbook_documents_path, [playbook_row])
+
+            with (
+                patch("play_book_studio.ingestion.validation.qdrant_count", return_value=None),
+                patch("play_book_studio.ingestion.validation.qdrant_id_inventory", return_value=(None, None)),
+            ):
+                runtime_report = build_validation_report(
+                    settings,
+                    expected_process_subset="high-value",
+                    include_qdrant_id_check=False,
+                )
+                source_subset_report = build_validation_report(
+                    settings,
+                    expected_process_subset="high-value",
+                    artifact_expectation_mode="source_subset",
+                    include_qdrant_id_check=False,
+                )
+
+        self.assertEqual("runtime_baseline", runtime_report["artifact_expectation_mode"])
+        self.assertEqual(1, runtime_report["expected_source_book_count"])
+        self.assertEqual(5, runtime_report["expected_derived_book_count"])
+        self.assertEqual(6, runtime_report["expected_book_count"])
+        self.assertFalse(runtime_report["checks"]["artifact_books_match_expected_subset"])
+        self.assertEqual("source_subset", source_subset_report["artifact_expectation_mode"])
+        self.assertTrue(source_subset_report["checks"]["artifact_books_match_expected_subset"])
+
 
 if __name__ == "__main__":
     unittest.main()

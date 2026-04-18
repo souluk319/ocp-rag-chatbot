@@ -234,6 +234,7 @@
         "time": "08:30"
       },
       "jobs": [
+        "approved_runtime_rebuild",
         "source_approval",
         "source_bundle_quality",
         "synthesis_lane",

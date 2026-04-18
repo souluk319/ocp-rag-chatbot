@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import time
 
-from .intake_overlay import filter_customer_pack_hits_by_selection
+from .intake_overlay import (
+    filter_customer_pack_hits_by_selection,
+    load_selected_customer_pack_private_bm25_index,
+    _runtime_eligible_selected_draft_ids,
+    search_selected_customer_pack_private_vectors,
+)
 from .models import RetrievalHit
 from .ranking import (
     rrf_merge_hit_lists as _rrf_merge_hit_lists,
@@ -69,12 +74,22 @@ def search_bm25_candidates(
         top_k=effective_candidate_k,
     )
     overlay_hits: list[RetrievalHit] = []
-    overlay_index = retriever.customer_pack_overlay_index()
+    private_index = load_selected_customer_pack_private_bm25_index(
+        retriever.settings,
+        context=context,
+    )
+    overlay_index = private_index or retriever.customer_pack_overlay_index()
+    eligible_selected = _runtime_eligible_selected_draft_ids(retriever.settings, context)
     if overlay_index is not None:
         overlay_hit_sets = [
-            filter_customer_pack_hits_by_selection(
-                overlay_index.search(subquery, top_k=effective_candidate_k),
-                context=context,
+            (
+                overlay_index.search(subquery, top_k=effective_candidate_k)
+                if private_index is not None
+                else filter_customer_pack_hits_by_selection(
+                    overlay_index.search(subquery, top_k=effective_candidate_k),
+                    context=context,
+                    allowed_draft_ids=eligible_selected,
+                )
             )
             for subquery in rewritten_queries
         ]
@@ -108,6 +123,7 @@ def search_bm25_candidates(
             "candidate_k": effective_candidate_k,
             "count": len(bm25_hits),
             "overlay_count": len(overlay_hits),
+            "private_overlay_ready": private_index is not None,
             "summary": _summarize_hit_list(bm25_hits),
         },
     )
@@ -121,12 +137,19 @@ def search_bm25_candidates(
 def search_vector_candidates(
     retriever,
     *,
+    context,
     rewritten_queries: list[str],
     effective_candidate_k: int,
     trace_callback,
     timings_ms: dict[str, float],
 ) -> dict[str, object]:
-    if retriever.vector_retriever is None:
+    _private_probe_hits, private_probe_runtime = search_selected_customer_pack_private_vectors(
+        retriever.settings,
+        context=context,
+        query=rewritten_queries[0] if rewritten_queries else "",
+        top_k=effective_candidate_k,
+    )
+    if retriever.vector_retriever is None and str(private_probe_runtime.get("status") or "") != "ready":
         _emit_trace_event(
             trace_callback,
             step="vector_search",
@@ -146,21 +169,51 @@ def search_vector_candidates(
         vector_hit_sets: list[list[RetrievalHit]] = []
         vector_subqueries: list[dict[str, object]] = []
         for subquery in rewritten_queries:
-            if hasattr(retriever.vector_retriever, "search_with_trace"):
-                hits, runtime = retriever.vector_retriever.search_with_trace(
-                    subquery,
+            official_hits: list[RetrievalHit] = []
+            runtime = {
+                "endpoint_used": "",
+                "attempted_endpoints": [],
+                "hit_count": 0,
+                "top_score": None,
+            }
+            if retriever.vector_retriever is not None:
+                if hasattr(retriever.vector_retriever, "search_with_trace"):
+                    official_hits, runtime = retriever.vector_retriever.search_with_trace(
+                        subquery,
+                        top_k=effective_candidate_k,
+                    )
+                else:
+                    official_hits = retriever.vector_retriever.search(subquery, top_k=effective_candidate_k)
+                    runtime = {
+                        "endpoint_used": "",
+                        "attempted_endpoints": [],
+                        "hit_count": len(official_hits),
+                        "top_score": float(official_hits[0].raw_score) if official_hits else None,
+                    }
+            private_hits, private_runtime = search_selected_customer_pack_private_vectors(
+                retriever.settings,
+                context=context,
+                query=subquery,
+                top_k=effective_candidate_k,
+            )
+            merged_hits = (
+                _rrf_merge_named_hit_lists(
+                    {
+                        "vector": official_hits,
+                        "private_vector": private_hits,
+                    },
+                    source_name="vector",
                     top_k=effective_candidate_k,
+                    weights={"vector": 1.0, "private_vector": 1.15},
                 )
-            else:
-                hits = retriever.vector_retriever.search(subquery, top_k=effective_candidate_k)
-                runtime = {
-                    "endpoint_used": "",
-                    "attempted_endpoints": [],
-                    "hit_count": len(hits),
-                    "top_score": float(hits[0].raw_score) if hits else None,
-                }
-            vector_hit_sets.append(hits)
-            vector_subqueries.append(_vector_subquery_runtime(query=subquery, runtime=runtime))
+                if official_hits and private_hits
+                else (private_hits or official_hits)
+            )
+            vector_hit_sets.append(merged_hits)
+            runtime_payload = _vector_subquery_runtime(query=subquery, runtime=runtime)
+            runtime_payload["private_vector_status"] = str(private_runtime.get("status", ""))
+            runtime_payload["private_hit_count"] = int(private_runtime.get("hit_count", 0) or 0)
+            vector_subqueries.append(runtime_payload)
         vector_hits = _rrf_merge_hit_lists(
             vector_hit_sets,
             source_name="vector",

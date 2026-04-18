@@ -9,6 +9,15 @@ from typing import Any
 from urllib.parse import parse_qs, urljoin, urlparse, urlunparse
 
 from play_book_studio.app.data_control_room import build_data_control_room_payload
+from play_book_studio.app.customer_pack_read_boundary import (
+    blocked_customer_pack_draft_ids_from_payload,
+    customer_pack_draft_id_from_viewer_path,
+    load_customer_pack_read_boundary,
+    sanitize_customer_pack_book_payload,
+    sanitize_customer_pack_draft_payload,
+    sanitize_customer_pack_source_meta_payload,
+    sanitize_debug_chat_log_entry,
+)
 from play_book_studio.app.repository_registry import (
     list_repository_favorites as _list_repository_favorites,
     remove_repository_favorite as _remove_repository_favorite,
@@ -72,6 +81,18 @@ _DOCS_DIRECTORY_VIEWER_PATH_RE = re.compile(r"^/docs/ocp/[^/]+/[^/]+/[^/]+$")
 _ACTIVE_RUNTIME_DIRECTORY_VIEWER_PATH_RE = re.compile(r"^/playbooks/wiki-runtime/active/[^/]+$")
 _ENTITY_DIRECTORY_VIEWER_PATH_RE = re.compile(r"^/wiki/entities/[^/]+$")
 _FIGURE_DIRECTORY_VIEWER_PATH_RE = re.compile(r"^/wiki/figures/[^/]+/[^/]+$")
+
+
+def _send_customer_pack_read_blocked(handler: Any) -> None:
+    handler._send_json(
+        {"error": "요청한 customer pack runtime을 찾을 수 없습니다."},
+        HTTPStatus.NOT_FOUND,
+    )
+
+
+def _customer_pack_read_allowed(root_dir: Path, draft_id: str) -> bool:
+    summary = load_customer_pack_read_boundary(root_dir, draft_id)
+    return bool(summary.get("read_allowed", False))
 
 
 def _scope_viewer_style(style_text: str) -> str:
@@ -350,6 +371,10 @@ def handle_source_meta(handler: Any, query: str, *, root_dir: Path) -> None:
     if not viewer_path:
         handler._send_json({"error": "viewer_path가 필요합니다."}, HTTPStatus.BAD_REQUEST)
         return
+    customer_pack_draft_id = customer_pack_draft_id_from_viewer_path(viewer_path)
+    if customer_pack_draft_id and not _customer_pack_read_allowed(root_dir, customer_pack_draft_id):
+        _send_customer_pack_read_blocked(handler)
+        return
 
     payload = _viewer_source_meta(root_dir, viewer_path)
     if payload is None:
@@ -358,6 +383,8 @@ def handle_source_meta(handler: Any, query: str, *, root_dir: Path) -> None:
             HTTPStatus.BAD_REQUEST,
         )
         return
+    if customer_pack_draft_id:
+        payload = sanitize_customer_pack_source_meta_payload(payload)
     handler._send_json(payload)
 
 
@@ -368,6 +395,10 @@ def handle_viewer_document(handler: Any, query: str, *, root_dir: Path) -> None:
         handler._send_json({"error": "viewer_path가 필요합니다."}, HTTPStatus.BAD_REQUEST)
         return
     viewer_path = _canonicalize_viewer_path(viewer_path)
+    customer_pack_draft_id = customer_pack_draft_id_from_viewer_path(viewer_path)
+    if customer_pack_draft_id and not _customer_pack_read_allowed(root_dir, customer_pack_draft_id):
+        _send_customer_pack_read_blocked(handler)
+        return
     html_text = _viewer_html_for_path(root_dir, viewer_path)
     if html_text is None:
         handler._send_json({"error": "viewer document를 찾을 수 없습니다."}, HTTPStatus.NOT_FOUND)
@@ -434,7 +465,12 @@ def handle_session_load(handler: Any, query: str, *, store: Any) -> None:
         handler._send_json({"error": "Session not found"}, HTTPStatus.NOT_FOUND)
         return
     from play_book_studio.app.sessions import serialize_session_snapshot
-    handler._send_json(serialize_session_snapshot(session))
+    payload = serialize_session_snapshot(session)
+    blocked = blocked_customer_pack_draft_ids_from_payload(Path(store._root_dir or "."), payload)
+    if blocked:
+        handler._send_json({"error": "Session not found"}, HTTPStatus.NOT_FOUND)
+        return
+    handler._send_json(payload)
 
 
 def handle_session_delete(handler: Any, payload: dict[str, Any], *, store: Any) -> None:
@@ -462,7 +498,12 @@ def handle_debug_session(handler: Any, query: str, *, store: Any, build_session_
     if session is None:
         handler._send_json({"error": "조회할 세션이 없습니다."}, HTTPStatus.NOT_FOUND)
         return
-    handler._send_json(build_session_debug_payload(session))
+    payload = build_session_debug_payload(session)
+    blocked = blocked_customer_pack_draft_ids_from_payload(Path(store._root_dir or "."), payload)
+    if blocked:
+        handler._send_json({"error": "조회할 세션이 없습니다."}, HTTPStatus.NOT_FOUND)
+        return
+    handler._send_json(payload)
 
 
 def handle_debug_chat_log(handler: Any, query: str, *, root_dir: Path) -> None:
@@ -476,12 +517,17 @@ def handle_debug_chat_log(handler: Any, query: str, *, root_dir: Path) -> None:
 
     log_path = load_settings(root_dir).chat_log_path
     if not log_path.exists():
-        handler._send_json({"entries": [], "count": 0, "path": str(log_path)})
+        handler._send_json({"entries": [], "count": 0})
         return
 
     lines = log_path.read_text(encoding="utf-8").splitlines()
     entries = [json.loads(line) for line in lines[-limit:] if line.strip()]
-    handler._send_json({"entries": entries, "count": len(entries), "path": str(log_path)})
+    sanitized_entries = [
+        sanitize_debug_chat_log_entry(entry)
+        for entry in entries
+        if not blocked_customer_pack_draft_ids_from_payload(root_dir, entry)
+    ]
+    handler._send_json({"entries": sanitized_entries, "count": len(sanitized_entries)})
 
 
 def handle_data_control_room(handler: Any, query: str, *, root_dir: Path) -> dict[str, Any]:
@@ -549,14 +595,24 @@ def handle_customer_pack_drafts(handler: Any, query: str, *, root_dir: Path) -> 
     params = parse_qs(query, keep_blank_values=False)
     draft_id = str((params.get("draft_id") or [""])[0]).strip()
     if not draft_id:
-        handler._send_json(_list_customer_pack_drafts(root_dir))
+        payload = _list_customer_pack_drafts(root_dir)
+        allowed_drafts = [
+            sanitize_customer_pack_draft_payload(draft)
+            for draft in (payload.get("drafts") or [])
+            if isinstance(draft, dict)
+            and _customer_pack_read_allowed(root_dir, str(draft.get("draft_id") or ""))
+        ]
+        handler._send_json({"drafts": allowed_drafts, "count": len(allowed_drafts)})
+        return
+    if not _customer_pack_read_allowed(root_dir, draft_id):
+        _send_customer_pack_read_blocked(handler)
         return
 
     draft = _load_customer_pack_draft(root_dir, draft_id)
     if draft is None:
         handler._send_json({"error": "업로드 플레이북 초안을 찾을 수 없습니다."}, HTTPStatus.NOT_FOUND)
         return
-    handler._send_json(draft)
+    handler._send_json(sanitize_customer_pack_draft_payload(draft))
 
 
 def handle_repository_search(handler: Any, query: str, *, root_dir: Path) -> None:
@@ -660,6 +716,9 @@ def handle_customer_pack_captured(handler: Any, query: str, *, root_dir: Path) -
     if not draft_id:
         handler._send_json({"error": "draft_id가 필요합니다."}, HTTPStatus.BAD_REQUEST)
         return
+    if not _customer_pack_read_allowed(root_dir, draft_id):
+        _send_customer_pack_read_blocked(handler)
+        return
 
     capture = _load_customer_pack_capture(root_dir, draft_id)
     if capture is None:
@@ -676,6 +735,9 @@ def handle_customer_pack_book(handler: Any, query: str, *, root_dir: Path) -> No
     if not draft_id:
         handler._send_json({"error": "draft_id가 필요합니다."}, HTTPStatus.BAD_REQUEST)
         return
+    if not _customer_pack_read_allowed(root_dir, draft_id):
+        _send_customer_pack_read_blocked(handler)
+        return
 
     payload = _load_customer_pack_book(root_dir, draft_id)
     if payload is None:
@@ -684,7 +746,7 @@ def handle_customer_pack_book(handler: Any, query: str, *, root_dir: Path) -> No
             HTTPStatus.NOT_FOUND,
         )
         return
-    handler._send_json(payload)
+    handler._send_json(sanitize_customer_pack_book_payload(payload))
 
 
 def handle_customer_pack_draft_create(handler: Any, payload: dict[str, Any], *, root_dir: Path) -> None:

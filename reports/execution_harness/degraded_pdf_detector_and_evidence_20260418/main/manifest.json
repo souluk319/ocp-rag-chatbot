@@ -1,0 +1,43 @@
+{
+  "task_id": "degraded_pdf_detector_and_evidence_20260418",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": true,
+  "parallel_execution_required": true,
+  "cwd": "C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio",
+  "python_path": "C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/.venv/Scripts/python.exe",
+  "worktree_path": "C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio",
+  "write_scope": [
+    "reports/execution_harness/degraded_pdf_detector_and_evidence_20260418/**",
+    "src/play_book_studio/intake/**",
+    "src/play_book_studio/app/**",
+    "tests/**"
+  ],
+  "target_outputs": [
+    "degraded PDF detector for customer-pack normalize flow",
+    "optional fallback seam that does not require fallback parser installation",
+    "normalize evidence contract with degraded and fallback metadata",
+    "focused tests for degraded positive, normal negative, missing-fallback graceful behavior, and evidence surfacing"
+  ],
+  "validation_commands": [
+    ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_intake_multiformat.py tests\\test_app_intake_ui.py -q"
+  ],
+  "companion_lanes": [
+    {
+      "lane_id": "explorer_seam_map",
+      "agent_id": "019d9f75-d3bb-75d0-a6c9-4c45a2c7b776",
+      "role": "explorer"
+    },
+    {
+      "lane_id": "worker_test_planner",
+      "agent_id": "019d9f75-d3f4-7522-80a0-94c8d35c8306",
+      "role": "worker"
+    },
+    {
+      "lane_id": "reviewer_failure_modes",
+      "agent_id": "019d9f75-d417-7292-bf49-2f995857840f",
+      "role": "reviewer"
+    }
+  ],
+  "status": "completed"
+}

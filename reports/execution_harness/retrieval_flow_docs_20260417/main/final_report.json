@@ -1,0 +1,22 @@
+{
+  "task_id": "retrieval_flow_docs_20260417",
+  "lane_id": "main",
+  "status": "completed",
+  "current_judgment": "a single human-readable retrieval explainer now exists under docs/, and it explains both the repo role split (`src` vs `scripts`) and the current retrieval path from query normalization through graph/rerank to RetrievalResult.",
+  "key_evidence": [
+    "docs/retrieval_flow.md explains the src-layout package model and positions scripts/ as task-oriented operational entrypoints rather than runtime truth owners",
+    "the doc points readers to answerer.py, retriever.py, retriever_pipeline.py, retriever_plan.py, retriever_search.py, graph_runtime.py, retriever_rerank.py, and models.py as the main files to open",
+    "the retrieval sequence is documented in human terms: normalize -> rewrite/decompose -> BM25 -> vector -> fusion -> graph expand -> rerank -> RetrievalResult -> answer stage"
+  ],
+  "artifact_paths": [
+    "docs/retrieval_flow.md",
+    "reports/execution_harness/retrieval_flow_docs_20260417/main/manifest.json",
+    "reports/execution_harness/retrieval_flow_docs_20260417/main/worklog.md",
+    "reports/execution_harness/retrieval_flow_docs_20260417/main/final_report.json"
+  ],
+  "validation_results": {
+    "doc_exists": "Test-Path docs\\retrieval_flow.md -> True",
+    "section_structure": "Select-String -Path docs\\retrieval_flow.md -Pattern '^## ' found the expected explainer sections"
+  },
+  "next_action": "if needed, split this into docs/repo_structure.md and docs/answer_flow.md in a follow-up cleanup packet; for now the single retrieval explainer is enough to orient a new reader."
+}

@@ -1,0 +1,52 @@
+{
+  "task_id": "customer_pack_read_surface_fail_close_20260418",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": true,
+  "parallel_execution_required": true,
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "src/play_book_studio/app/server_routes.py",
+    "src/play_book_studio/app/source_books_customer_pack.py",
+    "src/play_book_studio/app/presenters.py",
+    "src/play_book_studio/app/chat_debug.py",
+    "src/play_book_studio/app/sessions.py",
+    "src/play_book_studio/app/customer_pack_read_boundary.py",
+    "tests/test_app_intake_ui.py",
+    "tests/test_private_lane_smoke.py",
+    "tests/test_server_chat.py",
+    "tests/test_customer_pack_read_boundary.py"
+  ],
+  "target_outputs": [
+    "customer-pack read surfaces fail-close on unreviewed or placeholder private drafts",
+    "approved non-default envelope remains readable across allowed surfaces",
+    "debug/session payloads stop leaking blocked private read data and unnecessary diagnostics"
+  ],
+  "validation_commands": [
+    ".\\.venv\\Scripts\\python.exe -m py_compile src\\play_book_studio\\app\\customer_pack_read_boundary.py src\\play_book_studio\\app\\server_routes.py src\\play_book_studio\\app\\source_books_customer_pack.py src\\play_book_studio\\app\\presenters.py src\\play_book_studio\\app\\chat_debug.py tests\\test_customer_pack_read_boundary.py tests\\test_app_intake_ui.py tests\\test_private_lane_smoke.py tests\\test_server_chat.py",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_customer_pack_read_boundary.py tests\\test_app_intake_ui.py tests\\test_private_lane_smoke.py tests\\test_server_chat.py -q"
+  ],
+  "companion_lanes": [
+    {
+      "lane_id": "explorer-bohr",
+      "agent_id": "019d9f91-2cf5-7db3-8d5a-bb56356fb1c4",
+      "role": "explorer",
+      "scope": "route seam mapping and common helper insertion points"
+    },
+    {
+      "lane_id": "worker-gauss",
+      "agent_id": "019d9f91-2d2b-7423-a005-5e4161c9079e",
+      "role": "worker",
+      "scope": "test impact narrowing and fixture reuse"
+    },
+    {
+      "lane_id": "reviewer-rawls",
+      "agent_id": "019d9f91-2d56-7e43-8aa2-c1fbb6e17d5e",
+      "role": "reviewer",
+      "scope": "security boundary review and payload redaction gaps"
+    }
+  ],
+  "status": "completed"
+}

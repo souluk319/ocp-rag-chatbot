@@ -240,6 +240,140 @@
   color: #c8defc;
 }
 
+/* --- Explain layer ------------------------------------------------------ */
+
+.wtp-explain {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wtp-explain-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.wtp-explain-stages {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.wtp-explain-stage {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  padding: 12px 13px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--wtp-card-border);
+}
+
+.wtp-explain-stage-step {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #dff5ff;
+  background: rgba(0, 209, 255, 0.16);
+  border: 1px solid rgba(0, 209, 255, 0.32);
+  flex-shrink: 0;
+}
+
+.wtp-explain-stage-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wtp-explain-stage-title {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #f6f8fb;
+}
+
+.wtp-explain-stage-summary {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.wtp-explain-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.wtp-explain-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 132px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--wtp-card-bg);
+  border: 1px solid var(--wtp-card-border);
+}
+
+.wtp-explain-card h3 {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #f6f8fb;
+  line-height: 1.3;
+}
+
+.wtp-explain-card-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.wtp-explain-card-body {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.wtp-explain-evidence {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wtp-explain-evidence-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid var(--wtp-card-border);
+}
+
+.wtp-explain-evidence-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #f0f4fa;
+}
+
+.wtp-explain-evidence-reason {
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
 /* --- Stage timeline (HERO) ---------------------------------------------- */
 
 .wtp-timeline-wrap {
@@ -938,6 +1072,10 @@
 /* --- Responsive --------------------------------------------------------- */
 
 @media (max-width: 1240px) {
+  .wtp-explain-stages,
+  .wtp-explain-grid {
+    grid-template-columns: 1fr;
+  }
   .wtp-grid {
     grid-template-columns: 1fr;
   }
@@ -954,6 +1092,9 @@
 @media (max-width: 720px) {
   .wtp { padding: 14px; }
   .wtp-stage { min-width: 78px; }
+  .wtp-explain-stage {
+    grid-template-columns: 1fr;
+  }
   .wtp-events-table { grid-template-columns: 1fr; }
   .wtp-events-table > .wtp-events-head { display: none; }
   .wtp-scoretable { grid-template-columns: 1fr; }

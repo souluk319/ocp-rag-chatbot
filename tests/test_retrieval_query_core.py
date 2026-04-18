@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = ROOT / "tests"
@@ -29,6 +30,49 @@ from _support_retrieval import (
     query_book_adjustments,
     rewrite_query,
 )
+
+
+def _write_private_runtime_manifest(
+    settings: Settings,
+    *,
+    draft_id: str,
+    approval_state: str = "approved",
+    tenant_id: str = "tenant-a",
+    workspace_id: str = "workspace-a",
+    vector_status: str = "skipped",
+) -> Path:
+    corpus_dir = settings.customer_pack_corpus_dir / draft_id
+    corpus_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = corpus_dir / "manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "artifact_version": "customer_private_corpus_v1",
+                "draft_id": draft_id,
+                "tenant_id": tenant_id,
+                "workspace_id": workspace_id,
+                "pack_id": f"customer-pack:{draft_id}",
+                "pack_version": draft_id,
+                "classification": "private",
+                "access_groups": [workspace_id, tenant_id],
+                "provider_egress_policy": "local_only",
+                "approval_state": approval_state,
+                "publication_state": "draft",
+                "redaction_state": "not_required",
+                "source_lane": "customer_source_first_pack",
+                "source_collection": "uploaded",
+                "boundary_truth": "private_customer_pack_runtime",
+                "runtime_truth_label": "Customer Source-First Pack",
+                "boundary_badge": "Private Pack Runtime",
+                "vector_status": vector_status,
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return manifest_path
+
 
 class TestRetrievalQueryCore(unittest.TestCase):
     def test_decompose_retrieval_queries_splits_compare_question(self) -> None:
@@ -182,6 +226,30 @@ class TestRetrievalQueryCore(unittest.TestCase):
 
         self.assertEqual(["draft-a:overview"], [hit.chunk_id for hit in filtered])
 
+    def test_filter_customer_pack_hits_by_selection_keeps_selected_root_for_derived_asset(self) -> None:
+        derived_hit = RetrievalHit(
+            chunk_id="draft-a--operation_playbook:overview",
+            book_slug="draft-a--operation_playbook",
+            chapter="개요",
+            section="파생 문서",
+            anchor="overview",
+            source_url="/tmp/a.pdf",
+            viewer_path="/playbooks/customer-packs/draft-a/assets/operation-playbook/index.html#overview",
+            text="선택된 업로드의 파생 플레이북",
+            source="overlay_bm25",
+            raw_score=1.0,
+        )
+
+        filtered = _filter_customer_pack_hits_by_selection(
+            [derived_hit],
+            context=SessionContext(
+                selected_draft_ids=["draft-a"],
+                restrict_uploaded_sources=True,
+            ),
+        )
+
+        self.assertEqual(["draft-a--operation_playbook:overview"], [hit.chunk_id for hit in filtered])
+
     def test_filter_customer_pack_hits_by_selection_returns_no_overlay_hits_when_none_checked(self) -> None:
         hit = RetrievalHit(
             chunk_id="draft-a:overview",
@@ -210,6 +278,7 @@ class TestRetrievalQueryCore(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             settings = Settings(root_dir=root)
+            _write_private_runtime_manifest(settings, draft_id="dtb-demo")
             (settings.customer_pack_books_dir / "dtb-demo.json").write_text(
                 json.dumps(
                     {
@@ -284,6 +353,7 @@ class TestRetrievalQueryCore(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             settings = Settings(root_dir=root)
+            _write_private_runtime_manifest(settings, draft_id="dtb-demo")
             (settings.customer_pack_books_dir / "dtb-demo.json").write_text(
                 json.dumps(
                     {
@@ -339,6 +409,315 @@ class TestRetrievalQueryCore(unittest.TestCase):
         self.assertEqual("customer-backup-runbook", result.hits[0].book_slug)
         self.assertEqual("uploaded", result.hits[0].source_collection)
         self.assertEqual(1, result.trace["metrics"]["overlay_bm25"]["count"])
+
+    def test_retriever_prioritizes_selected_uploaded_snippet_without_explicit_customer_doc_phrase(self) -> None:
+        class _FakeVectorRetriever:
+            def search(self, query: str, top_k: int):
+                del query, top_k
+                return [
+                    RetrievalHit(
+                        chunk_id="core-configmap-secret",
+                        book_slug="authentication_and_authorization",
+                        chapter="auth",
+                        section="ConfigMap and Secret defaults",
+                        anchor="configmap-secret",
+                        source_url="https://example.com/core",
+                        viewer_path="/docs/core.html#configmap-secret",
+                        text="ConfigMap Secret handling in OpenShift",
+                        source="vector",
+                        raw_score=0.95,
+                        fused_score=0.95,
+                    )
+                ]
+
+        class _OfficialFirstReranker:
+            def __init__(self) -> None:
+                self.model_name = "official-first-reranker"
+                self.top_n = 8
+
+            def rerank(self, query: str, hits: list[RetrievalHit], *, top_k: int):
+                del query, top_k
+                promoted = sorted(
+                    hits,
+                    key=lambda hit: (
+                        0 if str(hit.source_collection or "").strip() != "uploaded" else 1,
+                        hit.book_slug,
+                    ),
+                )
+                for index, hit in enumerate(promoted, start=1):
+                    hit.component_scores["pre_rerank_fused_score"] = float(hit.fused_score)
+                    hit.component_scores["reranker_score"] = float(10 - index)
+                    hit.fused_score = float(10 - index)
+                    hit.raw_score = float(10 - index)
+                return promoted
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = Settings(root_dir=root)
+            _write_private_runtime_manifest(settings, draft_id="draft-a")
+            (settings.customer_pack_books_dir / "draft-a.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "canonical_book_v1",
+                        "book_slug": "customer-config-guide",
+                        "title": "Customer Config Guide",
+                        "source_type": "pdf",
+                        "source_uri": "/tmp/customer.pdf",
+                        "language_hint": "ko",
+                        "source_view_strategy": "normalized_sections_v1",
+                        "retrieval_derivation": "chunks_from_canonical_sections",
+                        "quality_status": "ready",
+                        "sections": [
+                            {
+                                "ordinal": 1,
+                                "section_key": "customer-config-guide:snippet",
+                                "heading": "ConfigMap Secret",
+                                "section_level": 2,
+                                "section_path": ["ConfigMap Secret"],
+                                "section_path_label": "ConfigMap Secret",
+                                "anchor": "snippet",
+                                "viewer_path": "/playbooks/customer-packs/draft-a/index.html#snippet",
+                                "source_url": "/tmp/customer.pdf",
+                                "text": "ConfigMap Secret values must be synchronized before rollout.",
+                                "block_kinds": ["paragraph"],
+                            }
+                        ],
+                        "notes": [],
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            retriever = ChatRetriever(
+                settings,
+                BM25Index.from_rows(
+                    [
+                        {
+                            "chunk_id": "core-bm25-configmap-secret",
+                            "book_slug": "configuration",
+                            "chapter": "config",
+                            "section": "ConfigMap Secret reference",
+                            "anchor": "cfg",
+                            "source_url": "https://example.com/config",
+                            "viewer_path": "/docs/config.html#cfg",
+                            "text": "ConfigMap Secret reference for OpenShift configuration",
+                        }
+                    ]
+                ),
+                vector_retriever=_FakeVectorRetriever(),
+                reranker=_OfficialFirstReranker(),
+            )
+
+            result = retriever.retrieve(
+                "ConfigMap Secret",
+                context=SessionContext(
+                    selected_draft_ids=["draft-a"],
+                    restrict_uploaded_sources=True,
+                ),
+                use_vector=True,
+                top_k=3,
+                candidate_k=5,
+            )
+
+        self.assertEqual("customer-config-guide", result.hits[0].book_slug)
+        self.assertEqual("uploaded", result.hits[0].source_collection)
+        self.assertEqual("uploaded", result.trace["hybrid"][0]["source_collection"])
+        self.assertEqual("uploaded", result.trace["reranked"][0]["source_collection"])
+        self.assertIn("uploaded_customer_pack_priority", result.trace["reranker"]["rebalance_reasons"])
+
+    def test_retriever_uses_private_customer_corpus_bm25_artifact_when_selected_draft_is_active(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = Settings(root_dir=root)
+            corpus_dir = settings.customer_pack_corpus_dir / "draft-a"
+            _write_private_runtime_manifest(settings, draft_id="draft-a", vector_status="skipped")
+            (corpus_dir / "bm25_corpus.jsonl").write_text(
+                json.dumps(
+                    {
+                        "chunk_id": "draft-a:snippet",
+                        "book_slug": "customer-config-guide",
+                        "chapter": "Customer Config Guide",
+                        "section": "ConfigMap Secret",
+                        "anchor": "snippet",
+                        "source_url": "/tmp/customer.pdf",
+                        "viewer_path": "/playbooks/customer-packs/draft-a/index.html#snippet",
+                        "text": "ConfigMap Secret values must be synchronized before rollout.",
+                        "section_path": ["ConfigMap Secret"],
+                        "chunk_type": "reference",
+                        "source_id": "customer_pack:draft-a",
+                        "source_lane": "customer_source_first_pack",
+                        "source_type": "manual_book",
+                        "source_collection": "uploaded",
+                        "product": "customer_pack",
+                        "version": "draft-a",
+                        "locale": "ko",
+                        "translation_status": "approved_ko",
+                        "review_status": "unreviewed",
+                        "trust_score": 1.0,
+                        "semantic_role": "reference",
+                        "cli_commands": [],
+                        "error_strings": [],
+                        "k8s_objects": [],
+                        "operator_names": [],
+                        "verification_hints": [],
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            retriever = ChatRetriever(settings, BM25Index.from_rows([]), vector_retriever=None)
+
+            result = retriever.retrieve(
+                "ConfigMap Secret",
+                context=SessionContext(
+                    selected_draft_ids=["draft-a"],
+                    restrict_uploaded_sources=True,
+                ),
+                use_vector=False,
+                top_k=3,
+                candidate_k=5,
+            )
+
+        self.assertEqual("customer-config-guide", result.hits[0].book_slug)
+        self.assertEqual("uploaded", result.hits[0].source_collection)
+        self.assertEqual(1, result.trace["metrics"]["overlay_bm25"]["count"])
+
+    def test_retriever_blocks_private_customer_corpus_bm25_artifact_when_boundary_is_not_runtime_eligible(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = Settings(root_dir=root)
+            corpus_dir = settings.customer_pack_corpus_dir / "draft-a"
+            _write_private_runtime_manifest(
+                settings,
+                draft_id="draft-a",
+                approval_state="unreviewed",
+                tenant_id="default-tenant",
+                workspace_id="default-workspace",
+                vector_status="skipped",
+            )
+            (corpus_dir / "bm25_corpus.jsonl").write_text(
+                json.dumps(
+                    {
+                        "chunk_id": "draft-a:snippet",
+                        "book_slug": "customer-config-guide",
+                        "chapter": "Customer Config Guide",
+                        "section": "ConfigMap Secret",
+                        "anchor": "snippet",
+                        "source_url": "/tmp/customer.pdf",
+                        "viewer_path": "/playbooks/customer-packs/draft-a/index.html#snippet",
+                        "text": "ConfigMap Secret values must be synchronized before rollout.",
+                        "section_path": ["ConfigMap Secret"],
+                        "chunk_type": "reference",
+                        "source_id": "customer_pack:draft-a",
+                        "source_lane": "customer_source_first_pack",
+                        "source_type": "manual_book",
+                        "source_collection": "uploaded",
+                        "product": "customer_pack",
+                        "version": "draft-a",
+                        "locale": "ko",
+                        "translation_status": "approved_ko",
+                        "review_status": "unreviewed",
+                        "trust_score": 1.0,
+                        "semantic_role": "reference",
+                        "cli_commands": [],
+                        "error_strings": [],
+                        "k8s_objects": [],
+                        "operator_names": [],
+                        "verification_hints": [],
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            retriever = ChatRetriever(settings, BM25Index.from_rows([]), vector_retriever=None)
+
+            result = retriever.retrieve(
+                "ConfigMap Secret",
+                context=SessionContext(
+                    selected_draft_ids=["draft-a"],
+                    restrict_uploaded_sources=True,
+                ),
+                use_vector=False,
+                top_k=3,
+                candidate_k=5,
+            )
+
+        self.assertEqual([], result.hits)
+        self.assertEqual(0, result.trace["metrics"].get("overlay_bm25", {}).get("count", 0))
+
+    def test_retriever_uses_private_customer_corpus_vector_artifact_without_official_qdrant(self) -> None:
+        class _FakeVectorRow:
+            def __init__(self, values: list[float]) -> None:
+                self._values = values
+
+            def tolist(self) -> list[float]:
+                return list(self._values)
+
+        class _FakeModel:
+            def encode(self, texts, **kwargs):
+                del kwargs
+                return [_FakeVectorRow([1.0, 0.0, 0.0]) for _ in texts]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = Settings(root_dir=root)
+            corpus_dir = settings.customer_pack_corpus_dir / "draft-a"
+            _write_private_runtime_manifest(settings, draft_id="draft-a", vector_status="ready")
+            (corpus_dir / "vector_store.jsonl").write_text(
+                json.dumps(
+                    {
+                        "chunk_id": "draft-a:snippet",
+                        "book_slug": "customer-config-guide",
+                        "chapter": "Customer Config Guide",
+                        "section": "ConfigMap Secret",
+                        "section_id": "customer-config-guide:snippet",
+                        "anchor": "snippet",
+                        "source_url": "/tmp/customer.pdf",
+                        "viewer_path": "/playbooks/customer-packs/draft-a/index.html#snippet",
+                        "text": "ConfigMap Secret values must be synchronized before rollout.",
+                        "section_path": ["ConfigMap Secret"],
+                        "chunk_type": "reference",
+                        "source_id": "customer_pack:draft-a",
+                        "source_lane": "customer_source_first_pack",
+                        "source_type": "manual_book",
+                        "source_collection": "uploaded",
+                        "review_status": "unreviewed",
+                        "trust_score": 1.0,
+                        "semantic_role": "reference",
+                        "block_kinds": ["paragraph"],
+                        "cli_commands": [],
+                        "error_strings": [],
+                        "k8s_objects": [],
+                        "operator_names": [],
+                        "verification_hints": [],
+                        "vector": [1.0, 0.0, 0.0],
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            retriever = ChatRetriever(settings, BM25Index.from_rows([]), vector_retriever=None)
+
+            with patch("play_book_studio.retrieval.intake_overlay.load_sentence_model", return_value=_FakeModel()):
+                result = retriever.retrieve(
+                    "ConfigMap Secret",
+                    context=SessionContext(
+                        selected_draft_ids=["draft-a"],
+                        restrict_uploaded_sources=True,
+                    ),
+                    use_bm25=False,
+                    use_vector=True,
+                    top_k=3,
+                    candidate_k=5,
+                )
+
+        self.assertEqual("customer-config-guide", result.hits[0].book_slug)
+        self.assertEqual("uploaded", result.hits[0].source_collection)
+        self.assertEqual("ready", result.trace["vector_runtime"]["subqueries"][0]["private_vector_status"])
 
     def test_has_deployment_scaling_intent_detects_replica_change_question(self) -> None:
         self.assertTrue(

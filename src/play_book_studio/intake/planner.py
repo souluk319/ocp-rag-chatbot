@@ -352,7 +352,7 @@ def _detect_block_kinds(text: str) -> tuple[str, ...]:
         kinds.append("paragraph")
     if "[CODE]" in normalized and "[/CODE]" in normalized:
         kinds.append("code")
-    if "[TABLE]" in normalized and "[/TABLE]" in normalized:
+    if "[TABLE" in normalized and "[/TABLE]" in normalized:
         kinds.append("table")
     return tuple(kinds)
 

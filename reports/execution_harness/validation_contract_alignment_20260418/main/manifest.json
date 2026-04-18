@@ -1,0 +1,30 @@
+{
+  "packet_id": "validation_contract_alignment_20260418",
+  "mode": "default",
+  "status": "completed",
+  "goal": "Lock validator expectations to the runtime baseline and rebuild a clean runtime-aligned chunks/qdrant snapshot so morning_gate clears release_blocking.",
+  "change_scope": [
+    "validator expectation contract",
+    "source approval/manual_synthesis overlay alignment",
+    "reader-grade blocker vs warning boundary for approved manual_synthesis",
+    "foundry gate rerun against a clean 29-source snapshot"
+  ],
+  "non_goals": [
+    "new product features",
+    "UI changes",
+    "large refactors",
+    "viewer perfection for English-heading manual_synthesis books"
+  ],
+  "lanes": [
+    {
+      "id": "main",
+      "role": "implementation_and_validation"
+    }
+  ],
+  "evidence": [
+    "reports/build_logs/foundry_runs/profiles/morning_gate/latest.json",
+    "reports/build_logs/foundry_runs/validation_gate/latest.json",
+    "reports/build_logs/foundry_runs/runtime_smoke/latest.json",
+    "artifacts/corpus/source_approval_report.json"
+  ]
+}

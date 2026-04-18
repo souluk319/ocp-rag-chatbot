@@ -401,7 +401,13 @@ def _sanitize_table_html(table_html: str) -> str:
     return sanitized.strip()
 
 
-def _render_table_block_html(table_text: str, *, caption: str = "", table_html: str = "") -> str:
+def _render_table_block_html(
+    table_text: str,
+    *,
+    caption: str = "",
+    table_html: str = "",
+    has_header: bool | None = None,
+) -> str:
     if str(table_html or "").strip():
         caption_html = (
             '<div class="table-caption">{}</div>'.format(html.escape(caption))
@@ -440,10 +446,21 @@ def _render_table_block_html(table_text: str, *, caption: str = "", table_html: 
     headers = rows[0]
     body = rows[1:]
     if len(raw_lines) >= 2 and MARKDOWN_TABLE_DIVIDER_RE.match(raw_lines[1]):
-        body = rows[2:]
-    if not body:
-        body = [headers]
+        if has_header is False:
+            headers = []
+            body = [rows[0], *rows[2:]]
+        else:
+            headers = rows[0]
+            body = rows[2:]
+    elif has_header is False:
         headers = []
+        body = rows
+    if not body:
+        if headers:
+            body = [headers]
+            headers = []
+        else:
+            body = rows
     header_html = ""
     if headers:
         header_cells = "".join(f"<th>{html.escape(cell)}</th>" for cell in headers)
@@ -769,10 +786,16 @@ def _render_normalized_section_html(text: str) -> str:
             flush_paragraph_queue()
             attrs = _parse_marker_attrs(table_match.group("attrs"))
             table_text = table_match.group("body").strip("\n")
+            has_header_attr = attrs.get("header")
             blocks.append(
                 _render_table_block_html(
                     table_text,
                     caption=str(attrs.get("caption") or "").strip(),
+                    has_header=(
+                        _parse_bool_attr(has_header_attr, True)
+                        if has_header_attr is not None
+                        else None
+                    ),
                 )
             )
             continue

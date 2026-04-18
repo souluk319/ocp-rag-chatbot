@@ -31,6 +31,8 @@ from _support_app_ui import (
     _serialize_citation,
 )
 from play_book_studio.app.server_routes import handle_customer_pack_support_matrix
+from play_book_studio.config.settings import load_settings
+from play_book_studio.intake.private_corpus import customer_pack_private_manifest_path
 
 class TestAppIntakeUi(unittest.TestCase):
     def test_build_customer_pack_plan_returns_resolved_web_capture(self) -> None:
@@ -379,6 +381,70 @@ class TestAppIntakeUi(unittest.TestCase):
         self.assertEqual(str(normalized["draft_id"]), normalized["book"]["draft_id"])
         self.assertIn("/playbooks/customer-packs/", normalized["book"]["target_viewer_path"])
 
+    def test_ingest_customer_pack_materializes_private_corpus_artifacts(self) -> None:
+        class _FakeTokenizer:
+            model_max_length = 1024
+
+            def __call__(self, text: str, **kwargs):
+                del kwargs
+                token_count = max(len(str(text).split()), 1)
+                return {"input_ids": list(range(token_count))}
+
+        class _FakeVectorRow:
+            def __init__(self, values: list[float]) -> None:
+                self._values = values
+
+            def tolist(self) -> list[float]:
+                return list(self._values)
+
+        class _FakeChunkingModel:
+            tokenizer = _FakeTokenizer()
+
+        class _FakeModel:
+            def encode(self, texts, **kwargs):
+                del kwargs
+                return [_FakeVectorRow([1.0, 0.0, 0.0]) for _ in texts]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source_md = root / "runbook.md"
+            source_md.write_text(
+                "# 운영 런북\n\n## ConfigMap Secret\n\nConfigMap Secret values must be synchronized before rollout.\n",
+                encoding="utf-8",
+            )
+
+            with patch("play_book_studio.intake.private_corpus.load_sentence_model", return_value=_FakeModel()):
+                with patch("play_book_studio.ingestion.chunking.load_sentence_model", return_value=_FakeChunkingModel()):
+                    normalized = _ingest_customer_pack(
+                        root,
+                        {
+                            "source_type": "md",
+                            "uri": str(source_md),
+                            "title": "운영 런북",
+                            "tenant_id": "tenant-a",
+                            "workspace_id": "workspace-a",
+                            "approval_state": "approved",
+                            "publication_state": "draft",
+                        },
+                    )
+
+            self.assertIn("private_corpus", normalized)
+            private_corpus = normalized["private_corpus"]
+            manifest_path = customer_pack_private_manifest_path(load_settings(root), str(normalized["draft_id"]))
+            corpus_dir = manifest_path.parent
+            self.assertTrue(manifest_path.exists())
+            self.assertTrue((corpus_dir / "chunks.jsonl").exists())
+            self.assertTrue((corpus_dir / "bm25_corpus.jsonl").exists())
+            self.assertTrue((corpus_dir / "vector_store.jsonl").exists())
+            self.assertEqual("customer_private_corpus_v1", private_corpus["artifact_version"])
+            self.assertEqual("ready", private_corpus["vector_status"])
+            self.assertTrue(private_corpus["runtime_eligible"])
+            self.assertEqual([], private_corpus["boundary_fail_reasons"])
+            self.assertGreater(int(private_corpus["chunk_count"]), 0)
+            self.assertEqual(str(normalized["draft_id"]), private_corpus["draft_id"])
+            self.assertNotIn("manifest_path", private_corpus)
+            self.assertNotIn("vector_error", private_corpus)
+
     def test_internal_customer_pack_viewer_renders_markdown_code_and_table_blocks(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -406,6 +472,44 @@ class TestAppIntakeUi(unittest.TestCase):
         self.assertIn('<pre><code>cluster-backup.sh /backup</code></pre>', viewer_html)
         self.assertIn("<table>", viewer_html)
         self.assertNotIn("<p>| 절차 | 명령어 |", viewer_html)
+
+    def test_internal_customer_pack_viewer_renders_sparse_pdf_table_without_fake_headers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source_pdf = root / "configmap-secret.pdf"
+            source_pdf.write_bytes(b"%PDF-1.4 sample")
+
+            captured = _capture_customer_pack_draft(
+                root,
+                {
+                    "source_type": "pdf",
+                    "uri": str(source_pdf),
+                    "title": "ConfigMap Secret",
+                },
+            )
+
+            with patch(
+                "play_book_studio.intake.normalization.builders.convert_with_markitdown",
+                return_value=(
+                    "# ConfigMap Secret\n\n"
+                    "## ConfigMap Secret 비교\n\n"
+                    "| ConfigMap: | | | 일반 | 설정 데이터 | 저장 | | | |\n"
+                    "| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n"
+                    "| Secret: | | 민감한 | 정보 | 저장 | | | | |\n"
+                ),
+            ):
+                _normalize_customer_pack_draft(root, {"draft_id": str(captured["draft_id"])})
+                viewer_html = _internal_customer_pack_viewer_html(
+                    root,
+                    f"/playbooks/customer-packs/{captured['draft_id']}/index.html",
+                )
+
+        self.assertIsNotNone(viewer_html)
+        assert viewer_html is not None
+        self.assertIn("<td>ConfigMap</td>", viewer_html)
+        self.assertIn("<td>일반 설정 데이터 저장</td>", viewer_html)
+        self.assertNotIn("<th>ConfigMap</th>", viewer_html)
+        self.assertNotIn("<td>-</td>", viewer_html)
 
     def test_customer_pack_meta_prefers_captured_source_url_and_quality(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -451,6 +555,12 @@ class TestAppIntakeUi(unittest.TestCase):
                         "capture_artifact_path": "/tmp/demo.pdf",
                         "capture_content_type": "application/pdf",
                         "capture_byte_size": 12,
+                        "degraded_pdf": True,
+                        "degraded_reason": "too_many_heading_only_sections",
+                        "fallback_used": False,
+                        "fallback_backend": "surya",
+                        "fallback_status": "backend_unavailable",
+                        "fallback_reason": "surya_adapter_unavailable",
                         "capture_error": "",
                         "canonical_book_path": str(book_dir / "dtb-review.json"),
                         "normalized_section_count": 3,
@@ -526,6 +636,14 @@ class TestAppIntakeUi(unittest.TestCase):
         self.assertEqual("/api/customer-packs/captured?draft_id=dtb-review", meta["source_url"])
         self.assertEqual("review", meta["quality_status"])
         self.assertIn("정규화 품질 검토", meta["quality_summary"])
+        self.assertFalse(meta["fallback_used"])
+        self.assertNotIn("quality_score", meta)
+        self.assertNotIn("quality_flags", meta)
+        self.assertNotIn("degraded_pdf", meta)
+        self.assertNotIn("degraded_reason", meta)
+        self.assertNotIn("fallback_backend", meta)
+        self.assertNotIn("fallback_status", meta)
+        self.assertNotIn("fallback_reason", meta)
         self.assertTrue(meta["section_match_exact"])
 
     def test_customer_pack_meta_marks_fallback_when_anchor_missing(self) -> None:

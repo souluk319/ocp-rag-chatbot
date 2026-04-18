@@ -1,0 +1,29 @@
+{
+  "task_id": "private_lane_boundary_hardening_20260418",
+  "lane_id": "main",
+  "status": "completed",
+  "current_judgment": "private lane runtime exposure now fail-closes for default/incomplete envelope and unreviewed approval state, while explicit review-oriented customer-pack surfaces remain available.",
+  "core_evidence": [
+    "private corpus manifests now carry runtime_eligible and boundary_fail_reasons derived from a shared boundary helper",
+    "selected private BM25/vector retrieval only reads runtime-eligible manifests",
+    "private lane smoke now ingests an approved non-default boundary baseline and passes under the hardened gate",
+    "intake API no longer exposes manifest_path or vector_error in private_corpus payloads"
+  ],
+  "changed_files": [
+    "src/play_book_studio/intake/private_boundary.py",
+    "src/play_book_studio/intake/private_corpus.py",
+    "src/play_book_studio/app/intake_api.py",
+    "src/play_book_studio/retrieval/intake_overlay.py",
+    "src/play_book_studio/retrieval/retriever_search.py",
+    "src/play_book_studio/app/private_lane_smoke.py",
+    "tests/test_retrieval_query_core.py",
+    "tests/test_app_intake_ui.py",
+    "tests/test_private_lane_smoke.py"
+  ],
+  "validation_results": [
+    ".\\.venv\\Scripts\\python.exe -m py_compile src\\play_book_studio\\intake\\private_boundary.py src\\play_book_studio\\intake\\private_corpus.py src\\play_book_studio\\app\\intake_api.py src\\play_book_studio\\retrieval\\intake_overlay.py src\\play_book_studio\\retrieval\\retriever_search.py src\\play_book_studio\\app\\private_lane_smoke.py tests\\test_retrieval_query_core.py tests\\test_app_intake_ui.py tests\\test_private_lane_smoke.py",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_private_lane_smoke.py tests\\test_retrieval_query_core.py tests\\test_app_intake_ui.py tests\\test_server_chat.py -q -> 57 passed, 4 subtests passed",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_cli.py -k private_lane_smoke -q -> 2 passed, 7 deselected"
+  ],
+  "next_action": "If you continue this axis, the next packet should make private corpus materialization best-effort so canonical normalize survives chunking/model failures without dropping the draft."
+}

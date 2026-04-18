@@ -1,0 +1,56 @@
+{
+  "status": "completed",
+  "completed_at_utc": "2026-04-18T01:35:21.214832+00:00",
+  "packet_a": {
+    "input_doc_count": 113,
+    "approved_corpus_count": 25,
+    "failure_doc_count": 88,
+    "failure_types": {
+      "blocked:missing_normalized_sections_or_chunks": 84,
+      "translation_required:selected_language_fallback": 4
+    },
+    "library_visible_count": 174,
+    "active_library_visible_count": 29,
+    "retrieval_reflected": true,
+    "retrieval_probe_pass_rate": 1.0,
+    "known_gaps": [
+      {
+        "book_slug": "backup_and_restore",
+        "source_lane": "official_en_fallback",
+        "content_status": "en_only",
+        "citation_block_reason": "vendor page reports selected-language fallback"
+      },
+      {
+        "book_slug": "installing_on_any_platform",
+        "source_lane": "official_en_fallback",
+        "content_status": "en_only",
+        "citation_block_reason": "vendor page reports selected-language fallback"
+      },
+      {
+        "book_slug": "machine_configuration",
+        "source_lane": "official_en_fallback",
+        "content_status": "en_only",
+        "citation_block_reason": "vendor page reports selected-language fallback"
+      },
+      {
+        "book_slug": "monitoring",
+        "source_lane": "official_en_fallback",
+        "content_status": "en_only",
+        "citation_block_reason": "vendor page reports selected-language fallback"
+      }
+    ]
+  },
+  "packet_b": {
+    "scenario_count": 5,
+    "turn_count": 30,
+    "turn_pass_rate": 1.0,
+    "scenario_completion_rate": 1.0,
+    "failure_bucket_counts": {}
+  },
+  "demo_ready": true,
+  "evidence_files": {
+    "packet_a": "reports/build_logs/ocp420_materialization_summary.json",
+    "packet_b": "reports/multiturn/ocp420_multiturn_live_eval.json",
+    "manifest": "manifests/ocp420_multiturn_live_scenarios.jsonl"
+  }
+}
