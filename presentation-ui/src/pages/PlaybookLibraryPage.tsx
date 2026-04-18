@@ -650,17 +650,13 @@ const PlaybookLibraryPage: React.FC = () => {
     setPreviewViewerDocument(null);
   };
 
-  const openMetricPopover = (kind: 'known' | 'approved' | 'latestNonGold' | 'manual' | 'customerPack' | 'candidate' | 'wikiRuntime' | 'navBacklog' | 'wikiUsage' | 'buyerGate' | 'buyerPackets' | 'derived') => {
+  const openMetricPopover = (kind: 'approved' | 'latestNonGold' | 'customerPack' | 'wikiRuntime' | 'navBacklog' | 'wikiUsage' | 'buyerGate' | 'buyerPackets') => {
     if (!controlRoom) return;
     const cr = controlRoom;
     let title = '';
     let books: LibraryBook[] = [];
     let packets: BuyerPacket[] = [];
     switch (kind) {
-      case 'known':
-        title = 'Full Source Catalog';
-        books = [...(cr.known_books ?? [])];
-        break;
       case 'approved':
         title = 'Gold PlayBooks';
         books = [...(cr.gold_books ?? [])];
@@ -668,10 +664,6 @@ const PlaybookLibraryPage: React.FC = () => {
       case 'latestNonGold':
         title = 'Silver · Bronze PlayBooks';
         books = [...(cr.approved_wiki_runtime_books?.books ?? [])].filter((book) => normalizePlaybookGrade(book.grade) !== 'Gold');
-        break;
-      case 'manual':
-        title = 'Gold Source Books';
-        books = [...(cr.manualbooks?.books ?? [])];
         break;
       case 'customerPack':
         title = 'User Library';
@@ -696,16 +688,6 @@ const PlaybookLibraryPage: React.FC = () => {
       case 'buyerPackets':
         title = 'Release Candidate Packets';
         packets = [...(cr.buyer_packet_bundle?.books ?? [])];
-        break;
-      case 'derived':
-        title = 'Derived Playbooks';
-        books = [
-          ...(cr.topic_playbooks?.books ?? []),
-          ...(cr.operation_playbooks?.books ?? []),
-          ...(cr.troubleshooting_playbooks?.books ?? []),
-          ...(cr.synthesized_playbooks?.books ?? []),
-          ...(cr.policy_overlay_books?.books ?? []),
-        ];
         break;
     }
     if (kind === 'buyerPackets') {
@@ -758,7 +740,6 @@ const PlaybookLibraryPage: React.FC = () => {
   const summary = controlRoom?.summary;
   const userLibraryBucket = controlRoom?.user_library_books ?? controlRoom?.customer_pack_runtime_books;
   const approvedRuntimeBooks = summary?.approved_runtime_count ?? summary?.gold_book_count ?? controlRoom?.gold_books?.length ?? 0;
-  const materializedManualBooks = summary?.manualbook_count ?? controlRoom?.manualbooks?.books?.length ?? 0;
   const userLibraryBooks = [...(userLibraryBucket?.books ?? [])];
   const userLibraryBookCount = summary?.user_library_book_count
     ?? summary?.customer_pack_runtime_book_count
@@ -780,7 +761,6 @@ const PlaybookLibraryPage: React.FC = () => {
   const releaseCandidatePacket = controlRoom?.buyer_packet_bundle?.books?.find(
     (packet) => packet.book_slug === 'buyer_packet__release-candidate-freeze',
   ) ?? null;
-  const derivedPlaybooks = summary?.derived_playbook_count ?? 0;
   const activeVision = WIKI_VISION_MODES.find((mode) => mode.id === visionMode) ?? WIKI_VISION_MODES[0];
   const comparisonCandidates = useMemo(() => {
     const preferred = operationalWikiBooks.find((book) => book.book_slug === 'advanced_networking');
@@ -1319,14 +1299,6 @@ const PlaybookLibraryPage: React.FC = () => {
 
             {visionMode !== 'guided_tour' && (
               <section className="metrics-grid metrics-grid-secondary">
-                <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('manual')}>
-                  <div className="metric-icon"><Layers size={24} /></div>
-                  <div className="metric-data">
-                    <h3>{materializedManualBooks.toLocaleString()}</h3>
-                    <p>Gold Source Books</p>
-                  </div>
-                  <div className="metric-status online">Materialized</div>
-                </div>
                 <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('customerPack')}>
                   <div className="metric-icon"><HardDrive size={24} /></div>
                   <div className="metric-data">
@@ -1368,14 +1340,6 @@ const PlaybookLibraryPage: React.FC = () => {
                   <div className={`metric-status ${productRehearsalStatus === 'Passing' ? 'online' : 'warning'}`}>
                     {productRehearsalStatus}
                   </div>
-                </div>
-                <div className="metric-card metric-card-secondary metric-clickable" onClick={() => openMetricPopover('derived')}>
-                  <div className="metric-icon"><Activity size={24} /></div>
-                  <div className="metric-data">
-                    <h3>{derivedPlaybooks.toLocaleString()}</h3>
-                    <p>Derived Playbooks</p>
-                  </div>
-                  <div className="metric-status optimized">Generated</div>
                 </div>
               </section>
             )}

@@ -1,0 +1,23 @@
+{
+  "task_id": "final_surface_legacy_catalog_retirement_20260418",
+  "lane_id": "main",
+  "role": "implementation",
+  "cwd": "C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio",
+  "python_path": ".venv/Scripts/python.exe",
+  "worktree_path": "C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio",
+  "write_scope": [
+    "presentation-ui/src/pages/PlaybookLibraryPage.tsx",
+    "tests/test_app_runtime_ui.py"
+  ],
+  "target_outputs": [
+    "Default PlaybookLibrary user surface no longer exposes legacy source/manual/derived catalog sections",
+    "Focused runtime UI contract updated to guard against old catalog reopening"
+  ],
+  "validation_commands": [
+    "@' import py_compile; py_compile.compile(r\"tests/test_app_runtime_ui.py\", doraise=True); print(\"py_compile ok\") '@ | python -",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_app_runtime_ui.py -q",
+    "cd presentation-ui && npm run build"
+  ],
+  "status": "completed",
+  "packet_type": "default"
+}

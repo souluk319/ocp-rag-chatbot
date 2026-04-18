@@ -1,0 +1,25 @@
+{
+  "task_id": "final_surface_legacy_catalog_retirement_20260418",
+  "status": "completed",
+  "current_judgment": "Default PlaybookLibrary user mode no longer exposes legacy source/manual/derived catalog surfaces; it is now centered on latest pipeline PlayBooks and explicit release/runtime views.",
+  "key_evidence": [
+    "presentation-ui/src/pages/PlaybookLibraryPage.tsx no longer contains Full Source Catalog or Gold Source Books popover routes",
+    "Derived Playbooks and Gold Source Books cards were removed from the default metrics grid",
+    "tests/test_app_runtime_ui.py now guards against those legacy labels and hooks reappearing"
+  ],
+  "validation": [
+    {
+      "command": "@' import py_compile; py_compile.compile(r\"tests/test_app_runtime_ui.py\", doraise=True); print(\"py_compile ok\") '@ | python -",
+      "result": "passed"
+    },
+    {
+      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_app_runtime_ui.py -q",
+      "result": "3 passed"
+    },
+    {
+      "command": "cd presentation-ui && npm run build",
+      "result": "passed"
+    }
+  ],
+  "next_action": "Carry the same final-surface discipline into the upcoming source-first Playbook rebuild so only deterministic latest-runtime outputs re-enter the Library."
+}
