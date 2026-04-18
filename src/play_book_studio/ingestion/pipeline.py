@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from play_book_studio.canonical import project_playbook_document, write_playbook_documents
+from play_book_studio.canonical import project_playbook_document
 from .audit_rules import (
     LANGUAGE_FALLBACK_RE,
     body_language_guess,
@@ -40,6 +40,10 @@ from .models import (
     SourceManifestEntry,
 )
 from .normalize import extract_document_ast, project_normalized_sections
+from .playbook_materialization import (
+    load_approved_playbook_payload,
+    project_playbook_payload_sections,
+)
 from .qdrant_store import ensure_collection, upsert_chunks
 from play_book_studio.config.settings import HIGH_VALUE_SLUGS, Settings
 
@@ -54,6 +58,26 @@ def _write_jsonl(path: Path, rows: list[dict]) -> None:
 def _write_jsonl_targets(paths: tuple[Path, ...], rows: list[dict]) -> None:
     for path in paths:
         _write_jsonl(path, rows)
+
+
+def _write_playbook_payloads(path: Path, books_dir: Path, payloads: list[dict]) -> None:
+    books_dir.mkdir(parents=True, exist_ok=True)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    sorted_payloads = sorted(
+        (dict(payload) for payload in payloads if str(payload.get("book_slug") or "").strip()),
+        key=lambda payload: str(payload.get("book_slug") or ""),
+    )
+    expected_filenames = {f"{payload['book_slug']}.json" for payload in sorted_payloads}
+    with path.open("w", encoding="utf-8") as handle:
+        for payload in sorted_payloads:
+            handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+            (books_dir / f"{payload['book_slug']}.json").write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+    for stale_path in books_dir.glob("*.json"):
+        if stale_path.name not in expected_filenames:
+            stale_path.unlink()
 
 
 def _runtime_source_lane(entry: SourceManifestEntry, content_status: str) -> str:
@@ -216,37 +240,53 @@ def run_ingestion_pipeline(
 
     process_entries = _select_entries(entries, process_subset, process_limit)
     all_sections: list[NormalizedSection] = []
-    playbook_documents = []
+    playbook_documents: list[dict[str, object]] = []
     _progress(f"[normalize] target_books={len(process_entries)} subset={process_subset}")
     # 3단계: raw HTML을 canonical section으로 바꾼다.
     log.stage = "normalize"
     for index, entry in enumerate(process_entries, start=1):
         try:
-            html_path = raw_html_path(settings, entry.book_slug)
-            if not html_path.exists():
-                collect_entry(entry, settings, force=False)
-                log.collected_count += 1
-                log.collected_sources.append(entry.book_slug)
-            html = html_path.read_text(encoding="utf-8")
             runtime_entry = entry_with_collected_metadata(settings, entry)
-            document = extract_document_ast(html, runtime_entry, settings=settings)
-            sections = project_normalized_sections(document)
-            inferred_entry = _entry_with_inferred_runtime_status(
-                runtime_entry,
-                html=html,
-                sections=sections,
-            )
-            if inferred_entry.to_dict() != runtime_entry.to_dict():
-                document = extract_document_ast(html, inferred_entry, settings=settings)
+            approved_playbook_payload = None
+            if runtime_entry.source_type == "manual_synthesis":
+                approved_playbook_payload = load_approved_playbook_payload(
+                    settings,
+                    entry.book_slug,
+                    source_type="manual_synthesis",
+                )
+            if approved_playbook_payload is not None:
+                sections = project_playbook_payload_sections(approved_playbook_payload)
+                inferred_entry = _entry_with_inferred_runtime_status(
+                    runtime_entry,
+                    html="",
+                    sections=sections,
+                )
+                playbook_documents.append(approved_playbook_payload)
+            else:
+                html_path = raw_html_path(settings, entry.book_slug)
+                if not html_path.exists():
+                    collect_entry(entry, settings, force=False)
+                    log.collected_count += 1
+                    log.collected_sources.append(entry.book_slug)
+                html = html_path.read_text(encoding="utf-8")
+                document = extract_document_ast(html, runtime_entry, settings=settings)
                 sections = project_normalized_sections(document)
-            playbook_documents.append(project_playbook_document(document))
+                inferred_entry = _entry_with_inferred_runtime_status(
+                    runtime_entry,
+                    html=html,
+                    sections=sections,
+                )
+                if inferred_entry.to_dict() != runtime_entry.to_dict():
+                    document = extract_document_ast(html, inferred_entry, settings=settings)
+                    sections = project_normalized_sections(document)
+                playbook_documents.append(project_playbook_document(document).to_dict())
             all_sections.extend(sections)
             log.processed_sources.append(entry.book_slug)
             log.upsert_book_stat(
                 entry.book_slug,
                 processed=True,
                 section_count=len(sections),
-                title=entry.title,
+                title=inferred_entry.title or entry.title,
                 high_value=entry.high_value,
                 content_status=inferred_entry.content_status,
                 source_lane=inferred_entry.source_lane,
@@ -269,7 +309,7 @@ def run_ingestion_pipeline(
         settings.normalized_docs_candidates,
         normalized_rows,
     )
-    write_playbook_documents(
+    _write_playbook_payloads(
         settings.playbook_documents_path,
         settings.playbook_books_dir,
         playbook_documents,

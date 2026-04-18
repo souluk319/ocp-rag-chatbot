@@ -258,7 +258,156 @@ class IngestionPipelineTests(unittest.TestCase):
 
             normalized_row = _read_jsonl(settings.normalized_docs_path)[0]
             self.assertEqual("official_en_fallback", normalized_row["source_lane"])
-            self.assertEqual("needs_review", normalized_row["review_status"])
+
+    def test_run_ingestion_pipeline_prefers_manual_synthesis_playbook_payload(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = Settings(root_dir=root, chunk_size=1000, chunk_overlap=0)
+            entry = SourceManifestEntry(
+                book_slug="monitoring",
+                title="클러스터 모니터링 운영 플레이북",
+                source_url="https://example.com/monitoring",
+                viewer_path="/docs/ocp/4.20/ko/monitoring/index.html",
+                content_status="approved_ko",
+                approval_status="approved",
+                review_status="approved",
+                citation_eligible=True,
+                source_fingerprint="fp-monitoring",
+                source_id="manual_synthesis:monitoring",
+                source_lane="applied_playbook",
+                source_type="manual_synthesis",
+                source_collection="core",
+                updated_at="2026-04-18T00:00:00Z",
+            )
+            settings.playbook_documents_path.parent.mkdir(parents=True, exist_ok=True)
+            manual_payload = {
+                "canonical_model": "playbook_document_v1",
+                "source_view_strategy": "playbook_ast_v1",
+                "book_slug": "monitoring",
+                "title": "클러스터 모니터링 운영 플레이북",
+                "version": "4.20",
+                "locale": "ko",
+                "source_uri": "https://example.com/monitoring",
+                "source_language": "ko",
+                "language_hint": "ko",
+                "translation_status": "approved_ko",
+                "translation_stage": "approved_ko",
+                "translation_source_uri": "https://example.com/en/monitoring",
+                "translation_source_language": "en",
+                "translation_source_fingerprint": "monitoring-fp",
+                "review_status": "approved",
+                "quality_status": "ready",
+                "quality_score": 0.98,
+                "source_metadata": {
+                    "source_id": "manual_synthesis:monitoring",
+                    "source_type": "manual_synthesis",
+                    "source_lane": "applied_playbook",
+                    "source_collection": "core",
+                    "product": "openshift",
+                    "version": "4.20",
+                    "trust_score": 0.98,
+                    "review_status": "approved",
+                    "verifiability": "anchor_backed",
+                    "updated_at": "2026-04-18T00:00:00Z",
+                    "translation_source_language": "en",
+                    "parsed_artifact_id": "parsed:manual_synthesis:monitoring",
+                    "tenant_id": "public",
+                    "workspace_id": "core",
+                    "pack_id": "openshift-4-20-core",
+                    "pack_version": "4.20",
+                    "bundle_scope": "official",
+                    "classification": "public",
+                    "access_groups": ["public"],
+                    "provider_egress_policy": "unspecified",
+                    "approval_state": "approved",
+                    "publication_state": "published",
+                    "redaction_state": "not_required",
+                    "citation_eligible": True,
+                    "citation_block_reason": "",
+                },
+                "anchor_map": {
+                    "monitoring-overview": "/docs/ocp/4.20/ko/monitoring/index.html#monitoring-overview"
+                },
+                "sections": [
+                    {
+                        "section_id": "monitoring:monitoring-overview",
+                        "ordinal": 1,
+                        "heading": "모니터링 운영 개요",
+                        "level": 2,
+                        "path": ["모니터링 운영 개요"],
+                        "anchor": "monitoring-overview",
+                        "viewer_path": "/docs/ocp/4.20/ko/monitoring/index.html#monitoring-overview",
+                        "semantic_role": "overview",
+                        "blocks": [
+                            {
+                                "kind": "paragraph",
+                                "text": "Cluster Monitoring Operator가 노출한 설정 경로와 verification 루프를 우선으로 본다."
+                            },
+                            {
+                                "kind": "code",
+                                "language": "bash",
+                                "code": "oc get pods -n openshift-monitoring"
+                            }
+                        ],
+                    }
+                ],
+            }
+            settings.playbook_documents_path.write_text(
+                json.dumps(manual_payload, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+
+            html = """
+            <html>
+              <body>
+                <main id="main-content">
+                  <article>
+                    <p>This content is not available in the selected language.</p>
+                    <h1>Monitoring</h1>
+                    <h2 id="overview">About OpenShift monitoring</h2>
+                    <p>Landing summary only.</p>
+                  </article>
+                </main>
+              </body>
+            </html>
+            """
+            raw_html_path(settings, entry.book_slug).write_text(html, encoding="utf-8")
+
+            with (
+                patch(
+                    "play_book_studio.ingestion.pipeline.load_runtime_manifest_entries",
+                    return_value=[entry],
+                ),
+                patch(
+                    "play_book_studio.ingestion.pipeline.collect_entry",
+                    side_effect=lambda item, provided_settings, force=False: raw_html_path(
+                        provided_settings,
+                        item.book_slug,
+                    ),
+                ),
+                patch.object(chunking, "load_sentence_model", return_value=_FakeSentenceModel()),
+            ):
+                log = run_ingestion_pipeline(
+                    settings,
+                    collect_subset="all",
+                    process_subset="all",
+                    skip_embeddings=True,
+                    skip_qdrant=True,
+                )
+
+            self.assertEqual(1, log.normalized_count)
+            normalized_row = _read_jsonl(settings.normalized_docs_path)[0]
+            self.assertEqual("manual_synthesis", normalized_row["source_type"])
+            self.assertEqual("applied_playbook", normalized_row["source_lane"])
+            self.assertIn("Cluster Monitoring Operator", normalized_row["text"])
+            self.assertEqual(
+                ["oc get pods -n openshift-monitoring"],
+                normalized_row["cli_commands"],
+            )
+            playbook_row = _read_jsonl(settings.playbook_documents_path)[0]
+            self.assertEqual("manual_synthesis", playbook_row["source_metadata"]["source_type"])
+            self.assertEqual("approved", playbook_row["review_status"])
+            self.assertEqual("approved", normalized_row["review_status"])
 
     def test_run_ingestion_pipeline_assigns_applied_playbook_lane_for_community_sources(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

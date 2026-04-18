@@ -1,0 +1,27 @@
+# logging_monitoring_source_scope_repair_20260418
+
+- scope locked:
+  - approved manual_synthesis materialization seam
+  - logging curated replacement
+  - monitoring curated refresh activation in maintenance/foundry flow
+  - regenerated quality/outlier evidence
+- non-goals:
+  - parser retuning
+  - source discovery URL overhaul
+  - graph experiments
+  - viewer redesign
+  - large refactor
+- companion lanes:
+  - Copernicus -> source-scope root cause and product-safe repair
+  - Confucius -> runtime materialization seam and validation narrowing
+- implemented:
+  - approved `manual_synthesis` books now materialize from playbook truth during rebuild
+  - `logging` curated replacement added and batched with existing curated gold set
+  - `approved_runtime_rebuild` now refreshes curated gold before pipeline/corpus rebuild
+  - outlier audit no longer treats curated manual_synthesis as raw-html split debt by default
+- regenerated evidence:
+  - curated gold batch
+  - source approval + approved manifest
+  - morning_gate profile
+  - active runtime viewer serving report
+  - pipeline quality outlier/checklist

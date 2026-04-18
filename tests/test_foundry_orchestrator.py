@@ -850,6 +850,12 @@ class FoundryOrchestratorTests(unittest.TestCase):
             }
 
             with patch(
+                "play_book_studio.ingestion.foundry_orchestrator.apply_all_curated_gold",
+                return_value={
+                    "summary": {"requested_count": 7, "promoted_count": 7},
+                    "books": [{"book_slug": "logging"}, {"book_slug": "monitoring"}],
+                },
+            ) as mocked_curated, patch(
                 "play_book_studio.ingestion.foundry_orchestrator.run_ingestion_pipeline",
                 return_value=fake_log,
             ) as mocked_run, patch(
@@ -862,6 +868,11 @@ class FoundryOrchestratorTests(unittest.TestCase):
                     "demo",
                 )
 
+            mocked_curated.assert_called_once_with(
+                Settings(root_dir=Path(tmpdir), graph_backend="local"),
+                refresh_synthesis_report=False,
+                sync_qdrant=False,
+            )
             mocked_run.assert_called_once_with(
                 Settings(root_dir=Path(tmpdir), graph_backend="local"),
                 refresh_manifest=False,
@@ -878,6 +889,8 @@ class FoundryOrchestratorTests(unittest.TestCase):
             self.assertEqual(245, payload["chunk_count"])
             self.assertEqual(245, payload["qdrant_upserted_count"])
             self.assertEqual(5, payload["runtime_corpus_materialization"]["derived_playbook_count"])
+            self.assertEqual(7, payload["curated_gold_refresh"]["promoted_count"])
+            self.assertEqual(["logging", "monitoring"], payload["curated_gold_refresh"]["books"])
             self.assertEqual("local", payload["graph_build_backend"])
             self.assertEqual(str(settings.playbook_books_dir), payload["output_targets"]["playbook_books_dir"])
             self.assertEqual(settings.qdrant_collection, payload["output_targets"]["qdrant_collection"])

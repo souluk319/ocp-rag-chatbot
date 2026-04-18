@@ -1,0 +1,57 @@
+{
+  "task_id": "logging_monitoring_source_scope_repair_20260418",
+  "lane_id": "main",
+  "status": "completed",
+  "summary": "logging and monitoring are no longer shipped as shallow landing summaries in the approved runtime rebuild path. approved manual_synthesis books now materialize from playbook truth, logging gained a curated replacement, approved_runtime_rebuild refreshes curated gold before rebuilding, and the outlier audit now treats curated manual_synthesis as condensed truth instead of raw-html split debt.",
+  "quality_repair": {
+    "logging": {
+      "title": "클러스터 로깅 운영 플레이북",
+      "section_count": 8,
+      "source_type": "manual_synthesis",
+      "source_lane": "applied_playbook"
+    },
+    "monitoring": {
+      "title": "클러스터 모니터링 운영 플레이북",
+      "section_count": 8,
+      "source_type": "manual_synthesis",
+      "source_lane": "applied_playbook"
+    }
+  },
+  "evidence": {
+    "outlier_count": 1,
+    "remaining_outlier_slug": "observability_overview",
+    "demo_blocker_count": 0,
+    "morning_gate_status": "release_ready",
+    "release_blocking": false
+  },
+  "validation": [
+    {
+      "command": ".\\.venv\\Scripts\\python.exe -m py_compile src\\play_book_studio\\ingestion\\playbook_materialization.py src\\play_book_studio\\ingestion\\pipeline.py src\\play_book_studio\\ingestion\\curated_gold.py src\\play_book_studio\\ingestion\\curated_gold_batch.py src\\play_book_studio\\ingestion\\foundry_orchestrator.py tests\\test_ingestion_pipeline.py tests\\test_curated_gold.py tests\\test_foundry_orchestrator.py",
+      "result": "passed"
+    },
+    {
+      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_ingestion_pipeline.py tests\\test_curated_gold.py tests\\test_foundry_orchestrator.py tests\\test_pipeline_quality_hardening.py -k \"logging or monitoring or manual_synthesis or approved_runtime_rebuild or outlier\" -q",
+      "result": "7 passed, 21 deselected"
+    },
+    {
+      "command": ".\\.venv\\Scripts\\python.exe scripts\\build_all_curated_gold.py",
+      "result": "passed"
+    },
+    {
+      "command": ".\\.venv\\Scripts\\python.exe scripts\\build_source_approval.py",
+      "result": "passed"
+    },
+    {
+      "command": ".\\.venv\\Scripts\\python.exe scripts\\run_gold_foundry.py --profile morning_gate",
+      "result": "passed"
+    },
+    {
+      "command": ".\\.venv\\Scripts\\python.exe scripts\\materialize_active_runtime_viewers.py",
+      "result": "docs_materialized_count=174, active_runtime_materialized_count=29"
+    },
+    {
+      "command": ".\\.venv\\Scripts\\python.exe scripts\\build_pipeline_quality_outlier_report.py",
+      "result": "outlier_count=1, blocker_count=0"
+    }
+  ]
+}

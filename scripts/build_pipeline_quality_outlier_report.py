@@ -100,6 +100,19 @@ def _classify_outlier(
     )
 
 
+def _is_curated_manual_synthesis(book_report: dict[str, Any]) -> bool:
+    source_type = str(book_report.get("source_type") or "").strip()
+    source_state_reason = str(book_report.get("source_state_reason") or "").strip()
+    source_id = str(book_report.get("source_id") or "").strip()
+    return (
+        source_type == "manual_synthesis"
+        and (
+            source_state_reason.startswith("curated_")
+            or "curated_gold" in source_id
+        )
+    )
+
+
 def build_reports(
     *,
     output_path: Path = DEFAULT_OUTPUT,
@@ -130,8 +143,12 @@ def build_reports(
         runtime_line_count = _line_count(runtime_path)
         book_report = dict(book_reports.get(slug) or {})
         runtime_excerpt = runtime_path.read_text(encoding="utf-8")[:2000] if runtime_path.exists() else ""
+        curated_manual_synthesis = _is_curated_manual_synthesis(book_report)
         is_low_section = section_count <= low_section_threshold
         weak_structure = raw_heading_count > 0 and split_ratio < 0.50
+        if curated_manual_synthesis and section_count > 2:
+            is_low_section = False
+            weak_structure = False
         if not (is_low_section or weak_structure):
             continue
         classification, note = _classify_outlier(
@@ -181,18 +198,25 @@ def build_reports(
         "classification_counts": dict(Counter(str(item["classification"]) for item in outliers)),
         "outliers": outliers,
     }
-    blockers = [
-        {
-            "id": "monitoring_source_scope",
-            "summary": "monitoring runtime book is still a shallow landing-page synthesis with only 2 sections",
-            "book_slug": "monitoring",
-        },
-        {
-            "id": "logging_source_scope",
-            "summary": "logging runtime book is still a shallow landing-page synthesis with only 2 sections",
-            "book_slug": "logging",
-        },
-    ][:3]
+    outlier_map = {str(item.get("book_slug") or ""): item for item in outliers}
+    blockers: list[dict[str, str]] = []
+    if "monitoring" in outlier_map:
+        blockers.append(
+            {
+                "id": "monitoring_source_scope",
+                "summary": "monitoring runtime book is still a shallow landing-page synthesis with only 2 sections",
+                "book_slug": "monitoring",
+            }
+        )
+    if "logging" in outlier_map:
+        blockers.append(
+            {
+                "id": "logging_source_scope",
+                "summary": "logging runtime book is still a shallow landing-page synthesis with only 2 sections",
+                "book_slug": "logging",
+            }
+        )
+    blockers = blockers[:3]
     warnings = [
         {
             "id": "observability_overview_split",

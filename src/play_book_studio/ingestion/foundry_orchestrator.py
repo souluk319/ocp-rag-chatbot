@@ -21,6 +21,7 @@ from .approval_report import (
     build_translation_lane_report,
     write_approved_manifest,
 )
+from .curated_gold_batch import apply_all_curated_gold
 from .data_quality import build_data_quality_report, playbook_reader_grade_failures
 from .manifest import read_manifest
 from .models import SourceManifestEntry
@@ -441,6 +442,11 @@ def _run_high_value_ingestion(settings: Settings, report_dir: Path, _: str) -> d
 
 def _run_approved_runtime_rebuild(settings: Settings, report_dir: Path, _: str) -> dict[str, Any]:
     rebuild_settings = replace(settings, graph_backend="local")
+    curated_gold_refresh = apply_all_curated_gold(
+        rebuild_settings,
+        refresh_synthesis_report=False,
+        sync_qdrant=False,
+    )
     log = run_ingestion_pipeline(
         rebuild_settings,
         refresh_manifest=False,
@@ -450,6 +456,15 @@ def _run_approved_runtime_rebuild(settings: Settings, report_dir: Path, _: str) 
         skip_qdrant=True,
     )
     payload = log.to_dict()
+    payload["curated_gold_refresh"] = {
+        "requested_count": int(dict(curated_gold_refresh.get("summary", {})).get("requested_count", 0) or 0),
+        "promoted_count": int(dict(curated_gold_refresh.get("summary", {})).get("promoted_count", 0) or 0),
+        "books": [
+            str(item.get("book_slug") or "")
+            for item in curated_gold_refresh.get("books", [])
+            if isinstance(item, dict) and str(item.get("book_slug") or "").strip()
+        ],
+    }
     runtime_corpus = materialize_runtime_corpus_from_playbooks(
         rebuild_settings,
         sync_qdrant=True,

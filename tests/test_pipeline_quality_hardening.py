@@ -224,10 +224,10 @@ class PipelineQualityHardeningTests(unittest.TestCase):
                 str(item["book_slug"]): dict(item)
                 for item in report["outliers"]
             }
-            self.assertEqual("source collection problem", outlier_map["logging"]["classification"])
-            self.assertEqual("source collection problem", outlier_map["monitoring"]["classification"])
+            self.assertNotIn("logging", outlier_map)
+            self.assertNotIn("monitoring", outlier_map)
             self.assertEqual("section split problem", outlier_map["observability_overview"]["classification"])
-            self.assertLessEqual(len(checklist["blocker"]), 3)
+            self.assertEqual([], checklist["blocker"])
             self.assertLessEqual(len(checklist["warning"]), 5)
 
 

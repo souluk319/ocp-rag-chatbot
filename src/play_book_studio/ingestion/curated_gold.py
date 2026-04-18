@@ -1653,6 +1653,285 @@ def apply_curated_operators_gold(
     )
 
 
+CURATED_LOGGING_BOOK_SLUG = "logging"
+CURATED_LOGGING_TITLE = "클러스터 로깅 운영 플레이북"
+CURATED_LOGGING_SOURCE_URL = (
+    "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/"
+    "html-single/logging/index"
+)
+CURATED_LOGGING_TRANSLATION_SOURCE_URL = (
+    "https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/"
+    "html-single/logging/index"
+)
+CURATED_LOGGING_INDEX_URL = (
+    "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/"
+)
+CURATED_LOGGING_VIEWER_BASE_PATH = "/docs/ocp/4.20/ko/logging/index.html"
+CURATED_LOGGING_SOURCE_ID = (
+    "openshift_container_platform:4.20:ko:logging:curated_gold_v1"
+)
+CURATED_LOGGING_UPDATED_AT = "2026-04-18T00:00:00Z"
+CURATED_LOGGING_LICENSE = "OpenShift documentation is licensed under the Apache License 2.0."
+
+
+def _logging_provenance_notes() -> tuple[str, ...]:
+    return (
+        "curated_logging_gold_v1",
+        "separate_logging_docs_family_repackaged_as_reader_grade_playbook",
+        "landing_summary_replaced_by_reviewed_ko_playbook",
+    )
+
+
+CURATED_LOGGING_SPEC = CuratedGoldSpec(
+    book_slug=CURATED_LOGGING_BOOK_SLUG,
+    title=CURATED_LOGGING_TITLE,
+    source_url=CURATED_LOGGING_SOURCE_URL,
+    translation_source_url=CURATED_LOGGING_TRANSLATION_SOURCE_URL,
+    index_url=CURATED_LOGGING_INDEX_URL,
+    viewer_base_path=CURATED_LOGGING_VIEWER_BASE_PATH,
+    source_id=CURATED_LOGGING_SOURCE_ID,
+    updated_at=CURATED_LOGGING_UPDATED_AT,
+    license_or_terms=CURATED_LOGGING_LICENSE,
+    original_title="Logging",
+    vendor_title="Logging",
+    approval_notes="curated logging gold sample from official EN docs and repo sidecars",
+    notes=_logging_provenance_notes(),
+    source_state_reason="curated_translation_ready_promoted_from_official_en_bundle",
+)
+
+
+def _build_logging_provenance() -> AstProvenance:
+    return _build_curated_provenance(CURATED_LOGGING_SPEC)
+
+
+def _logging_section(
+    *,
+    ordinal: int,
+    heading: str,
+    anchor: str,
+    semantic_role: str,
+    blocks: tuple[object, ...],
+    path: tuple[str, ...] | None = None,
+    level: int = 2,
+) -> CanonicalSectionAst:
+    return _section_for(
+        CURATED_LOGGING_SPEC,
+        ordinal=ordinal,
+        heading=heading,
+        anchor=anchor,
+        semantic_role=semantic_role,
+        blocks=blocks,
+        path=path,
+        level=level,
+    )
+
+
+def build_curated_logging_document() -> CanonicalDocumentAst:
+    sections = (
+        _logging_section(
+            ordinal=1,
+            heading="로깅 운영 개요",
+            anchor="logging-playbook-overview",
+            semantic_role="overview",
+            blocks=(
+                ParagraphBlock(
+                    "OpenShift 로깅은 애플리케이션, 인프라, 감사 로그를 수집하고 "
+                    "전달 경로와 저장소를 운영 기준으로 정리하는 별도 문서 세트다. "
+                    "이 플레이북은 landing summary 대신 운영자가 바로 쓰는 판단 축만 다시 묶은 수동서다."
+                ),
+                ParagraphBlock(
+                    "핵심 질문은 세 가지다. 어떤 로그를 수집할지, 어디로 전달할지, "
+                    "그리고 장애 시 어느 컴포넌트부터 좁힐지다."
+                ),
+            ),
+        ),
+        _logging_section(
+            ordinal=2,
+            heading="먼저 분리해야 하는 운영 축",
+            anchor="logging-core-decisions",
+            semantic_role="concept",
+            blocks=(
+                ParagraphBlock(
+                    "클러스터 로깅을 볼 때는 애플리케이션 로그, 인프라 로그, 감사 로그를 "
+                    "같은 저장소 요구사항으로 묶지 말아야 한다. "
+                    "수집 대상과 보존 정책, 전달 대상이 서로 다를 수 있기 때문이다."
+                ),
+                ParagraphBlock(
+                    "또한 OpenShift 본체 릴리스와 로깅 릴리스 주기는 다를 수 있으므로, "
+                    "문제 조사와 운영 변경은 로깅 전용 문서 세트 기준으로 확인해야 한다."
+                ),
+            ),
+        ),
+        _logging_section(
+            ordinal=3,
+            heading="구성 변경은 logging API 경로로만 한다",
+            anchor="logging-supported-configuration-boundary",
+            semantic_role="concept",
+            blocks=(
+                ParagraphBlock(
+                    "지원되는 변경 경로는 로깅 operator가 관리하는 API와 리소스다. "
+                    "수집기 pod 안 설정 파일을 직접 수정하는 방식은 운영 기준에서 제외해야 한다."
+                ),
+                ParagraphBlock(
+                    "특히 log forwarding은 `ClusterLogForwarder` 와 관련 output 정의를 중심으로 보고, "
+                    "collector나 store 내부 설정을 직접 우회하지 않는 것이 안전하다."
+                ),
+                NoteBlock(
+                    title="중요",
+                    variant="important",
+                    text=(
+                        "landing summary를 더 잘 쪼개는 것으로는 운영 지식이 깊어지지 않는다. "
+                        "지원되는 API 경계와 verification 루프를 먼저 고정해야 한다."
+                    ),
+                ),
+            ),
+        ),
+        _logging_section(
+            ordinal=4,
+            heading="설정 전 운영자가 먼저 정할 것",
+            anchor="logging-first-decisions",
+            semantic_role="procedure",
+            blocks=(
+                ParagraphBlock(
+                    "설정 전에 먼저 정해야 하는 것은 로그 출력 대상, 장기 저장 필요 여부, "
+                    "감사 로그 분리 여부, 그리고 외부 전송이 필요한지다."
+                ),
+                PrerequisiteBlock(
+                    items=(
+                        "감사 로그가 규정상 별도 보관 대상인지 확인한다.",
+                        "외부 SIEM 또는 장기 저장소로 forwarding 해야 하는지 결정한다.",
+                        "애플리케이션 로그와 인프라 로그를 같은 retention 기준으로 둘지 분리할지 정한다.",
+                    )
+                ),
+            ),
+        ),
+        _logging_section(
+            ordinal=5,
+            heading="기본 상태 확인 루프",
+            anchor="logging-verification-loop",
+            semantic_role="procedure",
+            blocks=(
+                ParagraphBlock(
+                    "문제가 생기기 전에도 먼저 보는 순서는 같다. operator와 collector가 살아 있는지, "
+                    "forwarder 정의가 기대와 맞는지, output 연결이 정상인지 순서대로 본다."
+                ),
+                CodeBlock(
+                    language="bash",
+                    caption="로깅 기본 상태 확인",
+                    code=(
+                        "oc get pods -n openshift-logging\n"
+                        "oc get clusterlogforwarder -n openshift-logging\n"
+                        "oc get clusterlogging -n openshift-logging"
+                    ),
+                ),
+                ParagraphBlock(
+                    "collector pod가 비정상이면 수집 단계부터 좁히고, "
+                    "forwarder 리소스는 있는데 출력이 비정상이면 output 경로와 인증 정보를 다음 분기로 본다."
+                ),
+            ),
+        ),
+        _logging_section(
+            ordinal=6,
+            heading="forwarding 중심으로 읽어야 한다",
+            anchor="logging-forwarding-model",
+            semantic_role="procedure",
+            blocks=(
+                ParagraphBlock(
+                    "실제 운영에서는 저장보다 forwarding이 더 자주 바뀐다. "
+                    "따라서 변경은 `ClusterLogForwarder` 파이프라인 기준으로 읽고 검증하는 편이 낫다."
+                ),
+                CodeBlock(
+                    language="yaml",
+                    caption="ClusterLogForwarder 개념 예시",
+                    code=(
+                        "apiVersion: observability.openshift.io/v1\n"
+                        "kind: ClusterLogForwarder\n"
+                        "metadata:\n"
+                        "  name: instance\n"
+                        "  namespace: openshift-logging\n"
+                        "spec:\n"
+                        "  pipelines:\n"
+                        "  - name: app-to-default\n"
+                        "    inputRefs:\n"
+                        "    - application\n"
+                        "    outputRefs:\n"
+                        "    - default"
+                    ),
+                ),
+                ParagraphBlock(
+                    "구성 변경 뒤에는 파이프라인 자체보다 collector 상태와 output 도달 여부를 같이 확인해야 한다."
+                ),
+            ),
+        ),
+        _logging_section(
+            ordinal=7,
+            heading="문제가 생기면 좁히는 순서",
+            anchor="logging-troubleshooting-sequence",
+            semantic_role="procedure",
+            blocks=(
+                ParagraphBlock(
+                    "로그가 안 보일 때는 곧바로 저장소부터 의심하지 말고, "
+                    "1) collector 정상 여부, 2) forwarder 정의, 3) output 연결, 4) 대상 시스템 수신 여부 순서로 좁힌다."
+                ),
+                CodeBlock(
+                    language="bash",
+                    caption="collector 로그와 이벤트 확인",
+                    code=(
+                        "oc logs -n openshift-logging daemonset/collector\n"
+                        "oc get events -n openshift-logging --sort-by=.metadata.creationTimestamp"
+                    ),
+                ),
+                NoteBlock(
+                    title="주의",
+                    variant="warning",
+                    text=(
+                        "collector 또는 output pod 내부 파일을 직접 수정해 임시 복구하는 방식은 "
+                        "operator reconciliation과 충돌할 수 있다."
+                    ),
+                ),
+            ),
+        ),
+        _logging_section(
+            ordinal=8,
+            heading="작업 후 다음 분기",
+            anchor="logging-next-branches",
+            semantic_role="reference",
+            blocks=(
+                ParagraphBlock(
+                    "수집 자체가 안 되면 collector와 node 측 로그 접근 권한을 다시 확인하고, "
+                    "수집은 되는데 외부 시스템에 안 보이면 forwarding/output 경로를 다음 분기로 본다."
+                ),
+                ParagraphBlock(
+                    "감사 로그나 장기 보관 정책이 요구되면 retention과 external destination 설계를 "
+                    "다음 작업으로 분리하는 편이 안전하다."
+                ),
+                ParagraphBlock(
+                    "기본 루프가 안정화된 뒤에야 advanced filtering, multi-destination forwarding, "
+                    "전용 분석 플랫폼 연동으로 넘어간다."
+                ),
+            ),
+        ),
+    )
+    return _build_curated_document(CURATED_LOGGING_SPEC, sections)
+
+
+def _curated_logging_manifest_entry() -> SourceManifestEntry:
+    return _curated_manifest_entry(CURATED_LOGGING_SPEC)
+
+
+def apply_curated_logging_gold(
+    settings: Settings,
+    *,
+    refresh_synthesis_report: bool = False,
+) -> dict[str, object]:
+    return _apply_curated_gold(
+        settings,
+        spec=CURATED_LOGGING_SPEC,
+        document_builder=build_curated_logging_document,
+        refresh_synthesis_report=refresh_synthesis_report,
+    )
+
+
 CURATED_MONITORING_BOOK_SLUG = "monitoring"
 CURATED_MONITORING_TITLE = "클러스터 모니터링 운영 플레이북"
 CURATED_MONITORING_SOURCE_URL = (

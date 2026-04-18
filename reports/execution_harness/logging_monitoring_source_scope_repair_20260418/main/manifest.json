@@ -1,0 +1,59 @@
+{
+  "task_id": "logging_monitoring_source_scope_repair_20260418",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": true,
+  "parallel_execution_required": true,
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "src/play_book_studio/ingestion/playbook_materialization.py",
+    "src/play_book_studio/ingestion/pipeline.py",
+    "src/play_book_studio/ingestion/curated_gold.py",
+    "src/play_book_studio/ingestion/curated_gold_batch.py",
+    "src/play_book_studio/ingestion/foundry_orchestrator.py",
+    "scripts/build_pipeline_quality_outlier_report.py",
+    "tests/test_curated_gold.py",
+    "tests/test_ingestion_pipeline.py",
+    "tests/test_foundry_orchestrator.py",
+    "tests/test_pipeline_quality_hardening.py",
+    "manifests/ocp_ko_4_20_approved_ko.json",
+    "manifests/ocp_ko_4_20_corpus_working_set.json",
+    "reports/build_logs/source_approval_report.json",
+    "reports/build_logs/pipeline_quality_outlier_report.json",
+    "reports/build_logs/demo_quality_checklist.json",
+    "reports/build_logs/active_runtime_viewer_serving_report.json",
+    "reports/execution_harness/logging_monitoring_source_scope_repair_20260418/main/worklog.md",
+    "reports/execution_harness/logging_monitoring_source_scope_repair_20260418/main/final_report.json"
+  ],
+  "target_outputs": [
+    "approved manual_synthesis books are materialized from playbook truth instead of shallow landing html",
+    "logging receives a curated replacement playbook so active runtime no longer ships a landing-summary book",
+    "monitoring curated replacement is refreshed inside standard foundry maintenance flow",
+    "quality blocker count for logging/monitoring is reduced with regenerated evidence"
+  ],
+  "validation_commands": [
+    ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_ingestion_pipeline.py tests\\test_curated_gold.py tests\\test_foundry_orchestrator.py tests\\test_pipeline_quality_hardening.py -k \"logging or monitoring or manual_synthesis or approved_runtime_rebuild or outlier\" -q",
+    ".\\.venv\\Scripts\\python.exe scripts\\build_all_curated_gold.py",
+    ".\\.venv\\Scripts\\python.exe scripts\\build_source_approval.py",
+    ".\\.venv\\Scripts\\python.exe scripts\\materialize_active_runtime_viewers.py",
+    ".\\.venv\\Scripts\\python.exe scripts\\build_pipeline_quality_outlier_report.py",
+    ".\\.venv\\Scripts\\python.exe scripts\\run_gold_foundry.py --profile morning_gate"
+  ],
+  "companion_lanes": [
+    {
+      "lane_id": "explorer-copernicus",
+      "agent_id": "019d9fe5-81d9-70e1-b8fb-e2888a661775",
+      "role": "explorer",
+      "scope": "logging/monitoring source-scope root cause and smallest product-safe repair"
+    },
+    {
+      "lane_id": "worker-confucius",
+      "agent_id": "019d9fe5-97a3-73b3-bd3f-d57f147cfea0",
+      "role": "worker",
+      "scope": "runtime materialization seam and validation command narrowing"
+    }
+  ],
+  "status": "completed"
+}

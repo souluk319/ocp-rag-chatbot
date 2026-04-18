@@ -16,6 +16,7 @@ from .curated_gold import (
     apply_curated_backup_restore_gold,
     apply_curated_etcd_gold,
     apply_curated_installing_on_any_platform_gold,
+    apply_curated_logging_gold,
     apply_curated_machine_configuration_gold,
     apply_curated_monitoring_gold,
     apply_curated_operators_gold,
@@ -50,6 +51,10 @@ def _apply_installing_on_any_platform(settings: Settings) -> dict[str, object]:
     )
 
 
+def _apply_logging(settings: Settings) -> dict[str, object]:
+    return apply_curated_logging_gold(settings, refresh_synthesis_report=False)
+
+
 def _apply_machine_configuration(settings: Settings) -> dict[str, object]:
     return apply_curated_machine_configuration_gold(
         settings,
@@ -69,6 +74,7 @@ CURATED_GOLD_APPLIERS: tuple[tuple[str, CuratedApplyFn], ...] = (
     ("backup_and_restore", _apply_backup_restore),
     ("etcd", _apply_etcd),
     ("installing_on_any_platform", _apply_installing_on_any_platform),
+    ("logging", _apply_logging),
     ("machine_configuration", _apply_machine_configuration),
     ("monitoring", _apply_monitoring),
     ("operators", _apply_operators),

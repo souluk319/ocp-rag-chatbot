@@ -20,6 +20,7 @@ from play_book_studio.ingestion.curated_gold import (
     apply_curated_backup_restore_gold,
     apply_curated_etcd_gold,
     apply_curated_installing_on_any_platform_gold,
+    apply_curated_logging_gold,
     apply_curated_machine_configuration_gold,
     apply_curated_monitoring_gold,
     apply_curated_operators_gold,
@@ -878,6 +879,58 @@ class CuratedGoldTests(unittest.TestCase):
                 install_chunks[0],
                 install_playbook,
                 source_id="openshift_container_platform:4.20:ko:installing_on_any_platform:curated_gold_v1",
+            )
+
+    def test_apply_curated_logging_gold_upserts_all_active_outputs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            settings = Settings(root_dir=Path(tmpdir))
+            settings.source_catalog_path.parent.mkdir(parents=True, exist_ok=True)
+
+            existing_manifest = SourceManifestEntry(
+                book_slug="architecture",
+                title="아키텍처",
+                source_url="https://example.com/architecture",
+                resolved_source_url="https://example.com/architecture",
+                viewer_path="/docs/ocp/4.20/ko/architecture/index.html",
+                content_status="approved_ko",
+                approval_status="approved",
+                citation_eligible=True,
+                high_value=True,
+            )
+            write_manifest(settings.source_manifest_path, [existing_manifest])
+
+            for path in settings.normalized_docs_candidates:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("", encoding="utf-8")
+            for path in (settings.chunks_path, settings.bm25_corpus_path, settings.playbook_documents_path):
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("", encoding="utf-8")
+
+            with patch.object(chunking, "load_sentence_model", return_value=_FakeSentenceModel()):
+                report = apply_curated_logging_gold(settings, refresh_synthesis_report=False)
+
+            self.assertEqual("logging", report["book_slug"])
+            self.assertGreaterEqual(report["section_count"], 8)
+            self.assertGreater(report["chunk_count"], 0)
+
+            normalized_rows = read_jsonl(settings.normalized_docs_path)
+            chunk_rows = read_jsonl(settings.chunks_path)
+            playbook_rows = read_jsonl(settings.playbook_documents_path)
+            logging_sections = [row for row in normalized_rows if row["book_slug"] == "logging"]
+            logging_chunks = [row for row in chunk_rows if row["book_slug"] == "logging"]
+            logging_playbook = next(row for row in playbook_rows if row["book_slug"] == "logging")
+
+            self.assertGreaterEqual(len(logging_sections), 8)
+            self.assertTrue(any("ClusterLogForwarder" in row["text"] for row in logging_sections))
+            self.assertTrue(logging_chunks)
+            self.assertEqual("manual_synthesis", logging_playbook["source_metadata"]["source_type"])
+            self.assertEqual("approved", logging_playbook["review_status"])
+            self.assertEqual("ready", logging_playbook["quality_status"])
+            self._assert_curated_provenance_contract(
+                logging_sections[0],
+                logging_chunks[0],
+                logging_playbook,
+                source_id="openshift_container_platform:4.20:ko:logging:curated_gold_v1",
             )
 
 
