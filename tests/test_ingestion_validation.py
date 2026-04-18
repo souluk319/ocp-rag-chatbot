@@ -351,8 +351,8 @@ class ValidationGateTests(unittest.TestCase):
 
         self.assertEqual("runtime_baseline", runtime_report["artifact_expectation_mode"])
         self.assertEqual(1, runtime_report["expected_source_book_count"])
-        self.assertEqual(5, runtime_report["expected_derived_book_count"])
-        self.assertEqual(6, runtime_report["expected_book_count"])
+        self.assertEqual(3, runtime_report["expected_derived_book_count"])
+        self.assertEqual(4, runtime_report["expected_book_count"])
         self.assertFalse(runtime_report["checks"]["artifact_books_match_expected_subset"])
         self.assertEqual("source_subset", source_subset_report["artifact_expectation_mode"])
         self.assertTrue(source_subset_report["checks"]["artifact_books_match_expected_subset"])

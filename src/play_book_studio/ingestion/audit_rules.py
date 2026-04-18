@@ -101,6 +101,7 @@ def resolve_final_content_status(
         manual_status == CONTENT_STATUS_APPROVED_KO
         and entry.approval_status == "approved"
         and entry.source_type == "manual_synthesis"
+        and auto_status in {CONTENT_STATUS_APPROVED_KO, CONTENT_STATUS_BLOCKED}
     ):
         return (
             CONTENT_STATUS_APPROVED_KO,

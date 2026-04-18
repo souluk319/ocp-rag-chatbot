@@ -267,32 +267,32 @@ class FoundryOrchestratorTests(unittest.TestCase):
             self.assertIn("backup_restore_control_plane", payload["topic_playbook_summary"]["generated_slugs"])
             self.assertEqual(1, payload["operation_playbook_summary"]["generated_count"])
             self.assertIn("backup_restore_operations", payload["operation_playbook_summary"]["generated_slugs"])
-            self.assertEqual(1, payload["policy_overlay_book_summary"]["generated_count"])
-            self.assertIn("backup_and_restore_policy_overlay_book", payload["policy_overlay_book_summary"]["generated_slugs"])
-            self.assertEqual(1, payload["synthesized_playbook_summary"]["generated_count"])
-            self.assertIn("backup_and_restore_synthesized_playbook", payload["synthesized_playbook_summary"]["generated_slugs"])
+            self.assertEqual(0, payload["policy_overlay_book_summary"]["generated_count"])
+            self.assertEqual([], payload["policy_overlay_book_summary"]["generated_slugs"])
+            self.assertEqual(0, payload["synthesized_playbook_summary"]["generated_count"])
+            self.assertEqual([], payload["synthesized_playbook_summary"]["generated_slugs"])
             self.assertEqual(1, payload["troubleshooting_playbook_summary"]["generated_count"])
             self.assertIn(
                 "backup_restore_recovery_troubleshooting",
                 payload["troubleshooting_playbook_summary"]["generated_slugs"],
             )
-            self.assertEqual(5, payload["derived_playbook_count"])
+            self.assertEqual(3, payload["derived_playbook_count"])
             self.assertEqual(
                 "materialized",
                 payload["derived_family_statuses"]["operation_playbook"]["status"],
             )
             self.assertEqual(
-                "materialized",
+                "not_emitted",
                 payload["derived_family_statuses"]["policy_overlay_book"]["status"],
             )
             self.assertEqual(
-                "materialized",
+                "not_emitted",
                 payload["derived_family_statuses"]["synthesized_playbook"]["status"],
             )
             self.assertTrue((settings.playbook_books_dir / "backup_restore_control_plane.json").exists())
             self.assertTrue((settings.playbook_books_dir / "backup_restore_operations.json").exists())
-            self.assertTrue((settings.playbook_books_dir / "backup_and_restore_policy_overlay_book.json").exists())
-            self.assertTrue((settings.playbook_books_dir / "backup_and_restore_synthesized_playbook.json").exists())
+            self.assertFalse((settings.playbook_books_dir / "backup_and_restore_policy_overlay_book.json").exists())
+            self.assertFalse((settings.playbook_books_dir / "backup_and_restore_synthesized_playbook.json").exists())
             self.assertTrue(
                 (settings.playbook_books_dir / "backup_restore_recovery_troubleshooting.json").exists()
             )

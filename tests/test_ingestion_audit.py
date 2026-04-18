@@ -28,7 +28,9 @@ from play_book_studio.ingestion.audit_rules import (
     body_language_guess,
     classify_content_status,
     is_english_like_title,
+    resolve_final_content_status,
 )
+from play_book_studio.ingestion.models import SourceManifestEntry
 from play_book_studio.ingestion.manifest import read_manifest
 
 
@@ -138,6 +140,32 @@ class Part1AuditTests(unittest.TestCase):
         self.assertEqual("en_only", body_language_guess(hangul_chunk_ratio=0.9, fallback_detected=True))
         self.assertEqual("mixed", body_language_guess(hangul_chunk_ratio=0.5, fallback_detected=False))
         self.assertEqual("ko", body_language_guess(hangul_chunk_ratio=0.95, fallback_detected=False))
+
+    def test_resolve_final_content_status_does_not_approve_english_manual_synthesis_override(self) -> None:
+        entry = SourceManifestEntry(
+            book_slug="monitoring",
+            title="모니터링 운영 플레이북",
+            source_url="https://example.com/monitoring",
+            resolved_source_url="https://example.com/monitoring",
+            viewer_path="/docs/ocp/4.20/ko/monitoring/index.html",
+            content_status="approved_ko",
+            approval_status="approved",
+            review_status="approved",
+            source_type="manual_synthesis",
+        )
+
+        content_status, citation_eligible, citation_block_reason, approval_status = (
+            resolve_final_content_status(
+                entry,
+                auto_status="en_only",
+                auto_reason="chunk text is effectively non-Korean",
+            )
+        )
+
+        self.assertEqual("en_only", content_status)
+        self.assertFalse(citation_eligible)
+        self.assertEqual("chunk text is effectively non-Korean", citation_block_reason)
+        self.assertEqual("needs_review", approval_status)
 
     def test_build_data_quality_report_separates_manifest_and_chunk_title_quality(self) -> None:
         with self._workspace() as root:
@@ -936,7 +964,7 @@ class Part1AuditTests(unittest.TestCase):
         self.assertEqual(1, report["summary"]["approved_ko_count"])
         self.assertEqual(1, report["summary"]["en_only_count"])
         self.assertEqual(
-            "docs.redhat.com published Korean html-single",
+            "openshift-docs repo AsciiDoc first with docs.redhat HTML fallback",
             report["policy"]["primary_source"],
         )
         self.assertEqual("approved_ko", report["books"][0]["content_status"])

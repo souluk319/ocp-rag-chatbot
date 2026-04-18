@@ -108,7 +108,7 @@ class TopicPlaybookTests(unittest.TestCase):
             self.assertIn("/docs/ocp/4.20/ko/backup_restore_control_plane/index.html#etcd-backup", topic_book["anchor_map"].values())
             self.assertFalse((settings.playbook_books_dir / "backup_and_restore_topic_playbook.json").exists())
 
-    def test_materialize_derived_playbooks_generates_all_families_for_generic_manual_synthesis(self) -> None:
+    def test_materialize_derived_playbooks_skips_generic_manual_synthesis_without_curated_spec(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             settings = Settings(root_dir=Path(tmpdir))
             settings.playbook_documents_path.parent.mkdir(parents=True, exist_ok=True)
@@ -181,95 +181,17 @@ class TopicPlaybookTests(unittest.TestCase):
 
             summary = materialize_derived_playbooks(settings)
 
-            self.assertEqual(5, summary["generated_count"])
-            self.assertEqual(
-                {
-                    "operation_playbook": 1,
-                    "policy_overlay_book": 1,
-                    "synthesized_playbook": 1,
-                    "topic_playbook": 1,
-                    "troubleshooting_playbook": 1,
-                },
-                summary["family_counts"],
-            )
-            self.assertEqual(
-                ["nodes_operations_playbook"],
-                summary["family_summaries"]["operation_playbook"]["generated_slugs"],
-            )
-            self.assertEqual(
-                ["nodes_topic_playbook"],
-                summary["family_summaries"]["topic_playbook"]["generated_slugs"],
-            )
-            self.assertEqual(
-                ["nodes_policy_overlay_book"],
-                summary["family_summaries"]["policy_overlay_book"]["generated_slugs"],
-            )
-            self.assertEqual(
-                ["nodes_synthesized_playbook"],
-                summary["family_summaries"]["synthesized_playbook"]["generated_slugs"],
-            )
-            self.assertEqual(
-                ["nodes_troubleshooting_playbook"],
-                summary["family_summaries"]["troubleshooting_playbook"]["generated_slugs"],
-            )
-
             derived_rows = approved_materialized_derived_playbooks(settings)
-            self.assertEqual(
-                [
-                    "nodes_operations_playbook",
-                    "nodes_policy_overlay_book",
-                    "nodes_synthesized_playbook",
-                    "nodes_topic_playbook",
-                    "nodes_troubleshooting_playbook",
-                ],
-                sorted(row["book_slug"] for row in derived_rows),
-            )
-            topic_book = json.loads(
-                (settings.playbook_books_dir / "nodes_topic_playbook.json").read_text(
-                    encoding="utf-8"
-                )
-            )
-            operation_book = json.loads(
-                (settings.playbook_books_dir / "nodes_operations_playbook.json").read_text(
-                    encoding="utf-8"
-                )
-            )
-            policy_book = json.loads(
-                (settings.playbook_books_dir / "nodes_policy_overlay_book.json").read_text(
-                    encoding="utf-8"
-                )
-            )
-            synthesized_book = json.loads(
-                (settings.playbook_books_dir / "nodes_synthesized_playbook.json").read_text(
-                    encoding="utf-8"
-                )
-            )
-            troubleshooting_book = json.loads(
-                (settings.playbook_books_dir / "nodes_troubleshooting_playbook.json").read_text(
-                    encoding="utf-8"
-                )
-            )
-            self.assertEqual("topic_playbook", topic_book["source_metadata"]["source_type"])
-            self.assertEqual("operation_playbook", operation_book["source_metadata"]["source_type"])
-            self.assertEqual("policy_overlay_book", policy_book["source_metadata"]["source_type"])
-            self.assertEqual("synthesized_playbook", synthesized_book["source_metadata"]["source_type"])
-            self.assertEqual(
-                "troubleshooting_playbook",
-                troubleshooting_book["source_metadata"]["source_type"],
-            )
-            self.assertEqual("nodes", topic_book["source_metadata"]["derived_from_book_slug"])
-            self.assertIn(
-                "/docs/ocp/4.20/ko/nodes_operations_playbook/index.html#node-drain",
-                operation_book["anchor_map"].values(),
-            )
-            self.assertIn(
-                "/docs/ocp/4.20/ko/nodes_troubleshooting_playbook/index.html#node-recovery",
-                troubleshooting_book["anchor_map"].values(),
-            )
-            self.assertTrue(policy_book["sections"])
-            self.assertTrue(synthesized_book["sections"])
+            self.assertEqual(0, summary["generated_count"])
+            self.assertEqual({}, summary["family_counts"])
+            self.assertEqual([], derived_rows)
+            self.assertFalse((settings.playbook_books_dir / "nodes_topic_playbook.json").exists())
+            self.assertFalse((settings.playbook_books_dir / "nodes_operations_playbook.json").exists())
+            self.assertFalse((settings.playbook_books_dir / "nodes_policy_overlay_book.json").exists())
+            self.assertFalse((settings.playbook_books_dir / "nodes_synthesized_playbook.json").exists())
+            self.assertFalse((settings.playbook_books_dir / "nodes_troubleshooting_playbook.json").exists())
 
-    def test_materialize_derived_playbooks_generates_all_families_for_approved_official_doc(self) -> None:
+    def test_materialize_derived_playbooks_skips_generic_official_doc_without_curated_spec(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             settings = Settings(root_dir=Path(tmpdir))
             settings.playbook_documents_path.parent.mkdir(parents=True, exist_ok=True)
@@ -336,41 +258,12 @@ class TopicPlaybookTests(unittest.TestCase):
 
             summary = materialize_derived_playbooks(settings)
 
-            self.assertEqual(5, summary["generated_count"])
-            self.assertEqual(
-                {
-                    "operation_playbook": 1,
-                    "policy_overlay_book": 1,
-                    "synthesized_playbook": 1,
-                    "topic_playbook": 1,
-                    "troubleshooting_playbook": 1,
-                },
-                summary["family_counts"],
-            )
             derived_rows = approved_materialized_derived_playbooks(settings)
-            self.assertEqual(
-                [
-                    "advanced_networking_operations_playbook",
-                    "advanced_networking_policy_overlay_book",
-                    "advanced_networking_synthesized_playbook",
-                    "advanced_networking_topic_playbook",
-                    "advanced_networking_troubleshooting_playbook",
-                ],
-                sorted(row["book_slug"] for row in derived_rows),
-            )
-            topic_book = json.loads(
-                (settings.playbook_books_dir / "advanced_networking_topic_playbook.json").read_text(
-                    encoding="utf-8"
-                )
-            )
-            self.assertEqual(
-                "official_doc:advanced_networking:topic_playbook:advanced_networking_topic_playbook",
-                topic_book["source_metadata"]["source_id"],
-            )
-            self.assertEqual("topic_playbook", topic_book["source_metadata"]["source_type"])
-            self.assertEqual(
-                "advanced_networking",
-                topic_book["source_metadata"]["derived_from_book_slug"],
+            self.assertEqual(0, summary["generated_count"])
+            self.assertEqual({}, summary["family_counts"])
+            self.assertEqual([], derived_rows)
+            self.assertFalse(
+                (settings.playbook_books_dir / "advanced_networking_topic_playbook.json").exists()
             )
 
     def test_materialize_derived_playbooks_prunes_stale_outputs_when_manual_loses_approval(self) -> None:
@@ -460,40 +353,40 @@ class TopicPlaybookTests(unittest.TestCase):
             source_payload = {
                 "canonical_model": "playbook_document_v1",
                 "source_view_strategy": "playbook_ast_v1",
-                "book_slug": "monitoring",
-                "title": "모니터링 운영 가이드",
+                "book_slug": "backup_and_restore",
+                "title": "백업 및 복구 운영 가이드",
                 "version": "4.20",
                 "locale": "ko",
-                "source_uri": "https://example.com/monitoring",
+                "source_uri": "https://example.com/backup_and_restore",
                 "translation_status": "approved_ko",
                 "review_status": "approved",
                 "source_metadata": {
-                    "source_id": "manual_synthesis:monitoring",
+                    "source_id": "manual_synthesis:backup_and_restore",
                     "source_type": "manual_synthesis",
                     "source_lane": "applied_playbook",
                 },
                 "sections": [
                     {
-                        "section_id": "monitoring:overview",
-                        "section_key": "monitoring:overview",
+                        "section_id": "backup_and_restore:overview",
+                        "section_key": "backup_and_restore:overview",
                         "ordinal": 1,
                         "heading": "개요",
                         "anchor": "overview",
                         "semantic_role": "overview",
                         "path": ["개요"],
                         "section_path": ["개요"],
-                        "blocks": [{"kind": "paragraph", "text": "모니터링 운영 개요"}],
+                        "blocks": [{"kind": "paragraph", "text": "백업 및 복구 운영 개요"}],
                     },
                     {
-                        "section_id": "monitoring:alerts",
-                        "section_key": "monitoring:alerts",
+                        "section_id": "backup_and_restore:backup",
+                        "section_key": "backup_and_restore:backup",
                         "ordinal": 2,
-                        "heading": "Alertmanager 운영 절차",
-                        "anchor": "alertmanager-ops",
+                        "heading": "etcd 백업 절차",
+                        "anchor": "etcd-backup",
                         "semantic_role": "procedure",
-                        "path": ["운영", "Alertmanager 운영 절차"],
-                        "section_path": ["운영", "Alertmanager 운영 절차"],
-                        "blocks": [{"kind": "code", "code": "oc -n openshift-monitoring get pods"}],
+                        "path": ["운영", "etcd 백업 절차"],
+                        "section_path": ["운영", "etcd 백업 절차"],
+                        "blocks": [{"kind": "code", "code": "cluster-backup.sh /backup"}],
                     },
                 ],
             }
@@ -502,7 +395,7 @@ class TopicPlaybookTests(unittest.TestCase):
                 encoding="utf-8",
             )
             settings.playbook_books_dir.mkdir(parents=True, exist_ok=True)
-            (settings.playbook_books_dir / "monitoring.json").write_text(
+            (settings.playbook_books_dir / "backup_and_restore.json").write_text(
                 json.dumps(source_payload, ensure_ascii=False) + "\n",
                 encoding="utf-8",
             )
@@ -517,9 +410,9 @@ class TopicPlaybookTests(unittest.TestCase):
                 families=("troubleshooting_playbook",),
             )
 
-            self.assertEqual(["monitoring_stack_operations"], [row["book_slug"] for row in operation_rows])
+            self.assertEqual(["backup_restore_operations"], [row["book_slug"] for row in operation_rows])
             self.assertEqual(
-                ["monitoring_troubleshooting_playbook"],
+                ["backup_restore_recovery_troubleshooting"],
                 [row["book_slug"] for row in troubleshooting_rows],
             )
 
@@ -607,40 +500,40 @@ class TopicPlaybookTests(unittest.TestCase):
             source_payload = {
                 "canonical_model": "playbook_document_v1",
                 "source_view_strategy": "playbook_ast_v1",
-                "book_slug": "nodes",
-                "title": "노드 운영 가이드",
+                "book_slug": "backup_and_restore",
+                "title": "백업 및 복구 운영 가이드",
                 "version": "4.20",
                 "locale": "ko",
-                "source_uri": "https://example.com/nodes",
+                "source_uri": "https://example.com/backup_and_restore",
                 "translation_status": "approved_ko",
                 "review_status": "approved",
                 "source_metadata": {
-                    "source_id": "manual_synthesis:nodes",
+                    "source_id": "manual_synthesis:backup_and_restore",
                     "source_type": "manual_synthesis",
                     "source_lane": "applied_playbook",
                 },
                 "sections": [
                     {
-                        "section_id": "nodes:overview",
-                        "section_key": "nodes:overview",
+                        "section_id": "backup_and_restore:overview",
+                        "section_key": "backup_and_restore:overview",
                         "ordinal": 1,
                         "heading": "개요",
                         "anchor": "overview",
                         "semantic_role": "overview",
                         "path": ["개요"],
                         "section_path": ["개요"],
-                        "blocks": [{"kind": "paragraph", "text": "노드 운영 기본 개요"}],
+                        "blocks": [{"kind": "paragraph", "text": "백업 및 복구 운영 개요"}],
                     },
                     {
-                        "section_id": "nodes:drain",
-                        "section_key": "nodes:drain",
+                        "section_id": "backup_and_restore:backup",
+                        "section_key": "backup_and_restore:backup",
                         "ordinal": 2,
-                        "heading": "노드 드레인 절차",
-                        "anchor": "node-drain",
+                        "heading": "etcd 백업 절차",
+                        "anchor": "etcd-backup",
                         "semantic_role": "procedure",
-                        "path": ["운영", "노드 드레인 절차"],
-                        "section_path": ["운영", "노드 드레인 절차"],
-                        "blocks": [{"kind": "code", "code": "oc adm drain node-0 --ignore-daemonsets"}],
+                        "path": ["운영", "etcd 백업 절차"],
+                        "section_path": ["운영", "etcd 백업 절차"],
+                        "blocks": [{"kind": "code", "code": "cluster-backup.sh /backup"}],
                     },
                 ],
             }
@@ -649,7 +542,7 @@ class TopicPlaybookTests(unittest.TestCase):
                 encoding="utf-8",
             )
             settings.playbook_books_dir.mkdir(parents=True, exist_ok=True)
-            (settings.playbook_books_dir / "nodes.json").write_text(
+            (settings.playbook_books_dir / "backup_and_restore.json").write_text(
                 json.dumps(source_payload, ensure_ascii=False) + "\n",
                 encoding="utf-8",
             )
@@ -657,5 +550,5 @@ class TopicPlaybookTests(unittest.TestCase):
 
             topic_rows = approved_materialized_topic_playbooks(settings)
 
-            self.assertEqual(["nodes_topic_playbook"], [row["book_slug"] for row in topic_rows])
+            self.assertEqual(["backup_restore_control_plane"], [row["book_slug"] for row in topic_rows])
             self.assertEqual("topic_playbook", topic_rows[0]["source_metadata"]["source_type"])

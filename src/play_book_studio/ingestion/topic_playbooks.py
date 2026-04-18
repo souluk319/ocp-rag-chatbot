@@ -537,12 +537,10 @@ def _build_generation_specs(source_payloads: dict[str, dict[str, Any]]) -> list[
     }
     specs: list[DerivedPlaybookSpec] = []
     for source_slug in sorted(source_payloads):
-        source_payload = source_payloads[source_slug]
         for family in sorted(DERIVED_PLAYBOOK_SOURCE_TYPES):
             spec = override_specs.get((source_slug, family))
-            if spec is None:
-                spec = _default_derived_spec(source_payload, family)
-            specs.append(spec)
+            if spec is not None:
+                specs.append(spec)
     return specs
 
 

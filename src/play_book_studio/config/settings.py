@@ -132,6 +132,8 @@ class Settings(SettingsPathMixin):
     graph_timeout_seconds: float = 5.0
     graph_sidecar_path_override: str = ""
     customer_pack_pdf_fallback_backend: str = ""
+    official_html_fallback_allowed: bool = False
+    allow_stale_full_rebuild_export: bool = False
     surya_ocr_endpoint: str = ""
     surya_health_endpoint: str = ""
     surya_timeout_seconds: float = 30.0
@@ -334,6 +336,14 @@ def load_settings(root_dir: str | Path) -> Settings:
             "PBS_CUSTOMER_PACK_PDF_FALLBACK_BACKEND",
             "",
         ).strip().lower(),
+        official_html_fallback_allowed=effective_env.get(
+            "PBS_OFFICIAL_HTML_FALLBACK_ALLOWED",
+            "false",
+        ).lower() in {"1", "true", "yes", "on"},
+        allow_stale_full_rebuild_export=effective_env.get(
+            "PBS_ALLOW_STALE_FULL_REBUILD_EXPORT",
+            "false",
+        ).lower() in {"1", "true", "yes", "on"},
         surya_ocr_endpoint=effective_env.get("SURYA_OCR", "").strip().rstrip("/"),
         surya_health_endpoint=effective_env.get("SURYA_HEALTH", "").strip().rstrip("/"),
         surya_timeout_seconds=float(effective_env.get("SURYA_TIMEOUT_SECONDS", "30")),

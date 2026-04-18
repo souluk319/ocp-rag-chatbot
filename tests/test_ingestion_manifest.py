@@ -64,6 +64,7 @@ class Part1ManifestTests(unittest.TestCase):
         self.assertEqual(["architecture"], [entry.book_slug for entry in entries])
         self.assertEqual("4.18", entries[0].ocp_version)
         self.assertEqual("ko", entries[0].docs_language)
+        self.assertEqual("source-first", entries[0].source_kind)
         self.assertEqual(
             "/docs/ocp/4.18/ko/architecture/index.html",
             entries[0].viewer_path,
@@ -75,7 +76,7 @@ class Part1ManifestTests(unittest.TestCase):
                 product_slug="openshift_container_platform",
                 ocp_version="4.20",
                 docs_language="ko",
-                source_kind="html-single",
+                source_kind="source-first",
                 book_slug="architecture",
                 title="아키텍처",
                 index_url="https://example.com/ko/index",
@@ -93,7 +94,7 @@ class Part1ManifestTests(unittest.TestCase):
                 product_slug="openshift_container_platform",
                 ocp_version="4.20",
                 docs_language="ko",
-                source_kind="html-single",
+                source_kind="source-first",
                 book_slug="nodes",
                 title="노드",
                 index_url="https://example.com/ko/index",
@@ -113,7 +114,7 @@ class Part1ManifestTests(unittest.TestCase):
                 product_slug="openshift_container_platform",
                 ocp_version="4.20",
                 docs_language="ko",
-                source_kind="html-single",
+                source_kind="source-first",
                 book_slug="architecture",
                 title="아키텍처 개요",
                 index_url="https://example.com/ko/index",
@@ -131,7 +132,7 @@ class Part1ManifestTests(unittest.TestCase):
                 product_slug="openshift_container_platform",
                 ocp_version="4.20",
                 docs_language="ko",
-                source_kind="html-single",
+                source_kind="source-first",
                 book_slug="monitoring",
                 title="모니터링",
                 index_url="https://example.com/ko/index",
@@ -152,8 +153,8 @@ class Part1ManifestTests(unittest.TestCase):
         self.assertEqual(1, report["summary"]["added_count"])
         self.assertEqual(1, report["summary"]["removed_count"])
         self.assertEqual(1, report["summary"]["changed_count"])
-        self.assertEqual(["4.20/ko/html-single/monitoring"], report["added"])
-        self.assertEqual(["4.20/ko/html-single/nodes"], report["removed"])
+        self.assertEqual(["4.20/ko/source-first/monitoring"], report["added"])
+        self.assertEqual(["4.20/ko/source-first/nodes"], report["removed"])
         self.assertEqual("architecture", report["changed"][0]["book_slug"])
         self.assertEqual("4.20", report["changed"][0]["ocp_version"])
         self.assertEqual("ko", report["changed"][0]["docs_language"])
@@ -265,6 +266,42 @@ class Part1ManifestTests(unittest.TestCase):
                 self.assertIn("Modified versions must remove all Red Hat trademarks.", metadata["license_or_terms"])
             finally:
                 collector_module.fetch_html_response = original_fetch
+
+    def test_collect_entry_blocks_source_first_html_fallback_without_explicit_approval(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            raw_html_dir = Path(tmpdir)
+            settings = SimpleNamespace(
+                raw_html_dir=raw_html_dir,
+                request_retries=1,
+                request_backoff_seconds=0,
+                request_timeout_seconds=5,
+                user_agent="test-agent",
+                official_html_fallback_allowed=False,
+            )
+            entry = SourceManifestEntry(
+                product_slug="openshift_container_platform",
+                ocp_version="4.20",
+                docs_language="ko",
+                source_kind="source-first",
+                book_slug="installation_overview",
+                title="설치 개요",
+                index_url="https://example.com/ko/index",
+                source_url="https://example.com/installation_overview",
+                resolved_source_url="https://example.com/installation_overview",
+                resolved_language="ko",
+                source_state="published_native",
+                source_state_reason="ok",
+                catalog_source_label="test",
+                viewer_path="/docs/ocp/4.20/ko/installation_overview/index.html",
+                high_value=True,
+                source_fingerprint="fingerprint-v1",
+                primary_input_kind="source_repo",
+                fallback_input_kind="html_single",
+                source_relative_path="installing/overview/index.adoc",
+            )
+
+            with self.assertRaisesRegex(RuntimeError, "HTML fallback is blocked"):
+                collect_entry(entry, settings)
 
     def test_load_runtime_manifest_entries_prefers_approved_manifest_over_catalog(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -390,6 +427,56 @@ class Part1ManifestTests(unittest.TestCase):
                 for entry in entries
             ],
         )
+        self.assertTrue(all(entry.source_kind == "source-first" for entry in entries))
+
+    def test_build_source_catalog_entries_marks_repo_first_when_local_source_mirror_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / ".env").write_text(
+                "SOURCE_CATALOG_VERSIONS=4.20\n"
+                "SOURCE_CATALOG_LANGUAGES=ko\n",
+                encoding="utf-8",
+            )
+            source_file = (
+                root
+                / "tmp_source"
+                / "openshift-docs-enterprise-4.20"
+                / "installing"
+                / "overview"
+                / "index.adoc"
+            )
+            source_file.parent.mkdir(parents=True, exist_ok=True)
+            source_file.write_text("= 설치 개요\n", encoding="utf-8")
+            settings = load_settings(root)
+
+            from play_book_studio.ingestion import manifest as manifest_module
+
+            original_fetch = manifest_module.fetch_docs_index
+            try:
+                html_by_index = {
+                    "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/": """
+                    <html><body>
+                      <a href="/ko/documentation/openshift_container_platform/4.20/html/installation_overview">설치 개요</a>
+                    </body></html>
+                    """,
+                }
+
+                def fake_fetch(_settings, *, index_url=None):
+                    return html_by_index[str(index_url)]
+
+                manifest_module.fetch_docs_index = fake_fetch
+                entries = build_source_catalog_entries(settings)
+            finally:
+                manifest_module.fetch_docs_index = original_fetch
+
+        self.assertEqual(1, len(entries))
+        self.assertEqual("source_repo", entries[0].primary_input_kind)
+        self.assertEqual("html_single", entries[0].fallback_input_kind)
+        self.assertEqual(
+            "installing/overview/index.adoc",
+            entries[0].source_relative_path,
+        )
+        self.assertTrue(entries[0].source_repo.endswith("openshift-docs"))
 
 
 if __name__ == "__main__":

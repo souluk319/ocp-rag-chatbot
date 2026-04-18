@@ -26,6 +26,8 @@ PBS runtime repository입니다.
 `Playbook` 은 최신 고정 파이프라인을 통과한 문서 중,
 `원문 충실도 + 챗봇 상호작용성` 을 동시에 만족하는 위키 단위다.
 
+공식 lane 에서 영어 본문이 발견되면 기본 처리 순서는 `번역 -> 검증 -> publish` 다.
+
 ## Requirements
 
 - `Docker Desktop` 또는 `Docker Engine + Compose plugin`

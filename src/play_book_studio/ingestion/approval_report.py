@@ -257,7 +257,7 @@ def build_source_approval_report(settings) -> dict[str, object]:
         },
         "policy": {
             "product_scope": "ocp_playbook_studio",
-            "primary_source": "docs.redhat.com published Korean html-single",
+            "primary_source": "openshift-docs repo AsciiDoc first with docs.redhat HTML fallback",
             "change_feed_candidate": "github.com/openshift/openshift-docs",
             "citation_default_statuses": list(CITATION_ELIGIBLE_STATUSES),
             "translation_lane_statuses": [CONTENT_STATUS_TRANSLATED_KO_DRAFT],

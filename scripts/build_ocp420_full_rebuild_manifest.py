@@ -15,33 +15,12 @@ OUTPUT_MANIFEST_PATH = ROOT / "manifests" / "ocp420_source_first_full_rebuild_ma
 OUTPUT_REPORT_PATH = ROOT / "reports" / "build_logs" / "ocp420_full_rebuild_manifest_report.json"
 # local unmanaged source mirror; top-level git intentionally ignores tmp_source/
 SOURCE_ROOT = ROOT / "tmp_source" / "openshift-docs-enterprise-4.20"
-SOURCE_REPO_URL = "https://github.com/openshift/openshift-docs"
-SOURCE_BRANCH = "enterprise-4.20"
-
-MANUAL_PATH_ALIASES: dict[str, str] = {
-    "architecture": "architecture/index.adoc",
-    "authentication_and_authorization": "authentication/index.adoc",
-    "backup_and_restore": "backup_and_restore/index.adoc",
-    "cli_tools": "cli_reference/index.adoc",
-    "disconnected_environments": "disconnected/index.adoc",
-    "etcd": "etcd/etcd-overview.adoc",
-    "images": "openshift_images/index.adoc",
-    "installing_on_any_platform": "installing/overview/index.adoc",
-    "installation_overview": "installing/overview/index.adoc",
-    "machine_configuration": "machine_configuration/index.adoc",
-    "machine_management": "machine_management/index.adoc",
-    "monitoring": "observability/monitoring/about-ocp-monitoring.adoc",
-    "nodes": "nodes/index.adoc",
-    "observability_overview": "observability/overview/index.adoc",
-    "operators": "operators/index.adoc",
-    "postinstallation_configuration": "post_installation_configuration/index.adoc",
-    "registry": "registry/index.adoc",
-    "security_and_compliance": "security/index.adoc",
-    "storage": "storage/index.adoc",
-    "support": "support/index.adoc",
-    "updating_clusters": "updating/index.adoc",
-    "web_console": "web_console/index.adoc",
-}
+from play_book_studio.ingestion.source_first import (
+    SOURCE_BRANCH,
+    SOURCE_REPO_URL,
+    resolve_repo_path,
+)
+from play_book_studio.config.settings import load_settings
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -53,34 +32,14 @@ def _read_json(path: Path) -> dict[str, Any]:
         return {}
     return payload if isinstance(payload, dict) else {}
 
-
-def _repo_path_candidates(slug: str) -> list[Path]:
-    candidates: list[Path] = []
-    alias = MANUAL_PATH_ALIASES.get(slug)
-    if alias:
-        candidates.append(SOURCE_ROOT / alias)
-    candidates.extend(
-        [
-            SOURCE_ROOT / slug / "index.adoc",
-            SOURCE_ROOT / slug.replace("_", "-") / "index.adoc",
-        ]
-    )
-    return candidates
-
-
-def _resolve_repo_path(slug: str) -> Path | None:
-    for candidate in _repo_path_candidates(slug):
-        if candidate.exists():
-            return candidate
-    return None
-
-
 def main() -> int:
+    settings = load_settings(ROOT)
     working_set = _read_json(WORKING_SET_PATH)
     entries = working_set.get("entries") if isinstance(working_set.get("entries"), list) else []
     manifest_entries: list[dict[str, Any]] = []
     source_first_count = 0
     fallback_count = 0
+    blocked_entries: list[dict[str, str]] = []
 
     for entry in entries:
         if not isinstance(entry, dict):
@@ -88,12 +47,18 @@ def main() -> int:
         slug = str(entry.get("book_slug") or "").strip()
         if not slug:
             continue
-        repo_path = _resolve_repo_path(slug)
+        repo_path = resolve_repo_path(ROOT, slug)
         primary_input_kind = "source_repo" if repo_path else "html_single"
         if repo_path:
             source_first_count += 1
         else:
             fallback_count += 1
+            blocked_entries.append(
+                {
+                    "book_slug": slug,
+                    "reason": "repo_source_missing_html_fallback_requires_explicit_approval",
+                }
+            )
         manifest_entries.append(
             {
                 "book_slug": slug,
@@ -108,6 +73,16 @@ def main() -> int:
                 "fallback_input_kind": "html_single",
                 "fallback_source_url": str(entry.get("resolved_source_url") or entry.get("source_url") or ""),
                 "fallback_viewer_path": str(entry.get("viewer_path") or ""),
+                "fallback_approved": bool(settings.official_html_fallback_allowed),
+                "rebuild_admission": (
+                    "repo_source_ready"
+                    if repo_path
+                    else (
+                        "html_fallback_approved"
+                        if settings.official_html_fallback_allowed
+                        else "blocked_pending_html_fallback_approval"
+                    )
+                ),
                 "source_lane": str(entry.get("source_lane") or ""),
                 "content_status": str(entry.get("content_status") or ""),
                 "approval_status": str(entry.get("approval_status") or ""),
@@ -121,18 +96,29 @@ def main() -> int:
         )
 
     payload = {
-        "status": "ok",
+        "status": (
+            "ok"
+            if settings.official_html_fallback_allowed or not blocked_entries
+            else "blocked"
+        ),
         "product_slug": "openshift_container_platform",
         "ocp_version": "4.20",
         "docs_language": "ko",
-        "source_strategy": "source-first-with-html-single-fallback",
+        "source_strategy": (
+            "source-first-with-approved-html-single-fallback"
+            if settings.official_html_fallback_allowed
+            else "source-first-strict-no-auto-fallback"
+        ),
         "source_repo": SOURCE_REPO_URL,
         "source_branch": SOURCE_BRANCH,
         "source_mirror_root": str(SOURCE_ROOT),
+        "html_fallback_auto_allowed": bool(settings.official_html_fallback_allowed),
         "working_set_path": str(WORKING_SET_PATH),
         "entry_count": len(manifest_entries),
         "source_first_count": source_first_count,
         "fallback_only_count": fallback_count,
+        "blocked_fallback_count": len(blocked_entries),
+        "blocked_entries": blocked_entries,
         "entries": manifest_entries,
     }
 
@@ -141,6 +127,8 @@ def main() -> int:
     OUTPUT_MANIFEST_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     OUTPUT_REPORT_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(payload, ensure_ascii=False, indent=2))
+    if blocked_entries and not settings.official_html_fallback_allowed:
+        return 2
     return 0
 
 

@@ -40,6 +40,11 @@ Playbook 자격은 아래 두 축을 동시에 만족할 때만 부여한다.
 
 reader-grade 실패, 구조 붕괴, 절차 붕괴 산출물은 pipeline output 일 수는 있어도 `Playbook` 이라고 부르지 않는다.
 
+영어 본문이 발견된 문서는 `버릴 대상` 이 아니라 `번역 완료 대상` 이다.
+
+- 공식 source lane 에서 영어 본문이 발견되면 기본 처리 순서는 `translate -> verify -> publish` 다.
+- 제품 기본 행위는 제거, 퇴출, 포기가 아니라 `한국어 완성본 생산` 이다.
+
 ## Renewal Frame
 
 PBS 는 이미 `award-winning enterprise product` 이고 `2026 best product` 중 하나로 선정된 상태다.
@@ -114,6 +119,7 @@ vendor docs 는 reference surface 이기도 하다.
 4. 챗봇 답변은 library anchor 로 되돌아갈 수 있어야 한다.
 5. customer/private 문서는 같은 아키텍처 안에서 `pack boundary labeled runtime` 으로 다룬다.
 6. 고객 주문용 package output 도 기존 PBS shared truth 와 surface model 안에서 파생한다.
+7. 공식 문서 lane 에서 영어 본문이 발견되면, 삭제보다 번역 완료를 우선한다.
 
 ## Non-Promises
 
@@ -146,6 +152,10 @@ vendor docs 는 reference surface 이기도 하다.
 3. `official rendered PDF for reader verification and fallback`
 
 즉 `published HTML` 은 official truth 자체가 아니라, `repo source first` 계약 아래의 verification/fallback lane 이다.
+`published HTML/PDF` fallback 은 사용자 승인 전에는 자동으로 실행하지 않는다.
+
+`official repository source` 가 영어이거나, rendered HTML/PDF 에서 영어 본문이 확인되면
+기본 다음 단계는 `translated_ko_draft` 또는 동등한 번역 완료 lane 이다.
 
 ## Locked Product Doctrine
 
@@ -156,6 +166,7 @@ vendor docs 는 reference surface 이기도 하다.
 - official raw truth 는 `repo/AsciiDoc first` 로 본다.
 - published HTML/PDF 는 canonical truth 가 아니라 `reader benchmark / verification / fallback` 으로만 쓴다.
 - 같은 source family 에서 여러 파생본을 만들 수는 있어도, default release/runtime surface 는 `선택된 최종 Playbook` 을 우선한다.
+- 영어 본문 발견 시 기본 제품 행위는 `translate and complete`, not `drop and forget` 다.
 - overlay 는 본문을 덮지 않고 보조 레이어로 남는다.
 - buyer/demo/release packet 은 제품 증거 surface 이지, core reader surface 를 대체하지 않는다.
 - commercial packet 이나 rehearsal score 는 supporting evidence 일 뿐이며, core runtime/retrieval/citation quality gate 를 대체하지 않는다.

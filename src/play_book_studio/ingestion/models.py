@@ -99,7 +99,7 @@ class SourceManifestEntry:
     product_slug: str = "openshift_container_platform"
     ocp_version: str = "4.20"
     docs_language: str = "ko"
-    source_kind: str = "html-single"
+    source_kind: str = "source-first"
     book_slug: str = ""
     title: str = ""
     index_url: str = ""
@@ -150,6 +150,14 @@ class SourceManifestEntry:
     approval_state: str = ""
     publication_state: str = ""
     redaction_state: str = DEFAULT_REDACTION_STATE
+    primary_input_kind: str = "html_single"
+    fallback_input_kind: str = ""
+    source_repo: str = ""
+    source_branch: str = ""
+    source_relative_path: str = ""
+    source_mirror_root: str = ""
+    fallback_source_url: str = ""
+    fallback_viewer_path: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)

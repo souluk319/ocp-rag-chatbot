@@ -27,6 +27,9 @@ last_updated: 2026-04-17
 
 private/customer source 가 들어오는 순간부터는 이 계약이 override 로 적용된다.
 
+추가로, private/customer source 에 영어 본문이 포함되어도 기본 제품 행위는 삭제가 아니라
+`boundary 유지 + translation completion` 이다.
+
 ## When This Contract Applies
 
 아래 중 하나라도 해당되면 이 문서를 반드시 적용한다.

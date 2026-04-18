@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
+from play_book_studio.config.settings import load_settings
 
 
 def _utc_now() -> str:
@@ -556,6 +557,23 @@ def _load_relation_entities() -> dict[str, list[dict[str, str]]]:
 
 
 def main() -> int:
+    settings = load_settings(ROOT)
+    if not settings.allow_stale_full_rebuild_export:
+        blocked_payload = {
+            "status": "blocked",
+            "reason": (
+                "stale_full_rebuild_export_uses_existing_playbook_payloads_and_html_fallback_assets; "
+                "blocked until repo AsciiDoc parser binding lands or explicit override is granted"
+            ),
+            "override_env": "PBS_ALLOW_STALE_FULL_REBUILD_EXPORT=1",
+        }
+        _report_out().parent.mkdir(parents=True, exist_ok=True)
+        _report_out().write_text(
+            json.dumps(blocked_payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        print(json.dumps(blocked_payload, ensure_ascii=False, indent=2))
+        return 2
     manifest = _load_json(_manifest_path())
 
     _gold_candidate_root().mkdir(parents=True, exist_ok=True)

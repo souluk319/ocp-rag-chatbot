@@ -217,6 +217,19 @@ def _write_raw_html_metadata(
         "license_or_terms": license_or_terms,
         "updated_at": _http_datetime_from_headers(response),
         "retrieved_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "primary_input_kind": entry.primary_input_kind,
+        "fallback_input_kind": entry.fallback_input_kind,
+        "source_repo": entry.source_repo,
+        "source_branch": entry.source_branch,
+        "source_relative_path": entry.source_relative_path,
+        "source_mirror_root": entry.source_mirror_root,
+        "fallback_source_url": entry.fallback_source_url,
+        "fallback_viewer_path": entry.fallback_viewer_path,
+        "collected_input_kind": (
+            "html_single_fallback"
+            if entry.primary_input_kind == "source_repo"
+            else "html_single"
+        ),
     }
     raw_html_metadata_path(settings, entry.book_slug).write_text(
         json.dumps(metadata, ensure_ascii=False, indent=2),
@@ -248,6 +261,14 @@ def _metadata_matches_entry(settings: Settings, entry: SourceManifestEntry) -> b
 def collect_entry(entry: SourceManifestEntry, settings: Settings, force: bool = False) -> Path:
     # source URL 또는 fingerprint가 바뀌었을 때만 다시 수집한다.
     # 강제 새로고침이 들어오면 예외적으로 무조건 다시 받는다.
+    if (
+        entry.source_kind == "source-first"
+        and not getattr(settings, "official_html_fallback_allowed", False)
+    ):
+        raise RuntimeError(
+            "official source-first HTML fallback is blocked until explicit approval; "
+            "use repo/AsciiDoc parse path for this rebuild"
+        )
     target = raw_html_path(settings, entry.book_slug)
     if target.exists() and not force and _metadata_matches_entry(settings, entry):
         return target

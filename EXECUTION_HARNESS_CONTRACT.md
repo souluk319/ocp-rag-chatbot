@@ -219,6 +219,10 @@ Main lane 은 통합과 최종 verdict 를 맡는다.
 - 구현 전에 `무엇을 바꾸는지`, `무엇을 안 바꾸는지`, `무엇으로 검증하는지`를 충분히 잠근다.
 - 이해가 얕은 상태에서 빨리 코드를 쓰는 것은 실패 패턴으로 간주한다.
 - closeout 품질은 `적은 토큰`이 아니라 `정확한 결과와 검증`으로 평가한다.
+- official lane 에서 영어 본문이 보이면 복구 기본값은 `translation completion packet` 이다.
+- `영어라서 제외`, `불완전하니 삭제` 같은 조치는 최종 선택지가 아니며, 번역 완료 경로를 먼저 검토하지 않으면 closeout 하지 않는다.
+- 공식 문서 rebuild 에서 `repo/AsciiDoc` 가 실패하면 기본 동작은 `fail-close` 다.
+- `published HTML/PDF` fallback 은 명시적 사용자 승인 없이는 자동 사용하지 않는다.
 
 ## Reporting Model
 

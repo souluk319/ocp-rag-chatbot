@@ -11,6 +11,12 @@ import requests
 from bs4 import BeautifulSoup
 
 from play_book_studio.config.settings import HIGH_VALUE_SLUGS, Settings
+from .source_first import (
+    SOURCE_BRANCH,
+    SOURCE_REPO_URL,
+    resolve_repo_relative_path,
+    source_mirror_root,
+)
 from .models import (
     SOURCE_STATE_EN_ONLY,
     SOURCE_STATE_PUBLISHED_NATIVE,
@@ -19,7 +25,7 @@ from .models import (
 
 
 CATALOG_SCHEMA_VERSION = 2
-MANIFEST_SOURCE_LABEL = "docs.redhat.com published OCP html-single catalog"
+MANIFEST_SOURCE_LABEL = "openshift-docs repo-first catalog with docs.redhat html fallback"
 DOCS_ROUTE_RE = re.compile(
     r"^/(?P<lang>ko|en)/documentation/"
     r"(?P<product>[^/]+)/(?P<version>\d+\.\d+)/html(?:-single)?/(?P<slug>[^/]+)(?:/index)?$"
@@ -70,6 +76,8 @@ def _source_fingerprint(
     resolved_source_url: str,
     viewer_path: str,
     resolved_language: str,
+    source_relative_path: str = "",
+    primary_input_kind: str = "",
 ) -> str:
     payload = "||".join(
         (
@@ -82,6 +90,8 @@ def _source_fingerprint(
             resolved_source_url,
             viewer_path,
             resolved_language,
+            source_relative_path,
+            primary_input_kind,
         )
     )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
@@ -112,7 +122,7 @@ def parse_manifest_entries(
     *,
     version: str | None = None,
     language: str | None = None,
-    source_kind: str = "html-single",
+    source_kind: str = "source-first",
 ) -> list[SourceManifestEntry]:
     pack = settings.active_pack
     version = (version or pack.version).strip()
@@ -139,6 +149,8 @@ def parse_manifest_entries(
     for slug in sorted(books):
         source_url = source_url_template.format(version=version, lang=language, slug=slug)
         viewer_path = viewer_path_template.format(version=version, lang=language, slug=slug)
+        source_relative_path = resolve_repo_relative_path(settings.root_dir, slug)
+        primary_input_kind = "source_repo" if source_relative_path else "html_single"
         entries.append(
             SourceManifestEntry(
                 product_slug=product_slug,
@@ -166,7 +178,17 @@ def parse_manifest_entries(
                     resolved_source_url=source_url,
                     viewer_path=viewer_path,
                     resolved_language=language,
+                    source_relative_path=source_relative_path,
+                    primary_input_kind=primary_input_kind,
                 ),
+                primary_input_kind=primary_input_kind,
+                fallback_input_kind="html_single" if primary_input_kind == "source_repo" else "",
+                source_repo=SOURCE_REPO_URL if source_relative_path else "",
+                source_branch=SOURCE_BRANCH if source_relative_path else "",
+                source_relative_path=source_relative_path,
+                source_mirror_root=str(source_mirror_root(settings.root_dir)) if source_relative_path else "",
+                fallback_source_url=source_url if primary_input_kind == "source_repo" else "",
+                fallback_viewer_path=viewer_path if primary_input_kind == "source_repo" else "",
             )
         )
     return entries
@@ -225,7 +247,7 @@ def build_source_catalog_entries(settings: Settings) -> list[SourceManifestEntry
                 settings,
                 version=pack.version,
                 language=pack.language,
-                source_kind="html-single",
+                source_kind="source-first",
             )
         )
     return _reconcile_source_states(catalog_entries)
@@ -350,6 +372,14 @@ def _entry_from_item(item: dict[str, object]) -> SourceManifestEntry:
         "approval_state": str(item.get("approval_state", "")),
         "publication_state": str(item.get("publication_state", "")),
         "redaction_state": str(item.get("redaction_state", "not_required")),
+        "primary_input_kind": str(item.get("primary_input_kind", "html_single")),
+        "fallback_input_kind": str(item.get("fallback_input_kind", "")),
+        "source_repo": str(item.get("source_repo", "")),
+        "source_branch": str(item.get("source_branch", "")),
+        "source_relative_path": str(item.get("source_relative_path", "")),
+        "source_mirror_root": str(item.get("source_mirror_root", "")),
+        "fallback_source_url": str(item.get("fallback_source_url", "")),
+        "fallback_viewer_path": str(item.get("fallback_viewer_path", "")),
     }
     if not entry_kwargs["source_fingerprint"]:
         entry_kwargs["source_fingerprint"] = _source_fingerprint(
@@ -362,6 +392,8 @@ def _entry_from_item(item: dict[str, object]) -> SourceManifestEntry:
             resolved_source_url=entry_kwargs["resolved_source_url"],
             viewer_path=entry_kwargs["viewer_path"],
             resolved_language=entry_kwargs["resolved_language"],
+            source_relative_path=entry_kwargs["source_relative_path"],
+            primary_input_kind=entry_kwargs["primary_input_kind"],
         )
     return SourceManifestEntry(**entry_kwargs)
 
