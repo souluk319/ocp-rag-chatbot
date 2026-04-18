@@ -1,0 +1,223 @@
+openapi: 3.1.0
+info:
+  title: Playbook Library API
+  version: 0.1.0
+  description: API contract for upload -> conversion -> structure -> quality gate -> publish -> retrieval/chat
+servers:
+  - url: https://api.example.com
+paths:
+  /v1/documents:
+    post:
+      summary: Upload a source document
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                source_url:
+                  type: string
+                tags:
+                  type: array
+                  items: { type: string }
+      responses:
+        '201':
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document_id: { type: string, format: uuid }
+                  status: { type: string, enum: [uploaded] }
+  /v1/documents/{document_id}:
+    get:
+      summary: Fetch document status and latest conversion summary
+      parameters:
+        - in: path
+          name: document_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Document state
+  /v1/documents/{document_id}/convert:
+    post:
+      summary: Start conversion using MarkItDown with optional fallback
+      parameters:
+        - in: path
+          name: document_id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [converter]
+              properties:
+                converter:
+                  type: string
+                  enum: [markitdown]
+                fallback:
+                  type: array
+                  items: { type: string, enum: [ocr, docint] }
+                options:
+                  type: object
+      responses:
+        '202':
+          description: Conversion queued
+  /v1/documents/{document_id}/structure:
+    post:
+      summary: Convert normalized markdown into canonical playbook JSON
+      parameters:
+        - in: path
+          name: document_id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                schema_version: { type: string, default: '1.0' }
+                mode: { type: string, enum: [rules, llm, hybrid], default: hybrid }
+      responses:
+        '201':
+          description: Structured
+  /v1/playbooks/{playbook_id}/quality-evaluate:
+    post:
+      summary: Evaluate quality with rule engine and/or LLM
+      parameters:
+        - in: path
+          name: playbook_id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                evaluators:
+                  type: array
+                  items: { type: string, enum: [rule_engine, llm] }
+                policy:
+                  type: object
+                  properties:
+                    auto_approve_threshold: { type: integer, default: 85 }
+                    auto_reject_threshold: { type: integer, default: 70 }
+      responses:
+        '200':
+          description: Quality report
+  /v1/playbooks/{playbook_id}/publish:
+    post:
+      summary: Publish approved playbook
+      parameters:
+        - in: path
+          name: playbook_id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                publish_note: { type: string }
+      responses:
+        '200':
+          description: Published
+  /v1/search/playbooks:
+    post:
+      summary: Hybrid retrieval over playbook sections
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: { type: string }
+                top_k: { type: integer, default: 8 }
+                filters:
+                  type: object
+                hybrid:
+                  type: object
+                  properties:
+                    bm25_weight: { type: number, default: 0.4 }
+                    vector_weight: { type: number, default: 0.6 }
+      responses:
+        '200':
+          description: Ranked results
+  /v1/chat/answer:
+    post:
+      summary: Generate answer grounded in published playbooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question]
+              properties:
+                question: { type: string }
+                retrieval:
+                  type: object
+                  properties:
+                    top_k: { type: integer, default: 6 }
+                    min_score: { type: number, default: 0.35 }
+                citation_required: { type: boolean, default: true }
+      responses:
+        '200':
+          description: Answer with citations and confidence
+  /v1/review-tasks:
+    get:
+      summary: List review tasks
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: priority
+          schema: { type: string }
+      responses:
+        '200':
+          description: Review queue
+  /v1/review-tasks/{task_id}:
+    patch:
+      summary: Update review task state
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string, enum: [open, in_progress, resolved, rejected] }
+                resolution_note: { type: string }
+      responses:
+        '200':
+          description: Updated
+  /v1/metrics/ingestion:
+    get:
+      summary: Ingestion and quality pipeline KPI summary
+      responses:
+        '200':
+          description: KPI snapshot
