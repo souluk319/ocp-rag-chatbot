@@ -171,23 +171,15 @@ def _select_report_candidate(
 
 
 def _grade_label(book: dict[str, Any]) -> str:
-    content_status = str(book.get("content_status") or "").strip()
-    approval_status = str(book.get("approval_status") or "").strip()
+    content_status = str(book.get("content_status") or book.get("translation_status") or "").strip()
+    approval_status = str(book.get("approval_status") or book.get("review_status") or "").strip()
     if content_status == "approved_ko" and approval_status == "approved":
         return "Gold"
-    if content_status == "translated_ko_draft":
-        return "Silver Draft"
-    if content_status == "mixed":
-        return "Mixed Review"
-    if content_status == "en_only":
-        return "English Only"
-    if content_status == "blocked":
-        return "Blocked"
-    if content_status:
-        return content_status
-    if approval_status:
-        return approval_status
-    return "Unknown"
+    if content_status in {"approved_ko", "translated_ko_draft", "mixed"}:
+        return "Silver"
+    if approval_status in {"approved", "needs_review", "queued", "draft"}:
+        return "Silver"
+    return "Bronze"
 
 
 def _is_gold_book(book: dict[str, Any]) -> bool:
@@ -294,7 +286,7 @@ def _build_high_value_focus(
             {
                 "book_slug": slug,
                 "title": str(bundle.get("title") or known.get("title") or manifest.get("title") or slug),
-                "grade": _grade_label(known) if known else _grade_label(manifest) if manifest else "Unknown",
+                "grade": _grade_label(known) if known else _grade_label(manifest) if manifest else "Bronze",
                 "content_status": str(bundle.get("content_status") or known.get("content_status") or manifest.get("content_status") or ""),
                 "gap_lane": str(bundle.get("gap_lane") or known.get("gap_lane") or manifest.get("gap_lane") or ""),
                 "promotion_strategy": str(bundle.get("promotion_strategy") or ""),
@@ -317,7 +309,7 @@ def _build_high_value_focus(
                 {
                     "book_slug": str(book.get("book_slug") or ""),
                     "title": str(book.get("title") or ""),
-                    "grade": str(book.get("grade") or "Unknown"),
+                    "grade": _grade_label(book),
                     "content_status": str(book.get("content_status") or ""),
                     "gap_lane": str(book.get("gap_lane") or ""),
                     "promotion_strategy": "",
@@ -523,7 +515,7 @@ def _aggregate_corpus_books(
             {
                 "book_slug": slug,
                 "title": title,
-                "grade": _grade_label(known_books.get(slug, {})) if slug in known_books else "Gold" if slug in manifest_by_slug else "Unknown",
+                "grade": _grade_label(known_books.get(slug, {})) if slug in known_books else "Gold" if slug in manifest_by_slug else "Bronze",
                 "chunk_count": 0,
                 "token_total": 0,
                 "command_chunk_count": 0,
@@ -632,9 +624,9 @@ def _aggregate_playbooks(
         known = known_books.get(slug, {})
         manifest = manifest_by_slug.get(slug, {})
         grouped[slug] = {
-            "book_slug": slug,
-            "title": str(payload.get("title") or payload.get("book_title") or slug),
-            "grade": _grade_label(known) if known else "Gold" if manifest else "Unknown",
+                "book_slug": slug,
+                "title": str(payload.get("title") or payload.get("book_title") or slug),
+                "grade": _grade_label(known) if known else "Gold" if manifest else "Bronze",
             "translation_status": str(payload.get("translation_status") or known.get("content_status") or ""),
             "review_status": str(payload.get("review_status") or known.get("review_status") or ""),
             "source_type": source_type or str(known.get("source_type") or manifest.get("source_type") or ""),
@@ -1087,7 +1079,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, Any]:
         "name": "source_approval_report",
         "path": str(source_approval_report_path or ""),
         "exists": bool(source_approval_report_path and source_approval_report_path.exists()),
-        "rule": "Source approval report is the canonical grade source for approved_ko / translated_ko_draft / blocked classification.",
+        "rule": "Source approval report is the canonical grade source. Release grade is normalized to Gold / Silver / Bronze while raw workflow states remain in content_status, review_status, and translation_status.",
         "summary": source_approval_report.get("summary") if isinstance(source_approval_report.get("summary"), dict) else {},
     }
     source_of_truth_drift = _build_source_of_truth_drift(

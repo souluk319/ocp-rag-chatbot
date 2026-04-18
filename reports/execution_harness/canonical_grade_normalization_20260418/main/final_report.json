@@ -1,0 +1,25 @@
+{
+  "task_id": "canonical_grade_normalization_20260418",
+  "status": "completed",
+  "current_judgment": "Canonical release-facing playbook grades are now normalized to Bronze/Silver/Gold, and Workspace/Library surfaces expose them as explicit badges instead of burying them in metadata strings.",
+  "key_evidence": [
+    "src/play_book_studio/app/data_control_room.py now normalizes exposed grades to Bronze/Silver/Gold while retaining raw workflow fields",
+    "presentation-ui/src/pages/WorkspacePage.tsx and WorkspacePage.css now render explicit grade badges in Outline and Source Books",
+    "presentation-ui/src/pages/PlaybookLibraryPage.tsx and PlaybookLibraryPage.css now normalize non-primary grade displays to badge form"
+  ],
+  "validation": [
+    {
+      "command": "@' import py_compile; [py_compile.compile(file, doraise=True) for file in [r\"src/play_book_studio/app/data_control_room.py\", r\"tests/test_app_data_control_room.py\", r\"tests/test_app_runtime_ui.py\"]]; print(\"py_compile ok\") '@ | python -",
+      "result": "passed"
+    },
+    {
+      "command": ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_app_data_control_room.py tests\\test_app_runtime_ui.py -q",
+      "result": "10 passed"
+    },
+    {
+      "command": "npm run build",
+      "result": "passed"
+    }
+  ],
+  "next_action": "Use the new canonical grade source during the upcoming source-first Playbook rebuild, then decide whether the default Workspace surface should remain latest-runtime or narrow further to final-only."
+}

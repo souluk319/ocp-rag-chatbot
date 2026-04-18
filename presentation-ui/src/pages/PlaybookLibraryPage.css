@@ -1099,6 +1099,38 @@
   letter-spacing: 0.06em;
 }
 
+.playbook-grade-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.playbook-grade-badge--gold {
+  color: #ffe08a;
+  background: rgba(255, 224, 138, 0.12);
+  border-color: rgba(255, 224, 138, 0.2);
+}
+
+.playbook-grade-badge--silver {
+  color: #d6dde7;
+  background: rgba(214, 221, 231, 0.12);
+  border-color: rgba(214, 221, 231, 0.2);
+}
+
+.playbook-grade-badge--bronze {
+  color: #e2b083;
+  background: rgba(226, 176, 131, 0.12);
+  border-color: rgba(226, 176, 131, 0.2);
+}
+
 .release-freeze-hero-copy p {
   margin: 0;
   max-width: 60ch;
@@ -2745,6 +2777,9 @@
 }
 
 .metric-book-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   font-size: 0.72rem;
   color: var(--text-dim);
 }

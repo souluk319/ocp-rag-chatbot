@@ -275,7 +275,7 @@ class TestAppDataControlRoom(unittest.TestCase):
             self.assertEqual(1, len(payload["active_queue"]))
             self.assertEqual("operators", payload["active_queue"][0]["book_slug"])
             self.assertEqual(2, len(payload["corpus_book_status"]))
-            self.assertEqual("Silver Draft", payload["corpus_book_status"][1]["grade"])
+            self.assertEqual("Silver", payload["corpus_book_status"][1]["grade"])
             self.assertEqual(0, payload["corpus_book_status"][1]["chunk_count"])
             self.assertEqual("https://example.com/operators", payload["corpus_book_status"][1]["source_url"])
             self.assertFalse(payload["corpus_book_status"][1]["materialized"])

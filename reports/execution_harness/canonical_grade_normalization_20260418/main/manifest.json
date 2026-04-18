@@ -1,0 +1,41 @@
+{
+  "task_id": "canonical_grade_normalization_20260418",
+  "packet_type": "major",
+  "goal": "Normalize release-facing playbook grades to Bronze/Silver/Gold and expose them as explicit UI badges.",
+  "change_scope": [
+    "src/play_book_studio/app/data_control_room.py",
+    "presentation-ui/src/pages/WorkspacePage.tsx",
+    "presentation-ui/src/pages/WorkspacePage.css",
+    "presentation-ui/src/pages/workspaceTypes.ts",
+    "presentation-ui/src/pages/PlaybookLibraryPage.tsx",
+    "presentation-ui/src/pages/PlaybookLibraryPage.css",
+    "tests/test_app_data_control_room.py",
+    "tests/test_app_runtime_ui.py"
+  ],
+  "non_goals": [
+    "Rebuild source-first parser binding",
+    "Change Playbook release surface policy beyond grade normalization",
+    "Introduce new runtime statuses or remove existing raw status fields"
+  ],
+  "validation_commands": [
+    "@' import py_compile; [py_compile.compile(file, doraise=True) for file in [r\"src/play_book_studio/app/data_control_room.py\", r\"tests/test_app_data_control_room.py\", r\"tests/test_app_runtime_ui.py\"]]; print(\"py_compile ok\") '@ | python -",
+    ".\\.venv\\Scripts\\python.exe -m pytest tests\\test_app_data_control_room.py tests\\test_app_runtime_ui.py -q",
+    "npm run build"
+  ],
+  "lanes": [
+    {
+      "name": "main",
+      "role": "implementation"
+    },
+    {
+      "name": "Beauvoir",
+      "role": "backend explorer",
+      "agent_id": "019d9f75-d3bb-75d0-a6c9-4c45a2c7b776"
+    },
+    {
+      "name": "Peirce",
+      "role": "frontend explorer",
+      "agent_id": "019d9f75-d3f4-7522-80a0-94c8d35c8306"
+    }
+  ]
+}

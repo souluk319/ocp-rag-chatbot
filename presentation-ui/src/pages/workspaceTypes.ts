@@ -55,6 +55,7 @@ export interface SourceEntry {
   kind: 'manual' | 'draft';
   name: string;
   meta: string;
+  grade?: string;
   viewerPath?: string;
   book?: LibraryBook;
   draft?: CustomerPackDraft;

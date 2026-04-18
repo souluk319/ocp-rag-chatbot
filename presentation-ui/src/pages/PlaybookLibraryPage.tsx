@@ -139,6 +139,22 @@ function customerPackBookEvidenceBits(book?: LibraryBook | null): string[] {
   return bits.filter(Boolean);
 }
 
+function normalizePlaybookGrade(grade?: string | null): 'Gold' | 'Silver' | 'Bronze' {
+  const normalized = String(grade || '').trim().toLowerCase();
+  if (normalized === 'gold') {
+    return 'Gold';
+  }
+  if (normalized === 'silver' || normalized === 'silver draft' || normalized === 'mixed review') {
+    return 'Silver';
+  }
+  return 'Bronze';
+}
+
+function playbookGradeBadgeClass(grade?: string | null): string {
+  const normalized = normalizePlaybookGrade(grade).toLowerCase();
+  return `playbook-grade-badge playbook-grade-badge--${normalized}`;
+}
+
 function firstFigureSectionToken(sectionHint: string): string {
   const normalized = sectionHint.replace(/[›>]/g, '|');
   return normalized
@@ -651,7 +667,7 @@ const PlaybookLibraryPage: React.FC = () => {
         break;
       case 'latestNonGold':
         title = 'Silver · Bronze PlayBooks';
-        books = [...(cr.approved_wiki_runtime_books?.books ?? [])].filter((book) => book.grade !== 'Gold');
+        books = [...(cr.approved_wiki_runtime_books?.books ?? [])].filter((book) => normalizePlaybookGrade(book.grade) !== 'Gold');
         break;
       case 'manual':
         title = 'Gold Source Books';
@@ -749,8 +765,8 @@ const PlaybookLibraryPage: React.FC = () => {
     ?? userLibraryBooks.length;
   const approvedWikiRuntimeBooks = summary?.approved_wiki_runtime_book_count ?? controlRoom?.approved_wiki_runtime_books?.books?.length ?? 0;
   const allOperationalWikiBooks = [...(controlRoom?.approved_wiki_runtime_books?.books ?? [])];
-  const goldOperationalWikiBooks = allOperationalWikiBooks.filter((book) => book.grade === 'Gold');
-  const latestNonGoldOperationalWikiBooks = allOperationalWikiBooks.filter((book) => book.grade !== 'Gold');
+  const goldOperationalWikiBooks = allOperationalWikiBooks.filter((book) => normalizePlaybookGrade(book.grade) === 'Gold');
+  const latestNonGoldOperationalWikiBooks = allOperationalWikiBooks.filter((book) => normalizePlaybookGrade(book.grade) !== 'Gold');
   const goldPlaybookCount = allOperationalWikiBooks.length ? goldOperationalWikiBooks.length : approvedRuntimeBooks;
   const latestNonGoldPlaybookCount = allOperationalWikiBooks.length
     ? latestNonGoldOperationalWikiBooks.length
@@ -908,7 +924,7 @@ const PlaybookLibraryPage: React.FC = () => {
                 <div className="vision-compare-book-meta">
                   <span>{comparisonBook.title}</span>
                   <span>{comparisonBook.section_count} sections</span>
-                  <span>{comparisonBook.grade}</span>
+                  <span className={playbookGradeBadgeClass(comparisonBook.grade)}>{normalizePlaybookGrade(comparisonBook.grade)}</span>
                   <span>{comparisonBook.book_slug.replace(/_/g, ' ')}</span>
                 </div>
                 <div className="vision-compare-grid">
@@ -1167,7 +1183,7 @@ const PlaybookLibraryPage: React.FC = () => {
                         className="operational-book-card"
                         onClick={() => setBookViewer(book)}
                       >
-                        <span className="operational-book-badge">{book.grade}</span>
+                        <span className="operational-book-badge">{normalizePlaybookGrade(book.grade)}</span>
                         <strong>{book.title}</strong>
                         <span>{book.book_slug.replace(/_/g, ' ')}</span>
                       </button>
@@ -1194,7 +1210,7 @@ const PlaybookLibraryPage: React.FC = () => {
                       className="operational-library-card"
                       onClick={() => setBookViewer(book)}
                     >
-                      <span className="operational-library-card-badge">{book.grade}</span>
+                      <span className="operational-library-card-badge">{normalizePlaybookGrade(book.grade)}</span>
                       <strong>{book.title}</strong>
                       <span>{book.book_slug.replace(/_/g, ' ')}</span>
                     </button>
@@ -1524,7 +1540,7 @@ const PlaybookLibraryPage: React.FC = () => {
                       <div className="draft-meta">
                         <span>{customerPackBookTruth(book) || book.source_lane}</span>
                         <span>{book.section_count} sections</span>
-                        <span>{book.grade}</span>
+                        <span className={playbookGradeBadgeClass(book.grade)}>{normalizePlaybookGrade(book.grade)}</span>
                       </div>
                       {customerPackBookEvidenceBits(book).length > 0 && (
                         <div className="preview-chip-row">
@@ -1940,9 +1956,11 @@ const PlaybookLibraryPage: React.FC = () => {
                       <FileText size={16} className="metric-book-icon" />
                       <div className="metric-book-info">
                         <span className="metric-book-title">{book.title}</span>
-                        <span className="metric-book-meta">
-                          {customerPackBookTruth(book) || book.source_lane} · {book.section_count} sections · {book.grade}
-                        </span>
+                        <div className="metric-book-meta">
+                          <span>{customerPackBookTruth(book) || book.source_lane}</span>
+                          <span>{book.section_count} sections</span>
+                          <span className={playbookGradeBadgeClass(book.grade)}>{normalizePlaybookGrade(book.grade)}</span>
+                        </div>
                         {customerPackBookEvidenceBits(book).length > 0 && (
                           <div className="metric-book-chip-row">
                             {customerPackBookEvidenceBits(book).map((item) => (
@@ -2016,7 +2034,7 @@ const PlaybookLibraryPage: React.FC = () => {
                 <div className="preview-header-meta">
                   <span>{customerPackBookTruth(bookViewer) || bookViewer.source_lane}</span>
                   <span>{bookViewer.section_count} sections</span>
-                  <span>{bookViewer.grade}</span>
+                  <span className={playbookGradeBadgeClass(bookViewer.grade)}>{normalizePlaybookGrade(bookViewer.grade)}</span>
                 </div>
                 {customerPackBookEvidenceBits(bookViewer).length > 0 && (
                   <div className="preview-chip-row">

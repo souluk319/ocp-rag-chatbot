@@ -163,9 +163,24 @@ function makeId(prefix: string): string {
   return `${prefix}-${shortPart}`;
 }
 
+function normalizePlaybookGrade(grade?: string | null): 'Gold' | 'Silver' | 'Bronze' {
+  const normalized = String(grade || '').trim().toLowerCase();
+  if (normalized === 'gold') {
+    return 'Gold';
+  }
+  if (normalized === 'silver' || normalized === 'silver draft' || normalized === 'mixed review') {
+    return 'Silver';
+  }
+  return 'Bronze';
+}
+
+function playbookGradeBadgeClass(grade?: string | null): string {
+  const normalized = normalizePlaybookGrade(grade).toLowerCase();
+  return `playbook-grade-badge playbook-grade-badge--${normalized}`;
+}
+
 function summarizeBookMeta(book: WorkspaceManualBook): string {
   const parts = [
-    book.grade,
     book.library_group_label,
     book.family_label,
     book.source_type,
@@ -1793,6 +1808,7 @@ export default function WorkspacePage() {
         kind: 'manual',
         name: book.title,
         meta: summarizeBookMeta(book),
+        grade: book.grade,
         viewerPath: book.viewer_path,
         book,
       })),
@@ -2795,7 +2811,12 @@ export default function WorkspacePage() {
                                           }}
                                         >
                                           <div className="outline-library-title-row">
-                                            <span className="outline-library-title">{family.primary.title}</span>
+                                            <div className="outline-library-title-group">
+                                              <span className="outline-library-title">{family.primary.title}</span>
+                                              <span className={playbookGradeBadgeClass(family.primary.grade)}>
+                                                {normalizePlaybookGrade(family.primary.grade)}
+                                              </span>
+                                            </div>
                                             {family.variants.length > 0 && (
                                               <span className="outline-library-variant-count">+{family.variants.length}</span>
                                             )}
@@ -2813,7 +2834,12 @@ export default function WorkspacePage() {
                                                   void openManualPreview(variant);
                                                 }}
                                               >
-                                                <span className="outline-library-variant-label">{describeOutlineVariant(variant)}</span>
+                                                <div className="outline-library-variant-header">
+                                                  <span className="outline-library-variant-label">{describeOutlineVariant(variant)}</span>
+                                                  <span className={playbookGradeBadgeClass(variant.grade)}>
+                                                    {normalizePlaybookGrade(variant.grade)}
+                                                  </span>
+                                                </div>
                                                 <span className="outline-library-variant-meta">{summarizeBookMeta(variant)}</span>
                                               </button>
                                             ))}
@@ -3272,7 +3298,14 @@ export default function WorkspacePage() {
                         >
                           <div className="item-main">
                             <FileText size={16} className="file-icon" />
-                            <span className="file-name">{file.name}</span>
+                            <div className="item-main-copy">
+                              <span className="file-name">{file.name}</span>
+                              {file.grade ? (
+                                <span className={playbookGradeBadgeClass(file.grade)}>
+                                  {normalizePlaybookGrade(file.grade)}
+                                </span>
+                              ) : null}
+                            </div>
                           </div>
                           <div className="item-meta">{file.meta}</div>
                         </div>
