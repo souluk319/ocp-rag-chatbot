@@ -1,0 +1,40 @@
+{
+  "status": "completed",
+  "completed_at_utc": "2026-04-19T21:33:10+00:00",
+  "git_ref_snapshot": {
+    "head_ref": "feat/ocp29-presentation-cutdown",
+    "head_sha": "2c14067e9d1b09f78a4e9054d4235e860b04712c",
+    "origin_main_sha": "e87fa0c562c5e277305617e1eea36c112aa01b27"
+  },
+  "studio_overlay": {
+    "ink_persistence_enabled": true,
+    "note_as_visible_added_text": true,
+    "official_doc_overlay_target_enabled": true,
+    "customer_pack_overlay_target_enabled": true,
+    "tablet_pen_pointer_support_hardened": true
+  },
+  "demo_simulator": {
+    "manifest_path": "manifests/ocp420_demo_simulator_scenarios.jsonl",
+    "report_path": "reports/demo_simulator/ocp420_demo_simulator_eval.json",
+    "scenario_count": 5,
+    "turn_count": 30,
+    "scenario_completion_rate": 1.0,
+    "turn_pass_rate": 1.0,
+    "streaming_turn_pass_rate": 1.0,
+    "guide_tone_pass_rate": 1.0,
+    "hallucination_guard_pass_rate": 1.0,
+    "history_pass_rate": 1.0
+  },
+  "validation": {
+    "py_compile": "passed",
+    "pytest_overlay": "passed",
+    "frontend_build": "passed",
+    "demo_harness": "passed"
+  },
+  "runtime_note": {
+    "live_runtime_url": "http://127.0.0.1:8765",
+    "tracked_local_stack_state": "absent",
+    "prompt_copy_refinement_landed_in_source": true,
+    "prompt_copy_refinement_force_restarted": false
+  }
+}

@@ -267,7 +267,23 @@ export interface ChatRelatedLink {
   boundary_badge?: string;
 }
 
-export type WikiOverlayKind = 'favorite' | 'check' | 'note' | 'recent_position';
+export type WikiInkTool = 'pen' | 'highlighter';
+export type WikiInkColorId = 'cyan' | 'amber' | 'rose' | 'violet' | 'lime' | string;
+
+export interface WikiInkStyle {
+  id: WikiInkColorId;
+  label: string;
+  penColor: string;
+  highlighterColor: string;
+}
+
+export interface WikiInkStroke {
+  path: string;
+  tool: WikiInkTool;
+  style: WikiInkStyle;
+}
+
+export type WikiOverlayKind = 'favorite' | 'check' | 'note' | 'ink' | 'recent_position';
 export type WikiOverlayTargetKind = 'book' | 'entity_hub' | 'section' | 'figure';
 
 export interface WikiOverlayResolvedTarget {
@@ -297,6 +313,7 @@ export interface WikiOverlayRecord {
   title?: string;
   summary?: string;
   viewer_path?: string;
+  strokes?: WikiInkStroke[];
 }
 
 export interface WikiOverlayResponse {
@@ -338,6 +355,7 @@ export interface WikiOverlaySignalsResponse {
     favorite_count: number;
     check_count: number;
     note_count: number;
+    ink_count: number;
     recent_position_count: number;
     target_count: number;
     user_count: number;
@@ -349,6 +367,7 @@ export interface WikiOverlaySignalsResponse {
     favorite_count: number;
     check_count: number;
     note_count: number;
+    ink_count: number;
     recent_position_count: number;
     recent_targets: Array<{
       overlay_id: string;

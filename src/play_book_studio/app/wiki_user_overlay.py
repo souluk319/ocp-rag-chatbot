@@ -21,7 +21,40 @@ from .wiki_user_overlay_targets import (
     resolve_overlay_target,
 )
 
-VALID_OVERLAY_KINDS = {"favorite", "check", "note", "recent_position"}
+VALID_OVERLAY_KINDS = {"favorite", "check", "note", "recent_position", "ink"}
+VALID_INK_TOOLS = {"pen", "highlighter"}
+DEFAULT_INK_STYLES = {
+    "cyan": {
+        "id": "cyan",
+        "label": "Cyan",
+        "penColor": "rgba(14, 165, 233, 0.96)",
+        "highlighterColor": "rgba(34, 211, 238, 0.28)",
+    },
+    "amber": {
+        "id": "amber",
+        "label": "Amber",
+        "penColor": "rgba(217, 119, 6, 0.96)",
+        "highlighterColor": "rgba(250, 204, 21, 0.32)",
+    },
+    "rose": {
+        "id": "rose",
+        "label": "Rose",
+        "penColor": "rgba(225, 29, 72, 0.96)",
+        "highlighterColor": "rgba(251, 113, 133, 0.28)",
+    },
+    "violet": {
+        "id": "violet",
+        "label": "Violet",
+        "penColor": "rgba(124, 58, 237, 0.96)",
+        "highlighterColor": "rgba(167, 139, 250, 0.28)",
+    },
+    "lime": {
+        "id": "lime",
+        "label": "Lime",
+        "penColor": "rgba(77, 124, 15, 0.96)",
+        "highlighterColor": "rgba(163, 230, 53, 0.3)",
+    },
+}
 
 
 def _now_iso() -> str:
@@ -62,7 +95,41 @@ def _overlay_timestamp(value: str) -> str:
 
 
 def _overlay_signal_weight(kind: str) -> int:
-    return {"favorite": 4, "check": 3, "note": 2, "recent_position": 1}.get(str(kind or "").strip(), 0)
+    return {"favorite": 4, "check": 3, "note": 2, "ink": 2, "recent_position": 1}.get(str(kind or "").strip(), 0)
+
+
+def _normalize_ink_style(value: Any) -> dict[str, str]:
+    payload = dict(value) if isinstance(value, dict) else {}
+    style_id = str(payload.get("id") or "").strip().lower()
+    default_style = DEFAULT_INK_STYLES.get(style_id) or DEFAULT_INK_STYLES["cyan"]
+    return {
+        "id": str(payload.get("id") or default_style["id"]).strip() or default_style["id"],
+        "label": str(payload.get("label") or default_style["label"]).strip() or default_style["label"],
+        "penColor": str(payload.get("penColor") or default_style["penColor"]).strip() or default_style["penColor"],
+        "highlighterColor": str(payload.get("highlighterColor") or default_style["highlighterColor"]).strip()
+        or default_style["highlighterColor"],
+    }
+
+
+def _normalize_ink_strokes(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    normalized: list[dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        path = str(item.get("path") or "").strip()
+        tool = str(item.get("tool") or "").strip().lower()
+        if not path or tool not in VALID_INK_TOOLS:
+            continue
+        normalized.append(
+            {
+                "path": path,
+                "tool": tool,
+                "style": _normalize_ink_style(item.get("style")),
+            }
+        )
+    return normalized
 
 
 def _save_overlay_document(root_dir: Path, payload: dict[str, Any]) -> None:
@@ -73,7 +140,7 @@ def _save_overlay_document(root_dir: Path, payload: dict[str, Any]) -> None:
 
 
 def _upsert_policy(kind: str) -> bool:
-    return kind in {"favorite", "check", "recent_position"}
+    return kind in {"favorite", "check", "recent_position", "ink"}
 
 
 def list_wiki_user_overlays(root_dir: Path, *, user_id: str) -> dict[str, Any]:
@@ -178,6 +245,7 @@ def _build_personalized_next_plays(root_dir: Path, user_items: list[dict[str, An
             "favorite": "즐겨찾기 기반",
             "check": "체크 완료 후 다음 경로",
             "note": "개인 메모 기반",
+            "ink": "낙서 기반",
             "recent_position": "최근 위치 기반",
         }.get(kind, "overlay 기반")
         candidates: list[dict[str, Any]] = []
@@ -229,6 +297,7 @@ def build_wiki_overlay_signal_payload(root_dir: Path, *, user_id: str | None = N
             "favorite_count": int(kind_counter.get("favorite", 0)),
             "check_count": int(kind_counter.get("check", 0)),
             "note_count": int(kind_counter.get("note", 0)),
+            "ink_count": int(kind_counter.get("ink", 0)),
             "recent_position_count": int(kind_counter.get("recent_position", 0)),
             "target_count": target_count,
             "user_count": user_count,
@@ -260,6 +329,7 @@ def build_wiki_overlay_signal_payload(root_dir: Path, *, user_id: str | None = N
             "favorite_count": sum(1 for item in user_items if str(item.get("kind") or "") == "favorite"),
             "check_count": sum(1 for item in user_items if str(item.get("kind") or "") == "check"),
             "note_count": sum(1 for item in user_items if str(item.get("kind") or "") == "note"),
+            "ink_count": sum(1 for item in user_items if str(item.get("kind") or "") == "ink"),
             "recent_position_count": sum(1 for item in user_items if str(item.get("kind") or "") == "recent_position"),
             "recent_targets": recent_targets[:6],
             "recommended_next_plays": _build_personalized_next_plays(root_dir, user_items),
@@ -270,7 +340,7 @@ def build_wiki_overlay_signal_payload(root_dir: Path, *, user_id: str | None = N
 def save_wiki_user_overlay(root_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
     kind = str(payload.get("kind") or "").strip()
     if kind not in VALID_OVERLAY_KINDS:
-        raise ValueError("kind는 favorite, check, note, recent_position 중 하나여야 합니다.")
+        raise ValueError("kind는 favorite, check, note, ink, recent_position 중 하나여야 합니다.")
     user_id = str(payload.get("user_id") or "").strip()
     if not user_id:
         raise ValueError("user_id가 필요합니다.")
@@ -296,6 +366,9 @@ def save_wiki_user_overlay(root_dir: Path, payload: dict[str, Any]) -> dict[str,
     if kind == "note":
         record["body"] = str(payload.get("body") or "").strip()
         record["pinned"] = bool(payload.get("pinned", False))
+    if kind == "ink":
+        record["title"] = str(payload.get("title") or "").strip()
+        record["strokes"] = _normalize_ink_strokes(payload.get("strokes"))
     if kind == "favorite":
         record["title"] = str(payload.get("title") or "").strip()
         record["summary"] = str(payload.get("summary") or "").strip()

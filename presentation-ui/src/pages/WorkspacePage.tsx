@@ -44,6 +44,7 @@ import {
   type WikiOverlayRecommendedPlay,
   type WikiOverlaySignalsResponse,
   type SourceMetaResponse,
+  type WikiInkStroke,
   type WikiOverlayRecord,
   type WikiOverlayTargetKind,
   type ViewerPageMode,
@@ -133,6 +134,30 @@ const OUTLINE_CATEGORY_RULES: Array<{
   ];
 
 const OUTLINE_CATEGORY_COLLAPSED = '__collapsed__';
+
+const STARTER_QUESTION_POOL = [
+  '운영 입문 기준으로 먼저 봐야 할 플레이북 3개 알려줘',
+  'Operator 장애가 났을 때 monitoring과 operators 문서를 어떻게 같이 따라가야 하나?',
+  '클러스터 네트워크 MTU 변경 전후에 어떤 절차와 검증을 확인해야 하나?',
+  '인증 문제와 Ingress 노출 문제를 같이 볼 때 어떤 책 순서로 확인해야 하나?',
+  '연결이 끊긴 환경에서 미러 레지스트리 설정을 점검할 때 운영자가 먼저 볼 문서는 무엇인가?',
+  '특정 namespace에 admin 권한을 주려면 어떤 절차를 먼저 확인해야 하나?',
+  '프로젝트가 Terminating에서 안 지워질 때 어떤 순서로 확인해야 하나?',
+  '노드가 Ready가 아니거나 머신컨피그 적용이 늦을 때 어디부터 봐야 하나?',
+  'Route나 Ingress 연결 문제를 점검할 때 먼저 볼 절차를 알려줘',
+  '모니터링 알림이 쏟아질 때 운영자가 먼저 확인할 플레이북 순서를 알려줘',
+  '클러스터 설치 후 Day-2 운영에서 먼저 읽어야 할 문서를 순서대로 알려줘',
+  '인증서 갱신이나 만료 문제를 볼 때 먼저 확인할 책과 절차를 알려줘',
+];
+
+function pickRandomStarterQuestions(pool: string[], count: number): string[] {
+  const shuffled = [...pool];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+  return shuffled.slice(0, count);
+}
 
 function normalizeRouteKey(link: ChatRelatedLink): string {
   return `${link.kind}:${(link.href || '').trim().toLowerCase()}::${(link.label || '').trim().toLowerCase()}`;
@@ -496,10 +521,6 @@ const PACK_OPTIONS = [
 
 const WIKI_OVERLAY_USER_ID = 'kugnus@cywell.co.kr';
 
-function containsHangul(text: string): boolean {
-  return /[가-힣]/.test(String(text || ''));
-}
-
 function runtimePathFromUrl(viewerUrl: string): string {
   try {
     const parsed = new URL(viewerUrl, window.location.origin);
@@ -643,7 +664,9 @@ function buildOverlayTargetFromViewerPath(
   fallbackTitle: string,
 ): OverlayTargetDescriptor | null {
   const runtimePath = runtimePathFromUrl(viewerUrl);
-  const [pathOnly, anchorPart] = runtimePath.split('#', 2);
+  const [pathWithQuery, anchorPart] = runtimePath.split('#', 2);
+  const [pathOnly, searchPart] = pathWithQuery.split('?', 2);
+  const searchParams = new URLSearchParams(searchPart ?? '');
   const anchor = anchorPart?.trim() ?? '';
 
   const entityMatch = pathOnly.match(/^\/wiki\/entities\/([^/]+)\/index\.html$/);
@@ -681,9 +704,14 @@ function buildOverlayTargetFromViewerPath(
     };
   }
 
-  const bookMatch = pathOnly.match(/^\/playbooks\/wiki-runtime\/active\/([^/]+)\/index\.html$/);
-  if (bookMatch) {
-    const bookSlug = bookMatch[1];
+  const runtimeBookMatch = pathOnly.match(/^\/playbooks\/wiki-runtime\/active\/([^/]+)\/index\.html$/);
+  const officialBookMatch = pathOnly.match(/^\/docs\/ocp\/[^/]+\/[^/]+\/([^/]+)\/index\.html$/);
+  const customerPackMatch = pathOnly.match(/^\/playbooks\/customer-packs\/([^/]+)\/index\.html$/);
+  const capturedDraftId = pathOnly === '/api/customer-packs/captured'
+    ? String(searchParams.get('draft_id') || '').trim()
+    : '';
+  const bookSlug = runtimeBookMatch?.[1] ?? officialBookMatch?.[1] ?? customerPackMatch?.[1] ?? capturedDraftId;
+  if (bookSlug) {
     if (anchor) {
       return {
         kind: 'section',
@@ -1583,22 +1611,10 @@ export default function WorkspacePage() {
     }
   }, []);
 
-  const welcomeQuestions = useMemo(() => {
-    const derived = manualBooks
-      .filter((book) => Boolean(book.title?.trim()))
-      .filter((book) => containsHangul(book.title) || book.title.length > 0)
-      .slice(0, 4)
-      .map((book) => `${book.title} 핵심 절차를 알려줘`);
-    if (derived.length > 0) {
-      return derived;
-    }
-    return [
-      '오픈시프트가 뭐야?',
-      '운영 입문 기준으로 먼저 봐야 할 플레이북 3개 알려줘',
-      '특정 namespace에 admin 권한 주는 법 알려줘',
-      '프로젝트가 Terminating에서 안 지워질 때 어떻게 해?',
-    ];
-  }, [manualBooks]);
+  const welcomeQuestions = useMemo(
+    () => pickRandomStarterQuestions(STARTER_QUESTION_POOL, 4),
+    [],
+  );
   const activeVision = useMemo(
     () => WIKI_VISION_MODES.find((mode) => mode.id === visionMode) ?? WIKI_VISION_MODES[0],
     [visionMode],
@@ -1932,9 +1948,25 @@ export default function WorkspacePage() {
   );
 
   const currentViewerPath = useMemo(
-    () => (preview.kind === 'viewer' ? (preview.meta?.viewer_path || runtimePathFromUrl(preview.viewerUrl)) : ''),
+    () => {
+      if (preview.kind === 'viewer') {
+        return preview.meta?.viewer_path || runtimePathFromUrl(preview.viewerUrl);
+      }
+      if (preview.kind === 'draft' && preview.viewerUrl) {
+        return runtimePathFromUrl(preview.viewerUrl);
+      }
+      return '';
+    },
     [preview],
   );
+
+  const viewerOriginalSourceHref = useMemo(() => {
+    if (preview.kind !== 'viewer') {
+      return '';
+    }
+    const sourceUrl = String(preview.meta?.source_url || '').trim();
+    return sourceUrl ? toRuntimeUrl(sourceUrl) : '';
+  }, [preview]);
 
   const quickNavItems = useMemo(
     () => (preview.kind === 'viewer' && preview.viewerDocument?.html && currentViewerPath
@@ -1944,10 +1976,10 @@ export default function WorkspacePage() {
   );
 
   const currentOverlayTarget = useMemo<OverlayTargetDescriptor | null>(() => {
-    if (preview.kind !== 'viewer' || !preview.viewerUrl) {
+    if ((preview.kind !== 'viewer' && preview.kind !== 'draft') || !preview.viewerUrl) {
       return null;
     }
-    if (viewerPageMode === 'multi' && preview.viewerDocument?.html) {
+    if (preview.kind === 'viewer' && viewerPageMode === 'multi' && preview.viewerDocument?.html) {
       const visibleSection = extractVisibleViewerSection(preview.viewerDocument.html);
       if (visibleSection && currentViewerPath) {
         const sectionViewerPath = `${currentViewerPath.split('#', 1)[0]}#${visibleSection.anchor}`;
@@ -1969,6 +2001,10 @@ export default function WorkspacePage() {
     () => wikiOverlays.filter((item) => item.kind === 'note'),
     [wikiOverlays],
   );
+  const inkOverlays = useMemo(
+    () => wikiOverlays.filter((item) => item.kind === 'ink'),
+    [wikiOverlays],
+  );
   const personalizedNextPlays = useMemo<WikiOverlayRecommendedPlay[]>(
     () => wikiOverlaySignals?.user_focus?.recommended_next_plays ?? [],
     [wikiOverlaySignals],
@@ -1988,6 +2024,14 @@ export default function WorkspacePage() {
   const currentNote = useMemo(
     () => noteOverlays.find((item) => item.target_ref === currentOverlayTarget?.ref) ?? null,
     [currentOverlayTarget, noteOverlays],
+  );
+  const currentInk = useMemo(
+    () => inkOverlays.find((item) => item.target_ref === currentOverlayTarget?.ref) ?? null,
+    [currentOverlayTarget, inkOverlays],
+  );
+  const currentInkStrokes = useMemo<WikiInkStroke[]>(
+    () => currentInk?.strokes ?? [],
+    [currentInk],
   );
 
   function mergeDraft(nextDraft: CustomerPackDraft, currentDrafts: CustomerPackDraft[] = drafts): CustomerPackDraft[] {
@@ -2337,6 +2381,59 @@ export default function WorkspacePage() {
           overlay_id: currentNote?.overlay_id ?? '',
           body,
           pinned: true,
+          ...currentOverlayTarget.payload,
+        });
+      }
+      await refreshWikiOverlays();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsOverlaySaving(false);
+    }
+  }
+
+  async function handleRemoveCurrentNote(): Promise<void> {
+    if (!currentNote) {
+      setNoteDraft('');
+      return;
+    }
+    setIsOverlaySaving(true);
+    try {
+      await removeWikiOverlay({
+        user_id: WIKI_OVERLAY_USER_ID,
+        overlay_id: currentNote.overlay_id,
+      });
+      setNoteDraft('');
+      setNoteOpen(false);
+      await refreshWikiOverlays();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsOverlaySaving(false);
+    }
+  }
+
+  async function handleSaveCurrentInk(strokes: WikiInkStroke[]): Promise<void> {
+    if (!currentOverlayTarget) {
+      return;
+    }
+    const normalizedStrokes = strokes.filter((stroke) => String(stroke.path || '').trim());
+    setIsOverlaySaving(true);
+    try {
+      if (normalizedStrokes.length === 0) {
+        if (currentInk) {
+          await removeWikiOverlay({
+            user_id: WIKI_OVERLAY_USER_ID,
+            overlay_id: currentInk.overlay_id,
+          });
+        }
+      } else {
+        await saveWikiOverlay({
+          user_id: WIKI_OVERLAY_USER_ID,
+          kind: 'ink',
+          overlay_id: currentInk?.overlay_id ?? '',
+          title: currentOverlayTarget.title,
+          strokes: normalizedStrokes,
           ...currentOverlayTarget.payload,
         });
       }
@@ -2752,11 +2849,7 @@ export default function WorkspacePage() {
     },
     tone: activeSourceId === source.id ? 'default' : 'muted',
   }));
-  const viewerSurfaceTitle = preview.kind === 'draft'
-    ? (visionMode === 'guided_tour' ? 'Guided Tour Pack' : 'Customer Pack Viewer')
-    : preview.kind === 'viewer'
-      ? (visionMode === 'guided_tour' ? 'Guided Tour Viewer' : 'Wiki Viewer')
-      : (visionMode === 'guided_tour' ? 'Guided Tour Document' : 'Document Viewer');
+  const viewerSurfaceTitle = 'Wiki Viewer';
   const viewerVisionLabel = testMode ? 'TEST' : visionMode === 'guided_tour' ? 'Guided Tour Active' : activeVision.label;
   const viewerSourcesLabel = visionMode === 'guided_tour' ? 'Tour Sources' : 'Sources';
   const viewerUploadLabel = isUploading
@@ -3415,6 +3508,9 @@ export default function WorkspacePage() {
           {/* ── Right Panel: Runtime Sources + Overlay ── */}
           <WorkspaceViewerPanel
             panelRef={rightPanelRef}
+            atlasCanvasActive={visionMode === 'atlas_canvas'}
+            savedInkStrokes={currentInkStrokes}
+            isInkSaving={isOverlaySaving}
             rightCollapsed={rightCollapsed}
             testMode={testMode}
             viewerSurfaceTitle={viewerSurfaceTitle}
@@ -3425,11 +3521,15 @@ export default function WorkspacePage() {
             visionUploadLabel={viewerUploadLabel}
             isUploading={isUploading}
             fileInputRef={fileInputRef}
+            inkSurfaceKey={currentViewerPath || (activeDraft ? `draft:${activeDraft.draft_id}` : `preview:${preview.kind}`)}
             uploadAccept={CUSTOMER_PACK_UPLOAD_ACCEPT}
             onRightPanelCollapsedChange={setRightCollapsed}
             onToggleRightPanel={toggleRightPanel}
             onToggleSourcesDrawer={() => setSourcesDrawerOpen((prev) => !prev)}
             onTriggerUpload={() => fileInputRef.current?.click()}
+            onSaveInk={(strokes) => {
+              void handleSaveCurrentInk(strokes);
+            }}
             onUploadSelection={(event) => {
               void handleUploadSelection(event);
             }}
@@ -3523,113 +3623,158 @@ export default function WorkspacePage() {
             )}
 
             {!testMode && currentOverlayTarget && (
-                <div className="reader-stage-rail">
-                  <div className="viewer-stage-topline">
-                    <div className="viewer-stage-actions">
-                      <div className="viewer-stage-actions-start">
-                        {preview.kind === 'viewer' && viewerPageMode === 'single' && preview.meta?.source_url && (
-                          <a href={toRuntimeUrl(preview.meta.source_url)} className="doc-inline-link viewer-stage-link" target="_blank" rel="noreferrer">
-                            원문 열기
-                          </a>
-                        )}
-                        {preview.kind === 'viewer' && (
-                          <label className="viewer-mode-field">
-                            <span>형식</span>
-                            <select
-                              className="viewer-mode-select"
-                              value={viewerPageMode}
-                              onChange={(event) => { void handleViewerPageModeChange(event.target.value as ViewerPageMode); }}
-                            >
-                              <option value="single">단일 페이지</option>
-                              <option value="multi">멀티 페이지</option>
-                            </select>
-                          </label>
-                        )}
-                      </div>
-                      <div className="viewer-stage-actions-end">
-                        {preview.kind === 'viewer' && quickNavItems.length > 0 && (
-                          <div ref={quickNavRef} className={`viewer-quick-nav ${quickNavOpen ? 'open' : ''}`}>
-                            <button
-                              type="button"
-                              className="wiki-overlay-action viewer-quick-nav-trigger"
-                              aria-expanded={quickNavOpen}
-                              title="Quick Nav"
-                              onClick={() => setQuickNavOpen((value) => !value)}
-                            >
-                              <Compass size={16} />
-                            </button>
-                            {quickNavOpen && (
-                              <div className="viewer-quick-nav-popover">
-                                <div className="viewer-quick-nav-header">Quick Nav</div>
-                                <div className="viewer-quick-nav-list">
-                                  {quickNavItems.map((item) => (
-                                    <button
-                                      key={item.id}
-                                      type="button"
-                                      className="viewer-quick-nav-item"
-                                      onClick={() => {
-                                        setQuickNavOpen(false);
-                                        void openViewerPreview(item.viewerPath, preview.title, undefined, viewerPageMode);
-                                      }}
-                                    >
-                                      <span className="viewer-quick-nav-item-heading">{item.heading}</span>
-                                      <span className="viewer-quick-nav-item-meta">{item.sectionPathLabel}</span>
-                                    </button>
-                                  ))}
-                                </div>
+              <div className="reader-stage-rail">
+                {currentNote?.body && (
+                  <div className="viewer-added-text-card">
+                    <div className="viewer-added-text-meta">
+                      <span className="viewer-added-text-label">추가한 글</span>
+                      <span className="viewer-added-text-target">
+                        {currentOverlayTarget.kind === 'section' ? '현재 섹션에 저장됨' : '현재 문서에 저장됨'}
+                      </span>
+                    </div>
+                    <p className="viewer-added-text-body">{currentNote.body}</p>
+                    <div className="viewer-added-text-actions">
+                      <button
+                        type="button"
+                        className="outline-btn viewer-added-text-btn"
+                        onClick={() => setNoteOpen(true)}
+                      >
+                        수정
+                      </button>
+                      <button
+                        type="button"
+                        className="outline-btn viewer-added-text-btn viewer-added-text-btn-danger"
+                        onClick={() => { void handleRemoveCurrentNote(); }}
+                        disabled={isOverlaySaving}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <div className="viewer-stage-topline">
+                  <div className="viewer-stage-actions">
+                    <div className="viewer-stage-actions-start">
+                      {preview.kind === 'viewer' && viewerOriginalSourceHref && (
+                        <a href={viewerOriginalSourceHref} className="doc-inline-link viewer-stage-link" target="_blank" rel="noreferrer">
+                          원문 열기
+                        </a>
+                      )}
+                      {preview.kind === 'viewer' && (
+                        <label className="viewer-mode-field">
+                          <span>형식</span>
+                          <select
+                            className="viewer-mode-select"
+                            value={viewerPageMode}
+                            onChange={(event) => { void handleViewerPageModeChange(event.target.value as ViewerPageMode); }}
+                          >
+                            <option value="single">단일 페이지</option>
+                            <option value="multi">멀티 페이지</option>
+                          </select>
+                        </label>
+                      )}
+                    </div>
+                    <div className="viewer-stage-actions-end">
+                      {preview.kind === 'viewer' && quickNavItems.length > 0 && (
+                        <div ref={quickNavRef} className={`viewer-quick-nav ${quickNavOpen ? 'open' : ''}`}>
+                          <button
+                            type="button"
+                            className="wiki-overlay-action viewer-quick-nav-trigger"
+                            aria-expanded={quickNavOpen}
+                            title="Quick Nav"
+                            onClick={() => setQuickNavOpen((value) => !value)}
+                          >
+                            <Compass size={16} />
+                          </button>
+                          {quickNavOpen && (
+                            <div className="viewer-quick-nav-popover">
+                              <div className="viewer-quick-nav-header">Quick Nav</div>
+                              <div className="viewer-quick-nav-list">
+                                {quickNavItems.map((item) => (
+                                  <button
+                                    key={item.id}
+                                    type="button"
+                                    className="viewer-quick-nav-item"
+                                    onClick={() => {
+                                      setQuickNavOpen(false);
+                                      void openViewerPreview(item.viewerPath, preview.title, undefined, viewerPageMode);
+                                    }}
+                                  >
+                                    <span className="viewer-quick-nav-item-heading">{item.heading}</span>
+                                    <span className="viewer-quick-nav-item-meta">{item.sectionPathLabel}</span>
+                                  </button>
+                                ))}
                               </div>
-                            )}
-                          </div>
-                        )}
-                        <div className="wiki-overlay-toolbar inline">
-                          <button
-                            type="button"
-                            className={`wiki-overlay-action ${currentFavorite ? 'active' : ''}`}
-                            onClick={() => { void handleToggleFavoriteCurrent(); }}
-                            disabled={isOverlaySaving}
-                            title={currentFavorite ? 'Saved' : 'Save'}
-                          >
-                            <Star size={14} />
-                          </button>
-                          {currentOverlayTarget.kind === 'section' && (
-                            <button
-                              type="button"
-                              className={`wiki-overlay-action ${currentSectionCheck ? 'active' : ''}`}
-                              onClick={() => { void handleToggleSectionCheckCurrent(); }}
-                              disabled={isOverlaySaving}
-                              title={currentSectionCheck ? 'Done' : 'Mark Done'}
-                            >
-                              <Check size={14} />
-                            </button>
+                            </div>
                           )}
+                        </div>
+                      )}
+                      <div className="wiki-overlay-toolbar inline">
+                        <button
+                          type="button"
+                          className={`wiki-overlay-action ${currentFavorite ? 'active' : ''}`}
+                          onClick={() => { void handleToggleFavoriteCurrent(); }}
+                          disabled={isOverlaySaving}
+                          title={currentFavorite ? 'Saved' : 'Save'}
+                        >
+                          <Star size={14} />
+                        </button>
+                        {currentOverlayTarget.kind === 'section' && (
                           <button
                             type="button"
-                            className={`wiki-overlay-action ${noteOpen ? 'active' : ''}`}
-                            onClick={() => setNoteOpen((value) => !value)}
-                            title="Note"
+                            className={`wiki-overlay-action ${currentSectionCheck ? 'active' : ''}`}
+                            onClick={() => { void handleToggleSectionCheckCurrent(); }}
+                            disabled={isOverlaySaving}
+                            title={currentSectionCheck ? 'Done' : 'Mark Done'}
                           >
-                            <NotebookPen size={14} />
+                            <Check size={14} />
                           </button>
-                        </div>
+                        )}
+                        <button
+                          type="button"
+                          className={`wiki-overlay-action ${noteOpen ? 'active' : ''}`}
+                          onClick={() => setNoteOpen((value) => !value)}
+                          title={currentNote ? '텍스트 수정' : '텍스트 추가'}
+                        >
+                          <NotebookPen size={14} />
+                        </button>
                       </div>
                     </div>
                   </div>
+                </div>
                 {noteOpen && (
                   <div className="wiki-note-panel viewer-stage-note-panel">
+                    <div className="viewer-note-panel-label">텍스트 추가</div>
                     <textarea
                       className="wiki-note-input"
                       value={noteDraft}
                       onChange={(event) => setNoteDraft(event.target.value)}
-                      placeholder="메모"
+                      placeholder="원문 위에 덧붙일 글을 적어두세요."
                     />
-                    <div className="wiki-note-actions">
+                    <div className="wiki-note-actions viewer-note-actions">
+                      {(currentNote || noteDraft.trim()) && (
+                        <button
+                          type="button"
+                          className="outline-btn viewer-note-clear-btn"
+                          onClick={() => {
+                            if (currentNote) {
+                              void handleRemoveCurrentNote();
+                              return;
+                            }
+                            setNoteDraft('');
+                          }}
+                          disabled={isOverlaySaving}
+                        >
+                          지우기
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="outline-btn"
                         onClick={() => { void handleSaveCurrentNote(); }}
                         disabled={isOverlaySaving}
                       >
-                        {currentNote ? 'Update Note' : 'Save Note'}
+                        저장
                       </button>
                     </div>
                   </div>
