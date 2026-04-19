@@ -297,6 +297,8 @@ export interface ViewerDocumentResponse {
   };
 }
 
+export type ViewerPageMode = 'single' | 'multi';
+
 export interface ChatResponse {
   answer: string;
   rewritten_query?: string;
@@ -821,9 +823,9 @@ export async function loadSourceMeta(viewerPath: string): Promise<SourceMetaResp
   return requestJson<SourceMetaResponse>(`/api/source-meta?viewer_path=${encodeURIComponent(normalizedViewerPath)}`);
 }
 
-export async function loadViewerDocument(viewerPath: string): Promise<ViewerDocumentResponse> {
+export async function loadViewerDocument(viewerPath: string, pageMode: ViewerPageMode = 'single'): Promise<ViewerDocumentResponse> {
   const normalizedViewerPath = normalizeViewerPath(viewerPath);
-  return requestJson<ViewerDocumentResponse>(`/api/viewer-document?viewer_path=${encodeURIComponent(normalizedViewerPath)}`);
+  return requestJson<ViewerDocumentResponse>(`/api/viewer-document?viewer_path=${encodeURIComponent(normalizedViewerPath)}&page_mode=${encodeURIComponent(pageMode)}`);
 }
 
 export async function loadRuntimeFigures(bookSlug: string, limit = 3): Promise<RuntimeFiguresResponse> {

@@ -7,7 +7,7 @@ from typing import Literal
 
 
 SemanticRole = Literal["overview", "procedure", "reference", "concept", "appendix", "unknown"]
-SourceType = Literal["web", "pdf", "upload"]
+SourceType = Literal["web", "pdf", "upload", "repo"]
 TranslationStatus = Literal["original", "translated_ko_draft", "approved_ko"]
 NoteVariant = Literal["note", "warning", "caution", "important", "tip"]
 
@@ -54,6 +54,16 @@ class AstProvenance:
     redaction_state: str = "not_required"
     citation_eligible: bool = False
     citation_block_reason: str = ""
+    primary_input_kind: str = ""
+    source_repo: str = ""
+    source_branch: str = ""
+    source_binding_kind: str = ""
+    source_relative_path: str = ""
+    source_relative_paths: tuple[str, ...] = field(default_factory=tuple)
+    source_mirror_root: str = ""
+    fallback_input_kind: str = ""
+    fallback_source_url: str = ""
+    fallback_viewer_path: str = ""
     notes: tuple[str, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, object]:
@@ -98,6 +108,16 @@ class AstProvenance:
             "redaction_state": self.redaction_state,
             "citation_eligible": self.citation_eligible,
             "citation_block_reason": self.citation_block_reason,
+            "primary_input_kind": self.primary_input_kind,
+            "source_repo": self.source_repo,
+            "source_branch": self.source_branch,
+            "source_binding_kind": self.source_binding_kind,
+            "source_relative_path": self.source_relative_path,
+            "source_relative_paths": list(self.source_relative_paths),
+            "source_mirror_root": self.source_mirror_root,
+            "fallback_input_kind": self.fallback_input_kind,
+            "fallback_source_url": self.fallback_source_url,
+            "fallback_viewer_path": self.fallback_viewer_path,
             "notes": list(self.notes),
         }
 

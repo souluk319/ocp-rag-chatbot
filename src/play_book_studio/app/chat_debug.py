@@ -13,7 +13,7 @@ from play_book_studio.answering.models import AnswerResult
 from play_book_studio.config.settings import load_settings
 from play_book_studio.retrieval.models import SessionContext
 
-from .presenters import _build_health_payload, _serialize_citation
+from .presenters import _build_citation_presentation_context, _build_health_payload, _serialize_citation
 from .sessions import ChatSession, Turn, serialize_session_snapshot, serialize_turn
 
 
@@ -297,6 +297,7 @@ def append_chat_turn_log(
     turn_index = len(session.history)
     latest_turn = session.history[-1] if session.history else None
     diagnosis = build_turn_diagnosis(result)
+    presentation_context = _build_citation_presentation_context(root_dir)
     payload = {
         "record_kind": "chat_turn_audit",
         "audit_envelope": {
@@ -320,7 +321,11 @@ def append_chat_turn_log(
         "warnings": list(result.warnings),
         "cited_indices": list(result.cited_indices),
         "citations": [
-            _serialize_citation(root_dir, citation)
+            _serialize_citation(
+                root_dir,
+                citation,
+                presentation_context=presentation_context,
+            )
             for citation in result.citations
         ],
         "context_before": context_before.to_dict() if context_before else {},
@@ -384,6 +389,7 @@ def write_recent_chat_session_snapshot(
         f"{settings.session_snapshot_stem(session.session_id)}-*.json"
     ):
         snapshot_alias_path.unlink(missing_ok=True)
+    snapshot_path.parent.mkdir(parents=True, exist_ok=True)
     snapshot_path.write_text(serialized, encoding="utf-8")
     return target
 

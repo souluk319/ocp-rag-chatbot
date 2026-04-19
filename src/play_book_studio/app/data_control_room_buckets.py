@@ -12,6 +12,7 @@ import yaml
 from play_book_studio.config.settings import load_settings
 from play_book_studio.runtime_catalog_registry import official_runtime_books
 
+from .runtime_truth import official_runtime_grade, official_runtime_truth_payload
 from .wiki_user_overlay import build_wiki_overlay_signal_payload
 
 LATEST_RUNTIME_BRONZE_SOURCE_TYPES = frozenset(
@@ -113,12 +114,7 @@ def _translation_runtime_blocked_slugs(translation_lane_report: dict[str, Any]) 
 
 
 def _latest_runtime_grade(entry: dict[str, Any]) -> str:
-    if bool(entry.get("active_runtime")):
-        return "Gold"
-    source_type = str(entry.get("source_type") or "").strip()
-    if source_type in LATEST_RUNTIME_BRONZE_SOURCE_TYPES:
-        return "Bronze"
-    return "Silver"
+    return official_runtime_grade(entry)
 
 
 def _latest_runtime_review_status(entry: dict[str, Any], *, grade: str) -> str:
@@ -130,6 +126,7 @@ def _latest_runtime_review_status(entry: dict[str, Any], *, grade: str) -> str:
 
 
 def _build_approved_wiki_runtime_book_bucket(root: Path, *, translation_lane_report: dict[str, Any]) -> dict[str, Any]:
+    settings = load_settings(root)
     manifest_path = root / "data" / "wiki_runtime_books" / "active_manifest.json"
     blocked_slugs = _translation_runtime_blocked_slugs(translation_lane_report)
     books: list[dict[str, Any]] = []
@@ -139,6 +136,7 @@ def _build_approved_wiki_runtime_book_bucket(root: Path, *, translation_lane_rep
         slug = str(entry.get("book_slug") or "").strip()
         if not slug:
             continue
+        grade = _latest_runtime_grade(entry)
         runtime_path_value = str(entry.get("runtime_path") or "").strip()
         runtime_path = Path(runtime_path_value).resolve() if runtime_path_value else None
         if slug in blocked_slugs:
@@ -150,13 +148,22 @@ def _build_approved_wiki_runtime_book_bucket(root: Path, *, translation_lane_rep
                 }
             )
             continue
+        if grade != "Gold":
+            hidden_books.append(
+                {
+                    "book_slug": slug,
+                    "title": str(entry.get("title") or slug),
+                    "hidden_reason": f"non_gold_runtime::{grade.lower()}",
+                }
+            )
+            continue
         section_count = int(entry.get("section_count") or 0)
         code_block_count = int(entry.get("code_block_count") or 0)
         if runtime_path is not None and runtime_path.exists() and runtime_path.is_file():
             runtime_paths.append(runtime_path)
             section_count = max(section_count, _markdown_heading_count(runtime_path))
             code_block_count = max(code_block_count, _markdown_code_block_count(runtime_path))
-        grade = _latest_runtime_grade(entry)
+        truth = official_runtime_truth_payload(settings=settings, manifest_entry=entry)
         books.append(
             {
                 "book_slug": slug,
@@ -170,10 +177,12 @@ def _build_approved_wiki_runtime_book_bucket(root: Path, *, translation_lane_rep
                 "viewer_path": str(entry.get("viewer_path") or entry.get("docs_viewer_path") or ""),
                 "source_url": str(entry.get("source_url") or entry.get("source_candidate_path") or ""),
                 "updated_at": str(entry.get("updated_at") or ""),
-                "approval_state": str(entry.get("approval_state") or ""),
-                "publication_state": str(entry.get("publication_state") or ""),
-                "runtime_truth_label": "Latest pipeline PlayBook",
-                "boundary_badge": grade,
+                "approval_state": str(truth.get("approval_state") or entry.get("approval_state") or ""),
+                "publication_state": str(truth.get("publication_state") or entry.get("publication_state") or ""),
+                "parser_backend": str(truth.get("parser_backend") or entry.get("parser_backend") or ""),
+                "boundary_truth": str(truth.get("boundary_truth") or ""),
+                "runtime_truth_label": str(truth.get("runtime_truth_label") or ""),
+                "boundary_badge": str(truth.get("boundary_badge") or ""),
             }
         )
     if runtime_paths:

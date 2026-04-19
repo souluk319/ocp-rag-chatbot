@@ -1,49 +1,4 @@
 {
-  "prometheus": {
-    "title": "Prometheus",
-    "eyebrow": "Entity Hub",
-    "summary": "",
-    "overview": [],
-    "related_books": [
-      {
-        "label": "Monitoring",
-        "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Monitoring 문서로 바로 이동한다."
-      },
-      {
-        "label": "관찰 기능 개요",
-        "href": "/playbooks/wiki-runtime/active/observability_overview/index.html",
-        "summary": "관찰 기능 개요 문서로 바로 이동한다."
-      },
-      {
-        "label": "로깅",
-        "href": "/playbooks/wiki-runtime/active/logging/index.html",
-        "summary": "로깅 문서로 바로 이동한다."
-      },
-      {
-        "label": "검증 및 문제 해결",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html",
-        "summary": "검증 및 문제 해결 문서로 바로 이동한다."
-      }
-    ],
-    "next_reading_path": [
-      {
-        "label": "1. Monitoring",
-        "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Monitoring 문서로 이어서 탐색한다."
-      },
-      {
-        "label": "2. 로깅",
-        "href": "/playbooks/wiki-runtime/active/logging/index.html",
-        "summary": "로깅 문서로 이어서 탐색한다."
-      },
-      {
-        "label": "3. 검증 및 문제 해결",
-        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html",
-        "summary": "검증 및 문제 해결 문서로 이어서 탐색한다."
-      }
-    ]
-  },
   "etcd": {
     "title": "Etcd",
     "eyebrow": "Entity Hub",
@@ -51,9 +6,9 @@
     "overview": [],
     "related_books": [
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Backup and restore 문서로 바로 이동한다."
+        "summary": "백업 및 복구 운영 플레이북 문서로 바로 이동한다."
       },
       {
         "label": "etcd 백업 및 복구 플레이북",
@@ -61,76 +16,31 @@
         "summary": "etcd 백업 및 복구 플레이북 문서로 바로 이동한다."
       },
       {
-        "label": "Machine configuration",
+        "label": "머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Machine configuration 문서로 바로 이동한다."
+        "summary": "머신 구성 운영 플레이북 문서로 바로 이동한다."
       },
       {
-        "label": "Monitoring",
+        "label": "클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Monitoring 문서로 바로 이동한다."
+        "summary": "클러스터 모니터링 운영 플레이북 문서로 바로 이동한다."
       }
     ],
     "next_reading_path": [
       {
-        "label": "1. Backup and restore",
+        "label": "1. 백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Backup and restore 문서로 이어서 탐색한다."
+        "summary": "백업 및 복구 운영 플레이북 문서로 이어서 탐색한다."
       },
       {
-        "label": "2. Machine configuration",
+        "label": "2. 머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Machine configuration 문서로 이어서 탐색한다."
+        "summary": "머신 구성 운영 플레이북 문서로 이어서 탐색한다."
       },
       {
-        "label": "3. Monitoring",
+        "label": "3. 클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Monitoring 문서로 이어서 탐색한다."
-      }
-    ]
-  },
-  "machine-config-operator": {
-    "title": "Machine Config Operator",
-    "eyebrow": "Entity Hub",
-    "summary": "",
-    "overview": [],
-    "related_books": [
-      {
-        "label": "Machine configuration",
-        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Machine configuration 문서로 바로 이동한다."
-      },
-      {
-        "label": "머신 관리",
-        "href": "/playbooks/wiki-runtime/active/machine_management/index.html",
-        "summary": "머신 관리 문서로 바로 이동한다."
-      },
-      {
-        "label": "노드",
-        "href": "/playbooks/wiki-runtime/active/nodes/index.html",
-        "summary": "노드 문서로 바로 이동한다."
-      },
-      {
-        "label": "Installing on any platform",
-        "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-        "summary": "Installing on any platform 문서로 바로 이동한다."
-      }
-    ],
-    "next_reading_path": [
-      {
-        "label": "1. Machine configuration",
-        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Machine configuration 문서로 이어서 탐색한다."
-      },
-      {
-        "label": "2. Installing on any platform",
-        "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-        "summary": "Installing on any platform 문서로 이어서 탐색한다."
-      },
-      {
-        "label": "3. Monitoring",
-        "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Monitoring 문서로 이어서 탐색한다."
+        "summary": "클러스터 모니터링 운영 플레이북 문서로 이어서 탐색한다."
       }
     ]
   },
@@ -146,9 +56,9 @@
         "summary": "설치 후 구성 문서로 바로 이동한다."
       },
       {
-        "label": "Installing on any platform",
+        "label": "플랫폼 비종속 설치 플레이북",
         "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-        "summary": "Installing on any platform 문서로 바로 이동한다."
+        "summary": "플랫폼 비종속 설치 플레이북 문서로 바로 이동한다."
       },
       {
         "label": "고급 네트워킹",
@@ -163,9 +73,9 @@
     ],
     "next_reading_path": [
       {
-        "label": "1. Installing on any platform",
+        "label": "1. 플랫폼 비종속 설치 플레이북",
         "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-        "summary": "Installing on any platform 문서로 이어서 탐색한다."
+        "summary": "플랫폼 비종속 설치 플레이북 문서로 이어서 탐색한다."
       },
       {
         "label": "2. 설치 후 구성",
@@ -176,6 +86,51 @@
         "label": "3. 고급 네트워킹",
         "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html",
         "summary": "고급 네트워킹 문서로 이어서 탐색한다."
+      }
+    ]
+  },
+  "machine-config-operator": {
+    "title": "Machine Config Operator",
+    "eyebrow": "Entity Hub",
+    "summary": "",
+    "overview": [],
+    "related_books": [
+      {
+        "label": "머신 구성 운영 플레이북",
+        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
+        "summary": "머신 구성 운영 플레이북 문서로 바로 이동한다."
+      },
+      {
+        "label": "머신 관리",
+        "href": "/playbooks/wiki-runtime/active/machine_management/index.html",
+        "summary": "머신 관리 문서로 바로 이동한다."
+      },
+      {
+        "label": "노드",
+        "href": "/playbooks/wiki-runtime/active/nodes/index.html",
+        "summary": "노드 문서로 바로 이동한다."
+      },
+      {
+        "label": "플랫폼 비종속 설치 플레이북",
+        "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
+        "summary": "플랫폼 비종속 설치 플레이북 문서로 바로 이동한다."
+      }
+    ],
+    "next_reading_path": [
+      {
+        "label": "1. 머신 구성 운영 플레이북",
+        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
+        "summary": "머신 구성 운영 플레이북 문서로 이어서 탐색한다."
+      },
+      {
+        "label": "2. 플랫폼 비종속 설치 플레이북",
+        "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
+        "summary": "플랫폼 비종속 설치 플레이북 문서로 이어서 탐색한다."
+      },
+      {
+        "label": "3. 클러스터 모니터링 운영 플레이북",
+        "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
+        "summary": "클러스터 모니터링 운영 플레이북 문서로 이어서 탐색한다."
       }
     ]
   },
@@ -191,14 +146,14 @@
         "summary": "노드 문서로 바로 이동한다."
       },
       {
-        "label": "Machine configuration",
+        "label": "머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Machine configuration 문서로 바로 이동한다."
+        "summary": "머신 구성 운영 플레이북 문서로 바로 이동한다."
       },
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Backup and restore 문서로 바로 이동한다."
+        "summary": "백업 및 복구 운영 플레이북 문서로 바로 이동한다."
       },
       {
         "label": "etcd 백업 및 복구 플레이북",
@@ -208,19 +163,64 @@
     ],
     "next_reading_path": [
       {
-        "label": "1. Backup and restore",
+        "label": "1. 백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Backup and restore 문서로 이어서 탐색한다."
+        "summary": "백업 및 복구 운영 플레이북 문서로 이어서 탐색한다."
       },
       {
-        "label": "2. Machine configuration",
+        "label": "2. 머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Machine configuration 문서로 이어서 탐색한다."
+        "summary": "머신 구성 운영 플레이북 문서로 이어서 탐색한다."
       },
       {
         "label": "3. 노드",
         "href": "/playbooks/wiki-runtime/active/nodes/index.html",
         "summary": "노드 문서로 이어서 탐색한다."
+      }
+    ]
+  },
+  "prometheus": {
+    "title": "Prometheus",
+    "eyebrow": "Entity Hub",
+    "summary": "",
+    "overview": [],
+    "related_books": [
+      {
+        "label": "클러스터 모니터링 운영 플레이북",
+        "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
+        "summary": "클러스터 모니터링 운영 플레이북 문서로 바로 이동한다."
+      },
+      {
+        "label": "관찰 기능 개요",
+        "href": "/playbooks/wiki-runtime/active/observability_overview/index.html",
+        "summary": "관찰 기능 개요 문서로 바로 이동한다."
+      },
+      {
+        "label": "클러스터 로깅 운영 플레이북",
+        "href": "/playbooks/wiki-runtime/active/logging/index.html",
+        "summary": "클러스터 로깅 운영 플레이북 문서로 바로 이동한다."
+      },
+      {
+        "label": "검증 및 문제 해결",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html",
+        "summary": "검증 및 문제 해결 문서로 바로 이동한다."
+      }
+    ],
+    "next_reading_path": [
+      {
+        "label": "1. 클러스터 모니터링 운영 플레이북",
+        "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
+        "summary": "클러스터 모니터링 운영 플레이북 문서로 이어서 탐색한다."
+      },
+      {
+        "label": "2. 클러스터 로깅 운영 플레이북",
+        "href": "/playbooks/wiki-runtime/active/logging/index.html",
+        "summary": "클러스터 로깅 운영 플레이북 문서로 이어서 탐색한다."
+      },
+      {
+        "label": "3. 검증 및 문제 해결",
+        "href": "/playbooks/wiki-runtime/active/validation_and_troubleshooting/index.html",
+        "summary": "검증 및 문제 해결 문서로 이어서 탐색한다."
       }
     ]
   },
@@ -261,9 +261,9 @@
         "summary": "아키텍처 문서로 이어서 읽는다."
       },
       {
-        "label": "3. Installing on any platform",
+        "label": "3. 플랫폼 비종속 설치 플레이북",
         "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-        "summary": "Installing on any platform 문서로 이어서 읽는다."
+        "summary": "플랫폼 비종속 설치 플레이북 문서로 이어서 읽는다."
       }
     ]
   },
@@ -282,9 +282,9 @@
         "summary": "설치 개요 문서로 바로 이동한다."
       },
       {
-        "label": "Installing on any platform",
+        "label": "플랫폼 비종속 설치 플레이북",
         "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-        "summary": "Installing on any platform 문서로 바로 이동한다."
+        "summary": "플랫폼 비종속 설치 플레이북 문서로 바로 이동한다."
       },
       {
         "label": "설치 후 구성",
@@ -304,14 +304,14 @@
         "summary": "설치 개요 문서로 이어서 읽는다."
       },
       {
-        "label": "2. Installing on any platform",
+        "label": "2. 플랫폼 비종속 설치 플레이북",
         "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-        "summary": "Installing on any platform 문서로 이어서 읽는다."
+        "summary": "플랫폼 비종속 설치 플레이북 문서로 이어서 읽는다."
       },
       {
-        "label": "3. Machine configuration",
+        "label": "3. 머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Machine configuration 문서로 이어서 읽는다."
+        "summary": "머신 구성 운영 플레이북 문서로 이어서 읽는다."
       }
     ]
   },
@@ -325,9 +325,9 @@
     ],
     "related_books": [
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Backup and restore 문서로 바로 이동한다."
+        "summary": "백업 및 복구 운영 플레이북 문서로 바로 이동한다."
       },
       {
         "label": "etcd 백업 및 복구 플레이북",
@@ -335,9 +335,9 @@
         "summary": "etcd 백업 및 복구 플레이북 문서로 바로 이동한다."
       },
       {
-        "label": "Machine configuration",
+        "label": "머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Machine configuration 문서로 바로 이동한다."
+        "summary": "머신 구성 운영 플레이북 문서로 바로 이동한다."
       },
       {
         "label": "머신 관리",
@@ -347,9 +347,9 @@
     ],
     "next_reading_path": [
       {
-        "label": "1. Backup and restore",
+        "label": "1. 백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Backup and restore 문서로 이어서 읽는다."
+        "summary": "백업 및 복구 운영 플레이북 문서로 이어서 읽는다."
       },
       {
         "label": "2. etcd 백업 및 복구 플레이북",
@@ -357,9 +357,9 @@
         "summary": "etcd 백업 및 복구 플레이북 문서로 이어서 읽는다."
       },
       {
-        "label": "3. Monitoring",
+        "label": "3. 클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Monitoring 문서로 이어서 읽는다."
+        "summary": "클러스터 모니터링 운영 플레이북 문서로 이어서 읽는다."
       }
     ]
   },
@@ -373,9 +373,9 @@
     ],
     "related_books": [
       {
-        "label": "Monitoring",
+        "label": "클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Monitoring 문서로 바로 이동한다."
+        "summary": "클러스터 모니터링 운영 플레이북 문서로 바로 이동한다."
       },
       {
         "label": "관찰 기능 개요",
@@ -383,9 +383,9 @@
         "summary": "관찰 기능 개요 문서로 바로 이동한다."
       },
       {
-        "label": "로깅",
+        "label": "클러스터 로깅 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/logging/index.html",
-        "summary": "로깅 문서로 바로 이동한다."
+        "summary": "클러스터 로깅 운영 플레이북 문서로 바로 이동한다."
       },
       {
         "label": "검증 및 문제 해결",
@@ -395,9 +395,9 @@
     ],
     "next_reading_path": [
       {
-        "label": "1. Monitoring",
+        "label": "1. 클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Monitoring 문서로 이어서 읽는다."
+        "summary": "클러스터 모니터링 운영 플레이북 문서로 이어서 읽는다."
       },
       {
         "label": "2. 관찰 기능 개요",
@@ -405,9 +405,9 @@
         "summary": "관찰 기능 개요 문서로 이어서 읽는다."
       },
       {
-        "label": "3. Backup and restore",
+        "label": "3. 백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Backup and restore 문서로 이어서 읽는다."
+        "summary": "백업 및 복구 운영 플레이북 문서로 이어서 읽는다."
       }
     ]
   },

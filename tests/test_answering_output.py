@@ -40,6 +40,7 @@ from _support_answering import (
     strip_weak_additional_guidance,
     summarize_session_context,
 )
+from play_book_studio.answering.answerer import _prune_provenance_noise_citations
 
 class TestAnsweringOutput(unittest.TestCase):
     def test_normalize_answer_text_enforces_single_answer_prefix(self) -> None:
@@ -1101,6 +1102,37 @@ class TestAnsweringOutput(unittest.TestCase):
         self.assertEqual([1], result.cited_indices)
         self.assertEqual(["postinstallation_configuration"], [citation.book_slug for citation in result.citations])
         self.assertNotIn("[2]", result.answer)
+
+    def test_prune_provenance_noise_citations_prefers_auth_book_for_rbac_follow_up(self) -> None:
+        citations = [
+            Citation(
+                index=1,
+                chunk_id="postinstall-rbac",
+                book_slug="postinstallation_configuration",
+                section="설치 후 작업",
+                anchor="post-install-tasks",
+                source_url="https://example.com/postinstall",
+                viewer_path="/docs/postinstall.html#post-install-tasks",
+                excerpt="설치 후 권한 관련 준비 작업을 설명합니다.",
+            ),
+            Citation(
+                index=2,
+                chunk_id="auth-rbac",
+                book_slug="authentication_and_authorization",
+                section="9.6. 사용자 역할 추가",
+                anchor="adding-role-to-user",
+                source_url="https://example.com/auth",
+                viewer_path="/docs/auth.html#adding-role-to-user",
+                excerpt="RoleBinding과 cluster-admin 차이를 설명합니다.",
+            ),
+        ]
+
+        pruned = _prune_provenance_noise_citations(
+            query="cluster-admin이랑 차이도 짧게 말해줘",
+            citations=citations,
+        )
+
+        self.assertEqual(["authentication_and_authorization"], [citation.book_slug for citation in pruned])
 
     def test_answerer_shapes_cluster_admin_difference_follow_up(self) -> None:
         class _RbacDiffRetriever:

@@ -12,17 +12,17 @@
         "signal_id": "query:복원-후-machine-configuration은-왜-같이-봐야-하는지-알려줘",
         "label": "복원 후 Machine Configuration은 왜 같이 봐야 하는지 알려줘",
         "signal_type": "suggested_query",
-        "count": 2,
+        "count": 36,
         "href": "",
         "kind": "query"
       },
       "supporting_signal": {
-        "signal_id": "query:복원-후-machine-configuration은-왜-같이-봐야-하는지-알려줘",
-        "label": "복원 후 Machine Configuration은 왜 같이 봐야 하는지 알려줘",
-        "signal_type": "suggested_query",
-        "count": 2,
-        "href": "",
-        "kind": "query"
+        "signal_id": "book:machine-configuration",
+        "label": "Machine configuration",
+        "signal_type": "related_book",
+        "count": 11,
+        "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html#about-machine-config-operator_machine-config-overview",
+        "kind": "book"
       },
       "expansion_goal": "Backup and Restore와 Machine Configuration 사이의 운영 분기와 후속 확인 경로를 별도 bridge book 또는 relation으로 고정한다.",
       "deliverables": [
@@ -40,7 +40,7 @@
         "signal_id": "query:백업-후-monitoring에서는-어떤-신호를-먼저-확인해야-해?",
         "label": "백업 후 Monitoring에서는 어떤 신호를 먼저 확인해야 해?",
         "signal_type": "suggested_query",
-        "count": 2,
+        "count": 36,
         "href": "",
         "kind": "query"
       },
@@ -48,7 +48,7 @@
         "signal_id": "query:백업-후-monitoring에서는-어떤-신호를-먼저-확인해야-해?",
         "label": "백업 후 Monitoring에서는 어떤 신호를 먼저 확인해야 해?",
         "signal_type": "suggested_query",
-        "count": 2,
+        "count": 36,
         "href": "",
         "kind": "query"
       },

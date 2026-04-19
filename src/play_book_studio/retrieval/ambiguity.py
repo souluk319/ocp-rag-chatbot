@@ -84,6 +84,79 @@ def has_update_doc_locator_ambiguity(query: str) -> bool:
     return not has_scope
 
 
+def has_postinstall_doc_locator_ambiguity(query: str) -> bool:
+    from .query import has_explicit_topic_signal
+
+    normalized = collapse_spaces(query)
+    lowered = normalized.lower()
+    if not any(
+        token in lowered
+        for token in (
+            "설치 후",
+            "설치후",
+            "설치한 뒤",
+            "설치하고 나서",
+            "설치 완료 후",
+            "설치 완료 뒤",
+            "post-install",
+            "postinstall",
+            "post installation",
+        )
+    ):
+        return False
+    if not any(
+        token in normalized
+        for token in (
+            "뭘 먼저",
+            "뭐부터",
+            "어디서부터",
+            "먼저 해야",
+            "먼저 할",
+            "먼저 봐야",
+            "먼저 보면",
+        )
+    ):
+        return False
+    if has_explicit_topic_signal(normalized):
+        return False
+    has_scope = any(
+        token in lowered
+        for token in (
+            "네트워크",
+            "network",
+            "보안",
+            "security",
+            "인증",
+            "authentication",
+            "권한",
+            "authorization",
+            "rbac",
+            "레지스트리",
+            "registry",
+            "스토리지",
+            "storage",
+            "이미지",
+            "image",
+            "머신셋",
+            "machineset",
+            "노드",
+            "node",
+            "모니터링",
+            "monitoring",
+            "로깅",
+            "logging",
+            "백업",
+            "backup",
+            "복구",
+            "restore",
+            "etcd",
+            "검증",
+            "validation",
+        )
+    )
+    return not has_scope
+
+
 def has_security_doc_locator_ambiguity(query: str) -> bool:
     from .query import SECURITY_RE, SECURITY_SCOPE_RE, has_doc_locator_intent
 

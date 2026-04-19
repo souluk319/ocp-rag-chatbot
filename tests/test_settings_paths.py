@@ -77,11 +77,15 @@ class SettingsPathTests(unittest.TestCase):
                 self.assertEqual(root / "artifacts" / "corpus", settings.corpus_dir)
                 self.assertEqual(root / "artifacts" / "retrieval", settings.retrieval_dir)
                 self.assertEqual(root / "data", settings.data_dir)
-                self.assertEqual(root / "data" / "silver" / "normalized_docs.jsonl", settings.normalized_docs_path)
-                self.assertEqual(root / "data" / "gold_corpus_ko" / "chunks.jsonl", settings.chunks_path)
-                self.assertEqual(root / "data" / "gold_corpus_ko" / "bm25_corpus.jsonl", settings.bm25_corpus_path)
-                self.assertEqual(root / "data" / "gold_manualbook_ko" / "playbook_documents.jsonl", settings.playbook_documents_path)
-                self.assertEqual(root / "data" / "gold_manualbook_ko" / "playbooks", settings.playbook_books_dir)
+                self.assertEqual(root / "artifacts" / "official_lane" / "repo_wide_official_source" / "normalized_docs.jsonl", settings.normalized_docs_path)
+                self.assertEqual(root / "artifacts" / "official_lane" / "repo_wide_official_source" / "chunks.jsonl", settings.chunks_path)
+                self.assertEqual(root / "artifacts" / "official_lane" / "repo_wide_official_source" / "bm25_corpus.jsonl", settings.bm25_corpus_path)
+                self.assertEqual(root / "artifacts" / "official_lane" / "repo_wide_official_source" / "playbook_documents.jsonl", settings.playbook_documents_path)
+                self.assertEqual(root / "artifacts" / "official_lane" / "repo_wide_official_source" / "playbooks", settings.playbook_books_dir)
+                self.assertEqual(root / "data" / "silver" / "normalized_docs.jsonl", settings.retrieval_normalized_docs_path)
+                self.assertEqual(root / "data" / "gold_corpus_ko" / "chunks.jsonl", settings.retrieval_chunks_path)
+                self.assertEqual(root / "data" / "gold_corpus_ko" / "bm25_corpus.jsonl", settings.retrieval_bm25_corpus_path)
+                self.assertEqual(root / "data" / "gold_manualbook_ko" / "playbook_documents.jsonl", settings.retrieval_playbook_documents_path)
                 self.assertEqual(root / "artifacts" / "corpus" / "translation_lane_report.json", settings.translation_lane_report_path)
                 self.assertEqual(root / "artifacts" / "runtime" / "recent_chat_session.json", settings.recent_chat_session_path)
                 self.assertEqual(root / "artifacts" / "runtime" / "chat_turns.md", settings.chat_markdown_log_path)
@@ -122,11 +126,15 @@ class SettingsPathTests(unittest.TestCase):
                 self.assertEqual(external.resolve(), settings.artifacts_dir)
                 self.assertEqual((external / "corpus").resolve(), settings.corpus_dir)
                 self.assertEqual((external / "retrieval").resolve(), settings.retrieval_dir)
-                self.assertEqual((root / "data" / "silver" / "normalized_docs.jsonl").resolve(), settings.normalized_docs_path)
-                self.assertEqual((root / "data" / "gold_corpus_ko" / "chunks.jsonl").resolve(), settings.chunks_path)
-                self.assertEqual((root / "data" / "gold_corpus_ko" / "bm25_corpus.jsonl").resolve(), settings.bm25_corpus_path)
-                self.assertEqual((root / "data" / "gold_manualbook_ko" / "playbook_documents.jsonl").resolve(), settings.playbook_documents_path)
-                self.assertEqual((root / "data" / "gold_manualbook_ko" / "playbooks").resolve(), settings.playbook_books_dir)
+                self.assertEqual((external / "official_lane" / "repo_wide_official_source" / "normalized_docs.jsonl").resolve(), settings.normalized_docs_path)
+                self.assertEqual((external / "official_lane" / "repo_wide_official_source" / "chunks.jsonl").resolve(), settings.chunks_path)
+                self.assertEqual((external / "official_lane" / "repo_wide_official_source" / "bm25_corpus.jsonl").resolve(), settings.bm25_corpus_path)
+                self.assertEqual((external / "official_lane" / "repo_wide_official_source" / "playbook_documents.jsonl").resolve(), settings.playbook_documents_path)
+                self.assertEqual((external / "official_lane" / "repo_wide_official_source" / "playbooks").resolve(), settings.playbook_books_dir)
+                self.assertEqual((root / "data" / "silver" / "normalized_docs.jsonl").resolve(), settings.retrieval_normalized_docs_path)
+                self.assertEqual((root / "data" / "gold_corpus_ko" / "chunks.jsonl").resolve(), settings.retrieval_chunks_path)
+                self.assertEqual((root / "data" / "gold_corpus_ko" / "bm25_corpus.jsonl").resolve(), settings.retrieval_bm25_corpus_path)
+                self.assertEqual((root / "data" / "gold_manualbook_ko" / "playbook_documents.jsonl").resolve(), settings.retrieval_playbook_documents_path)
                 self.assertEqual((external / "corpus" / "translation_lane_report.json").resolve(), settings.translation_lane_report_path)
                 self.assertEqual((external / "customer_packs").resolve(), settings.customer_packs_dir)
                 self.assertEqual((external / "customer_packs" / "drafts").resolve(), settings.customer_pack_drafts_dir)
@@ -234,7 +242,7 @@ class SettingsPathTests(unittest.TestCase):
             )
             self.assertEqual(("4.16", "4.17", "4.18", "4.19", "4.20", "4.21"), settings.supported_ocp_versions)
             self.assertEqual(("ko", "en"), settings.supported_docs_languages)
-            self.assertEqual(("html-single",), settings.supported_source_kinds)
+            self.assertEqual(("source-first", "html-single"), settings.supported_source_kinds)
             self.assertEqual("Play Book Studio", settings.app_label)
             self.assertEqual("openshift-4-20-core", settings.active_pack_id)
             self.assertEqual("OpenShift 4.20", settings.active_pack_label)
@@ -385,6 +393,37 @@ class SettingsPathTests(unittest.TestCase):
                     os.environ.pop("RAW_HTML_DIR", None)
                 else:
                     os.environ["RAW_HTML_DIR"] = old_raw_env
+
+    def test_load_settings_does_not_autocreate_legacy_or_deleted_dirs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = load_settings(root)
+
+            self.assertEqual(root / "artifacts", settings.artifacts_dir)
+            self.assertEqual(root / "data", settings.data_dir)
+            self.assertTrue(settings.artifacts_dir.exists())
+            self.assertTrue(settings.data_dir.exists())
+            self.assertTrue(settings.bronze_dir.exists())
+
+            unexpected_dirs = (
+                root / "data" / "silver",
+                root / "data" / "silver_ko",
+                root / "data" / "gold_corpus_ko",
+                root / "data" / "gold_manualbook_ko",
+                root / "data" / "customer_pack_drafts",
+                root / "data" / "customer_pack_books",
+                root / "data" / "bronze" / "raw_html",
+                root / "artifacts" / "answering",
+                root / "artifacts" / "corpus",
+                root / "artifacts" / "retrieval",
+                root / "artifacts" / "runtime",
+                root / "artifacts" / "customer_packs" / "drafts",
+                root / "artifacts" / "customer_packs" / "books",
+                root / "artifacts" / "customer_packs" / "captures",
+                root / "artifacts" / "customer_packs" / "corpus",
+            )
+            for path in unexpected_dirs:
+                self.assertFalse(path.exists(), str(path))
 
     def test_llm_max_tokens_defaults_to_1100(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

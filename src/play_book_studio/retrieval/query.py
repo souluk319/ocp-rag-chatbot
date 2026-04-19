@@ -108,6 +108,7 @@ from .ambiguity import (
     has_follow_up_entity_ambiguity,
     has_logging_ambiguity,
     has_multiple_entity_ambiguity,
+    has_postinstall_doc_locator_ambiguity,
     has_security_doc_locator_ambiguity,
     has_update_doc_locator_ambiguity,
 )

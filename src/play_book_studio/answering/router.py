@@ -11,6 +11,7 @@ from play_book_studio.retrieval.query import (
     has_doc_locator_intent,
     has_logging_ambiguity,
     has_multiple_entity_ambiguity,
+    has_postinstall_doc_locator_ambiguity,
     has_rbac_intent,
     has_security_doc_locator_ambiguity,
     has_update_doc_locator_ambiguity,
@@ -178,6 +179,13 @@ def route_non_rag(
             route="clarification",
             answer=(
                 "답변: 지금은 업데이트 범위가 불명확합니다. 현재 버전, 목표 버전, 단일 클러스터 업그레이드인지부터 확인해 주시겠어요?"
+            ),
+        )
+    if has_postinstall_doc_locator_ambiguity(normalized):
+        return RoutedResponse(
+            route="clarification",
+            answer=(
+                "답변: 설치 후 작업 범위를 먼저 정해야 합니다. 네트워크, 보안·인증, 레지스트리·스토리지, 노드·머신셋, 모니터링 중 어디부터 볼까요?"
             ),
         )
     out_of_corpus_version = detect_out_of_corpus_version(normalized, corpus_version=corpus_version)

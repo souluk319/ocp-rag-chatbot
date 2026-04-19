@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -50,6 +51,62 @@ def _parse_companion_lanes(values: list[str]) -> list[dict[str, str]]:
     return lanes
 
 
+def _git_output(repo_root: Path, *args: str) -> str:
+    completed = subprocess.run(
+        ["git", *args],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=False,
+    )
+    if completed.returncode != 0:
+        return ""
+    return completed.stdout.strip()
+
+
+def _git_upstream_ref(repo_root: Path) -> str:
+    upstream_ref = _git_output(repo_root, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+    if upstream_ref:
+        return upstream_ref
+    head_ref = _git_output(repo_root, "rev-parse", "--abbrev-ref", "HEAD")
+    if not head_ref:
+        return ""
+    remote_name = _git_output(repo_root, "config", "--get", f"branch.{head_ref}.remote")
+    merge_ref = _git_output(repo_root, "config", "--get", f"branch.{head_ref}.merge")
+    if not remote_name or not merge_ref.startswith("refs/heads/"):
+        return ""
+    return f"{remote_name}/{merge_ref.removeprefix('refs/heads/')}"
+
+
+def _git_upstream_sha(repo_root: Path, upstream_ref: str) -> str:
+    if not upstream_ref:
+        return ""
+    upstream_sha = _git_output(repo_root, "rev-parse", upstream_ref)
+    if upstream_sha:
+        return upstream_sha
+    remote_name, _, branch_name = upstream_ref.partition("/")
+    if not remote_name or not branch_name:
+        return ""
+    return _git_output(repo_root, "ls-remote", remote_name, f"refs/heads/{branch_name}").split("\t", 1)[0].strip()
+
+
+def _git_ref_snapshot(repo_root: Path) -> dict[str, str]:
+    head_ref = _git_output(repo_root, "rev-parse", "--abbrev-ref", "HEAD")
+    head_sha = _git_output(repo_root, "rev-parse", "HEAD")
+    upstream_ref = _git_upstream_ref(repo_root)
+    upstream_sha = _git_upstream_sha(repo_root, upstream_ref)
+    origin_main_sha = _git_output(repo_root, "rev-parse", "refs/remotes/origin/main")
+    return {
+        "head_ref": head_ref,
+        "head_sha": head_sha,
+        "upstream_ref": upstream_ref,
+        "upstream_sha": upstream_sha,
+        "origin_main_sha": origin_main_sha,
+    }
+
+
 def _create_harness_package(
     *,
     target_dir: Path,
@@ -64,24 +121,29 @@ def _create_harness_package(
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     if not worklog_path.exists():
         worklog_path.write_text("\n".join(worklog_lines).rstrip() + "\n", encoding="utf-8")
-    if not final_report_path.exists():
-        final_report_path.write_text(
-            json.dumps(
-                {
-                    "task_id": manifest["task_id"],
-                    "lane_id": manifest["lane_id"],
-                    "role": manifest["role"],
-                    "status": "pending",
-                    "code_paths": [],
-                    "artifacts": [],
-                    "validation": [],
-                },
-                ensure_ascii=False,
-                indent=2,
-            )
-            + "\n",
-            encoding="utf-8",
-        )
+    default_final_report = {
+        "task_id": manifest["task_id"],
+        "lane_id": manifest["lane_id"],
+        "role": manifest["role"],
+        "status": "pending",
+        "git_ref_snapshot": manifest["git_ref_snapshot"],
+        "code_paths": [],
+        "artifacts": [],
+        "validation": [],
+    }
+    if final_report_path.exists():
+        try:
+            existing_payload = json.loads(final_report_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            existing_payload = {}
+        if not isinstance(existing_payload, dict):
+            existing_payload = {}
+        default_final_report.update(existing_payload)
+        default_final_report["git_ref_snapshot"] = manifest["git_ref_snapshot"]
+    final_report_path.write_text(
+        json.dumps(default_final_report, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
     return manifest_path, worklog_path, final_report_path
 
 
@@ -126,6 +188,7 @@ def main() -> int:
         "write_scope": args.write_scope,
         "target_outputs": _parse_list(args.output),
         "validation_commands": _parse_list(args.validate),
+        "git_ref_snapshot": _git_ref_snapshot(repo_root),
         "status": "prepared",
     }
     manifest_path, worklog_path, final_report_path = _create_harness_package(
@@ -159,6 +222,7 @@ def main() -> int:
             "write_scope": "reserved-by-main",
             "target_outputs": [],
             "validation_commands": [],
+            "git_ref_snapshot": manifest["git_ref_snapshot"],
             "status": "reserved",
             "reserved_by_lane": args.lane_id,
         }

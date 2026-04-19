@@ -4,6 +4,7 @@ import time
 
 from .intake_overlay import (
     filter_customer_pack_hits_by_selection,
+    has_active_customer_pack_selection,
     load_selected_customer_pack_private_bm25_index,
     _runtime_eligible_selected_draft_ids,
     search_selected_customer_pack_private_vectors,
@@ -78,7 +79,11 @@ def search_bm25_candidates(
         retriever.settings,
         context=context,
     )
-    overlay_index = private_index or retriever.customer_pack_overlay_index()
+    overlay_index = None
+    if private_index is not None:
+        overlay_index = private_index
+    elif has_active_customer_pack_selection(context):
+        overlay_index = retriever.customer_pack_overlay_index()
     eligible_selected = _runtime_eligible_selected_draft_ids(retriever.settings, context)
     if overlay_index is not None:
         overlay_hit_sets = [

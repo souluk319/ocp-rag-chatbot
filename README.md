@@ -56,8 +56,7 @@ PBS 기본 주소는 `8765` 입니다.
 powershell -ExecutionPolicy Bypass -File scripts\pbs-up.ps1
 ```
 
-- 같은 PC에서 확인: `http://127.0.0.1:8765`
-- 같은 LAN의 다른 PC에서 확인: `http://<내-PC-LAN-IP>:8765`
+- 테스트 서버: `http://127.0.0.1:8765`
 
 `scripts\pbs-up.ps1` 는 아래를 한 번에 처리합니다.
 

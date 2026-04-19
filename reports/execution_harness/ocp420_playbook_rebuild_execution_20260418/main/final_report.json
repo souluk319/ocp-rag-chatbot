@@ -1,0 +1,57 @@
+{
+  "task_id": "ocp420_playbook_rebuild_execution_20260418",
+  "lane_id": "main",
+  "role": "main",
+  "status": "completed",
+  "git_ref_snapshot": {
+    "head_ref": "feat/playbook-studio-pt",
+    "head_sha": "6bcb8703c2332ce0c7066e402fcfc9a0046fcd11",
+    "upstream_ref": "origin/feat/playbook-studio-pt",
+    "upstream_sha": "6bcb8703c2332ce0c7066e402fcfc9a0046fcd11",
+    "origin_main_sha": "e87fa0c562c5e277305617e1eea36c112aa01b27"
+  },
+  "ref_basis": {
+    "shell": "powershell",
+    "current_branch_tree_matches_origin_main_before_packet": true,
+    "report_basis": "HEAD 6bcb8703c2332ce0c7066e402fcfc9a0046fcd11 vs origin/main e87fa0c562c5e277305617e1eea36c112aa01b27, then packet changes applied locally"
+  },
+  "current_judgment": "Clean official repo-first rebuild is execution-complete on the current packet. Remaining work is Playbook qualification hardening, not rebuild-unblocking cleanup.",
+  "key_evidence": [
+    "reports/build_logs/ocp420_one_click_runtime_report.json status ok",
+    "manifests/ocp420_source_first_full_rebuild_manifest.json source_first_count 29 and blocked_fallback_count 0",
+    "reports/build_logs/ocp420_full_rebuild_materialization_report.json candidate_count 29, runtime_count 29, generation_modes.repo_source_binding 29",
+    "data/wiki_runtime_books/active_manifest.json active_group full_rebuild with 29 runtime entries",
+    "Direct active wiki runtime viewer GET now resolves through server route dispatch and smoke succeeds"
+  ],
+  "code_paths": [
+    "EXECUTION_HARNESS_CONTRACT.md",
+    "scripts/materialize_ocp420_full_rebuild_books.py",
+    "scripts/prepare_execution_harness.py",
+    "src/play_book_studio/app/server.py",
+    "src/play_book_studio/app/server_routes.py"
+  ],
+  "artifacts": [
+    "reports/build_logs/ocp420_one_click_runtime_report.json",
+    "reports/build_logs/ocp420_full_rebuild_manifest_report.json",
+    "reports/build_logs/official_rebuild_quarantine_report.json",
+    "reports/build_logs/ocp420_full_rebuild_materialization_report.json",
+    "data/wiki_runtime_books/active_manifest.json",
+    "reports/execution_harness/ocp420_playbook_rebuild_execution_20260418/main/manifest.json",
+    "reports/execution_harness/ocp420_playbook_rebuild_execution_20260418/main/final_report.json"
+  ],
+  "validation": [
+    {
+      "command": ".\\.venv\\Scripts\\python.exe -m py_compile scripts\\materialize_ocp420_full_rebuild_books.py scripts\\prepare_execution_harness.py",
+      "status": "passed"
+    },
+    {
+      "command": ".\\.venv\\Scripts\\python.exe -m py_compile src\\play_book_studio\\app\\server.py src\\play_book_studio\\app\\server_routes.py",
+      "status": "passed"
+    },
+    {
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\codex_python.ps1 scripts\\run_ocp420_one_click_runtime.py \"reports/build_logs/ocp420_one_click_runtime_report.json\" \"one-click runtime report exists\"",
+      "status": "passed"
+    }
+  ],
+  "next_action": "Move from rebuild cleanup to Playbook qualification audit: AsciiDoc provenance surfacing, Red Hat single/multi/PDF benchmark comparison, and chatbot interaction quality hardening."
+}

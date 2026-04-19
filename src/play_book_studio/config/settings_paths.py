@@ -10,24 +10,15 @@ from .packs import GLOBAL_SOURCE_CATALOG_NAME
 
 class SettingsPathMixin:
     def __post_init__(self) -> None:
-        self.manifest_dir.mkdir(parents=True, exist_ok=True)
-        self.data_dir.mkdir(parents=True, exist_ok=True)
-        self.bronze_dir.mkdir(parents=True, exist_ok=True)
-        self.silver_dir.mkdir(parents=True, exist_ok=True)
-        self.silver_ko_dir.mkdir(parents=True, exist_ok=True)
-        self.gold_corpus_ko_dir.mkdir(parents=True, exist_ok=True)
-        self.gold_manualbook_ko_dir.mkdir(parents=True, exist_ok=True)
-        self.corpus_dir.mkdir(parents=True, exist_ok=True)
-        self.retrieval_dir.mkdir(parents=True, exist_ok=True)
-        self.answering_dir.mkdir(parents=True, exist_ok=True)
-        self.runtime_dir.mkdir(parents=True, exist_ok=True)
-        self.runtime_sessions_dir.mkdir(parents=True, exist_ok=True)
-        self.customer_pack_drafts_dir.mkdir(parents=True, exist_ok=True)
-        self.customer_pack_capture_dir.mkdir(parents=True, exist_ok=True)
-        self.customer_pack_books_dir.mkdir(parents=True, exist_ok=True)
-        self.customer_pack_corpus_dir.mkdir(parents=True, exist_ok=True)
-        self.playbook_books_dir.mkdir(parents=True, exist_ok=True)
-        self.raw_html_dir.mkdir(parents=True, exist_ok=True)
+        # Only bootstrap stable roots. Legacy and lane-specific directories are
+        # materialized on demand by the code paths that actually write to them.
+        for path in (
+            self.manifest_dir,
+            self.data_dir,
+            self.bronze_dir,
+            self.artifacts_dir,
+        ):
+            path.mkdir(parents=True, exist_ok=True)
 
     def _resolve_optional_dir(self, value: str, default: Path) -> Path:
         if not value:
@@ -49,6 +40,18 @@ class SettingsPathMixin:
 
     def _artifact_scope_dir(self, preferred_name: str) -> Path:
         return self.artifacts_dir / preferred_name
+
+    def _prefer_existing_file(self, *paths: Path) -> Path:
+        for path in paths:
+            if path.exists() and path.is_file():
+                return path.resolve()
+        return paths[0].resolve()
+
+    def _prefer_nonempty_dir(self, *paths: Path) -> Path:
+        for path in paths:
+            if path.exists() and path.is_dir() and any(path.iterdir()):
+                return path.resolve()
+        return paths[0].resolve()
 
     def _unique_paths(self, *paths: Path) -> tuple[Path, ...]:
         unique: list[Path] = []
@@ -162,32 +165,95 @@ class SettingsPathMixin:
         return self.customer_packs_dir / "corpus"
 
     @property
+    def official_lane_repo_wide_dir(self) -> Path:
+        return self.artifacts_dir / "official_lane" / "repo_wide_official_source"
+
+    @property
     def normalized_docs_path(self) -> Path:
-        return self.silver_dir / "normalized_docs.jsonl"
+        return self._prefer_existing_file(
+            self.official_lane_repo_wide_dir / "normalized_docs.jsonl",
+            self.silver_dir / "normalized_docs.jsonl",
+        )
 
     @property
     def normalized_docs_candidates(self) -> tuple[Path, ...]:
-        return (self.normalized_docs_path.resolve(),)
+        return self._unique_paths(
+            self.normalized_docs_path,
+            self.silver_dir / "normalized_docs.jsonl",
+            self.official_lane_repo_wide_dir / "normalized_docs.jsonl",
+        )
+
+    @property
+    def retrieval_normalized_docs_path(self) -> Path:
+        return self._prefer_existing_file(
+            self.silver_dir / "normalized_docs.jsonl",
+            self.official_lane_repo_wide_dir / "normalized_docs.jsonl",
+        )
+
+    @property
+    def retrieval_normalized_docs_candidates(self) -> tuple[Path, ...]:
+        return self._unique_paths(
+            self.retrieval_normalized_docs_path,
+            self.silver_dir / "normalized_docs.jsonl",
+            self.official_lane_repo_wide_dir / "normalized_docs.jsonl",
+        )
 
     @property
     def chunks_path(self) -> Path:
-        return self.gold_corpus_ko_dir / "chunks.jsonl"
+        return self._prefer_existing_file(
+            self.official_lane_repo_wide_dir / "chunks.jsonl",
+            self.gold_corpus_ko_dir / "chunks.jsonl",
+        )
 
     @property
     def bm25_corpus_path(self) -> Path:
-        return self.gold_corpus_ko_dir / "bm25_corpus.jsonl"
+        return self._prefer_existing_file(
+            self.official_lane_repo_wide_dir / "bm25_corpus.jsonl",
+            self.gold_corpus_ko_dir / "bm25_corpus.jsonl",
+        )
+
+    @property
+    def retrieval_chunks_path(self) -> Path:
+        return self._prefer_existing_file(
+            self.gold_corpus_ko_dir / "chunks.jsonl",
+            self.official_lane_repo_wide_dir / "chunks.jsonl",
+        )
+
+    @property
+    def retrieval_bm25_corpus_path(self) -> Path:
+        return self._prefer_existing_file(
+            self.gold_corpus_ko_dir / "bm25_corpus.jsonl",
+            self.official_lane_repo_wide_dir / "bm25_corpus.jsonl",
+        )
 
     @property
     def playbook_documents_path(self) -> Path:
-        return self.gold_manualbook_ko_dir / "playbook_documents.jsonl"
+        return self._prefer_existing_file(
+            self.official_lane_repo_wide_dir / "playbook_documents.jsonl",
+            self.gold_manualbook_ko_dir / "playbook_documents.jsonl",
+        )
+
+    @property
+    def retrieval_playbook_documents_path(self) -> Path:
+        return self._prefer_existing_file(
+            self.gold_manualbook_ko_dir / "playbook_documents.jsonl",
+            self.official_lane_repo_wide_dir / "playbook_documents.jsonl",
+        )
 
     @property
     def playbook_books_dir(self) -> Path:
-        return self.gold_manualbook_ko_dir / "playbooks"
+        return self._prefer_nonempty_dir(
+            self.official_lane_repo_wide_dir / "playbooks",
+            self.gold_manualbook_ko_dir / "playbooks",
+        )
 
     @property
     def playbook_book_dirs(self) -> tuple[Path, ...]:
-        return (self.playbook_books_dir.resolve(),)
+        return self._unique_paths(
+            self.playbook_books_dir,
+            self.gold_manualbook_ko_dir / "playbooks",
+            self.official_lane_repo_wide_dir / "playbooks",
+        )
 
     @property
     def preprocessing_log_path(self) -> Path:

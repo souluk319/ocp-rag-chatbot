@@ -122,6 +122,97 @@ def _procedure_chunk_priority(hit: RetrievalHit) -> int:
     return 3
 
 
+def _session_mentions_mco(session_context: SessionContext | None) -> bool:
+    if session_context is None:
+        return False
+    haystack = " ".join(
+        [
+            session_context.current_topic or "",
+            *session_context.open_entities,
+            session_context.user_goal or "",
+            session_context.unresolved_question or "",
+        ]
+    ).lower()
+    return any(
+        token in haystack
+        for token in (
+            "machine config operator",
+            "machine configuration",
+            "mco",
+            "머신 구성 오퍼레이터",
+            "머신 컨피그 오퍼레이터",
+        )
+    )
+
+
+def _session_mentions_rbac(session_context: SessionContext | None) -> bool:
+    if session_context is None:
+        return False
+    haystack = " ".join(
+        [
+            session_context.current_topic or "",
+            *session_context.open_entities,
+            session_context.user_goal or "",
+            session_context.unresolved_question or "",
+        ]
+    ).lower()
+    return any(
+        token in haystack
+        for token in (
+            "rbac",
+            "권한",
+            "authorization",
+            "cluster-admin",
+            "clusterrole",
+            "rolebinding",
+        )
+    )
+
+
+def _mco_signal(hit: RetrievalHit) -> bool:
+    lowered_section = (hit.section or "").lower()
+    lowered_anchor = (hit.anchor or "").lower()
+    lowered_text = (hit.text or "").lower()
+    return (
+        hit.book_slug in {"machine_configuration", "operators", "machine_management"}
+        or "machine config operator" in lowered_section
+        or "machine config operator" in lowered_text
+        or "machine config pool" in lowered_section
+        or "machine config pool" in lowered_text
+        or "machineconfigpool" in lowered_section
+        or "machineconfigpool" in lowered_text
+        or lowered_anchor.startswith("about-mco")
+        or lowered_anchor.endswith("mco")
+    )
+
+
+def _rbac_signal(hit: RetrievalHit) -> bool:
+    lowered_section = (hit.section or "").lower()
+    lowered_anchor = (hit.anchor or "").lower()
+    lowered_text = (hit.text or "").lower()
+    haystack = " ".join((lowered_section, lowered_anchor, lowered_text))
+    return (
+        hit.book_slug in {"authentication_and_authorization", "cli_tools"}
+        or (
+            hit.book_slug == "postinstallation_configuration"
+            and any(
+                token in haystack
+                for token in (
+                    "rbac",
+                    "authorization",
+                    "rolebinding",
+                    "role binding",
+                    "clusterrole",
+                    "cluster-admin",
+                    "selfsubjectaccessreview",
+                    "selfsubjectrulesreview",
+                    "oc auth can-i",
+                )
+            )
+        )
+    )
+
+
 def _is_troubleshooting_doc_locator_query(query: str) -> bool:
     normalized = (query or "").lower()
     if not has_doc_locator_intent(normalized):
@@ -466,6 +557,18 @@ def _select_hits(
         return []
 
     normalized = query or ""
+    allow_uploaded_hits = (
+        _is_customer_pack_explicit_query(normalized)
+        or has_active_customer_pack_selection(session_context)
+    )
+    if not allow_uploaded_hits:
+        ranked_hits = [
+            hit
+            for hit in ranked_hits
+            if str(hit.source_collection or "").strip() != "uploaded"
+        ]
+        if not ranked_hits:
+            return []
     is_concept_query = any(
         [
             has_openshift_kubernetes_compare_intent(normalized),
@@ -654,13 +757,18 @@ def _select_hits(
         support_window = ranked_hits[: max(max_chunks * 2, 8)]
         top_score = _hit_score(support_window[0])
         top_book = support_window[0].book_slug
-    elif has_mco_concept_intent(normalized):
+    elif has_mco_concept_intent(normalized) or (
+        _session_mentions_mco(session_context)
+        and any(_mco_signal(hit) for hit in ranked_hits[:8])
+    ):
         preferred_order = {
             "machine_configuration": 0,
-            "architecture": 1,
-            "overview": 2,
-            "machine_management": 3,
-            "operators": 4,
+            "operators": 1,
+            "machine_management": 2,
+            "architecture": 3,
+            "overview": 4,
+            "postinstallation_configuration": 5,
+            "updating_clusters": 6,
         }
         ranked_hits = sorted(
             ranked_hits,
@@ -674,7 +782,10 @@ def _select_hits(
         support_window = ranked_hits[: max(max_chunks * 2, 6)]
         top_score = _hit_score(support_window[0])
         top_book = support_window[0].book_slug
-    elif has_rbac_intent(normalized):
+    elif has_rbac_intent(normalized) or (
+        _session_mentions_rbac(session_context)
+        and any(_rbac_signal(hit) for hit in ranked_hits[:8])
+    ):
         preferred_order = {
             "authentication_and_authorization": 0,
             "cli_tools": 1,
@@ -936,11 +1047,41 @@ def _select_hits(
         for book_slug in ("support", "validation_and_troubleshooting", "building_applications", "nodes"):
             if best_book_scores.get(book_slug, 0.0) >= top_score * 0.55:
                 allowed_books.add(book_slug)
-    if has_mco_concept_intent(normalized):
-        for book_slug in ("machine_configuration", "architecture", "overview", "machine_management", "operators"):
-            if best_book_scores.get(book_slug, 0.0) >= top_score * 0.62:
-                allowed_books.add(book_slug)
-    if has_rbac_intent(normalized):
+    if has_mco_concept_intent(normalized) or (
+        _session_mentions_mco(session_context)
+        and any(_mco_signal(hit) for hit in ranked_hits[:8])
+    ):
+        preferred_mco_books = tuple(
+            book_slug
+            for book_slug in (
+                "machine_configuration",
+                "operators",
+                "machine_management",
+                "architecture",
+                "overview",
+                "postinstallation_configuration",
+                "updating_clusters",
+            )
+            if best_book_scores.get(book_slug, 0.0) > 0.0
+        )
+        if preferred_mco_books:
+            allowed_books.update(preferred_mco_books)
+        else:
+            for book_slug in (
+                "machine_configuration",
+                "operators",
+                "machine_management",
+                "architecture",
+                "overview",
+                "postinstallation_configuration",
+                "updating_clusters",
+            ):
+                if best_book_scores.get(book_slug, 0.0) >= top_score * 0.62:
+                    allowed_books.add(book_slug)
+    if has_rbac_intent(normalized) or (
+        _session_mentions_rbac(session_context)
+        and any(_rbac_signal(hit) for hit in ranked_hits[:8])
+    ):
         for book_slug in ("authentication_and_authorization", "cli_tools", "postinstallation_configuration"):
             if best_book_scores.get(book_slug, 0.0) >= top_score * 0.58:
                 allowed_books.add(book_slug)
@@ -1007,13 +1148,7 @@ def _select_hits(
         for hit in ranked_hits
         if str(hit.source_collection or "").strip() == "uploaded"
     ]
-    uploaded_explicit = _is_customer_pack_explicit_query(normalized)
-    top_uploaded_score = max((_hit_score(hit) for hit in uploaded_hits), default=0.0)
-    should_seed_uploaded = bool(uploaded_hits) and (
-        uploaded_explicit
-        or has_active_customer_pack_selection(session_context)
-        or (top_score > 0 and top_uploaded_score >= top_score * (0.82 if is_procedure_query else 0.9))
-    )
+    should_seed_uploaded = bool(uploaded_hits) and allow_uploaded_hits
 
     if should_seed_uploaded:
         for hit in sorted(

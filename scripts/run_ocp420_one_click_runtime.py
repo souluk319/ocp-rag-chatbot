@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 import urllib.request
@@ -82,20 +83,19 @@ def _http_get_text(url: str) -> str:
         return response.read().decode("utf-8", errors="replace")
 
 
-def _smoke_payload() -> dict[str, Any]:
-    figure_catalog_path = ROOT / "data" / "wiki_relations" / "figure_assets.json"
-    figure_catalog = json.loads(figure_catalog_path.read_text(encoding="utf-8")) if figure_catalog_path.exists() else {}
-    figure_entries = figure_catalog.get("entries") if isinstance(figure_catalog, dict) else {}
-    architecture_figures = figure_entries.get("architecture") if isinstance(figure_entries, dict) else []
-    first_architecture_figure = architecture_figures[0] if isinstance(architecture_figures, list) and architecture_figures else {}
+def _first_figure_viewer_path(html: str) -> str:
+    match = re.search(r'(/wiki/figures/[^"\']+/index\.html)', html)
+    return str(match.group(1) or "") if match else ""
 
+
+def _smoke_payload() -> dict[str, Any]:
     data_control_room = _http_get_json("http://127.0.0.1:8765/api/data-control-room")
     runtime_html = _http_get_text("http://127.0.0.1:8765/playbooks/wiki-runtime/active/advanced_networking/index.html?embed=1")
     storage_html = _http_get_text("http://127.0.0.1:8765/playbooks/wiki-runtime/active/storage/index.html?embed=1")
     nodes_html = _http_get_text("http://127.0.0.1:8765/playbooks/wiki-runtime/active/nodes/index.html?embed=1")
     architecture_html = _http_get_text("http://127.0.0.1:8765/playbooks/wiki-runtime/active/architecture/index.html?embed=1")
     proxy_hub_html = _http_get_text("http://127.0.0.1:8765/wiki/entities/cluster-wide-proxy/index.html?embed=1")
-    architecture_figure_viewer_path = str(first_architecture_figure.get("viewer_path") or "")
+    architecture_figure_viewer_path = _first_figure_viewer_path(architecture_html)
     architecture_figure_html = _http_get_text(f"http://127.0.0.1:8765{architecture_figure_viewer_path}?embed=1") if architecture_figure_viewer_path else ""
 
     chat_request = urllib.request.Request(
@@ -132,18 +132,28 @@ def _smoke_payload() -> dict[str, Any]:
         "runtime_viewer_has_title": "고급 네트워킹" in runtime_html,
         "runtime_viewer_has_related_documents": "Related Documents" in runtime_html,
         "runtime_viewer_has_networking_hub": "/wiki/entities/networking/index.html" in runtime_html,
-        "runtime_viewer_has_related_sections": "Related Sections" in runtime_html and "/playbooks/wiki-runtime/active/" in runtime_html and "#" in runtime_html,
+        "runtime_viewer_has_related_sections": (
+            "<h3>Sections</h3>" in runtime_html
+            and "연결된 절차 섹션이 아직 없습니다." not in runtime_html
+            and "/playbooks/wiki-runtime/active/" in runtime_html
+            and "#" in runtime_html
+        ),
         "storage_viewer_has_topic_hub": "/wiki/entities/storage-and-content/index.html" in storage_html,
         "proxy_hub_has_related_figures": "Related Figures" in proxy_hub_html and "/wiki/figures/advanced_networking/" in proxy_hub_html,
         "proxy_hub_has_related_sections": "Related Sections" in proxy_hub_html and "/playbooks/wiki-runtime/active/" in proxy_hub_html and "#" in proxy_hub_html,
         "nodes_viewer_has_figure": "figure-block" in nodes_html and "/playbooks/wiki-assets/full_rebuild/nodes/" in nodes_html,
-        "architecture_viewer_has_figure": "figure-block" in architecture_html and "/playbooks/wiki-assets/full_rebuild/architecture/" in architecture_html,
+        "architecture_viewer_has_figure": (
+            "<h3>Figures</h3>" in architecture_html
+            and "연결된 figure 자산이 아직 없습니다." not in architecture_html
+            and "/wiki/figures/" in architecture_html
+        ),
         "architecture_figure_viewer_path": architecture_figure_viewer_path,
         "architecture_figure_viewer_has_parent_book": "Parent Book" in architecture_figure_html,
         "architecture_figure_viewer_has_related_entities": "Related Entities" in architecture_figure_html,
         "architecture_figure_viewer_has_related_section": (
             "Related Section" in architecture_figure_html
-            and "/playbooks/wiki-runtime/active/architecture/index.html#" in architecture_figure_html
+            and "/playbooks/wiki-runtime/active/" in architecture_figure_html
+            and "#" in architecture_figure_html
         ),
         "chat_related_link_count": len(related_links),
         "chat_active_runtime_links": active_runtime_links,

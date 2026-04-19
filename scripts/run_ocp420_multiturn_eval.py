@@ -8,7 +8,7 @@ import uuid
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 from urllib import request
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +17,24 @@ DEFAULT_MANIFEST = ROOT / "manifests" / "ocp420_multiturn_live_scenarios.jsonl"
 DEFAULT_OUTPUT = ROOT / "reports" / "multiturn" / "ocp420_multiturn_live_eval.json"
 DEFAULT_API_BASE = "http://127.0.0.1:8765"
 SECTION_PREFIX_RE = re.compile(r"^\s*[0-9]+(?:\.[0-9]+)*\.?\s*")
+LEGACY_BOOK_FAMILY_PREFIXES: dict[str, tuple[str, ...]] = {
+    "architecture": ("architecture__",),
+    "authentication_and_authorization": ("authentication__",),
+    "backup_and_restore": ("backup_and_restore__",),
+    "cli_tools": ("cli_reference__",),
+    "etcd": ("etcd__",),
+    "images": ("openshift_images__", "disconnected__installing_mirroring_installation_images"),
+    "machine_config_operations": ("machine_configuration__",),
+    "machine_config_rollout_operations": ("machine_configuration__",),
+    "machine_configuration": ("machine_configuration__",),
+    "operators": ("operators__",),
+    "overview": ("welcome__",),
+    "postinstallation_configuration": (
+        "post_installation_configuration__",
+        "installing__installing_bare_metal__bare_metal_postinstallation_configuration",
+    ),
+    "route_and_ingress": ("networking__ingress_load_balancing__",),
+}
 
 
 def _load_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -66,6 +84,54 @@ def _ordered_unique(items: list[str]) -> list[str]:
         seen.add(value)
         ordered.append(value)
     return ordered
+
+
+def _family_prefixes_for_expected_slug(expected_slug: str) -> tuple[str, ...]:
+    slug = str(expected_slug or "").strip()
+    if not slug:
+        return ()
+    prefixes = list(LEGACY_BOOK_FAMILY_PREFIXES.get(slug, ()))
+    prefixes.append(f"{slug}__")
+    return tuple(_ordered_unique(prefixes))
+
+
+def _match_expected_key(
+    actual_book_slug: str,
+    *,
+    expected_book_slugs: list[str],
+    expected_book_families: list[str],
+) -> str:
+    actual = str(actual_book_slug or "").strip()
+    if not actual:
+        return ""
+    for expected_slug in expected_book_slugs:
+        if actual == expected_slug:
+            return expected_slug
+    for expected_slug in expected_book_slugs:
+        for prefix in _family_prefixes_for_expected_slug(expected_slug):
+            if actual.startswith(prefix):
+                return expected_slug
+    for family_prefix in expected_book_families:
+        family = str(family_prefix or "").strip()
+        if family and actual.startswith(family):
+            return family
+    return actual
+
+
+def _normalize_book_list(
+    book_slugs: Iterable[str],
+    *,
+    expected_book_slugs: list[str],
+    expected_book_families: list[str],
+) -> list[str]:
+    return _ordered_unique(
+        _match_expected_key(
+            str(book_slug),
+            expected_book_slugs=expected_book_slugs,
+            expected_book_families=expected_book_families,
+        )
+        for book_slug in book_slugs
+    )
 
 
 def _retrieved_books(payload: dict[str, Any]) -> list[str]:
@@ -143,17 +209,29 @@ def run_eval(
                 {"session_id": session_id, "query": str(turn["query"])},
                 timeout=timeout,
             )
-            expected_books = [str(item) for item in turn.get("expected_book_slugs", [])]
-            cited_books = _ordered_unique(
+            expected_books = _ordered_unique(turn.get("expected_book_slugs", []))
+            expected_families = _ordered_unique(turn.get("expected_book_families", []))
+            expected_match_keys = _ordered_unique(expected_books + expected_families)
+            raw_cited_books = _ordered_unique(
                 [str(item.get("book_slug") or "") for item in payload.get("citations", []) if isinstance(item, dict)]
             )
-            retrieved_books = _retrieved_books(payload)
+            cited_books = _normalize_book_list(
+                raw_cited_books,
+                expected_book_slugs=expected_books,
+                expected_book_families=expected_families,
+            )
+            raw_retrieved_books = _retrieved_books(payload)
+            retrieved_books = _normalize_book_list(
+                raw_retrieved_books,
+                expected_book_slugs=expected_books,
+                expected_book_families=expected_families,
+            )
             response_kind = str(payload.get("response_kind") or "")
             current_topic = str((payload.get("context") or {}).get("current_topic") or "")
             topic_pass = _topic_matches(current_topic, str(turn.get("expected_topic") or ""))
             citation_required = bool(turn.get("citation_required", False))
-            citation_pass = (not citation_required) or any(book in expected_books for book in cited_books)
-            corpus_target_pass = any(book in expected_books for book in retrieved_books)
+            citation_pass = (not citation_required) or any(book in expected_match_keys for book in cited_books)
+            corpus_target_pass = any(book in expected_match_keys for book in retrieved_books)
             previous_context_required = bool(turn.get("previous_turn_context_required", False))
             context_pass = (not previous_context_required) or topic_pass
             format_pass = response_kind == "rag" and _has_inline_citation(payload)
@@ -186,6 +264,7 @@ def run_eval(
                 "expected_topic": str(turn["expected_topic"]),
                 "expected_book_slug": str(turn.get("expected_book_slug") or ""),
                 "expected_book_slugs": expected_books,
+                "expected_book_families": expected_families,
                 "corpus_target": str(turn.get("corpus_target") or ""),
                 "citation_required": citation_required,
                 "previous_turn_context_required": previous_context_required,
@@ -201,7 +280,9 @@ def run_eval(
                 "failure_bucket": failure_bucket,
                 "warnings": list(payload.get("warnings") or []),
                 "cited_books": cited_books,
+                "cited_books_raw": raw_cited_books,
                 "retrieved_books": retrieved_books[:10],
+                "retrieved_books_raw": raw_retrieved_books[:10],
                 "answer_preview": str(payload.get("answer") or "")[:320],
             }
             turn_results.append(result)

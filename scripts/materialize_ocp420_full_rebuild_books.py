@@ -18,6 +18,7 @@ from play_book_studio.ingestion.official_rebuild import (
     primary_heading_from_path,
     render_bound_markdown,
 )
+from play_book_studio.source_provenance import source_provenance_payload
 
 
 def _utc_now() -> str:
@@ -353,82 +354,6 @@ def _place_figures_inline(
     }, visible_figures
 
 
-def _render_block(block: dict[str, Any]) -> list[str]:
-    kind = str(block.get("kind") or "").strip()
-    if kind == "paragraph":
-        text = str(block.get("text") or "").strip()
-        return [text] if text else []
-    if kind == "code":
-        code = str(block.get("code") or "").rstrip()
-        if not code:
-            return []
-        language = str(block.get("language") or "text").strip() or "text"
-        return [f"```{language}\n{code}\n```"]
-    if kind == "prerequisite":
-        items = [str(item).strip() for item in (block.get("items") or []) if str(item).strip()]
-        return ["\n".join(f"- {item}" for item in items)] if items else []
-    if kind == "procedure":
-        lines: list[str] = []
-        for index, step in enumerate(block.get("steps") or [], start=1):
-            text = str(step.get("text") or "").strip()
-            if text:
-                lines.append(f"{index}. {text}")
-            for substep in (step.get("substeps") or []):
-                normalized = str(substep).strip()
-                if normalized:
-                    lines.append(f"   - {normalized}")
-        return ["\n".join(lines)] if lines else []
-    if kind == "note":
-        title = str(block.get("title") or "참고").strip() or "참고"
-        text = str(block.get("text") or "").strip()
-        return [f"> **{title}**\n> {text}"] if text else []
-    if kind == "table":
-        headers = [str(item).strip() for item in (block.get("headers") or []) if str(item).strip()]
-        rows = [[str(cell).strip() for cell in row] for row in (block.get("rows") or [])]
-        rendered: list[str] = []
-        if headers:
-            rendered.append("| " + " | ".join(headers) + " |")
-            rendered.append("| " + " | ".join("---" for _ in headers) + " |")
-        for row in rows:
-            rendered.append("| " + " | ".join(row) + " |")
-        return ["\n".join(rendered)] if rendered else []
-    if kind == "list":
-        items = [str(item).strip() for item in (block.get("items") or []) if str(item).strip()]
-        return ["\n".join(f"- {item}" for item in items)] if items else []
-    return []
-
-
-def _generic_markdown_from_playbook(payload: dict[str, Any], *, title_override: str = "") -> str:
-    title = str(title_override or payload.get("title") or payload.get("book_slug") or "Untitled").strip()
-    sections = payload.get("sections") if isinstance(payload.get("sections"), list) else []
-    parts: list[str] = [f"# {title}"]
-    seen_headings: set[str] = set()
-    for section in sections:
-        if not isinstance(section, dict):
-            continue
-        heading = _clean_heading(section.get("heading") or "")
-        if not heading:
-            continue
-        level = int(section.get("level") or 2)
-        level = max(2, min(level, 4))
-        normalized_key = f"{level}:{heading}"
-        if normalized_key in seen_headings:
-            continue
-        seen_headings.add(normalized_key)
-        parts.append("")
-        parts.append(f"{'#' * level} {heading}")
-        blocks = section.get("blocks") if isinstance(section.get("blocks"), list) else []
-        rendered_blocks: list[str] = []
-        for block in blocks:
-            if not isinstance(block, dict):
-                continue
-            rendered_blocks.extend(_render_block(block))
-        if rendered_blocks:
-            parts.append("")
-            parts.append("\n\n".join(item for item in rendered_blocks if item.strip()))
-    return "\n".join(parts).strip() + "\n"
-
-
 def _catalog_markdown(title: str, generated_at: str, entries: list[dict[str, str]], kind_key: str) -> str:
     lines = [
         f"# {title}",
@@ -606,19 +531,44 @@ def main() -> int:
                 "source_kind": source_kind,
                 "source_binding_kind": source_binding_kind,
                 "source_lane": str(entry.get("source_lane") or ""),
+                "source_ref": str(source_provenance_payload(entry).get("source_ref") or ""),
+                "source_fingerprint": str(source_provenance_payload(entry).get("source_fingerprint") or ""),
+                "source_repo": str(entry.get("source_repo") or ""),
+                "source_branch": str(entry.get("source_branch") or ""),
+                "source_relative_path": str(entry.get("source_relative_path") or ""),
+                "source_relative_paths": list(source_provenance_payload(entry).get("source_relative_paths") or []),
+                "fallback_source_url": str(entry.get("fallback_source_url") or ""),
+                "fallback_viewer_path": str(entry.get("fallback_viewer_path") or ""),
                 "source_manifest_path": str(_manifest_path().resolve()),
                 "promoted_path": str(candidate_path.resolve()),
                 "source_trial_path": str(candidate_path.resolve()),
                 "promotion_strategy": promotion_strategy,
+                "parser_route": "source_first_repo_binding",
+                "parser_backend": "render_bound_markdown",
+                "updated_at": generated_at,
             }
         )
         runtime_entries.append(
             {
                 "slug": slug,
                 "title": title,
+                "source_lane": str(entry.get("source_lane") or ""),
+                "source_ref": str(source_provenance_payload(entry).get("source_ref") or ""),
+                "source_fingerprint": str(source_provenance_payload(entry).get("source_fingerprint") or ""),
+                "source_repo": str(entry.get("source_repo") or ""),
+                "source_branch": str(entry.get("source_branch") or ""),
+                "source_binding_kind": source_binding_kind,
+                "source_relative_path": str(entry.get("source_relative_path") or ""),
+                "source_relative_paths": list(source_provenance_payload(entry).get("source_relative_paths") or []),
+                "fallback_source_url": str(entry.get("fallback_source_url") or ""),
+                "fallback_viewer_path": str(entry.get("fallback_viewer_path") or ""),
                 "source_candidate_path": str(candidate_path.resolve()),
                 "runtime_path": str(runtime_path.resolve()),
                 "promotion_strategy": promotion_strategy,
+                "source_manifest_path": str(_manifest_path().resolve()),
+                "parser_route": "source_first_repo_binding",
+                "parser_backend": "render_bound_markdown",
+                "updated_at": generated_at,
             }
         )
 
@@ -632,6 +582,8 @@ def main() -> int:
         "generated_at_utc": generated_at,
         "runtime_count": len(runtime_entries),
         "promotion_group": "full_rebuild_wiki_runtime",
+        "source_strategy": str(manifest.get("source_strategy") or ""),
+        "source_manifest_path": str(_manifest_path().resolve()),
         "entries": runtime_entries,
     }
 

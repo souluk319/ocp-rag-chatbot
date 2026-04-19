@@ -1,11 +1,6 @@
-"""HTTP 서버가 공통으로 쓰는 presentation helper.
-
-런타임/내부 객체를 UI가 소비할 payload로 바꾸고, runtime fingerprint 및
-health snapshot 생성도 담당한다.
-"""
+"""HTTP 서버가 공통으로 쓰는 presentation helper."""
 
 import html
-import hashlib
 import json
 import re
 from functools import lru_cache
@@ -17,28 +12,23 @@ from play_book_studio.intake.service import evaluate_canonical_book_quality
 from play_book_studio.config.packs import default_core_pack, resolve_ocp_core_pack
 from play_book_studio.config.settings import Settings, load_settings
 from play_book_studio.config.validation import read_jsonl
-from play_book_studio.ingestion.graph_sidecar import graph_sidecar_compact_artifact_status
 from play_book_studio.runtime_catalog_registry import official_runtime_book_entry
-from play_book_studio.answering.answerer import ChatAnswerer
 from play_book_studio.answering.models import Citation
 from play_book_studio.app.viewers import _parse_viewer_path
-from .viewer_blocks import _clean_source_view_text
-
-
-HEADING_NUMBER_PREFIX_RE = re.compile(
-    r"^\s*(?:chapter\s+\d+\.?\s*|\d+\s*장\.?\s*|(?:\d+|[A-Za-z])(?:\.\d+)*\.?\s+)",
-    re.IGNORECASE,
+from .runtime_truth import official_runtime_truth_payload
+from .presenters_runtime import (
+    _build_health_payload,
+    _llm_runtime_signature,
+    _refresh_answerer_llm_settings,
 )
-
-
+from .viewer_blocks import _clean_source_view_text
+HEADING_NUMBER_PREFIX_RE = re.compile(r"^\s*(?:chapter\s+\d+\.?\s*|\d+\s*장\.?\s*|(?:\d+|[A-Za-z])(?:\.\d+)*\.?\s+)", re.IGNORECASE)
 def _display_source_heading(text: str) -> str:
     raw = " ".join(str(text or "").split()).strip()
     if not raw:
         return ""
     cleaned = HEADING_NUMBER_PREFIX_RE.sub("", raw).strip()
     return cleaned or raw
-
-
 def _display_section_path(items: list[Any]) -> list[str]:
     normalized: list[str] = []
     for item in items:
@@ -46,8 +36,6 @@ def _display_section_path(items: list[Any]) -> list[str]:
         if display:
             normalized.append(display)
     return normalized
-
-
 def _display_section_label(
     *,
     section_path: list[str],
@@ -66,10 +54,6 @@ def _display_section_label(
     if section_path:
         return " > ".join(section_path)
     return _display_source_heading(heading)
-
-
-
-
 def _citation_href(citation: Citation) -> str:
     viewer_path = (citation.viewer_path or "").strip()
     if viewer_path:
@@ -77,12 +61,8 @@ def _citation_href(citation: Citation) -> str:
     if citation.anchor:
         return f"{citation.source_url}#{citation.anchor}"
     return citation.source_url
-
-
 def _humanize_book_slug(book_slug: str) -> str:
     return " ".join(part for part in str(book_slug or "").replace("_", " ").split())
-
-
 def _core_pack_payload(*, version: str | None = None, language: str | None = None) -> dict[str, str]:
     pack = (
         resolve_ocp_core_pack(version=version, language=language or default_core_pack().language)
@@ -90,120 +70,6 @@ def _core_pack_payload(*, version: str | None = None, language: str | None = Non
         else default_core_pack()
     )
     return pack.payload()
-
-def _llm_runtime_signature(settings: Settings) -> tuple[Any, ...]:
-    return (
-        settings.ocp_version,
-        settings.docs_language,
-        settings.llm_endpoint,
-        settings.llm_model,
-        settings.llm_api_key,
-        settings.llm_temperature,
-        settings.llm_max_tokens,
-        settings.embedding_base_url,
-        settings.embedding_model,
-        settings.embedding_device,
-        settings.embedding_api_key,
-        settings.embedding_batch_size,
-        settings.embedding_timeout_seconds,
-        settings.reranker_enabled,
-        settings.reranker_model,
-        settings.reranker_top_n,
-        settings.reranker_batch_size,
-        settings.reranker_device,
-        settings.qdrant_url,
-        settings.qdrant_collection,
-        settings.qdrant_vector_size,
-        settings.qdrant_distance,
-        settings.request_timeout_seconds,
-        str(settings.artifacts_dir),
-        str(settings.source_manifest_path),
-        str(settings.normalized_docs_path),
-        str(settings.chunks_path),
-        str(settings.bm25_corpus_path),
-        str(settings.customer_pack_books_dir),
-        settings.request_timeout_seconds,
-    )
-
-
-def _runtime_fingerprint(settings: Settings) -> str:
-    raw = "|".join(str(item) for item in _llm_runtime_signature(settings))
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
-
-
-def _refresh_answerer_llm_settings(
-    answerer: ChatAnswerer,
-    *,
-    root_dir: Path,
-    current_signature: tuple[Any, ...] | None,
-) -> tuple[ChatAnswerer, tuple[Any, ...]]:
-    # runtime signature가 바뀌면 answerer 전체를 다시 만들어 LLM, embedding,
-    # retriever, pack 상태가 서로 어긋나지 않게 한다.
-    settings = load_settings(root_dir)
-    signature = _llm_runtime_signature(settings)
-    if signature == current_signature:
-        return answerer, signature
-    factory = getattr(answerer.__class__, "from_settings", None)
-    if callable(factory):
-        return factory(settings), signature
-    answerer.settings = settings
-    if hasattr(answerer, "llm_client") and hasattr(answerer.llm_client.__class__, "__call__"):
-        answerer.llm_client = answerer.llm_client.__class__(settings)
-    return answerer, signature
-
-
-def _build_health_payload(answerer: ChatAnswerer) -> dict[str, Any]:
-    settings = answerer.settings
-    pack = settings.active_pack
-    embedding_mode = "remote" if settings.embedding_base_url else "local"
-    compact_graph_artifact = graph_sidecar_compact_artifact_status(settings)
-    llm_runtime = (
-        answerer.llm_client.runtime_metadata()
-        if hasattr(answerer.llm_client, "runtime_metadata")
-        else {}
-    )
-    return {
-        "ok": True,
-        "runtime": {
-            "app_id": settings.app_id,
-            "app_label": settings.app_label,
-            "config_fingerprint": _runtime_fingerprint(settings),
-            "runtime_refresh_strategy": "rebuild_answerer_on_signature_change",
-            "ocp_version": settings.ocp_version,
-            "docs_language": settings.docs_language,
-            "active_pack_id": pack.pack_id,
-            "active_pack_label": pack.pack_label,
-            "active_pack_product": pack.product_label,
-            "viewer_path_prefix": pack.viewer_path_prefix,
-            "llm_endpoint": settings.llm_endpoint,
-            "llm_model": settings.llm_model,
-            "llm_provider_hint": llm_runtime.get("preferred_provider", "unknown"),
-            "llm_fallback_enabled": bool(llm_runtime.get("fallback_enabled", False)),
-            "llm_last_provider": llm_runtime.get("last_provider"),
-            "llm_last_fallback_used": bool(llm_runtime.get("last_fallback_used", False)),
-            "llm_attempted_providers": list(llm_runtime.get("last_attempted_providers", [])),
-            "embedding_mode": embedding_mode,
-            "embedding_base_url": settings.embedding_base_url,
-            "embedding_model": settings.embedding_model,
-            "embedding_device": settings.embedding_device,
-            "reranker_enabled": bool(settings.reranker_enabled),
-            "reranker_model": settings.reranker_model,
-            "reranker_top_n": settings.reranker_top_n,
-            "reranker_batch_size": settings.reranker_batch_size,
-            "reranker_device": settings.reranker_device,
-            "qdrant_url": settings.qdrant_url,
-            "qdrant_collection": settings.qdrant_collection,
-            "graph_backend": settings.graph_backend,
-            "graph_runtime_mode": settings.graph_runtime_mode,
-            "graph_compact_artifact": compact_graph_artifact,
-            "artifacts_dir": str(settings.artifacts_dir),
-            "source_manifest_path": str(settings.source_manifest_path),
-            "normalized_docs_path": str(settings.normalized_docs_path),
-            "bm25_corpus_path": str(settings.bm25_corpus_path),
-            "customer_pack_books_dir": str(settings.customer_pack_books_dir),
-        },
-    }
-
 
 @lru_cache(maxsize=4)
 def _load_manifest_entries(
@@ -213,13 +79,15 @@ def _load_manifest_entries(
     del mtime_ns
     payload = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
     entries = payload.get("entries") or []
+    generated_at = str(payload.get("generated_at_utc") or payload.get("updated_at") or "").strip()
     return {
-        str(entry.get("book_slug", "")).strip(): dict(entry)
+        str(entry.get("book_slug", "")).strip(): {
+            **dict(entry),
+            "updated_at": str(entry.get("updated_at") or generated_at).strip(),
+        }
         for entry in entries
         if str(entry.get("book_slug", "")).strip()
     }
-
-
 def _manifest_entry_for_book(root_dir: Path, book_slug: str) -> dict[str, Any]:
     settings = load_settings(root_dir)
     manifest_path = settings.source_manifest_path
@@ -229,11 +97,50 @@ def _manifest_entry_for_book(root_dir: Path, book_slug: str) -> dict[str, Any]:
             str(manifest_path),
             manifest_path.stat().st_mtime_ns,
         ).get(book_slug, {})
-    if manifest_entry:
+    runtime_entry = official_runtime_book_entry(root_dir, book_slug)
+    if not manifest_entry:
+        return runtime_entry
+    if not runtime_entry:
         return manifest_entry
-    return official_runtime_book_entry(root_dir, book_slug)
 
+    merged = dict(runtime_entry)
+    for key, value in manifest_entry.items():
+        if value in ("", None, [], {}):
+            continue
+        merged[key] = value
 
+    runtime_has_repo_binding = bool(
+        str(runtime_entry.get("source_repo") or "").strip()
+        or list(runtime_entry.get("source_relative_paths") or [])
+    )
+    manifest_has_repo_binding = bool(
+        str(manifest_entry.get("source_repo") or "").strip()
+        or list(manifest_entry.get("source_relative_paths") or [])
+    )
+    if runtime_has_repo_binding and not manifest_has_repo_binding:
+        for key in (
+            "source_ref",
+            "source_fingerprint",
+            "primary_input_kind",
+            "source_repo",
+            "source_branch",
+            "source_binding_kind",
+            "source_relative_path",
+            "source_relative_paths",
+            "source_mirror_root",
+            "fallback_input_kind",
+            "fallback_source_url",
+            "fallback_viewer_path",
+            "fallback_approved",
+            "source_manifest_path",
+            "parser_route",
+            "parser_backend",
+            "updated_at",
+        ):
+            value = runtime_entry.get(key)
+            if value not in ("", None, [], {}):
+                merged[key] = value
+    return merged
 class _CitationPresentationContext:
     def __init__(self, root_dir: Path) -> None:
         self.root_dir = root_dir
@@ -245,6 +152,7 @@ class _CitationPresentationContext:
         self._manifest_entries: dict[str, dict[str, Any]] = {}
         self._normalized_rows: dict[str, tuple[dict[str, Any] | None, bool]] = {}
         self._customer_pack_meta: dict[str, dict[str, Any] | None] = {}
+        self._serialized_citations: dict[str, dict[str, Any]] = {}
 
     def manifest_entry(self, book_slug: str) -> dict[str, Any]:
         normalized_slug = str(book_slug or "").strip()
@@ -280,13 +188,11 @@ class _CitationPresentationContext:
                 settings=self.settings,
             )
         return self._customer_pack_meta[normalized_viewer_path]
-
-
 def _build_citation_presentation_context(root_dir: Path) -> _CitationPresentationContext:
     return _CitationPresentationContext(root_dir)
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=4)
 def _load_normalized_sections(
     normalized_docs_path: str,
     mtime_ns: int,
@@ -454,14 +360,7 @@ def _official_runtime_truth_payload(
     settings: Settings,
     manifest_entry: dict[str, Any],
 ) -> dict[str, str]:
-    pack_label = str(manifest_entry.get("pack_label") or settings.active_pack.pack_label or "").strip()
-    runtime_truth_label = f"{pack_label} Runtime" if pack_label else "Validated Pack Runtime"
-    return {
-        "source_lane": str(manifest_entry.get("source_lane") or "approved_wiki_runtime"),
-        "boundary_truth": "official_validated_runtime",
-        "runtime_truth_label": runtime_truth_label,
-        "boundary_badge": "Validated Runtime",
-    }
+    return official_runtime_truth_payload(settings=settings, manifest_entry=manifest_entry)
 
 
 def _normalized_row_for_viewer_path(root_dir: Path, viewer_path: str) -> dict[str, Any] | None:
@@ -480,7 +379,7 @@ def _resolve_normalized_row_for_viewer_path(
         return None, False
     book_slug, anchor = parsed
     active_settings = settings or load_settings(root_dir)
-    for normalized_docs_path in active_settings.normalized_docs_candidates:
+    for normalized_docs_path in active_settings.retrieval_normalized_docs_candidates:
         if not normalized_docs_path.exists():
             continue
         sections_by_book = _load_normalized_sections(
@@ -500,18 +399,66 @@ def _resolve_normalized_row_for_viewer_path(
     return None, False
 
 
-def _serialize_citation(
+def _citation_cache_token(citation: Citation) -> str:
+    return json.dumps(
+        citation.to_dict(),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _citation_from_payload(payload: dict[str, Any]) -> Citation:
+    return Citation(
+        index=int(payload.get("index") or 0),
+        chunk_id=str(payload.get("chunk_id") or ""),
+        book_slug=str(payload.get("book_slug") or ""),
+        section=str(payload.get("section") or ""),
+        anchor=str(payload.get("anchor") or ""),
+        source_url=str(payload.get("source_url") or ""),
+        viewer_path=str(payload.get("viewer_path") or ""),
+        excerpt=str(payload.get("excerpt") or ""),
+        section_path=tuple(str(item) for item in (payload.get("section_path") or [])),
+        section_path_label=str(payload.get("section_path_label") or ""),
+        chunk_type=str(payload.get("chunk_type") or "reference"),
+        semantic_role=str(payload.get("semantic_role") or "unknown"),
+        source_collection=str(payload.get("source_collection") or "core"),
+        block_kinds=tuple(str(item) for item in (payload.get("block_kinds") or [])),
+        cli_commands=tuple(str(item) for item in (payload.get("cli_commands") or [])),
+        error_strings=tuple(str(item) for item in (payload.get("error_strings") or [])),
+        k8s_objects=tuple(str(item) for item in (payload.get("k8s_objects") or [])),
+        operator_names=tuple(str(item) for item in (payload.get("operator_names") or [])),
+        verification_hints=tuple(str(item) for item in (payload.get("verification_hints") or [])),
+    )
+
+
+def _citation_has_direct_section_metadata(citation: Citation) -> bool:
+    return bool(citation.section_path or citation.section_path_label.strip())
+
+
+@lru_cache(maxsize=2048)
+def _serialize_citation_cached(
+    root_dir_str: str,
+    citation_token: str,
+) -> dict[str, Any]:
+    root_dir = Path(root_dir_str)
+    citation = _citation_from_payload(json.loads(citation_token))
+    context = _build_citation_presentation_context(root_dir)
+    return _serialize_citation_uncached(root_dir, citation, presentation_context=context)
+
+
+def _serialize_citation_uncached(
     root_dir: Path,
     citation: Citation,
     *,
-    presentation_context: _CitationPresentationContext | None = None,
+    presentation_context: _CitationPresentationContext,
 ) -> dict[str, Any]:
-    context = presentation_context or _build_citation_presentation_context(root_dir)
+    context = presentation_context
     settings = context.settings
     href = _citation_href(citation)
-    row, matched_exact = context.normalized_row(href)
-    customer_pack_meta = context.customer_pack_meta(href)
     manifest_entry = context.manifest_entry(citation.book_slug)
+    customer_pack_meta = context.customer_pack_meta(href)
+    row: dict[str, Any] | None = None
 
     if row is None and customer_pack_meta is not None:
         book_title = str(customer_pack_meta.get("book_title") or "") or _humanize_book_slug(citation.book_slug)
@@ -555,6 +502,37 @@ def _serialize_citation(
             "section_match_exact": bool(customer_pack_meta.get("section_match_exact", True)),
         }
 
+    if _citation_has_direct_section_metadata(citation):
+        book_title = (
+            str(manifest_entry.get("title") or "")
+            or _humanize_book_slug(citation.book_slug)
+        )
+        section_path = [
+            item
+            for item in _display_section_path(list(citation.section_path))
+            if str(item).strip()
+        ]
+        section = _display_source_heading(str(citation.section or citation.anchor))
+        section_label = _display_section_label(
+            section_path=section_path,
+            section_path_label=str(citation.section_path_label or "").strip(),
+            heading=section,
+        )
+        return {
+            **citation.to_dict(),
+            "section": section,
+            "href": href,
+            "book_title": book_title,
+            "section_path": section_path,
+            "section_path_label": section_label,
+            "source_label": f"{book_title} · {section_label}" if section_label else book_title,
+            **context.core_pack_payload,
+            **_official_runtime_truth_payload(settings=settings, manifest_entry=manifest_entry),
+            "section_match_exact": True,
+        }
+
+    row, matched_exact = context.normalized_row(href)
+
     book_title = (
         str((row or {}).get("book_title") or "")
         or str(manifest_entry.get("title") or "")
@@ -583,3 +561,26 @@ def _serialize_citation(
         **_official_runtime_truth_payload(settings=settings, manifest_entry=manifest_entry),
         "section_match_exact": matched_exact,
     }
+
+
+def _serialize_citation(
+    root_dir: Path,
+    citation: Citation,
+    *,
+    presentation_context: _CitationPresentationContext | None = None,
+) -> dict[str, Any]:
+    citation_token = _citation_cache_token(citation)
+    if presentation_context is None:
+        return dict(_serialize_citation_cached(str(root_dir.resolve()), citation_token))
+
+    cached = presentation_context._serialized_citations.get(citation_token)
+    if cached is not None:
+        return dict(cached)
+
+    payload = _serialize_citation_uncached(
+        root_dir,
+        citation,
+        presentation_context=presentation_context,
+    )
+    presentation_context._serialized_citations[citation_token] = dict(payload)
+    return payload

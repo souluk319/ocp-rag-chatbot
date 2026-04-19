@@ -28,9 +28,14 @@ DEFAULT_ATTRIBUTES: dict[str, str] = {
 
 
 def _source_repo_root(source_file: Path) -> Path | None:
-    for parent in (source_file.resolve(), *source_file.resolve().parents):
-        if (parent / "_attributes").exists():
+    resolved = source_file.resolve()
+    parent_chain = (resolved.parent, *resolved.parents)
+    for parent in parent_chain:
+        if (parent / "_topic_maps").exists():
             return parent
+    attribute_roots = [parent for parent in parent_chain if (parent / "_attributes").exists()]
+    if attribute_roots:
+        return attribute_roots[-1]
     return None
 
 

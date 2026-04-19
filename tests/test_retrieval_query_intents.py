@@ -22,6 +22,7 @@ from _support_retrieval import (
     has_machine_config_reboot_intent,
     has_node_drain_intent,
     has_multiple_entity_ambiguity,
+    has_postinstall_doc_locator_ambiguity,
     has_project_scoped_rbac_intent,
     has_rbac_assignment_intent,
     has_rbac_intent,
@@ -408,6 +409,10 @@ class TestRetrievalQueryIntents(unittest.TestCase):
         self.assertFalse(has_security_doc_locator_ambiguity("인증 관련 기본 문서는 뭐가 중심이야?"))
         self.assertFalse(has_security_doc_locator_ambiguity("네트워크 보안 문서는 어디서 봐?"))
 
+    def test_has_postinstall_doc_locator_ambiguity_requires_scope(self) -> None:
+        self.assertTrue(has_postinstall_doc_locator_ambiguity("설치 후에 뭘 먼저 해야 해?"))
+        self.assertFalse(has_postinstall_doc_locator_ambiguity("설치 후 네트워크는 뭐부터 봐야 해?"))
+
     def test_has_multiple_entity_ambiguity_does_not_split_mco_single_concept(self) -> None:
         self.assertFalse(has_multiple_entity_ambiguity("Machine Config Operator가 뭐야?"))
 
@@ -420,6 +425,9 @@ class TestRetrievalQueryIntents(unittest.TestCase):
         self.assertTrue(has_follow_up_reference("찾았는데도 안 지워지면 finalizers는 어떻게 봐?"))
         self.assertTrue(has_follow_up_reference("그 Operator는 뭘 관리해?"))
         self.assertTrue(has_follow_up_reference("그 복원 순서는?"))
+        self.assertTrue(has_follow_up_reference("그 중 네트워크 쪽에서 중요한 건 뭐야?"))
+        self.assertTrue(has_follow_up_reference("그중에서 설치 전에 확인할 건 뭐야?"))
+        self.assertTrue(has_follow_up_reference("그 안에서 먼저 볼 만한 건 뭐야?"))
         self.assertTrue(has_follow_up_reference("그 RoleBinding YAML 예시도 보여줘"))
         self.assertTrue(has_follow_up_reference("그 권한이 잘 들어갔는지 확인하는 명령도 알려줘"))
         self.assertTrue(has_follow_up_reference("그 권한을 회수하려면 어떻게 해?"))

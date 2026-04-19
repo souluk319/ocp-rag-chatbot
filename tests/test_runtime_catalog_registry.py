@@ -43,6 +43,12 @@ class RuntimeCatalogRegistryTests(unittest.TestCase):
                             "source_type": "official_doc",
                             "approval_state": "approved",
                             "publication_state": "active",
+                            "source_repo": "https://github.com/example/openshift-docs",
+                            "source_branch": "enterprise-4.20",
+                            "source_binding_kind": "file",
+                            "source_relative_path": "support/index.adoc",
+                            "source_relative_paths": ["support/index.adoc"],
+                            "fallback_source_url": "https://docs.example.com/support",
                         },
                         {
                             "book_slug": "operators",
@@ -90,6 +96,27 @@ class RuntimeCatalogRegistryTests(unittest.TestCase):
                         },
                     },
                     {
+                        "book_slug": "installing_on_any_platform",
+                        "title": "Installing on any platform",
+                        "source_uri": "https://github.com/example/openshift-docs/blob/enterprise-4.20/installing/installing_on_any_platform/index.adoc",
+                        "review_status": "unreviewed",
+                        "translation_stage": "en_only",
+                        "section_count": 18,
+                        "source_metadata": {
+                            "source_type": "official_doc",
+                            "source_lane": "official_source_first",
+                            "primary_input_kind": "source_repo",
+                            "source_repo": "https://github.com/example/openshift-docs",
+                            "source_branch": "enterprise-4.20",
+                            "source_binding_kind": "file",
+                            "source_relative_path": "installing/installing_on_any_platform/index.adoc",
+                            "source_relative_paths": ["installing/installing_on_any_platform/index.adoc"],
+                            "approval_state": "unreviewed",
+                            "publication_state": "candidate",
+                            "updated_at": "2026-04-18T09:00:00Z",
+                        },
+                    },
+                    {
                         "book_slug": "backup_restore_operations",
                         "title": "Backup Restore Operations",
                         "source_uri": "https://example.com/backup_restore_operations",
@@ -134,9 +161,18 @@ class RuntimeCatalogRegistryTests(unittest.TestCase):
         )
         self.assertTrue(registry["support"]["active_runtime"])
         self.assertEqual(
+            "https://github.com/example/openshift-docs@enterprise-4.20:support/index.adoc",
+            registry["support"]["source_ref"],
+        )
+        self.assertEqual("file", registry["support"]["source_binding_kind"])
+        self.assertEqual(["support/index.adoc"], registry["support"]["source_relative_paths"])
+        self.assertEqual("https://docs.example.com/support", registry["support"]["fallback_source_url"])
+        self.assertTrue(registry["support"]["source_fingerprint"])
+        self.assertEqual(
             "/docs/ocp/4.20/ko/backup_restore_operations/index.html",
             registry["backup_restore_operations"]["viewer_path"],
         )
+        self.assertNotIn("installing_on_any_platform", registry)
         self.assertEqual(
             "operation_playbook",
             registry["backup_restore_operations"]["source_type"],

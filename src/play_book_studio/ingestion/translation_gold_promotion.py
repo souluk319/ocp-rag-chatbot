@@ -37,6 +37,19 @@ TRANSLATED_GOLD_PROMOTION_NOTE = (
 TRANSLATED_GOLD_TRUST_SCORE = 0.98
 
 
+def _emit_progress(stage: str, **payload: object) -> None:
+    print(
+        json.dumps(
+            {
+                "stage": stage,
+                **payload,
+            },
+            ensure_ascii=False,
+        ),
+        flush=True,
+    )
+
+
 def _draft_root(settings: Settings) -> Path:
     return settings.silver_ko_dir / "translation_drafts"
 
@@ -449,11 +462,16 @@ def promote_translation_gold(
 ) -> dict[str, object]:
     generation_report = None
     if generate_first:
+        _emit_progress("gold_generate_first_start")
         generation_report = generate_translation_drafts(
             settings,
             slugs=slugs,
             force_collect=force_collect,
             force_regenerate=force_regenerate,
+        )
+        _emit_progress(
+            "gold_generate_first_complete",
+            summary=generation_report.get("summary"),
         )
 
     entries = read_manifest(settings.translation_draft_manifest_path)
@@ -482,21 +500,49 @@ def promote_translation_gold(
     errors: list[dict[str, object]] = []
     graph_compact_refresh: dict[str, object] = {"status": "skipped"}
 
-    for entry in selected_entries:
+    total_entries = len(selected_entries)
+    for index, entry in enumerate(selected_entries, start=1):
         slug = entry.book_slug
+        _emit_progress(
+            "gold_promote",
+            index=index,
+            total=total_entries,
+            book_slug=slug,
+        )
         normalized_rows = draft_normalized_by_slug.get(slug, [])
         chunk_rows = draft_chunks_by_slug.get(slug, [])
         playbook_payload = draft_playbooks_by_slug.get(slug)
         if not normalized_rows or not chunk_rows or playbook_payload is None:
             errors.append({"book_slug": slug, "error": "draft_artifacts_missing"})
+            _emit_progress(
+                "gold_promote_error",
+                index=index,
+                total=total_entries,
+                book_slug=slug,
+                error="draft_artifacts_missing",
+            )
             continue
 
         audit_row = audit_by_slug.get(slug, {})
         if not bool(audit_row.get("semantic_role_coverage_ok", True)):
             errors.append({"book_slug": slug, "error": "draft_manualbook_semantic_role_failed"})
+            _emit_progress(
+                "gold_promote_error",
+                index=index,
+                total=total_entries,
+                book_slug=slug,
+                error="draft_manualbook_semantic_role_failed",
+            )
             continue
         if not bool(audit_row.get("heading_language_ok", True)):
             errors.append({"book_slug": slug, "error": "draft_manualbook_heading_language_failed"})
+            _emit_progress(
+                "gold_promote_error",
+                index=index,
+                total=total_entries,
+                book_slug=slug,
+                error="draft_manualbook_heading_language_failed",
+            )
             continue
 
         metadata_errors = _draft_metadata_errors(
@@ -511,6 +557,14 @@ def promote_translation_gold(
                     "error": "draft_metadata_incomplete",
                     "details": metadata_errors,
                 }
+            )
+            _emit_progress(
+                "gold_promote_error",
+                index=index,
+                total=total_entries,
+                book_slug=slug,
+                error="draft_metadata_incomplete",
+                details=metadata_errors,
             )
             continue
 
@@ -552,9 +606,22 @@ def promote_translation_gold(
                 "promotion_strategy": TRANSLATED_GOLD_PROMOTION_STRATEGY,
             }
         )
+        _emit_progress(
+            "gold_promote_complete",
+            index=index,
+            total=total_entries,
+            book_slug=slug,
+            section_count=len(approved_section_rows),
+            chunk_count=len(approved_chunk_rows),
+        )
 
     promoted_slugs = {entry.book_slug for entry in promoted_entries}
     if promoted_entries:
+        _emit_progress(
+            "gold_materialize_start",
+            promoted_count=len(promoted_entries),
+            error_count=len(errors),
+        )
         for path in settings.normalized_docs_candidates:
             rows = _upsert_book_rows(_read_jsonl_safe(path), promoted_sections, slugs=promoted_slugs)
             _write_jsonl(path, rows)
@@ -589,6 +656,12 @@ def promote_translation_gold(
             allow_compact_degrade=True,
         )
         graph_compact_refresh = dict(graph_refresh.get("compact_sidecar", {}))
+        _emit_progress(
+            "gold_materialize_complete",
+            promoted_count=len(promoted_entries),
+            approved_manifest_path=str(settings.source_manifest_path),
+            graph_compact_status=graph_compact_refresh.get("status"),
+        )
 
     dossier_promoted_count = 0
     for entry in promoted_entries:
@@ -599,18 +672,52 @@ def promote_translation_gold(
             source_id=entry.source_id,
         ):
             dossier_promoted_count += 1
+    if promoted_entries:
+        _emit_progress(
+            "gold_dossier_complete",
+            dossier_promoted_count=dossier_promoted_count,
+        )
 
     qdrant_upserted_count = 0
     if sync_qdrant and promoted_chunks:
+        _emit_progress(
+            "gold_qdrant_start",
+            chunk_count=len(promoted_chunks),
+        )
         chunk_records = _chunk_records(promoted_chunks)
         client = EmbeddingClient(settings)
-        vectors = client.embed_texts(chunk.text for chunk in chunk_records)
-        qdrant_upserted_count = upsert_chunks(settings, chunk_records, vectors)
+        vectors = client.embed_texts(
+            (chunk.text for chunk in chunk_records),
+            progress_callback=lambda done, total: _emit_progress(
+                "gold_embed_progress",
+                completed_batches=done,
+                total_batches=total,
+            ),
+        )
+        qdrant_upserted_count = upsert_chunks(
+            settings,
+            chunk_records,
+            vectors,
+            progress_callback=lambda done, total: _emit_progress(
+                "gold_qdrant_progress",
+                completed_batches=done,
+                total_batches=total,
+            ),
+        )
+        _emit_progress(
+            "gold_qdrant_complete",
+            qdrant_upserted_count=qdrant_upserted_count,
+        )
 
     synthesis_report = None
     if refresh_synthesis_report and settings.source_catalog_path.exists():
         synthesis_report_path = synthesis_lane_report_path(settings)
         synthesis_report = write_synthesis_lane_outputs(settings)
+        _emit_progress(
+            "gold_synthesis_complete",
+            synthesis_report_path=str(synthesis_report_path),
+            summary=synthesis_report.get("summary"),
+        )
     else:
         synthesis_report_path = None
 
@@ -651,4 +758,8 @@ def promote_translation_gold(
     if synthesis_report is not None and synthesis_report_path is not None:
         report["synthesis_report_path"] = str(synthesis_report_path)
         report["synthesis_summary"] = synthesis_report.get("summary")
+    _emit_progress(
+        "gold_summary",
+        summary=report.get("summary"),
+    )
     return report

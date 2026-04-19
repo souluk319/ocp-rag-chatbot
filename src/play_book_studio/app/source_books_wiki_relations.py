@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 from play_book_studio.config.settings import load_settings
 from play_book_studio.runtime_catalog_registry import official_runtime_book_entry
 
+from .runtime_truth import official_runtime_truth_payload
 from .wiki_relations import load_wiki_relation_assets
 
 
@@ -52,12 +53,7 @@ def _chat_link_truth_payload(root_dir: Path, href: str, kind: str) -> dict[str, 
         parts = [part for part in parsed.path.split("/") if part]
         slug = parts[-2] if len(parts) >= 5 and parts[-1] == "index.html" else ""
         registry_entry = official_runtime_book_entry(root_dir, slug) if slug else {}
-        return {
-            "source_lane": str(registry_entry.get("source_lane") or "approved_wiki_runtime"),
-            "boundary_truth": "official_validated_runtime",
-            "runtime_truth_label": f"{settings.active_pack.pack_label} Runtime",
-            "boundary_badge": "Validated Runtime",
-        }
+        return official_runtime_truth_payload(settings=settings, manifest_entry=registry_entry)
     if normalized_href.startswith(f"{ACTIVE_WIKI_RUNTIME_BOOK_PREFIX}/"):
         parsed = urlparse(normalized_href)
         parts = [part for part in parsed.path.split("/") if part]
@@ -67,12 +63,7 @@ def _chat_link_truth_payload(root_dir: Path, href: str, kind: str) -> dict[str, 
         elif len(parts) >= 3:
             slug = parts[-1]
         registry_entry = official_runtime_book_entry(root_dir, slug) if slug else {}
-        return {
-            "source_lane": str(registry_entry.get("source_lane") or "approved_wiki_runtime"),
-            "boundary_truth": "official_validated_runtime",
-            "runtime_truth_label": f"{settings.active_pack.pack_label} Runtime",
-            "boundary_badge": "Validated Runtime",
-        }
+        return official_runtime_truth_payload(settings=settings, manifest_entry=registry_entry)
     return {}
 
 
@@ -176,6 +167,84 @@ def _book_related_sections(slug: str) -> list[dict[str, Any]]:
     return [item for item in items if isinstance(item, dict)] if isinstance(items, list) else []
 
 
+def _section_linked_figures(section_href: str) -> list[dict[str, Any]]:
+    normalized_href = str(section_href or "").strip()
+    if not normalized_href:
+        return []
+    payload = _figure_section_index()
+    by_slug = payload.get("by_slug") if isinstance(payload.get("by_slug"), dict) else {}
+    results: list[dict[str, Any]] = []
+    for source_slug, records in by_slug.items():
+        if not isinstance(records, list):
+            continue
+        for item in records:
+            if not isinstance(item, dict):
+                continue
+            if str(item.get("section_href") or "").strip() != normalized_href:
+                continue
+            asset_name = str(item.get("asset_name") or "").strip()
+            asset = _figure_asset_by_name(str(source_slug or "").strip(), asset_name) or {}
+            viewer_path = str(item.get("viewer_path") or "").strip()
+            if not viewer_path:
+                viewer_path = _figure_viewer_href(str(source_slug or "").strip(), asset)
+            results.append(
+                {
+                    "book_slug": str(source_slug or "").strip(),
+                    "viewer_path": viewer_path,
+                    "asset_url": str(asset.get("asset_url") or "").strip(),
+                    "caption": str(item.get("caption") or asset.get("caption") or asset.get("alt") or "Figure").strip(),
+                    "section_hint": str(item.get("section_path") or item.get("section_hint") or asset.get("section_hint") or "").strip(),
+                    "section_href": normalized_href,
+                    "section_anchor": str(item.get("section_anchor") or "").strip(),
+                    "source": "section_relation_figure",
+                }
+            )
+    return results
+
+
+def _book_related_figures(slug: str, *, limit: int = 6) -> list[dict[str, Any]]:
+    normalized_slug = str(slug or "").strip()
+    if not normalized_slug:
+        return []
+    results: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def _append(item: dict[str, Any]) -> None:
+        viewer_path = str(item.get("viewer_path") or "").strip()
+        asset_url = str(item.get("asset_url") or "").strip()
+        key = viewer_path or asset_url
+        if not key or key in seen:
+            return
+        seen.add(key)
+        results.append(item)
+
+    for asset in _figure_assets().get(normalized_slug, []):
+        if not isinstance(asset, dict):
+            continue
+        _append(
+            {
+                "book_slug": normalized_slug,
+                "viewer_path": _figure_viewer_href(normalized_slug, asset),
+                "asset_url": str(asset.get("asset_url") or "").strip(),
+                "caption": str(asset.get("caption") or asset.get("alt") or "Figure").strip(),
+                "section_hint": str(asset.get("section_hint") or "").strip(),
+                "source": "book_figure",
+            }
+        )
+        if len(results) >= limit:
+            return results
+
+    for section in _book_related_sections(normalized_slug):
+        href = str(section.get("href") or "").strip()
+        if not href:
+            continue
+        for figure in _section_linked_figures(href):
+            _append(figure)
+            if len(results) >= limit:
+                return results
+    return results
+
+
 def _entity_related_sections(entity_slug: str) -> list[dict[str, Any]]:
     payload = _section_relation_index()
     by_entity = payload.get("by_entity") if isinstance(payload.get("by_entity"), dict) else {}
@@ -196,10 +265,35 @@ def _runtime_markdown_path_from_manifest(root_dir: Path, manifest_filename: str,
     except Exception:  # noqa: BLE001
         return None
     entries = payload.get("entries") if isinstance(payload, dict) else []
-    return _runtime_markdown_path_from_entries(entries, slug)
+    return _runtime_markdown_path_from_entries(root_dir, entries, slug)
 
 
-def _runtime_markdown_path_from_entries(entries: list[Any], slug: str) -> Path | None:
+def _runtime_markdown_path_candidates(root_dir: Path, recorded_path: str) -> tuple[Path, ...]:
+    normalized = str(recorded_path or "").strip()
+    if not normalized:
+        return ()
+    candidates: list[Path] = [Path(normalized)]
+    normalized_slash = normalized.replace("\\", "/")
+    marker = "data/wiki_runtime_books/"
+    relative_tail = ""
+    if marker in normalized_slash:
+        relative_tail = normalized_slash.split(marker, 1)[1].strip("/")
+    elif normalized_slash.startswith(marker):
+        relative_tail = normalized_slash[len(marker):].strip("/")
+    if relative_tail:
+        candidates.append(root_dir / "data" / "wiki_runtime_books" / Path(relative_tail))
+    unique: list[Path] = []
+    seen: set[Path] = set()
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        unique.append(resolved)
+    return tuple(unique)
+
+
+def _runtime_markdown_path_from_entries(root_dir: Path, entries: list[Any], slug: str) -> Path | None:
     normalized_slug = str(slug or "").strip()
     if not normalized_slug:
         return None
@@ -209,9 +303,9 @@ def _runtime_markdown_path_from_entries(entries: list[Any], slug: str) -> Path |
         entry_slug = str(entry.get("slug") or "").strip()
         if entry_slug != normalized_slug:
             continue
-        runtime_path = Path(str(entry.get("runtime_path") or "")).resolve()
-        if runtime_path.exists() and runtime_path.is_file():
-            return runtime_path
+        for runtime_path in _runtime_markdown_path_candidates(root_dir, str(entry.get("runtime_path") or "")):
+            if runtime_path.exists() and runtime_path.is_file():
+                return runtime_path
     return None
 
 
@@ -384,37 +478,4 @@ def _figure_viewer_sections(slug: str, asset_name: str, asset: dict[str, Any]) -
     ]
 
 
-__all__ = [
-    "ACTIVE_WIKI_RUNTIME_BOOK_PREFIX",
-    "GOLD_CANDIDATE_BOOK_PREFIX",
-    "LEGACY_WIKI_RUNTIME_BOOK_PREFIX",
-    "_active_runtime_markdown_path",
-    "_book_related_sections",
-    "_build_backlinks",
-    "_build_entity_backlinks",
-    "_candidate_relations",
-    "_chat_link_truth_payload",
-    "_chat_navigation_aliases",
-    "_contains_hangul",
-    "_entity_hub_sections",
-    "_entity_hubs",
-    "_entity_related_sections",
-    "_figure_asset_by_name",
-    "_figure_asset_filename",
-    "_figure_assets",
-    "_figure_entity_index",
-    "_figure_section_index",
-    "_figure_section_match",
-    "_figure_viewer_href",
-    "_figure_viewer_sections",
-    "_is_final_runtime_href",
-    "_link_book_slug",
-    "_preferred_book_href",
-    "_prefer_korean_book_links",
-    "_relation_href_matches_slug",
-    "_rewrite_book_href",
-    "_runtime_markdown_path_from_entries",
-    "_runtime_markdown_path_from_manifest",
-    "_section_relation_index",
-    "_wiki_relation_items",
-]
+__all__ = ["ACTIVE_WIKI_RUNTIME_BOOK_PREFIX", "GOLD_CANDIDATE_BOOK_PREFIX", "LEGACY_WIKI_RUNTIME_BOOK_PREFIX", "_active_runtime_markdown_path", "_book_related_figures", "_book_related_sections", "_build_backlinks", "_build_entity_backlinks", "_candidate_relations", "_chat_link_truth_payload", "_chat_navigation_aliases", "_contains_hangul", "_entity_hub_sections", "_entity_hubs", "_entity_related_sections", "_figure_asset_by_name", "_figure_asset_filename", "_figure_assets", "_figure_entity_index", "_runtime_markdown_path_candidates", "_section_linked_figures", "_figure_section_index", "_figure_section_match", "_figure_viewer_href", "_figure_viewer_sections", "_is_final_runtime_href", "_link_book_slug", "_preferred_book_href", "_prefer_korean_book_links", "_relation_href_matches_slug", "_rewrite_book_href", "_runtime_markdown_path_from_entries", "_runtime_markdown_path_from_manifest", "_section_relation_index", "_wiki_relation_items"]

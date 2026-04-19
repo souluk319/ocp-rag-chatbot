@@ -21,6 +21,7 @@ from .models import (
     TableBlock,
 )
 from .html import build_web_document_ast
+from .asciidoc import build_source_repo_document_ast
 from .project_corpus import CorpusSectionProjection, project_corpus_sections
 from .project_playbook import project_playbook_document, write_playbook_documents
 from .translate import translate_document_ast
@@ -32,6 +33,7 @@ __all__ = [
     "CanonicalDocumentAst",
     "CanonicalSectionAst",
     "CodeBlock",
+    "build_source_repo_document_ast",
     "CorpusSectionProjection",
     "build_web_document_ast",
     "NoteBlock",

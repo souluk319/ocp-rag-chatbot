@@ -1,0 +1,29 @@
+# 머신 구성 운영 플레이북
+
+There are times when you need to make changes to the operating systems running on OpenShift Container Platform nodes. This can include changing settings for network time service, adding kernel arguments, or configuring journaling in a specific way.
+
+Aside from a few specialized features, most changes to operating systems on OpenShift Container Platform nodes can be done by creating what are referred to as `MachineConfig` objects that are managed by the Machine Config Operator. For example, you can use the Machine Config Operator (MCO) and machine configs to manage update to systemd, CRI-O and kubelet, the kernel, Network Manager and other system features.
+
+Tasks in this section describe how to use features of the Machine Config Operator to configure operating system features on OpenShift Container Platform nodes.
+
+> NetworkManager stores new network configurations to `/etc/NetworkManager/system-connections/` in a key file format.
+
+> Previously, NetworkManager stored new network configurations to `/etc/sysconfig/network-scripts/` in the `ifcfg` format. Starting with RHEL 9.0, RHEL stores new network configurations at `/etc/NetworkManager/system-connections/` in a key file format. The connections configurations stored to `/etc/sysconfig/network-scripts/` in the old format still work uninterrupted. Modifications in existing profiles continue updating the older files.
+
+Additional resources
+
+* About the OVN-Kubernetes network plugin
+
+Additional resources
+
+* About the Machine Config Operator
+* Using node disruption policies to minimize disruption from machine config changes
+* Disabling the Machine Config Operator from automatically rebooting
+
+Additional resources
+
+* Enabling features using feature gates
+
+### Understanding Machine Config Operator certificates
+
+Machine Config Operator certificates are used to secure connections between the Red Hat Enterprise Linux CoreOS (RHCOS) nodes and the Machine Config Server. For more information, see Machine Config Operator certificates.

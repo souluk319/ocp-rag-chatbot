@@ -19,6 +19,17 @@ function dedupeBooks(books: readonly LibraryBook[]): LibraryBook[] {
   return items;
 }
 
+function gradeRank(grade: string | undefined): number {
+  const normalized = String(grade || '').trim().toLowerCase();
+  if (normalized === 'gold') {
+    return 0;
+  }
+  if (normalized === 'silver' || normalized === 'silver draft' || normalized === 'mixed review') {
+    return 1;
+  }
+  return 2;
+}
+
 export function resolveWorkspaceSourceBooks(room: WorkspaceSourceRoom | null | undefined): LibraryBook[] {
   if (!room) {
     return [];
@@ -30,5 +41,11 @@ export function resolveWorkspaceSourceBooks(room: WorkspaceSourceRoom | null | u
       ? room.manualbooks.books
       : room.gold_books ?? [];
 
-  return dedupeBooks(preferredBooks);
+  return dedupeBooks(preferredBooks).sort((left, right) => {
+    const gradeDelta = gradeRank(left.grade) - gradeRank(right.grade);
+    if (gradeDelta !== 0) {
+      return gradeDelta;
+    }
+    return (left.title || left.book_slug || '').localeCompare(right.title || right.book_slug || '', 'ko');
+  });
 }

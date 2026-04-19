@@ -26,6 +26,7 @@ import {
   Star,
   Clock3,
   NotebookPen,
+  Compass,
 } from 'lucide-react';
 import gsap from 'gsap';
 import './WorkspacePage.css';
@@ -45,6 +46,7 @@ import {
   type SourceMetaResponse,
   type WikiOverlayRecord,
   type WikiOverlayTargetKind,
+  type ViewerPageMode,
   captureCustomerPackDraft,
   formatBytes,
   listCustomerPackDrafts,
@@ -261,7 +263,17 @@ function truthSurfaceCopy(payload?: {
     };
   }
 
-  if (boundaryTruth === 'official_validated_runtime' || sourceLane.includes('wiki_runtime') || sourceLane.includes('approved')) {
+  if (boundaryTruth === 'official_gold_playbook_runtime') {
+    return {
+      label: 'Gold Playbook',
+      meta: [
+        runtimeTruthLabel || (packLabel ? `${packLabel} Gold Playbook` : 'Gold Playbook'),
+        packLabel || '',
+      ].filter(Boolean),
+    };
+  }
+
+  if (boundaryTruth === 'official_validated_runtime') {
     return {
       label: 'Validated Runtime',
       meta: [
@@ -511,8 +523,92 @@ function normalizeViewerDocumentPayload(viewerDocument: Awaited<ReturnType<typeo
   };
 }
 
-async function loadViewerDocumentPayload(viewerPath: string): Promise<ViewerDocumentPayload> {
-  return normalizeViewerDocumentPayload(await loadViewerDocument(viewerPath));
+function parseViewerHtml(viewerHtml: string): Document | null {
+  if (typeof DOMParser === 'undefined') {
+    return null;
+  }
+  try {
+    return new DOMParser().parseFromString(viewerHtml, 'text/html');
+  } catch {
+    return null;
+  }
+}
+
+function extractVisibleViewerSection(viewerHtml: string): { anchor: string; title: string } | null {
+  const documentRoot = parseViewerHtml(viewerHtml);
+  const section = documentRoot?.querySelector('section.section-card[id], section.embedded-section[id]');
+  if (!(section instanceof HTMLElement)) {
+    return null;
+  }
+  const anchor = String(section.id || '').trim();
+  if (!anchor) {
+    return null;
+  }
+  const title = section.querySelector('h2')?.textContent?.trim() || section.querySelector('.section-meta')?.textContent?.trim() || anchor;
+  return { anchor, title };
+}
+
+function extractViewerQuickNavItems(viewerHtml: string, viewerPath: string): OutlineTocNode[] {
+  const documentRoot = parseViewerHtml(viewerHtml);
+  if (!documentRoot) {
+    return [];
+  }
+  const baseViewerPath = normalizeViewerPath(viewerPath.split('#', 1)[0] || viewerPath);
+  const nodes: OutlineTocNode[] = [];
+  const seen = new Set<string>();
+
+  documentRoot.querySelectorAll('.document-nav-link[href]').forEach((node) => {
+    if (!(node instanceof HTMLAnchorElement)) {
+      return;
+    }
+    const rawHref = String(node.getAttribute('href') || '').trim();
+    const label = node.textContent?.trim() || '';
+    if (!rawHref || !label) {
+      return;
+    }
+    const anchor = rawHref.startsWith('#') ? rawHref.slice(1) : rawHref.split('#', 2)[1] || '';
+    if (!anchor || seen.has(anchor)) {
+      return;
+    }
+    seen.add(anchor);
+    nodes.push({
+      id: anchor,
+      heading: label,
+      depth: 1,
+      viewerPath: rawHref.startsWith('#') ? `${baseViewerPath}#${anchor}` : normalizeViewerPath(rawHref),
+      sectionPathLabel: String(node.getAttribute('title') || label).trim(),
+    });
+  });
+
+  if (nodes.length > 0) {
+    return nodes;
+  }
+
+  documentRoot.querySelectorAll('section.section-card[id], section.embedded-section[id]').forEach((node) => {
+    if (!(node instanceof HTMLElement)) {
+      return;
+    }
+    const anchor = String(node.id || '').trim();
+    const heading = node.querySelector('h2')?.textContent?.trim() || node.querySelector('.section-meta')?.textContent?.trim() || anchor;
+    const sectionPathLabel = node.querySelector('.section-meta')?.textContent?.trim() || heading;
+    if (!anchor || !heading || seen.has(anchor)) {
+      return;
+    }
+    seen.add(anchor);
+    nodes.push({
+      id: anchor,
+      heading,
+      depth: 1,
+      viewerPath: `${baseViewerPath}#${anchor}`,
+      sectionPathLabel,
+    });
+  });
+
+  return nodes;
+}
+
+async function loadViewerDocumentPayload(viewerPath: string, pageMode: ViewerPageMode): Promise<ViewerDocumentPayload> {
+  return normalizeViewerDocumentPayload(await loadViewerDocument(viewerPath, pageMode));
 }
 
 function normalizePreviewNavigationTarget(viewerPath: string): string | null {
@@ -1397,6 +1493,7 @@ export default function WorkspacePage() {
   const [activeTestTrace, setActiveTestTrace] = useState<WorkspaceTestTrace | null>(null);
   const [activeSourceId, setActiveSourceId] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewState>({ kind: 'empty' });
+  const [viewerPageMode, setViewerPageMode] = useState<ViewerPageMode>('single');
   const [isUploading, setIsUploading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -1440,12 +1537,14 @@ export default function WorkspacePage() {
   const [isOverlaySaving, setIsOverlaySaving] = useState(false);
   const [noteDraft, setNoteDraft] = useState('');
   const [noteOpen, setNoteOpen] = useState(false);
+  const [quickNavOpen, setQuickNavOpen] = useState(false);
 
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
   const chatMessagesRef = useRef<HTMLDivElement>(null);
+  const quickNavRef = useRef<HTMLDivElement>(null);
   const leftPanelRef = usePanelRef();
   const rightPanelRef = usePanelRef();
 
@@ -1832,12 +1931,31 @@ export default function WorkspacePage() {
     [activeSourceId, drafts],
   );
 
+  const currentViewerPath = useMemo(
+    () => (preview.kind === 'viewer' ? (preview.meta?.viewer_path || runtimePathFromUrl(preview.viewerUrl)) : ''),
+    [preview],
+  );
+
+  const quickNavItems = useMemo(
+    () => (preview.kind === 'viewer' && preview.viewerDocument?.html && currentViewerPath
+      ? extractViewerQuickNavItems(preview.viewerDocument.html, currentViewerPath)
+      : []),
+    [currentViewerPath, preview],
+  );
+
   const currentOverlayTarget = useMemo<OverlayTargetDescriptor | null>(() => {
     if (preview.kind !== 'viewer' || !preview.viewerUrl) {
       return null;
     }
+    if (viewerPageMode === 'multi' && preview.viewerDocument?.html) {
+      const visibleSection = extractVisibleViewerSection(preview.viewerDocument.html);
+      if (visibleSection && currentViewerPath) {
+        const sectionViewerPath = `${currentViewerPath.split('#', 1)[0]}#${visibleSection.anchor}`;
+        return buildOverlayTargetFromViewerPath(sectionViewerPath, visibleSection.title);
+      }
+    }
     return buildOverlayTargetFromViewerPath(preview.viewerUrl, preview.title);
-  }, [preview]);
+  }, [currentViewerPath, preview, viewerPageMode]);
 
   const favoriteOverlays = useMemo(
     () => wikiOverlays.filter((item) => item.kind === 'favorite'),
@@ -1876,7 +1994,12 @@ export default function WorkspacePage() {
     return [nextDraft, ...currentDrafts.filter((draft) => draft.draft_id !== nextDraft.draft_id)];
   }
 
-  async function openViewerPreview(viewerPath: string, title: string, sourceId?: string): Promise<void> {
+  async function openViewerPreview(
+    viewerPath: string,
+    title: string,
+    sourceId?: string,
+    pageMode: ViewerPageMode = viewerPageMode,
+  ): Promise<void> {
     const normalizedViewerPath = normalizePreviewNavigationTarget(viewerPath);
     if (!normalizedViewerPath) {
       setPreview({ kind: 'empty' });
@@ -1888,7 +2011,7 @@ export default function WorkspacePage() {
       const meta = await loadSourceMeta(normalizedViewerPath);
       const resolvedViewerPath = meta.viewer_path || normalizedViewerPath;
       const viewerUrl = toRuntimeUrl(resolvedViewerPath);
-      const viewerDocument = await loadViewerDocumentPayload(resolvedViewerPath);
+      const viewerDocument = await loadViewerDocumentPayload(resolvedViewerPath, pageMode);
       setPreview({
         kind: 'viewer',
         title: meta.book_title || title,
@@ -1909,6 +2032,18 @@ export default function WorkspacePage() {
         viewerUrl: toRuntimeUrl(normalizedViewerPath),
       });
     }
+  }
+
+  async function handleViewerPageModeChange(nextMode: ViewerPageMode): Promise<void> {
+    if (nextMode === viewerPageMode) {
+      return;
+    }
+    setViewerPageMode(nextMode);
+    if (preview.kind !== 'viewer') {
+      return;
+    }
+    const targetViewerPath = preview.meta?.viewer_path || runtimePathFromUrl(preview.viewerUrl);
+    await openViewerPreview(targetViewerPath, preview.title, activeSourceId ?? undefined, nextMode);
   }
 
   async function openManualPreview(book: LibraryBook): Promise<void> {
@@ -1938,7 +2073,7 @@ export default function WorkspacePage() {
     }
 
     const viewerDocument = viewerUrl
-      ? await loadViewerDocumentPayload(runtimePathFromUrl(viewerUrl))
+      ? await loadViewerDocumentPayload(runtimePathFromUrl(viewerUrl), 'single')
       : undefined;
 
     setPreview({
@@ -1956,6 +2091,26 @@ export default function WorkspacePage() {
   useEffect(() => {
     setNoteDraft(currentNote?.body ?? '');
   }, [currentNote?.body, currentOverlayTarget?.ref]);
+
+  useEffect(() => {
+    setQuickNavOpen(false);
+  }, [currentViewerPath, viewerPageMode]);
+
+  useEffect(() => {
+    if (!quickNavOpen) {
+      return undefined;
+    }
+    function handleWindowPointerDown(event: MouseEvent): void {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest('.viewer-quick-nav')) {
+        setQuickNavOpen(false);
+      }
+    }
+    window.addEventListener('mousedown', handleWindowPointerDown);
+    return () => {
+      window.removeEventListener('mousedown', handleWindowPointerDown);
+    };
+  }, [quickNavOpen]);
 
   useEffect(() => {
     if (!currentOverlayTarget) {
@@ -3368,46 +3523,97 @@ export default function WorkspacePage() {
             )}
 
             {!testMode && currentOverlayTarget && (
-              <div className="reader-stage-rail">
-                <div className="viewer-stage-topline">
-                  <div className="viewer-stage-actions">
-                    {preview.kind === 'viewer' && preview.meta?.source_url && (
-                      <a href={toRuntimeUrl(preview.meta.source_url)} className="doc-inline-link viewer-stage-link" target="_blank" rel="noreferrer">
-                        원문 열기
-                      </a>
-                    )}
-                    <div className="wiki-overlay-toolbar inline">
-                      <button
-                        type="button"
-                        className={`wiki-overlay-action ${currentFavorite ? 'active' : ''}`}
-                        onClick={() => { void handleToggleFavoriteCurrent(); }}
-                        disabled={isOverlaySaving}
-                        title={currentFavorite ? 'Saved' : 'Save'}
-                      >
-                        <Star size={14} />
-                      </button>
-                      {currentOverlayTarget.kind === 'section' && (
-                        <button
-                          type="button"
-                          className={`wiki-overlay-action ${currentSectionCheck ? 'active' : ''}`}
-                          onClick={() => { void handleToggleSectionCheckCurrent(); }}
-                          disabled={isOverlaySaving}
-                          title={currentSectionCheck ? 'Done' : 'Mark Done'}
-                        >
-                          <Check size={14} />
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className={`wiki-overlay-action ${noteOpen ? 'active' : ''}`}
-                        onClick={() => setNoteOpen((value) => !value)}
-                        title="Note"
-                      >
-                        <NotebookPen size={14} />
-                      </button>
+                <div className="reader-stage-rail">
+                  <div className="viewer-stage-topline">
+                    <div className="viewer-stage-actions">
+                      <div className="viewer-stage-actions-start">
+                        {preview.kind === 'viewer' && viewerPageMode === 'single' && preview.meta?.source_url && (
+                          <a href={toRuntimeUrl(preview.meta.source_url)} className="doc-inline-link viewer-stage-link" target="_blank" rel="noreferrer">
+                            원문 열기
+                          </a>
+                        )}
+                        {preview.kind === 'viewer' && (
+                          <label className="viewer-mode-field">
+                            <span>형식</span>
+                            <select
+                              className="viewer-mode-select"
+                              value={viewerPageMode}
+                              onChange={(event) => { void handleViewerPageModeChange(event.target.value as ViewerPageMode); }}
+                            >
+                              <option value="single">단일 페이지</option>
+                              <option value="multi">멀티 페이지</option>
+                            </select>
+                          </label>
+                        )}
+                      </div>
+                      <div className="viewer-stage-actions-end">
+                        {preview.kind === 'viewer' && quickNavItems.length > 0 && (
+                          <div ref={quickNavRef} className={`viewer-quick-nav ${quickNavOpen ? 'open' : ''}`}>
+                            <button
+                              type="button"
+                              className="wiki-overlay-action viewer-quick-nav-trigger"
+                              aria-expanded={quickNavOpen}
+                              title="Quick Nav"
+                              onClick={() => setQuickNavOpen((value) => !value)}
+                            >
+                              <Compass size={16} />
+                            </button>
+                            {quickNavOpen && (
+                              <div className="viewer-quick-nav-popover">
+                                <div className="viewer-quick-nav-header">Quick Nav</div>
+                                <div className="viewer-quick-nav-list">
+                                  {quickNavItems.map((item) => (
+                                    <button
+                                      key={item.id}
+                                      type="button"
+                                      className="viewer-quick-nav-item"
+                                      onClick={() => {
+                                        setQuickNavOpen(false);
+                                        void openViewerPreview(item.viewerPath, preview.title, undefined, viewerPageMode);
+                                      }}
+                                    >
+                                      <span className="viewer-quick-nav-item-heading">{item.heading}</span>
+                                      <span className="viewer-quick-nav-item-meta">{item.sectionPathLabel}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="wiki-overlay-toolbar inline">
+                          <button
+                            type="button"
+                            className={`wiki-overlay-action ${currentFavorite ? 'active' : ''}`}
+                            onClick={() => { void handleToggleFavoriteCurrent(); }}
+                            disabled={isOverlaySaving}
+                            title={currentFavorite ? 'Saved' : 'Save'}
+                          >
+                            <Star size={14} />
+                          </button>
+                          {currentOverlayTarget.kind === 'section' && (
+                            <button
+                              type="button"
+                              className={`wiki-overlay-action ${currentSectionCheck ? 'active' : ''}`}
+                              onClick={() => { void handleToggleSectionCheckCurrent(); }}
+                              disabled={isOverlaySaving}
+                              title={currentSectionCheck ? 'Done' : 'Mark Done'}
+                            >
+                              <Check size={14} />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className={`wiki-overlay-action ${noteOpen ? 'active' : ''}`}
+                            onClick={() => setNoteOpen((value) => !value)}
+                            title="Note"
+                          >
+                            <NotebookPen size={14} />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
                 {noteOpen && (
                   <div className="wiki-note-panel viewer-stage-note-panel">
                     <textarea
@@ -3436,8 +3642,9 @@ export default function WorkspacePage() {
                 {preview.viewerDocument?.html ? (
                   <ViewerDocumentStage
                     viewerDocument={preview.viewerDocument}
+                    currentViewerPath={currentViewerPath}
                     onNavigateViewerPath={(viewerPath) => {
-                      void openViewerPreview(viewerPath, preview.title);
+                      void openViewerPreview(viewerPath, preview.title, undefined, viewerPageMode);
                     }}
                     className="playbook-reader-shadow-host"
                   />
@@ -3487,8 +3694,9 @@ export default function WorkspacePage() {
                   {preview.viewerDocument?.html ? (
                     <ViewerDocumentStage
                       viewerDocument={preview.viewerDocument}
+                      currentViewerPath={runtimePathFromUrl(preview.viewerUrl)}
                       onNavigateViewerPath={(viewerPath) => {
-                        void openViewerPreview(viewerPath, preview.title);
+                        void openViewerPreview(viewerPath, preview.title, undefined, viewerPageMode);
                       }}
                       className="playbook-reader-shadow-host"
                     />

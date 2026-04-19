@@ -90,7 +90,7 @@
         "summary": "아키텍처 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Installing on any platform",
+        "label": "플랫폼 비종속 설치 플레이북",
         "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
         "summary": "아키텍처 이후 함께 봐야 하는 문서다."
       },
@@ -102,9 +102,9 @@
     ],
     "next_reading_path": [
       {
-        "label": "1. Installing on any platform",
+        "label": "1. 플랫폼 비종속 설치 플레이북",
         "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-        "summary": "아키텍처 다음 경로로 Installing on any platform를 본다."
+        "summary": "아키텍처 다음 경로로 플랫폼 비종속 설치 플레이북를 본다."
       },
       {
         "label": "2. 네트워킹 개요",
@@ -192,39 +192,39 @@
       {
         "label": "etcd 백업 및 복구 플레이북",
         "href": "/playbooks/wiki-runtime/active/etcd/index.html",
-        "summary": "Backup and restore 이후 함께 봐야 하는 문서다."
+        "summary": "백업 및 복구 운영 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Machine configuration",
+        "label": "머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Backup and restore 이후 함께 봐야 하는 문서다."
+        "summary": "백업 및 복구 운영 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Monitoring",
+        "label": "클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Backup and restore 이후 함께 봐야 하는 문서다."
+        "summary": "백업 및 복구 운영 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
         "label": "설치 후 구성",
         "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html",
-        "summary": "Backup and restore 이후 함께 봐야 하는 문서다."
+        "summary": "백업 및 복구 운영 플레이북 이후 함께 봐야 하는 문서다."
       }
     ],
     "next_reading_path": [
       {
-        "label": "1. Monitoring",
+        "label": "1. 클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Backup and restore 다음 경로로 Monitoring를 본다."
+        "summary": "백업 및 복구 운영 플레이북 다음 경로로 클러스터 모니터링 운영 플레이북를 본다."
       },
       {
         "label": "2. 설치 후 구성",
         "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html",
-        "summary": "Backup and restore 다음 경로로 설치 후 구성를 본다."
+        "summary": "백업 및 복구 운영 플레이북 다음 경로로 설치 후 구성를 본다."
       },
       {
         "label": "3. etcd 백업 및 복구 플레이북",
         "href": "/playbooks/wiki-runtime/active/etcd/index.html",
-        "summary": "Backup and restore 다음 경로로 etcd 백업 및 복구 플레이북를 본다."
+        "summary": "백업 및 복구 운영 플레이북 다음 경로로 etcd 백업 및 복구 플레이북를 본다."
       }
     ],
     "parent_topic": {
@@ -236,17 +236,17 @@
       {
         "label": "etcd 백업 및 복구 플레이북",
         "href": "/playbooks/wiki-runtime/active/etcd/index.html",
-        "summary": "Backup and restore와 같은 작업군에 속한 문서다."
+        "summary": "백업 및 복구 운영 플레이북와 같은 작업군에 속한 문서다."
       },
       {
-        "label": "Machine configuration",
+        "label": "머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Backup and restore와 같은 작업군에 속한 문서다."
+        "summary": "백업 및 복구 운영 플레이북와 같은 작업군에 속한 문서다."
       },
       {
         "label": "머신 관리",
         "href": "/playbooks/wiki-runtime/active/machine_management/index.html",
-        "summary": "Backup and restore와 같은 작업군에 속한 문서다."
+        "summary": "백업 및 복구 운영 플레이북와 같은 작업군에 속한 문서다."
       }
     ]
   },
@@ -281,17 +281,17 @@
     ],
     "related_docs": [
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
         "summary": "etcd 백업 및 복구 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Machine configuration",
+        "label": "머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
         "summary": "etcd 백업 및 복구 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Monitoring",
+        "label": "클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
         "summary": "etcd 백업 및 복구 플레이북 이후 함께 봐야 하는 문서다."
       },
@@ -303,9 +303,9 @@
     ],
     "next_reading_path": [
       {
-        "label": "1. Monitoring",
+        "label": "1. 클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "etcd 백업 및 복구 플레이북 다음 경로로 Monitoring를 본다."
+        "summary": "etcd 백업 및 복구 플레이북 다음 경로로 클러스터 모니터링 운영 플레이북를 본다."
       },
       {
         "label": "2. 설치 후 구성",
@@ -313,9 +313,9 @@
         "summary": "etcd 백업 및 복구 플레이북 다음 경로로 설치 후 구성를 본다."
       },
       {
-        "label": "3. Backup and restore",
+        "label": "3. 백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "etcd 백업 및 복구 플레이북 다음 경로로 Backup and restore를 본다."
+        "summary": "etcd 백업 및 복구 플레이북 다음 경로로 백업 및 복구 운영 플레이북를 본다."
       }
     ],
     "parent_topic": {
@@ -325,12 +325,12 @@
     },
     "siblings": [
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
         "summary": "etcd 백업 및 복구 플레이북와 같은 작업군에 속한 문서다."
       },
       {
-        "label": "Machine configuration",
+        "label": "머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
         "summary": "etcd 백업 및 복구 플레이북와 같은 작업군에 속한 문서다."
       },
@@ -485,7 +485,7 @@
     ],
     "related_docs": [
       {
-        "label": "Installing on any platform",
+        "label": "플랫폼 비종속 설치 플레이북",
         "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
         "summary": "설치 개요 이후 함께 봐야 하는 문서다."
       },
@@ -495,31 +495,31 @@
         "summary": "설치 개요 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Machine configuration",
+        "label": "머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
         "summary": "설치 개요 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
         "summary": "설치 개요 이후 함께 봐야 하는 문서다."
       }
     ],
     "next_reading_path": [
       {
-        "label": "1. Machine configuration",
+        "label": "1. 머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "설치 개요 다음 경로로 Machine configuration를 본다."
+        "summary": "설치 개요 다음 경로로 머신 구성 운영 플레이북를 본다."
       },
       {
-        "label": "2. Backup and restore",
+        "label": "2. 백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "설치 개요 다음 경로로 Backup and restore를 본다."
+        "summary": "설치 개요 다음 경로로 백업 및 복구 운영 플레이북를 본다."
       },
       {
-        "label": "3. Installing on any platform",
+        "label": "3. 플랫폼 비종속 설치 플레이북",
         "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-        "summary": "설치 개요 다음 경로로 Installing on any platform를 본다."
+        "summary": "설치 개요 다음 경로로 플랫폼 비종속 설치 플레이북를 본다."
       }
     ],
     "parent_topic": {
@@ -529,7 +529,7 @@
     },
     "siblings": [
       {
-        "label": "Installing on any platform",
+        "label": "플랫폼 비종속 설치 플레이북",
         "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
         "summary": "설치 개요와 같은 작업군에 속한 문서다."
       },
@@ -564,39 +564,39 @@
       {
         "label": "설치 개요",
         "href": "/playbooks/wiki-runtime/active/installation_overview/index.html",
-        "summary": "Installing on any platform 이후 함께 봐야 하는 문서다."
+        "summary": "플랫폼 비종속 설치 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
         "label": "설치 후 구성",
         "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html",
-        "summary": "Installing on any platform 이후 함께 봐야 하는 문서다."
+        "summary": "플랫폼 비종속 설치 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Machine configuration",
+        "label": "머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Installing on any platform 이후 함께 봐야 하는 문서다."
+        "summary": "플랫폼 비종속 설치 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Installing on any platform 이후 함께 봐야 하는 문서다."
+        "summary": "플랫폼 비종속 설치 플레이북 이후 함께 봐야 하는 문서다."
       }
     ],
     "next_reading_path": [
       {
-        "label": "1. Machine configuration",
+        "label": "1. 머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Installing on any platform 다음 경로로 Machine configuration를 본다."
+        "summary": "플랫폼 비종속 설치 플레이북 다음 경로로 머신 구성 운영 플레이북를 본다."
       },
       {
-        "label": "2. Backup and restore",
+        "label": "2. 백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Installing on any platform 다음 경로로 Backup and restore를 본다."
+        "summary": "플랫폼 비종속 설치 플레이북 다음 경로로 백업 및 복구 운영 플레이북를 본다."
       },
       {
         "label": "3. 설치 개요",
         "href": "/playbooks/wiki-runtime/active/installation_overview/index.html",
-        "summary": "Installing on any platform 다음 경로로 설치 개요를 본다."
+        "summary": "플랫폼 비종속 설치 플레이북 다음 경로로 설치 개요를 본다."
       }
     ],
     "parent_topic": {
@@ -608,17 +608,17 @@
       {
         "label": "설치 개요",
         "href": "/playbooks/wiki-runtime/active/installation_overview/index.html",
-        "summary": "Installing on any platform와 같은 작업군에 속한 문서다."
+        "summary": "플랫폼 비종속 설치 플레이북와 같은 작업군에 속한 문서다."
       },
       {
         "label": "설치 후 구성",
         "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html",
-        "summary": "Installing on any platform와 같은 작업군에 속한 문서다."
+        "summary": "플랫폼 비종속 설치 플레이북와 같은 작업군에 속한 문서다."
       },
       {
         "label": "클러스터 업데이트",
         "href": "/playbooks/wiki-runtime/active/updating_clusters/index.html",
-        "summary": "Installing on any platform와 같은 작업군에 속한 문서다."
+        "summary": "플랫폼 비종속 설치 플레이북와 같은 작업군에 속한 문서다."
       }
     ]
   },
@@ -635,41 +635,41 @@
     ],
     "related_docs": [
       {
-        "label": "Monitoring",
+        "label": "클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "로깅 이후 함께 봐야 하는 문서다."
+        "summary": "클러스터 로깅 운영 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
         "label": "관찰 기능 개요",
         "href": "/playbooks/wiki-runtime/active/observability_overview/index.html",
-        "summary": "로깅 이후 함께 봐야 하는 문서다."
+        "summary": "클러스터 로깅 운영 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "로깅 이후 함께 봐야 하는 문서다."
+        "summary": "클러스터 로깅 운영 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Machine configuration",
+        "label": "머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "로깅 이후 함께 봐야 하는 문서다."
+        "summary": "클러스터 로깅 운영 플레이북 이후 함께 봐야 하는 문서다."
       }
     ],
     "next_reading_path": [
       {
-        "label": "1. Backup and restore",
+        "label": "1. 백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "로깅 다음 경로로 Backup and restore를 본다."
+        "summary": "클러스터 로깅 운영 플레이북 다음 경로로 백업 및 복구 운영 플레이북를 본다."
       },
       {
-        "label": "2. Machine configuration",
+        "label": "2. 머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "로깅 다음 경로로 Machine configuration를 본다."
+        "summary": "클러스터 로깅 운영 플레이북 다음 경로로 머신 구성 운영 플레이북를 본다."
       },
       {
-        "label": "3. Monitoring",
+        "label": "3. 클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "로깅 다음 경로로 Monitoring를 본다."
+        "summary": "클러스터 로깅 운영 플레이북 다음 경로로 클러스터 모니터링 운영 플레이북를 본다."
       }
     ],
     "parent_topic": {
@@ -679,14 +679,14 @@
     },
     "siblings": [
       {
-        "label": "Monitoring",
+        "label": "클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "로깅와 같은 작업군에 속한 문서다."
+        "summary": "클러스터 로깅 운영 플레이북와 같은 작업군에 속한 문서다."
       },
       {
         "label": "관찰 기능 개요",
         "href": "/playbooks/wiki-runtime/active/observability_overview/index.html",
-        "summary": "로깅와 같은 작업군에 속한 문서다."
+        "summary": "클러스터 로깅 운영 플레이북와 같은 작업군에 속한 문서다."
       }
     ]
   },
@@ -707,41 +707,41 @@
     ],
     "related_docs": [
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Machine configuration 이후 함께 봐야 하는 문서다."
+        "summary": "머신 구성 운영 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
         "label": "etcd 백업 및 복구 플레이북",
         "href": "/playbooks/wiki-runtime/active/etcd/index.html",
-        "summary": "Machine configuration 이후 함께 봐야 하는 문서다."
+        "summary": "머신 구성 운영 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Monitoring",
+        "label": "클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Machine configuration 이후 함께 봐야 하는 문서다."
+        "summary": "머신 구성 운영 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
         "label": "설치 후 구성",
         "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html",
-        "summary": "Machine configuration 이후 함께 봐야 하는 문서다."
+        "summary": "머신 구성 운영 플레이북 이후 함께 봐야 하는 문서다."
       }
     ],
     "next_reading_path": [
       {
-        "label": "1. Monitoring",
+        "label": "1. 클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "Machine configuration 다음 경로로 Monitoring를 본다."
+        "summary": "머신 구성 운영 플레이북 다음 경로로 클러스터 모니터링 운영 플레이북를 본다."
       },
       {
         "label": "2. 설치 후 구성",
         "href": "/playbooks/wiki-runtime/active/postinstallation_configuration/index.html",
-        "summary": "Machine configuration 다음 경로로 설치 후 구성를 본다."
+        "summary": "머신 구성 운영 플레이북 다음 경로로 설치 후 구성를 본다."
       },
       {
-        "label": "3. Backup and restore",
+        "label": "3. 백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Machine configuration 다음 경로로 Backup and restore를 본다."
+        "summary": "머신 구성 운영 플레이북 다음 경로로 백업 및 복구 운영 플레이북를 본다."
       }
     ],
     "parent_topic": {
@@ -751,19 +751,19 @@
     },
     "siblings": [
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Machine configuration와 같은 작업군에 속한 문서다."
+        "summary": "머신 구성 운영 플레이북와 같은 작업군에 속한 문서다."
       },
       {
         "label": "etcd 백업 및 복구 플레이북",
         "href": "/playbooks/wiki-runtime/active/etcd/index.html",
-        "summary": "Machine configuration와 같은 작업군에 속한 문서다."
+        "summary": "머신 구성 운영 플레이북와 같은 작업군에 속한 문서다."
       },
       {
         "label": "머신 관리",
         "href": "/playbooks/wiki-runtime/active/machine_management/index.html",
-        "summary": "Machine configuration와 같은 작업군에 속한 문서다."
+        "summary": "머신 구성 운영 플레이북와 같은 작업군에 속한 문서다."
       }
     ]
   },
@@ -784,7 +784,7 @@
     ],
     "related_docs": [
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
         "summary": "머신 관리 이후 함께 봐야 하는 문서다."
       },
@@ -794,7 +794,7 @@
         "summary": "머신 관리 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Monitoring",
+        "label": "클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
         "summary": "머신 관리 이후 함께 봐야 하는 문서다."
       },
@@ -806,9 +806,9 @@
     ],
     "next_reading_path": [
       {
-        "label": "1. Monitoring",
+        "label": "1. 클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "머신 관리 다음 경로로 Monitoring를 본다."
+        "summary": "머신 관리 다음 경로로 클러스터 모니터링 운영 플레이북를 본다."
       },
       {
         "label": "2. 설치 후 구성",
@@ -816,9 +816,9 @@
         "summary": "머신 관리 다음 경로로 설치 후 구성를 본다."
       },
       {
-        "label": "3. Backup and restore",
+        "label": "3. 백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "머신 관리 다음 경로로 Backup and restore를 본다."
+        "summary": "머신 관리 다음 경로로 백업 및 복구 운영 플레이북를 본다."
       }
     ],
     "parent_topic": {
@@ -828,7 +828,7 @@
     },
     "siblings": [
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
         "summary": "머신 관리와 같은 작업군에 속한 문서다."
       },
@@ -838,7 +838,7 @@
         "summary": "머신 관리와 같은 작업군에 속한 문서다."
       },
       {
-        "label": "Machine configuration",
+        "label": "머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
         "summary": "머신 관리와 같은 작업군에 속한 문서다."
       }
@@ -859,39 +859,39 @@
       {
         "label": "관찰 기능 개요",
         "href": "/playbooks/wiki-runtime/active/observability_overview/index.html",
-        "summary": "Monitoring 이후 함께 봐야 하는 문서다."
+        "summary": "클러스터 모니터링 운영 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "로깅",
+        "label": "클러스터 로깅 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/logging/index.html",
-        "summary": "Monitoring 이후 함께 봐야 하는 문서다."
+        "summary": "클러스터 모니터링 운영 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Monitoring 이후 함께 봐야 하는 문서다."
+        "summary": "클러스터 모니터링 운영 플레이북 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Machine configuration",
+        "label": "머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Monitoring 이후 함께 봐야 하는 문서다."
+        "summary": "클러스터 모니터링 운영 플레이북 이후 함께 봐야 하는 문서다."
       }
     ],
     "next_reading_path": [
       {
-        "label": "1. Backup and restore",
+        "label": "1. 백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "Monitoring 다음 경로로 Backup and restore를 본다."
+        "summary": "클러스터 모니터링 운영 플레이북 다음 경로로 백업 및 복구 운영 플레이북를 본다."
       },
       {
-        "label": "2. Machine configuration",
+        "label": "2. 머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "Monitoring 다음 경로로 Machine configuration를 본다."
+        "summary": "클러스터 모니터링 운영 플레이북 다음 경로로 머신 구성 운영 플레이북를 본다."
       },
       {
         "label": "3. 관찰 기능 개요",
         "href": "/playbooks/wiki-runtime/active/observability_overview/index.html",
-        "summary": "Monitoring 다음 경로로 관찰 기능 개요를 본다."
+        "summary": "클러스터 모니터링 운영 플레이북 다음 경로로 관찰 기능 개요를 본다."
       }
     ],
     "parent_topic": {
@@ -903,12 +903,12 @@
       {
         "label": "관찰 기능 개요",
         "href": "/playbooks/wiki-runtime/active/observability_overview/index.html",
-        "summary": "Monitoring와 같은 작업군에 속한 문서다."
+        "summary": "클러스터 모니터링 운영 플레이북와 같은 작업군에 속한 문서다."
       },
       {
-        "label": "로깅",
+        "label": "클러스터 로깅 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/logging/index.html",
-        "summary": "Monitoring와 같은 작업군에 속한 문서다."
+        "summary": "클러스터 모니터링 운영 플레이북와 같은 작업군에 속한 문서다."
       }
     ]
   },
@@ -997,7 +997,7 @@
     ],
     "related_docs": [
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
         "summary": "노드 이후 함께 봐야 하는 문서다."
       },
@@ -1007,7 +1007,7 @@
         "summary": "노드 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Monitoring",
+        "label": "클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
         "summary": "노드 이후 함께 봐야 하는 문서다."
       },
@@ -1019,9 +1019,9 @@
     ],
     "next_reading_path": [
       {
-        "label": "1. Monitoring",
+        "label": "1. 클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "노드 다음 경로로 Monitoring를 본다."
+        "summary": "노드 다음 경로로 클러스터 모니터링 운영 플레이북를 본다."
       },
       {
         "label": "2. 설치 후 구성",
@@ -1029,9 +1029,9 @@
         "summary": "노드 다음 경로로 설치 후 구성를 본다."
       },
       {
-        "label": "3. Backup and restore",
+        "label": "3. 백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "노드 다음 경로로 Backup and restore를 본다."
+        "summary": "노드 다음 경로로 백업 및 복구 운영 플레이북를 본다."
       }
     ],
     "parent_topic": {
@@ -1041,7 +1041,7 @@
     },
     "siblings": [
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
         "summary": "노드와 같은 작업군에 속한 문서다."
       },
@@ -1051,7 +1051,7 @@
         "summary": "노드와 같은 작업군에 속한 문서다."
       },
       {
-        "label": "Machine configuration",
+        "label": "머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
         "summary": "노드와 같은 작업군에 속한 문서다."
       }
@@ -1070,41 +1070,41 @@
     ],
     "related_docs": [
       {
-        "label": "Monitoring",
+        "label": "클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
         "summary": "관찰 기능 개요 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "로깅",
+        "label": "클러스터 로깅 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/logging/index.html",
         "summary": "관찰 기능 개요 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
         "summary": "관찰 기능 개요 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Machine configuration",
+        "label": "머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
         "summary": "관찰 기능 개요 이후 함께 봐야 하는 문서다."
       }
     ],
     "next_reading_path": [
       {
-        "label": "1. Backup and restore",
+        "label": "1. 백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "관찰 기능 개요 다음 경로로 Backup and restore를 본다."
+        "summary": "관찰 기능 개요 다음 경로로 백업 및 복구 운영 플레이북를 본다."
       },
       {
-        "label": "2. Machine configuration",
+        "label": "2. 머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "관찰 기능 개요 다음 경로로 Machine configuration를 본다."
+        "summary": "관찰 기능 개요 다음 경로로 머신 구성 운영 플레이북를 본다."
       },
       {
-        "label": "3. Monitoring",
+        "label": "3. 클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "관찰 기능 개요 다음 경로로 Monitoring를 본다."
+        "summary": "관찰 기능 개요 다음 경로로 클러스터 모니터링 운영 플레이북를 본다."
       }
     ],
     "parent_topic": {
@@ -1114,12 +1114,12 @@
     },
     "siblings": [
       {
-        "label": "Monitoring",
+        "label": "클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
         "summary": "관찰 기능 개요와 같은 작업군에 속한 문서다."
       },
       {
-        "label": "로깅",
+        "label": "클러스터 로깅 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/logging/index.html",
         "summary": "관찰 기능 개요와 같은 작업군에 속한 문서다."
       }
@@ -1188,7 +1188,7 @@
         "summary": "개요 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Installing on any platform",
+        "label": "플랫폼 비종속 설치 플레이북",
         "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
         "summary": "개요 이후 함께 봐야 하는 문서다."
       },
@@ -1200,9 +1200,9 @@
     ],
     "next_reading_path": [
       {
-        "label": "1. Installing on any platform",
+        "label": "1. 플랫폼 비종속 설치 플레이북",
         "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
-        "summary": "개요 다음 경로로 Installing on any platform를 본다."
+        "summary": "개요 다음 경로로 플랫폼 비종속 설치 플레이북를 본다."
       },
       {
         "label": "2. 네트워킹 개요",
@@ -1255,31 +1255,31 @@
         "summary": "설치 후 구성 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Installing on any platform",
+        "label": "플랫폼 비종속 설치 플레이북",
         "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
         "summary": "설치 후 구성 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Machine configuration",
+        "label": "머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
         "summary": "설치 후 구성 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
         "summary": "설치 후 구성 이후 함께 봐야 하는 문서다."
       }
     ],
     "next_reading_path": [
       {
-        "label": "1. Machine configuration",
+        "label": "1. 머신 구성 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/machine_configuration/index.html",
-        "summary": "설치 후 구성 다음 경로로 Machine configuration를 본다."
+        "summary": "설치 후 구성 다음 경로로 머신 구성 운영 플레이북를 본다."
       },
       {
-        "label": "2. Backup and restore",
+        "label": "2. 백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "설치 후 구성 다음 경로로 Backup and restore를 본다."
+        "summary": "설치 후 구성 다음 경로로 백업 및 복구 운영 플레이북를 본다."
       },
       {
         "label": "3. 설치 개요",
@@ -1299,7 +1299,7 @@
         "summary": "설치 후 구성와 같은 작업군에 속한 문서다."
       },
       {
-        "label": "Installing on any platform",
+        "label": "플랫폼 비종속 설치 플레이북",
         "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
         "summary": "설치 후 구성와 같은 작업군에 속한 문서다."
       },
@@ -1493,26 +1493,26 @@
     ],
     "related_docs": [
       {
-        "label": "Backup and restore",
+        "label": "백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
         "summary": "클러스터 업데이트 이후 함께 봐야 하는 문서다."
       },
       {
-        "label": "Monitoring",
+        "label": "클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
         "summary": "클러스터 업데이트 이후 함께 봐야 하는 문서다."
       }
     ],
     "next_reading_path": [
       {
-        "label": "1. Backup and restore",
+        "label": "1. 백업 및 복구 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
-        "summary": "클러스터 업데이트 다음 경로로 Backup and restore를 본다."
+        "summary": "클러스터 업데이트 다음 경로로 백업 및 복구 운영 플레이북를 본다."
       },
       {
-        "label": "2. Monitoring",
+        "label": "2. 클러스터 모니터링 운영 플레이북",
         "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
-        "summary": "클러스터 업데이트 다음 경로로 Monitoring를 본다."
+        "summary": "클러스터 업데이트 다음 경로로 클러스터 모니터링 운영 플레이북를 본다."
       }
     ],
     "parent_topic": {

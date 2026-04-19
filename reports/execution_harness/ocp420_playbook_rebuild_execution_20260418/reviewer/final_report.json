@@ -1,0 +1,16 @@
+{
+  "task_id": "ocp420_playbook_rebuild_execution_20260418",
+  "lane_id": "reviewer",
+  "role": "reviewer",
+  "status": "pending",
+  "git_ref_snapshot": {
+    "head_ref": "feat/playbook-studio-pt",
+    "head_sha": "6bcb8703c2332ce0c7066e402fcfc9a0046fcd11",
+    "upstream_ref": "origin/feat/playbook-studio-pt",
+    "upstream_sha": "6bcb8703c2332ce0c7066e402fcfc9a0046fcd11",
+    "origin_main_sha": "e87fa0c562c5e277305617e1eea36c112aa01b27"
+  },
+  "code_paths": [],
+  "artifacts": [],
+  "validation": []
+}

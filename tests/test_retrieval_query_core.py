@@ -30,6 +30,7 @@ from _support_retrieval import (
     query_book_adjustments,
     rewrite_query,
 )
+from play_book_studio.retrieval.retriever_pipeline import _filter_latest_only_hits
 
 
 def _write_private_runtime_manifest(
@@ -43,6 +44,7 @@ def _write_private_runtime_manifest(
 ) -> Path:
     corpus_dir = settings.customer_pack_corpus_dir / draft_id
     corpus_dir.mkdir(parents=True, exist_ok=True)
+    settings.customer_pack_books_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = corpus_dir / "manifest.json"
     manifest_path.write_text(
         json.dumps(
@@ -583,6 +585,114 @@ class TestRetrievalQueryCore(unittest.TestCase):
         self.assertEqual("customer-config-guide", result.hits[0].book_slug)
         self.assertEqual("uploaded", result.hits[0].source_collection)
         self.assertEqual(1, result.trace["metrics"]["overlay_bm25"]["count"])
+
+    def test_retriever_ignores_uploaded_overlay_without_active_selection(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            settings = Settings(root_dir=root)
+            _write_private_runtime_manifest(settings, draft_id="draft-a", vector_status="skipped")
+            (settings.customer_pack_books_dir / "draft-a.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "canonical_book_v1",
+                        "book_slug": "customer-config-guide",
+                        "title": "Customer Config Guide",
+                        "source_type": "pdf",
+                        "source_uri": "/tmp/customer.pdf",
+                        "language_hint": "ko",
+                        "source_view_strategy": "normalized_sections_v1",
+                        "retrieval_derivation": "chunks_from_canonical_sections",
+                        "quality_status": "ready",
+                        "sections": [
+                            {
+                                "ordinal": 1,
+                                "section_key": "customer-config-guide:snippet",
+                                "heading": "ConfigMap Secret",
+                                "section_level": 2,
+                                "section_path": ["ConfigMap Secret"],
+                                "section_path_label": "ConfigMap Secret",
+                                "anchor": "snippet",
+                                "viewer_path": "/playbooks/customer-packs/draft-a/index.html#snippet",
+                                "source_url": "/tmp/customer.pdf",
+                                "text": "ConfigMap Secret values must be synchronized before rollout.",
+                                "block_kinds": ["paragraph"],
+                            }
+                        ],
+                        "notes": [],
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            retriever = ChatRetriever(
+                settings,
+                BM25Index.from_rows(
+                    [
+                        {
+                            "chunk_id": "core-bm25-backup",
+                            "book_slug": "postinstallation_configuration",
+                            "chapter": "postinstall",
+                            "section": "4.12.5. etcd 데이터 백업",
+                            "anchor": "backup",
+                            "source_url": "https://example.com/postinstall",
+                            "viewer_path": "/docs/postinstall.html#backup",
+                            "text": "공식 문서의 etcd backup 절차입니다.",
+                        }
+                    ]
+                ),
+                vector_retriever=None,
+                reranker=None,
+            )
+
+            result = retriever.retrieve(
+                "backup 절차를 알려줘",
+                context=SessionContext(),
+                use_vector=False,
+                top_k=3,
+                candidate_k=5,
+            )
+
+        self.assertEqual("postinstallation_configuration", result.hits[0].book_slug)
+        self.assertNotEqual("uploaded", result.hits[0].source_collection)
+        self.assertEqual(0, result.trace["metrics"].get("overlay_bm25", {}).get("count", 0))
+
+    def test_filter_latest_only_hits_keeps_official_core_hits_outside_active_runtime(self) -> None:
+        class _FakeRetriever:
+            def __init__(self, settings: Settings) -> None:
+                self.settings = settings
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            active_manifest = root / "data" / "wiki_runtime_books" / "active_manifest.json"
+            active_manifest.parent.mkdir(parents=True, exist_ok=True)
+            active_manifest.write_text(
+                json.dumps({"entries": [{"slug": "installation_overview"}]}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            retriever = _FakeRetriever(Settings(root_dir=root))
+            hits = [
+                RetrievalHit(
+                    chunk_id="repo-wide-official-hit",
+                    book_slug="installing__installing_gcp__installing_gcp_private",
+                    chapter="installing",
+                    section="Prerequisites",
+                    anchor="prereq",
+                    source_url="https://example.com/private",
+                    viewer_path="/docs/private.html#prereq",
+                    text="Private cluster prerequisites",
+                    source="vector",
+                    raw_score=0.9,
+                    fused_score=0.9,
+                    source_collection="core",
+                    review_status="unreviewed",
+                )
+            ]
+
+            filtered = _filter_latest_only_hits(retriever, hits)
+
+        self.assertEqual(1, len(filtered))
+        self.assertEqual("repo-wide-official-hit", filtered[0].chunk_id)
 
     def test_retriever_blocks_private_customer_corpus_bm25_artifact_when_boundary_is_not_runtime_eligible(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -31,7 +31,9 @@ from play_book_studio.app.server_routes import (
     handle_viewer_document,
     _viewer_source_meta,
 )
+import play_book_studio.app.presenters as presenters_module
 from play_book_studio.app.presenters import _build_citation_presentation_context
+from play_book_studio.app.viewer_page import _render_study_viewer_html
 from play_book_studio.config.settings import load_settings
 
 
@@ -76,7 +78,7 @@ class AppViewersTestSupport(unittest.TestCase):
             """
             <html>
               <head>
-                <style>:root { --bg: #fff; } body.is-embedded main { padding: 0; }</style>
+                <style>:root { --bg: #fff; } body.is-embedded main { padding: 0; } .section-body p { margin: 0; }</style>
                 <script>window.bad = true;</script>
               </head>
               <body class="doc-body">
@@ -94,11 +96,546 @@ class AppViewersTestSupport(unittest.TestCase):
         self.assertEqual("doc-body", payload["body_class_name"])
         self.assertEqual(1, len(payload["inline_styles"]))
         self.assertIn(".viewer-root", payload["inline_styles"][0])
+        self.assertIn(".section-body p", payload["inline_styles"][0])
+        self.assertNotIn(".section-.viewer-root p", payload["inline_styles"][0])
         self.assertIn('/playbooks/wiki-runtime/active/release_notes/images/hero.png', payload["html"])
         self.assertIn('/playbooks/wiki-runtime/active/release_notes/guide/next.html', payload["html"])
         self.assertIn('href="#section-1"', payload["html"])
         self.assertNotIn("<script", payload["html"])
         self.assertTrue(payload["interaction_policy"]["code_copy"])
+
+    def test_viewer_document_recovers_labeled_and_unordered_lists(self) -> None:
+        with self._workspace() as root:
+            runtime_dir = root / "data" / "wiki_runtime_books" / "full_rebuild"
+            runtime_dir.mkdir(parents=True, exist_ok=True)
+            runtime_path = runtime_dir / "installation_overview.md"
+            runtime_path.write_text(
+                (
+                    "# 설치 개요\n\n"
+                    "## OpenShift Container Platform 설치 정보\n\n"
+                    "OpenShift Container Platform 설치 프로그램은 클러스터를 배포하는 네 가지 방법을 제공하며, 다음 목록에서 자세히 설명합니다:\n\n"
+                    "대화형: 웹 기반 지원 설치 관리자를 사용하여 클러스터를 배포할 수 있습니다. 이는 인터넷에 연결된 네트워크가 있는 클러스터에 이상적인 방법입니다.\n\n"
+                    "지원 설치 프로그램은 OpenShift Container Platform을 설치하는 가장 쉬운 방법이며, 스마트 기본값을 제공합니다.\n\n"
+                    "로컬 에이전트 기반: 연결이 끊긴 환경 또는 제한된 네트워크를 위해 에이전트 기반 설치 관리자를 사용하여 로컬로 클러스터를 배포할 수 있습니다.\n\n"
+                    "구성은 명령줄 인터페이스를 사용하여 수행됩니다. 이 방법은 연결이 끊긴 환경에 이상적입니다.\n\n"
+                    "자동화: 설치 관리자 프로비저닝 인프라에 클러스터를 배포할 수 있습니다.\n\n"
+                    "전체 제어: 준비 및 유지 관리하는 인프라에 클러스터를 배포하여 최대 사용자 지정 가능성을 제공할 수 있습니다.\n\n"
+                    "각 방법은 다음과 같은 특성을 가진 클러스터를 배포합니다.\n\n"
+                    "기본적으로 사용 가능한 단일 장애 지점이 없는 고가용성 인프라입니다.\n\n"
+                    "관리자는 적용되는 업데이트 및 시기를 제어할 수 있습니다.\n"
+                ),
+                encoding="utf-8",
+            )
+            active_manifest_path = root / "data" / "wiki_runtime_books" / "active_manifest.json"
+            active_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            active_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "generated_at_utc": "2026-04-19T08:00:00+00:00",
+                        "active_group": "full_rebuild",
+                        "entries": [
+                            {
+                                "slug": "installation_overview",
+                                "title": "설치 개요",
+                                "runtime_path": str(runtime_path),
+                                "source_lane": "official_ko",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            handler = self._capture_json_response()
+            handle_viewer_document(
+                handler,
+                urlencode(
+                    {
+                        "viewer_path": "/playbooks/wiki-runtime/active/installation_overview/index.html",
+                    }
+                ),
+                root_dir=root,
+            )
+
+        self.assertEqual(1, len(handler.calls))
+        status, payload = handler.calls[0]
+        self.assertEqual(HTTPStatus.OK, status)
+        html = str(payload["html"])
+        self.assertIn('reader-bullet-list reader-bullet-list-labeled', html)
+        self.assertIn('<span class="reader-list-lead">대화형:</span>', html)
+        self.assertIn('<span class="reader-list-lead">로컬 에이전트 기반:</span>', html)
+        self.assertIn('<ul class="reader-bullet-list">', html)
+        self.assertIn('관리자는 적용되는 업데이트 및 시기를 제어할 수 있습니다.', html)
+
+    def test_viewer_document_renders_admonition_box_with_simple_list_items(self) -> None:
+        with self._workspace() as root:
+            runtime_dir = root / "data" / "wiki_runtime_books" / "full_rebuild"
+            runtime_dir.mkdir(parents=True, exist_ok=True)
+            runtime_path = runtime_dir / "images.md"
+            runtime_path.write_text(
+                (
+                    "# 이미지\n\n"
+                    "## Cluster Samples Operator\n\n"
+                    "중요\n\n"
+                    "Cluster Samples Operator는 더 이상 사용되지 않습니다. 새 템플릿, 샘플 또는 비 S2I 이미지 스트림은 Cluster Samples Operator에 추가되지 않습니다.\n\n"
+                    "그러나 기존 S2I 빌더 이미지 스트림과 템플릿은 계속 업데이트를 수신합니다. S2I 이미지 스트림 및 템플릿은 다음과 같습니다.\n\n"
+                    "Ruby\n\n"
+                    "Python\n\n"
+                    "Node.js\n\n"
+                    "Perl\n\n"
+                    "Cluster Samples Operator는 S2I가 아닌 샘플 관리 및 지원을 중지합니다.\n"
+                ),
+                encoding="utf-8",
+            )
+            active_manifest_path = root / "data" / "wiki_runtime_books" / "active_manifest.json"
+            active_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            active_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "generated_at_utc": "2026-04-19T08:00:00+00:00",
+                        "active_group": "full_rebuild",
+                        "entries": [
+                            {
+                                "slug": "images",
+                                "title": "이미지",
+                                "runtime_path": str(runtime_path),
+                                "source_lane": "official_ko",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            handler = self._capture_json_response()
+            handle_viewer_document(
+                handler,
+                urlencode(
+                    {
+                        "viewer_path": "/playbooks/wiki-runtime/active/images/index.html",
+                    }
+                ),
+                root_dir=root,
+            )
+
+        self.assertEqual(1, len(handler.calls))
+        status, payload = handler.calls[0]
+        self.assertEqual(HTTPStatus.OK, status)
+        html = str(payload["html"])
+        self.assertIn('class="note-card note-important"', html)
+        self.assertIn('class="note-heading"', html)
+        self.assertIn('<ul class="reader-bullet-list">', html)
+        self.assertIn(">Ruby<", html)
+        self.assertIn(">Node.js<", html)
+        self.assertNotIn("<h3>Ruby</h3>", html)
+
+    def test_render_study_viewer_html_tolerates_outline_anchors_with_braces(self) -> None:
+        html = _render_study_viewer_html(
+            title="설치",
+            source_url="https://example.com",
+            cards=['<section id="intro" class="section-card"><div class="section-body"><p>body</p></div></section>'],
+            section_count=1,
+            eyebrow="Source-First Candidate",
+            summary="summary",
+            section_outline=[{"anchor": "about-sno-{context}", "heading": "SNO", "path": "SNO"}],
+        )
+
+        self.assertIn('href="#about-sno-{context}"', html)
+        self.assertIn("Quick Nav", html)
+
+    def test_active_runtime_viewer_prefers_playbook_book_for_structured_code_blocks(self) -> None:
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
+            (playbook_dir / "registry.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "playbook_document_v1",
+                        "source_view_strategy": "playbook_ast_v1",
+                        "book_slug": "registry",
+                        "title": "레지스트리",
+                        "source_uri": "https://example.com/registry",
+                        "sections": [
+                            {
+                                "section_id": "registry:process",
+                                "section_key": "registry:process",
+                                "ordinal": 1,
+                                "heading": "프로세스",
+                                "level": 2,
+                                "path": ["프로세스"],
+                                "section_path": ["프로세스"],
+                                "anchor": "process",
+                                "viewer_path": "/docs/ocp/4.20/ko/registry/index.html#process",
+                                "semantic_role": "reference",
+                                "blocks": [
+                                    {
+                                        "kind": "code",
+                                        "language": "yaml",
+                                        "wrap_hint": True,
+                                        "overflow_hint": "toggle",
+                                        "code": "spec:\n  schedule: 0 0 * * *\n  suspend: false\nstatus:\n  observedGeneration: 2",
+                                        "copy_text": "spec:\n  schedule: 0 0 * * *\n  suspend: false\nstatus:\n  observedGeneration: 2",
+                                    }
+                                ],
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            active_manifest_path = root / "data" / "wiki_runtime_books" / "active_manifest.json"
+            active_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            active_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "generated_at_utc": "2026-04-19T08:00:00+00:00",
+                        "active_group": "full_rebuild",
+                        "entries": [
+                            {
+                                "slug": "registry",
+                                "title": "레지스트리",
+                                "runtime_path": str(root / "data" / "wiki_runtime_books" / "full_rebuild" / "registry.md"),
+                                "source_lane": "official_ko",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            handler = self._capture_json_response()
+            handle_viewer_document(
+                handler,
+                urlencode(
+                    {
+                        "viewer_path": "/playbooks/wiki-runtime/active/registry/index.html",
+                    }
+                ),
+                root_dir=root,
+            )
+
+        self.assertEqual(1, len(handler.calls))
+        status, payload = handler.calls[0]
+        self.assertEqual(HTTPStatus.OK, status)
+        html = str(payload["html"])
+        self.assertIn("Source-First Candidate", html)
+        self.assertNotIn("Approved Wiki Runtime Book", html)
+        self.assertIn('data-copy="&quot;spec:\\n  schedule: 0 0 * * *', html)
+        self.assertIn('class="code-token code-key">spec:</span>', html)
+
+    def test_active_runtime_viewer_restores_link_lists_and_additional_resources_from_playbook_sections(self) -> None:
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
+            (playbook_dir / "operators.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "playbook_document_v1",
+                        "source_view_strategy": "playbook_ast_v1",
+                        "book_slug": "operators",
+                        "title": "Operator",
+                        "source_uri": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/operators/index",
+                        "sections": [
+                            {
+                                "section_id": "operators:dev",
+                                "section_key": "operators:dev",
+                                "ordinal": 1,
+                                "heading": "1.1. 개발자의 경우",
+                                "level": 3,
+                                "path": ["Operator 개요", "개발자의 경우"],
+                                "section_path": ["Operator 개요", "개발자의 경우"],
+                                "anchor": "operators-overview-developer-tasks_operators-overview",
+                                "viewer_path": "/docs/ocp/4.20/ko/operators/index.html#operators-overview-developer-tasks_operators-overview",
+                                "semantic_role": "overview",
+                                "blocks": [
+                                    {"kind": "paragraph", "text": "Operator 작성자는 OLM 기반 Operator에 대해 다음 개발 작업을 수행할 수 있습니다."},
+                                    {"kind": "paragraph", "text": "Operator를 설치하고 네임스페이스에 등록합니다."},
+                                    {"kind": "paragraph", "text": "웹 콘솔을 통해 설치된 Operator에서 애플리케이션을 생성합니다."},
+                                    {"kind": "paragraph", "text": "추가 리소스"},
+                                    {"kind": "paragraph", "text": "Operator 개발자의 머신 삭제 라이프사이클 후크 예"},
+                                ],
+                            },
+                            {
+                                "section_id": "operators:install-ns",
+                                "section_key": "operators:install-ns",
+                                "ordinal": 2,
+                                "heading": "3.2. 네임스페이스에 Operator 설치",
+                                "level": 3,
+                                "path": ["사용자 작업", "네임스페이스에 Operator 설치"],
+                                "section_path": ["사용자 작업", "네임스페이스에 Operator 설치"],
+                                "anchor": "olm-installing-operators-in-namespace",
+                                "viewer_path": "/docs/ocp/4.20/ko/operators/index.html#olm-installing-operators-in-namespace",
+                                "semantic_role": "procedure",
+                                "blocks": [{"kind": "paragraph", "text": "본문"}],
+                            },
+                            {
+                                "section_id": "operators:create-apps",
+                                "section_key": "operators:create-apps",
+                                "ordinal": 3,
+                                "heading": "3.1. 설치된 Operator에서 애플리케이션 생성",
+                                "level": 3,
+                                "path": ["사용자 작업", "설치된 Operator에서 애플리케이션 생성"],
+                                "section_path": ["사용자 작업", "설치된 Operator에서 애플리케이션 생성"],
+                                "anchor": "olm-creating-apps-from-installed-operators",
+                                "viewer_path": "/docs/ocp/4.20/ko/operators/index.html#olm-creating-apps-from-installed-operators",
+                                "semantic_role": "procedure",
+                                "blocks": [{"kind": "paragraph", "text": "본문"}],
+                            },
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            active_manifest_path = root / "data" / "wiki_runtime_books" / "active_manifest.json"
+            active_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            active_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "generated_at_utc": "2026-04-19T08:00:00+00:00",
+                        "active_group": "full_rebuild",
+                        "entries": [
+                            {
+                                "slug": "operators",
+                                "title": "Operator",
+                                "runtime_path": str(root / "data" / "wiki_runtime_books" / "full_rebuild" / "operators.md"),
+                                "source_lane": "official_ko",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            handler = self._capture_json_response()
+            handle_viewer_document(
+                handler,
+                urlencode(
+                    {
+                        "viewer_path": "/playbooks/wiki-runtime/active/operators/index.html",
+                    }
+                ),
+                root_dir=root,
+            )
+
+        self.assertEqual(1, len(handler.calls))
+        status, payload = handler.calls[0]
+        self.assertEqual(HTTPStatus.OK, status)
+        html = str(payload["html"])
+        self.assertIn('reader-bullet-list reader-bullet-list-linked', html)
+        self.assertIn('/playbooks/wiki-runtime/active/operators/index.html#olm-installing-operators-in-namespace', html)
+        self.assertIn('/playbooks/wiki-runtime/active/operators/index.html#olm-creating-apps-from-installed-operators', html)
+        self.assertIn('class="additional-resources-card"', html)
+        self.assertIn('Operator 개발자의 머신 삭제 라이프사이클 후크 예', html)
+
+    def test_viewer_document_supports_single_and_multi_page_modes(self) -> None:
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
+            (playbook_dir / "install_modes.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "playbook_document_v1",
+                        "source_view_strategy": "playbook_ast_v1",
+                        "book_slug": "install_modes",
+                        "title": "설치 형식",
+                        "source_uri": "https://example.com/install-modes",
+                        "sections": [
+                            {
+                                "section_id": "install_modes:intro",
+                                "section_key": "install_modes:intro",
+                                "ordinal": 1,
+                                "heading": "설치 개요",
+                                "level": 2,
+                                "path": ["설치", "설치 개요"],
+                                "section_path": ["설치", "설치 개요"],
+                                "anchor": "install-overview",
+                                "viewer_path": "/docs/ocp/4.20/ko/install_modes/index.html#install-overview",
+                                "semantic_role": "overview",
+                                "blocks": [{"kind": "paragraph", "text": "개요 본문"}],
+                            },
+                            {
+                                "section_id": "install_modes:post",
+                                "section_key": "install_modes:post",
+                                "ordinal": 2,
+                                "heading": "설치 후 구성",
+                                "level": 2,
+                                "path": ["설치", "설치 후 구성"],
+                                "section_path": ["설치", "설치 후 구성"],
+                                "anchor": "post-install",
+                                "viewer_path": "/docs/ocp/4.20/ko/install_modes/index.html#post-install",
+                                "semantic_role": "procedure",
+                                "blocks": [{"kind": "paragraph", "text": "후속 본문"}],
+                            },
+                        ],
+                    },
+                    ensure_ascii=False,
+                ) + "\n",
+                encoding="utf-8",
+            )
+            active_manifest_path = root / "data" / "wiki_runtime_books" / "active_manifest.json"
+            active_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            active_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "generated_at_utc": "2026-04-19T08:00:00+00:00",
+                        "active_group": "full_rebuild",
+                        "entries": [
+                            {
+                                "slug": "install_modes",
+                                "title": "설치 형식",
+                                "runtime_path": str(root / "data" / "wiki_runtime_books" / "full_rebuild" / "install_modes.md"),
+                                "source_lane": "official_ko",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            single_handler = self._capture_json_response()
+            handle_viewer_document(
+                single_handler,
+                urlencode(
+                    {
+                        "viewer_path": "/playbooks/wiki-runtime/active/install_modes/index.html#post-install",
+                        "page_mode": "single",
+                    }
+                ),
+                root_dir=root,
+            )
+            multi_handler = self._capture_json_response()
+            handle_viewer_document(
+                multi_handler,
+                urlencode(
+                    {
+                        "viewer_path": "/playbooks/wiki-runtime/active/install_modes/index.html#post-install",
+                        "page_mode": "multi",
+                    }
+                ),
+                root_dir=root,
+            )
+
+        self.assertEqual(HTTPStatus.OK, single_handler.calls[0][0])
+        self.assertEqual(HTTPStatus.OK, multi_handler.calls[0][0])
+        single_html = str(single_handler.calls[0][1]["html"])
+        multi_html = str(multi_handler.calls[0][1]["html"])
+        self.assertIn("개요 본문", single_html)
+        self.assertIn("후속 본문", single_html)
+        self.assertIn(">Quick Nav</summary>", multi_html)
+        self.assertIn("후속 본문", multi_html)
+        self.assertNotIn("개요 본문", multi_html)
+        self.assertIn('class="document-footer-nav"', multi_html)
+        self.assertIn('href="#install-overview"', multi_html)
+        self.assertIn(">이전<", multi_html)
+        self.assertNotIn(">다음<", multi_html)
+
+    def test_active_runtime_viewer_uses_local_asciidoc_overlay_for_missing_link_metadata(self) -> None:
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
+            (playbook_dir / "installation_overview.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "playbook_document_v1",
+                        "source_view_strategy": "playbook_ast_v1",
+                        "book_slug": "installation_overview",
+                        "title": "설치 개요",
+                        "source_uri": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/installation_overview/index",
+                        "anchor_map": {
+                            "preparing-to-install-with-agent-based-installer": "/docs/ocp/4.20/ko/installing_with_agent_based_installer/index.html#preparing-to-install-with-agent-based-installer",
+                            "ipi-install-overview": "/docs/ocp/4.20/ko/installing_on_any_platform/index.html#ipi-install-overview",
+                            "installing-bare-metal": "/docs/ocp/4.20/ko/installing_on_bare_metal/index.html#installing-bare-metal",
+                        },
+                        "sections": [
+                            {
+                                "section_id": "installation_overview:installation-overview_ocp-installation-overview",
+                                "section_key": "installation_overview:installation-overview_ocp-installation-overview",
+                                "ordinal": 1,
+                                "heading": "1.1. OpenShift Container Platform 설치 정보",
+                                "level": 3,
+                                "path": ["설치 개요", "설치 정보"],
+                                "section_path": ["설치 개요", "설치 정보"],
+                                "anchor": "installation-overview_ocp-installation-overview",
+                                "viewer_path": "/docs/ocp/4.20/ko/installation_overview/index.html#installation-overview_ocp-installation-overview",
+                                "semantic_role": "concept",
+                                "blocks": [
+                                    {"kind": "paragraph", "text": "OpenShift Container Platform 설치 프로그램은 클러스터를 배포하는 네 가지 방법을 제공하며, 다음 목록에서 자세히 설명합니다:"},
+                                    {"kind": "paragraph", "text": "대화형: 웹 기반 지원 설치 관리자를 사용하여 클러스터를 배포할 수 있습니다. 이는 인터넷에 연결된 네트워크가 있는 클러스터에 이상적인 방법입니다."},
+                                    {"kind": "paragraph", "text": "지원 설치 프로그램은 OpenShift Container Platform을 설치하는 가장 쉬운 방법이며, 스마트 기본값을 제공하며 클러스터를 설치하기 전에 사전 진행 중 검증을 수행합니다."},
+                                    {"kind": "paragraph", "text": "로컬 에이전트 기반: 연결이 끊긴 환경 또는 제한된 네트워크를 위해 에이전트 기반 설치 관리자를 사용하여 로컬로 클러스터를 배포할 수 있습니다."},
+                                    {"kind": "paragraph", "text": "자동화: 설치 관리자 프로비저닝 인프라에 클러스터를 배포할 수 있습니다."},
+                                    {"kind": "paragraph", "text": "전체 제어: 준비 및 유지 관리하는 인프라에 클러스터를 배포하여 최대 사용자 지정 가능성을 제공할 수 있습니다."},
+                                ],
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            tmp_source_module = root / "tmp_source" / "openshift-docs-enterprise-4.20" / "modules"
+            tmp_source_module.mkdir(parents=True, exist_ok=True)
+            (tmp_source_module / "installation-overview.adoc").write_text(
+                (
+                    '[id="installation-overview_{context}"]\n'
+                    '= About installation\n\n'
+                    'The installation program offers methods.\n\n'
+                    '* *Interactive*: You can deploy a cluster with the web-based '
+                    'link:https://access.redhat.com/documentation/en-us/assisted_installer_for_openshift_container_platform[Assisted Installer].\n\n'
+                    '* *Local Agent-based*: You can deploy a cluster locally with the '
+                    'xref:../../installing/installing_with_agent_based_installer/preparing-to-install-with-agent-based-installer.adoc#preparing-to-install-with-agent-based-installer[agent-based installer]. '
+                    'You must download and configure the link:https://console.redhat.com/openshift/install/metal/agent-based[agent-based installer] first.\n\n'
+                    '* *Automated*: You can '
+                    'xref:../../installing/installing_bare_metal/ipi/ipi-install-overview.adoc#ipi-install-overview[deploy a cluster on installer-provisioned infrastructure].\n\n'
+                    '* *Full control*: You can deploy a cluster on '
+                    'xref:../../installing/installing_bare_metal/upi/installing-bare-metal.adoc#installing-bare-metal[infrastructure that you prepare and maintain].\n'
+                ),
+                encoding="utf-8",
+            )
+            active_manifest_path = root / "data" / "wiki_runtime_books" / "active_manifest.json"
+            active_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            active_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "generated_at_utc": "2026-04-19T08:00:00+00:00",
+                        "active_group": "full_rebuild",
+                        "entries": [
+                            {
+                                "slug": "installation_overview",
+                                "title": "설치 개요",
+                                "runtime_path": str(root / "data" / "wiki_runtime_books" / "full_rebuild" / "installation_overview.md"),
+                                "source_lane": "official_ko",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            handler = self._capture_json_response()
+            handle_viewer_document(
+                handler,
+                urlencode(
+                    {
+                        "viewer_path": "/playbooks/wiki-runtime/active/installation_overview/index.html",
+                    }
+                ),
+                root_dir=root,
+            )
+
+        self.assertEqual(1, len(handler.calls))
+        status, payload = handler.calls[0]
+        self.assertEqual(HTTPStatus.OK, status)
+        html = str(payload["html"])
+        self.assertIn('reader-bullet-list reader-bullet-list-labeled', html)
+        self.assertIn('https://access.redhat.com/documentation/en-us/assisted_installer_for_openshift_container_platform', html)
+        self.assertIn('/playbooks/wiki-runtime/active/installing_with_agent_based_installer/index.html#preparing-to-install-with-agent-based-installer', html)
+        self.assertIn('/playbooks/wiki-runtime/active/installing_on_any_platform/index.html#ipi-install-overview', html)
+        self.assertIn('/playbooks/wiki-runtime/active/installing_on_bare_metal/index.html#installing-bare-metal', html)
 
     def test_viewer_source_meta_resolves_active_runtime_viewer_path(self) -> None:
         with self._workspace() as root:
@@ -116,6 +653,12 @@ class AppViewersTestSupport(unittest.TestCase):
                                 "source_lane": "approved_wiki_runtime",
                                 "approval_state": "approved",
                                 "publication_state": "active",
+                                "source_repo": "https://github.com/example/openshift-docs",
+                                "source_branch": "enterprise-4.20",
+                                "source_binding_kind": "file",
+                                "source_relative_path": "support/index.adoc",
+                                "source_relative_paths": ["support/index.adoc"],
+                                "fallback_source_url": "https://docs.example.com/support",
                             }
                         ]
                     },
@@ -164,7 +707,380 @@ class AppViewersTestSupport(unittest.TestCase):
             "/playbooks/wiki-runtime/active/support/index.html#contact-red-hat-support",
             payload["viewer_path"],
         )
-        self.assertEqual("official_validated_runtime", payload["boundary_truth"])
+        self.assertEqual("official_candidate_runtime", payload["boundary_truth"])
+        self.assertEqual("Source-First Candidate", payload["boundary_badge"])
+        self.assertEqual(
+            "https://github.com/example/openshift-docs@enterprise-4.20:support/index.adoc",
+            payload["source_ref"],
+        )
+        self.assertEqual("file", payload["source_binding_kind"])
+        self.assertEqual(["support/index.adoc"], payload["source_relative_paths"])
+        self.assertEqual("https://docs.example.com/support", payload["fallback_source_url"])
+        self.assertTrue(payload["source_fingerprint"])
+
+    def test_active_runtime_viewer_document_renders_repo_first_source_trace(self) -> None:
+        with self._workspace() as root:
+            settings = self._settings(root)
+            settings.source_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.source_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "generated_at_utc": "2026-04-18T14:00:00+00:00",
+                        "entries": [
+                            {
+                                "book_slug": "support",
+                                "title": "Support",
+                                "source_lane": "official_ko",
+                                "approval_state": "approved",
+                                "publication_state": "active",
+                                "source_repo": "https://github.com/example/openshift-docs",
+                                "source_branch": "enterprise-4.20",
+                                "source_binding_kind": "file",
+                                "source_relative_path": "support/index.adoc",
+                                "source_relative_paths": ["support/index.adoc"],
+                                "fallback_source_url": "https://docs.example.com/support",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            runtime_dir = root / "data" / "wiki_runtime_books" / "full_rebuild"
+            runtime_dir.mkdir(parents=True, exist_ok=True)
+            runtime_path = runtime_dir / "support.md"
+            runtime_path.write_text(
+                "# Support\n\n## Get support\n\n본문\n",
+                encoding="utf-8",
+            )
+            active_manifest_path = root / "data" / "wiki_runtime_books" / "active_manifest.json"
+            active_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            active_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "generated_at_utc": "2026-04-18T14:10:00+00:00",
+                        "active_group": "full_rebuild",
+                        "entries": [
+                            {
+                                "slug": "support",
+                                "title": "Support",
+                                "source_lane": "official_ko",
+                                "source_ref": "https://github.com/example/openshift-docs@enterprise-4.20:support/index.adoc",
+                                "source_fingerprint": "supportfingerprint",
+                                "source_binding_kind": "file",
+                                "source_relative_paths": ["support/index.adoc"],
+                                "fallback_source_url": "https://docs.example.com/support",
+                                "runtime_path": str(runtime_path),
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            handler = self._capture_json_response()
+            handle_viewer_document(
+                handler,
+                urlencode(
+                    {
+                        "viewer_path": "/playbooks/wiki-runtime/active/support/index.html",
+                    }
+                ),
+                root_dir=root,
+            )
+
+        self.assertEqual(1, len(handler.calls))
+        status, payload = handler.calls[0]
+        self.assertEqual(HTTPStatus.OK, status)
+        html = str(payload["html"])
+        self.assertIn("Repo/AsciiDoc First", html)
+        self.assertIn("https://github.com/example/openshift-docs", html)
+        self.assertIn("support/index.adoc", html)
+        self.assertIn("Red Hat HTML Single", html)
+
+    def test_active_runtime_viewer_document_accepts_windows_manifest_runtime_path_inside_container(self) -> None:
+        with self._workspace() as root:
+            runtime_dir = root / "data" / "wiki_runtime_books" / "full_rebuild"
+            runtime_dir.mkdir(parents=True, exist_ok=True)
+            runtime_path = runtime_dir / "support.md"
+            runtime_path.write_text(
+                "# Support\n\n## Get support\n\n본문\n",
+                encoding="utf-8",
+            )
+            active_manifest_path = root / "data" / "wiki_runtime_books" / "active_manifest.json"
+            active_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            active_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "generated_at_utc": "2026-04-19T09:00:00+00:00",
+                        "active_group": "full_rebuild",
+                        "entries": [
+                            {
+                                "slug": "support",
+                                "title": "Support",
+                                "source_lane": "official_ko",
+                                "runtime_path": r"C:\\host\\workspace\\data\\wiki_runtime_books\\full_rebuild\\support.md",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            handler = self._capture_json_response()
+            handle_viewer_document(
+                handler,
+                urlencode({"viewer_path": "/playbooks/wiki-runtime/active/support/index.html"}),
+                root_dir=root,
+            )
+
+        self.assertEqual(1, len(handler.calls))
+        status, payload = handler.calls[0]
+        self.assertEqual(HTTPStatus.OK, status)
+        self.assertIn("Get support", str(payload["html"]))
+
+    def test_active_runtime_viewer_document_uses_relation_indexes_for_sections_figures_and_siblings(self) -> None:
+        with self._workspace() as root:
+            settings = self._settings(root)
+            relation_dir = root / "data" / "wiki_relations"
+            relation_dir.mkdir(parents=True, exist_ok=True)
+            settings.source_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.source_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "generated_at_utc": "2026-04-18T15:00:00+00:00",
+                        "entries": [
+                            {
+                                "book_slug": "advanced_networking",
+                                "title": "고급 네트워킹",
+                                "source_lane": "official_ko",
+                                "approval_state": "approved",
+                                "publication_state": "active",
+                                "source_repo": "https://github.com/example/openshift-docs",
+                                "source_branch": "enterprise-4.20",
+                                "source_binding_kind": "collection",
+                                "source_relative_paths": ["networking/advanced_networking/index.adoc"],
+                                "fallback_source_url": "https://docs.example.com/advanced-networking",
+                            },
+                            {
+                                "book_slug": "architecture",
+                                "title": "아키텍처",
+                                "source_lane": "official_ko",
+                                "approval_state": "approved",
+                                "publication_state": "active",
+                                "source_repo": "https://github.com/example/openshift-docs",
+                                "source_branch": "enterprise-4.20",
+                                "source_binding_kind": "file",
+                                "source_relative_paths": ["architecture/index.adoc"],
+                                "fallback_source_url": "https://docs.example.com/architecture",
+                            },
+                            {
+                                "book_slug": "installation_overview",
+                                "title": "설치 개요",
+                                "source_lane": "official_ko",
+                                "approval_state": "approved",
+                                "publication_state": "active",
+                            },
+                            {
+                                "book_slug": "networking_overview",
+                                "title": "네트워킹 개요",
+                                "source_lane": "official_ko",
+                                "approval_state": "approved",
+                                "publication_state": "active",
+                            },
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            runtime_dir = root / "data" / "wiki_runtime_books" / "full_rebuild"
+            runtime_dir.mkdir(parents=True, exist_ok=True)
+            (runtime_dir / "advanced_networking.md").write_text(
+                "# 고급 네트워킹\n\n## Network bonding considerations\n\n본문\n",
+                encoding="utf-8",
+            )
+            (runtime_dir / "architecture.md").write_text(
+                "# 아키텍처\n\n## About installation and updates\n\n본문\n",
+                encoding="utf-8",
+            )
+            active_manifest_path = root / "data" / "wiki_runtime_books" / "active_manifest.json"
+            active_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            active_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "generated_at_utc": "2026-04-18T15:10:00+00:00",
+                        "active_group": "full_rebuild",
+                        "entries": [
+                            {
+                                "slug": "advanced_networking",
+                                "title": "고급 네트워킹",
+                                "source_lane": "official_ko",
+                                "runtime_path": str(runtime_dir / "advanced_networking.md"),
+                            },
+                            {
+                                "slug": "architecture",
+                                "title": "아키텍처",
+                                "source_lane": "official_ko",
+                                "runtime_path": str(runtime_dir / "architecture.md"),
+                            },
+                            {
+                                "slug": "installation_overview",
+                                "title": "설치 개요",
+                                "source_lane": "official_ko",
+                                "runtime_path": str(runtime_dir / "architecture.md"),
+                            },
+                            {
+                                "slug": "networking_overview",
+                                "title": "네트워킹 개요",
+                                "source_lane": "official_ko",
+                                "runtime_path": str(runtime_dir / "advanced_networking.md"),
+                            },
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (relation_dir / "candidate_relations.json").write_text(
+                json.dumps(
+                    {
+                        "advanced_networking": {
+                            "entities": [],
+                            "related_docs": [],
+                            "next_reading_path": [],
+                            "siblings": [
+                                {
+                                    "label": "네트워킹 개요",
+                                    "href": "/playbooks/wiki-runtime/active/networking_overview/index.html",
+                                    "summary": "같은 작업군 문서",
+                                }
+                            ],
+                        },
+                        "architecture": {
+                            "entities": [],
+                            "related_docs": [],
+                            "next_reading_path": [],
+                            "siblings": [
+                                {
+                                    "label": "설치 개요",
+                                    "href": "/playbooks/wiki-runtime/active/installation_overview/index.html",
+                                    "summary": "연결된 설치 문서",
+                                }
+                            ],
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (relation_dir / "figure_assets.json").write_text(
+                json.dumps(
+                    {
+                        "entries": {
+                            "advanced_networking": [
+                                {
+                                    "caption": "OVS balance-slb mode",
+                                    "asset_url": "/playbooks/wiki-assets/full_rebuild/advanced_networking/ovs-balance-slb.png",
+                                    "viewer_path": "/wiki/figures/advanced_networking/ovs-balance-slb.png/index.html",
+                                    "section_hint": "고급 네트워킹 > Network bonding considerations",
+                                }
+                            ],
+                            "installation_overview": [
+                                {
+                                    "caption": "OpenShift Container Platform installation targets and dependencies",
+                                    "asset_url": "/playbooks/wiki-assets/full_rebuild/installation_overview/targets-and-dependencies.png",
+                                    "viewer_path": "/wiki/figures/installation_overview/targets-and-dependencies.png/index.html",
+                                    "section_hint": "설치 개요 > Figures > Figure 1. OpenShift Container Platform installation targets and dependencies",
+                                }
+                            ],
+                        }
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (relation_dir / "figure_entity_index.json").write_text(
+                json.dumps({"by_entity": {}, "by_book": {}}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            (relation_dir / "figure_section_index.json").write_text(
+                json.dumps(
+                    {
+                        "by_slug": {
+                            "installation_overview": [
+                                {
+                                    "asset_name": "targets-and-dependencies.png",
+                                    "viewer_path": "/wiki/figures/installation_overview/targets-and-dependencies.png/index.html",
+                                    "caption": "OpenShift Container Platform installation targets and dependencies",
+                                    "section_hint": "OpenShift Container Platform installation overview",
+                                    "section_path": "설치 개요 > Figures > Figure 1. OpenShift Container Platform installation targets and dependencies",
+                                    "section_href": "/playbooks/wiki-runtime/active/installation_overview/index.html#figure-1-openshift-container-platform-installation-targets-and-dependencies",
+                                    "section_anchor": "figure-1-openshift-container-platform-installation-targets-and-dependencies",
+                                }
+                            ]
+                        }
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (relation_dir / "section_relation_index.json").write_text(
+                json.dumps(
+                    {
+                        "by_book": {
+                            "advanced_networking": [
+                                {
+                                    "label": "Network bonding considerations",
+                                    "href": "/playbooks/wiki-runtime/active/advanced_networking/index.html#network-bonding-considerations",
+                                    "summary": "고급 네트워킹 > Network bonding considerations",
+                                    "source": "figure_section",
+                                }
+                            ],
+                            "architecture": [
+                                {
+                                    "label": "Figure 1. OpenShift Container Platform installation targets and dependencies",
+                                    "href": "/playbooks/wiki-runtime/active/installation_overview/index.html#figure-1-openshift-container-platform-installation-targets-and-dependencies",
+                                    "summary": "설치 개요 > Figures > Figure 1. OpenShift Container Platform installation targets and dependencies",
+                                    "source": "related_doc_section",
+                                }
+                            ],
+                        },
+                        "by_entity": {},
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            (relation_dir / "entity_hubs.json").write_text("{}", encoding="utf-8")
+            (relation_dir / "chat_navigation_aliases.json").write_text("{}", encoding="utf-8")
+
+            with patch("play_book_studio.app.wiki_relations.WIKI_RELATIONS_DIR", relation_dir):
+                advanced_handler = self._capture_json_response()
+                handle_viewer_document(
+                    advanced_handler,
+                    urlencode({"viewer_path": "/playbooks/wiki-runtime/active/advanced_networking/index.html"}),
+                    root_dir=root,
+                )
+                architecture_handler = self._capture_json_response()
+                handle_viewer_document(
+                    architecture_handler,
+                    urlencode({"viewer_path": "/playbooks/wiki-runtime/active/architecture/index.html"}),
+                    root_dir=root,
+                )
+
+        advanced_html = str(advanced_handler.calls[0][1]["html"])
+        architecture_html = str(architecture_handler.calls[0][1]["html"])
+        self.assertIn("Network bonding considerations", advanced_html)
+        self.assertIn("/wiki/figures/advanced_networking/ovs-balance-slb.png/index.html", advanced_html)
+        self.assertIn("/playbooks/wiki-runtime/active/networking_overview/index.html", advanced_html)
+        self.assertNotIn("연결된 절차 섹션이 아직 없습니다.", advanced_html)
+        self.assertNotIn("연결된 figure 자산이 아직 없습니다.", advanced_html)
+        self.assertIn("OpenShift Container Platform installation targets and dependencies", architecture_html)
+        self.assertIn("/wiki/figures/installation_overview/targets-and-dependencies.png/index.html", architecture_html)
+        self.assertNotIn("연결된 figure 자산이 아직 없습니다.", architecture_html)
 
     def test_viewer_source_meta_uses_registry_for_derived_docs_viewer_path(self) -> None:
         with self._workspace(env_text="ARTIFACTS_DIR=artifacts\n") as root:
@@ -209,7 +1125,7 @@ class AppViewersTestSupport(unittest.TestCase):
         self.assertEqual("backup_restore_operations", payload["book_slug"])
         self.assertEqual("Backup Restore Operations", payload["book_title"])
         self.assertEqual("applied_playbook", payload["source_lane"])
-        self.assertEqual("official_validated_runtime", payload["boundary_truth"])
+        self.assertEqual("official_candidate_runtime", payload["boundary_truth"])
         self.assertEqual(
             "/docs/ocp/4.20/ko/backup_restore_operations/index.html",
             payload["viewer_path"],
@@ -324,6 +1240,11 @@ class AppViewersTestSupport(unittest.TestCase):
                     "source_url": "",
                     "boundary_truth": "official_validated_runtime",
                     "runtime_truth_label": "Validated Runtime Entity Hub",
+                    "source_lane": "approved_wiki_runtime",
+                    "approval_state": "approved",
+                    "publication_state": "active",
+                    "parser_backend": "",
+                    "boundary_badge": "Validated Runtime",
                 },
             ),
             (
@@ -334,13 +1255,18 @@ class AppViewersTestSupport(unittest.TestCase):
                     "anchor": "oke-about-ocp-stack-image.png",
                     "section": "Red Hat OpenShift Kubernetes Engine",
                     "section_path": [
-                        "2.1. OpenShift Container Platform 이해",
+                        "Introduction to OpenShift Container Platform",
                         "Red Hat OpenShift Kubernetes Engine",
                     ],
                     "viewer_path": "/wiki/figures/overview/oke-about-ocp-stack-image.png/index.html",
                     "source_url": "/playbooks/wiki-assets/full_rebuild/overview/oke-about-ocp-stack-image.png",
-                    "boundary_truth": "official_validated_runtime",
-                    "runtime_truth_label": "Validated Runtime Figure",
+                    "boundary_truth": "official_candidate_runtime",
+                    "runtime_truth_label": "Source-First Candidate Figure",
+                    "source_lane": "official_source_first_candidate",
+                    "approval_state": "",
+                    "publication_state": "published",
+                    "parser_backend": "render_bound_markdown",
+                    "boundary_badge": "Source-First Candidate",
                 },
             ),
             (
@@ -354,6 +1280,11 @@ class AppViewersTestSupport(unittest.TestCase):
                     "source_url": "",
                     "boundary_truth": "official_validated_runtime",
                     "runtime_truth_label": "Validated Runtime Entity Hub",
+                    "source_lane": "approved_wiki_runtime",
+                    "approval_state": "approved",
+                    "publication_state": "active",
+                    "parser_backend": "",
+                    "boundary_badge": "Validated Runtime",
                 },
             ),
             (
@@ -364,13 +1295,18 @@ class AppViewersTestSupport(unittest.TestCase):
                     "anchor": "oke-about-ocp-stack-image.png",
                     "section": "Red Hat OpenShift Kubernetes Engine",
                     "section_path": [
-                        "2.1. OpenShift Container Platform 이해",
+                        "Introduction to OpenShift Container Platform",
                         "Red Hat OpenShift Kubernetes Engine",
                     ],
                     "viewer_path": "/wiki/figures/overview/oke-about-ocp-stack-image.png/index.html",
                     "source_url": "/playbooks/wiki-assets/full_rebuild/overview/oke-about-ocp-stack-image.png",
-                    "boundary_truth": "official_validated_runtime",
-                    "runtime_truth_label": "Validated Runtime Figure",
+                    "boundary_truth": "official_candidate_runtime",
+                    "runtime_truth_label": "Source-First Candidate Figure",
+                    "source_lane": "official_source_first_candidate",
+                    "approval_state": "",
+                    "publication_state": "published",
+                    "parser_backend": "render_bound_markdown",
+                    "boundary_badge": "Source-First Candidate",
                 },
             ),
         ]
@@ -386,11 +1322,55 @@ class AppViewersTestSupport(unittest.TestCase):
                 for key, value in expected.items():
                     self.assertEqual(value, payload[key], key)
                 self.assertTrue(payload["section_match_exact"])
-                self.assertEqual("approved_wiki_runtime", payload["source_lane"])
-                self.assertEqual("approved", payload["approval_state"])
-                self.assertEqual("active", payload["publication_state"])
-                self.assertEqual("", payload["parser_backend"])
-                self.assertEqual("Validated Runtime", payload["boundary_badge"])
+
+    def test_active_runtime_source_meta_demotes_untranslated_source_first_runtime(self) -> None:
+        with self._workspace() as root:
+            runtime_dir = root / "data" / "wiki_runtime_books" / "full_rebuild"
+            runtime_dir.mkdir(parents=True, exist_ok=True)
+            runtime_path = runtime_dir / "installing_on_any_platform.md"
+            runtime_path.write_text(
+                "# 플랫폼 비종속 설치 플레이북\n\nAdditional resources\n\nInstalling OpenShift Container Platform on any platform\n",
+                encoding="utf-8",
+            )
+            active_manifest_path = root / "data" / "wiki_runtime_books" / "active_manifest.json"
+            active_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            active_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "generated_at_utc": "2026-04-19T08:00:00+00:00",
+                        "active_group": "full_rebuild",
+                        "entries": [
+                            {
+                                "slug": "installing_on_any_platform",
+                                "title": "플랫폼 비종속 설치 플레이북",
+                                "runtime_path": str(runtime_path),
+                                "source_lane": "official_ko",
+                                "parser_backend": "render_bound_markdown",
+                                "promotion_strategy": "full_rebuild_source_repo_binding",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            handler = self._capture_json_response()
+            handle_source_meta(
+                handler,
+                urlencode({"viewer_path": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html"}),
+                root_dir=root,
+            )
+
+        self.assertEqual(1, len(handler.calls))
+        status, payload = handler.calls[0]
+        self.assertEqual(HTTPStatus.OK, status)
+        self.assertEqual("official_candidate_runtime", payload["boundary_truth"])
+        self.assertEqual("Source-First Candidate", payload["boundary_badge"])
+        self.assertEqual("official_source_first_candidate", payload["source_lane"])
+        self.assertEqual("", payload["approval_state"])
+        self.assertEqual("active", payload["publication_state"])
+        self.assertEqual("render_bound_markdown", payload["parser_backend"])
 
     def test_viewer_document_route_supports_entity_and_figure_paths(self) -> None:
         cases = [
@@ -495,8 +1475,8 @@ class AppViewersTestSupport(unittest.TestCase):
                     self.assertEqual(HTTPStatus.OK, status)
                     self.assertEqual(viewer_path, payload["viewer_path"])
                     html = str(payload["html"])
-                    self.assertIn("Configuring and using the monitoring stack in OpenShift Container Platform", html)
                     self.assertIn("OpenShift Container Platform includes a preconfigured", html)
+                    self.assertIn("self-updating monitoring stack", html)
 
     def test_viewer_path_local_raw_html_fallback_is_disabled(self) -> None:
         with self._workspace() as root:
@@ -783,6 +1763,109 @@ class AppViewersTestSupport(unittest.TestCase):
         self.assertEqual(first["section_path_label"], second["section_path_label"])
         self.assertEqual(1, load_settings_spy.call_count)
 
+    def test_serialize_citation_skips_normalized_lookup_when_citation_has_section_path(self) -> None:
+        with self._workspace() as root:
+            settings = self._settings(root)
+            settings.source_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.source_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "entries": [
+                            {
+                                "book_slug": "post_installation_configuration__cluster_tasks",
+                                "title": "설치 후 클러스터 작업",
+                                "source_url": "https://example.com/post-install",
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            citation = Citation(
+                index=1,
+                chunk_id="chunk-1",
+                book_slug="post_installation_configuration__cluster_tasks",
+                section="Informational Resources",
+                anchor="informational-resources",
+                source_url="https://example.com/post-install",
+                viewer_path="/docs/ocp/4.20/ko/post_installation_configuration__cluster_tasks/index.html#informational-resources",
+                excerpt="본문",
+                section_path=("Available cluster customizations", "Informational Resources"),
+                section_path_label="Available cluster customizations > Informational Resources",
+            )
+            presentation_context = _build_citation_presentation_context(root)
+            with patch(
+                "play_book_studio.app.presenters._resolve_normalized_row_for_viewer_path",
+                side_effect=AssertionError("normalized lookup should not run"),
+            ):
+                payload = _serialize_citation(
+                    root,
+                    citation,
+                    presentation_context=presentation_context,
+                )
+
+        self.assertEqual("설치 후 클러스터 작업", payload["book_title"])
+        self.assertEqual(
+            ["Available cluster customizations", "Informational Resources"],
+            payload["section_path"],
+        )
+        self.assertEqual(
+            "Available cluster customizations > Informational Resources",
+            payload["section_path_label"],
+        )
+        self.assertTrue(payload["section_match_exact"])
+
+    def test_serialize_citation_reuses_process_local_cache_without_context(self) -> None:
+        with self._workspace() as root:
+            settings = self._settings(root)
+            settings.source_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.source_manifest_path.write_text(
+                json.dumps(
+                    {
+                        "entries": [
+                            {
+                                "book_slug": "architecture",
+                                "title": "아키텍처",
+                                "source_url": "https://example.com/architecture",
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            settings.normalized_docs_path.parent.mkdir(parents=True, exist_ok=True)
+            settings.normalized_docs_path.write_text(
+                json.dumps(
+                    {
+                        "book_slug": "architecture",
+                        "book_title": "아키텍처",
+                        "heading": "컨트롤 플레인",
+                        "section_level": 2,
+                        "section_path": ["개요", "컨트롤 플레인"],
+                        "anchor": "overview",
+                        "source_url": "https://example.com/architecture",
+                        "viewer_path": "/docs/ocp/4.20/ko/architecture/index.html#overview",
+                        "text": "본문",
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            presenters_module._serialize_citation_cached.cache_clear()
+            with patch(
+                "play_book_studio.app.presenters._serialize_citation_uncached",
+                wraps=presenters_module._serialize_citation_uncached,
+            ) as uncached_spy:
+                first = _serialize_citation(root, _citation(1))
+                second = _serialize_citation(root, _citation(1))
+
+        self.assertEqual(first["source_label"], second["source_label"])
+        self.assertEqual(1, uncached_spy.call_count)
+
     def test_internal_viewer_html_falls_back_to_normalized_sections_without_playbook_artifact(self) -> None:
         with self._workspace() as root:
             settings = self._settings(root)
@@ -890,7 +1973,7 @@ class AppViewersTestSupport(unittest.TestCase):
 
         self.assertIsNotNone(html)
         assert html is not None
-        self.assertIn("정리된 AST 기준의 유저용 매뉴얼북을 보여줍니다.", html)
+        self.assertNotIn("정리된 AST 기준의 유저용 매뉴얼북을 보여줍니다.", html)
         self.assertIn("사전 요구 사항", html)
         self.assertIn("리소스를 확인합니다.", html)
         self.assertIn("운영 중에는 영향도를 먼저 확인합니다.", html)
@@ -1049,8 +2132,8 @@ class AppViewersTestSupport(unittest.TestCase):
         self.assertNotIn('class="section-card', html)
         self.assertIn('class="study-document study-document-embedded"', html)
         self.assertIn('class="embedded-section', html)
-        self.assertIn("공식 매뉴얼 원문", html)
-        self.assertIn('class="embedded-origin-link"', html)
+        self.assertIn("Quick Nav", html)
+        self.assertIn('class="overlay-page-target"', html)
         self.assertIn("임베드 본문만 보여야 합니다.", html)
         self.assertIn("--bg:", html)
         self.assertIn("body.is-embedded {", html)
@@ -1175,7 +2258,8 @@ class AppViewersTestSupport(unittest.TestCase):
 
         self.assertIsNotNone(html)
         assert html is not None
-        self.assertIn("Quick Navigation", html)
+        self.assertIn('class="document-nav-menu"', html)
+        self.assertIn(">Quick Nav</summary>", html)
         self.assertIn('href="#overview"', html)
         self.assertIn('href="#apply"', html)
         self.assertIn(">절차 1<", html)
@@ -1354,6 +2438,141 @@ class AppViewersTestSupport(unittest.TestCase):
         assert html is not None
         self.assertIn('class="code-block preserve-layout overflow-toggle"', html)
         self.assertNotIn('class="code-block preserve-layout overflow-toggle is-wrapped"', html)
+
+    def test_internal_viewer_html_renders_collapsible_highlighted_yaml_code_block(self) -> None:
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
+            (playbook_dir / "process.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "playbook_document_v1",
+                        "source_view_strategy": "playbook_ast_v1",
+                        "book_slug": "process",
+                        "title": "Process",
+                        "source_uri": "https://example.com/process",
+                        "sections": [
+                            {
+                                "section_id": "process:yaml",
+                                "section_key": "process:yaml",
+                                "ordinal": 1,
+                                "heading": "프로세스",
+                                "level": 2,
+                                "path": ["프로세스"],
+                                "section_path": ["프로세스"],
+                                "anchor": "yaml",
+                                "viewer_path": "/docs/ocp/4.20/ko/process/index.html#yaml",
+                                "semantic_role": "reference",
+                                "blocks": [
+                                    {
+                                        "kind": "code",
+                                        "language": "shell",
+                                        "wrap_hint": True,
+                                        "overflow_hint": "toggle",
+                                        "code": "\n".join(
+                                            [
+                                                "spec:",
+                                                "  schedule: 0 0 * * *",
+                                                "  suspend: false",
+                                                "  keepTagRevisions: 3",
+                                                "  resources: {}",
+                                                "status:",
+                                                "  observedGeneration: 2",
+                                                "  conditions:",
+                                                '  - type: Available',
+                                                '    status: \"True\"',
+                                                '    lastTransitionTime: 2019-10-09T03:13:45',
+                                                '    reason: Ready',
+                                                '    message: \"Periodic image pruner has been created.\"',
+                                                '  - type: Scheduled',
+                                                '    status: \"True\"',
+                                                '    reason: Scheduled',
+                                            ]
+                                        ),
+                                    }
+                                ],
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            html = _internal_viewer_html(
+                root,
+                "/docs/ocp/4.20/ko/process/index.html#yaml",
+            )
+
+        self.assertIsNotNone(html)
+        assert html is not None
+        self.assertIn('class="code-block is-collapsible overflow-toggle is-wrapped"', html)
+        self.assertIn('class="collapse-button"', html)
+        self.assertIn('Show less', html)
+        self.assertIn('&nbsp;&nbsp;<span class="code-token code-key">schedule:</span>', html)
+        self.assertIn('class="code-token code-key">spec:</span>', html)
+        self.assertIn('class="code-token code-string">&quot;True&quot;</span>', html)
+        self.assertIn('class="copy-button icon-button"', html)
+        self.assertIn('class="wrap-button icon-button"', html)
+
+    def test_internal_viewer_html_renders_outline_as_toolbar_menu(self) -> None:
+        with self._workspace() as root:
+            playbook_dir = self._playbook_dir(root)
+            (playbook_dir / "install.json").write_text(
+                json.dumps(
+                    {
+                        "canonical_model": "playbook_document_v1",
+                        "source_view_strategy": "playbook_ast_v1",
+                        "book_slug": "install",
+                        "title": "설치",
+                        "source_uri": "https://example.com/install",
+                        "sections": [
+                            {
+                                "section_id": "install:intro",
+                                "section_key": "install:intro",
+                                "ordinal": 1,
+                                "heading": "설치 개요",
+                                "level": 2,
+                                "path": ["설치", "설치 개요"],
+                                "section_path": ["설치", "설치 개요"],
+                                "section_path_label": "설치 > 설치 개요",
+                                "anchor": "install-overview",
+                                "viewer_path": "/docs/ocp/4.20/ko/install/index.html#install-overview",
+                                "semantic_role": "overview",
+                                "blocks": [{"kind": "paragraph", "text": "본문"}],
+                            },
+                            {
+                                "section_id": "install:post",
+                                "section_key": "install:post",
+                                "ordinal": 2,
+                                "heading": "설치 후 구성",
+                                "level": 2,
+                                "path": ["설치", "설치 후 구성"],
+                                "section_path": ["설치", "설치 후 구성"],
+                                "section_path_label": "설치 > 설치 후 구성",
+                                "anchor": "post-install",
+                                "viewer_path": "/docs/ocp/4.20/ko/install/index.html#post-install",
+                                "semantic_role": "procedure",
+                                "blocks": [{"kind": "paragraph", "text": "후속"}],
+                            },
+                        ],
+                    },
+                    ensure_ascii=False,
+                ) + "\n",
+                encoding="utf-8",
+            )
+
+            html = _internal_viewer_html(
+                root,
+                "/docs/ocp/4.20/ko/install/index.html#install-overview",
+            )
+
+        self.assertIsNotNone(html)
+        assert html is not None
+        self.assertIn('class="document-nav-menu"', html)
+        self.assertIn(">Quick Nav</summary>", html)
+        self.assertIn('href="#post-install"', html)
+        self.assertNotIn("Quick Navigation", html)
 
     def test_internal_viewer_html_preserves_raw_html_tables(self) -> None:
         with self._workspace() as root:

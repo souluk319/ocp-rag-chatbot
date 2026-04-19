@@ -10,8 +10,8 @@
   - 복원 후 MCO 확인 경로 정리
   - machine_configuration 허브/문서 backlink 강화
   - chat related links에 복구 후속 점검 경로 고정
-- primary_signal: `query:복원-후-machine-configuration은-왜-같이-봐야-하는지-알려줘` · count=`2`
-- supporting_signal: `query:복원-후-machine-configuration은-왜-같이-봐야-하는지-알려줘` · count=`2`
+- primary_signal: `query:복원-후-machine-configuration은-왜-같이-봐야-하는지-알려줘` · count=`36`
+- supporting_signal: `book:machine-configuration` · count=`11`
 
 ## P3. Post-Action Verification Path
 
@@ -21,5 +21,5 @@
   - Monitoring verification path relation 추가
   - post-action verify 중심 북 후보 정의
   - 추천질문을 verification path로 재고정
-- primary_signal: `query:백업-후-monitoring에서는-어떤-신호를-먼저-확인해야-해?` · count=`2`
-- supporting_signal: `query:백업-후-monitoring에서는-어떤-신호를-먼저-확인해야-해?` · count=`2`
+- primary_signal: `query:백업-후-monitoring에서는-어떤-신호를-먼저-확인해야-해?` · count=`36`
+- supporting_signal: `query:백업-후-monitoring에서는-어떤-신호를-먼저-확인해야-해?` · count=`36`

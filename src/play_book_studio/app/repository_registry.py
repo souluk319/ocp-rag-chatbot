@@ -9,81 +9,21 @@ import requests
 
 from play_book_studio.config.settings import load_effective_env, load_settings
 
-REPOSITORY_CATEGORIES = (
-    "Official Docs",
-    "Enterprise Knowledge",
-    "Operations Demo",
-    "Troubleshooting",
-)
-
-_DOC_HINT_TERMS = (
-    "doc",
-    "docs",
-    "documentation",
-    "manual",
-    "guide",
-    "guides",
-    "handbook",
-    "runbook",
-    "runbooks",
-    "reference",
-    "references",
-    "tutorial",
-    "tutorials",
-)
-_DEMO_HINT_TERMS = (
-    "demo",
-    "demos",
-    "example",
-    "examples",
-    "lab",
-    "labs",
-    "workshop",
-    "showcase",
-    "sample",
-    "samples",
-)
-_TROUBLESHOOTING_HINT_TERMS = (
-    "troubleshoot",
-    "troubleshooting",
-    "incident",
-    "incident-response",
-    "recovery",
-    "repair",
-    "debug",
-    "fix",
-)
-_ROOT_DOC_NAMES = {
-    "docs",
-    "doc",
-    "documentation",
-    "guide",
-    "guides",
-    "manual",
-    "runbook",
-    "runbooks",
-    "tutorial",
-    "tutorials",
-    "reference",
-    "references",
-}
+REPOSITORY_CATEGORIES = ("Official Docs", "Enterprise Knowledge", "Operations Demo", "Troubleshooting")
+_DOC_HINT_TERMS = ("doc", "docs", "documentation", "manual", "guide", "guides", "handbook", "runbook", "runbooks", "reference", "references", "tutorial", "tutorials")
+_DEMO_HINT_TERMS = ("demo", "demos", "example", "examples", "lab", "labs", "workshop", "showcase", "sample", "samples")
+_TROUBLESHOOTING_HINT_TERMS = ("troubleshoot", "troubleshooting", "incident", "incident-response", "recovery", "repair", "debug", "fix")
+_ROOT_DOC_NAMES = {"docs", "doc", "documentation", "guide", "guides", "manual", "runbook", "runbooks", "tutorial", "tutorials", "reference", "references"}
 _ROOT_DEMO_NAMES = {"demo", "demos", "example", "examples", "lab", "labs", "workshop", "samples"}
-_TOKEN_ENV_KEYS = (
-    "GITHUB_TOKEN",
-    "GH_TOKEN",
-    "GITHUB_CLASSIC_TOKEN",
-    "GITHUB_PAT",
-)
+_TOKEN_ENV_KEYS = ("GITHUB_TOKEN", "GH_TOKEN", "GITHUB_CLASSIC_TOKEN", "GITHUB_PAT")
 _GITHUB_API_BASE_URL = "https://api.github.com"
 
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
-
 def _normalize_query(value: str) -> str:
     return " ".join(str(value or "").strip().split())
-
 
 def _normalize_category(value: str) -> str:
     normalized = str(value or "").strip()
@@ -92,7 +32,6 @@ def _normalize_category(value: str) -> str:
         raise ValueError(f"category는 {supported} 중 하나여야 합니다.")
     return normalized
 
-
 def _github_token(root_dir: Path) -> tuple[str, str]:
     effective_env = load_effective_env(root_dir)
     for key in _TOKEN_ENV_KEYS:
@@ -100,7 +39,6 @@ def _github_token(root_dir: Path) -> tuple[str, str]:
         if token:
             return token, key
     return "", ""
-
 
 def _github_headers(root_dir: Path) -> tuple[dict[str, str], str]:
     token, _token_key = _github_token(root_dir)
@@ -115,7 +53,6 @@ def _github_headers(root_dir: Path) -> tuple[dict[str, str], str]:
         auth_mode = "token"
     return headers, auth_mode
 
-
 def _rewrite_github_query(query: str) -> str:
     normalized = _normalize_query(query)
     if not normalized:
@@ -128,13 +65,11 @@ def _rewrite_github_query(query: str) -> str:
         base_clause = normalized
     return f"{base_clause} in:name,description,readme archived:false"
 
-
 def _favorites_path(root_dir: Path) -> Path:
     settings = load_settings(root_dir)
     github_dir = settings.artifacts_dir / "github"
     github_dir.mkdir(parents=True, exist_ok=True)
     return github_dir / "favorites.json"
-
 
 def _load_favorites_document(root_dir: Path) -> dict[str, Any]:
     path = _favorites_path(root_dir)
@@ -161,7 +96,6 @@ def _load_favorites_document(root_dir: Path) -> dict[str, Any]:
         "items": [dict(item) for item in items if isinstance(item, dict)],
     }
 
-
 def _save_favorites_document(root_dir: Path, payload: dict[str, Any]) -> None:
     path = _favorites_path(root_dir)
     path.write_text(
@@ -169,13 +103,11 @@ def _save_favorites_document(root_dir: Path, payload: dict[str, Any]) -> None:
         encoding="utf-8",
     )
 
-
 def _category_sort_key(category: str) -> int:
     try:
         return REPOSITORY_CATEGORIES.index(category)
     except ValueError:
         return len(REPOSITORY_CATEGORIES)
-
 
 def list_repository_favorites(root_dir: Path) -> dict[str, Any]:
     document = _load_favorites_document(root_dir)
@@ -197,7 +129,6 @@ def list_repository_favorites(root_dir: Path) -> dict[str, Any]:
         "items": items,
         "groups": grouped,
     }
-
 
 def _root_listing_summary(
     root_dir: Path,
@@ -227,7 +158,6 @@ def _root_listing_summary(
         "entries": entries,
         "entry_names": entry_names,
     }
-
 
 def _docs_signals(
     *,
@@ -297,7 +227,6 @@ def _docs_signals(
         "summary": ", ".join(summary_bits),
     }
 
-
 def _query_match_score(query: str, repository: dict[str, Any], docs_signals: dict[str, Any]) -> int:
     tokens = [
         token
@@ -322,7 +251,6 @@ def _query_match_score(query: str, repository: dict[str, Any], docs_signals: dic
             score += 1
     return score
 
-
 def _suggest_repository_category(repository: dict[str, Any], docs_signals: dict[str, Any]) -> str:
     description = str(repository.get("description") or "").lower()
     topics = " ".join(str(topic).lower() for topic in (repository.get("topics") or []))
@@ -341,13 +269,11 @@ def _suggest_repository_category(repository: dict[str, Any], docs_signals: dict[
         return "Official Docs"
     return "Enterprise Knowledge"
 
-
 def _favorite_lookup(root_dir: Path) -> dict[str, dict[str, Any]]:
     return {
         str(item.get("full_name") or ""): item
         for item in list_repository_favorites(root_dir)["items"]
     }
-
 
 def search_github_repositories(root_dir: Path, *, query: str, limit: int = 12) -> dict[str, Any]:
     normalized_query = _normalize_query(query)
@@ -439,7 +365,6 @@ def search_github_repositories(root_dir: Path, *, query: str, limit: int = 12) -
         "results": results,
     }
 
-
 def _favorite_record(payload: dict[str, Any], *, category: str) -> dict[str, Any]:
     full_name = str(payload.get("full_name") or "").strip()
     if not full_name:
@@ -466,7 +391,6 @@ def _favorite_record(payload: dict[str, Any], *, category: str) -> dict[str, Any
         "saved_at": _now_iso(),
     }
 
-
 def save_repository_favorites(root_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
     category = _normalize_category(str(payload.get("category") or ""))
     repositories = payload.get("repositories")
@@ -491,7 +415,6 @@ def save_repository_favorites(root_dir: Path, payload: dict[str, Any]) -> dict[s
     _save_favorites_document(root_dir, document)
     return list_repository_favorites(root_dir)
 
-
 def remove_repository_favorite(root_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
     full_name = str(payload.get("full_name") or "").strip()
     if not full_name:
@@ -506,11 +429,4 @@ def remove_repository_favorite(root_dir: Path, payload: dict[str, Any]) -> dict[
     _save_favorites_document(root_dir, document)
     return list_repository_favorites(root_dir)
 
-
-__all__ = [
-    "REPOSITORY_CATEGORIES",
-    "list_repository_favorites",
-    "remove_repository_favorite",
-    "save_repository_favorites",
-    "search_github_repositories",
-]
+__all__ = ["REPOSITORY_CATEGORIES", "list_repository_favorites", "remove_repository_favorite", "save_repository_favorites", "search_github_repositories"]

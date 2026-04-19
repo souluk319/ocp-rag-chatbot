@@ -22,6 +22,7 @@ from play_book_studio.retrieval.query import (
     has_deployment_scaling_intent,
     has_doc_locator_intent,
     has_follow_up_reference,
+    has_operator_concept_intent,
     has_openshift_kubernetes_compare_intent,
     has_pod_lifecycle_concept_intent,
     has_pod_pending_troubleshooting_intent,
@@ -32,7 +33,22 @@ from play_book_studio.retrieval.query import (
 )
 
 DEFAULT_CORE_VERSION = default_core_pack().version
+GENERIC_CITATION_TOPICS = {
+    "additional resources",
+    "informational resources",
+    "legal notice",
+    "legal notice abstract",
+    "abstract",
+    "추가 리소스",
+    "법적 공지",
+    "법적 공지 초록",
+    "초록",
+}
 
+
+def _is_generic_citation_topic(topic: str) -> bool:
+    normalized = strip_section_prefix(topic or "").strip().lower()
+    return normalized in GENERIC_CITATION_TOPICS
 
 def context_with_request_overrides(
     previous: SessionContext | None,
@@ -63,7 +79,6 @@ def context_with_request_overrides(
     context.restrict_uploaded_sources = bool(payload.get("restrict_uploaded_sources", True))
     return context
 
-
 def is_task_topic(topic: str) -> bool:
     normalized = (topic or "").strip()
     if not normalized:
@@ -72,11 +87,11 @@ def is_task_topic(topic: str) -> bool:
         "Deployment 스케일링",
         "etcd 백업/복원",
         "RBAC",
+        "Operator",
         "Machine Config Operator",
         "OpenShift 아키텍처",
         "Route와 Ingress 비교",
     }
-
 
 def infer_explicit_topic(query: str) -> str | None:
     normalized = (query or "").strip()
@@ -86,6 +101,8 @@ def infer_explicit_topic(query: str) -> str | None:
         return "Deployment 스케일링"
     if has_route_ingress_compare_intent(normalized):
         return "Route와 Ingress 비교"
+    if has_operator_concept_intent(normalized):
+        return "Operator"
     if ETCD_RE.search(normalized):
         if has_backup_restore_intent(normalized):
             return "etcd 백업/복원"
@@ -102,13 +119,14 @@ def infer_explicit_topic(query: str) -> str | None:
         return None
     return None
 
-
 def infer_open_entities(topic: str) -> list[str]:
     normalized = (topic or "").lower()
     if "deployment" in normalized and "스케일" in normalized:
         return ["Deployment", "replicas"]
     if "etcd" in normalized:
         return ["etcd"]
+    if normalized == "operator":
+        return ["Operator"]
     if "machine config operator" in normalized or "mco" in normalized:
         return ["Machine Config Operator"]
     if "rbac" in normalized:
@@ -118,7 +136,6 @@ def infer_open_entities(topic: str) -> list[str]:
     if "openshift" in normalized:
         return ["OpenShift"]
     return []
-
 
 def derive_next_context(
     previous: SessionContext | None,
@@ -162,13 +179,13 @@ def derive_next_context(
         primary = result.citations[0]
         if not (follow_up_reference and is_task_topic(next_context.current_topic or "")):
             primary_topic = strip_section_prefix(primary.section) or next_context.current_topic
-            next_context.current_topic = primary_topic
-            next_context.open_entities = infer_open_entities(primary_topic or "")
+            if not _is_generic_citation_topic(primary_topic or ""):
+                next_context.current_topic = primary_topic
+                next_context.open_entities = infer_open_entities(primary_topic or "")
         next_context.unresolved_question = None
     else:
         next_context.unresolved_question = query
     return next_context
-
 
 def dedupe_suggestions(candidates: list[str], *, query: str, limit: int = 3) -> list[str]:
     normalized_query = (query or "").strip().lower()
@@ -186,7 +203,6 @@ def dedupe_suggestions(candidates: list[str], *, query: str, limit: int = 3) -> 
         if len(unique) >= limit:
             break
     return unique
-
 
 def _suggestion_subject(
     *,
@@ -217,7 +233,6 @@ def _suggestion_subject(
         return explicit
     return ""
 
-
 def _contextualize_follow_up(candidate: str, *, subject: str) -> str:
     cleaned = (candidate or "").strip()
     if not cleaned or not subject:
@@ -232,7 +247,6 @@ def _contextualize_follow_up(candidate: str, *, subject: str) -> str:
         "실무에서 왜 중요한지도 설명해줘": f"{subject}가 실무에서 왜 중요한지도 설명해줘",
     }
     return replacements.get(cleaned, cleaned)
-
 
 def fallback_follow_up_questions(*, query: str) -> list[str]:
     if (
@@ -251,7 +265,6 @@ def fallback_follow_up_questions(*, query: str) -> list[str]:
         "주의사항도 함께 정리해줘",
         "상태 확인 방법도 같이 알려줘",
     ]
-
 
 def fallback_no_answer_questions(*, query: str, topic: str = "") -> list[str]:
     lowered = (query or "").lower()
@@ -272,7 +285,6 @@ def fallback_no_answer_questions(*, query: str, topic: str = "") -> list[str]:
         limit=3,
     )
 
-
 _SUGGESTION_TOKEN_RE = re.compile(r"[0-9A-Za-z가-힣_-]+")
 _BAD_SUGGESTION_PATTERNS = (
     "지원 요청",
@@ -289,7 +301,6 @@ _BAD_SUGGESTION_PATTERNS = (
     "oc-mirror",
 )
 
-
 def _tokenize_suggestion_text(*parts: str) -> set[str]:
     tokens: set[str] = set()
     for part in parts:
@@ -299,13 +310,11 @@ def _tokenize_suggestion_text(*parts: str) -> set[str]:
                 tokens.add(normalized)
     return tokens
 
-
 def _is_bad_suggestion_section(section: str) -> bool:
     lowered = str(section or "").strip().lower()
     if not lowered:
         return True
     return any(pattern in lowered for pattern in _BAD_SUGGESTION_PATTERNS)
-
 
 def _suggestions_from_retrieval_hits(result: AnswerResult) -> list[str]:
     retrieval_trace = result.retrieval_trace or {}
@@ -342,7 +351,6 @@ def _suggestions_from_retrieval_hits(result: AnswerResult) -> list[str]:
             if len(suggestions) >= 3:
                 return suggestions
     return suggestions
-
 
 def suggest_follow_up_questions(*, session: ChatSession, result: AnswerResult) -> list[str]:
     query = (result.query or "").strip()
@@ -511,14 +519,4 @@ def suggest_follow_up_questions(*, session: ChatSession, result: AnswerResult) -
     merged = dedupe_suggestions(contextualized, query=query)
     return merged[:3]
 
-
-__all__ = [
-    "context_with_request_overrides",
-    "dedupe_suggestions",
-    "derive_next_context",
-    "fallback_follow_up_questions",
-    "infer_explicit_topic",
-    "infer_open_entities",
-    "is_task_topic",
-    "suggest_follow_up_questions",
-]
+__all__ = ["context_with_request_overrides", "dedupe_suggestions", "derive_next_context", "fallback_follow_up_questions", "infer_explicit_topic", "infer_open_entities", "is_task_topic", "suggest_follow_up_questions"]

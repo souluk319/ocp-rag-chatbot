@@ -20,17 +20,20 @@ from play_book_studio.app.runtime_report import (
 from play_book_studio.app.server import serve
 from play_book_studio.config.settings import load_effective_env, load_settings
 from play_book_studio.evals.answer_eval import evaluate_case, summarize_case_results
-from play_book_studio.evals.ragas_eval import (
-    build_ragas_case_row,
-    evaluate_cases_with_ragas,
-    generate_answers_for_cases,
-    load_openai_judge_config_from_env,
-    read_jsonl,
-)
 from play_book_studio.ingestion.graph_sidecar import write_graph_sidecar_compact_from_artifacts
 from play_book_studio.retrieval.models import SessionContext
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def _read_jsonl(path: Path) -> list[dict]:
+    rows: list[dict] = []
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        rows.append(json.loads(line))
+    return rows
 
 
 def _add_runtime_args(parser: argparse.ArgumentParser) -> None:
@@ -179,7 +182,7 @@ def _run_ask(args: argparse.Namespace) -> int:
 
 def _run_eval(args: argparse.Namespace) -> int:
     answerer = _build_answerer()
-    cases = read_jsonl(args.cases)
+    cases = _read_jsonl(args.cases)
     details: list[dict] = []
     for case in cases:
         details.append(
@@ -210,8 +213,15 @@ def _run_eval(args: argparse.Namespace) -> int:
 
 
 def _run_ragas(args: argparse.Namespace) -> int:
+    from play_book_studio.evals.ragas_eval import (
+        build_ragas_case_row,
+        evaluate_cases_with_ragas,
+        generate_answers_for_cases,
+        load_openai_judge_config_from_env,
+    )
+
     answerer = _build_answerer()
-    cases = read_jsonl(args.cases)
+    cases = _read_jsonl(args.cases)
     settings = answerer.settings
     effective_env = load_effective_env(ROOT)
 

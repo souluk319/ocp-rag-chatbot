@@ -225,6 +225,32 @@ class TestAppSessionFlow(unittest.TestCase):
         self.assertEqual(["RBAC"], updated.open_entities)
         self.assertEqual("특정 namespace에 admin 권한 주는 법 알려줘", updated.user_goal)
 
+    def test_derive_next_context_normalizes_operator_concept_topic_over_catalog_section(self) -> None:
+        result = AnswerResult(
+            query="Operator가 왜 중요한지도 설명해줘",
+            mode="learn",
+            answer="답변: Operator는 플랫폼 기능을 자동화합니다. [1]",
+            rewritten_query="Operator가 왜 중요한지도 설명해줘",
+            citations=[
+                _citation(
+                    1,
+                    section="2.4.4.5.1. 카탈로그 우선순위",
+                    book_slug="operators",
+                )
+            ],
+            cited_indices=[1],
+        )
+
+        updated = _derive_next_context(
+            SessionContext(mode="learn", ocp_version="4.20"),
+            query="Operator가 왜 중요한지도 설명해줘",
+            mode="learn",
+            result=result,
+        )
+
+        self.assertEqual("Operator", updated.current_topic)
+        self.assertEqual(["Operator"], updated.open_entities)
+
     def test_derive_next_context_marks_unresolved_when_no_citations(self) -> None:
         result = AnswerResult(
             query="로그는 어디서 봐?",
@@ -377,6 +403,34 @@ class TestAppSessionFlow(unittest.TestCase):
 
         self.assertEqual("경고 및 이벤트 확인", updated.current_topic)
         self.assertEqual([], updated.open_entities)
+        self.assertIsNone(updated.unresolved_question)
+
+    def test_derive_next_context_ignores_generic_resource_section_for_grounded_result(self) -> None:
+        result = AnswerResult(
+            query="설치 후 클러스터 작업에는 뭐가 있어?",
+            mode="learn",
+            answer="답변: 설치 후 클러스터 작업 가이드를 확인하면 됩니다. [1]",
+            rewritten_query="설치 후 클러스터 작업에는 뭐가 있어?",
+            citations=[
+                _citation(
+                    1,
+                    section="Informational Resources",
+                    book_slug="postinstallation_configuration",
+                )
+            ],
+            cited_indices=[1],
+        )
+
+        updated = _derive_next_context(
+            SessionContext(mode="learn", current_topic="기존 주제", open_entities=["OpenShift"], ocp_version="4.20"),
+            query="설치 후 클러스터 작업에는 뭐가 있어?",
+            mode="learn",
+            result=result,
+        )
+
+        self.assertEqual("기존 주제", updated.current_topic)
+        self.assertEqual(["OpenShift"], updated.open_entities)
+        self.assertEqual("설치 후 클러스터 작업에는 뭐가 있어?", updated.user_goal)
         self.assertIsNone(updated.unresolved_question)
 
     def test_derive_next_context_strips_numeric_section_prefix_from_topic(self) -> None:

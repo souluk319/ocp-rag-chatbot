@@ -1,0 +1,23 @@
+# 머신 관리
+
+You can use machine management to flexibly work with underlying infrastructure such as Amazon Web Services (AWS), Microsoft Azure, {gcp-first}, {rh-openstack-first}, and VMware vSphere to manage the OpenShift Container Platform cluster.
+You can control the cluster and perform auto-scaling, such as scaling up and down the cluster based on specific workload policies.
+
+It is important to have a cluster that adapts to changing workloads. The OpenShift Container Platform cluster can horizontally scale up and down when the load increases or decreases.
+
+Machine management is implemented as a custom resource definition (CRD).
+A CRD object defines a new unique object `Kind` in the cluster and enables the Kubernetes API server to handle the object's entire lifecycle.
+
+The Machine API Operator provisions the following resources:
+
+* `MachineSet`
+* `Machine`
+* `ClusterAutoscaler`
+* `MachineAutoscaler`
+* `MachineHealthCheck`
+
+Additional resources
+* Machine phases and lifecycle
+
+Additional resources
+* Adding compute machines to clusters with user-provisioned infrastructure manually

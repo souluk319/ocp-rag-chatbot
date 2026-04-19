@@ -18,10 +18,10 @@ def apply_security_adjustments(
     boosts: dict[str, float],
     penalties: dict[str, float],
 ) -> None:
-    del context_text
-    rbac_intent = has_rbac_intent(normalized)
-    project_scoped_rbac = has_project_scoped_rbac_intent(normalized)
-    rbac_assignment = has_rbac_assignment_intent(normalized)
+    effective_text = " ".join(part for part in (normalized, context_text) if part).strip()
+    rbac_intent = has_rbac_intent(effective_text)
+    project_scoped_rbac = has_project_scoped_rbac_intent(effective_text)
+    rbac_assignment = has_rbac_assignment_intent(effective_text)
     prefers_rbac_api_docs = bool(ROLE_API_STYLE_RE.search(normalized))
 
     if rbac_intent:

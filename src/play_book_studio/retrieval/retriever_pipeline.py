@@ -137,7 +137,7 @@ def _is_latest_only_hit(hit: RetrievalHit, *, active_slugs: frozenset[str]) -> b
     if not active_slugs:
         return True
     if str(hit.book_slug or "").strip() not in active_slugs:
-        return False
+        return True
     review_status = str(hit.review_status or "").strip()
     if review_status not in {"", "approved", "unreviewed"}:
         return False

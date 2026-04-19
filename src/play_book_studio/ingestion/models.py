@@ -154,7 +154,9 @@ class SourceManifestEntry:
     fallback_input_kind: str = ""
     source_repo: str = ""
     source_branch: str = ""
+    source_binding_kind: str = ""
     source_relative_path: str = ""
+    source_relative_paths: tuple[str, ...] = field(default_factory=tuple)
     source_mirror_root: str = ""
     fallback_source_url: str = ""
     fallback_viewer_path: str = ""
@@ -162,6 +164,11 @@ class SourceManifestEntry:
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         payload["access_groups"] = list(_contract_access_groups(self.access_groups))
+        payload["source_relative_paths"] = [
+            str(path).strip()
+            for path in self.source_relative_paths
+            if str(path).strip()
+        ]
         payload["pack_id"] = self.pack_id or f"{self.product_slug}-{self.ocp_version}-core"
         payload["pack_version"] = self.pack_version or self.ocp_version
         payload["approval_state"] = self.approval_state or _contract_approval_state(

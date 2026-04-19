@@ -96,7 +96,7 @@
       "kind": "entity"
     },
     {
-      "label": "Backup and restore",
+      "label": "백업 및 복구 운영 플레이북",
       "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
       "kind": "book"
     }
@@ -157,7 +157,7 @@
       "kind": "entity"
     },
     {
-      "label": "Installing on any platform",
+      "label": "플랫폼 비종속 설치 플레이북",
       "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
       "kind": "book"
     },
@@ -201,7 +201,7 @@
       "kind": "entity"
     },
     {
-      "label": "Monitoring",
+      "label": "클러스터 모니터링 운영 플레이북",
       "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
       "kind": "book"
     },
@@ -228,7 +228,7 @@
       "kind": "entity"
     },
     {
-      "label": "Backup and restore",
+      "label": "백업 및 복구 운영 플레이북",
       "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
       "kind": "book"
     }
@@ -250,7 +250,7 @@
       "kind": "entity"
     },
     {
-      "label": "Backup and restore",
+      "label": "백업 및 복구 운영 플레이북",
       "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
       "kind": "book"
     }
@@ -272,7 +272,7 @@
       "kind": "book"
     },
     {
-      "label": "로깅",
+      "label": "클러스터 로깅 운영 플레이북",
       "href": "/playbooks/wiki-runtime/active/logging/index.html",
       "kind": "book"
     }
@@ -316,7 +316,7 @@
       "kind": "entity"
     },
     {
-      "label": "Backup and restore",
+      "label": "백업 및 복구 운영 플레이북",
       "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
       "kind": "book"
     }
@@ -333,12 +333,12 @@
       "kind": "entity"
     },
     {
-      "label": "Monitoring",
+      "label": "클러스터 모니터링 운영 플레이북",
       "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
       "kind": "book"
     },
     {
-      "label": "로깅",
+      "label": "클러스터 로깅 운영 플레이북",
       "href": "/playbooks/wiki-runtime/active/logging/index.html",
       "kind": "book"
     }
@@ -377,7 +377,7 @@
       "kind": "book"
     },
     {
-      "label": "Installing on any platform",
+      "label": "플랫폼 비종속 설치 플레이북",
       "href": "/playbooks/wiki-runtime/active/installing_on_any_platform/index.html",
       "kind": "book"
     }
@@ -474,12 +474,12 @@
       "kind": "entity"
     },
     {
-      "label": "Backup and restore",
+      "label": "백업 및 복구 운영 플레이북",
       "href": "/playbooks/wiki-runtime/active/backup_and_restore/index.html",
       "kind": "book"
     },
     {
-      "label": "Monitoring",
+      "label": "클러스터 모니터링 운영 플레이북",
       "href": "/playbooks/wiki-runtime/active/monitoring/index.html",
       "kind": "book"
     }

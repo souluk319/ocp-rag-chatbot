@@ -75,9 +75,18 @@ major task 는 default packet 위에 병렬 lane 요구가 추가된 형태다.
 - `write_scope`
 - `target_outputs`
 - `validation_commands`
+- `git_ref_snapshot`
 - `status`
 
 validation commands 는 구현 전에 먼저 잠근다.
+
+`git_ref_snapshot` 은 최소 아래를 포함한다.
+
+- `head_ref`
+- `head_sha`
+- `upstream_ref`
+- `upstream_sha`
+- `origin_main_sha`
 
 ## Micro Packet Exception
 
@@ -235,6 +244,7 @@ closeout 에는 아래를 포함한다.
 
 - `현재 판단`
 - `핵심 근거`
+- `ref 기준`
 - `산출물 경로`
 - `검증 결과`
 - `다음 행동`

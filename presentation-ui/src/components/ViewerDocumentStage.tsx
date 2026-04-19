@@ -42,12 +42,26 @@ const VIEWER_READER_POLISH = `
     max-width: 100% !important;
   }
 
+  .viewer-root .hero .actions.hero-actions,
+  .viewer-root .hero .hero-meta,
+  .viewer-root .hero .meta-pill {
+    display: none !important;
+  }
+
+  .viewer-root .document-toolbar {
+    display: none !important;
+  }
+
+  .viewer-root .hero {
+    margin-bottom: 20px !important;
+  }
+
   /* Constrain the main width similar to a typical book/documentation layout */
   .viewer-root main {
-    width: min(900px, 100%) !important;
-    max-width: 900px !important;
+    width: min(860px, 100%) !important;
+    max-width: 860px !important;
     margin: 0 auto !important;
-    padding: 32px 48px !important;
+    padding: 28px 32px 56px !important;
     min-width: 0 !important;
   }
 
@@ -66,7 +80,7 @@ const VIEWER_READER_POLISH = `
 
   @media (max-width: 1100px) {
     .viewer-root main {
-      padding: 32px 24px !important;
+      padding: 24px 20px 48px !important;
     }
   }
 `;
@@ -87,10 +101,12 @@ function isViewerHref(href: string): boolean {
 
 export default function ViewerDocumentStage({
   viewerDocument,
+  currentViewerPath,
   onNavigateViewerPath,
   className,
 }: {
   viewerDocument: ViewerDocumentPayload;
+  currentViewerPath?: string;
   onNavigateViewerPath?: (viewerPath: string) => void;
   className?: string;
 }) {
@@ -136,6 +152,7 @@ export default function ViewerDocumentStage({
       const anchor = target?.closest('a[href]') as HTMLAnchorElement | null;
       if (anchor) {
         const href = anchor.getAttribute('href') ?? '';
+        const navMenu = anchor.closest('.document-nav-menu') as HTMLDetailsElement | null;
         if (href.startsWith('#')) {
           event.preventDefault();
           const targetId = href.slice(1);
@@ -161,11 +178,23 @@ export default function ViewerDocumentStage({
               targetNode.scrollIntoView({ block: 'start', behavior: 'smooth' });
             }
           }
+          if (!targetNode && onNavigateViewerPath && currentViewerPath) {
+            const basePath = currentViewerPath.split('#', 1)[0];
+            if (basePath) {
+              onNavigateViewerPath(`${basePath}#${targetId}`);
+            }
+          }
+          if (navMenu) {
+            navMenu.open = false;
+          }
           return;
         }
         if (href && isViewerHref(href) && onNavigateViewerPath) {
           event.preventDefault();
           const parsed = new URL(href, window.location.origin);
+          if (navMenu) {
+            navMenu.open = false;
+          }
           onNavigateViewerPath(`${parsed.pathname}${parsed.search}${parsed.hash}`);
           return;
         }
@@ -183,21 +212,25 @@ export default function ViewerDocumentStage({
           if (navigator.clipboard?.writeText) {
             await navigator.clipboard.writeText(text);
           }
-          button.textContent = '복사됨';
           button.classList.add('is-copied');
+          button.setAttribute('title', button.getAttribute('data-label-active') ?? '복사됨');
+          button.setAttribute('aria-label', button.getAttribute('data-label-active') ?? '복사됨');
           window.setTimeout(() => {
-            button.textContent = defaultLabel;
             button.classList.remove('is-copied');
+            button.setAttribute('title', defaultLabel);
+            button.setAttribute('aria-label', defaultLabel);
           }, 1400);
         } catch {
-          button.textContent = '실패';
+          button.setAttribute('title', '실패');
+          button.setAttribute('aria-label', '실패');
           window.setTimeout(() => {
-            button.textContent = defaultLabel;
+            button.setAttribute('title', defaultLabel);
+            button.setAttribute('aria-label', defaultLabel);
           }, 1400);
         }
         return;
       }
-      if (button.classList.contains('icon-button')) {
+      if (button.classList.contains('wrap-button')) {
         const codeBlock = button.closest('.code-block');
         if (!codeBlock) {
           return;
@@ -205,9 +238,32 @@ export default function ViewerDocumentStage({
         codeBlock.classList.toggle('is-wrapped');
         const wrapped = codeBlock.classList.contains('is-wrapped');
         button.setAttribute('aria-pressed', wrapped ? 'true' : 'false');
-        button.textContent = wrapped
-          ? button.getAttribute('data-label-active') ?? '줄바꿈 해제'
-          : button.getAttribute('data-label-default') ?? '줄바꿈';
+        button.setAttribute(
+          'title',
+          wrapped
+            ? button.getAttribute('data-label-active') ?? '줄바꿈 해제'
+            : button.getAttribute('data-label-default') ?? '줄바꿈',
+        );
+        button.setAttribute(
+          'aria-label',
+          wrapped
+            ? button.getAttribute('data-label-active') ?? '줄바꿈 해제'
+            : button.getAttribute('data-label-default') ?? '줄바꿈',
+        );
+        return;
+      }
+      if (button.classList.contains('collapse-button')) {
+        const codeBlock = button.closest('.code-block');
+        if (!codeBlock) {
+          return;
+        }
+        codeBlock.classList.toggle('is-collapsed');
+        const collapsed = codeBlock.classList.contains('is-collapsed');
+        button.classList.toggle('is-collapsed', collapsed);
+        button.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        button.textContent = collapsed
+          ? button.getAttribute('data-label-collapsed') ?? 'Show more'
+          : button.getAttribute('data-label-expanded') ?? 'Show less';
       }
     };
 
@@ -215,7 +271,7 @@ export default function ViewerDocumentStage({
     return () => {
       root.removeEventListener('click', handleClick);
     };
-  }, [onNavigateViewerPath, viewerDocument]);
+  }, [currentViewerPath, onNavigateViewerPath, viewerDocument]);
 
   return <div className={className} ref={hostRef} />;
 }

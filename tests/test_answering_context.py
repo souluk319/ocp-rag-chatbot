@@ -111,6 +111,35 @@ class ContextAssemblyTests(unittest.TestCase):
         self.assertNotEqual([], bundle.citations)
         self.assertEqual("customer-backup-runbook", bundle.citations[0].book_slug)
 
+    def test_assemble_context_does_not_seed_uploaded_customer_pack_for_implicit_query(self) -> None:
+        bundle = assemble_context(
+            [
+                _hit(
+                    "uploaded-1",
+                    "customer-backup-runbook",
+                    "OpenShift Backup Restore Runbook",
+                    "1. Enter debug shell\n/usr/local/bin/cluster-backup.sh /home/core/assets/backup",
+                    score=0.024,
+                    source_collection="uploaded",
+                ),
+                _hit(
+                    "core-1",
+                    "postinstallation_configuration",
+                    "4.12.5. etcd 데이터 백업",
+                    "공식 문서의 etcd 백업 절차입니다.",
+                    score=0.026,
+                    chunk_type="command",
+                    semantic_role="procedure",
+                    cli_commands=("oc debug --as-root node/<node_name>",),
+                ),
+            ],
+            query="backup 절차를 알려줘",
+            max_chunks=4,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertEqual("postinstallation_configuration", bundle.citations[0].book_slug)
+
     def test_assemble_context_deduplicates_same_chunk_and_signature(self) -> None:
         bundle = assemble_context(
             [
@@ -867,6 +896,93 @@ class ContextAssemblyTests(unittest.TestCase):
 
         self.assertNotEqual([], bundle.citations)
         self.assertEqual("authentication_and_authorization", bundle.citations[0].book_slug)
+
+    def test_rbac_follow_up_context_prefers_authorization_book_for_permission_check(self) -> None:
+        hits = [
+            _hit(
+                "chunk-1",
+                "postinstallation_configuration",
+                "9.2.6. 사용자 역할 추가",
+                "oc auth can-i get pods -n <project>",
+                score=0.048,
+            ),
+            _hit(
+                "chunk-2",
+                "authentication_and_authorization",
+                "7.6. 권한 검증",
+                "SelfSubjectAccessReview와 SelfSubjectRulesReview 또는 oc auth can-i 로 확인합니다.",
+                score=0.043,
+            ),
+        ]
+
+        bundle = assemble_context(
+            hits,
+            query="권한이 잘 들어갔는지 확인하는 명령도 알려줘",
+            session_context=SessionContext(
+                current_topic="RBAC",
+                open_entities=["RBAC"],
+                user_goal="특정 namespace에 admin 권한 주는 법 알려줘",
+            ),
+            max_chunks=4,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertEqual("authentication_and_authorization", bundle.citations[0].book_slug)
+
+    def test_mco_follow_up_context_prefers_machine_configuration_core_books(self) -> None:
+        hits = [
+            _hit(
+                "chunk-1",
+                "updating_clusters",
+                "업데이트 중 재부팅",
+                "업데이트 중 노드가 재부팅될 수 있습니다.",
+                score=0.051,
+            ),
+            _hit(
+                "chunk-2",
+                "postinstallation_configuration",
+                "Troubleshooting MCO",
+                "Machine Config Operator 문제 해결 절차를 설명합니다.",
+                anchor="troubleshooting-mco",
+                score=0.05,
+            ),
+            _hit(
+                "chunk-3",
+                "machine_configuration",
+                "About the Machine Config Operator",
+                "Machine Config Operator는 MachineConfig 변경을 적용하고 재부팅을 조율합니다.",
+                anchor="about-mco",
+                score=0.044,
+            ),
+            _hit(
+                "chunk-4",
+                "operators",
+                "Operator 개요",
+                "Machine Config Operator와 관련 Operator를 설명합니다.",
+                score=0.043,
+            ),
+            _hit(
+                "chunk-5",
+                "machine_management",
+                "머신 관리 개요",
+                "노드와 Machine Config Pool 운영 흐름을 설명합니다.",
+                score=0.042,
+            ),
+        ]
+
+        bundle = assemble_context(
+            hits,
+            query="그럼 노드 재부팅이 왜 필요한지도 알려줘",
+            session_context=SessionContext(
+                current_topic="Machine Config Operator",
+                open_entities=["Machine Config Operator"],
+                user_goal="Machine Config Operator가 뭐야?",
+            ),
+            max_chunks=4,
+        )
+
+        self.assertNotEqual([], bundle.citations)
+        self.assertEqual("machine_configuration", bundle.citations[0].book_slug)
 
     def test_troubleshooting_doc_locator_prefers_support_path_over_release_notes_and_console(self) -> None:
         hits = [

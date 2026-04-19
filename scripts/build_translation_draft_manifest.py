@@ -28,12 +28,29 @@ def build_parser() -> argparse.ArgumentParser:
         default=[],
         help="Specific book slug to include. Repeatable. Defaults to translation_first high-value queue.",
     )
+    parser.add_argument(
+        "--all-runtime-catalog",
+        action="store_true",
+        help="Include every active runtime source-catalog slug instead of the high-value translation queue only.",
+    )
     return parser
 
 
-def _select_target_slugs(settings, explicit_slugs: list[str]) -> list[str]:
+def _select_target_slugs(
+    settings,
+    explicit_slugs: list[str],
+    *,
+    all_runtime_catalog: bool = False,
+) -> list[str]:
     if explicit_slugs:
         return sorted({slug.strip() for slug in explicit_slugs if slug.strip()})
+    if all_runtime_catalog:
+        return sorted(
+            {
+                entry.book_slug
+                for entry in runtime_catalog_entries(read_manifest(settings.source_catalog_path), settings)
+            }
+        )
     report = build_source_approval_report(settings)
     selected = [
         str(item["book_slug"])
@@ -55,12 +72,15 @@ def _build_draft_entry(entry: SourceManifestEntry) -> SourceManifestEntry:
     payload = entry.to_dict()
     payload.update(
         {
+            "source_kind": "html-single",
             "content_status": CONTENT_STATUS_TRANSLATED_KO_DRAFT,
             "citation_eligible": False,
             "citation_block_reason": "translated Korean draft requires review before citation",
             "approval_status": "needs_review",
             "approval_notes": "machine translation draft scheduled for corpus/playbook generation",
             "resolved_language": source_language,
+            "primary_input_kind": "html_single",
+            "fallback_input_kind": "",
             "translation_source_language": source_language,
             "translation_target_language": "ko",
             "translation_source_url": entry.resolved_source_url or entry.source_url,
@@ -75,7 +95,11 @@ def main() -> int:
     args = build_parser().parse_args()
     settings = load_settings(ROOT)
     approval_report = build_source_approval_report(settings)
-    target_slugs = _select_target_slugs(settings, args.slugs)
+    target_slugs = _select_target_slugs(
+        settings,
+        args.slugs,
+        all_runtime_catalog=args.all_runtime_catalog,
+    )
     catalog_entries = runtime_catalog_entries(read_manifest(settings.source_catalog_path), settings)
     catalog_by_slug = {entry.book_slug: entry for entry in catalog_entries}
     books_by_slug = {str(item["book_slug"]): item for item in approval_report["books"]}

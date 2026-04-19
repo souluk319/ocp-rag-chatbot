@@ -900,24 +900,20 @@ class TestAppDataControlRoom(unittest.TestCase):
 
             payload = build_data_control_room_payload(root)
 
-        self.assertEqual(3, payload["summary"]["approved_wiki_runtime_book_count"])
+        self.assertEqual(1, payload["summary"]["approved_wiki_runtime_book_count"])
         self.assertEqual(
-            {"architecture", "backup_restore_operations", "support"},
+            {"architecture"},
             {book["book_slug"] for book in payload["approved_wiki_runtime_books"]["books"]},
         )
         self.assertEqual(
             {
                 "/docs/ocp/4.20/ko/architecture/index.html",
-                "/docs/ocp/4.20/ko/backup_restore_operations/index.html",
-                "/playbooks/wiki-runtime/active/support/index.html",
             },
             {book["viewer_path"] for book in payload["approved_wiki_runtime_books"]["books"]},
         )
         self.assertEqual(
             {
-                "architecture": "Silver",
-                "backup_restore_operations": "Bronze",
-                "support": "Gold",
+                "architecture": "Gold",
             },
             {
                 book["book_slug"]: book["grade"]
@@ -926,12 +922,70 @@ class TestAppDataControlRoom(unittest.TestCase):
         )
         self.assertEqual(
             {
-                "architecture": "latest_pipeline_output",
-                "backup_restore_operations": "derived_runtime_output",
-                "support": "active_runtime",
+                "architecture": "active_runtime",
             },
             {
                 book["book_slug"]: book["review_status"]
                 for book in payload["approved_wiki_runtime_books"]["books"]
             },
         )
+        self.assertIn(
+            {"book_slug": "support", "title": "Support", "hidden_reason": "non_gold_runtime::silver"},
+            payload["approved_wiki_runtime_books"]["hidden_books"],
+        )
+        self.assertIn(
+            {
+                "book_slug": "backup_restore_operations",
+                "title": "Backup Restore Operations",
+                "hidden_reason": "non_gold_runtime::bronze",
+            },
+            payload["approved_wiki_runtime_books"]["hidden_books"],
+        )
+
+    def test_build_data_control_room_payload_prefers_gold_truth_over_candidate_badge(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / ".env").write_text("ARTIFACTS_DIR=artifacts\n", encoding="utf-8")
+            settings = load_settings(root)
+
+            self._write_json(
+                settings.source_manifest_path,
+                {
+                    "entries": [
+                        {
+                            "book_slug": "advanced_networking",
+                            "title": "고급 네트워킹",
+                            "viewer_path": "/docs/ocp/4.20/ko/advanced_networking/index.html",
+                            "source_url": "https://example.com/advanced_networking",
+                            "source_lane": "official_ko",
+                            "source_type": "official_doc",
+                            "approval_state": "approved",
+                            "publication_state": "active",
+                            "content_status": "approved_ko",
+                        }
+                    ]
+                },
+            )
+            self._write_json(
+                root / "data" / "wiki_runtime_books" / "active_manifest.json",
+                {
+                    "generated_at_utc": "2026-04-17T11:00:00+00:00",
+                    "active_group": "full_rebuild",
+                    "entries": [
+                        {
+                            "slug": "advanced_networking",
+                            "title": "고급 네트워킹",
+                            "promotion_strategy": "full_rebuild_source_repo_binding",
+                            "runtime_path": str(root / "runtime" / "advanced_networking.md"),
+                        }
+                    ],
+                },
+            )
+
+            payload = build_data_control_room_payload(root)
+
+        approved_books = payload["approved_wiki_runtime_books"]["books"]
+        self.assertEqual(1, len(approved_books))
+        self.assertEqual("Gold", approved_books[0]["grade"])
+        self.assertEqual("official_gold_playbook_runtime", approved_books[0]["boundary_truth"])
+        self.assertEqual("Gold Playbook", approved_books[0]["boundary_badge"])

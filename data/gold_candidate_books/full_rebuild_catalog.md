@@ -4,7 +4,7 @@
 
 이 카탈로그는 OCP 4.20 full rebuild 기준으로 물질화된 md 북만 모아둔 것이다.
 
-- generated_at_utc: `2026-04-18T13:45:38+00:00`
+- generated_at_utc: `2026-04-18T15:10:31+00:00`
 
 ## Entries
 

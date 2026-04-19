@@ -605,26 +605,69 @@ def _rebalance_mco_concept_hits(
     hybrid_hits: list[RetrievalHit],
     reranked_hits: list[RetrievalHit],
 ) -> list[RetrievalHit]:
-    if not has_mco_concept_intent(query):
+    preferred_order = {
+        "machine_configuration": 0,
+        "operators": 1,
+        "machine_management": 2,
+        "architecture": 3,
+        "overview": 4,
+    }
+
+    def _mco_signal(hit: RetrievalHit) -> bool:
+        lowered_section = (hit.section or "").lower()
+        lowered_anchor = (hit.anchor or "").lower()
+        lowered_text = (hit.text or "").lower()
+        return (
+            hit.book_slug in {"machine_configuration", "operators", "machine_management"}
+            or "machine config operator" in lowered_section
+            or "machine config operator" in lowered_text
+            or "machine config pool" in lowered_section
+            or "machine config pool" in lowered_text
+            or "machineconfigpool" in lowered_section
+            or "machineconfigpool" in lowered_text
+            or lowered_anchor.startswith("about-mco")
+            or lowered_anchor.endswith("mco")
+        )
+
+    explicit_mco_intent = has_mco_concept_intent(query)
+    follow_up_mco_intent = has_follow_up_reference(query) and any(
+        _mco_signal(hit) for hit in hybrid_hits[:8]
+    )
+    if not explicit_mco_intent and not follow_up_mco_intent:
         return reranked_hits
-    preferred_books = {"machine_configuration", "operators"}
-    if not hybrid_hits or not any(hit.book_slug in preferred_books for hit in hybrid_hits[:5]):
-        return reranked_hits
-    if not reranked_hits or reranked_hits[0].book_slug in preferred_books:
+    if not hybrid_hits or not any(_mco_signal(hit) for hit in hybrid_hits[:8]):
         return reranked_hits
 
     hybrid_rank = {hit.chunk_id: index for index, hit in enumerate(hybrid_hits)}
     reordered = list(reranked_hits)
+
+    def _priority(hit: RetrievalHit) -> tuple[int, int]:
+        lowered_section = (hit.section or "").lower()
+        lowered_anchor = (hit.anchor or "").lower()
+        lowered_text = (hit.text or "").lower()
+        book_priority = preferred_order.get(hit.book_slug, 9)
+        if hit.book_slug == "release_notes":
+            noise_priority = 5
+        elif hit.book_slug == "support":
+            noise_priority = 4
+        elif hit.book_slug == "updating_clusters" and (
+            "일반 용어" in hit.section or "glossary" in lowered_section
+        ):
+            noise_priority = 3
+        elif hit.book_slug == "postinstallation_configuration" and any(
+            token in f"{lowered_section} {lowered_anchor} {lowered_text}"
+            for token in ("troubleshooting", "mco")
+        ):
+            noise_priority = 4
+        elif hit.book_slug == "postinstallation_configuration":
+            noise_priority = 2
+        else:
+            noise_priority = 0
+        return book_priority, noise_priority
+
     reordered.sort(
         key=lambda hit: (
-            0 if hit.book_slug in preferred_books else 1,
-            1
-            if (
-                hit.book_slug == "updating_clusters"
-                or "일반 용어" in hit.section
-                or "glossary" in hit.section.lower()
-            )
-            else 0,
+            *_priority(hit),
             hybrid_rank.get(hit.chunk_id, 999),
             -hit.component_scores.get("pre_rerank_fused_score", 0.0),
             -hit.component_scores.get("reranker_score", hit.fused_score),

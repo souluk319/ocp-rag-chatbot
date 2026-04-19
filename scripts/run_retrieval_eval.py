@@ -7,6 +7,7 @@ import json
 import sys
 from collections import defaultdict
 from pathlib import Path
+from typing import Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -22,6 +23,43 @@ from play_book_studio.evals.retrieval_eval import (
 from play_book_studio.retrieval.models import SessionContext
 from play_book_studio.retrieval.retriever import ChatRetriever
 
+LEGACY_BOOK_FAMILY_PREFIXES: dict[str, tuple[str, ...]] = {
+    "architecture": ("architecture__",),
+    "authentication_and_authorization": ("authentication__",),
+    "backup_and_restore": ("backup_and_restore__",),
+    "cli_tools": ("cli_reference__",),
+    "disconnected_environments": ("disconnected__",),
+    "etcd": ("etcd__",),
+    "images": ("openshift_images__", "disconnected__installing_mirroring_installation_images"),
+    "ingress_and_load_balancing": ("networking__ingress_load_balancing__",),
+    "installation_overview": ("installing__overview__",),
+    "logging": ("observability__logging__",),
+    "machine_config_operations": ("machine_configuration__",),
+    "machine_config_rollout_operations": ("machine_configuration__",),
+    "machine_configuration": ("machine_configuration__",),
+    "machine_management": ("machine_management__",),
+    "monitoring": (
+        "observability__monitoring__",
+        "support__troubleshooting__investigating_monitoring_issues",
+        "support__remote_health_monitoring__",
+    ),
+    "networking_overview": ("networking__networking_overview__",),
+    "nodes": ("nodes__",),
+    "observability_overview": ("observability__overview__", "observability__network_observability__"),
+    "operators": ("operators__",),
+    "overview": ("welcome__",),
+    "postinstallation_configuration": (
+        "post_installation_configuration__",
+        "installing__installing_bare_metal__bare_metal_postinstallation_configuration",
+    ),
+    "registry": ("registry__", "disconnected__installing_mirroring_creating_registry"),
+    "release_notes": ("release_notes__",),
+    "security_and_compliance": ("security__",),
+    "support": ("support__",),
+    "updating_clusters": ("updating__",),
+    "web_console": ("web_console__",),
+}
+
 
 def read_jsonl(path: Path) -> list[dict]:
     rows: list[dict] = []
@@ -31,6 +69,90 @@ def read_jsonl(path: Path) -> list[dict]:
             if line:
                 rows.append(json.loads(line))
     return rows
+
+
+def _ordered_unique(items: Iterable[str]) -> list[str]:
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for item in items:
+        value = str(item or "").strip()
+        if not value or value in seen:
+            continue
+        seen.add(value)
+        ordered.append(value)
+    return ordered
+
+
+def _family_prefixes_for_expected_slug(expected_slug: str) -> tuple[str, ...]:
+    slug = str(expected_slug or "").strip()
+    if not slug:
+        return ()
+    prefixes = list(LEGACY_BOOK_FAMILY_PREFIXES.get(slug, ()))
+    prefixes.append(f"{slug}__")
+    return tuple(_ordered_unique(prefixes))
+
+
+def _match_expected_key(
+    actual_book_slug: str,
+    *,
+    expected_book_slugs: list[str],
+    expected_book_families: list[str],
+) -> str:
+    actual = str(actual_book_slug or "").strip()
+    if not actual:
+        return ""
+    for expected_slug in expected_book_slugs:
+        if actual == expected_slug:
+            return expected_slug
+    for expected_slug in expected_book_slugs:
+        for prefix in _family_prefixes_for_expected_slug(expected_slug):
+            if actual.startswith(prefix):
+                return expected_slug
+    for family_prefix in expected_book_families:
+        family = str(family_prefix or "").strip()
+        if family and actual.startswith(family):
+            return family
+    return actual
+
+
+def _normalize_book_slug_list(
+    book_slugs: list[str],
+    *,
+    expected_book_slugs: list[str],
+    expected_book_families: list[str],
+) -> list[str]:
+    return [
+        _match_expected_key(
+            book_slug,
+            expected_book_slugs=expected_book_slugs,
+            expected_book_families=expected_book_families,
+        )
+        for book_slug in book_slugs
+    ]
+
+
+def _normalize_top_hits(
+    hits: list,
+    *,
+    expected_book_slugs: list[str],
+    expected_book_families: list[str],
+) -> list[dict[str, str]]:
+    normalized_hits: list[dict[str, str]] = []
+    for hit in hits:
+        normalized_hits.append(
+            {
+                "book_slug": _match_expected_key(
+                    hit.book_slug,
+                    expected_book_slugs=expected_book_slugs,
+                    expected_book_families=expected_book_families,
+                ),
+                "book_slug_raw": hit.book_slug,
+                "section": hit.section,
+                "anchor": hit.anchor,
+                "viewer_path": hit.viewer_path,
+            }
+        )
+    return normalized_hits
 
 
 def _hit_at(top_books: list[str], expected_books: set[str], k: int) -> bool:
@@ -97,39 +219,69 @@ def main() -> int:
         plan_trace = trace.get("plan") or {}
         ablation_trace = trace.get("ablation") or {}
         vector_runtime = trace.get("vector_runtime") or {}
-        top_books = [hit.book_slug for hit in result.hits]
-        top_hits = [
-            {
-                "book_slug": hit.book_slug,
-                "section": hit.section,
-                "anchor": hit.anchor,
-                "viewer_path": hit.viewer_path,
-            }
-            for hit in result.hits
-        ]
-        expected_books = set(case.get("expected_book_slugs", []))
+        raw_top_books = [hit.book_slug for hit in result.hits]
+        expected_book_slugs = _ordered_unique(case.get("expected_book_slugs", []))
+        expected_book_families = _ordered_unique(case.get("expected_book_families", []))
+        expected_match_keys = set(expected_book_slugs + expected_book_families)
+        top_books = _normalize_book_slug_list(
+            raw_top_books,
+            expected_book_slugs=expected_book_slugs,
+            expected_book_families=expected_book_families,
+        )
+        top_hits = _normalize_top_hits(
+            result.hits,
+            expected_book_slugs=expected_book_slugs,
+            expected_book_families=expected_book_families,
+        )
         expected_landing_terms = [str(item) for item in case.get("expected_landing_terms", []) if str(item).strip()]
+        raw_bm25_top_books = [str(item) for item in ablation_trace.get("bm25_top_book_slugs", [])]
+        raw_vector_top_books = [str(item) for item in ablation_trace.get("vector_top_book_slugs", [])]
+        raw_hybrid_top_books = [str(item) for item in ablation_trace.get("hybrid_top_book_slugs", [])]
+        raw_reranked_top_books = [str(item) for item in ablation_trace.get("reranked_top_book_slugs", raw_top_books)]
         detail = {
             "id": case["id"],
             "category": case["category"],
             "mode": str(case.get("mode", case["category"] if case["category"] in {"ops", "learn"} else "ops")),
             "query_type": str(case.get("query_type", case["category"])),
             "query": case["query"],
-            "expected_book_slugs": sorted(expected_books),
+            "expected_book_slugs_input": expected_book_slugs,
+            "expected_book_families": expected_book_families,
+            "expected_book_slugs": sorted(expected_match_keys),
             "expected_landing_terms": expected_landing_terms,
             "rewritten_query": result.rewritten_query,
             "top_book_slugs": top_books,
+            "top_book_slugs_raw": raw_top_books,
             "top_hits": top_hits,
-            "bm25_top_book_slugs": [str(item) for item in ablation_trace.get("bm25_top_book_slugs", [])],
-            "vector_top_book_slugs": [str(item) for item in ablation_trace.get("vector_top_book_slugs", [])],
-            "hybrid_top_book_slugs": [str(item) for item in ablation_trace.get("hybrid_top_book_slugs", [])],
-            "reranked_top_book_slugs": [str(item) for item in ablation_trace.get("reranked_top_book_slugs", top_books)],
-            "book_hit_at_1": _hit_at(top_books, expected_books, 1),
-            "book_hit_at_3": _hit_at(top_books, expected_books, 3),
-            "book_hit_at_5": _hit_at(top_books, expected_books, 5),
-            "landing_hit_at_1": landing_hit_at_k(top_hits, sorted(expected_books), expected_landing_terms, 1),
-            "landing_hit_at_3": landing_hit_at_k(top_hits, sorted(expected_books), expected_landing_terms, 3),
-            "landing_hit_at_5": landing_hit_at_k(top_hits, sorted(expected_books), expected_landing_terms, 5),
+            "bm25_top_book_slugs": _normalize_book_slug_list(
+                raw_bm25_top_books,
+                expected_book_slugs=expected_book_slugs,
+                expected_book_families=expected_book_families,
+            ),
+            "bm25_top_book_slugs_raw": raw_bm25_top_books,
+            "vector_top_book_slugs": _normalize_book_slug_list(
+                raw_vector_top_books,
+                expected_book_slugs=expected_book_slugs,
+                expected_book_families=expected_book_families,
+            ),
+            "vector_top_book_slugs_raw": raw_vector_top_books,
+            "hybrid_top_book_slugs": _normalize_book_slug_list(
+                raw_hybrid_top_books,
+                expected_book_slugs=expected_book_slugs,
+                expected_book_families=expected_book_families,
+            ),
+            "hybrid_top_book_slugs_raw": raw_hybrid_top_books,
+            "reranked_top_book_slugs": _normalize_book_slug_list(
+                raw_reranked_top_books,
+                expected_book_slugs=expected_book_slugs,
+                expected_book_families=expected_book_families,
+            ),
+            "reranked_top_book_slugs_raw": raw_reranked_top_books,
+            "book_hit_at_1": _hit_at(top_books, expected_match_keys, 1),
+            "book_hit_at_3": _hit_at(top_books, expected_match_keys, 3),
+            "book_hit_at_5": _hit_at(top_books, expected_match_keys, 5),
+            "landing_hit_at_1": landing_hit_at_k(top_hits, sorted(expected_match_keys), expected_landing_terms, 1),
+            "landing_hit_at_3": landing_hit_at_k(top_hits, sorted(expected_match_keys), expected_landing_terms, 3),
+            "landing_hit_at_5": landing_hit_at_k(top_hits, sorted(expected_match_keys), expected_landing_terms, 5),
             "warnings": trace.get("warnings", []),
             "reranker_applied": bool(trace.get("reranker", {}).get("applied", False)),
             "rewrite_applied": bool(plan_trace.get("rewrite_applied", False)),

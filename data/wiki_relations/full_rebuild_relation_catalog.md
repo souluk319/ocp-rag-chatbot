@@ -1,6 +1,6 @@
 # OCP 4.20 Full Rebuild Wiki Relations
 
-- generated_at_utc: `2026-04-16T14:34:18+00:00`
+- generated_at_utc: `2026-04-18T15:10:33+00:00`
 - entity_hub_count: `14`
 - candidate_relation_count: `29`
 
@@ -14,7 +14,7 @@
 
 - title: `아키텍처`
 - entities: Platform Foundation, Control Plane Nodes
-- related_docs: 개요, 설치 개요, Installing on any platform, 네트워킹 개요
+- related_docs: 개요, 설치 개요, 플랫폼 비종속 설치 플레이북, 네트워킹 개요
 
 ## `authentication_and_authorization`
 
@@ -24,9 +24,9 @@
 
 ## `backup_and_restore`
 
-- title: `Backup and restore`
+- title: `백업 및 복구 운영 플레이북`
 - entities: Etcd, Control Plane Nodes, Cluster Wide Proxy, Control Plane and Node Operations
-- related_docs: etcd 백업 및 복구 플레이북, Machine configuration, Monitoring, 설치 후 구성
+- related_docs: etcd 백업 및 복구 플레이북, 머신 구성 운영 플레이북, 클러스터 모니터링 운영 플레이북, 설치 후 구성
 
 ## `cli_tools`
 
@@ -44,7 +44,7 @@
 
 - title: `etcd 백업 및 복구 플레이북`
 - entities: Etcd, Control Plane Nodes, Control Plane and Node Operations
-- related_docs: Backup and restore, Machine configuration, Monitoring, 설치 후 구성
+- related_docs: 백업 및 복구 운영 플레이북, 머신 구성 운영 플레이북, 클러스터 모니터링 운영 플레이북, 설치 후 구성
 
 ## `images`
 
@@ -62,37 +62,37 @@
 
 - title: `설치 개요`
 - entities: Platform Foundation, Installation and Day-2
-- related_docs: Installing on any platform, 설치 후 구성, Machine configuration, Backup and restore
+- related_docs: 플랫폼 비종속 설치 플레이북, 설치 후 구성, 머신 구성 운영 플레이북, 백업 및 복구 운영 플레이북
 
 ## `installing_on_any_platform`
 
-- title: `Installing on any platform`
+- title: `플랫폼 비종속 설치 플레이북`
 - entities: Cluster Wide Proxy, Machine Config Operator, Installation and Day-2
-- related_docs: 설치 개요, 설치 후 구성, Machine configuration, Backup and restore
+- related_docs: 설치 개요, 설치 후 구성, 머신 구성 운영 플레이북, 백업 및 복구 운영 플레이북
 
 ## `logging`
 
-- title: `로깅`
+- title: `클러스터 로깅 운영 플레이북`
 - entities: Prometheus, Observability and Troubleshooting
-- related_docs: Monitoring, 관찰 기능 개요, Backup and restore, Machine configuration
+- related_docs: 클러스터 모니터링 운영 플레이북, 관찰 기능 개요, 백업 및 복구 운영 플레이북, 머신 구성 운영 플레이북
 
 ## `machine_configuration`
 
-- title: `Machine configuration`
+- title: `머신 구성 운영 플레이북`
 - entities: Machine Config Operator, Control Plane Nodes, Control Plane and Node Operations
-- related_docs: Backup and restore, etcd 백업 및 복구 플레이북, Monitoring, 설치 후 구성
+- related_docs: 백업 및 복구 운영 플레이북, etcd 백업 및 복구 플레이북, 클러스터 모니터링 운영 플레이북, 설치 후 구성
 
 ## `machine_management`
 
 - title: `머신 관리`
 - entities: Machine Config Operator, Control Plane Nodes, Control Plane and Node Operations
-- related_docs: Backup and restore, etcd 백업 및 복구 플레이북, Monitoring, 설치 후 구성
+- related_docs: 백업 및 복구 운영 플레이북, etcd 백업 및 복구 플레이북, 클러스터 모니터링 운영 플레이북, 설치 후 구성
 
 ## `monitoring`
 
-- title: `Monitoring`
+- title: `클러스터 모니터링 운영 플레이북`
 - entities: Prometheus, Observability and Troubleshooting
-- related_docs: 관찰 기능 개요, 로깅, Backup and restore, Machine configuration
+- related_docs: 관찰 기능 개요, 클러스터 로깅 운영 플레이북, 백업 및 복구 운영 플레이북, 머신 구성 운영 플레이북
 
 ## `networking_overview`
 
@@ -104,13 +104,13 @@
 
 - title: `노드`
 - entities: Control Plane Nodes, Machine Config Operator, Control Plane and Node Operations
-- related_docs: Backup and restore, etcd 백업 및 복구 플레이북, Monitoring, 설치 후 구성
+- related_docs: 백업 및 복구 운영 플레이북, etcd 백업 및 복구 플레이북, 클러스터 모니터링 운영 플레이북, 설치 후 구성
 
 ## `observability_overview`
 
 - title: `관찰 기능 개요`
 - entities: Prometheus, Observability and Troubleshooting
-- related_docs: Monitoring, 로깅, Backup and restore, Machine configuration
+- related_docs: 클러스터 모니터링 운영 플레이북, 클러스터 로깅 운영 플레이북, 백업 및 복구 운영 플레이북, 머신 구성 운영 플레이북
 
 ## `operators`
 
@@ -122,13 +122,13 @@
 
 - title: `개요`
 - entities: Platform Foundation
-- related_docs: 아키텍처, 설치 개요, Installing on any platform, 네트워킹 개요
+- related_docs: 아키텍처, 설치 개요, 플랫폼 비종속 설치 플레이북, 네트워킹 개요
 
 ## `postinstallation_configuration`
 
 - title: `설치 후 구성`
 - entities: Cluster Wide Proxy, Machine Config Operator, Installation and Day-2
-- related_docs: 설치 개요, Installing on any platform, Machine configuration, Backup and restore
+- related_docs: 설치 개요, 플랫폼 비종속 설치 플레이북, 머신 구성 운영 플레이북, 백업 및 복구 운영 플레이북
 
 ## `registry`
 
@@ -164,7 +164,7 @@
 
 - title: `클러스터 업데이트`
 - entities: Installation and Day-2, Control Plane Nodes
-- related_docs: Backup and restore, Monitoring
+- related_docs: 백업 및 복구 운영 플레이북, 클러스터 모니터링 운영 플레이북
 
 ## `validation_and_troubleshooting`
 
@@ -180,71 +180,54 @@
 
 ## Figure Entity Coverage
 
-- `cluster-wide-proxy` · figure_count=`29`
-- `control-plane-nodes` · figure_count=`17`
-- `control-plane-ops` · figure_count=`6`
-- `etcd` · figure_count=`4`
-- `installation-day2` · figure_count=`7`
-- `lifecycle-and-support` · figure_count=`5`
-- `machine-config-operator` · figure_count=`4`
-- `networking` · figure_count=`23`
-- `observability` · figure_count=`1`
-- `operators-and-tooling` · figure_count=`20`
-- `platform-foundation` · figure_count=`13`
-- `prometheus` · figure_count=`1`
-- `security-and-auth` · figure_count=`36`
-- `storage-and-content` · figure_count=`2`
+- `cluster-wide-proxy` · figure_count=`20`
+- `control-plane-nodes` · figure_count=`2`
+- `control-plane-ops` · figure_count=`2`
+- `installation-day2` · figure_count=`6`
+- `machine-config-operator` · figure_count=`5`
+- `networking` · figure_count=`17`
+- `operators-and-tooling` · figure_count=`9`
+- `platform-foundation` · figure_count=`8`
 
 ## Figure Section Coverage
 
-- `advanced_networking` · matched_sections=`14/14`
-- `architecture` · matched_sections=`7/7`
-- `authentication_and_authorization` · matched_sections=`5/5`
-- `backup_and_restore` · matched_sections=`4/4`
-- `cli_tools` · matched_sections=`5/5`
-- `disconnected_environments` · matched_sections=`1/1`
+- `advanced_networking` · matched_sections=`9/9`
 - `ingress_and_load_balancing` · matched_sections=`8/8`
-- `installation_overview` · matched_sections=`2/2`
-- `machine_management` · matched_sections=`1/1`
-- `nodes` · matched_sections=`1/1`
-- `operators` · matched_sections=`7/7`
-- `overview` · matched_sections=`4/4`
-- `postinstallation_configuration` · matched_sections=`2/2`
-- `security_and_compliance` · matched_sections=`31/31`
-- `storage` · matched_sections=`1/1`
-- `support` · matched_sections=`2/2`
-- `updating_clusters` · matched_sections=`3/3`
+- `installation_overview` · matched_sections=`3/3`
+- `installing_on_any_platform` · matched_sections=`3/3`
+- `nodes` · matched_sections=`2/2`
+- `overview` · matched_sections=`5/5`
 - `validation_and_troubleshooting` · matched_sections=`1/1`
-- `web_console` · matched_sections=`8/8`
+- `web_console` · matched_sections=`9/9`
 
 ## Section Relation Coverage
 
 - `advanced_networking` · related_sections=`6`
-- `architecture` · related_sections=`6`
-- `authentication_and_authorization` · related_sections=`6`
-- `backup_and_restore` · related_sections=`5`
-- `cli_tools` · related_sections=`2`
-- `disconnected_environments` · related_sections=`1`
-- `etcd` · related_sections=`2`
-- `images` · related_sections=`2`
+- `architecture` · related_sections=`3`
+- `authentication_and_authorization` · related_sections=`0`
+- `backup_and_restore` · related_sections=`0`
+- `cli_tools` · related_sections=`0`
+- `disconnected_environments` · related_sections=`0`
+- `etcd` · related_sections=`0`
+- `images` · related_sections=`0`
 - `ingress_and_load_balancing` · related_sections=`6`
-- `installation_overview` · related_sections=`4`
-- `installing_on_any_platform` · related_sections=`3`
-- `logging` · related_sections=`1`
-- `machine_configuration` · related_sections=`2`
-- `machine_management` · related_sections=`3`
-- `monitoring` · related_sections=`1`
-- `networking_overview` · related_sections=`4`
-- `nodes` · related_sections=`3`
-- `observability_overview` · related_sections=`1`
-- `operators` · related_sections=`6`
+- `installation_overview` · related_sections=`2`
+- `installing_on_any_platform` · related_sections=`2`
+- `logging` · related_sections=`0`
+- `machine_configuration` · related_sections=`0`
+- `machine_management` · related_sections=`0`
+- `monitoring` · related_sections=`0`
+- `networking_overview` · related_sections=`3`
+- `nodes` · related_sections=`1`
+- `observability_overview` · related_sections=`0`
+- `operators` · related_sections=`1`
 - `overview` · related_sections=`6`
-- `postinstallation_configuration` · related_sections=`4`
-- `registry` · related_sections=`2`
+- `postinstallation_configuration` · related_sections=`2`
+- `registry` · related_sections=`1`
 - `release_notes` · related_sections=`0`
-- `security_and_compliance` · related_sections=`6`
-- `storage` · related_sections=`2`
-- `support` · related_sections=`2`
-- `updating_clusters` · related_sections=`4`
+- `security_and_compliance` · related_sections=`0`
+- `storage` · related_sections=`1`
+- `support` · related_sections=`0`
+- `updating_clusters` · related_sections=`0`
 - `validation_and_troubleshooting` · related_sections=`1`
-- `web_console` · related_sections=`6`
+- `web_console` · related_sections=`3`

@@ -238,6 +238,20 @@ class TestAnsweringRoutes(unittest.TestCase):
         self.assertIn("어떤 로그", result.answer)
         self.assertEqual([], result.citations)
 
+    def test_answerer_routes_ambiguous_postinstall_question_to_clarification(self) -> None:
+        settings = Settings(root_dir=ROOT)
+        answerer = ChatAnswerer(
+            settings=settings,
+            retriever=_ExplodingRetriever(),
+            llm_client=_FakeLLMClient(),
+        )
+
+        result = answerer.answer("설치 후에 뭘 먼저 해야 해?", mode="ops")
+
+        self.assertEqual("clarification", result.response_kind)
+        self.assertIn("설치 후 작업 범위", result.answer)
+        self.assertEqual([], result.citations)
+
     def test_answerer_aligns_drain_command_to_grounded_oc_command(self) -> None:
         class _DrainRetriever:
             def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001

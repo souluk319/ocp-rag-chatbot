@@ -215,6 +215,7 @@ class CustomerPackNormalizeService:
                 canonical_book.to_dict(),
                 draft_id=record.draft_id,
             )
+            self.settings.customer_pack_books_dir.mkdir(parents=True, exist_ok=True)
             book_path = self.settings.customer_pack_books_dir / f"{record.draft_id}.json"
             initial_quality = evaluate_canonical_book_quality(canonical_payload)
             initial_degraded = assess_degraded_pdf_payload(canonical_payload, quality=initial_quality)

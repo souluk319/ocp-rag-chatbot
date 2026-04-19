@@ -114,7 +114,17 @@ def _requires_console_grounding(query: str) -> bool:
 
 def _requires_rbac_grounding(query: str) -> bool:
     lowered = str(query or "").lower()
-    return "권한" in lowered or "rbac" in lowered or "rolebinding" in lowered
+    return any(
+        token in lowered
+        for token in (
+            "권한",
+            "rbac",
+            "rolebinding",
+            "cluster-admin",
+            "clusterrole",
+            "cluster role",
+        )
+    )
 
 
 def _citations_match_rbac_intent(citations: list) -> bool:
@@ -216,13 +226,29 @@ def _prune_provenance_noise_citations(*, query: str, citations: list) -> list:
 
     pruned = list(citations)
     if has_mco_concept_intent(query):
-        preferred_books = {
+        strong_preferred_books = {
             "machine_configuration",
             "machine_management",
             "operators",
-            "updating_clusters",
-            "architecture",
-            "overview",
+        }
+        if any(citation.book_slug in strong_preferred_books for citation in pruned):
+            pruned = [citation for citation in pruned if citation.book_slug in strong_preferred_books]
+        else:
+            preferred_books = {
+                "machine_configuration",
+                "machine_management",
+                "operators",
+                "updating_clusters",
+                "architecture",
+                "overview",
+            }
+            if any(citation.book_slug in preferred_books for citation in pruned):
+                pruned = [citation for citation in pruned if citation.book_slug in preferred_books]
+
+    if _requires_rbac_grounding(query):
+        preferred_books = {
+            "authentication_and_authorization",
+            "cli_tools",
         }
         if any(citation.book_slug in preferred_books for citation in pruned):
             pruned = [citation for citation in pruned if citation.book_slug in preferred_books]
