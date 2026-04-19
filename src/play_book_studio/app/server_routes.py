@@ -20,8 +20,12 @@ from .server_routes_customer_pack import (
     handle_customer_pack_upload_draft,
 )
 from .server_routes_ops import (
+    handle_repository_official_materialize,
+    handle_repository_official_catalog,
+    _search_official_source_candidates,
     handle_buyer_packet,
     handle_data_control_room,
+    handle_data_control_room_chunks,
     handle_debug_chat_log,
     handle_debug_session,
     handle_repository_favorites,
@@ -68,7 +72,30 @@ def handle_repository_search(handler: Any, query: str, *, root_dir: Path) -> Non
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
         return
+    payload["official_candidates"] = _search_official_source_candidates(
+        root_dir,
+        query=search_query,
+        limit=min(limit, 8),
+    )
     handler._send_json(payload)
+
+
+def handle_repository_official_materialize_request(
+    handler: Any,
+    payload: dict[str, Any],
+    *,
+    root_dir: Path,
+) -> dict[str, Any] | None:
+    return handle_repository_official_materialize(handler, payload, root_dir=root_dir)
+
+
+def handle_repository_official_catalog_request(
+    handler: Any,
+    query: str,
+    *,
+    root_dir: Path,
+) -> None:
+    handle_repository_official_catalog(handler, query, root_dir=root_dir)
 
 
 __all__ = [name for name in globals() if name.startswith("handle_") or name.startswith("_") or name == "resolve_viewer_html"]

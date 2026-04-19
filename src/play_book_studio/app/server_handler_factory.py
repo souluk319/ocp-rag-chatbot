@@ -18,6 +18,7 @@ from play_book_studio.app.server_chat import (
 from play_book_studio.app.server_routes import (
     resolve_viewer_html as _resolve_viewer_html,
     handle_data_control_room as _handle_data_control_room_request,
+    handle_data_control_room_chunks as _handle_data_control_room_chunks_request,
     handle_debug_chat_log as _handle_debug_chat_log_request,
     handle_debug_session as _handle_debug_session_request,
     handle_customer_pack_book as _handle_customer_pack_book_request,
@@ -39,6 +40,8 @@ from play_book_studio.app.server_routes import (
     handle_repository_favorites as _handle_repository_favorites_request,
     handle_repository_favorites_remove as _handle_repository_favorites_remove_request,
     handle_repository_favorites_save as _handle_repository_favorites_save_request,
+    handle_repository_official_catalog_request as _handle_repository_official_catalog_request,
+    handle_repository_official_materialize_request as _handle_repository_official_materialize_request,
     handle_repository_search as _handle_repository_search_request,
     handle_repository_unanswered as _handle_repository_unanswered_request,
     handle_runtime_figures as _handle_runtime_figures_request,
@@ -136,6 +139,9 @@ def _build_handler(
                 self._handle_data_control_room(parsed_request.query)
                 self._debug_timing("data-control-room", started_at)
                 return
+            if request_path == "/api/data-control-room/chunks":
+                self._handle_data_control_room_chunks(parsed_request.query)
+                return
             if request_path == "/api/buyer-packet":
                 self._handle_buyer_packet(parsed_request.query)
                 return
@@ -165,6 +171,9 @@ def _build_handler(
                 return
             if request_path == "/api/repositories/search":
                 self._handle_repository_search(parsed_request.query)
+                return
+            if request_path == "/api/repositories/official-catalog":
+                self._handle_repository_official_catalog(parsed_request.query)
                 return
             if request_path == "/api/repositories/unanswered":
                 self._handle_repository_unanswered(parsed_request.query)
@@ -243,6 +252,9 @@ def _build_handler(
             if self.path == "/api/repositories/favorites/remove":
                 self._handle_repository_favorites_remove(payload)
                 return
+            if self.path == "/api/repositories/official-materialize":
+                self._handle_repository_official_materialize(payload)
+                return
             if self.path == "/api/wiki-overlays":
                 self._handle_wiki_user_overlay_save(payload)
                 return
@@ -296,6 +308,13 @@ def _build_handler(
                 root_dir=root_dir,
             )
 
+        def _handle_repository_official_catalog(self, query: str) -> None:
+            _handle_repository_official_catalog_request(
+                self,
+                query,
+                root_dir=root_dir,
+            )
+
         def _handle_wiki_user_overlays(self, query: str) -> None:
             _handle_wiki_user_overlays_request(
                 self,
@@ -331,6 +350,13 @@ def _build_handler(
                 root_dir=root_dir,
             )
 
+        def _handle_data_control_room_chunks(self, query: str) -> None:
+            _handle_data_control_room_chunks_request(
+                self,
+                query,
+                root_dir=root_dir,
+            )
+
         def _handle_sessions_list(self, query: str) -> None: _handle_sessions_list_request(self, query, store=store)
         def _handle_session_load(self, query: str) -> None: _handle_session_load_request(self, query, store=store)
         def _handle_session_delete(self, payload: dict[str, Any]) -> None: _handle_session_delete_request(self, payload, store=store)
@@ -356,14 +382,30 @@ def _build_handler(
         def _handle_customer_pack_drafts(self, query: str) -> None: _handle_customer_pack_drafts_request(self, query, root_dir=root_dir)
         def _handle_customer_pack_captured(self, query: str) -> None: _handle_customer_pack_captured_request(self, query, root_dir=root_dir)
         def _handle_customer_pack_book(self, query: str) -> None: _handle_customer_pack_book_request(self, query, root_dir=root_dir)
-        def _handle_customer_pack_draft_create(self, payload: dict[str, Any]) -> None: _handle_customer_pack_draft_create_request(self, payload, root_dir=root_dir)
-        def _handle_customer_pack_upload_draft(self, payload: dict[str, Any]) -> None: _handle_customer_pack_upload_draft_request(self, payload, root_dir=root_dir)
-        def _handle_customer_pack_ingest(self, payload: dict[str, Any]) -> None: _handle_customer_pack_ingest_request(self, payload, root_dir=root_dir)
-        def _handle_customer_pack_capture(self, payload: dict[str, Any]) -> None: _handle_customer_pack_capture_request(self, payload, root_dir=root_dir)
-        def _handle_customer_pack_normalize(self, payload: dict[str, Any]) -> None: _handle_customer_pack_normalize_request(self, payload, root_dir=root_dir)
-        def _handle_customer_pack_delete_draft(self, payload: dict[str, Any]) -> None: _handle_customer_pack_delete_draft_request(self, payload, root_dir=root_dir)
+        def _handle_customer_pack_draft_create(self, payload: dict[str, Any]) -> None:
+            _handle_customer_pack_draft_create_request(self, payload, root_dir=root_dir)
+            data_control_room_cache.set("payload", None)
+        def _handle_customer_pack_upload_draft(self, payload: dict[str, Any]) -> None:
+            _handle_customer_pack_upload_draft_request(self, payload, root_dir=root_dir)
+            data_control_room_cache.set("payload", None)
+        def _handle_customer_pack_ingest(self, payload: dict[str, Any]) -> None:
+            _handle_customer_pack_ingest_request(self, payload, root_dir=root_dir)
+            data_control_room_cache.set("payload", None)
+        def _handle_customer_pack_capture(self, payload: dict[str, Any]) -> None:
+            _handle_customer_pack_capture_request(self, payload, root_dir=root_dir)
+            data_control_room_cache.set("payload", None)
+        def _handle_customer_pack_normalize(self, payload: dict[str, Any]) -> None:
+            _handle_customer_pack_normalize_request(self, payload, root_dir=root_dir)
+            data_control_room_cache.set("payload", None)
+        def _handle_customer_pack_delete_draft(self, payload: dict[str, Any]) -> None:
+            _handle_customer_pack_delete_draft_request(self, payload, root_dir=root_dir)
+            data_control_room_cache.set("payload", None)
         def _handle_repository_favorites_save(self, payload: dict[str, Any]) -> None: _handle_repository_favorites_save_request(self, payload, root_dir=root_dir)
         def _handle_repository_favorites_remove(self, payload: dict[str, Any]) -> None: _handle_repository_favorites_remove_request(self, payload, root_dir=root_dir)
+        def _handle_repository_official_materialize(self, payload: dict[str, Any]) -> None:
+            result = _handle_repository_official_materialize_request(self, payload, root_dir=root_dir)
+            if result is not None:
+                data_control_room_cache.set("payload", None)
         def _handle_wiki_user_overlay_save(self, payload: dict[str, Any]) -> None: _handle_wiki_user_overlay_save_request(self, payload, root_dir=root_dir)
         def _handle_wiki_user_overlay_remove(self, payload: dict[str, Any]) -> None: _handle_wiki_user_overlay_remove_request(self, payload, root_dir=root_dir)
 

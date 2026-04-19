@@ -2,6 +2,15 @@ export const RUNTIME_ORIGIN = (import.meta.env.VITE_RUNTIME_ORIGIN ?? '').trim()
 export const RUNTIME_EXTERNAL_ORIGIN = RUNTIME_ORIGIN || 'http://127.0.0.1:8765';
 export const CUSTOMER_PACK_UPLOAD_ACCEPT = '.pdf,.md,.markdown,.docx,.pptx,.xlsx,.txt,.adoc,.asciidoc,.html,.htm,.png,.jpg,.jpeg,.webp';
 
+export interface LibraryBookSourceOption {
+  key: string;
+  label: string;
+  href: string;
+  availability: 'available' | 'missing' | string;
+  note: string;
+  is_current?: boolean;
+}
+
 export interface LibraryBook {
   book_slug: string;
   title: string;
@@ -20,11 +29,77 @@ export interface LibraryBook {
   boundary_truth?: string;
   runtime_truth_label?: string;
   boundary_badge?: string;
+  current_source_basis?: 'official_homepage' | 'official_repo' | 'unknown' | string;
+  current_source_label?: string;
+  source_options?: LibraryBookSourceOption[];
+  source_collection?: string;
+  source_origin_label?: string;
+  source_origin_url?: string;
+  draft_id?: string;
+  chunk_count?: number;
+  token_total?: number;
+  command_chunk_count?: number;
+  error_chunk_count?: number;
+  materialized?: boolean;
+  chunk_scope?: 'runtime' | 'customer_pack' | string;
+  delete_target_kind?: string;
+  delete_target_id?: string;
+  delete_target_label?: string;
+  corpus_chunk_count?: number;
+  corpus_token_total?: number;
+  corpus_materialized?: boolean;
+  corpus_runtime_eligible?: boolean;
+  corpus_vector_status?: string;
+  chunk_type_breakdown?: Record<string, number>;
 }
 
 export interface LibraryBucket {
-  selected_dir: string;
+  selected_dir?: string;
+  selected_path?: string;
   books: LibraryBook[];
+}
+
+export interface CorpusChunkRow {
+  chunk_id: string;
+  ordinal: number;
+  chunk_type: string;
+  token_count: number;
+  chapter: string;
+  section: string;
+  section_path: string[];
+  anchor: string;
+  viewer_path: string;
+  source_url: string;
+  text: string;
+  cli_commands: string[];
+  error_strings: string[];
+  k8s_objects: string[];
+  operator_names: string[];
+  verification_hints: string[];
+}
+
+export interface CorpusChunkViewerResponse {
+  scope: 'runtime' | 'customer_pack' | string;
+  scope_label: string;
+  book_slug: string;
+  title: string;
+  draft_id?: string;
+  document_viewer_path: string;
+  source_lane: string;
+  source_type: string;
+  source_collection?: string;
+  source_origin_label?: string;
+  source_origin_url?: string;
+  runtime_truth_label?: string;
+  boundary_badge?: string;
+  vector_status?: string;
+  corpus_runtime_eligible?: boolean;
+  chunk_count: number;
+  token_total: number;
+  command_chunk_count: number;
+  error_chunk_count: number;
+  chunk_type_breakdown: Record<string, number>;
+  chunks: CorpusChunkRow[];
 }
 
 export interface BuyerPacket {
@@ -80,8 +155,11 @@ export interface DataControlRoomSummary {
   approved_runtime_count: number;
   gold_book_count: number;
   manualbook_count: number;
+  corpus_book_count?: number;
   customer_pack_runtime_book_count?: number;
   user_library_book_count?: number;
+  user_library_corpus_book_count?: number;
+  user_library_corpus_chunk_count?: number;
   gold_candidate_book_count?: number;
   approved_wiki_runtime_book_count?: number;
   wiki_navigation_backlog_count?: number;
@@ -124,9 +202,11 @@ export interface DataControlRoomResponse {
   };
   known_books: LibraryBook[];
   gold_books: LibraryBook[];
+  corpus: LibraryBucket;
   manualbooks: LibraryBucket;
   customer_pack_runtime_books?: LibraryBucket;
   user_library_books?: LibraryBucket;
+  user_library_corpus?: LibraryBucket;
   gold_candidate_books?: LibraryBucket;
   approved_wiki_runtime_books?: LibraryBucket;
   wiki_navigation_backlog?: LibraryBucket;
@@ -461,6 +541,51 @@ export interface RepositorySearchResult {
   ranking_score: number;
 }
 
+export interface OfficialSourceCandidate {
+  book_slug: string;
+  title: string;
+  viewer_path: string;
+  source_relative_path: string;
+  source_repo: string;
+  source_kind: string;
+  status_kind: 'live' | 'candidate' | string;
+  status_label: string;
+  match_score: number;
+  current_source_basis?: 'official_homepage' | 'official_repo' | 'unknown' | string;
+  current_source_label?: string;
+  source_options?: LibraryBookSourceOption[];
+}
+
+export interface OfficialSourceMaterializeResponse {
+  book_slug: string;
+  source_basis: 'official_homepage' | 'official_repo' | string;
+  source_label: string;
+  title: string;
+  viewer_path: string;
+  request_manifest_path: string;
+  draft_summary: Record<string, unknown>;
+  gold_summary: Record<string, unknown>;
+  smoke: {
+    approved_manifest_present: boolean;
+    approved_manifest_count: number;
+    approved_source_kind: string;
+    approved_source_url: string;
+    approved_source_lane: string;
+    viewer_ready: boolean;
+    source_meta_ready: boolean;
+    viewer_path: string;
+  };
+  report_path: string;
+}
+
+export interface OfficialSourceCatalogResponse {
+  source: string;
+  total_count: number;
+  live_count: number;
+  candidate_count: number;
+  rows: OfficialSourceCandidate[];
+}
+
 export interface RepositorySearchResponse {
   query: string;
   rewritten_query: string;
@@ -468,6 +593,7 @@ export interface RepositorySearchResponse {
   auth_mode: 'token' | 'public';
   categories: RepositoryCategory[];
   results: RepositorySearchResult[];
+  official_candidates?: OfficialSourceCandidate[];
 }
 
 export interface RepositoryFavorite extends Omit<RepositorySearchResult, 'is_favorite' | 'favorite_category' | 'archived' | 'ranking_score'> {
@@ -661,6 +787,21 @@ export async function loadDataControlRoom(): Promise<DataControlRoomResponse> {
   return requestJson<DataControlRoomResponse>('/api/data-control-room');
 }
 
+export async function loadDataControlRoomChunks(payload: {
+  scope: 'runtime' | 'customer_pack';
+  bookSlug: string;
+  draftId?: string;
+}): Promise<CorpusChunkViewerResponse> {
+  const params = new URLSearchParams({
+    scope: payload.scope,
+    book_slug: payload.bookSlug,
+  });
+  if (payload.draftId) {
+    params.set('draft_id', payload.draftId);
+  }
+  return requestJson<CorpusChunkViewerResponse>(`/api/data-control-room/chunks?${params.toString()}`);
+}
+
 export async function loadBuyerPacket(packetId: string): Promise<BuyerPacketPreview> {
   return requestJson<BuyerPacketPreview>(`/api/buyer-packet?packet_id=${encodeURIComponent(packetId)}`);
 }
@@ -671,6 +812,23 @@ export async function searchRepositories(query: string, limit = 12): Promise<Rep
     limit: String(limit),
   });
   return requestJson<RepositorySearchResponse>(`/api/repositories/search?${params.toString()}`);
+}
+
+export async function loadOfficialSourceCatalog(): Promise<OfficialSourceCatalogResponse> {
+  return requestJson<OfficialSourceCatalogResponse>('/api/repositories/official-catalog');
+}
+
+export async function materializeOfficialSourceCandidate(
+  bookSlug: string,
+  sourceBasis: 'official_homepage' | 'official_repo',
+): Promise<OfficialSourceMaterializeResponse> {
+  return requestJson<OfficialSourceMaterializeResponse>('/api/repositories/official-materialize', {
+    method: 'POST',
+    body: JSON.stringify({
+      book_slug: bookSlug,
+      source_basis: sourceBasis,
+    }),
+  });
 }
 
 export async function loadRepositoryFavorites(): Promise<RepositoryFavoritesResponse> {

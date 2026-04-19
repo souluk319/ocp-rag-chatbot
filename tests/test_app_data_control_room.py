@@ -749,6 +749,8 @@ class TestAppDataControlRoom(unittest.TestCase):
             self.assertEqual(1, payload["manual_book_library"]["extra_count"])
             self.assertEqual(1, payload["summary"]["extra_manualbook_count"])
             self.assertEqual(1, payload["summary"]["user_library_book_count"])
+            self.assertGreaterEqual(payload["summary"]["user_library_corpus_book_count"], 1)
+            self.assertGreater(payload["summary"]["user_library_corpus_chunk_count"], 0)
             self.assertEqual(5, payload["summary"]["derived_playbook_count"])
             self.assertEqual(6, payload["summary"]["playable_asset_count"])
             self.assertEqual([str(normalized["draft_id"])], [book["book_slug"] for book in payload["extra_manualbook_status"]])
@@ -760,6 +762,28 @@ class TestAppDataControlRoom(unittest.TestCase):
                 f"/playbooks/customer-packs/{normalized['draft_id']}/index.html",
                 payload["manual_book_library"]["books"][0]["viewer_path"],
             )
+            self.assertEqual(source_md.name, payload["user_library_books"]["books"][0]["source_origin_label"])
+            self.assertTrue(
+                all(book["draft_id"] == str(normalized["draft_id"]) for book in payload["user_library_corpus"]["books"])
+            )
+            self.assertTrue(
+                all(book["source_origin_label"] == source_md.name for book in payload["user_library_corpus"]["books"])
+            )
+            self.assertEqual(str(normalized["draft_id"]), payload["user_library_books"]["books"][0]["delete_target_id"])
+            self.assertTrue(
+                all(book["delete_target_id"] == str(normalized["draft_id"]) for book in payload["user_library_corpus"]["books"])
+            )
+            self.assertEqual("customer_pack_draft", payload["user_library_books"]["books"][0]["delete_target_kind"])
+            self.assertEqual(
+                f"/api/customer-packs/captured?draft_id={normalized['draft_id']}",
+                payload["user_library_books"]["books"][0]["source_origin_url"],
+            )
+            self.assertTrue(
+                all(book["chunk_scope"] == "customer_pack" for book in payload["user_library_corpus"]["books"])
+            )
+            self.assertEqual("customer_pack", payload["user_library_books"]["books"][0]["chunk_scope"])
+            self.assertGreater(payload["user_library_books"]["books"][0]["corpus_chunk_count"], 0)
+            self.assertTrue(payload["user_library_books"]["books"][0]["corpus_runtime_eligible"])
             self.assertEqual(5, payload["playbook_library"]["total_count"])
             self.assertEqual(5, payload["playbook_library"]["family_count"])
             self.assertEqual(
@@ -772,6 +796,65 @@ class TestAppDataControlRoom(unittest.TestCase):
                 },
                 {family["family"] for family in payload["playbook_library"]["families"]},
             )
+
+    def test_handler_exposes_customer_pack_chunk_view(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / ".env").write_text("ARTIFACTS_DIR=artifacts\n", encoding="utf-8")
+            settings = load_settings(root)
+            source_md = root / "customer-runbook.md"
+            source_md.write_text(
+                "# 운영 런북\n\n## etcd 백업\n\n```bash\ncluster-backup.sh /backup\n```\n\n## 검증\n\n백업 파일을 점검합니다.\n",
+                encoding="utf-8",
+            )
+            normalized = _ingest_customer_pack(
+                root,
+                {
+                    "source_type": "md",
+                    "uri": str(source_md),
+                    "title": "운영 런북",
+                },
+            )
+
+            class _FakeAnswerer:
+                def __init__(self, settings) -> None:
+                    self.settings = settings
+
+            captured: dict[str, object] = {}
+            handler_cls = _build_handler(
+                answerer=_FakeAnswerer(settings),
+                store=SessionStore(),
+                root_dir=root,
+            )
+            handler = object.__new__(handler_cls)
+            handler._send_json = lambda payload, status=None: captured.update(payload=payload, status=status)
+
+            handler._handle_data_control_room_chunks(
+                f"scope=customer_pack&book_slug={normalized['draft_id']}&draft_id={normalized['draft_id']}"
+            )
+
+            payload = captured["payload"]
+            assert isinstance(payload, dict)
+            self.assertEqual("customer_pack", payload["scope"])
+            self.assertEqual("User Corpus", payload["scope_label"])
+            self.assertEqual(str(normalized["draft_id"]), payload["book_slug"])
+            self.assertEqual(str(normalized["draft_id"]), payload["draft_id"])
+            self.assertEqual(source_md.name, payload["source_origin_label"])
+            self.assertEqual(
+                f"/api/customer-packs/captured?draft_id={normalized['draft_id']}",
+                payload["source_origin_url"],
+            )
+            self.assertEqual(
+                f"/playbooks/customer-packs/{normalized['draft_id']}/index.html",
+                payload["document_viewer_path"],
+            )
+            self.assertGreater(payload["chunk_count"], 0)
+            self.assertGreater(payload["token_total"], 0)
+            self.assertTrue(payload["corpus_runtime_eligible"])
+            self.assertIn("reference", payload["chunk_type_breakdown"])
+            self.assertIn("cluster-backup.sh /backup", payload["chunks"][0]["text"])
+            self.assertEqual("Customer Source-First Pack", payload["runtime_truth_label"])
+            self.assertEqual("Private Pack Runtime", payload["boundary_badge"])
 
     def test_build_data_control_room_payload_fails_closed_for_missing_product_rehearsal(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -1,0 +1,25 @@
+# control_tower_corpus_playbook_observability_20260420 / main
+
+- goal lock:
+  - expose Control Tower data status for official corpus files, official playbook files, uploaded playbooks, and uploaded corpus
+  - let corpus rows open an on-demand chunk viewer so chunk boundaries are inspectable from the product surface
+  - show source lineage on playbook rows and allow safe delete for uploaded/private runtime artifacts
+  - surface that uploaded data already materializes to canonical viewer HTML and private corpus/chat runtime truth
+- non-goals:
+  - do not redesign Playbook Library naming or the broader surface model
+  - do not add destructive deletion for official gold/runtime artifacts in this packet
+  - do not reimplement upload normalization or chat retrieval when the backend contract already exists
+- validation target:
+  - focused backend tests cover payload enrichment and chunk detail route
+  - frontend build succeeds after the richer Control Tower detail modals and chunk viewer land
+  - ref stamping and blocked companion-lane constraint are preserved in harness closeout
+- constraint note:
+  - major-task companion lanes are required by repo contract but actual delegated agents are blocked in this session unless the user explicitly asks for delegation
+- implementation closeout:
+  - control-room payload now exposes `user_library_corpus` and draft-aware corpus aliases so uploaded playbook rows can show corpus counts and open chunk detail
+  - customer-pack source links are normalized to capture-backed runtime URLs and delete metadata is attached to both playbook and corpus rows
+  - chunk detail route now falls back from `draft_id` playbook rows to the primary customer-pack viewer path so the uploaded book's corpus opens instead of 404
+- validation closeout:
+  - `.\\.venv\\Scripts\\python.exe -m py_compile ...` passed
+  - `.\\.venv\\Scripts\\python.exe -m pytest tests\\test_app_data_control_room.py -q` passed with `9 passed`
+  - `npm --prefix presentation-ui run build` passed; remaining output is the existing Vite chunk-size warning only

@@ -35,6 +35,33 @@ PLAYBOOK_LIBRARY_FAMILY_LABELS = {
 }
 
 
+def _copy_source_options(*candidates: Any) -> list[dict[str, Any]]:
+    for candidate in candidates:
+        if isinstance(candidate, list):
+            return [dict(item) for item in candidate if isinstance(item, dict)]
+    return []
+
+
+def _customer_pack_source_origin_label(record: Any, fallback_title: str = "") -> str:
+    uploaded_file_name = str(getattr(record, "uploaded_file_name", "") or "").strip()
+    if uploaded_file_name:
+        return uploaded_file_name
+    request = getattr(record, "request", None)
+    request_uri = str(getattr(request, "uri", "") or "").strip()
+    if request_uri:
+        if "://" not in request_uri:
+            name = Path(request_uri).name.strip()
+            if name:
+                return name
+        tail = request_uri.rstrip("/").rsplit("/", 1)[-1].strip()
+        if tail:
+            return tail
+        return request_uri
+    plan = getattr(record, "plan", None)
+    title = str(getattr(plan, "title", "") or fallback_title).strip()
+    return title or fallback_title
+
+
 def _customer_pack_draft_id_from_book(book: dict[str, Any]) -> str:
     viewer_path = str(book.get("viewer_path") or "").strip()
     prefix = "/playbooks/customer-packs/"
@@ -45,6 +72,11 @@ def _customer_pack_draft_id_from_book(book: dict[str, Any]) -> str:
             return str(parts[0]).strip()
     slug = str(book.get("book_slug") or "").strip()
     return slug.split("--", 1)[0].strip() if "--" in slug else ""
+
+
+def _customer_pack_capture_url(draft_id: str) -> str:
+    normalized = str(draft_id or "").strip()
+    return f"/api/customer-packs/captured?draft_id={normalized}" if normalized else ""
 
 
 def _apply_customer_pack_runtime_truth(
@@ -58,6 +90,10 @@ def _apply_customer_pack_runtime_truth(
         draft_id = _customer_pack_draft_id_from_book(entry)
         record = draft_records_by_id.get(draft_id) if draft_id else None
         if record is not None:
+            source_origin_label = _customer_pack_source_origin_label(
+                record,
+                fallback_title=str(entry.get("title") or getattr(getattr(record, "plan", None), "title", "") or "").strip(),
+            )
             entry["source_lane"] = str(entry.get("source_lane") or getattr(record, "source_lane", "") or "customer_source_first_pack")
             entry["approval_state"] = str(entry.get("approval_state") or getattr(record, "approval_state", "") or "unreviewed")
             entry["publication_state"] = str(entry.get("publication_state") or getattr(record, "publication_state", "") or "draft")
@@ -65,6 +101,27 @@ def _apply_customer_pack_runtime_truth(
             entry["boundary_truth"] = str(entry.get("boundary_truth") or "private_customer_pack_runtime")
             entry["runtime_truth_label"] = str(entry.get("runtime_truth_label") or "Customer Source-First Pack")
             entry["boundary_badge"] = str(entry.get("boundary_badge") or "Private Pack Runtime")
+            entry["source_collection"] = str(
+                entry.get("source_collection")
+                or getattr(getattr(record, "plan", None), "source_collection", "")
+                or "uploaded"
+            )
+            entry["draft_id"] = draft_id
+            entry["source_origin_label"] = str(entry.get("source_origin_label") or source_origin_label)
+            entry["source_origin_url"] = _customer_pack_capture_url(draft_id)
+            entry["delete_target_kind"] = str(entry.get("delete_target_kind") or "customer_pack_draft")
+            entry["delete_target_id"] = str(entry.get("delete_target_id") or draft_id)
+            entry["delete_target_label"] = str(entry.get("delete_target_label") or source_origin_label or draft_id)
+            entry["chunk_scope"] = "customer_pack"
+            entry["corpus_runtime_eligible"] = bool(
+                entry.get("corpus_runtime_eligible")
+                or str(getattr(record, "private_corpus_status", "") or "").strip() == "ready"
+            )
+            entry["corpus_vector_status"] = str(
+                entry.get("corpus_vector_status")
+                or getattr(record, "private_corpus_vector_status", "")
+                or ""
+            )
         items.append(entry)
     return items
 
@@ -100,6 +157,23 @@ def _aggregate_corpus_books(
                 "updated_at": str(row.get("updated_at") or manifest_by_slug.get(slug, {}).get("updated_at") or ""),
                 "viewer_path": str(row.get("viewer_path") or manifest_by_slug.get(slug, {}).get("viewer_path") or ""),
                 "source_url": str(row.get("source_url") or known_books.get(slug, {}).get("source_url") or manifest_by_slug.get(slug, {}).get("source_url") or ""),
+                "source_collection": str(row.get("source_collection") or manifest_by_slug.get(slug, {}).get("source_collection") or ""),
+                "approval_state": str(row.get("approval_state") or known_books.get(slug, {}).get("approval_state") or manifest_by_slug.get(slug, {}).get("approval_state") or ""),
+                "publication_state": str(row.get("publication_state") or known_books.get(slug, {}).get("publication_state") or manifest_by_slug.get(slug, {}).get("publication_state") or ""),
+                "parser_backend": str(row.get("parser_backend") or known_books.get(slug, {}).get("parser_backend") or manifest_by_slug.get(slug, {}).get("parser_backend") or ""),
+                "boundary_truth": str(row.get("boundary_truth") or known_books.get(slug, {}).get("boundary_truth") or manifest_by_slug.get(slug, {}).get("boundary_truth") or ""),
+                "runtime_truth_label": str(row.get("runtime_truth_label") or known_books.get(slug, {}).get("runtime_truth_label") or manifest_by_slug.get(slug, {}).get("runtime_truth_label") or ""),
+                "boundary_badge": str(row.get("boundary_badge") or known_books.get(slug, {}).get("boundary_badge") or manifest_by_slug.get(slug, {}).get("boundary_badge") or ""),
+                "current_source_basis": str(row.get("current_source_basis") or known_books.get(slug, {}).get("current_source_basis") or manifest_by_slug.get(slug, {}).get("current_source_basis") or ""),
+                "current_source_label": str(row.get("current_source_label") or known_books.get(slug, {}).get("current_source_label") or manifest_by_slug.get(slug, {}).get("current_source_label") or ""),
+                "source_options": _copy_source_options(row.get("source_options"), known_books.get(slug, {}).get("source_options"), manifest_by_slug.get(slug, {}).get("source_options")),
+                "source_origin_label": str(row.get("source_origin_label") or known_books.get(slug, {}).get("current_source_label") or manifest_by_slug.get(slug, {}).get("current_source_label") or ""),
+                "source_origin_url": str(row.get("source_origin_url") or row.get("source_url") or known_books.get(slug, {}).get("source_url") or manifest_by_slug.get(slug, {}).get("source_url") or ""),
+                "draft_id": str(row.get("draft_id") or ""),
+                "delete_target_kind": str(row.get("delete_target_kind") or ""),
+                "delete_target_id": str(row.get("delete_target_id") or ""),
+                "delete_target_label": str(row.get("delete_target_label") or ""),
+                "chunk_scope": str(row.get("chunk_scope") or "runtime"),
                 "materialized": True,
             },
         )
@@ -132,6 +206,23 @@ def _aggregate_corpus_books(
                 "updated_at": str(entry.get("updated_at") or ""),
                 "viewer_path": str(entry.get("viewer_path") or ""),
                 "source_url": str(known_books.get(slug, {}).get("source_url") or entry.get("source_url") or ""),
+                "source_collection": str(entry.get("source_collection") or ""),
+                "approval_state": str(known_books.get(slug, {}).get("approval_state") or entry.get("approval_state") or ""),
+                "publication_state": str(known_books.get(slug, {}).get("publication_state") or entry.get("publication_state") or ""),
+                "parser_backend": str(known_books.get(slug, {}).get("parser_backend") or entry.get("parser_backend") or ""),
+                "boundary_truth": str(known_books.get(slug, {}).get("boundary_truth") or entry.get("boundary_truth") or ""),
+                "runtime_truth_label": str(known_books.get(slug, {}).get("runtime_truth_label") or entry.get("runtime_truth_label") or ""),
+                "boundary_badge": str(known_books.get(slug, {}).get("boundary_badge") or entry.get("boundary_badge") or ""),
+                "current_source_basis": str(known_books.get(slug, {}).get("current_source_basis") or entry.get("current_source_basis") or ""),
+                "current_source_label": str(known_books.get(slug, {}).get("current_source_label") or entry.get("current_source_label") or ""),
+                "source_options": _copy_source_options(known_books.get(slug, {}).get("source_options"), entry.get("source_options")),
+                "source_origin_label": str(known_books.get(slug, {}).get("current_source_label") or entry.get("current_source_label") or ""),
+                "source_origin_url": str(known_books.get(slug, {}).get("source_url") or entry.get("source_url") or ""),
+                "draft_id": "",
+                "delete_target_kind": "",
+                "delete_target_id": "",
+                "delete_target_label": "",
+                "chunk_scope": "runtime",
                 "materialized": False,
             },
         )
@@ -194,6 +285,22 @@ def _aggregate_playbooks(
             "viewer_path": str(payload.get("target_viewer_path") or payload.get("viewer_path") or manifest.get("viewer_path") or known.get("viewer_path") or ""),
             "source_url": str(payload.get("source_origin_url") or payload.get("source_uri") or payload.get("source_url") or ""),
             "updated_at": str(source_metadata.get("updated_at") or known.get("updated_at") or manifest.get("updated_at") or ""),
+            "approval_state": str(payload.get("approval_state") or source_metadata.get("approval_state") or known.get("approval_state") or manifest.get("approval_state") or ""),
+            "publication_state": str(payload.get("publication_state") or source_metadata.get("publication_state") or known.get("publication_state") or manifest.get("publication_state") or ""),
+            "parser_backend": str(payload.get("parser_backend") or source_metadata.get("parser_backend") or ""),
+            "boundary_truth": str(payload.get("boundary_truth") or source_metadata.get("boundary_truth") or known.get("boundary_truth") or manifest.get("boundary_truth") or ""),
+            "runtime_truth_label": str(payload.get("runtime_truth_label") or source_metadata.get("runtime_truth_label") or known.get("runtime_truth_label") or manifest.get("runtime_truth_label") or ""),
+            "boundary_badge": str(payload.get("boundary_badge") or source_metadata.get("boundary_badge") or known.get("boundary_badge") or manifest.get("boundary_badge") or ""),
+            "current_source_basis": str(payload.get("current_source_basis") or known.get("current_source_basis") or manifest.get("current_source_basis") or ""),
+            "current_source_label": str(payload.get("current_source_label") or known.get("current_source_label") or manifest.get("current_source_label") or ""),
+            "source_options": _copy_source_options(payload.get("source_options"), known.get("source_options"), manifest.get("source_options")),
+            "source_origin_label": str(payload.get("source_origin_label") or source_metadata.get("source_origin_label") or payload.get("current_source_label") or known.get("current_source_label") or manifest.get("current_source_label") or ""),
+            "source_origin_url": str(payload.get("source_origin_url") or payload.get("source_origin_href") or payload.get("source_uri") or payload.get("source_url") or ""),
+            "draft_id": str(payload.get("draft_id") or payload.get("derived_from_draft_id") or ""),
+            "delete_target_kind": str(payload.get("delete_target_kind") or ""),
+            "delete_target_id": str(payload.get("delete_target_id") or ""),
+            "delete_target_label": str(payload.get("delete_target_label") or ""),
+            "chunk_scope": str(payload.get("chunk_scope") or "runtime"),
             "materialized": True,
         }
     for slug, entry in manifest_by_slug.items():
@@ -218,6 +325,22 @@ def _aggregate_playbooks(
                 "viewer_path": str(entry.get("viewer_path") or ""),
                 "source_url": str(known_books.get(slug, {}).get("source_url") or entry.get("source_url") or ""),
                 "updated_at": str(entry.get("updated_at") or ""),
+                "approval_state": str(known_books.get(slug, {}).get("approval_state") or entry.get("approval_state") or ""),
+                "publication_state": str(known_books.get(slug, {}).get("publication_state") or entry.get("publication_state") or ""),
+                "parser_backend": str(known_books.get(slug, {}).get("parser_backend") or entry.get("parser_backend") or ""),
+                "boundary_truth": str(known_books.get(slug, {}).get("boundary_truth") or entry.get("boundary_truth") or ""),
+                "runtime_truth_label": str(known_books.get(slug, {}).get("runtime_truth_label") or entry.get("runtime_truth_label") or ""),
+                "boundary_badge": str(known_books.get(slug, {}).get("boundary_badge") or entry.get("boundary_badge") or ""),
+                "current_source_basis": str(known_books.get(slug, {}).get("current_source_basis") or entry.get("current_source_basis") or ""),
+                "current_source_label": str(known_books.get(slug, {}).get("current_source_label") or entry.get("current_source_label") or ""),
+                "source_options": _copy_source_options(known_books.get(slug, {}).get("source_options"), entry.get("source_options")),
+                "source_origin_label": str(known_books.get(slug, {}).get("current_source_label") or entry.get("current_source_label") or ""),
+                "source_origin_url": str(known_books.get(slug, {}).get("source_url") or entry.get("source_url") or ""),
+                "draft_id": "",
+                "delete_target_kind": "",
+                "delete_target_id": "",
+                "delete_target_label": "",
+                "chunk_scope": "runtime",
                 "materialized": False,
             },
         )
@@ -293,6 +416,40 @@ def _apply_viewer_path_fallback(books: list[dict[str, Any]], *, root: Path) -> l
     return books
 
 
+def _attach_corpus_status(
+    books: list[dict[str, Any]],
+    *,
+    corpus_by_slug: dict[str, dict[str, Any]],
+    default_chunk_scope: str = "runtime",
+) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for book in books:
+        entry = dict(book)
+        slug = str(entry.get("book_slug") or "").strip()
+        corpus = corpus_by_slug.get(slug)
+        if corpus is not None:
+            entry["corpus_chunk_count"] = int(entry.get("corpus_chunk_count") or corpus.get("chunk_count") or 0)
+            entry["corpus_token_total"] = int(entry.get("corpus_token_total") or corpus.get("token_total") or 0)
+            entry["corpus_materialized"] = bool(corpus.get("materialized"))
+            entry["chunk_scope"] = str(entry.get("chunk_scope") or corpus.get("chunk_scope") or default_chunk_scope)
+            if not str(entry.get("draft_id") or "").strip():
+                entry["draft_id"] = str(corpus.get("draft_id") or "")
+            for key in ("source_origin_label", "source_origin_url", "delete_target_kind", "delete_target_id", "delete_target_label"):
+                if not str(entry.get(key) or "").strip():
+                    entry[key] = str(corpus.get(key) or "")
+            if "corpus_runtime_eligible" not in entry:
+                entry["corpus_runtime_eligible"] = bool(corpus.get("corpus_runtime_eligible"))
+            if not str(entry.get("corpus_vector_status") or "").strip():
+                entry["corpus_vector_status"] = str(corpus.get("corpus_vector_status") or "")
+        else:
+            entry["corpus_chunk_count"] = int(entry.get("corpus_chunk_count") or 0)
+            entry["corpus_token_total"] = int(entry.get("corpus_token_total") or 0)
+            entry["corpus_materialized"] = bool(entry.get("corpus_materialized", False))
+            entry["chunk_scope"] = str(entry.get("chunk_scope") or default_chunk_scope)
+        items.append(entry)
+    return items
+
+
 __all__ = [
     "DATA_CONTROL_ROOM_DERIVED_PLAYBOOK_SOURCE_TYPES",
     "DATA_CONTROL_ROOM_DERIVED_PLAYBOOK_SOURCE_TYPE_SET",
@@ -304,6 +461,7 @@ __all__ = [
     "TROUBLESHOOTING_PLAYBOOK_SOURCE_TYPE",
     "_aggregate_corpus_books",
     "_aggregate_playbooks",
+    "_attach_corpus_status",
     "_apply_customer_pack_runtime_truth",
     "_apply_viewer_path_fallback",
     "_build_manual_book_library",

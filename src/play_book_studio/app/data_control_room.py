@@ -38,6 +38,7 @@ from .data_control_room_helpers import (
     _simplify_book,
     _summarize_eval,
 )
+from .data_control_room_detail import load_customer_pack_private_chunk_rows
 from .data_control_room_library import (
     DATA_CONTROL_ROOM_DERIVED_PLAYBOOK_SOURCE_TYPES,
     DATA_CONTROL_ROOM_DERIVED_PLAYBOOK_SOURCE_TYPE_SET,
@@ -48,6 +49,7 @@ from .data_control_room_library import (
     TROUBLESHOOTING_PLAYBOOK_SOURCE_TYPE,
     _aggregate_corpus_books,
     _aggregate_playbooks,
+    _attach_corpus_status,
     _apply_customer_pack_runtime_truth,
     _apply_viewer_path_fallback,
     _build_manual_book_library,
@@ -92,6 +94,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, object]:
     selected_playbook_dir, playbook_files, playbook_candidates = _candidate_playbook_dirs(*settings.playbook_book_dirs, expected_count=len(manifest_by_slug))
     customer_pack_files = sorted(settings.customer_pack_books_dir.glob("*.json"))
     customer_pack_draft_records = {record.draft_id: record for record in CustomerPackDraftStore(root).list() if str(record.draft_id or "").strip()}
+    customer_pack_corpus_rows = load_customer_pack_private_chunk_rows(root, draft_records_by_id=customer_pack_draft_records)
     all_playbook_files: list[Path] = []
     seen_playbook_paths: set[str] = set()
     for path in [*playbook_files, *customer_pack_files]:
@@ -102,6 +105,22 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, object]:
     corpus_books = _aggregate_corpus_books(chunk_rows, manifest_by_slug=manifest_by_slug, known_books=known_books, grade_label=_grade_label)
     manualbooks = _aggregate_playbooks(all_playbook_files, manifest_by_slug=manifest_by_slug, known_books=known_books, grade_label=_grade_label, safe_read_json=_safe_read_json)
     manualbooks = _apply_customer_pack_runtime_truth(manualbooks, draft_records_by_id=customer_pack_draft_records)
+    user_library_corpus_books = _aggregate_corpus_books(customer_pack_corpus_rows, manifest_by_slug={}, known_books={}, grade_label=_grade_label)
+    user_library_corpus_books = _apply_customer_pack_runtime_truth(user_library_corpus_books, draft_records_by_id=customer_pack_draft_records)
+    combined_corpus_by_slug = {
+        str(book.get("book_slug") or "").strip(): book
+        for book in [*corpus_books, *user_library_corpus_books]
+        if str(book.get("book_slug") or "").strip()
+    }
+    for book in user_library_corpus_books:
+        draft_id = str(book.get("draft_id") or "").strip()
+        if not draft_id:
+            continue
+        primary_viewer_path = f"/playbooks/customer-packs/{draft_id}/index.html"
+        book_viewer_path = str(book.get("viewer_path") or "").split("#", 1)[0].strip()
+        if draft_id not in combined_corpus_by_slug or book_viewer_path == primary_viewer_path:
+            combined_corpus_by_slug[draft_id] = book
+    manualbooks = _attach_corpus_status(manualbooks, corpus_by_slug=combined_corpus_by_slug)
     derived_playbook_family_statuses = {
         family: _derived_family_status(family, [book for book in manualbooks if str(book.get("source_type") or "").strip() == family])
         for family in DATA_CONTROL_ROOM_DERIVED_PLAYBOOK_SOURCE_TYPES
@@ -118,6 +137,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, object]:
     extra_manualbooks = [book for book in manualbooks if str(book.get("source_type") or "").strip() not in DATA_CONTROL_ROOM_DERIVED_PLAYBOOK_SOURCE_TYPE_SET and str(book.get("book_slug") or "").strip() not in manifest_slugs]
     user_library_books = _apply_viewer_path_fallback([book for book in extra_manualbooks if str(book.get("boundary_truth") or "").strip() == "private_customer_pack_runtime" or str(book.get("source_lane") or "").strip() == "customer_source_first_pack"], root=root)
     customer_pack_runtime_books = _apply_viewer_path_fallback([book for book in manualbooks if str(book.get("boundary_truth") or "").strip() == "private_customer_pack_runtime" or str(book.get("source_lane") or "").strip() == "customer_source_first_pack"], root=root)
+    user_library_corpus_chunk_count = sum(int(book.get("chunk_count") or 0) for book in user_library_corpus_books)
     grade_breakdown_counter = Counter(_grade_label(book) for book in source_books)
     gold_books = [_simplify_book(book) for slug in manifest_by_slug for book in [known_books.get(slug)] if isinstance(book, dict) and _is_gold_book(book)]
     materialized_corpus_slugs = {str(row.get("book_slug") or "").strip() for row in chunk_rows if str(row.get("book_slug") or "").strip()}
@@ -225,6 +245,8 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, object]:
             "core_manualbook_count": len(materialized_core_manualbook_slugs),
             "customer_pack_runtime_book_count": len(customer_pack_runtime_books),
             "user_library_book_count": len(user_library_books),
+            "user_library_corpus_book_count": len(user_library_corpus_books),
+            "user_library_corpus_chunk_count": user_library_corpus_chunk_count,
             "gold_candidate_book_count": len(gold_candidate_books.get("books") or []),
             "approved_wiki_runtime_book_count": len(approved_wiki_runtime_books.get("books") or []),
             "wiki_navigation_backlog_count": len(navigation_backlog.get("books") or []),
@@ -288,6 +310,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, object]:
         "manualbooks": {"selected_dir": str(selected_playbook_dir) if selected_playbook_dir else "", "books": core_manualbooks},
         "customer_pack_runtime_books": {"selected_dir": str(settings.customer_pack_books_dir.resolve()), "books": customer_pack_runtime_books},
         "user_library_books": {"selected_dir": str(settings.customer_pack_books_dir.resolve()), "books": user_library_books},
+        "user_library_corpus": {"selected_dir": str(settings.customer_pack_corpus_dir.resolve()), "books": user_library_corpus_books},
         "gold_candidate_books": gold_candidate_books,
         "approved_wiki_runtime_books": approved_wiki_runtime_books,
         "wiki_navigation_backlog": navigation_backlog,
@@ -313,6 +336,8 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, object]:
             "core_manualbook_book_count": len(core_manualbooks),
             "customer_pack_runtime_book_count": len(customer_pack_runtime_books),
             "user_library_book_count": len(user_library_books),
+            "user_library_corpus_book_count": len(user_library_corpus_books),
+            "user_library_corpus_chunk_count": user_library_corpus_chunk_count,
             "topic_playbook_book_count": len(topic_playbooks),
             "operation_playbook_book_count": len(operation_playbooks),
             "troubleshooting_playbook_book_count": len(troubleshooting_playbooks),
@@ -347,6 +372,7 @@ def build_data_control_room_payload(root_dir: str | Path) -> dict[str, object]:
         "extra_corpus_book_status": extra_corpus_books,
         "manualbook_status": core_manualbooks,
         "extra_manualbook_status": extra_manualbooks,
+        "user_library_corpus_status": user_library_corpus_books,
         "topic_playbook_status": topic_playbooks,
         "operation_playbook_status": operation_playbooks,
         "troubleshooting_playbook_status": troubleshooting_playbooks,
