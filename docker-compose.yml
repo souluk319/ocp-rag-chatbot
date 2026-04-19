@@ -51,8 +51,6 @@ services:
         condition: service_healthy
     ports:
       - "5173:5173"
-    volumes:
-      - ./presentation-ui/src:/app/src
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5173').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 15s

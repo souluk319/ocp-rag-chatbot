@@ -70,6 +70,20 @@ powershell -ExecutionPolicy Bypass -File scripts\pbs-up.ps1
 powershell -ExecutionPolicy Bypass -File scripts\pbs-down.ps1
 ```
 
+### 1-1. Docker Compose serve stack
+
+`docker-compose.yml` 기준 기본 프런트는 `Vite dev server` 가 아니라 `build 결과물을 preview serve` 하는 모드다.
+
+```powershell
+docker compose up -d --build backend frontend qdrant
+```
+
+- UI serve: `http://127.0.0.1:5173`
+- backend/API: `http://127.0.0.1:8765`
+- `5173` 은 `npm run preview` 기반 서빙 주소다.
+- `/api`, `/docs`, `/playbooks`, `/wiki` 는 `8765` backend 로 프록시된다.
+- 프런트 코드를 바꾼 뒤 이 모드에 반영하려면 `docker compose up -d --build frontend` 후 필요 시 `docker compose up -d --no-deps --force-recreate frontend` 를 실행한다.
+
 ### 2. 빠른 UI 개발
 
 UI를 빠르게 수정하면서 보려면 `5173` 개발 서버를 쓰고, 실제 데이터/API는 계속 `8765` 백엔드를 사용합니다.

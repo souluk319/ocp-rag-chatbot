@@ -15,4 +15,13 @@ export default defineConfig({
       '/wiki': proxyTarget,
     },
   },
+  preview: {
+    host: '0.0.0.0',
+    proxy: {
+      '/api': proxyTarget,
+      '/docs': proxyTarget,
+      '/playbooks': proxyTarget,
+      '/wiki': proxyTarget,
+    },
+  },
 })
