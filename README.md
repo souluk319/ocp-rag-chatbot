@@ -1,4 +1,69 @@
 # PlayBookStudio
+http://127.0.0.1:5173
+
+## Actual Pipeline Architecture
+
+```mermaid
+flowchart TD
+  subgraph OCP["Official OCP lane"]
+    O1["Official repo AsciiDoc"] --> O2["Custom AsciiDoc AST parser"]
+    O2 --> O3["Structured runtime"]
+    O3 --> O4["Viewer / Corpus / Chat"]
+    OF["Published HTML/PDF"] -. "verification / explicit fallback only" .-> O2
+  end
+
+  subgraph CU["Customer upload lane"]
+    U1["User upload"] --> U2{"Source type"}
+
+    U2 -->|"pdf / docx / pptx / xlsx"| M1["1. MarkItDown primary"]
+    M1 -->|"ok"| N1["Canonical normalize"]
+    M1 -. "fail / low confidence" .-> D1["2. Docling parse"]
+
+    D1 -->|"ok"| N1
+    D1 -. "fail" .-> D2["3. Docling OCR"]
+
+    D2 -->|"ok"| N1
+    D2 -. "fail / degraded" .-> P1["4. pypdf text + outline"]
+
+    P1 -->|"ok"| N1
+    P1 -. "needs rendered OCR" .-> R1["5. pypdfium2 render + RapidOCR"]
+
+    R1 -->|"ok"| N1
+    R1 -. "still degraded + remote OCR allowed" .-> S1["6. Surya remote OCR fallback"]
+
+    S1 -->|"ok"| N1
+    S1 -. "not configured / unavailable" .-> X1["7. Marker stub only"]
+
+    U2 -->|"web / md / asciidoc / txt"| T1["Direct normalize"]
+    T1 --> N1
+
+    U2 -->|"image"| I1["Docling image parse"]
+    I1 -->|"ok"| N1
+    I1 -. "fail / low confidence" .-> S1
+
+    N1 --> U3["Customer pack runtime / User Library"]
+  end
+
+  subgraph RT["Retrieval / Chat runtime"]
+    RTA["Remote TEI embedding: bge-m3-ko"] --> RTB["Qdrant vector store"]
+    RTC["CrossEncoder reranker"] --> RTD["Neo4j graph option"]
+    RTB --> RTE["Grounded retrieval"]
+    RTC --> RTE
+    RTD --> RTE
+    RTE --> RTF["LLM /chat/completions"]
+  end
+```
+
+### Priority Notes
+
+- `공식 OCP`의 주력 파서는 [src/play_book_studio/canonical/asciidoc.py](/C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio/src/play_book_studio/canonical/asciidoc.py) 이다.
+- `Docling / MarkItDown / Surya`는 `공식 OCP 주력 라인`이 아니라 `customer upload / fallback` 쪽 도구다.
+- OCR fallback priority는 `RapidOCR first`, `Surya second` 다.
+- `pypdf` 와 `pypdfium2` 는 실제 가동 중이다.
+- `Marker` 는 현재 `미설치 + 미구현 adapter slot` 이라 사실상 미사용 stub 이다.
+- `5173` 은 현재 `Vite dev server` 가 아니라 `Vite preview serve` 다.
+
+
 
 PBS runtime repository입니다.
 
@@ -46,29 +111,6 @@ npm install
 cd ..
 ```
 
-## Run
-
-### 1. 팀 공유용 서빙 주소
-
-PBS 기본 주소는 `8765` 입니다.
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\pbs-up.ps1
-```
-
-- 테스트 서버: `http://127.0.0.1:8765`
-
-`scripts\pbs-up.ps1` 는 아래를 한 번에 처리합니다.
-
-- `docker compose up -d qdrant`
-- `presentation-ui` build
-- `0.0.0.0:8765` PBS shared serve 기동
-
-중지:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\pbs-down.ps1
-```
 
 ### 1-1. Docker Compose serve stack
 
