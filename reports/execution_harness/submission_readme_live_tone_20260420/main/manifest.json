@@ -1,0 +1,50 @@
+{
+  "task_id": "submission_readme_live_tone_20260420",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": true,
+  "parallel_execution_required": true,
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "README.md",
+    "reports/execution_harness/submission_readme_live_tone_20260420/*"
+  ],
+  "target_outputs": [
+    "submission-facing README explains the direct-built RAG architecture and maps to the evaluation criteria",
+    "runtime ownership and safe restart viability are verified against the live 8765 service",
+    "if safe, guide-forward answer tone is revalidated on the running service with evidence"
+  ],
+  "validation_commands": [
+    "Get-Content README.md",
+    "try { (Invoke-WebRequest -Uri 'http://127.0.0.1:8765/api/health' -UseBasicParsing -TimeoutSec 5).Content } catch { $_.Exception.Message }"
+  ],
+  "git_ref_snapshot": {
+    "head_ref": "feat/ocp29-presentation-cutdown",
+    "head_sha": "32bb7daedc8ce35d0a08ec1a83d0ec91bb348491",
+    "upstream_ref": "origin/main",
+    "upstream_sha": "e87fa0c562c5e277305617e1eea36c112aa01b27",
+    "origin_main_sha": "e87fa0c562c5e277305617e1eea36c112aa01b27"
+  },
+  "companion_lanes": [
+    {
+      "lane_id": "explorer",
+      "role": "explorer",
+      "focus": "submission rubric to README mapping and missing evidence scan",
+      "status": "blocked_by_session_delegation_rule"
+    },
+    {
+      "lane_id": "reviewer",
+      "role": "reviewer",
+      "focus": "runtime restart safety and live tone verification review",
+      "status": "blocked_by_session_delegation_rule"
+    }
+  ],
+  "constraints": [
+    "Repo contract marks cross-surface doc/runtime verification as a major task and expects companion lanes.",
+    "Session-level developer rule only allows spawn_agent when the user explicitly requests delegation.",
+    "This packet proceeds in main lane and records blocked companion skeletons instead of inventing unauthorized agents."
+  ],
+  "status": "completed"
+}

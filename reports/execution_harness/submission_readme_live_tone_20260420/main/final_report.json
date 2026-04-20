@@ -1,0 +1,50 @@
+{
+  "status": "completed",
+  "completed_at_utc": "2026-04-20T00:28:30+00:00",
+  "git_ref_snapshot": {
+    "head_ref": "feat/ocp29-presentation-cutdown",
+    "head_sha": "32bb7daedc8ce35d0a08ec1a83d0ec91bb348491",
+    "origin_main_sha": "e87fa0c562c5e277305617e1eea36c112aa01b27"
+  },
+  "readme_packet": {
+    "submission_snapshot_added": true,
+    "evaluation_mapping_added": true,
+    "direct_built_rag_notes_added": true,
+    "multiturn_streaming_cache_notes_added": true,
+    "submission_runbook_added": true
+  },
+  "runtime_verification": {
+    "live_runtime_url": "http://127.0.0.1:8765",
+    "runtime_owner": "docker compose backend service",
+    "restart_command": "docker compose restart backend",
+    "healthcheck_after_restart": "passed",
+    "health_runtime_config_fingerprint": "4a7d0e425e68",
+    "guide_forward_chat_smoke": {
+      "query": "특정 namespace에 admin 권한 주는 법 알려줘",
+      "response_kind": "rag",
+      "current_topic": "RBAC",
+      "history_size": 1,
+      "primary_cited_book": "authentication_and_authorization"
+    }
+  },
+  "validation": {
+    "pytest_multiturn_api": "passed",
+    "demo_simulator_live_rerun": "passed"
+  },
+  "demo_simulator": {
+    "report_path": "reports/demo_simulator/ocp420_demo_simulator_eval.json",
+    "scenario_count": 5,
+    "turn_count": 30,
+    "scenario_completion_rate": 1.0,
+    "turn_pass_rate": 1.0,
+    "streaming_turn_pass_rate": 1.0,
+    "guide_tone_pass_rate": 1.0,
+    "hallucination_guard_pass_rate": 1.0,
+    "history_pass_rate": 1.0
+  },
+  "constraints": {
+    "major_task_companion_lanes_requested_by_contract": true,
+    "companion_lanes_spawned": false,
+    "reason": "session-level developer rule only permits spawn_agent when the user explicitly requests delegation"
+  }
+}

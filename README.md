@@ -1,6 +1,30 @@
 # PlayBookStudio
 http://127.0.0.1:5173
 
+## Submission Snapshot
+
+- 과제 목적: `사용자 -> RAG -> LLM` 전체 파이프라인을 PBS 안에서 직접 구현하고, OCP 운영 지식 저장소로 시연 가능한 상태까지 검증
+- 서비스 표면: `Playbook Library / Wiki Runtime Viewer / Chat Workspace`
+- LLM: `Qwen/Qwen3.5-9B`
+- Embedding: `BGE-m3`
+- Streaming: `POST /api/chat/stream` NDJSON 이벤트 스트림
+- Vector store: `Qdrant`
+- Sparse retrieval: repo 내부 구현 `BM25Index`
+- 멀티턴 메모리: 세션별 `SessionContext` + turn history 직접 관리
+- 외부 프레임워크: `LangChain`, `LlamaIndex` 같은 orchestration framework 미사용
+
+## Evaluation Mapping
+
+| 평가 항목 | 현재 구현 | 근거 파일 |
+| --- | --- | --- |
+| RAG 정확성 | 질문 정규화 -> 질의 재작성 -> BM25/vector 검색 -> hybrid fusion -> graph expand(optional) -> rerank -> context 조립 -> citation finalize | `src/play_book_studio/retrieval/retriever_pipeline.py`, `src/play_book_studio/answering/context.py`, `src/play_book_studio/answering/answerer.py` |
+| 멀티턴 5턴 이상 | 세션별 `current_topic`, `open_entities`, `unresolved_question`, `selected_draft_ids`를 저장하고 후속 turn에 재사용 | `src/play_book_studio/retrieval/models.py`, `src/play_book_studio/app/session_flow.py`, `src/play_book_studio/app/sessions.py` |
+| Streaming 응답 | `/api/chat/stream` 가 trace event와 최종 result를 NDJSON으로 순차 전송 | `src/play_book_studio/app/server_handler_factory.py`, `src/play_book_studio/app/server_chat.py`, `tests/test_app_chat_api_multiturn.py` |
+| Vector index 직접 설계 | chunk JSONL + BM25 JSONL + Qdrant payload를 직접 구성하고, SDK 대신 HTTP 요청으로 vector search 수행 | `src/play_book_studio/ingestion/pipeline.py`, `src/play_book_studio/retrieval/bm25.py`, `src/play_book_studio/retrieval/vector.py` |
+| 성능 개선 | hybrid retrieval, semantic rerank, follow-up/설명형 query에만 graph/rerank를 선택 적용 | `src/play_book_studio/retrieval/retriever_pipeline.py`, `src/play_book_studio/retrieval/retriever_rerank.py` |
+| 캐싱 전략 | LRU/TTL 기반 runtime cache, citation serialization cache, translation draft cache 적용 | `src/play_book_studio/runtime_catalog_registry.py`, `src/play_book_studio/app/presenters.py`, `src/play_book_studio/app/server_support.py`, `src/play_book_studio/canonical/translate.py` |
+| 시연 하네스 | 5개 시나리오 x 6턴 = 총 30턴 멀티턴 대화 자동 검증 | `scripts/run_ocp420_demo_simulator.py`, `manifests/ocp420_demo_simulator_scenarios.jsonl`, `reports/demo_simulator/ocp420_demo_simulator_eval.json` |
+
 ## Actual Pipeline Architecture
 
 ```mermaid
@@ -67,7 +91,7 @@ flowchart TD
 
 PBS runtime repository입니다.
 
-이 문서는 `reference README` 이다.  
+이 문서는 `reference README` 이면서, 현재 과제 제출 시연 기준도 함께 담는다.  
 현재 실행 계약은 아래 active root 문서를 우선한다.
 
 - `AGENTS.md`
@@ -92,6 +116,66 @@ PBS runtime repository입니다.
 `원문 충실도 + 챗봇 상호작용성` 을 동시에 만족하는 위키 단위다.
 
 공식 lane 에서 영어 본문이 발견되면 기본 처리 순서는 `번역 -> 검증 -> publish` 다.
+
+## Direct-Built RAG Notes
+
+- 질문 해석과 검색 orchestration은 repo 내부 로직으로 직접 구현했다. `query normalize`, `rewrite`, `candidate budget`, `follow-up detection`, `rerank gating`, `graph expand gating` 가 모두 코드에 명시돼 있다.
+- sparse 검색은 `BM25Index.from_jsonl()` 로 JSONL corpus를 읽어 직접 토큰화/IDF/BM25 scoring을 계산한다.
+- dense 검색은 `EmbeddingClient` 로 질의를 임베딩한 뒤 Qdrant REST endpoint에 직접 POST 해서 후보를 가져온다.
+- hybrid fusion은 BM25와 vector 후보를 결합하고, 상황에 따라 customer/private overlay 후보를 rescue 한다.
+- 답변 단계에서는 retrieval hit 전체를 그대로 넣지 않고, 질문 종류와 안전성에 맞춰 `citation` 과 `context chunk` 를 다시 고른 뒤 prompt를 조립한다.
+- citation은 answer 후처리에서 다시 정리하며, viewer path/source url/runtime truth를 함께 묶어 surface와 챗봇이 같은 근거를 보게 만든다.
+
+## Multiturn, Streaming, Cache
+
+- 세션 메모리는 LLM provider의 hidden history에 맡기지 않고 PBS가 직접 보존한다. 세션 snapshot에는 최근 최대 20개 turn, 현재 topic, 열려 있는 엔티티, 미해결 질문이 저장된다.
+- follow-up 질문이면 이전 `user_goal/current_topic/unresolved_question` 을 재사용해 검색 대상을 좁힌다.
+- 스트리밍은 token 단위 생성이 아니라 `request_received -> retrieval/fusion/graph/rerank trace -> final result` 흐름을 NDJSON chunk로 밀어준다.
+- 캐시는 한 가지가 아니라 여러 층에 있다. runtime catalog/viewer/citation serialization은 process-local cache를 사용하고, 번역 draft는 파일 cache를 사용한다.
+
+## Demo And Evaluation Evidence
+
+- 멀티턴 API 회귀 테스트: `tests/test_app_chat_api_multiturn.py`
+- 데모 시뮬레이터 시나리오: `manifests/ocp420_demo_simulator_scenarios.jsonl`
+- 데모 시뮬레이터 결과: `reports/demo_simulator/ocp420_demo_simulator_eval.json`
+- 현재 저장된 결과 기준:
+  - `scenario_count = 5`
+  - `turn_count = 30`
+  - `scenario_completion_rate = 1.0`
+  - `turn_pass_rate = 1.0`
+  - `streaming_turn_pass_rate = 1.0`
+  - `hallucination_guard_pass_rate = 1.0`
+  - `history_pass_rate = 1.0`
+
+## Submission Runbook
+
+### 1. 제품 실행
+
+```powershell
+docker compose up -d --build backend frontend qdrant
+```
+
+### 2. 멀티턴/스트리밍 API 확인
+
+```powershell
+.\.venv\Scripts\python -m pytest tests/test_app_chat_api_multiturn.py -q
+```
+
+### 3. 데모 시나리오 하네스 실행
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\codex_python.ps1 `
+  -ScriptPath scripts\run_ocp420_demo_simulator.py `
+  -WriteScope reports/demo_simulator/ocp420_demo_simulator_eval.json `
+  -VerifyCmd "OCP 4.20 demo simulator"
+```
+
+### 4. 제출 시 설명 포인트
+
+- `왜 RAG인가`: 공식 OCP 문서와 업로드 문서를 같은 viewer/corpus truth 위에서 검색하기 위해서
+- `왜 직접 구현인가`: retrieval, session memory, streaming, citation shaping을 모두 repo 내부 코드로 통제하기 위해서
+- `정확도 개선`: hybrid retrieval + rerank + follow-up context + chunk selection
+- `안전장치`: 근거 밖 내용 억제, citation 강제, official/private boundary truth 유지
 
 ## Requirements
 
