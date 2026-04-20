@@ -66,14 +66,39 @@ const VIEWER_READER_POLISH = `
     min-width: 0 !important;
   }
 
+  .viewer-root .section-card {
+    background: var(--pbs-reader-card-bg) !important;
+    border: 1px solid var(--pbs-reader-border) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
+    border-radius: 12px !important;
+    margin-bottom: 24px !important;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+  }
+
+  .viewer-root .section-header h2,
+  .viewer-root .section-header h3 {
+    color: var(--pbs-reader-text) !important;
+  }
+
+  .viewer-root .section-meta {
+    color: var(--pbs-reader-dim) !important;
+  }
+
+  .viewer-root .code-block {
+    background: rgba(0,0,0,0.03) !important;
+    border: 1px solid var(--pbs-reader-border) !important;
+  }
+
+  :host([data-viewer-theme="obsidian"]) .viewer-root .code-block {
+    background: rgba(255,255,255,0.03) !important;
+  }
+
   .viewer-root .study-document,
   .viewer-root .hero,
   .viewer-root .hero-grid,
   .viewer-root .hero-main,
   .viewer-root .section-list,
-  .viewer-root .section-card,
   .viewer-root .section-body,
-  .viewer-root .code-block,
   .viewer-root .table-wrap {
     min-width: 0 !important;
     max-width: 100% !important;
@@ -218,12 +243,12 @@ function normalizeEditedTextStyle(value?: Partial<WikiEditedTextStyle> | null): 
   return {
     tone:
       tone === 'ink'
-      || tone === 'teal'
-      || tone === 'amber'
-      || tone === 'cyan'
-      || tone === 'rose'
-      || tone === 'violet'
-      || tone === 'lime'
+        || tone === 'teal'
+        || tone === 'amber'
+        || tone === 'cyan'
+        || tone === 'rose'
+        || tone === 'violet'
+        || tone === 'lime'
         ? tone
         : 'amber',
     size: size === 'sm' || size === 'md' || size === 'lg' ? size : 'md',
@@ -502,7 +527,7 @@ export default function ViewerDocumentStage({
     root.appendChild(wrapper);
     wrapperRef.current = wrapper;
 
-    let cleanupSectionTracking = (): void => {};
+    let cleanupSectionTracking = (): void => { };
     const sections = findSectionNodes(wrapper);
     if (sections.length === 0) {
       latestActiveSectionChangeRef.current?.(null);

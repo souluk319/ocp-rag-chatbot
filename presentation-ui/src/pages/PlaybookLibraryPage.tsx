@@ -586,9 +586,8 @@ function OfficialSourcePopover({
                     <div className="operational-source-option-top">
                       <strong>{option.label}</strong>
                       <span
-                        className={`operational-source-option-status ${
-                          option.is_current ? 'current' : isAvailable ? 'available' : 'missing'
-                        }`}
+                        className={`operational-source-option-status ${option.is_current ? 'current' : isAvailable ? 'available' : 'missing'
+                          }`}
                       >
                         {currentLabel}
                       </span>
@@ -1666,11 +1665,11 @@ const PlaybookLibraryPage: React.FC = () => {
     ? stageLabel(pipelineStage)
     : toolsRunActive
       ? 'Book Factory Running...'
-    : repositoryStage === 'loading'
-      ? 'Finding Source Candidates...'
-      : repositoryUnanswered.length > 0
-        ? `${repositoryUnanswered.length} source requests queued`
-        : 'Source Finder Ready';
+      : repositoryStage === 'loading'
+        ? 'Finding Source Candidates...'
+        : repositoryUnanswered.length > 0
+          ? `${repositoryUnanswered.length} source requests queued`
+          : 'Source Finder Ready';
   const bookFactoryStatusClass = factoryLane === 'user'
     ? pipelineStage === 'error'
       ? 'error'
@@ -1681,11 +1680,11 @@ const PlaybookLibraryPage: React.FC = () => {
       ? 'error'
       : factoryDownloadList.some((item) => item.status === 'done')
         ? 'done'
-    : repositoryStage === 'error'
-      ? 'error'
-      : repositoryStage === 'done'
-        ? 'done'
-        : '';
+        : repositoryStage === 'error'
+          ? 'error'
+          : repositoryStage === 'done'
+            ? 'done'
+            : '';
   const bookFactoryModeSummary = factoryLane === 'user'
     ? `${userLibraryBookCount} user books · ${drafts.length} drafts`
     : `${repositoryUnanswered.length} requests · ${repositoryFavorites.length} saved sources`;
@@ -1919,7 +1918,7 @@ const PlaybookLibraryPage: React.FC = () => {
               <div className="wiki-vision-lab-header">
                 <div>
                   <span className="wiki-vision-eyebrow">{visionMode === 'guided_tour' ? 'Guided Tour' : 'Wiki Vision Lab'}</span>
-                  <h2>{visionMode === 'guided_tour' ? 'Guided Tour Active' : '위키 대백과 이상형 3안'}</h2>
+                  <h2>{visionMode === 'guided_tour' ? 'Guided Tour Active' : '위키 대백과 3안'}</h2>
                   <p>{activeVision.library.summary}</p>
                 </div>
                 <div className="wiki-vision-focus">{visionMode === 'guided_tour' ? 'Active Route' : activeVision.library.focus}</div>
@@ -1958,7 +1957,7 @@ const PlaybookLibraryPage: React.FC = () => {
                         ? '가장 먼저 열 문서와 이어서 볼 문서를 이 순서대로 엽니다.'
                         : visionMode === 'atlas_canvas'
                           ? '문서 본문, 연결 경로, 맥락 문서를 한 화면 감각으로 읽기 위한 atlas shelf 입니다.'
-                        : '지금 제품 표면에서 바로 여는 핵심 운영 문서 묶음입니다.'}
+                          : '지금 제품 표면에서 바로 여는 핵심 운영 문서 묶음입니다.'}
                     </p>
                   </div>
                   <button
@@ -2436,11 +2435,9 @@ const PlaybookLibraryPage: React.FC = () => {
                   {FACTORY_PIPELINE_STEPS.tools.map((step, index) => (
                     <React.Fragment key={step.badge}>
                       <div
-                        className={`pipeline-step ${
-                          index <= toolsPipelineState.completedIndex ? 'completed' : ''
-                        } ${index === toolsPipelineState.activeIndex ? 'active' : ''} ${
-                          index === 3 && toolsPipelineState.activeIndex === 3 ? 'final' : ''
-                        }`}
+                        className={`pipeline-step ${index <= toolsPipelineState.completedIndex ? 'completed' : ''
+                          } ${index === toolsPipelineState.activeIndex ? 'active' : ''} ${index === 3 && toolsPipelineState.activeIndex === 3 ? 'final' : ''
+                          }`}
                       >
                         <div className="step-badge">{step.badge}</div>
                         <div className="step-icon">
@@ -2453,9 +2450,8 @@ const PlaybookLibraryPage: React.FC = () => {
                       </div>
                       {index < FACTORY_PIPELINE_STEPS.tools.length - 1 && (
                         <div
-                          className={`pipeline-connector ${
-                            index < toolsPipelineState.completedIndex ? 'filled' : ''
-                          } ${index === toolsPipelineState.activeIndex - 1 ? 'flowing' : ''}`}
+                          className={`pipeline-connector ${index < toolsPipelineState.completedIndex ? 'filled' : ''
+                            } ${index === toolsPipelineState.activeIndex - 1 ? 'flowing' : ''}`}
                         >
                           <div className="flow-particle"></div>
                         </div>
@@ -2951,99 +2947,99 @@ const PlaybookLibraryPage: React.FC = () => {
                               ) : (
                                 <div className="factory-catalog-list">
                                   {generatedCatalogRows.map((row, rowIndex) => {
-                                      const rowOptions = [...sourceOptionsForRecord(row)
-                                        .filter((option) => option.availability === 'available' && option.href)]
-                                        .sort((left, right) => {
-                                          if (generatedCatalogPreferredBasis === 'mixed') {
-                                            return 0;
-                                          }
-                                          const leftPriority = left.key === generatedCatalogPreferredBasis ? 0 : 1;
-                                          const rightPriority = right.key === generatedCatalogPreferredBasis ? 0 : 1;
-                                          return leftPriority - rightPriority;
-                                        });
-                                      const queuedItems = factoryDownloadList.filter((item) => item.record.book_slug === row.book_slug);
-                                      const producing = Boolean(materializingOptionKey && materializingOptionKey.startsWith(`${row.book_slug}:`));
-                                      const queued = queuedItems.length > 0;
-                                      const rowStatus = producing
-                                        ? 'producing'
-                                        : row.status_kind === 'live'
-                                          ? 'live'
-                                          : queued
-                                            ? 'queued'
-                                            : 'candidate';
-                                      const rowStatusLabel = producing
-                                        ? '생산 중'
-                                        : row.status_kind === 'live'
-                                          ? 'Ready'
-                                          : queued
-                                            ? '다운로드 대기'
-                                            : '아직 없음';
-                                      const isOpen = openCatalogRowSlug === row.book_slug;
-                                      return (
-                                        <div className={`factory-catalog-item factory-catalog-item--${rowStatus} ${isOpen ? 'is-open' : ''}`} key={row.book_slug}>
-                                          <button
-                                            type="button"
-                                            className="factory-catalog-summary-row"
-                                            aria-expanded={isOpen}
-                                            onClick={() => setOpenCatalogRowSlug((prev) => prev === row.book_slug ? null : row.book_slug)}
-                                          >
-                                            <span className="factory-catalog-main">
-                                              <span className="factory-catalog-main-top">
-                                                <span className="factory-catalog-order">{String(rowIndex + 1).padStart(3, '0')}</span>
-                                                <span className="factory-catalog-slug">{row.book_slug.replace(/_/g, ' ')}</span>
-                                              </span>
-                                              <strong>{row.title}</strong>
-                                              <span>{catalogSourceDetail(row)}</span>
+                                    const rowOptions = [...sourceOptionsForRecord(row)
+                                      .filter((option) => option.availability === 'available' && option.href)]
+                                      .sort((left, right) => {
+                                        if (generatedCatalogPreferredBasis === 'mixed') {
+                                          return 0;
+                                        }
+                                        const leftPriority = left.key === generatedCatalogPreferredBasis ? 0 : 1;
+                                        const rightPriority = right.key === generatedCatalogPreferredBasis ? 0 : 1;
+                                        return leftPriority - rightPriority;
+                                      });
+                                    const queuedItems = factoryDownloadList.filter((item) => item.record.book_slug === row.book_slug);
+                                    const producing = Boolean(materializingOptionKey && materializingOptionKey.startsWith(`${row.book_slug}:`));
+                                    const queued = queuedItems.length > 0;
+                                    const rowStatus = producing
+                                      ? 'producing'
+                                      : row.status_kind === 'live'
+                                        ? 'live'
+                                        : queued
+                                          ? 'queued'
+                                          : 'candidate';
+                                    const rowStatusLabel = producing
+                                      ? '생산 중'
+                                      : row.status_kind === 'live'
+                                        ? 'Ready'
+                                        : queued
+                                          ? '다운로드 대기'
+                                          : '아직 없음';
+                                    const isOpen = openCatalogRowSlug === row.book_slug;
+                                    return (
+                                      <div className={`factory-catalog-item factory-catalog-item--${rowStatus} ${isOpen ? 'is-open' : ''}`} key={row.book_slug}>
+                                        <button
+                                          type="button"
+                                          className="factory-catalog-summary-row"
+                                          aria-expanded={isOpen}
+                                          onClick={() => setOpenCatalogRowSlug((prev) => prev === row.book_slug ? null : row.book_slug)}
+                                        >
+                                          <span className="factory-catalog-main">
+                                            <span className="factory-catalog-main-top">
+                                              <span className="factory-catalog-order">{String(rowIndex + 1).padStart(3, '0')}</span>
+                                              <span className="factory-catalog-slug">{row.book_slug.replace(/_/g, ' ')}</span>
                                             </span>
-                                            <span className="factory-catalog-meta">
-                                              <span className={`operational-source-basis operational-source-basis--${String(row.current_source_basis || 'unknown').trim() || 'unknown'}`}>
-                                                {sourceBasisLabel(row)}
-                                              </span>
-                                              <span className={`factory-catalog-status factory-catalog-status--${rowStatus}`}>
-                                                {rowStatusLabel}
-                                              </span>
-                                              <ChevronDown size={14} className={`factory-catalog-chevron ${isOpen ? 'is-open' : ''}`} />
+                                            <strong>{row.title}</strong>
+                                            <span>{catalogSourceDetail(row)}</span>
+                                          </span>
+                                          <span className="factory-catalog-meta">
+                                            <span className={`operational-source-basis operational-source-basis--${String(row.current_source_basis || 'unknown').trim() || 'unknown'}`}>
+                                              {sourceBasisLabel(row)}
                                             </span>
-                                          </button>
-                                          {isOpen ? (
-                                            <div className="factory-catalog-options">
-                                              {rowOptions.map((option) => {
-                                                const actionKey = sourceOptionActionKey(row, option);
-                                                const saved = factoryDownloadList.some((item) => item.id === actionKey);
-                                                return (
-                                                  <div className="factory-candidate-option" key={actionKey}>
-                                                    <div className="factory-candidate-option-copy">
-                                                      <strong>{friendlySourceOptionLabel(row, option)}</strong>
-                                                      <span>{option.note}</span>
-                                                    </div>
-                                                    <div className="operational-source-option-actions">
-                                                      <a
-                                                        className="operational-source-option-link"
-                                                        href={option.href}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                      >
-                                                        <ExternalLink size={13} />
-                                                        <span>원본</span>
-                                                      </a>
-                                                      <button
-                                                        type="button"
-                                                        className="operational-source-option-save"
-                                                        onClick={() => handleQueueOfficialSource(row, option, generatedCatalogPrompt)}
-                                                        disabled={saved || row.status_kind === 'live'}
-                                                      >
-                                                        <BookmarkPlus size={13} />
-                                                        <span>{row.status_kind === 'live' ? '있음' : saved ? '저장됨' : '하나 받기'}</span>
-                                                      </button>
-                                                    </div>
+                                            <span className={`factory-catalog-status factory-catalog-status--${rowStatus}`}>
+                                              {rowStatusLabel}
+                                            </span>
+                                            <ChevronDown size={14} className={`factory-catalog-chevron ${isOpen ? 'is-open' : ''}`} />
+                                          </span>
+                                        </button>
+                                        {isOpen ? (
+                                          <div className="factory-catalog-options">
+                                            {rowOptions.map((option) => {
+                                              const actionKey = sourceOptionActionKey(row, option);
+                                              const saved = factoryDownloadList.some((item) => item.id === actionKey);
+                                              return (
+                                                <div className="factory-candidate-option" key={actionKey}>
+                                                  <div className="factory-candidate-option-copy">
+                                                    <strong>{friendlySourceOptionLabel(row, option)}</strong>
+                                                    <span>{option.note}</span>
                                                   </div>
-                                                );
-                                              })}
-                                            </div>
-                                          ) : null}
-                                        </div>
-                                      );
-                                    })}
+                                                  <div className="operational-source-option-actions">
+                                                    <a
+                                                      className="operational-source-option-link"
+                                                      href={option.href}
+                                                      target="_blank"
+                                                      rel="noreferrer"
+                                                    >
+                                                      <ExternalLink size={13} />
+                                                      <span>원본</span>
+                                                    </a>
+                                                    <button
+                                                      type="button"
+                                                      className="operational-source-option-save"
+                                                      onClick={() => handleQueueOfficialSource(row, option, generatedCatalogPrompt)}
+                                                      disabled={saved || row.status_kind === 'live'}
+                                                    >
+                                                      <BookmarkPlus size={13} />
+                                                      <span>{row.status_kind === 'live' ? '있음' : saved ? '저장됨' : '하나 받기'}</span>
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        ) : null}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               )}
                             </>
@@ -3116,9 +3112,8 @@ const PlaybookLibraryPage: React.FC = () => {
                               <div className="card-header repo-card-header repo-card-header--stack">
                                 <div className="repo-card-source-meta">
                                   <span
-                                    className={`operational-source-basis operational-source-basis--${
-                                      String(candidate.current_source_basis || 'unknown').trim() || 'unknown'
-                                    }`}
+                                    className={`operational-source-basis operational-source-basis--${String(candidate.current_source_basis || 'unknown').trim() || 'unknown'
+                                      }`}
                                   >
                                     {sourceBasisLabel(candidate)}
                                   </span>
@@ -3681,11 +3676,11 @@ const PlaybookLibraryPage: React.FC = () => {
                       <div className="metric-book-info">
                         <span className="metric-book-title">{packet.title}</span>
                         <span className="metric-book-meta">
-                        {packet.boundary_badge || 'Release Packet'} · {packet.runtime_truth_label || ''}
-                      </span>
-                    </div>
-                    <span className={`metric-book-status ${packet.review_status === 'ready' ? 'approved' : ''}`}>
-                      {packet.review_status}
+                          {packet.boundary_badge || 'Release Packet'} · {packet.runtime_truth_label || ''}
+                        </span>
+                      </div>
+                      <span className={`metric-book-status ${packet.review_status === 'ready' ? 'approved' : ''}`}>
+                        {packet.review_status}
                       </span>
                     </button>
                   ))}

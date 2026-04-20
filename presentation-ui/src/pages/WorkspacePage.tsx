@@ -1718,6 +1718,11 @@ export default function WorkspacePage() {
   const [viewerActiveSection, setViewerActiveSection] = useState<ViewerActiveSection | null>(null);
   const [signalsFavoriteFilter, setSignalsFavoriteFilter] = useState<SignalsFavoriteFilter>('favorites');
 
+  const [globalTheme, setGlobalTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window === 'undefined') return 'dark';
+    return (window.localStorage.getItem('pbs.globalTheme') as 'dark' | 'light') || 'dark';
+  });
+
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2364,6 +2369,16 @@ export default function WorkspacePage() {
   useEffect(() => {
     setQuickNavOpen(false);
   }, [currentViewerPath, viewerPageMode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    document.documentElement.setAttribute('data-theme', globalTheme);
+    window.localStorage.setItem('pbs.globalTheme', globalTheme);
+  }, [globalTheme]);
+
+  const handleToggleGlobalTheme = useCallback(() => {
+    setGlobalTheme((current) => (current === 'dark' ? 'light' : 'dark'));
+  }, []);
 
   useEffect(() => {
     if (!quickNavOpen) {
@@ -3253,6 +3268,7 @@ export default function WorkspacePage() {
         packOptions={PACK_OPTIONS}
         sessionId={sessionId}
         testMode={testMode}
+        globalTheme={globalTheme}
         onOpenLibrary={() => navigate('/playbook-library')}
         onResetSession={resetSession}
         onSelectPack={(label) => {
@@ -3261,6 +3277,7 @@ export default function WorkspacePage() {
         }}
         onTogglePackDropdown={() => setPackDropdownOpen((prev) => !prev)}
         onToggleTestMode={() => setTestMode((current) => !current)}
+        onToggleGlobalTheme={handleToggleGlobalTheme}
       />
 
       <main className="workspace-content">

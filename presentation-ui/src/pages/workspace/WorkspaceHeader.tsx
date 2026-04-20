@@ -1,4 +1,4 @@
-import { ChevronDown, Languages, Sparkles } from 'lucide-react';
+import { ChevronDown, Languages, Sparkles, Moon, Sun } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 type WorkspaceHeaderProps = {
@@ -7,11 +7,13 @@ type WorkspaceHeaderProps = {
   packOptions: readonly string[];
   sessionId: string;
   testMode: boolean;
+  globalTheme: 'dark' | 'light';
   onOpenLibrary: () => void;
   onResetSession: () => void;
   onSelectPack: (label: string) => void;
   onTogglePackDropdown: () => void;
   onToggleTestMode: () => void;
+  onToggleGlobalTheme: () => void;
 };
 
 export default function WorkspaceHeader({
@@ -25,6 +27,8 @@ export default function WorkspaceHeader({
   onSelectPack,
   onTogglePackDropdown,
   onToggleTestMode,
+  onToggleGlobalTheme,
+  globalTheme,
 }: WorkspaceHeaderProps) {
   return (
     <header className="workspace-nav">
@@ -67,6 +71,11 @@ export default function WorkspaceHeader({
         <div className="status-indicator" onClick={onResetSession} title="Click to start a new session">
           <div className="status-dot"></div>
           <span className="session-id-text">{sessionId}</span>
+        </div>
+        <div className="header-theme-controls">
+          <button className="header-action-btn" onClick={onToggleGlobalTheme} title="Toggle Dark/Light Mode">
+            {globalTheme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
         </div>
         <button
           className={`nav-btn test-mode-btn ${testMode ? 'active' : ''}`}
