@@ -107,6 +107,10 @@ def _viewer_html_for_path(root_dir: Path, viewer_path: str, *, page_mode: str = 
 
 
 def resolve_viewer_html(root_dir: Path, viewer_path: str, *, page_mode: str = "single") -> str | None:
+    viewer_path = _canonicalize_viewer_path(viewer_path)
+    customer_pack_draft_id = customer_pack_draft_id_from_viewer_path(viewer_path)
+    if customer_pack_draft_id and not _customer_pack_read_allowed(root_dir, customer_pack_draft_id):
+        return None
     return _viewer_html_for_path(root_dir, viewer_path, page_mode=page_mode)
 
 

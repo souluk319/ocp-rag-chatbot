@@ -113,7 +113,7 @@ def _build_handler(
                     content_type = mimetypes.guess_type(str(asset_path))[0] or "text/html; charset=utf-8"
                     self._send_bytes(asset_path.read_bytes(), content_type=content_type)
                     return
-            if request_path.startswith(("/playbooks/wiki-runtime/", "/docs/", "/wiki/entities/", "/wiki/figures/", "/buyer-packets/")):
+            if request_path.startswith(("/playbooks/wiki-runtime/", "/playbooks/customer-packs/", "/docs/", "/wiki/entities/", "/wiki/figures/", "/buyer-packets/")):
                 viewer_html = _resolve_viewer_html(root_dir, self.path)
                 if viewer_html is not None:
                     self._send_bytes(

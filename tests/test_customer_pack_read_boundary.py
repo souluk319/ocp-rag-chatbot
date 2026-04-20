@@ -19,10 +19,16 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from play_book_studio.answering.models import AnswerResult, Citation
+from play_book_studio.app.customer_pack_read_boundary import (
+    LOCAL_CUSTOMER_PACK_TENANT_ID,
+    LOCAL_CUSTOMER_PACK_WORKSPACE_ID,
+    load_customer_pack_read_boundary,
+)
 from play_book_studio.app.chat_debug import append_chat_turn_log
 from play_book_studio.app.server import _build_handler
 from play_book_studio.app.sessions import ChatSession, SessionStore, Turn
 from play_book_studio.config.settings import load_settings
+from play_book_studio.intake import CustomerPackDraftStore
 from play_book_studio.intake.private_corpus import customer_pack_private_manifest_path
 from play_book_studio.app.intake_api import ingest_customer_pack
 from play_book_studio.retrieval.models import SessionContext
@@ -155,6 +161,14 @@ def _private_citation_payload(draft_id: str) -> dict[str, object]:
     }
 
 
+def _mark_pack_needs_review(root: Path, draft_id: str) -> None:
+    store = CustomerPackDraftStore(root)
+    record = store.get(draft_id)
+    assert record is not None
+    record.approval_state = "needs_review"
+    store.save(record)
+
+
 def _persist_private_session(
     *,
     root: Path,
@@ -235,7 +249,7 @@ def _persist_private_session(
 
 
 class CustomerPackReadBoundaryTests(unittest.TestCase):
-    def test_customer_pack_read_surfaces_fail_close_for_unreviewed_and_placeholder(self) -> None:
+    def test_customer_pack_read_surfaces_auto_repair_local_uploads_and_fail_close_non_read_ready_packs(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             approved = _ingest_pack(
@@ -259,16 +273,26 @@ class CustomerPackReadBoundaryTests(unittest.TestCase):
                 workspace_id=None,
                 approval_state="approved",
             )
+            blocked = _ingest_pack(
+                root,
+                draft_tag="needs-review",
+                tenant_id="tenant-c",
+                workspace_id="workspace-c",
+                approval_state="approved",
+            )
+            _mark_pack_needs_review(root, str(blocked["draft_id"]))
 
             approved_id = str(approved["draft_id"])
             unreviewed_id = str(unreviewed["draft_id"])
             placeholder_id = str(placeholder["draft_id"])
+            blocked_id = str(blocked["draft_id"])
 
             with _test_server(root) as (base_url, _store, _answerer):
                 for draft_id, expected_status in (
                     (approved_id, 200),
-                    (unreviewed_id, 404),
-                    (placeholder_id, 404),
+                    (unreviewed_id, 200),
+                    (placeholder_id, 200),
+                    (blocked_id, 404),
                 ):
                     captured = requests.get(
                         f"{base_url}/api/customer-packs/captured",
@@ -308,8 +332,25 @@ class CustomerPackReadBoundaryTests(unittest.TestCase):
                 drafts = requests.get(f"{base_url}/api/customer-packs/drafts", timeout=10)
                 self.assertEqual(200, drafts.status_code)
                 payload = drafts.json()
-                self.assertEqual(1, payload["count"])
-                self.assertEqual([approved_id], [item["draft_id"] for item in payload["drafts"]])
+                self.assertEqual(3, payload["count"])
+                self.assertEqual(
+                    {approved_id, unreviewed_id, placeholder_id},
+                    {item["draft_id"] for item in payload["drafts"]},
+                )
+
+            unreviewed_boundary = load_customer_pack_read_boundary(root, unreviewed_id)
+            self.assertTrue(unreviewed_boundary["read_allowed"])
+            self.assertEqual("approved", unreviewed_boundary["approval_state"])
+
+            placeholder_boundary = load_customer_pack_read_boundary(root, placeholder_id)
+            self.assertTrue(placeholder_boundary["read_allowed"])
+            self.assertEqual(LOCAL_CUSTOMER_PACK_TENANT_ID, placeholder_boundary["tenant_id"])
+            self.assertEqual(LOCAL_CUSTOMER_PACK_WORKSPACE_ID, placeholder_boundary["workspace_id"])
+            self.assertEqual("approved", placeholder_boundary["approval_state"])
+
+            blocked_boundary = load_customer_pack_read_boundary(root, blocked_id)
+            self.assertFalse(blocked_boundary["read_allowed"])
+            self.assertIn("approval_not_read_ready:needs_review", blocked_boundary["fail_reasons"])
 
     def test_customer_pack_read_surface_sanitizes_public_payloads(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -414,9 +455,18 @@ class CustomerPackReadBoundaryTests(unittest.TestCase):
                 workspace_id=None,
                 approval_state="approved",
             )
+            blocked = _ingest_pack(
+                root,
+                draft_tag="needs-review",
+                tenant_id="tenant-c",
+                workspace_id="workspace-c",
+                approval_state="approved",
+            )
+            _mark_pack_needs_review(root, str(blocked["draft_id"]))
             approved_id = str(approved["draft_id"])
             unreviewed_id = str(unreviewed["draft_id"])
             placeholder_id = str(placeholder["draft_id"])
+            blocked_id = str(blocked["draft_id"])
 
             with _test_server(root) as (base_url, store, answerer):
                 _persist_private_session(
@@ -443,11 +493,20 @@ class CustomerPackReadBoundaryTests(unittest.TestCase):
                     draft_id=placeholder_id,
                     approval_state="approved",
                 )
+                _persist_private_session(
+                    root=root,
+                    store=store,
+                    answerer=answerer,
+                    session_id="session-blocked",
+                    draft_id=blocked_id,
+                    approval_state="needs_review",
+                )
 
                 for session_id, expected_status in (
                     ("session-approved", 200),
-                    ("session-unreviewed", 404),
-                    ("session-placeholder", 404),
+                    ("session-unreviewed", 200),
+                    ("session-placeholder", 200),
+                    ("session-blocked", 404),
                 ):
                     session_payload = requests.get(
                         f"{base_url}/api/sessions/load",
@@ -471,15 +530,18 @@ class CustomerPackReadBoundaryTests(unittest.TestCase):
                 self.assertEqual(200, chat_log_payload.status_code)
                 debug_log = chat_log_payload.json()
                 self.assertNotIn("path", debug_log)
-                self.assertEqual(1, debug_log["count"])
-                entry = debug_log["entries"][0]
-                self.assertEqual("session-approved", entry["session_id"])
-                self.assertNotIn("snapshot_path", entry["audit_envelope"])
-                self.assertNotIn("recent_session_path", entry["audit_envelope"])
-                runtime_payload = entry.get("runtime") or {}
-                self.assertNotIn("artifacts_dir", runtime_payload)
-                self.assertNotIn("source_manifest_path", runtime_payload)
-                self.assertNotIn("customer_pack_books_dir", runtime_payload)
+                self.assertEqual(3, debug_log["count"])
+                self.assertEqual(
+                    {"session-approved", "session-unreviewed", "session-placeholder"},
+                    {entry["session_id"] for entry in debug_log["entries"]},
+                )
+                for entry in debug_log["entries"]:
+                    self.assertNotIn("snapshot_path", entry["audit_envelope"])
+                    self.assertNotIn("recent_session_path", entry["audit_envelope"])
+                    runtime_payload = entry.get("runtime") or {}
+                    self.assertNotIn("artifacts_dir", runtime_payload)
+                    self.assertNotIn("source_manifest_path", runtime_payload)
+                    self.assertNotIn("customer_pack_books_dir", runtime_payload)
 
 
 if __name__ == "__main__":
