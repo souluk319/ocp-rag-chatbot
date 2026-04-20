@@ -14,7 +14,6 @@ from play_book_studio.answering.answerer import ChatAnswerer
 from play_book_studio.answering.models import AnswerResult
 from play_book_studio.app.presenters import (
     _build_citation_presentation_context,
-    _build_health_payload,
     _serialize_citation,
 )
 from play_book_studio.app.source_books import (
@@ -183,11 +182,6 @@ def _build_chat_payload(
             "confirm_label": "확인",
             "repository_query": (result.rewritten_query or result.query or "").strip(),
         }
-    if answerer is not None:
-        runtime_started_at = time.perf_counter()
-        payload["runtime"] = _build_health_payload(answerer)["runtime"]
-        if timings_sink is not None:
-            timings_sink["payload_runtime"] = (time.perf_counter() - runtime_started_at) * 1000
     return payload
 
 

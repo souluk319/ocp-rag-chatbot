@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from functools import lru_cache
 from pathlib import Path
 
 from play_book_studio.app.data_control_room_buckets import (
@@ -58,7 +59,53 @@ from .data_control_room_library import (
 )
 
 
+def _path_fingerprint(path: Path | None) -> tuple[str, bool, int, int]:
+    if path is None:
+        return ("", False, 0, 0)
+    target = Path(path).resolve()
+    try:
+        stat = target.stat()
+    except FileNotFoundError:
+        return (str(target), False, 0, 0)
+    return (str(target), True, int(stat.st_mtime_ns), int(stat.st_size))
+
+
+def _data_control_room_cache_fingerprint(root: Path) -> tuple[tuple[str, bool, int, int], ...]:
+    settings = load_settings(root)
+    gate_path = root / "reports" / "build_logs" / "foundry_runs" / "profiles" / "morning_gate" / "latest.json"
+    watched_paths = [
+        gate_path,
+        settings.source_manifest_path,
+        settings.source_approval_report_path,
+        settings.translation_lane_report_path,
+        settings.retrieval_eval_report_path,
+        settings.answer_eval_report_path,
+        settings.ragas_eval_report_path,
+        settings.runtime_report_path,
+        settings.chunks_path,
+        settings.customer_pack_books_dir,
+        settings.customer_pack_corpus_dir,
+        *settings.playbook_book_dirs,
+    ]
+    return tuple(_path_fingerprint(path) for path in watched_paths)
+
+
+@lru_cache(maxsize=8)
+def _build_data_control_room_payload_cached(
+    root_dir: str,
+    fingerprint: tuple[tuple[str, bool, int, int], ...],
+) -> dict[str, object]:
+    del fingerprint
+    return _build_data_control_room_payload_uncached(Path(root_dir))
+
+
 def build_data_control_room_payload(root_dir: str | Path) -> dict[str, object]:
+    root = Path(root_dir).resolve()
+    fingerprint = _data_control_room_cache_fingerprint(root)
+    return _build_data_control_room_payload_cached(str(root), fingerprint)
+
+
+def _build_data_control_room_payload_uncached(root_dir: str | Path) -> dict[str, object]:
     root = Path(root_dir).resolve()
     settings = load_settings(root)
     gate_path = root / "reports" / "build_logs" / "foundry_runs" / "profiles" / "morning_gate" / "latest.json"

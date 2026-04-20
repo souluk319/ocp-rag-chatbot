@@ -175,6 +175,37 @@ Glossary term body
         self.assertEqual("review", quality["quality_status"])
         self.assertIn("chapter_footer_contamination", quality["quality_flags"])
 
+    def test_quality_review_detects_flattened_structured_pdf_sections(self) -> None:
+        payload = {
+            "sections": [
+                {
+                    "heading": "YAML 예시",
+                    "text": "apiVersion: argoproj.io/v1alpha1\nkind: Application\nmetadata:\n  name: demo\nspec:\n  destination:\n    namespace: demo",
+                    "block_kinds": ["paragraph"],
+                },
+                {
+                    "heading": "명령 실행",
+                    "text": "oc apply -f app.yaml\nkubectl get pods -n demo\nargocd app sync demo",
+                    "block_kinds": ["paragraph"],
+                },
+                {
+                    "heading": "구성 표",
+                    "text": "| 이름 | 역할 |\n| --- | --- |\n| api-server | 제어 |\n| etcd | 저장 |",
+                    "block_kinds": ["paragraph"],
+                },
+                {
+                    "heading": "검증",
+                    "text": "정상 동작 여부를 확인합니다. 충분히 긴 설명 문장입니다.",
+                    "block_kinds": ["paragraph"],
+                },
+            ]
+        }
+
+        quality = evaluate_canonical_book_quality(payload)
+
+        self.assertEqual("review", quality["quality_status"])
+        self.assertIn("structured_blocks_flattened", quality["quality_flags"])
+
     def test_build_canonical_book_from_normalized_rows_preserves_source_view_fields(self) -> None:
         planner = CustomerPackPlanner()
         book = planner.build_canonical_book(
@@ -579,4 +610,3 @@ Glossary term body
 
 if __name__ == "__main__":
     unittest.main()
-

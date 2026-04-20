@@ -16,6 +16,7 @@ PDF_DEGRADED_QUALITY_FLAGS = {
     "too_many_page_summary_sections",
     "too_many_heading_only_sections",
     "too_many_short_sections",
+    "structured_blocks_flattened",
     "section_count_too_high",
     "chapter_footer_contamination",
     "toc_artifacts_remaining",

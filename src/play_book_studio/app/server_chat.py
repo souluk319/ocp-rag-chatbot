@@ -90,6 +90,43 @@ def _attach_server_timings(
         pipeline_trace["server_timings_ms"] = rounded
 
 
+def _persist_chat_audit_logs(
+    *,
+    root_dir: Path,
+    answerer: Any,
+    session: Turn | Any,
+    query: str,
+    result: Any,
+    context_before: SessionContext,
+    context_after: SessionContext,
+    response_payload: dict[str, Any],
+    append_chat_turn_log: Any,
+    append_unanswered_question_log: Any,
+) -> None:
+    try:
+        append_chat_turn_log(
+            root_dir,
+            answerer=answerer,
+            session=session,
+            query=query,
+            result=result,
+            context_before=context_before,
+            context_after=context_after,
+            suggested_queries=response_payload.get("suggested_queries"),
+            related_links=response_payload.get("related_links"),
+            related_sections=response_payload.get("related_sections"),
+        )
+        if result.response_kind == "no_answer":
+            append_unanswered_question_log(
+                root_dir,
+                session=session,
+                query=query,
+                result=result,
+            )
+    except Exception as exc:  # noqa: BLE001
+        print(f"[chat-audit] persist failed: {exc}")
+
+
 def handle_chat(
     handler: Any,
     payload: dict[str, Any],
@@ -204,33 +241,6 @@ def handle_chat(
     server_timings_ms["session_persist_post_payload"] = (
         (time.perf_counter() - second_session_persist_started_at) * 1000
     )
-    chat_audit_started_at = time.perf_counter()
-    append_chat_turn_log(
-        root_dir,
-        answerer=active_answerer,
-        session=session,
-        query=query,
-        result=result,
-        context_before=context_before,
-        context_after=session.context,
-        suggested_queries=response_payload.get("suggested_queries"),
-        related_links=response_payload.get("related_links"),
-        related_sections=response_payload.get("related_sections"),
-    )
-    server_timings_ms["chat_audit_persist"] = (
-        (time.perf_counter() - chat_audit_started_at) * 1000
-    )
-    if result.response_kind == "no_answer":
-        unanswered_log_started_at = time.perf_counter()
-        append_unanswered_question_log(
-            root_dir,
-            session=session,
-            query=query,
-            result=result,
-        )
-        server_timings_ms["unanswered_log_persist"] = (
-            (time.perf_counter() - unanswered_log_started_at) * 1000
-        )
     server_timings_ms["post_answer_total"] = (
         (time.perf_counter() - request_started_at) * 1000
         - server_timings_ms.get("answerer_runtime", 0.0)
@@ -238,6 +248,18 @@ def handle_chat(
     server_timings_ms["request_total"] = (time.perf_counter() - request_started_at) * 1000
     _attach_server_timings(response_payload, server_timings_ms=server_timings_ms)
     handler._send_json(response_payload)
+    _persist_chat_audit_logs(
+        root_dir=root_dir,
+        answerer=active_answerer,
+        session=session,
+        query=query,
+        result=result,
+        context_before=context_before,
+        context_after=session.context,
+        response_payload=response_payload,
+        append_chat_turn_log=append_chat_turn_log,
+        append_unanswered_question_log=append_unanswered_question_log,
+    )
 
 
 def handle_chat_stream(
@@ -365,33 +387,6 @@ def handle_chat_stream(
     server_timings_ms["session_persist_post_payload"] = (
         (time.perf_counter() - second_session_persist_started_at) * 1000
     )
-    chat_audit_started_at = time.perf_counter()
-    append_chat_turn_log(
-        root_dir,
-        answerer=active_answerer,
-        session=session,
-        query=query,
-        result=result,
-        context_before=context_before,
-        context_after=session.context,
-        suggested_queries=response_payload.get("suggested_queries"),
-        related_links=response_payload.get("related_links"),
-        related_sections=response_payload.get("related_sections"),
-    )
-    server_timings_ms["chat_audit_persist"] = (
-        (time.perf_counter() - chat_audit_started_at) * 1000
-    )
-    if result.response_kind == "no_answer":
-        unanswered_log_started_at = time.perf_counter()
-        append_unanswered_question_log(
-            root_dir,
-            session=session,
-            query=query,
-            result=result,
-        )
-        server_timings_ms["unanswered_log_persist"] = (
-            (time.perf_counter() - unanswered_log_started_at) * 1000
-        )
     server_timings_ms["post_answer_total"] = (
         (time.perf_counter() - request_started_at) * 1000
         - server_timings_ms.get("answerer_runtime", 0.0)
@@ -403,4 +398,16 @@ def handle_chat_stream(
             "type": "result",
             "payload": response_payload,
         }
+    )
+    _persist_chat_audit_logs(
+        root_dir=root_dir,
+        answerer=active_answerer,
+        session=session,
+        query=query,
+        result=result,
+        context_before=context_before,
+        context_after=session.context,
+        response_payload=response_payload,
+        append_chat_turn_log=append_chat_turn_log,
+        append_unanswered_question_log=append_unanswered_question_log,
     )

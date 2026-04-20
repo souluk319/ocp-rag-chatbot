@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = ROOT / "tests"
@@ -25,6 +26,73 @@ class TestAppDataControlRoom(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         body = "\n".join(json.dumps(row, ensure_ascii=False) for row in rows)
         path.write_text(body, encoding="utf-8")
+
+    def test_build_data_control_room_payload_reuses_cached_payload_when_inputs_unchanged(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            data_control_room = __import__(
+                "play_book_studio.app.data_control_room",
+                fromlist=["_build_data_control_room_payload_cached"],
+            )
+            data_control_room._build_data_control_room_payload_cached.cache_clear()
+            try:
+                first_payload = {"generated_at": "first"}
+                second_payload = {"generated_at": "second"}
+                with (
+                    patch.object(
+                        data_control_room,
+                        "_data_control_room_cache_fingerprint",
+                        return_value=(("stable", True, 1, 1),),
+                    ),
+                    patch.object(
+                        data_control_room,
+                        "_build_data_control_room_payload_uncached",
+                        side_effect=[first_payload, second_payload],
+                    ) as build_mock,
+                ):
+                    first = build_data_control_room_payload(root)
+                    second = build_data_control_room_payload(root)
+
+                self.assertEqual(first_payload, first)
+                self.assertEqual(first_payload, second)
+                self.assertEqual(1, build_mock.call_count)
+            finally:
+                data_control_room._build_data_control_room_payload_cached.cache_clear()
+
+    def test_build_data_control_room_payload_invalidates_cache_when_fingerprint_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            data_control_room = __import__(
+                "play_book_studio.app.data_control_room",
+                fromlist=["_build_data_control_room_payload_cached"],
+            )
+            data_control_room._build_data_control_room_payload_cached.cache_clear()
+            try:
+                first_payload = {"generated_at": "first"}
+                second_payload = {"generated_at": "second"}
+                with (
+                    patch.object(
+                        data_control_room,
+                        "_data_control_room_cache_fingerprint",
+                        side_effect=[
+                            (("stable-a", True, 1, 1),),
+                            (("stable-b", True, 2, 1),),
+                        ],
+                    ),
+                    patch.object(
+                        data_control_room,
+                        "_build_data_control_room_payload_uncached",
+                        side_effect=[first_payload, second_payload],
+                    ) as build_mock,
+                ):
+                    first = build_data_control_room_payload(root)
+                    second = build_data_control_room_payload(root)
+
+                self.assertEqual(first_payload, first)
+                self.assertEqual(second_payload, second)
+                self.assertEqual(2, build_mock.call_count)
+            finally:
+                data_control_room._build_data_control_room_payload_cached.cache_clear()
 
     def test_build_data_control_room_payload_summarizes_gold_corpus_and_manualbook(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

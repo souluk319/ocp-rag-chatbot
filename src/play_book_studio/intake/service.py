@@ -70,6 +70,13 @@ CUSTOMER_PACK_FAMILY_SECTION_RATIOS = {
     SYNTHESIZED_PLAYBOOK_SOURCE_TYPE: 0.7,
 }
 
+_STRUCTURED_KEY_VALUE_RE = re.compile(r"^[A-Za-z0-9_.-]+:\s*\S")
+_STRUCTURED_MANIFEST_KEY_RE = re.compile(
+    r"^(?:apiVersion|kind|metadata|spec|data|stringData|targetRevision|server|path|namespace|image|tag):",
+    re.IGNORECASE,
+)
+_STRUCTURED_COMMAND_RE = re.compile(r"^(?:oc|kubectl|helm|argocd|podman|docker)\s+\S", re.IGNORECASE)
+
 
 def _customer_pack_asset_slug(draft_id: str, family: str) -> str:
     return f"{draft_id}--{family}"
@@ -316,6 +323,11 @@ def evaluate_canonical_book_quality(payload: dict[str, object]) -> dict[str, obj
         for text in texts
         if re.search(r"(?:\.\s*){8,}", text) or "table of contents" in text.lower()
     )
+    flattened_structured_count = sum(
+        1
+        for section in sections
+        if _looks_like_flattened_structured_section(section)
+    )
 
     total = max(len(sections), 1)
     page_summary_ratio = page_summary_count / total
@@ -323,6 +335,7 @@ def evaluate_canonical_book_quality(payload: dict[str, object]) -> dict[str, obj
     short_text_ratio = short_text_count / total
     chapter_footer_ratio = chapter_footer_count / total
     toc_artifact_ratio = toc_artifact_count / total
+    flattened_structured_ratio = flattened_structured_count / total
 
     flags: list[str] = []
     score = 100
@@ -344,6 +357,9 @@ def evaluate_canonical_book_quality(payload: dict[str, object]) -> dict[str, obj
     if toc_artifact_ratio >= 0.08:
         flags.append("toc_artifacts_remaining")
         score -= 15
+    if len(sections) >= 4 and flattened_structured_ratio >= 0.2:
+        flags.append("structured_blocks_flattened")
+        score -= 25
 
     status = "ready" if score >= 70 and not flags else "review"
     summary = (
@@ -357,6 +373,44 @@ def evaluate_canonical_book_quality(payload: dict[str, object]) -> dict[str, obj
         "quality_flags": flags,
         "quality_summary": summary,
     }
+
+
+def _looks_like_flattened_structured_section(section: dict[str, Any]) -> bool:
+    block_kinds = [
+        str(item).strip().lower()
+        for item in (section.get("block_kinds") or [])
+        if str(item).strip()
+    ]
+    if "code" in block_kinds or "table" in block_kinds:
+        return False
+
+    text = str(section.get("text") or "").strip()
+    if not text:
+        return False
+    lines = [line.rstrip() for line in text.splitlines() if line.strip()]
+    if len(lines) < 3:
+        return False
+
+    score = 0
+    for raw_line in lines[:12]:
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("|") and line.count("|") >= 2:
+            score += 3
+        if _STRUCTURED_MANIFEST_KEY_RE.match(line):
+            score += 3
+        elif _STRUCTURED_KEY_VALUE_RE.match(line):
+            score += 1
+        if _STRUCTURED_COMMAND_RE.match(line):
+            score += 2
+        if raw_line[:1].isspace():
+            score += 1
+        if "://" in line:
+            score += 1
+        if any(token in line for token in ("{", "}", "[", "]")):
+            score += 1
+    return score >= 4
 
 
 __all__ = [

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+import threading
+import time
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -27,6 +29,11 @@ from .source_books_viewer_resolver import (
 from .wiki_user_overlay import build_wiki_overlay_signal_payload
 
 
+_OVERLAY_SIGNAL_CACHE_TTL_SECONDS = 30.0
+_OVERLAY_SIGNAL_CACHE_LOCK = threading.Lock()
+_OVERLAY_SIGNAL_CACHE: dict[tuple[str, str], tuple[float, dict[str, int], dict[str, int]]] = {}
+
+
 def _overlay_recent_target_scores(
     root_dir: Path,
     *,
@@ -35,6 +42,14 @@ def _overlay_recent_target_scores(
     normalized_user_id = str(user_id or "").strip()
     if not normalized_user_id:
         return {}, {}
+    cache_key = (str(root_dir.resolve()), normalized_user_id)
+    now = time.monotonic()
+    with _OVERLAY_SIGNAL_CACHE_LOCK:
+        cached = _OVERLAY_SIGNAL_CACHE.get(cache_key)
+        if cached is not None:
+            cached_at, href_scores, ref_scores = cached
+            if now - cached_at <= _OVERLAY_SIGNAL_CACHE_TTL_SECONDS:
+                return dict(href_scores), dict(ref_scores)
     try:
         payload = build_wiki_overlay_signal_payload(root_dir, user_id=normalized_user_id)
     except Exception:  # noqa: BLE001
@@ -55,6 +70,16 @@ def _overlay_recent_target_scores(
             href_scores[href] = max(href_scores.get(href, 0), base_score)
         if target_ref:
             ref_scores[target_ref] = max(ref_scores.get(target_ref, 0), base_score)
+    with _OVERLAY_SIGNAL_CACHE_LOCK:
+        _OVERLAY_SIGNAL_CACHE[cache_key] = (now, dict(href_scores), dict(ref_scores))
+        if len(_OVERLAY_SIGNAL_CACHE) > 64:
+            stale_keys = [
+                key
+                for key, (cached_at, _, _) in _OVERLAY_SIGNAL_CACHE.items()
+                if now - cached_at > _OVERLAY_SIGNAL_CACHE_TTL_SECONDS
+            ]
+            for stale_key in stale_keys:
+                _OVERLAY_SIGNAL_CACHE.pop(stale_key, None)
     return href_scores, ref_scores
 
 

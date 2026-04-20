@@ -13,11 +13,13 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from play_book_studio.config.settings import load_settings
+from play_book_studio.intake.normalization.degraded_pdf import assess_degraded_pdf_payload
 from play_book_studio.intake.normalization.degraded_pdf import (
     attempt_optional_image_markdown_fallback,
     attempt_optional_pdf_markdown_fallback,
     requested_pdf_fallback_backend,
 )
+from play_book_studio.intake.service import evaluate_canonical_book_quality
 
 
 class IntakeDegradedPdfTests(unittest.TestCase):
@@ -68,3 +70,37 @@ class IntakeDegradedPdfTests(unittest.TestCase):
         self.assertEqual("ready", attempt.status)
         self.assertTrue(attempt.used)
         self.assertIn("OCR 성공", attempt.markdown)
+
+    def test_assess_degraded_pdf_payload_marks_flattened_structured_sections_as_degraded(self) -> None:
+        payload = {
+            "source_type": "pdf",
+            "sections": [
+                {
+                    "heading": "YAML 예시",
+                    "text": "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: demo\ndata:\n  key: value",
+                    "block_kinds": ["paragraph"],
+                },
+                {
+                    "heading": "명령",
+                    "text": "oc apply -f config.yaml\nkubectl get configmap demo\nargocd app sync demo",
+                    "block_kinds": ["paragraph"],
+                },
+                {
+                    "heading": "표",
+                    "text": "| 이름 | 값 |\n| --- | --- |\n| key | value |",
+                    "block_kinds": ["paragraph"],
+                },
+                {
+                    "heading": "설명",
+                    "text": "이 문서는 동기화 절차를 설명합니다. 충분히 긴 설명입니다.",
+                    "block_kinds": ["paragraph"],
+                },
+            ],
+        }
+
+        quality = evaluate_canonical_book_quality(payload)
+        degraded = assess_degraded_pdf_payload(payload, quality=quality)
+
+        self.assertIn("structured_blocks_flattened", quality["quality_flags"])
+        self.assertTrue(degraded["degraded_pdf"])
+        self.assertIn("structured_blocks_flattened", degraded["degraded_reasons"])

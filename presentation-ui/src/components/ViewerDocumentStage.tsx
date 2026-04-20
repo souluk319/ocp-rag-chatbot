@@ -89,8 +89,24 @@ const VIEWER_READER_POLISH = `
     border: 1px solid var(--pbs-reader-border) !important;
   }
 
+  .viewer-root .code-block pre,
+  .viewer-root .code-block code,
+  .viewer-root .code-block span,
+  .viewer-root pre,
+  .viewer-root pre code {
+    color: #0f172a !important;
+  }
+
   :host([data-viewer-theme="obsidian"]) .viewer-root .code-block {
     background: rgba(255,255,255,0.03) !important;
+  }
+
+  :host([data-viewer-theme="obsidian"]) .viewer-root .code-block pre,
+  :host([data-viewer-theme="obsidian"]) .viewer-root .code-block code,
+  :host([data-viewer-theme="obsidian"]) .viewer-root .code-block span,
+  :host([data-viewer-theme="obsidian"]) .viewer-root pre,
+  :host([data-viewer-theme="obsidian"]) .viewer-root pre code {
+    color: #e5eef8 !important;
   }
 
   .viewer-root .study-document,
