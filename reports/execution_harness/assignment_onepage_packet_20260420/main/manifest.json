@@ -1,0 +1,27 @@
+{
+  "task_id": "assignment_onepage_packet_20260420",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": false,
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "docs/ocp420_assignment_onepage.md",
+    "reports/execution_harness/assignment_onepage_packet_20260420/*"
+  ],
+  "target_outputs": [
+    "one-page review sheet compresses the validated PBS assignment story into a presentation-safe handout"
+  ],
+  "validation_commands": [
+    "Get-Content docs\\ocp420_assignment_onepage.md"
+  ],
+  "git_ref_snapshot": {
+    "head_ref": "feat/ocp29-presentation-cutdown",
+    "head_sha": "00f5febfe0897c3de4a6ef269d5f6105f1992aa1",
+    "upstream_ref": "origin/main",
+    "upstream_sha": "e87fa0c562c5e277305617e1eea36c112aa01b27",
+    "origin_main_sha": "e87fa0c562c5e277305617e1eea36c112aa01b27"
+  },
+  "status": "completed"
+}
