@@ -672,6 +672,18 @@ body.is-embedded .embedded-section.is-target {
   overflow-wrap: normal;
   word-break: normal;
 }
+.code-block.overflow-toggle.is-wrapped pre,
+.code-block.overflow-wrap pre {
+  white-space: pre-wrap;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.code-block.overflow-toggle.is-wrapped code,
+.code-block.overflow-wrap code {
+  white-space: inherit;
+  overflow-wrap: inherit;
+}
 .code-token.code-key {
   color: #93c5fd;
 }

@@ -134,8 +134,8 @@ export default function PipelineScroller() {
               <div className="step-node"></div>
               <div className="step-card">
                 <span className="step-number text-dim">01.</span>
-                <h3 className="step-title">Multi-Source Capture</h3>
-                <p className="step-desc">공식 문서, 업로드 파일, 선택한 레포지토리 문서를 수집하고 원본과 출처를 함께 고정합니다.</p>
+                <h3 className="step-title">Intake & Discovery (Bronze)</h3>
+                <p className="step-desc">공식 Repo(AsciiDoc) 및 비정형 소스를 하베스팅하고 소스 계보(Lineage)를 고정하는 단계입니다.</p>
               </div>
             </div>
 
@@ -143,8 +143,8 @@ export default function PipelineScroller() {
               <div className="step-node"></div>
               <div className="step-card">
                 <span className="step-number text-dim">02.</span>
-                <h3 className="step-title">Canonical Normalization</h3>
-                <p className="step-desc">HTML, PDF, DOCX, PPTX, XLSX를 정규 섹션으로 바꾸고 명령어, 표, 절차, 앵커와 lineage를 추출합니다.</p>
+                <h3 className="step-title">Canonical Structuring (Silver)</h3>
+                <p className="step-desc">정밀 파싱을 통해 문서를 지식 객체(Structured Book)로 변환하고 한국어 번안을 수행하는 단계입니다.</p>
               </div>
             </div>
 
@@ -152,8 +152,8 @@ export default function PipelineScroller() {
               <div className="step-node"></div>
               <div className="step-card">
                 <span className="step-number text-dim">03.</span>
-                <h3 className="step-title">Approval & Materialization</h3>
-                <p className="step-desc">품질 게이트를 통과한 문서만 Approved Runtime Book으로 승격하고 뷰어와 라이브러리 자산으로 반영합니다.</p>
+                <h3 className="step-title">Synthesis & Enrichment (Gold)</h3>
+                <p className="step-desc">정제된 지식을 트러블슈팅/운영 등 목적별 '플레이북'으로 파생하고 지식 그래프를 구성하는 단계입니다.</p>
               </div>
             </div>
 
@@ -161,8 +161,8 @@ export default function PipelineScroller() {
               <div className="step-node"></div>
               <div className="step-card highlight-card">
                 <span className="step-number gradient-text">04.</span>
-                <h3 className="step-title">Derived Playbook Foundry</h3>
-                <p className="step-desc">승격된 북을 Topic, Operation, Troubleshooting, Policy, Synthesized Playbook으로 파생해 실행형 지식 자산으로 배포합니다.</p>
+                <h3 className="step-title">Judge-Led Release (Gate)</h3>
+                <p className="step-desc">14종 이상의 품질 규칙을 통과한 자산만 최종 라이브 코퍼스와 뷰어로 배포하는 릴리스 가드 단계입니다.</p>
               </div>
             </div>
           </div>

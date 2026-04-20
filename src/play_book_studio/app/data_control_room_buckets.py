@@ -66,6 +66,98 @@ def _safe_float(value: Any) -> float | None:
         return None
 
 
+def _raw_html_meta_path(root: Path, slug: str) -> Path:
+    return root / "data" / "bronze" / "raw_html" / f"{slug}.meta.json"
+
+
+def _first_nonempty(*values: Any) -> str:
+    for value in values:
+        normalized = str(value or "").strip()
+        if normalized:
+            return normalized
+    return ""
+
+
+def _normalize_repo_relative_path(value: str) -> str:
+    normalized = str(value or "").strip().replace("\\", "/").lstrip("/")
+    if not normalized:
+        return ""
+    suffix = Path(normalized).suffix.lower()
+    if suffix:
+        return normalized
+    return f"{normalized.rstrip('/')}/index.adoc"
+
+
+def _repo_blob_href(*, repo_url: str, branch: str, relative_path: str) -> str:
+    repo = str(repo_url or "").strip().rstrip("/")
+    path = _normalize_repo_relative_path(relative_path)
+    if not repo or not path:
+        return ""
+    branch_name = str(branch or "").strip() or "main"
+    return f"{repo}/blob/{branch_name}/{path}"
+
+
+def _official_docs_source_payload(root: Path, *, slug: str, entry: dict[str, Any], settings) -> dict[str, Any]:
+    bronze_meta = _safe_read_json(_raw_html_meta_path(root, slug))
+    current_source_url = _first_nonempty(entry.get("source_url"))
+    fallback_source_url = _first_nonempty(entry.get("fallback_source_url"), bronze_meta.get("fallback_source_url"))
+    homepage_url = _first_nonempty(
+        current_source_url if "docs.redhat.com" in current_source_url else "",
+        fallback_source_url if "docs.redhat.com" in fallback_source_url else "",
+        bronze_meta.get("source_url"),
+        bronze_meta.get("resolved_source_url"),
+        settings.book_url_template.format(slug=slug),
+    )
+    repo_relative_path = _first_nonempty(
+        entry.get("source_relative_path"),
+        *(entry.get("source_relative_paths") or []),
+        bronze_meta.get("source_relative_path"),
+        *(bronze_meta.get("source_relative_paths") or []),
+    )
+    repo_url = _first_nonempty(entry.get("source_repo"), bronze_meta.get("source_repo"))
+    repo_branch = _first_nonempty(entry.get("source_branch"), bronze_meta.get("source_branch"), f"enterprise-{settings.ocp_version}")
+    repo_href = _first_nonempty(
+        current_source_url if "github.com" in current_source_url else "",
+        _repo_blob_href(repo_url=repo_url, branch=repo_branch, relative_path=repo_relative_path),
+    )
+    primary_input_kind = _first_nonempty(entry.get("primary_input_kind"), bronze_meta.get("primary_input_kind"))
+    current_basis = "unknown"
+    if "github.com" in current_source_url or primary_input_kind == "source_repo":
+        current_basis = "official_repo"
+    elif "docs.redhat.com" in current_source_url or primary_input_kind == "html_single":
+        current_basis = "official_homepage"
+    elif repo_href and not homepage_url:
+        current_basis = "official_repo"
+    elif homepage_url and not repo_href:
+        current_basis = "official_homepage"
+    basis_label = {
+        "official_homepage": "공식 홈페이지 기준",
+        "official_repo": "공식 레포 기준",
+    }.get(current_basis, "원천 기준 미기록")
+    return {
+        "current_source_basis": current_basis,
+        "current_source_label": basis_label,
+        "source_options": [
+            {
+                "key": "official_homepage",
+                "label": "공식 홈페이지",
+                "href": homepage_url,
+                "availability": "available" if homepage_url else "missing",
+                "note": "공식 KO published surface · 번역 없이 바로 reader-grade 기준선" if homepage_url else "공식 홈페이지 surface 미확인",
+                "is_current": current_basis == "official_homepage",
+            },
+            {
+                "key": "official_repo",
+                "label": "공식 레포",
+                "href": repo_href,
+                "availability": "available" if repo_href else "missing",
+                "note": "공식 AsciiDoc 원천 · 한국어 surface에서는 번역이 포함될 수 있음" if repo_href else "repo binding 미확정",
+                "is_current": current_basis == "official_repo",
+            },
+        ],
+    }
+
+
 def _markdown_heading_count(path: Path) -> int:
     if not path.exists() or not path.is_file():
         return 0
@@ -132,6 +224,7 @@ def _build_approved_wiki_runtime_book_bucket(root: Path, *, translation_lane_rep
     books: list[dict[str, Any]] = []
     runtime_paths: list[Path] = []
     hidden_books: list[dict[str, Any]] = []
+    seen_slugs: set[str] = set()
     for entry in official_runtime_books(root):
         slug = str(entry.get("book_slug") or "").strip()
         if not slug:
@@ -164,6 +257,7 @@ def _build_approved_wiki_runtime_book_bucket(root: Path, *, translation_lane_rep
             section_count = max(section_count, _markdown_heading_count(runtime_path))
             code_block_count = max(code_block_count, _markdown_code_block_count(runtime_path))
         truth = official_runtime_truth_payload(settings=settings, manifest_entry=entry)
+        source_payload = _official_docs_source_payload(root, slug=slug, entry=entry, settings=settings)
         books.append(
             {
                 "book_slug": slug,
@@ -183,8 +277,48 @@ def _build_approved_wiki_runtime_book_bucket(root: Path, *, translation_lane_rep
                 "boundary_truth": str(truth.get("boundary_truth") or ""),
                 "runtime_truth_label": str(truth.get("runtime_truth_label") or ""),
                 "boundary_badge": str(truth.get("boundary_badge") or ""),
+                **source_payload,
             }
         )
+        seen_slugs.add(slug)
+    approved_manifest_payload = _safe_read_json(settings.source_manifest_path)
+    approved_manifest_entries = approved_manifest_payload.get("entries") if isinstance(approved_manifest_payload.get("entries"), list) else []
+    for entry in approved_manifest_entries:
+        if not isinstance(entry, dict):
+            continue
+        slug = str(entry.get("book_slug") or "").strip()
+        if not slug or slug in seen_slugs:
+            continue
+        if slug in blocked_slugs:
+            continue
+        grade = _latest_runtime_grade(entry)
+        if grade != "Gold":
+            continue
+        truth = official_runtime_truth_payload(settings=settings, manifest_entry=entry)
+        source_payload = _official_docs_source_payload(root, slug=slug, entry=entry, settings=settings)
+        books.append(
+            {
+                "book_slug": slug,
+                "title": str(entry.get("title") or slug),
+                "grade": grade,
+                "review_status": _latest_runtime_review_status(entry, grade=grade),
+                "source_type": str(entry.get("source_type") or "reader_grade_md"),
+                "source_lane": str(entry.get("source_lane") or "approved_wiki_runtime"),
+                "section_count": int(entry.get("section_count") or 0),
+                "code_block_count": int(entry.get("code_block_count") or 0),
+                "viewer_path": str(entry.get("viewer_path") or entry.get("docs_viewer_path") or ""),
+                "source_url": str(entry.get("source_url") or entry.get("source_candidate_path") or ""),
+                "updated_at": str(entry.get("updated_at") or ""),
+                "approval_state": str(truth.get("approval_state") or entry.get("approval_state") or ""),
+                "publication_state": str(truth.get("publication_state") or entry.get("publication_state") or ""),
+                "parser_backend": str(truth.get("parser_backend") or entry.get("parser_backend") or ""),
+                "boundary_truth": str(truth.get("boundary_truth") or ""),
+                "runtime_truth_label": str(truth.get("runtime_truth_label") or ""),
+                "boundary_badge": str(truth.get("boundary_badge") or ""),
+                **source_payload,
+            }
+        )
+        seen_slugs.add(slug)
     if runtime_paths:
         parents = {str(path.parent) for path in runtime_paths}
         selected_dir = sorted(parents)[0] if len(parents) == 1 else str((root / "data" / "wiki_runtime_books").resolve())

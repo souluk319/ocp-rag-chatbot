@@ -11,6 +11,10 @@ from typing import Any
 from play_book_studio.answering.llm import LLMClient
 from play_book_studio.config.settings import Settings
 
+from .ocp_ko_terminology import (
+    normalize_ocp_ko_terminology,
+    ocp_ko_terminology_prompt,
+)
 from .models import (
     AnchorBlock,
     AstBlock,
@@ -30,6 +34,7 @@ UNIT_BATCH_SIZE = 18
 UNIT_BATCH_CHAR_LIMIT = 2600
 MAX_SINGLE_TEXT_CHARS = 1200
 TRANSLATION_BATCH_CONCURRENCY = 4
+OCP_KO_TERMINOLOGY_PROMPT = ocp_ko_terminology_prompt()
 
 
 @dataclass(slots=True, frozen=True)
@@ -233,7 +238,7 @@ def _parse_translated_items(payload: Any) -> dict[str, str]:
         if not isinstance(item, dict):
             continue
         unit_id = str(item.get("id") or "").strip()
-        text = str(item.get("text") or "").strip()
+        text = normalize_ocp_ko_terminology(str(item.get("text") or "").strip())
         if unit_id:
             translated[unit_id] = text
     return translated
@@ -261,6 +266,7 @@ def _translate_unit_batch(client: LLMClient, batch: list[_TextUnit]) -> dict[str
                 "- Keep item count identical.\n"
                 "- Translate only user-facing prose.\n"
                 "- Keep product names, CLI commands, file paths, URLs, YAML/JSON keys, env vars, API names, and inline code literals unchanged when natural.\n"
+                f"{OCP_KO_TERMINOLOGY_PROMPT}\n"
                 "- Do not add explanations.\n"
                 "- Do not wrap the answer in markdown fences."
             ),
@@ -294,7 +300,8 @@ def _translate_single_unit(client: LLMClient, unit: _TextUnit) -> str:
             "content": (
                 "Translate one OpenShift documentation text snippet from English to Korean.\n"
                 "Return JSON only with the same keys: {\"id\":\"...\",\"text\":\"...\"}\n"
-                "Keep commands, file paths, API names, env vars, URLs, and inline code literals unchanged when natural."
+                "Keep commands, file paths, API names, env vars, URLs, and inline code literals unchanged when natural.\n"
+                f"{OCP_KO_TERMINOLOGY_PROMPT}"
             ),
         },
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
@@ -441,7 +448,7 @@ def _translate_units(
 
 def _translated_text(translations: dict[str, str], unit_id: str, default: str) -> str:
     translated = translations.get(unit_id, "").strip()
-    return translated or default
+    return normalize_ocp_ko_terminology(translated or default)
 
 
 def _apply_translations(

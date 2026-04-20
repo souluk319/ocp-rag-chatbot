@@ -358,6 +358,18 @@ new_css = """<style>
             padding: 0;
             color: inherit;
           }
+          .code-block.overflow-toggle.is-wrapped pre,
+          .code-block.overflow-wrap pre {
+            white-space: pre-wrap;
+            overflow-x: hidden;
+            overflow-y: auto;
+            overflow-wrap: anywhere;
+          }
+          .code-block.overflow-toggle.is-wrapped code,
+          .code-block.overflow-wrap code {
+            white-space: inherit;
+            overflow-wrap: inherit;
+          }
           
           /* Notes */
           .note-card {

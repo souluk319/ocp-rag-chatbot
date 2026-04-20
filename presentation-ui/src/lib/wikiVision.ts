@@ -36,14 +36,15 @@ export function loadStoredVisionMode(): VisionMode {
   if (typeof window === 'undefined') {
     return DEFAULT_VISION_MODE;
   }
-  return resolveVisionMode(window.localStorage.getItem(WIKI_VISION_MODE_STORAGE_KEY));
+  window.localStorage.removeItem(WIKI_VISION_MODE_STORAGE_KEY);
+  return DEFAULT_VISION_MODE;
 }
 
-export function persistVisionMode(mode: VisionMode): void {
+export function persistVisionMode(_mode: VisionMode): void {
   if (typeof window === 'undefined') {
     return;
   }
-  window.localStorage.setItem(WIKI_VISION_MODE_STORAGE_KEY, mode);
+  window.localStorage.removeItem(WIKI_VISION_MODE_STORAGE_KEY);
 }
 
 export const WIKI_VISION_MODES: WikiVisionModeDescriptor[] = [

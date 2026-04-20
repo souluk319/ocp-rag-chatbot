@@ -1,12 +1,23 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
+import re
+import subprocess
 
 
 SOURCE_REPO_URL = "https://github.com/openshift/openshift-docs"
 SOURCE_BRANCH = "enterprise-4.20"
 SOURCE_MIRROR_DIRNAME = "openshift-docs-enterprise-4.20"
+OFFICIAL_OCP_DOCS_LICENSE = "OpenShift documentation is licensed under the Apache License 2.0."
+
+DOCS_SOURCE_URL_RE = re.compile(
+    r"^https://docs\.redhat\.com/"
+    r"(?P<lang>ko|en)/documentation/"
+    r"(?P<product>[^/]+)/(?P<version>\d+\.\d+)/"
+    r"html(?:-single)?/(?P<slug>[^/]+)/index$"
+)
 
 MANUAL_PATH_ALIASES: dict[str, str] = {
     "architecture": "architecture/index.adoc",
@@ -228,3 +239,80 @@ def resolve_repo_relative_path(root_dir: Path, slug: str) -> str:
 def resolve_repo_relative_paths(root_dir: Path, slug: str) -> list[str]:
     binding = resolve_repo_binding(root_dir, slug)
     return list(binding.source_relative_paths) if binding is not None else []
+
+
+def derive_official_docs_legal_notice_url(entry) -> str:
+    explicit = str(getattr(entry, "legal_notice_url", "") or "").strip()
+    if explicit:
+        return explicit
+    candidates = (
+        str(getattr(entry, "resolved_source_url", "") or "").strip(),
+        str(getattr(entry, "source_url", "") or "").strip(),
+        str(getattr(entry, "translation_source_url", "") or "").strip(),
+    )
+    for candidate in candidates:
+        match = DOCS_SOURCE_URL_RE.match(candidate)
+        if match is None:
+            continue
+        return (
+            "https://docs.redhat.com/"
+            f"{match.group('lang')}/documentation/{match.group('product')}/{match.group('version')}/"
+            "html/legal_notice/index"
+        )
+    return ""
+
+
+def derive_official_docs_license_or_terms(entry, *, legal_notice_url: str) -> str:
+    explicit = str(getattr(entry, "license_or_terms", "") or "").strip()
+    if explicit:
+        return explicit
+    candidates = (
+        str(getattr(entry, "resolved_source_url", "") or "").strip(),
+        str(getattr(entry, "source_url", "") or "").strip(),
+        str(getattr(entry, "translation_source_url", "") or "").strip(),
+        str(legal_notice_url or "").strip(),
+    )
+    if any(
+        "docs.redhat.com" in candidate and "openshift_container_platform" in candidate
+        for candidate in candidates
+        if candidate
+    ):
+        return OFFICIAL_OCP_DOCS_LICENSE
+    return ""
+
+
+def derive_source_repo_updated_at(
+    root_dir: Path,
+    *,
+    source_relative_paths: tuple[str, ...] | list[str],
+    mirror_root: Path | None = None,
+) -> str:
+    relative_paths = tuple(str(path).strip() for path in source_relative_paths if str(path).strip())
+    if not relative_paths:
+        return ""
+    repo_root = Path(mirror_root or source_mirror_root(root_dir))
+    timestamps: list[str] = []
+    for relative_path in relative_paths:
+        try:
+            result = subprocess.run(
+                ["git", "-C", str(repo_root), "log", "-1", "--format=%cI", "--", relative_path],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except OSError:
+            result = None
+        if result is not None:
+            stamp = str(result.stdout or "").strip()
+            if stamp:
+                timestamps.append(stamp)
+                continue
+        file_path = (repo_root / relative_path).resolve()
+        if file_path.exists():
+            timestamps.append(
+                datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc)
+                .replace(microsecond=0)
+                .isoformat()
+                .replace("+00:00", "Z")
+            )
+    return max(timestamps) if timestamps else ""

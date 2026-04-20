@@ -62,7 +62,7 @@ NODE_RE = re.compile(r"(노드|node|worker)", re.IGNORECASE)
 DRAIN_RE = re.compile(r"(drain|비워|비우|evacuate|점검 때문에 비워)", re.IGNORECASE)
 TOP_RE = re.compile(r"(\btop\b|사용량|cpu|메모리|memory)", re.IGNORECASE)
 HOSTED_CONTROL_PLANE_RE = re.compile(
-    r"(hosted control plane|hosted cluster|호스팅된 컨트롤 플레인|호스트된 컨트롤 플레인|hypershift|oadp|velero)",
+    r"(hosted control plane|hosted cluster|호스팅된 컨트롤 플레인|호스트된 컨트롤 플레인|호스팅 제어 평면|제어 평면|hypershift|oadp|velero)",
     re.IGNORECASE,
 )
 PROJECT_TERMINATING_RE = re.compile(
@@ -84,6 +84,12 @@ OPERATOR_RE = re.compile(
 DOC_LOCATOR_RE = re.compile(
     r"(문서|가이드|어디서|어디 있어|어디를|찾아|찾을|봐야|보려면|보고 싶|참고할)|"
     r"((위키|wiki).*(이동|순서|경로|들어가|찾아가|따라가))",
+    re.IGNORECASE,
+)
+FIRST_STEP_RE = re.compile(
+    r"(가장\s*먼저|맨\s*먼저|처음(?:에는|엔)?|첫\s*(?:단계|번째|순서|행동|확인|명령)|"
+    r"어디부터|뭐부터|무엇부터|먼저\s*(?:뭘|무엇|어떤\s*명령|확인|시작)|"
+    r"first\s+(?:step|command)|start\s+with)",
     re.IGNORECASE,
 )
 SECURITY_SCOPE_RE = re.compile(
@@ -174,6 +180,7 @@ __all__ = [
     "REMAINING_RESOURCE_RE",
     "OPERATOR_RE",
     "DOC_LOCATOR_RE",
+    "FIRST_STEP_RE",
     "SECURITY_SCOPE_RE",
     "EXPLAINER_RE",
     "GENERIC_INTRO_RE",

@@ -9,6 +9,7 @@ from play_book_studio.retrieval.query import (
     detect_out_of_corpus_version,
     detect_unsupported_product,
     has_doc_locator_intent,
+    has_hosted_control_plane_signal,
     has_logging_ambiguity,
     has_multiple_entity_ambiguity,
     has_postinstall_doc_locator_ambiguity,
@@ -205,6 +206,8 @@ def route_non_rag(
             ),
         )
     if has_doc_locator_intent(normalized) or has_rbac_intent(normalized):
+        return None
+    if has_hosted_control_plane_signal(normalized):
         return None
     if _looks_like_light_smalltalk(normalized):
         return RoutedResponse(route="smalltalk", answer=_generic_smalltalk_answer())

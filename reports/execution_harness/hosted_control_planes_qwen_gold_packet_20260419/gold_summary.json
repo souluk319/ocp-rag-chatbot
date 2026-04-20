@@ -1,0 +1,17 @@
+{
+  "book_slug": "hosted_control_planes",
+  "title": "호스팅 제어 평면 개요",
+  "approved_manifest_count": 30,
+  "content_status": "approved_ko",
+  "review_status": "approved",
+  "translation_stage": "approved_ko",
+  "legal_notice_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html/legal_notice/index",
+  "license_or_terms": "OpenShift documentation is licensed under the Apache License 2.0.",
+  "updated_at": "2026-04-10T16:13:01-04:00",
+  "runtime_quality_status": "ready",
+  "runtime_translation_status": "approved_ko",
+  "runtime_section_count": 24,
+  "runtime_source_metadata_legal_notice_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html/legal_notice/index",
+  "runtime_source_metadata_license_or_terms": "OpenShift documentation is licensed under the Apache License 2.0.",
+  "runtime_source_metadata_updated_at": "2026-04-10T16:13:01-04:00"
+}

@@ -1,0 +1,140 @@
+[preflight] shell=pwsh
+[preflight] cwd=C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio
+[preflight] python=C:\Users\soulu\cywell\ocp-play-studio\ocp-play-studio\.venv\\Scripts\\python.exe
+[preflight] git_bash=C:\Program Files\Git\bin\bash.exe
+[preflight] command=promote_translation_gold
+[preflight] write_scope=manifests/ocp_ko_4_20_approved_ko.json;data/gold;reports/execution_harness/hosted_control_planes_qwen_gold_packet_20260419
+[preflight] verify_cmd=python -m py_compile scripts/promote_translation_gold.py src/play_book_studio/ingestion/translation_gold_promotion.py src/play_book_studio/ingestion/translation_draft_generation.py src/play_book_studio/ingestion/source_first.py
+{"stage": "gold_promote", "index": 1, "total": 1, "book_slug": "hosted_control_planes"}
+{"stage": "gold_promote_complete", "index": 1, "total": 1, "book_slug": "hosted_control_planes", "section_count": 24, "chunk_count": 63}
+{"stage": "gold_materialize_start", "promoted_count": 1, "error_count": 0}
+{"stage": "gold_materialize_complete", "promoted_count": 1, "approved_manifest_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\manifests\\ocp_ko_4_20_approved_ko.json", "graph_compact_status": "ok"}
+{"stage": "gold_dossier_complete", "dossier_promoted_count": 0}
+{"stage": "gold_qdrant_start", "chunk_count": 63}
+{"stage": "gold_embed_progress", "completed_batches": 1, "total_batches": 2}
+{"stage": "gold_embed_progress", "completed_batches": 2, "total_batches": 2}
+{"stage": "gold_qdrant_progress", "completed_batches": 1, "total_batches": 1}
+{"stage": "gold_qdrant_complete", "qdrant_upserted_count": 63}
+{"stage": "gold_synthesis_complete", "synthesis_report_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\reports\\build_logs\\synthesis_lane_report.json", "summary": {"approved_runtime_count": 26, "translation_ready_count": 4, "manual_review_ready_count": 0, "corpus_working_count": 30, "playable_book_count": 10, "derived_playbook_count": 0, "approved_manifest_derived_playbook_count": 0, "materialized_derived_playbook_count": 0, "operation_playbook_count": 0, "policy_overlay_book_count": 0, "synthesized_playbook_count": 0, "topic_playbook_count": 0, "troubleshooting_playbook_count": 0}}
+{"stage": "gold_summary", "summary": {"requested_count": 1, "promoted_count": 1, "error_count": 0, "dossier_promoted_count": 0, "qdrant_upserted_count": 63, "graph_compact_ready": true}}
+{
+  "summary": {
+    "requested_count": 1,
+    "promoted_count": 1,
+    "error_count": 0,
+    "dossier_promoted_count": 0,
+    "qdrant_upserted_count": 63,
+    "graph_compact_ready": true
+  },
+  "books": [
+    {
+      "book_slug": "hosted_control_planes",
+      "title": "ȣ���� ���� ��� ����",
+      "section_count": 24,
+      "chunk_count": 63,
+      "translation_source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/hosted_control_planes/index",
+      "promotion_strategy": "translated_gold_manual_synthesis"
+    }
+  ],
+  "errors": [],
+  "graph_compact_refresh": {
+    "status": "ok",
+    "output_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\artifacts\\retrieval\\graph_sidecar_compact.json",
+    "book_count": 1729,
+    "relation_count": 264957,
+    "artifact_status": {
+      "path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\artifacts\\retrieval\\graph_sidecar_compact.json",
+      "exists": true,
+      "size_bytes": 95688490,
+      "mtime": "2026-04-19T22:22:18+09:00",
+      "schema_version": "graph_sidecar_compact_v1",
+      "book_count": 1729,
+      "relation_count": 264957,
+      "state": "fresh",
+      "ready": true,
+      "requires_refresh": false,
+      "newest_source_mtime": "2026-04-19T22:22:10+09:00",
+      "source_artifacts": {
+        "chunks": {
+          "path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\artifacts\\official_lane\\repo_wide_official_source\\chunks.jsonl",
+          "exists": true,
+          "size_bytes": 393610604,
+          "mtime": "2026-04-19T22:21:59+09:00"
+        },
+        "playbook_documents": {
+          "path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\artifacts\\official_lane\\repo_wide_official_source\\playbook_documents.jsonl",
+          "exists": true,
+          "size_bytes": 83273159,
+          "mtime": "2026-04-19T22:22:10+09:00"
+        }
+      },
+      "degrade_mode": "compact_relations"
+    }
+  },
+  "graph_compact_artifact": {
+    "path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\artifacts\\retrieval\\graph_sidecar_compact.json",
+    "exists": true,
+    "size_bytes": 95688490,
+    "mtime": "2026-04-19T22:22:18+09:00",
+    "schema_version": "graph_sidecar_compact_v1",
+    "book_count": 1729,
+    "relation_count": 264957,
+    "state": "fresh",
+    "ready": true,
+    "requires_refresh": false,
+    "newest_source_mtime": "2026-04-19T22:22:10+09:00",
+    "source_artifacts": {
+      "chunks": {
+        "path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\artifacts\\official_lane\\repo_wide_official_source\\chunks.jsonl",
+        "exists": true,
+        "size_bytes": 393610604,
+        "mtime": "2026-04-19T22:21:59+09:00"
+      },
+      "playbook_documents": {
+        "path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\artifacts\\official_lane\\repo_wide_official_source\\playbook_documents.jsonl",
+        "exists": true,
+        "size_bytes": 83273159,
+        "mtime": "2026-04-19T22:22:10+09:00"
+      }
+    },
+    "degrade_mode": "compact_relations"
+  },
+  "output_targets": {
+    "translation_draft_manifest_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\manifests\\ocp_ko_4_20_translated_ko_draft_all_runtime.json",
+    "approved_manifest_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\manifests\\ocp_ko_4_20_approved_ko.json",
+    "normalized_docs": [
+      "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\artifacts\\official_lane\\repo_wide_official_source\\normalized_docs.jsonl",
+      "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\silver\\normalized_docs.jsonl"
+    ],
+    "chunks": [
+      "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\artifacts\\official_lane\\repo_wide_official_source\\chunks.jsonl"
+    ],
+    "bm25_corpus": [
+      "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\artifacts\\official_lane\\repo_wide_official_source\\bm25_corpus.jsonl"
+    ],
+    "playbook_documents": [
+      "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\artifacts\\official_lane\\repo_wide_official_source\\playbook_documents.jsonl"
+    ],
+    "playbook_books": [
+      "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\artifacts\\official_lane\\repo_wide_official_source\\playbooks",
+      "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\gold_manualbook_ko\\playbooks"
+    ],
+    "graph_sidecar_compact_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\artifacts\\retrieval\\graph_sidecar_compact.json"
+  },
+  "synthesis_report_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\reports\\build_logs\\synthesis_lane_report.json",
+  "synthesis_summary": {
+    "approved_runtime_count": 26,
+    "translation_ready_count": 4,
+    "manual_review_ready_count": 0,
+    "corpus_working_count": 30,
+    "playable_book_count": 10,
+    "derived_playbook_count": 0,
+    "approved_manifest_derived_playbook_count": 0,
+    "materialized_derived_playbook_count": 0,
+    "operation_playbook_count": 0,
+    "policy_overlay_book_count": 0,
+    "synthesized_playbook_count": 0,
+    "topic_playbook_count": 0,
+    "troubleshooting_playbook_count": 0
+  }
+}

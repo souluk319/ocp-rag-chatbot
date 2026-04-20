@@ -1,0 +1,45 @@
+{
+  "bronze": {
+    "book_slug": "hosted_control_planes",
+    "title": "호스팅된 컨트롤 플레인",
+    "source_kind": "source-first",
+    "primary_input_kind": "source_repo",
+    "source_lane": "official_source_first",
+    "source_repo": "https://github.com/openshift/openshift-docs",
+    "source_relative_path": "hosted_control_planes/index.adoc",
+    "translation_stage": "translated_ko_draft",
+    "legal_notice_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html/legal_notice/index",
+    "license_or_terms": "OpenShift documentation is licensed under the Apache License 2.0.",
+    "updated_at": "2026-04-10T16:13:01-04:00"
+  },
+  "silver": {
+    "book_slug": "hosted_control_planes",
+    "title": "호스팅 제어 평면 개요",
+    "translation_status": "translated_ko_draft",
+    "section_count": 24,
+    "legal_notice_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html/legal_notice/index",
+    "source_metadata_legal_notice_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html/legal_notice/index",
+    "source_metadata_license_or_terms": "OpenShift documentation is licensed under the Apache License 2.0.",
+    "source_metadata_updated_at": "2026-04-10T16:13:01-04:00",
+    "translation_source_uri": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/hosted_control_planes/index",
+    "source_uri": "https://github.com/openshift/openshift-docs/blob/enterprise-4.20/hosted_control_planes/index.adoc",
+    "review_status": "unreviewed"
+  },
+  "gold": {
+    "book_slug": "hosted_control_planes",
+    "title": "호스팅 제어 평면 개요",
+    "approved_manifest_count": 30,
+    "content_status": "approved_ko",
+    "review_status": "approved",
+    "translation_stage": "approved_ko",
+    "legal_notice_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html/legal_notice/index",
+    "license_or_terms": "OpenShift documentation is licensed under the Apache License 2.0.",
+    "updated_at": "2026-04-10T16:13:01-04:00",
+    "runtime_quality_status": "ready",
+    "runtime_translation_status": "approved_ko",
+    "runtime_section_count": 24,
+    "runtime_source_metadata_legal_notice_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html/legal_notice/index",
+    "runtime_source_metadata_license_or_terms": "OpenShift documentation is licensed under the Apache License 2.0.",
+    "runtime_source_metadata_updated_at": "2026-04-10T16:13:01-04:00"
+  }
+}

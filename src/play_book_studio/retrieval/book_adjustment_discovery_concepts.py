@@ -30,6 +30,22 @@ def apply_concept_discovery_adjustments(
         and COMPARE_RE.search(normalized)
     )
     logging_ambiguity = has_logging_ambiguity(normalized)
+    hosted_control_plane_signal = has_hosted_control_plane_signal(normalized) or has_hosted_control_plane_signal(context_text)
+
+    if hosted_control_plane_signal:
+        boosts["hosted_control_planes"] = max(boosts.get("hosted_control_planes", 1.0), 2.6)
+        boosts["architecture"] = max(boosts.get("architecture", 1.0), 1.14)
+        boosts["overview"] = max(boosts.get("overview", 1.0), 1.06)
+        penalties["installation_overview"] = min(
+            penalties.get("installation_overview", 1.0),
+            0.46,
+        )
+        penalties["updating_clusters"] = min(
+            penalties.get("updating_clusters", 1.0),
+            0.58,
+        )
+        penalties["support"] = min(penalties.get("support", 1.0), 0.62)
+        penalties["operators"] = min(penalties.get("operators", 1.0), 0.72)
 
     if observability_compare:
         boosts["observability_overview"] = max(boosts.get("observability_overview", 1.0), 1.96)

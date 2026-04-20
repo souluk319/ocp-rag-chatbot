@@ -36,6 +36,10 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Ignore existing draft outputs and regenerate selected books from scratch.",
     )
+    parser.add_argument(
+        "--manifest-path",
+        help="Optional manifest path to read instead of the default translation draft manifest.",
+    )
     return parser
 
 
@@ -47,6 +51,7 @@ def main() -> int:
         slugs=[slug.strip() for slug in args.slugs if slug.strip()] or None,
         force_collect=args.force_collect,
         force_regenerate=args.force_regenerate,
+        manifest_path=(Path(args.manifest_path).expanduser().resolve() if args.manifest_path else None),
     )
     report_path = DEFAULT_REPORT_PATH
     report_path.parent.mkdir(parents=True, exist_ok=True)

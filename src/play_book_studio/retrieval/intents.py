@@ -53,6 +53,7 @@ from .intent_patterns import (
     REMAINING_RESOURCE_RE,
     OPERATOR_RE,
     DOC_LOCATOR_RE,
+    FIRST_STEP_RE,
     SECURITY_SCOPE_RE,
     EXPLAINER_RE,
     GENERIC_INTRO_RE,
@@ -66,6 +67,7 @@ from .intent_patterns import (
 from .intent_detectors import __all__ as _DETECTOR_ALL
 from .intent_detectors import (
     has_doc_locator_intent,
+    has_first_step_intent,
     has_update_doc_locator_intent,
     has_pod_pending_troubleshooting_intent,
     has_backup_restore_intent,

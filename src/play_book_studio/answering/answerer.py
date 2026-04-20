@@ -49,7 +49,7 @@ from .citations import (
 )
 from .context import assemble_context
 from .llm import LLMClient
-from .models import AnswerResult
+from .models import AnswerResult, Citation
 from .pipeline_helpers import (
     build_answer_result,
     build_follow_up_clarification_answer,
@@ -190,6 +190,82 @@ def _build_doc_locator_answer(*, query: str, citations: list) -> str | None:
     elif any(token in lowered for token in ("경로", "path", "route")):
         follow_up = " 이 경로를 기준으로 연결 문서와 다음 절차를 이어가면 됩니다 [1]."
     return f"답변: 먼저 `{section_label}` 문서를 여는 것이 맞습니다 [1].{follow_up}"
+
+
+INTRO_PLAYBOOK_ROUTE = (
+    {
+        "book_slug": "overview",
+        "book_title": "개요",
+        "viewer_path": "/playbooks/wiki-runtime/active/overview/index.html",
+        "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/overview/index",
+        "source_label": "개요",
+        "section": "개요",
+    },
+    {
+        "book_slug": "architecture",
+        "book_title": "아키텍처",
+        "viewer_path": "/playbooks/wiki-runtime/active/architecture/index.html",
+        "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/architecture/index",
+        "source_label": "아키텍처",
+        "section": "아키텍처",
+    },
+    {
+        "book_slug": "operators",
+        "book_title": "Operator 운영 플레이북",
+        "viewer_path": "/playbooks/wiki-runtime/active/operators/index.html",
+        "source_url": "https://docs.redhat.com/ko/documentation/openshift_container_platform/4.20/html-single/operators/index",
+        "source_label": "Operator 운영 플레이북",
+        "section": "Operator 운영 플레이북",
+    },
+)
+
+
+def _has_intro_playbook_route_intent(query: str) -> bool:
+    normalized = " ".join(str(query or "").split()).lower()
+    if not normalized:
+        return False
+    has_pack_target = any(token in normalized for token in ("플레이북", "playbook", "문서"))
+    has_intro_signal = any(token in normalized for token in ("입문", "처음", "먼저", "start"))
+    has_count_signal = any(token in normalized for token in ("3개", "세 개", "3권", "세 권", "top 3"))
+    has_route_signal = any(token in normalized for token in ("봐야", "읽", "추천", "알려줘", "추천해"))
+    return has_pack_target and has_intro_signal and has_count_signal and has_route_signal
+
+
+def _build_intro_playbook_route_citations() -> list[Citation]:
+    citations: list[Citation] = []
+    for index, item in enumerate(INTRO_PLAYBOOK_ROUTE, start=1):
+        citations.append(
+            Citation(
+                index=index,
+                chunk_id=f"intro-playbook-route-{item['book_slug']}",
+                book_slug=item["book_slug"],
+                section=item["section"],
+                anchor="",
+                source_url=item["source_url"],
+                viewer_path=item["viewer_path"],
+                excerpt="운영 입문용 기본 Playbook route",
+                section_path=(item["section"],),
+                section_path_label=item["section"],
+                chunk_type="concept",
+                semantic_role="guide",
+                source_collection="core",
+            )
+        )
+    return citations
+
+
+def _build_intro_playbook_route_answer(query: str) -> tuple[str, list[Citation]] | None:
+    if not _has_intro_playbook_route_intent(query):
+        return None
+    citations = _build_intro_playbook_route_citations()
+    answer = (
+        "답변: 운영 입문이면 아래 3권 순서로 시작하는 게 가장 자연스럽습니다.\n\n"
+        "1. `개요`부터 엽니다. 제품 범위와 기본 용어를 먼저 잡는 단계입니다 [1].\n"
+        "2. `아키텍처`로 넘어갑니다. 클러스터 구성과 핵심 컴포넌트가 어떻게 맞물리는지 이해하는 단계입니다 [2].\n"
+        "3. `Operator 운영 플레이북`으로 마무리합니다. 실제 운영 흐름을 붙이기 좋은 출발점입니다 [3].\n\n"
+        "읽는 순서도 그대로 `개요 -> 아키텍처 -> Operator 운영 플레이북`으로 가면 됩니다 [1] [2] [3]."
+    )
+    return answer, citations
 
 
 def _allow_single_citation_fallback(*, query: str, citations: list) -> bool:
@@ -675,6 +751,41 @@ class ChatAnswerer:
                     "답변: 현재 Playbook Library에 해당 자료가 없습니다. "
                     "자료 추가가 필요합니다."
                 ),
+                warnings=warnings,
+                retrieval_trace=retrieval.trace,
+                pipeline_events=pipeline_events,
+                pipeline_timings_ms=pipeline_timings_ms,
+                selected_hits=selected_hits,
+            )
+
+        intro_playbook_route = _build_intro_playbook_route_answer(query)
+        if intro_playbook_route is not None:
+            answer_text, route_citations = intro_playbook_route
+            answer_text, final_citations, cited_indices = finalize_citations(
+                answer_text,
+                route_citations,
+            )
+            pipeline_timings_ms["total"] = round(
+                (time.perf_counter() - answer_started_at) * 1000,
+                1,
+            )
+            emit(
+                {
+                    "step": "deterministic_answer",
+                    "label": "입문 Playbook route 정리 완료",
+                    "status": "done",
+                    "detail": f"추천 3권, 총 {pipeline_timings_ms['total']}ms",
+                    "duration_ms": pipeline_timings_ms["total"],
+                }
+            )
+            return build_answer_result(
+                query=query,
+                mode=mode,
+                answer=answer_text,
+                rewritten_query=retrieval.rewritten_query,
+                response_kind="rag",
+                citations=final_citations,
+                cited_indices=cited_indices,
                 warnings=warnings,
                 retrieval_trace=retrieval.trace,
                 pipeline_events=pipeline_events,

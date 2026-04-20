@@ -1,0 +1,59 @@
+{
+  "summary": {
+    "requested_count": 1,
+    "generated_count": 1,
+    "reused_count": 0,
+    "error_count": 0,
+    "section_count": 24,
+    "chunk_count": 63,
+    "draft_manualbook_failing_book_count": 0
+  },
+  "books": [
+    {
+      "book_slug": "hosted_control_planes",
+      "section_count": 24,
+      "chunk_count": 63,
+      "title": "호스팅 제어 평면 개요",
+      "translation_status": "translated_ko_draft",
+      "resume_state": "generated"
+    }
+  ],
+  "errors": [],
+  "draft_manualbook_audit": {
+    "book_count": 1,
+    "failing_book_count": 0,
+    "warning_book_count": 0,
+    "failing_books": [],
+    "warning_books": [],
+    "worst_books": [
+      {
+        "book_slug": "hosted_control_planes",
+        "title": "호스팅 제어 평면 개요",
+        "translation_status": "translated_ko_draft",
+        "source_type": "official_doc",
+        "source_lane": "official_source_first",
+        "section_count": 24,
+        "known_semantic_role_count": 24,
+        "unknown_section_share": 0.0,
+        "procedure_section_share": 0.5417,
+        "english_heading_ratio": 0.0833,
+        "code_block_count": 1,
+        "semantic_role_coverage_ok": true,
+        "heading_language_ok": true,
+        "heading_language_warning": false,
+        "heading_gate_exempt": false
+      }
+    ],
+    "checks": {
+      "playbook_semantic_roles_valid": true,
+      "playbook_korean_headings_valid": true
+    }
+  },
+  "output_targets": {
+    "translation_draft_manifest_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\manifests\\ocp_ko_4_20_translated_ko_draft_all_runtime.json",
+    "normalized_docs_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\silver_ko\\translation_drafts\\normalized_docs.jsonl",
+    "chunks_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\silver_ko\\translation_drafts\\chunks.jsonl",
+    "playbook_documents_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\silver_ko\\translation_drafts\\playbook_documents.jsonl",
+    "playbook_books_dir": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\data\\silver_ko\\translation_drafts\\playbooks"
+  }
+}

@@ -56,8 +56,8 @@ export default function Hero() {
           <span className="gradient-text">Studio.</span>
         </h1>
         <p className="text-subtitle hero-subtitle">
-          공식 문서를 실행형 플레이북으로.<br />
-          근거와 챗봇을 연결하는 지능형 데이터 제련소.
+          복잡한 매뉴얼을 실행 가능한 지식으로.<br />
+          질문하면 답하고, 바로 쓸 수 있는 플레이북을 만듭니다.
         </p>
 
         <div className="hero-actions">

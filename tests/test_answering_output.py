@@ -40,7 +40,9 @@ from _support_answering import (
     strip_weak_additional_guidance,
     summarize_session_context,
 )
+from play_book_studio.answering.answer_text_commands import guard_first_step_grounding
 from play_book_studio.answering.answerer import _prune_provenance_noise_citations
+from play_book_studio.answering.context import assemble_context
 
 class TestAnsweringOutput(unittest.TestCase):
     def test_normalize_answer_text_enforces_single_answer_prefix(self) -> None:
@@ -159,6 +161,36 @@ class TestAnsweringOutput(unittest.TestCase):
         self.assertIn("현재 주제: etcd 백업", summary)
         self.assertIn("열린 엔터티: etcd", summary)
         self.assertIn("미해결 질문: 복원 절차", summary)
+
+    def test_assemble_context_surfaces_ordered_cli_commands_for_prompt_grounding(self) -> None:
+        hit = RetrievalHit(
+            chunk_id="control-plane-first-step",
+            book_slug="postinstallation_configuration",
+            chapter="postinstallation_configuration",
+            section="4.5.1. 클러스터에 컨트롤 플레인 노드 추가",
+            anchor="adding-control-plane-node",
+            source_url="https://example.com/postinstall",
+            viewer_path="/docs/postinstall.html#adding-control-plane-node",
+            text="새 컨트롤 플레인 노드에 대해 보류 중인 CSR을 검색한 뒤 승인합니다.",
+            source="hybrid",
+            raw_score=1.0,
+            fused_score=1.0,
+            cli_commands=(
+                "oc get csr | grep Pending",
+                "oc adm certificate approve <csr-name>",
+                "oc get nodes",
+            ),
+        )
+
+        bundle = assemble_context(
+            [hit],
+            query="컨트롤 플레인 노드 추가 후 가장 먼저 어떤 명령어로 확인해?",
+            max_chunks=1,
+        )
+
+        self.assertIn("ordered_cli_commands:", bundle.prompt_context)
+        self.assertIn("- step 1: oc get csr | grep Pending", bundle.prompt_context)
+        self.assertIn("- step 2: oc adm certificate approve <csr-name>", bundle.prompt_context)
 
     def test_finalize_citations_collapses_duplicate_targets(self) -> None:
         citations = [
@@ -707,6 +739,56 @@ class TestAnsweringOutput(unittest.TestCase):
         self.assertIn("```bash\noc adm policy add-role-to-user admin alice -n joe\n```", result.answer)
         self.assertEqual(2, result.answer.count("```bash"))
 
+    def test_answerer_keeps_namespace_admin_assignment_for_first_step_wording(self) -> None:
+        class _NamespaceAdminRetriever:
+            def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
+                hit = RetrievalHit(
+                    chunk_id="rbac-admin-command",
+                    book_slug="authentication_and_authorization",
+                    chapter="authentication_and_authorization",
+                    section="9.6. 사용자 역할 추가",
+                    anchor="adding-user-role",
+                    source_url="https://example.com/auth",
+                    viewer_path="/docs/auth.html#adding-user-role",
+                    text=(
+                        "oc adm policy add-role-to-user admin <user> -n <project>\n"
+                        "예를 들면 oc adm policy add-role-to-user admin alice -n joe\n"
+                        "적용 후에는 oc describe rolebinding.rbac -n <project> 로 확인할 수 있습니다."
+                    ),
+                    source="hybrid",
+                    raw_score=1.0,
+                    fused_score=1.0,
+                )
+                return RetrievalResult(
+                    query=query,
+                    normalized_query=query,
+                    rewritten_query=query,
+                    top_k=top_k,
+                    candidate_k=candidate_k,
+                    context=(context or SessionContext()).to_dict(),
+                    hits=[hit],
+                    trace={"warnings": [], "timings_ms": {"bm25_search": 1.0}},
+                )
+
+        class _NamespaceNarrativeLLMClient:
+            def generate(self, messages, trace_callback=None):  # noqa: ANN001
+                return "답변: 먼저 rolebinding을 확인하면 됩니다."
+
+        settings = Settings(root_dir=ROOT)
+        answerer = ChatAnswerer(
+            settings=settings,
+            retriever=_NamespaceAdminRetriever(),
+            llm_client=_NamespaceNarrativeLLMClient(),
+        )
+
+        result = answerer.answer(
+            "특정 namespace에 admin 권한을 주려면 어떤 절차를 먼저 확인해야 하냐?",
+            mode="ops",
+        )
+
+        self.assertIn("oc adm policy add-role-to-user admin <user> -n <project>", result.answer)
+        self.assertNotIn("oc describe rolebinding.rbac -n <project>", result.answer)
+
     def test_answerer_shapes_concrete_namespace_admin_follow_up_with_target_substitution(self) -> None:
         class _NamespaceAdminRetriever:
             def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
@@ -757,6 +839,56 @@ class TestAnsweringOutput(unittest.TestCase):
         self.assertIn("```bash\noc adm policy add-role-to-user admin kugnus -n cywell\n```", result.answer)
         self.assertIn("```bash\noc adm policy add-role-to-user admin <user> -n <project>\n```", result.answer)
         self.assertEqual(2, result.answer.count("```bash"))
+
+    def test_answerer_keeps_target_substitution_for_namespace_admin_first_step_wording(self) -> None:
+        class _NamespaceAdminRetriever:
+            def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
+                hit = RetrievalHit(
+                    chunk_id="rbac-admin-command",
+                    book_slug="authentication_and_authorization",
+                    chapter="authentication_and_authorization",
+                    section="9.6. 사용자 역할 추가",
+                    anchor="adding-user-role",
+                    source_url="https://example.com/auth",
+                    viewer_path="/docs/auth.html#adding-user-role",
+                    text=(
+                        "oc adm policy add-role-to-user admin <user> -n <project>\n"
+                        "예를 들면 oc adm policy add-role-to-user admin alice -n joe\n"
+                        "적용 후에는 oc describe rolebinding.rbac -n <project> 로 확인할 수 있습니다."
+                    ),
+                    source="hybrid",
+                    raw_score=1.0,
+                    fused_score=1.0,
+                )
+                return RetrievalResult(
+                    query=query,
+                    normalized_query=query,
+                    rewritten_query=query,
+                    top_k=top_k,
+                    candidate_k=candidate_k,
+                    context=(context or SessionContext()).to_dict(),
+                    hits=[hit],
+                    trace={"warnings": [], "timings_ms": {"bm25_search": 1.0}},
+                )
+
+        class _NamespaceNarrativeLLMClient:
+            def generate(self, messages, trace_callback=None):  # noqa: ANN001
+                return "답변: 먼저 rolebinding을 확인하면 됩니다."
+
+        settings = Settings(root_dir=ROOT)
+        answerer = ChatAnswerer(
+            settings=settings,
+            retriever=_NamespaceAdminRetriever(),
+            llm_client=_NamespaceNarrativeLLMClient(),
+        )
+
+        result = answerer.answer(
+            "예를들어 cywell 프로젝트의 kugnus 사용자에게 어드민 역할을 주려면 먼저 어떤 명령어부터 보면 돼?",
+            mode="ops",
+        )
+
+        self.assertIn("```bash\noc adm policy add-role-to-user admin kugnus -n cywell\n```", result.answer)
+        self.assertNotIn("oc describe rolebinding.rbac -n cywell", result.answer)
 
     def test_answerer_does_not_hijack_etcd_follow_up_into_rbac_answer(self) -> None:
         class _EtcdBackupTroubleshootingRetriever:
@@ -1260,6 +1392,93 @@ class TestAnsweringOutput(unittest.TestCase):
 
         self.assertIn("[1]", result.answer)
         self.assertNotIn("[2]", result.answer)
+        self.assertEqual([1], result.cited_indices)
+        self.assertEqual(1, len(result.citations))
+
+    def test_guard_first_step_grounding_rewrites_later_step_command(self) -> None:
+        citations = [
+            Citation(
+                index=1,
+                chunk_id="control-plane-first-step",
+                book_slug="postinstallation_configuration",
+                section="4.5.1. 클러스터에 컨트롤 플레인 노드 추가",
+                anchor="adding-control-plane-node",
+                source_url="https://example.com/postinstall",
+                viewer_path="/docs/postinstall.html#adding-control-plane-node",
+                excerpt="보류 중인 CSR을 먼저 검색한 뒤 승인하고, 그 다음에 노드 상태를 확인합니다.",
+                cli_commands=(
+                    "oc get csr | grep Pending",
+                    "oc adm certificate approve <csr-name>",
+                    "oc get nodes",
+                ),
+            )
+        ]
+
+        updated = guard_first_step_grounding(
+            "답변: 가장 먼저 아래 명령으로 노드 상태를 확인하면 됩니다 [1].\n\n"
+            "```bash\noc get nodes\n```",
+            query="베어 메탈 클러스터에 컨트롤 플레인 노드를 추가한 뒤 가장 먼저 어떤 명령어로 확인해야 해?",
+            citations=citations,
+        )
+
+        self.assertIn("oc get csr | grep Pending", updated)
+        self.assertNotIn("```bash\noc get nodes\n```", updated)
+
+    def test_answerer_prefers_first_ordered_procedure_command_for_first_step_query(self) -> None:
+        class _ControlPlaneFirstStepRetriever:
+            def retrieve(self, query, context, top_k, candidate_k, trace_callback=None):  # noqa: ANN001
+                hit = RetrievalHit(
+                    chunk_id="control-plane-first-step",
+                    book_slug="postinstallation_configuration",
+                    chapter="postinstallation_configuration",
+                    section="4.5.1. 클러스터에 컨트롤 플레인 노드 추가",
+                    anchor="adding-control-plane-node",
+                    source_url="https://example.com/postinstall",
+                    viewer_path="/docs/postinstall.html#adding-control-plane-node",
+                    text=(
+                        "다음 명령을 입력하여 새 컨트롤 플레인 노드에 대해 보류 중인 CSR을 검색합니다. "
+                        "그 다음에는 모든 CSR을 승인하고 마지막에 노드 상태를 확인합니다."
+                    ),
+                    source="hybrid",
+                    raw_score=1.0,
+                    fused_score=1.0,
+                    semantic_role="procedure",
+                    cli_commands=(
+                        "oc get csr | grep Pending",
+                        "oc adm certificate approve <csr-name>",
+                        "oc get nodes",
+                    ),
+                )
+                return RetrievalResult(
+                    query=query,
+                    normalized_query=query,
+                    rewritten_query=query,
+                    top_k=top_k,
+                    candidate_k=candidate_k,
+                    context=(context or SessionContext()).to_dict(),
+                    hits=[hit],
+                    trace={"warnings": [], "timings_ms": {"bm25_search": 1.0}},
+                )
+
+        class _ExplodingFirstStepLLMClient:
+            def generate(self, messages, trace_callback=None):  # noqa: ANN001
+                raise AssertionError("LLM should not be called for grounded first-step answers")
+
+        settings = Settings(root_dir=ROOT)
+        answerer = ChatAnswerer(
+            settings=settings,
+            retriever=_ControlPlaneFirstStepRetriever(),
+            llm_client=_ExplodingFirstStepLLMClient(),
+        )
+
+        result = answerer.answer(
+            "베어 메탈 클러스터에 컨트롤 플레인 노드를 추가한 뒤 가장 먼저 어떤 명령어로 확인해야 해?",
+            mode="ops",
+        )
+
+        self.assertEqual("rag", result.response_kind)
+        self.assertIn("oc get csr | grep Pending", result.answer)
+        self.assertNotIn("```bash\noc get nodes\n```", result.answer)
         self.assertEqual([1], result.cited_indices)
         self.assertEqual(1, len(result.citations))
 

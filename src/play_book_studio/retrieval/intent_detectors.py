@@ -53,6 +53,7 @@ from .intent_patterns import (
     REMAINING_RESOURCE_RE,
     OPERATOR_RE,
     DOC_LOCATOR_RE,
+    FIRST_STEP_RE,
     SECURITY_SCOPE_RE,
     EXPLAINER_RE,
     GENERIC_INTRO_RE,
@@ -70,6 +71,10 @@ from .intent_patterns import (
 
 def has_doc_locator_intent(query: str) -> bool:
     return bool(DOC_LOCATOR_RE.search(query or ""))
+
+
+def has_first_step_intent(query: str) -> bool:
+    return bool(FIRST_STEP_RE.search(query or ""))
 
 
 def has_update_doc_locator_intent(query: str) -> bool:
@@ -403,6 +408,7 @@ def has_explicit_topic_signal(query: str) -> bool:
 
 __all__ = [
     "has_doc_locator_intent",
+    "has_first_step_intent",
     "has_update_doc_locator_intent",
     "has_pod_pending_troubleshooting_intent",
     "has_backup_restore_intent",

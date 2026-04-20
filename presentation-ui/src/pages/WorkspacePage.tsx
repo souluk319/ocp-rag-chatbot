@@ -25,7 +25,6 @@ import {
   WrapText,
   Star,
   Clock3,
-  NotebookPen,
   Compass,
 } from 'lucide-react';
 import gsap from 'gsap';
@@ -44,9 +43,14 @@ import {
   type WikiOverlayRecommendedPlay,
   type WikiOverlaySignalsResponse,
   type SourceMetaResponse,
+  type WikiAnnotationTool,
+  type WikiEditedTextStyle,
+  type WikiInkColorId,
   type WikiInkStroke,
   type WikiOverlayRecord,
   type WikiOverlayTargetKind,
+  type WikiTextAnnotation,
+  type WikiTextAnnotationMode,
   type ViewerPageMode,
   captureCustomerPackDraft,
   formatBytes,
@@ -92,7 +96,13 @@ interface OverlayTargetDescriptor {
   payload: Record<string, unknown>;
 }
 
+interface ViewerActiveSection {
+  anchor: string;
+  title: string;
+}
+
 type LeftPanelMode = 'history' | 'outline' | 'signals';
+type SignalsFavoriteFilter = 'favorites' | 'edited';
 interface OutlineLinkItem {
   id: string;
   label: string;
@@ -134,6 +144,143 @@ const OUTLINE_CATEGORY_RULES: Array<{
   ];
 
 const OUTLINE_CATEGORY_COLLAPSED = '__collapsed__';
+const DEFAULT_EDITED_TEXT_STYLE: WikiEditedTextStyle = {
+  tone: 'amber',
+  size: 'md',
+  weight: 'regular',
+};
+
+function normalizeEditedTextStyle(value?: Partial<WikiEditedTextStyle> | null): WikiEditedTextStyle {
+  const tone = String(value?.tone || '').trim().toLowerCase();
+  const size = String(value?.size || '').trim().toLowerCase();
+  const weight = String(value?.weight || '').trim().toLowerCase();
+  return {
+    tone:
+      tone === 'ink'
+      || tone === 'teal'
+      || tone === 'amber'
+      || tone === 'cyan'
+      || tone === 'rose'
+      || tone === 'violet'
+      || tone === 'lime'
+        ? tone
+        : DEFAULT_EDITED_TEXT_STYLE.tone,
+    size: size === 'sm' || size === 'lg' || size === 'md' ? size : DEFAULT_EDITED_TEXT_STYLE.size,
+    weight: weight === 'strong' || weight === 'regular' ? weight : DEFAULT_EDITED_TEXT_STYLE.weight,
+  };
+}
+
+function normalizeAnnotationRatio(value: unknown, fallback: number): number {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return fallback;
+  }
+  return Math.max(0, Math.min(1, numeric));
+}
+
+function createTextAnnotationId(): string {
+  if (typeof globalThis !== 'undefined' && 'crypto' in globalThis && typeof globalThis.crypto?.randomUUID === 'function') {
+    return `ant-${globalThis.crypto.randomUUID().slice(0, 8)}`;
+  }
+  return `ant-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function overlayAnchorFromTargetRef(targetRef: string): string {
+  const normalized = String(targetRef || '').trim();
+  if (!normalized.startsWith('section:') || !normalized.includes('#')) {
+    return '';
+  }
+  return normalized.split('#').slice(1).join('#').trim();
+}
+
+function annotationColorIdToTone(colorId: WikiInkColorId): WikiEditedTextStyle['tone'] {
+  const normalized = String(colorId || '').trim().toLowerCase();
+  if (
+    normalized === 'amber'
+    || normalized === 'ink'
+    || normalized === 'teal'
+    || normalized === 'cyan'
+    || normalized === 'rose'
+    || normalized === 'violet'
+    || normalized === 'lime'
+  ) {
+    return normalized;
+  }
+  return DEFAULT_EDITED_TEXT_STYLE.tone;
+}
+
+function normalizeTextAnnotation(
+  value: Partial<WikiTextAnnotation> | null | undefined,
+  fallbackAnchor: string,
+): WikiTextAnnotation | null {
+  const kind = String(value?.kind || '').trim().toLowerCase();
+  if (kind !== 'add' && kind !== 'edit') {
+    return null;
+  }
+  const text = String(value?.text || '').trim();
+  if (!text) {
+    return null;
+  }
+  const anchor = String(value?.anchor || fallbackAnchor || '').trim();
+  if (!anchor) {
+    return null;
+  }
+  const annotationId = String(value?.annotation_id || '').trim() || createTextAnnotationId();
+  const blockPath = String(value?.block_path || '').trim();
+  if (kind === 'edit' && !blockPath) {
+    return null;
+  }
+  return {
+    annotation_id: annotationId,
+    kind,
+    anchor,
+    text,
+    style: normalizeEditedTextStyle(value?.style),
+    x_ratio: normalizeAnnotationRatio(value?.x_ratio, 0.08),
+    y_ratio: normalizeAnnotationRatio(value?.y_ratio, 0.12),
+    block_path: blockPath,
+  };
+}
+
+function extractTextAnnotations(
+  value?: Pick<WikiOverlayRecord, 'text_annotations' | 'payload' | 'body' | 'text_style' | 'target_ref'> | null,
+  fallbackAnchor = '',
+): WikiTextAnnotation[] {
+  if (!value) {
+    return [];
+  }
+  const anchor = String(fallbackAnchor || overlayAnchorFromTargetRef(value.target_ref || '')).trim();
+  const payload = value.payload && typeof value.payload === 'object'
+    ? value.payload as Record<string, unknown>
+    : {};
+  const rawAnnotations = Array.isArray(value.text_annotations)
+    ? value.text_annotations
+    : Array.isArray(payload.text_annotations)
+      ? payload.text_annotations as Partial<WikiTextAnnotation>[]
+      : [];
+  const normalized = rawAnnotations
+    .map((item) => normalizeTextAnnotation(item, anchor))
+    .filter((item): item is WikiTextAnnotation => Boolean(item));
+  if (normalized.length > 0) {
+    return normalized;
+  }
+  const legacyBody = String(value.body || '').trim();
+  if (!legacyBody || !anchor) {
+    return [];
+  }
+  return [
+    {
+      annotation_id: `legacy-${anchor}`,
+      kind: 'add',
+      anchor,
+      text: legacyBody,
+      style: normalizeEditedTextStyle(value.text_style),
+      x_ratio: 0.08,
+      y_ratio: 0.12,
+      block_path: '',
+    },
+  ];
+}
 
 const STARTER_QUESTION_POOL = [
   '운영 입문 기준으로 먼저 봐야 할 플레이북 3개 알려줘',
@@ -1522,7 +1669,6 @@ export default function WorkspacePage() {
   const [activeSourceId, setActiveSourceId] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewState>({ kind: 'empty' });
   const [viewerPageMode, setViewerPageMode] = useState<ViewerPageMode>('single');
-  const [isUploading, setIsUploading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isNormalizing, setIsNormalizing] = useState(false);
@@ -1563,9 +1709,14 @@ export default function WorkspacePage() {
   const [wikiOverlaySignals, setWikiOverlaySignals] = useState<WikiOverlaySignalsResponse | null>(null);
   const [isOverlayLoading, setIsOverlayLoading] = useState(false);
   const [isOverlaySaving, setIsOverlaySaving] = useState(false);
-  const [noteDraft, setNoteDraft] = useState('');
-  const [noteOpen, setNoteOpen] = useState(false);
+  const [annotationEnabled, setAnnotationEnabled] = useState(false);
+  const [annotationTool, setAnnotationTool] = useState<WikiAnnotationTool>('text');
+  const [annotationColorId, setAnnotationColorId] = useState<WikiInkColorId>('amber');
+  const [textAnnotationMode, setTextAnnotationMode] = useState<WikiTextAnnotationMode>('add');
+  const [annotationTextStyle, setAnnotationTextStyle] = useState<WikiEditedTextStyle>(DEFAULT_EDITED_TEXT_STYLE);
   const [quickNavOpen, setQuickNavOpen] = useState(false);
+  const [viewerActiveSection, setViewerActiveSection] = useState<ViewerActiveSection | null>(null);
+  const [signalsFavoriteFilter, setSignalsFavoriteFilter] = useState<SignalsFavoriteFilter>('favorites');
 
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1980,14 +2131,14 @@ export default function WorkspacePage() {
       return null;
     }
     if (preview.kind === 'viewer' && viewerPageMode === 'multi' && preview.viewerDocument?.html) {
-      const visibleSection = extractVisibleViewerSection(preview.viewerDocument.html);
+      const visibleSection = viewerActiveSection ?? extractVisibleViewerSection(preview.viewerDocument.html);
       if (visibleSection && currentViewerPath) {
         const sectionViewerPath = `${currentViewerPath.split('#', 1)[0]}#${visibleSection.anchor}`;
         return buildOverlayTargetFromViewerPath(sectionViewerPath, visibleSection.title);
       }
     }
     return buildOverlayTargetFromViewerPath(preview.viewerUrl, preview.title);
-  }, [currentViewerPath, preview, viewerPageMode]);
+  }, [currentViewerPath, preview, viewerActiveSection, viewerPageMode]);
 
   const favoriteOverlays = useMemo(
     () => wikiOverlays.filter((item) => item.kind === 'favorite'),
@@ -2005,6 +2156,58 @@ export default function WorkspacePage() {
     () => wikiOverlays.filter((item) => item.kind === 'ink'),
     [wikiOverlays],
   );
+  const editedCardOverlays = useMemo(
+    () => wikiOverlays.filter((item) => item.kind === 'edited_card'),
+    [wikiOverlays],
+  );
+  const editedCardOverlayByTarget = useMemo(
+    () => new Map(editedCardOverlays.map((item) => [item.target_ref, item])),
+    [editedCardOverlays],
+  );
+  const noteOverlayByTarget = useMemo(
+    () => new Map(noteOverlays.map((item) => [item.target_ref, item])),
+    [noteOverlays],
+  );
+  const inkOverlayByTarget = useMemo(
+    () => new Map(inkOverlays.map((item) => [item.target_ref, item])),
+    [inkOverlays],
+  );
+  const currentPreviewBookSlug = useMemo(() => {
+    if (preview.kind === 'viewer') {
+      return String(preview.meta?.book_slug || '').trim();
+    }
+    return '';
+  }, [preview]);
+  const sectionTextAnnotationsByAnchor = useMemo<Record<string, WikiTextAnnotation[]>>(() => {
+    if (!currentPreviewBookSlug) {
+      return {};
+    }
+    const next: Record<string, WikiTextAnnotation[]> = {};
+    editedCardOverlays.forEach((item) => {
+      if (item.target_kind !== 'section' || item.book_slug !== currentPreviewBookSlug) {
+        return;
+      }
+      const anchor = String(item.source_anchor || overlayAnchorFromTargetRef(item.target_ref)).trim();
+      const annotations = extractTextAnnotations(item, anchor);
+      if (anchor && annotations.length > 0) {
+        next[anchor] = annotations;
+      }
+    });
+    noteOverlays.forEach((item) => {
+      if (item.target_kind !== 'section' || item.book_slug !== currentPreviewBookSlug) {
+        return;
+      }
+      const anchor = overlayAnchorFromTargetRef(item.target_ref);
+      if (!anchor || next[anchor]?.length) {
+        return;
+      }
+      const annotations = extractTextAnnotations(item, anchor);
+      if (annotations.length > 0) {
+        next[anchor] = annotations;
+      }
+    });
+    return next;
+  }, [currentPreviewBookSlug, editedCardOverlays, noteOverlays]);
   const personalizedNextPlays = useMemo<WikiOverlayRecommendedPlay[]>(
     () => wikiOverlaySignals?.user_focus?.recommended_next_plays ?? [],
     [wikiOverlaySignals],
@@ -2021,17 +2224,17 @@ export default function WorkspacePage() {
       ) ?? null,
     [currentOverlayTarget, wikiOverlays],
   );
-  const currentNote = useMemo(
-    () => noteOverlays.find((item) => item.target_ref === currentOverlayTarget?.ref) ?? null,
-    [currentOverlayTarget, noteOverlays],
+  const currentLegacyInk = useMemo(
+    () => (currentOverlayTarget ? inkOverlayByTarget.get(currentOverlayTarget.ref) ?? null : null),
+    [currentOverlayTarget, inkOverlayByTarget],
   );
-  const currentInk = useMemo(
-    () => inkOverlays.find((item) => item.target_ref === currentOverlayTarget?.ref) ?? null,
-    [currentOverlayTarget, inkOverlays],
+  const currentEditedCard = useMemo(
+    () => (currentOverlayTarget ? editedCardOverlayByTarget.get(currentOverlayTarget.ref) ?? null : null),
+    [currentOverlayTarget, editedCardOverlayByTarget],
   );
   const currentInkStrokes = useMemo<WikiInkStroke[]>(
-    () => currentInk?.strokes ?? [],
-    [currentInk],
+    () => currentEditedCard?.strokes ?? currentLegacyInk?.strokes ?? [],
+    [currentEditedCard?.strokes, currentLegacyInk?.strokes],
   );
 
   function mergeDraft(nextDraft: CustomerPackDraft, currentDrafts: CustomerPackDraft[] = drafts): CustomerPackDraft[] {
@@ -2133,8 +2336,30 @@ export default function WorkspacePage() {
   }
 
   useEffect(() => {
-    setNoteDraft(currentNote?.body ?? '');
-  }, [currentNote?.body, currentOverlayTarget?.ref]);
+    const nextTone = annotationColorIdToTone(annotationColorId);
+    setAnnotationTextStyle((current) => (
+      current.tone === nextTone
+        ? current
+        : { ...current, tone: nextTone }
+    ));
+  }, [annotationColorId]);
+
+  useEffect(() => {
+    if (preview.kind !== 'viewer' || viewerPageMode !== 'multi') {
+      setViewerActiveSection(null);
+      setAnnotationEnabled(false);
+      return;
+    }
+    setViewerActiveSection((current) => {
+      if (currentViewerPath.includes('#')) {
+        const anchor = currentViewerPath.split('#').slice(1).join('#').trim();
+        if (anchor && current?.anchor !== anchor) {
+          return { anchor, title: current?.title || anchor };
+        }
+      }
+      return current;
+    });
+  }, [currentViewerPath, preview.kind, viewerPageMode]);
 
   useEffect(() => {
     setQuickNavOpen(false);
@@ -2362,27 +2587,98 @@ export default function WorkspacePage() {
     }
   }
 
-  async function handleSaveCurrentNote(): Promise<void> {
-    if (!currentOverlayTarget) {
-      return;
+  function buildSectionOverlayTarget(anchor: string, title: string): OverlayTargetDescriptor | null {
+    const normalizedAnchor = String(anchor || '').trim();
+    if (!normalizedAnchor) {
+      return null;
     }
-    const body = noteDraft.trim();
+    const baseViewerPath = currentViewerPath
+      ? currentViewerPath.split('#', 1)[0]
+      : preview.kind === 'viewer' || preview.kind === 'draft'
+        ? runtimePathFromUrl(preview.viewerUrl).split('#', 1)[0]
+        : '';
+    if (!baseViewerPath) {
+      return null;
+    }
+    return buildOverlayTargetFromViewerPath(`${baseViewerPath}#${normalizedAnchor}`, title);
+  }
+
+  async function cleanupLegacyEditOverlaysForTarget(targetRef: string): Promise<void> {
+    const removals: Promise<unknown>[] = [];
+    const legacyNote = noteOverlayByTarget.get(targetRef);
+    const legacyInk = inkOverlayByTarget.get(targetRef);
+    if (legacyNote) {
+      removals.push(removeWikiOverlay({
+        user_id: WIKI_OVERLAY_USER_ID,
+        overlay_id: legacyNote.overlay_id,
+      }));
+    }
+    if (legacyInk) {
+      removals.push(removeWikiOverlay({
+        user_id: WIKI_OVERLAY_USER_ID,
+        overlay_id: legacyInk.overlay_id,
+      }));
+    }
+    if (removals.length > 0) {
+      await Promise.all(removals);
+    }
+  }
+
+  async function saveEditedCardBundleForTarget(target: OverlayTargetDescriptor, options?: {
+    strokes?: WikiInkStroke[];
+    textAnnotations?: WikiTextAnnotation[];
+    textStyle?: WikiEditedTextStyle;
+  }): Promise<void> {
+    const existingEditedCard = editedCardOverlayByTarget.get(target.ref) ?? null;
+    const legacyNote = noteOverlayByTarget.get(target.ref) ?? null;
+    const legacyInk = inkOverlayByTarget.get(target.ref) ?? null;
+    const strokes = Array.isArray(options?.strokes)
+      ? options.strokes.filter((stroke) => String(stroke.path || '').trim())
+      : existingEditedCard?.strokes ?? legacyInk?.strokes ?? [];
+    const anchor = target.kind === 'section'
+      ? overlayAnchorFromTargetRef(target.ref)
+      : '';
+    const textAnnotations = Array.isArray(options?.textAnnotations)
+      ? options.textAnnotations
+        .map((item) => normalizeTextAnnotation(item, anchor))
+        .filter((item): item is WikiTextAnnotation => Boolean(item))
+      : extractTextAnnotations(existingEditedCard ?? legacyNote, anchor);
+    const textStyle = normalizeEditedTextStyle(
+      options?.textStyle
+      ?? existingEditedCard?.text_style
+      ?? legacyNote?.text_style
+      ?? annotationTextStyle,
+    );
     setIsOverlaySaving(true);
     try {
-      if (!body && currentNote) {
-        await removeWikiOverlay({
-          user_id: WIKI_OVERLAY_USER_ID,
-          overlay_id: currentNote.overlay_id,
-        });
-      } else if (body) {
+      if (textAnnotations.length === 0 && strokes.length === 0) {
+        if (existingEditedCard) {
+          await removeWikiOverlay({
+            user_id: WIKI_OVERLAY_USER_ID,
+            overlay_id: existingEditedCard.overlay_id,
+          });
+        }
+        await cleanupLegacyEditOverlaysForTarget(target.ref);
+      } else {
         await saveWikiOverlay({
           user_id: WIKI_OVERLAY_USER_ID,
-          kind: 'note',
-          overlay_id: currentNote?.overlay_id ?? '',
-          body,
+          kind: 'edited_card',
+          overlay_id: existingEditedCard?.overlay_id ?? '',
+          title: target.title,
+          card_title: target.title,
+          summary: preview.kind === 'viewer' || preview.kind === 'draft' ? preview.subtitle : '',
+          body: '',
+          strokes,
+          text_style: textStyle,
+          text_annotations: textAnnotations,
+          source_anchor: anchor,
+          source_viewer_path: target.viewerPath,
+          document_title: `${target.title} 수정본`,
+          document_label: target.kind === 'section' ? 'card_edit_snapshot' : 'book_edit_snapshot',
           pinned: true,
-          ...currentOverlayTarget.payload,
+          ...target.payload,
         });
+        await cleanupLegacyEditOverlaysForTarget(target.ref);
       }
       await refreshWikiOverlays();
     } catch (error) {
@@ -2392,25 +2688,53 @@ export default function WorkspacePage() {
     }
   }
 
-  async function handleRemoveCurrentNote(): Promise<void> {
-    if (!currentNote) {
-      setNoteDraft('');
+  async function handleUpsertSectionTextAnnotation(
+    section: { anchor: string; title: string },
+    annotation: WikiTextAnnotation,
+  ): Promise<void> {
+    const target = buildSectionOverlayTarget(section.anchor, section.title);
+    if (!target) {
       return;
     }
-    setIsOverlaySaving(true);
-    try {
-      await removeWikiOverlay({
-        user_id: WIKI_OVERLAY_USER_ID,
-        overlay_id: currentNote.overlay_id,
-      });
-      setNoteDraft('');
-      setNoteOpen(false);
-      await refreshWikiOverlays();
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsOverlaySaving(false);
+    const existingEditedCard = editedCardOverlayByTarget.get(target.ref) ?? null;
+    const existingAnnotations = extractTextAnnotations(existingEditedCard ?? noteOverlayByTarget.get(target.ref) ?? null, section.anchor);
+    const nextAnnotation = normalizeTextAnnotation(annotation, section.anchor);
+    if (!nextAnnotation) {
+      return;
     }
+    const nextAnnotations = [
+      ...existingAnnotations.filter((item) => (
+        item.annotation_id !== nextAnnotation.annotation_id
+        && !(nextAnnotation.kind === 'edit' && item.kind === 'edit' && item.block_path === nextAnnotation.block_path)
+      )),
+      nextAnnotation,
+    ].sort((left, right) => {
+      if (left.kind !== right.kind) {
+        return left.kind === 'edit' ? -1 : 1;
+      }
+      if (left.kind === 'edit') {
+        return String(left.block_path || '').localeCompare(String(right.block_path || ''));
+      }
+      return Number(left.y_ratio || 0) - Number(right.y_ratio || 0);
+    });
+    await saveEditedCardBundleForTarget(target, {
+      textAnnotations: nextAnnotations,
+      textStyle: nextAnnotation.style,
+    });
+  }
+
+  async function handleRemoveSectionTextAnnotation(section: { anchor: string; title: string }, annotationId: string): Promise<void> {
+    const target = buildSectionOverlayTarget(section.anchor, section.title);
+    if (!target) {
+      return;
+    }
+    const existingEditedCard = editedCardOverlayByTarget.get(target.ref) ?? null;
+    const existingAnnotations = extractTextAnnotations(existingEditedCard ?? noteOverlayByTarget.get(target.ref) ?? null, section.anchor);
+    const nextAnnotations = existingAnnotations.filter((item) => item.annotation_id !== annotationId);
+    await saveEditedCardBundleForTarget(target, {
+      textAnnotations: nextAnnotations,
+      textStyle: existingEditedCard?.text_style ?? annotationTextStyle,
+    });
   }
 
   async function handleSaveCurrentInk(strokes: WikiInkStroke[]): Promise<void> {
@@ -2418,31 +2742,10 @@ export default function WorkspacePage() {
       return;
     }
     const normalizedStrokes = strokes.filter((stroke) => String(stroke.path || '').trim());
-    setIsOverlaySaving(true);
-    try {
-      if (normalizedStrokes.length === 0) {
-        if (currentInk) {
-          await removeWikiOverlay({
-            user_id: WIKI_OVERLAY_USER_ID,
-            overlay_id: currentInk.overlay_id,
-          });
-        }
-      } else {
-        await saveWikiOverlay({
-          user_id: WIKI_OVERLAY_USER_ID,
-          kind: 'ink',
-          overlay_id: currentInk?.overlay_id ?? '',
-          title: currentOverlayTarget.title,
-          strokes: normalizedStrokes,
-          ...currentOverlayTarget.payload,
-        });
-      }
-      await refreshWikiOverlays();
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsOverlaySaving(false);
-    }
+    await saveEditedCardBundleForTarget(currentOverlayTarget, {
+      strokes: normalizedStrokes,
+      textStyle: currentEditedCard?.text_style ?? annotationTextStyle,
+    });
   }
 
   function getSignalDisplayTitle(item: WikiOverlayRecord): string {
@@ -2497,7 +2800,6 @@ export default function WorkspacePage() {
       return;
     }
 
-    setIsUploading(true);
     try {
       const uploaded = await uploadCustomerPackDraft(file);
       setDrafts((current) => mergeDraft(uploaded, current));
@@ -2506,7 +2808,6 @@ export default function WorkspacePage() {
       console.error(error);
       window.alert(error instanceof Error ? error.message : '업로드 중 오류가 발생했습니다.');
     } finally {
-      setIsUploading(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -2694,9 +2995,13 @@ export default function WorkspacePage() {
   const canCapture = Boolean(activeDraft) && !isCapturing;
   const canNormalize = Boolean(activeDraft) && !isNormalizing;
 
-  const totalSourceCount = manualSources.length;
   const recentOverlayItems = recentPositionOverlays.slice(0, 4);
-  const favoriteOverlayItems = favoriteOverlays.slice(0, 4);
+  const editedOverlayItems = editedCardOverlays.slice(0, 6);
+  const favoriteOverlayItems = (
+    signalsFavoriteFilter === 'edited'
+      ? editedOverlayItems
+      : favoriteOverlays
+  ).slice(0, 6);
   const nextPlayItems = personalizedNextPlays.slice(0, 4);
   const activeAssistantMessage = useMemo(
     () => [...messages].reverse().find((message) => message.role === 'assistant') ?? null,
@@ -2850,11 +3155,93 @@ export default function WorkspacePage() {
     tone: activeSourceId === source.id ? 'default' : 'muted',
   }));
   const viewerSurfaceTitle = 'Wiki Viewer';
-  const viewerVisionLabel = testMode ? 'TEST' : visionMode === 'guided_tour' ? 'Guided Tour Active' : activeVision.label;
-  const viewerSourcesLabel = visionMode === 'guided_tour' ? 'Tour Sources' : 'Sources';
-  const viewerUploadLabel = isUploading
-    ? (visionMode === 'guided_tour' ? 'Adding source...' : 'Uploading...')
-    : (visionMode === 'guided_tour' ? 'Add Source' : 'Upload Pack');
+  const viewerHeaderToolbar = !testMode && currentOverlayTarget ? (
+    <div className="viewer-header-toolbar" role="toolbar" aria-label="위키 뷰어 액션">
+      {preview.kind === 'viewer' && viewerOriginalSourceHref && (
+        <a
+          href={viewerOriginalSourceHref}
+          className="viewer-header-icon-btn viewer-header-link"
+          target="_blank"
+          rel="noreferrer"
+          title="원문 열기"
+          aria-label="원문 열기"
+        >
+          <FileText size={15} />
+        </a>
+      )}
+      {preview.kind === 'viewer' && (
+        <label className="viewer-header-mode" title="형식">
+          <BookOpen size={14} aria-hidden="true" />
+          <select
+            className="viewer-header-mode-select"
+            value={viewerPageMode}
+            aria-label="형식"
+            onChange={(event) => { void handleViewerPageModeChange(event.target.value as ViewerPageMode); }}
+          >
+            <option value="single">단일</option>
+            <option value="multi">멀티</option>
+          </select>
+        </label>
+      )}
+      <button
+        type="button"
+        className={`viewer-header-icon-btn ${currentFavorite ? 'active' : ''}`}
+        onClick={() => { void handleToggleFavoriteCurrent(); }}
+        disabled={isOverlaySaving}
+        title={currentFavorite ? '즐겨찾기 해제' : '즐겨찾기'}
+        aria-label={currentFavorite ? '즐겨찾기 해제' : '즐겨찾기'}
+      >
+        <Star size={15} />
+      </button>
+      {currentOverlayTarget.kind === 'section' && (
+        <button
+          type="button"
+          className={`viewer-header-icon-btn ${currentSectionCheck ? 'active' : ''}`}
+          onClick={() => { void handleToggleSectionCheckCurrent(); }}
+          disabled={isOverlaySaving}
+          title={currentSectionCheck ? '완료 해제' : '완료 표시'}
+          aria-label={currentSectionCheck ? '완료 해제' : '완료 표시'}
+        >
+          <Check size={15} />
+        </button>
+      )}
+      {preview.kind === 'viewer' && quickNavItems.length > 0 && (
+        <div ref={quickNavRef} className={`viewer-quick-nav ${quickNavOpen ? 'open' : ''}`}>
+          <button
+            type="button"
+            className="viewer-header-icon-btn viewer-quick-nav-trigger"
+            aria-expanded={quickNavOpen}
+            title="퀵 네비게이션"
+            aria-label="퀵 네비게이션"
+            onClick={() => setQuickNavOpen((value) => !value)}
+          >
+            <Compass size={15} />
+          </button>
+          {quickNavOpen && (
+            <div className="viewer-quick-nav-popover">
+              <div className="viewer-quick-nav-header">퀵 네비게이션</div>
+              <div className="viewer-quick-nav-list">
+                {quickNavItems.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className="viewer-quick-nav-item"
+                    onClick={() => {
+                      setQuickNavOpen(false);
+                      void openViewerPreview(item.viewerPath, preview.title, undefined, viewerPageMode);
+                    }}
+                  >
+                    <span className="viewer-quick-nav-item-heading">{item.heading}</span>
+                    <span className="viewer-quick-nav-item-meta">{item.sectionPathLabel}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  ) : null;
   return (
     <div className="workspace-wrapper" ref={containerRef} data-lenis-prevent>
       <div className="bokeh-bg bokeh-1"></div>
@@ -3015,7 +3402,7 @@ export default function WorkspacePage() {
               ) : leftPanelMode === 'outline' ? (
                 <div className="outline-panel">
                   {outlineCategoryGroups.length > 0 && (
-                    <section className="outline-category-board">
+                    <section className="outline-category-board outline-surface-card outline-surface-card--catalog">
                       <div className="outline-section-head">
                         <strong>{visionMode === 'guided_tour' ? 'Tour Routes' : 'Categories'}</strong>
                         <span>{outlineCategoryGroups.length}</span>
@@ -3105,7 +3492,7 @@ export default function WorkspacePage() {
                     </section>
                   )}
 
-                  <nav className="outline-toc" aria-label="Document outline">
+                  <nav className="outline-toc outline-surface-card outline-surface-card--document" aria-label="Document outline">
                     <div className="outline-section-head">
                       <div className="outline-section-copy">
                         <strong>{visionMode === 'guided_tour' ? 'Current Stop' : 'Current Document'}</strong>
@@ -3170,7 +3557,7 @@ export default function WorkspacePage() {
                   </nav>
 
                   {visionMode !== 'guided_tour' && (outlineRuntimeItems.length > 0 || outlineCustomerItems.length > 0) && (
-                    <details className="outline-more">
+                    <details className="outline-more outline-surface-card outline-surface-card--sources">
                       <summary>More sources</summary>
                       {outlineRuntimeItems.length > 0 && (
                         <div className="outline-group">
@@ -3234,6 +3621,22 @@ export default function WorkspacePage() {
                       <Star size={14} />
                       <span>Favorites</span>
                     </div>
+                    <div className="signals-card-filters">
+                      <button
+                        type="button"
+                        className={`signals-filter-btn ${signalsFavoriteFilter === 'favorites' ? 'active' : ''}`}
+                        onClick={() => setSignalsFavoriteFilter('favorites')}
+                      >
+                        즐겨찾기
+                      </button>
+                      <button
+                        type="button"
+                        className={`signals-filter-btn ${signalsFavoriteFilter === 'edited' ? 'active' : ''}`}
+                        onClick={() => setSignalsFavoriteFilter('edited')}
+                      >
+                        수정한 것
+                      </button>
+                    </div>
                     <div className="signals-chip-list">
                       {isOverlayLoading ? <span className="signals-empty">불러오는 중</span> : favoriteOverlayItems.length > 0 ? favoriteOverlayItems.map((item) => (
                         <button
@@ -3245,7 +3648,7 @@ export default function WorkspacePage() {
                         >
                           {getSignalDisplayTitle(item)}
                         </button>
-                      )) : <span className="signals-empty">즐겨찾기가 없습니다.</span>}
+                      )) : <span className="signals-empty">{signalsFavoriteFilter === 'edited' ? '수정본이 없습니다.' : '즐겨찾기가 없습니다.'}</span>}
                     </div>
                   </div>
                   <div className="signals-card">
@@ -3508,25 +3911,30 @@ export default function WorkspacePage() {
           {/* ── Right Panel: Runtime Sources + Overlay ── */}
           <WorkspaceViewerPanel
             panelRef={rightPanelRef}
-            atlasCanvasActive={visionMode === 'atlas_canvas'}
+            annotationColorId={annotationColorId}
+            annotationEnabled={annotationEnabled}
+            annotationTool={annotationTool}
+            atlasCanvasActive={visionMode === 'atlas_canvas' && viewerPageMode === 'multi'}
             savedInkStrokes={currentInkStrokes}
             isInkSaving={isOverlaySaving}
             rightCollapsed={rightCollapsed}
             testMode={testMode}
             viewerSurfaceTitle={viewerSurfaceTitle}
-            viewerVisionLabel={viewerVisionLabel}
             sourcesDrawerOpen={sourcesDrawerOpen}
-            totalSourceCount={totalSourceCount}
-            visionSourcesLabel={viewerSourcesLabel}
-            visionUploadLabel={viewerUploadLabel}
-            isUploading={isUploading}
             fileInputRef={fileInputRef}
-            inkSurfaceKey={currentViewerPath || (activeDraft ? `draft:${activeDraft.draft_id}` : `preview:${preview.kind}`)}
+            headerToolbar={viewerHeaderToolbar}
+            inkSurfaceKey={currentOverlayTarget?.ref || currentViewerPath || (activeDraft ? `draft:${activeDraft.draft_id}` : `preview:${preview.kind}`)}
+            textAnnotationMode={textAnnotationMode}
+            textAnnotationStyle={annotationTextStyle}
             uploadAccept={CUSTOMER_PACK_UPLOAD_ACCEPT}
+            onAnnotationColorChange={setAnnotationColorId}
+            onAnnotationEnabledChange={setAnnotationEnabled}
+            onAnnotationToolChange={setAnnotationTool}
             onRightPanelCollapsedChange={setRightCollapsed}
+            onTextAnnotationModeChange={setTextAnnotationMode}
+            onTextAnnotationStyleChange={setAnnotationTextStyle}
             onToggleRightPanel={toggleRightPanel}
             onToggleSourcesDrawer={() => setSourcesDrawerOpen((prev) => !prev)}
-            onTriggerUpload={() => fileInputRef.current?.click()}
             onSaveInk={(strokes) => {
               void handleSaveCurrentInk(strokes);
             }}
@@ -3622,174 +4030,25 @@ export default function WorkspacePage() {
               </div>
             )}
 
-            {!testMode && currentOverlayTarget && (
-              <div className="reader-stage-rail">
-                {currentNote?.body && (
-                  <div className="viewer-added-text-card">
-                    <div className="viewer-added-text-meta">
-                      <span className="viewer-added-text-label">추가한 글</span>
-                      <span className="viewer-added-text-target">
-                        {currentOverlayTarget.kind === 'section' ? '현재 섹션에 저장됨' : '현재 문서에 저장됨'}
-                      </span>
-                    </div>
-                    <p className="viewer-added-text-body">{currentNote.body}</p>
-                    <div className="viewer-added-text-actions">
-                      <button
-                        type="button"
-                        className="outline-btn viewer-added-text-btn"
-                        onClick={() => setNoteOpen(true)}
-                      >
-                        수정
-                      </button>
-                      <button
-                        type="button"
-                        className="outline-btn viewer-added-text-btn viewer-added-text-btn-danger"
-                        onClick={() => { void handleRemoveCurrentNote(); }}
-                        disabled={isOverlaySaving}
-                      >
-                        삭제
-                      </button>
-                    </div>
-                  </div>
-                )}
-                <div className="viewer-stage-topline">
-                  <div className="viewer-stage-actions">
-                    <div className="viewer-stage-actions-start">
-                      {preview.kind === 'viewer' && viewerOriginalSourceHref && (
-                        <a href={viewerOriginalSourceHref} className="doc-inline-link viewer-stage-link" target="_blank" rel="noreferrer">
-                          원문 열기
-                        </a>
-                      )}
-                      {preview.kind === 'viewer' && (
-                        <label className="viewer-mode-field">
-                          <span>형식</span>
-                          <select
-                            className="viewer-mode-select"
-                            value={viewerPageMode}
-                            onChange={(event) => { void handleViewerPageModeChange(event.target.value as ViewerPageMode); }}
-                          >
-                            <option value="single">단일 페이지</option>
-                            <option value="multi">멀티 페이지</option>
-                          </select>
-                        </label>
-                      )}
-                    </div>
-                    <div className="viewer-stage-actions-end">
-                      {preview.kind === 'viewer' && quickNavItems.length > 0 && (
-                        <div ref={quickNavRef} className={`viewer-quick-nav ${quickNavOpen ? 'open' : ''}`}>
-                          <button
-                            type="button"
-                            className="wiki-overlay-action viewer-quick-nav-trigger"
-                            aria-expanded={quickNavOpen}
-                            title="Quick Nav"
-                            onClick={() => setQuickNavOpen((value) => !value)}
-                          >
-                            <Compass size={16} />
-                          </button>
-                          {quickNavOpen && (
-                            <div className="viewer-quick-nav-popover">
-                              <div className="viewer-quick-nav-header">Quick Nav</div>
-                              <div className="viewer-quick-nav-list">
-                                {quickNavItems.map((item) => (
-                                  <button
-                                    key={item.id}
-                                    type="button"
-                                    className="viewer-quick-nav-item"
-                                    onClick={() => {
-                                      setQuickNavOpen(false);
-                                      void openViewerPreview(item.viewerPath, preview.title, undefined, viewerPageMode);
-                                    }}
-                                  >
-                                    <span className="viewer-quick-nav-item-heading">{item.heading}</span>
-                                    <span className="viewer-quick-nav-item-meta">{item.sectionPathLabel}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      <div className="wiki-overlay-toolbar inline">
-                        <button
-                          type="button"
-                          className={`wiki-overlay-action ${currentFavorite ? 'active' : ''}`}
-                          onClick={() => { void handleToggleFavoriteCurrent(); }}
-                          disabled={isOverlaySaving}
-                          title={currentFavorite ? 'Saved' : 'Save'}
-                        >
-                          <Star size={14} />
-                        </button>
-                        {currentOverlayTarget.kind === 'section' && (
-                          <button
-                            type="button"
-                            className={`wiki-overlay-action ${currentSectionCheck ? 'active' : ''}`}
-                            onClick={() => { void handleToggleSectionCheckCurrent(); }}
-                            disabled={isOverlaySaving}
-                            title={currentSectionCheck ? 'Done' : 'Mark Done'}
-                          >
-                            <Check size={14} />
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          className={`wiki-overlay-action ${noteOpen ? 'active' : ''}`}
-                          onClick={() => setNoteOpen((value) => !value)}
-                          title={currentNote ? '텍스트 수정' : '텍스트 추가'}
-                        >
-                          <NotebookPen size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {noteOpen && (
-                  <div className="wiki-note-panel viewer-stage-note-panel">
-                    <div className="viewer-note-panel-label">텍스트 추가</div>
-                    <textarea
-                      className="wiki-note-input"
-                      value={noteDraft}
-                      onChange={(event) => setNoteDraft(event.target.value)}
-                      placeholder="원문 위에 덧붙일 글을 적어두세요."
-                    />
-                    <div className="wiki-note-actions viewer-note-actions">
-                      {(currentNote || noteDraft.trim()) && (
-                        <button
-                          type="button"
-                          className="outline-btn viewer-note-clear-btn"
-                          onClick={() => {
-                            if (currentNote) {
-                              void handleRemoveCurrentNote();
-                              return;
-                            }
-                            setNoteDraft('');
-                          }}
-                          disabled={isOverlaySaving}
-                        >
-                          지우기
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="outline-btn"
-                        onClick={() => { void handleSaveCurrentNote(); }}
-                        disabled={isOverlaySaving}
-                      >
-                        저장
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
             {!testMode && preview.kind === 'viewer' && (
               <section className="reader-stage animate-in">
                 {preview.viewerDocument?.html ? (
                   <ViewerDocumentStage
                     viewerDocument={preview.viewerDocument}
                     currentViewerPath={currentViewerPath}
+                    onActiveSectionChange={viewerPageMode === 'multi' ? setViewerActiveSection : undefined}
                     onNavigateViewerPath={(viewerPath) => {
                       void openViewerPreview(viewerPath, preview.title, undefined, viewerPageMode);
+                    }}
+                    textAnnotationsByAnchor={sectionTextAnnotationsByAnchor}
+                    textToolEnabled={annotationEnabled && annotationTool === 'text' && viewerPageMode === 'multi' && visionMode === 'atlas_canvas'}
+                    textToolMode={textAnnotationMode}
+                    activeTextStyle={annotationTextStyle}
+                    onSaveTextAnnotation={(section, annotation) => {
+                      void handleUpsertSectionTextAnnotation(section, annotation);
+                    }}
+                    onRemoveTextAnnotation={(section, annotationId) => {
+                      void handleRemoveSectionTextAnnotation(section, annotationId);
                     }}
                     className="playbook-reader-shadow-host"
                   />

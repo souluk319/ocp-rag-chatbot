@@ -12,6 +12,7 @@ from play_book_studio.retrieval.query import (
     has_cluster_node_usage_intent,
     has_crash_loop_troubleshooting_intent,
     has_deployment_scaling_intent,
+    has_first_step_intent,
     has_mco_concept_intent,
     has_node_drain_intent,
     has_openshift_kubernetes_compare_intent,
@@ -72,6 +73,11 @@ def _intent_shape_hint(query: str) -> str:
             "스케줄링 제약 확인 -> 이벤트에 드러난 리소스/노드 상태 원인 확인' 순서로 답할 것. "
             "첫 단계는 Pod Events 확인으로 시작할 것."
         )
+    if has_first_step_intent(query):
+        return (
+            "첫 단계/가장 먼저 확인형 질문이면 근거에 ordered_cli_commands가 있을 때 step 1만 첫 행동으로 답하고, "
+            "뒤 단계 명령을 첫 단계처럼 앞세우지 말 것."
+        )
     if has_crash_loop_troubleshooting_intent(query):
         return (
             "CrashLoopBackOff 질문이면 '현재 상태와 이벤트 확인 -> 로그와 이전 종료 원인 확인 -> 이미지/프로브/설정 확인 -> "
@@ -105,6 +111,7 @@ def build_messages(
         "질문이 한국어면 서술은 자연스러운 한국어로만 쓰고, 명령어·옵션·상태명·고유명사 외의 불필요한 영문 단어는 섞지 마라. "
         "운영/트러블슈팅 질문이면 첫 문장에서 사용자가 해야 할 첫 행동이나 핵심 명령을 바로 제시하라. "
         "가능하면 첫 문장 다음에 바로 이어서 무엇을 확인하면 되는지도 짧게 덧붙여라. "
+        "근거에 ordered_cli_commands 또는 step 정보가 있으면 그 순서를 바꾸지 말고, '가장 먼저'를 묻는 질문에는 step 1만 첫 행동으로 제시하라. "
         "명령이나 절차가 근거에 있으면 코드 블록이나 단계형 설명으로 보여라. "
         "bare command만 던지지 말고, 한 줄 설명 -> 코드 블록 -> 짧은 범위/예시 순서로 답하라. "
         "트러블슈팅은 필요한 흐름과 이유와 확인 포인트를 충분히 설명하라. "
@@ -132,6 +139,8 @@ def build_messages(
         "- 답변 본문은 현재 질문에 바로 답할 것\n"
         "- 참조문서 요약본처럼 쓰지 말고, 사용자를 위한 가이드처럼 쓸 것\n"
         "- 운영/트러블슈팅 질문이면 '첫 행동 1문장 -> 코드 블록 또는 단계 -> 짧은 확인/주의사항' 순서를 우선할 것\n"
+        "- 근거에 ordered_cli_commands가 있으면 step 순서를 바꾸지 말 것\n"
+        "- 질문이 '가장 먼저/어디부터/첫 단계'를 묻는 경우 ordered_cli_commands의 step 1만 첫 행동으로 답할 것\n"
         "- 개념 질문이면 '정의 -> 실제 사용 맥락 -> 운영상 의미' 순서로 짧게 답할 것\n"
         "- 근거에 명령이나 절차가 있으면 코드 블록이나 번호형 단계 중 하나는 반드시 포함할 것\n"
         "- 근거에 명령이 있는데 평문 요약으로만 끝내지 말 것\n"

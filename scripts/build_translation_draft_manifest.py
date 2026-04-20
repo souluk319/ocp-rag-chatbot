@@ -15,6 +15,13 @@ from play_book_studio.config.settings import load_settings
 from play_book_studio.ingestion.approval_report import build_source_approval_report
 from play_book_studio.ingestion.manifest import read_manifest, runtime_catalog_entries, write_manifest
 from play_book_studio.ingestion.models import CONTENT_STATUS_TRANSLATED_KO_DRAFT, SourceManifestEntry
+from play_book_studio.ingestion.source_first import (
+    derive_official_docs_legal_notice_url,
+    derive_official_docs_license_or_terms,
+    derive_source_repo_updated_at,
+    resolve_repo_binding,
+    source_mirror_root,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -32,6 +39,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--all-runtime-catalog",
         action="store_true",
         help="Include every active runtime source-catalog slug instead of the high-value translation queue only.",
+    )
+    parser.add_argument(
+        "--output-path",
+        help=(
+            "Optional manifest output path. "
+            "When omitted, --all-runtime-catalog writes to a dedicated all-runtime queue path."
+        ),
     )
     return parser
 
@@ -70,17 +84,29 @@ def _select_target_slugs(
 def _build_draft_entry(entry: SourceManifestEntry) -> SourceManifestEntry:
     source_language = (entry.translation_source_language or entry.resolved_language or entry.docs_language or "ko").strip() or "ko"
     payload = entry.to_dict()
+    source_repo_capable = bool(
+        str(entry.primary_input_kind or "").strip() == "source_repo"
+        or str(entry.source_kind or "").strip() == "source-first"
+        or (
+            str(entry.source_repo or "").strip()
+            and (
+                str(entry.source_relative_path or "").strip()
+                or any(str(path).strip() for path in entry.source_relative_paths)
+            )
+        )
+    )
     payload.update(
         {
-            "source_kind": "html-single",
+            "source_kind": "source-first" if source_repo_capable else "html-single",
             "content_status": CONTENT_STATUS_TRANSLATED_KO_DRAFT,
             "citation_eligible": False,
             "citation_block_reason": "translated Korean draft requires review before citation",
             "approval_status": "needs_review",
             "approval_notes": "machine translation draft scheduled for corpus/playbook generation",
             "resolved_language": source_language,
-            "primary_input_kind": "html_single",
+            "primary_input_kind": "source_repo" if source_repo_capable else "html_single",
             "fallback_input_kind": "",
+            "source_lane": "official_source_first" if source_repo_capable else str(entry.source_lane or ""),
             "translation_source_language": source_language,
             "translation_target_language": "ko",
             "translation_source_url": entry.resolved_source_url or entry.source_url,
@@ -89,6 +115,13 @@ def _build_draft_entry(entry: SourceManifestEntry) -> SourceManifestEntry:
         }
     )
     return SourceManifestEntry(**payload)
+
+
+def _default_output_path(settings, *, all_runtime_catalog: bool) -> Path:
+    output_path = settings.translation_draft_manifest_path
+    if not all_runtime_catalog:
+        return output_path
+    return output_path.with_name(f"{output_path.stem}_all_runtime{output_path.suffix}")
 
 
 def main() -> int:
@@ -112,27 +145,67 @@ def main() -> int:
     for slug in target_slugs:
         entry = catalog_by_slug[slug]
         book = books_by_slug.get(slug, {})
-        seeded = SourceManifestEntry(
+        binding = resolve_repo_binding(settings.root_dir, slug)
+        source_relative_paths = tuple(binding.source_relative_paths) if binding is not None else tuple(
+            str(path).strip() for path in entry.source_relative_paths if str(path).strip()
+        )
+        mirror_root = Path(entry.source_mirror_root or source_mirror_root(settings.root_dir))
+        seeded_entry = SourceManifestEntry(
             **{
                 **entry.to_dict(),
-                "resolved_source_url": str(book.get("resolved_source_url") or entry.resolved_source_url or entry.source_url),
-                "fallback_detected": bool(book.get("fallback_detected", entry.fallback_detected)),
-                "body_language_guess": str(book.get("body_language_guess") or entry.body_language_guess),
+                "source_binding_kind": str(entry.source_binding_kind or (binding.binding_kind if binding is not None else "")),
+                "source_relative_path": str(entry.source_relative_path or (binding.root_relative_path if binding is not None else "")),
+                "source_relative_paths": list(source_relative_paths),
+                "source_mirror_root": str(mirror_root),
+            }
+        )
+        legal_notice_url = str(
+            book.get("legal_notice_url")
+            or seeded_entry.legal_notice_url
+            or derive_official_docs_legal_notice_url(seeded_entry)
+        )
+        license_or_terms = str(
+            book.get("license_or_terms")
+            or seeded_entry.license_or_terms
+            or derive_official_docs_license_or_terms(seeded_entry, legal_notice_url=legal_notice_url)
+        )
+        updated_at = str(
+            book.get("updated_at")
+            or seeded_entry.updated_at
+            or derive_source_repo_updated_at(
+                settings.root_dir,
+                source_relative_paths=source_relative_paths,
+                mirror_root=mirror_root,
+            )
+        )
+        seeded = SourceManifestEntry(
+            **{
+                **seeded_entry.to_dict(),
+                "resolved_source_url": str(book.get("resolved_source_url") or seeded_entry.resolved_source_url or seeded_entry.source_url),
+                "fallback_detected": bool(book.get("fallback_detected", seeded_entry.fallback_detected)),
+                "body_language_guess": str(book.get("body_language_guess") or seeded_entry.body_language_guess),
+                "legal_notice_url": legal_notice_url,
+                "license_or_terms": license_or_terms,
+                "updated_at": updated_at,
                 "translation_source_language": (
                     "en"
-                    if str(book.get("body_language_guess") or entry.body_language_guess) in {"en_only", "mixed"}
+                    if str(book.get("body_language_guess") or seeded_entry.body_language_guess) in {"en_only", "mixed"}
                     else str(
                         book.get("translation_lane", {}).get("source_language")
                         or book.get("resolved_language")
-                        or entry.resolved_language
-                        or entry.docs_language
+                        or seeded_entry.resolved_language
+                        or seeded_entry.docs_language
                     )
                 ),
             }
         )
         entries.append(_build_draft_entry(seeded))
 
-    output_path = settings.translation_draft_manifest_path
+    output_path = (
+        Path(args.output_path).expanduser().resolve()
+        if args.output_path
+        else _default_output_path(settings, all_runtime_catalog=args.all_runtime_catalog)
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     write_manifest(output_path, entries)
 

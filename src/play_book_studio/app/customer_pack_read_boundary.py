@@ -19,6 +19,8 @@ PRIVATE_READ_PLACEHOLDER_VALUES = {
     "workspace_id": {"", "default-workspace"},
 }
 PRIVATE_READ_ALLOWED_APPROVAL_STATES = {"approved"}
+LOCAL_CUSTOMER_PACK_TENANT_ID = "tenant-user-library-local"
+LOCAL_CUSTOMER_PACK_WORKSPACE_ID = "workspace-user-library-local"
 
 _DRAFT_ROUTE_DROP_FIELDS = {
     "request",
@@ -195,8 +197,118 @@ def summarize_customer_pack_read_boundary(record: Any | None) -> dict[str, Any]:
     }
 
 
+def _record_source_collection(record: Any) -> str:
+    plan = getattr(record, "plan", None)
+    return str(getattr(plan, "source_collection", "") or "").strip()
+
+
+def _is_local_uploaded_customer_pack(record: Any | None) -> bool:
+    if record is None:
+        return False
+    source_collection = _record_source_collection(record)
+    source_lane = str(getattr(record, "source_lane", "") or "").strip()
+    classification = str(getattr(record, "classification", "") or "").strip()
+    provider_egress_policy = str(getattr(record, "provider_egress_policy", "") or "").strip()
+    return (
+        source_collection == "uploaded"
+        and source_lane in {"", "customer_source_first_pack"}
+        and classification in {"", "private"}
+        and provider_egress_policy in {"", "local_only"}
+    )
+
+
+def _placeholder_field_names(record: Any) -> list[str]:
+    return [
+        field_name
+        for field_name, placeholder_values in PRIVATE_READ_PLACEHOLDER_VALUES.items()
+        if str(getattr(record, field_name, "") or "").strip() in placeholder_values
+    ]
+
+
+def _rewrite_private_manifest_runtime_boundary(
+    manifest_path: Path,
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    access_groups: tuple[str, ...],
+    approval_state: str,
+    publication_state: str,
+) -> None:
+    if manifest_path.as_posix() in {"", "."} or not manifest_path.exists():
+        return
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return
+    if not isinstance(payload, dict):
+        return
+    payload["tenant_id"] = tenant_id
+    payload["workspace_id"] = workspace_id
+    payload["access_groups"] = list(access_groups)
+    payload["approval_state"] = approval_state
+    payload["publication_state"] = publication_state
+    boundary_summary = summarize_private_runtime_boundary(payload)
+    payload["runtime_eligible"] = bool(boundary_summary.get("runtime_eligible", False))
+    payload["boundary_fail_reasons"] = list(boundary_summary.get("fail_reasons") or [])
+    manifest_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _repair_local_uploaded_customer_pack_record(root_dir: Path, record: Any | None) -> Any | None:
+    if not _is_local_uploaded_customer_pack(record):
+        return record
+    placeholder_fields = set(_placeholder_field_names(record))
+    approval_state = str(getattr(record, "approval_state", "") or "").strip()
+    publication_state = str(getattr(record, "publication_state", "") or "").strip()
+    needs_repair = bool(placeholder_fields) or approval_state in {"", "unreviewed"}
+    if not needs_repair:
+        return record
+
+    tenant_id = (
+        LOCAL_CUSTOMER_PACK_TENANT_ID
+        if "tenant_id" in placeholder_fields
+        else str(getattr(record, "tenant_id", "") or "").strip()
+    )
+    workspace_id = (
+        LOCAL_CUSTOMER_PACK_WORKSPACE_ID
+        if "workspace_id" in placeholder_fields
+        else str(getattr(record, "workspace_id", "") or "").strip()
+    )
+    repaired_approval_state = approval_state if approval_state and approval_state != "unreviewed" else "approved"
+    repaired_publication_state = publication_state or "draft"
+    repaired_access_groups = tuple(
+        item
+        for item in (
+            workspace_id,
+            tenant_id,
+        )
+        if item
+    )
+
+    setattr(record, "tenant_id", tenant_id)
+    setattr(record, "workspace_id", workspace_id)
+    setattr(record, "access_groups", repaired_access_groups)
+    setattr(record, "approval_state", repaired_approval_state)
+    setattr(record, "publication_state", repaired_publication_state)
+    CustomerPackDraftStore(root_dir).save(record)
+
+    manifest_path = Path(str(getattr(record, "private_corpus_manifest_path", "") or "").strip())
+    _rewrite_private_manifest_runtime_boundary(
+        manifest_path,
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        access_groups=repaired_access_groups,
+        approval_state=repaired_approval_state,
+        publication_state=repaired_publication_state,
+    )
+    return record
+
+
 def load_customer_pack_read_boundary(root_dir: Path, draft_id: str) -> dict[str, Any]:
     record = CustomerPackDraftStore(root_dir).get(str(draft_id or "").strip())
+    record = _repair_local_uploaded_customer_pack_record(root_dir, record)
     return summarize_customer_pack_read_boundary(record)
 
 

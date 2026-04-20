@@ -40,6 +40,7 @@ from .models import Citation, ContextBundle
 SPACE_RE = re.compile(r"\s+")
 SECTION_PREFIX_RE = re.compile(r"^\d+(?:\.\d+)*\.?\s*")
 INTRO_RECOMMENDATION_COUNT_RE = re.compile(r"(\d+\s*개|세\s*개|3\s*개|목록|리스트|top\s*\d+)", re.IGNORECASE)
+MAX_PROMPT_CLI_COMMANDS = 4
 
 
 def _normalize_excerpt(text: str) -> str:
@@ -1336,6 +1337,10 @@ def assemble_context(
             f"[{citation.index}] book={citation.book_slug} | section={citation.section} | viewer={citation.viewer_path}"
         )
         prompt_lines.append(citation.excerpt)
+        if citation.cli_commands:
+            prompt_lines.append("ordered_cli_commands:")
+            for step_index, command in enumerate(citation.cli_commands[:MAX_PROMPT_CLI_COMMANDS], start=1):
+                prompt_lines.append(f"- step {step_index}: {command}")
         prompt_lines.append("")
 
     return ContextBundle(

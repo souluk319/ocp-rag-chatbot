@@ -1,0 +1,16 @@
+{
+  "gold_book_slug": "hosted_control_planes",
+  "approved_manifest_count": 30,
+  "viewer_smoke_pass": true,
+  "chat_smoke_pass": true,
+  "chat_grounding_queries": [
+    "호스팅 제어 평면이 무엇인지 설명해줘",
+    "호스팅 제어 평면 아키텍처를 요약해줘",
+    "Hosted control planes 의 이점과 차이점을 설명해줘"
+  ],
+  "primary_grounded_paths": [
+    "/docs/ocp/4.20/ko/hosted_control_planes/index.html#concepts",
+    "/docs/ocp/4.20/ko/hosted_control_planes/index.html#architecture-of-hosted-control-planes",
+    "/docs/ocp/4.20/ko/hosted_control_planes/index.html#benefits-of-hosted-control-planes"
+  ]
+}

@@ -10,10 +10,12 @@ from play_book_studio.retrieval.query import (
     has_command_request,
     has_corrective_follow_up,
     has_deployment_scaling_intent,
+    has_first_step_intent,
     has_node_drain_intent,
     has_openshift_kubernetes_compare_intent,
     has_project_finalizer_intent,
     has_project_terminating_intent,
+    has_rbac_assignment_intent,
     has_rbac_intent,
     has_pod_pending_troubleshooting_intent,
     has_pod_lifecycle_concept_intent,
@@ -86,6 +88,27 @@ def _citation_text(citation) -> str:
     ]
     parts.extend(str(command or "") for command in (getattr(citation, "cli_commands", ()) or ()))
     return "\n".join(part for part in parts if part).lower()
+
+
+def _should_use_generic_first_step_answer(query: str) -> bool:
+    if not has_first_step_intent(query):
+        return False
+    if (
+        has_backup_restore_intent(query)
+        or has_certificate_monitor_intent(query)
+        or has_cluster_node_usage_intent(query)
+        or has_deployment_scaling_intent(query)
+        or has_node_drain_intent(query)
+        or has_openshift_kubernetes_compare_intent(query)
+        or has_pod_pending_troubleshooting_intent(query)
+        or has_pod_lifecycle_concept_intent(query)
+        or has_project_finalizer_intent(query)
+        or has_project_terminating_intent(query)
+        or has_rbac_intent(query)
+        or is_generic_intro_query(query)
+    ):
+        return False
+    return True
 
 
 def _query_command_tokens(query: str) -> set[str]:
@@ -229,6 +252,28 @@ def _looks_like_shell_command(value: str) -> bool:
     )
 
 
+def _ordered_citation_commands(citation, *, limit: int = 3) -> list[str]:
+    commands: list[str] = []
+    seen: set[str] = set()
+
+    for command in (getattr(citation, "cli_commands", ()) or ()):
+        normalized = (command or "").strip().lstrip("$").strip()
+        if not _looks_like_shell_command(normalized):
+            continue
+        key = normalized.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        commands.append(normalized)
+        if len(commands) >= limit:
+            return commands
+
+    if commands:
+        return commands
+
+    return _extract_grounded_commands(str(getattr(citation, "excerpt", "") or ""), limit=limit)
+
+
 def _extract_grounded_commands(*texts: str, limit: int = 3) -> list[str]:
     commands: list[str] = []
     seen: set[str] = set()
@@ -254,6 +299,84 @@ def _extract_grounded_commands(*texts: str, limit: int = 3) -> list[str]:
             break
 
     return commands[:limit]
+
+
+def _collect_ordered_grounded_commands(citations, *, limit: int = 3) -> list[str]:
+    commands: list[str] = []
+    seen: set[str] = set()
+
+    for citation in citations:
+        for command in _ordered_citation_commands(citation, limit=limit):
+            key = command.casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            commands.append(command)
+            if len(commands) >= limit:
+                return commands
+
+    return commands
+
+
+def _first_grounded_command_citation_index(citations) -> int:
+    for index, citation in enumerate(citations, start=1):
+        if _ordered_citation_commands(citation, limit=1):
+            return index
+    return 1
+
+
+def build_first_step_grounded_answer(
+    *,
+    query: str,
+    citations,
+) -> str | None:
+    if not citations or not _should_use_generic_first_step_answer(query):
+        return None
+
+    first_citation_index = _first_grounded_command_citation_index(citations)
+    primary_citation = citations[first_citation_index - 1]
+    commands = _collect_ordered_grounded_commands(citations[first_citation_index - 1 :], limit=2)
+    if not commands:
+        return None
+
+    primary_ref = citation_marker(citations, first_citation_index)
+    section = (primary_citation.section or "").strip()
+    section_prefix = f"`{section}` 절차 기준으로 " if section else ""
+    follow_up = ""
+    if len(commands) > 1:
+        follow_up = f"\n\n첫 단계가 끝나면 같은 절차의 다음 명령으로 이어가면 됩니다 {primary_ref}."
+
+    return (
+        f"답변: {section_prefix}가장 먼저 아래 명령으로 시작하면 됩니다 {primary_ref}.\n\n"
+        f"```bash\n{commands[0]}\n```\n\n"
+        f"질문이 첫 단계 확인형이므로 뒤 단계 명령보다 이 명령을 먼저 확인하면 됩니다 {primary_ref}."
+        f"{follow_up}"
+    )
+
+
+def guard_first_step_grounding(
+    answer_text: str,
+    *,
+    query: str,
+    citations,
+) -> str:
+    expected_answer = build_first_step_grounded_answer(
+        query=query,
+        citations=citations,
+    )
+    if expected_answer is None:
+        return answer_text
+
+    expected_commands = _collect_ordered_grounded_commands(citations, limit=1)
+    if not expected_commands:
+        return answer_text
+
+    answer_commands = _extract_grounded_commands(answer_text, limit=1)
+    if not answer_commands:
+        return expected_answer
+    if answer_commands[0].casefold() != expected_commands[0].casefold():
+        return expected_answer
+    return answer_text
 
 
 def _actionable_intro(query: str) -> str:
@@ -337,6 +460,12 @@ def build_grounded_command_guide_answer(
 ) -> str | None:
     if not citations:
         return None
+    first_step_answer = build_first_step_grounded_answer(
+        query=query,
+        citations=citations,
+    )
+    if first_step_answer is not None:
+        return first_step_answer
     if (
         has_backup_restore_intent(query)
         or has_project_terminating_intent(query)
@@ -359,10 +488,7 @@ def build_grounded_command_guide_answer(
     if not has_sufficient_command_grounding(query=query, citations=citations):
         return None
 
-    commands = _extract_grounded_commands(
-        *[(citation.excerpt or "") for citation in citations],
-        limit=2,
-    )
+    commands = _collect_ordered_grounded_commands(citations, limit=2)
     if not commands:
         return None
 
@@ -416,12 +542,28 @@ def _has_grounded_rbac_citation(citations) -> bool:
 def _has_explicit_rbac_follow_up_query(query: str) -> bool:
     normalized = query or ""
     return bool(
-        has_rbac_intent(normalized)
-        or NAMESPACE_ADMIN_QUERY_RE.search(normalized)
-        or RBAC_YAML_QUERY_RE.search(normalized)
+        RBAC_YAML_QUERY_RE.search(normalized)
         or RBAC_REVOKE_QUERY_RE.search(normalized)
         or RBAC_CLUSTER_ADMIN_DIFF_RE.search(normalized)
-        or (RBAC_VERIFY_FOLLOW_UP_RE.search(normalized) and RBAC_FOLLOW_UP_HINT_RE.search(normalized))
+        or _is_rbac_verify_follow_up_query(normalized)
+    )
+
+
+def _has_rbac_assignment_query(query: str) -> bool:
+    normalized = query or ""
+    return bool(
+        has_rbac_assignment_intent(normalized)
+        or (NAMESPACE_ADMIN_QUERY_RE.search(normalized) and has_rbac_intent(normalized))
+    )
+
+
+def _is_rbac_verify_follow_up_query(query: str) -> bool:
+    normalized = query or ""
+    if _has_rbac_assignment_query(normalized):
+        return False
+    return bool(
+        RBAC_VERIFY_FOLLOW_UP_RE.search(normalized)
+        and RBAC_FOLLOW_UP_HINT_RE.search(normalized)
     )
 
 
@@ -504,7 +646,7 @@ def shape_rbac_follow_up_answer(
             "```bash\noc apply -f rolebinding.yaml\n```"
         )
 
-    if RBAC_VERIFY_FOLLOW_UP_RE.search(query or ""):
+    if _is_rbac_verify_follow_up_query(query):
         _, subject_project = _extract_rbac_assignment_targets(query)
         project_value = subject_project or "<project>"
         return (
@@ -905,11 +1047,13 @@ def build_deployment_scaling_answer(
 
 __all__ = [
     "align_answer_to_grounded_commands",
+    "build_first_step_grounded_answer",
     "build_deployment_scaling_answer",
     "build_grounded_command_guide_answer",
     "citation_marker",
     "deployment_scaling_signal",
     "extract_replica_counts",
+    "guard_first_step_grounding",
     "has_grounded_deployment_scale_citation",
     "has_sufficient_command_grounding",
     "shape_actionable_ops_answer",

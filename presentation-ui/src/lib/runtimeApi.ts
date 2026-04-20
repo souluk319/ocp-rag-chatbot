@@ -283,7 +283,31 @@ export interface WikiInkStroke {
   style: WikiInkStyle;
 }
 
-export type WikiOverlayKind = 'favorite' | 'check' | 'note' | 'ink' | 'recent_position';
+export type WikiEditedTextTone = 'amber' | 'ink' | 'teal' | string;
+export type WikiEditedTextSize = 'sm' | 'md' | 'lg' | string;
+export type WikiEditedTextWeight = 'regular' | 'strong' | string;
+
+export interface WikiEditedTextStyle {
+  tone: WikiEditedTextTone;
+  size: WikiEditedTextSize;
+  weight: WikiEditedTextWeight;
+}
+
+export type WikiAnnotationTool = 'text' | WikiInkTool;
+export type WikiTextAnnotationMode = 'add' | 'edit';
+
+export interface WikiTextAnnotation {
+  annotation_id: string;
+  kind: WikiTextAnnotationMode;
+  anchor: string;
+  text: string;
+  style: WikiEditedTextStyle;
+  x_ratio?: number;
+  y_ratio?: number;
+  block_path?: string;
+}
+
+export type WikiOverlayKind = 'favorite' | 'check' | 'note' | 'ink' | 'recent_position' | 'edited_card';
 export type WikiOverlayTargetKind = 'book' | 'entity_hub' | 'section' | 'figure';
 
 export interface WikiOverlayResolvedTarget {
@@ -314,6 +338,14 @@ export interface WikiOverlayRecord {
   summary?: string;
   viewer_path?: string;
   strokes?: WikiInkStroke[];
+  text_style?: WikiEditedTextStyle;
+  text_annotations?: WikiTextAnnotation[];
+  card_title?: string;
+  source_anchor?: string;
+  source_viewer_path?: string;
+  document_id?: string;
+  document_title?: string;
+  document_label?: string;
 }
 
 export interface WikiOverlayResponse {
@@ -356,6 +388,7 @@ export interface WikiOverlaySignalsResponse {
     check_count: number;
     note_count: number;
     ink_count: number;
+    edited_card_count: number;
     recent_position_count: number;
     target_count: number;
     user_count: number;
@@ -368,6 +401,7 @@ export interface WikiOverlaySignalsResponse {
     check_count: number;
     note_count: number;
     ink_count: number;
+    edited_card_count: number;
     recent_position_count: number;
     recent_targets: Array<{
       overlay_id: string;

@@ -459,8 +459,10 @@ def promote_translation_gold(
     force_regenerate: bool = False,
     refresh_synthesis_report: bool = True,
     sync_qdrant: bool = False,
+    manifest_path: Path | None = None,
 ) -> dict[str, object]:
     generation_report = None
+    draft_manifest_path = manifest_path or settings.translation_draft_manifest_path
     if generate_first:
         _emit_progress("gold_generate_first_start")
         generation_report = generate_translation_drafts(
@@ -468,13 +470,14 @@ def promote_translation_gold(
             slugs=slugs,
             force_collect=force_collect,
             force_regenerate=force_regenerate,
+            manifest_path=draft_manifest_path,
         )
         _emit_progress(
             "gold_generate_first_complete",
             summary=generation_report.get("summary"),
         )
 
-    entries = read_manifest(settings.translation_draft_manifest_path)
+    entries = read_manifest(draft_manifest_path)
     selected_entries = [
         entry for entry in entries
         if not slugs or entry.book_slug in set(slugs)
@@ -735,6 +738,7 @@ def promote_translation_gold(
         "graph_compact_refresh": graph_compact_refresh,
         "graph_compact_artifact": graph_sidecar_compact_artifact_status(settings),
         "output_targets": {
+            "translation_draft_manifest_path": str(draft_manifest_path),
             "approved_manifest_path": str(settings.source_manifest_path),
             "normalized_docs": [str(path) for path in settings.normalized_docs_candidates],
             "chunks": [

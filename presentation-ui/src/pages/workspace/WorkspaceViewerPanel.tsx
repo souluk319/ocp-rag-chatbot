@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode, type RefObject } from 'react';
-import { BookOpen, ChevronDown, FileText, Highlighter, PanelRightClose, PenTool, Trash2, Upload } from 'lucide-react';
+import { BookOpen, Highlighter, PanelRightClose, PenTool, Trash2, Type } from 'lucide-react';
 import { Panel, usePanelRef } from 'react-resizable-panels';
-import type { WikiInkColorId, WikiInkStroke, WikiInkStyle, WikiInkTool } from '../../lib/runtimeApi';
+import type {
+  WikiAnnotationTool,
+  WikiEditedTextStyle,
+  WikiInkColorId,
+  WikiInkStroke,
+  WikiInkStyle,
+  WikiInkTool,
+  WikiTextAnnotationMode,
+} from '../../lib/runtimeApi';
 
 const INK_STYLES: WikiInkStyle[] = [
   {
@@ -37,73 +45,83 @@ const INK_STYLES: WikiInkStyle[] = [
 ];
 
 type WorkspaceViewerPanelProps = {
+  annotationColorId: WikiInkColorId;
+  annotationEnabled: boolean;
+  annotationTool: WikiAnnotationTool;
   atlasCanvasActive: boolean;
   children: ReactNode;
   drawerContent: ReactNode;
   fileInputRef: RefObject<HTMLInputElement | null>;
+  headerToolbar?: ReactNode;
   inkSurfaceKey: string;
   isInkSaving: boolean;
-  isUploading: boolean;
   rightCollapsed: boolean;
   savedInkStrokes: WikiInkStroke[];
   sourcesDrawerOpen: boolean;
   testMode: boolean;
-  totalSourceCount: number;
+  textAnnotationMode: WikiTextAnnotationMode;
+  textAnnotationStyle: WikiEditedTextStyle;
   uploadAccept: string;
   viewerSurfaceTitle: string;
-  viewerVisionLabel: string;
-  visionUploadLabel: string;
-  visionSourcesLabel: string;
+  onAnnotationColorChange: (colorId: WikiInkColorId) => void;
+  onAnnotationEnabledChange: (enabled: boolean) => void;
+  onAnnotationToolChange: (tool: WikiAnnotationTool) => void;
   onSaveInk: (strokes: WikiInkStroke[]) => void;
   onRightPanelCollapsedChange: (collapsed: boolean) => void;
+  onTextAnnotationModeChange: (mode: WikiTextAnnotationMode) => void;
+  onTextAnnotationStyleChange: (style: WikiEditedTextStyle) => void;
   onToggleRightPanel: () => void;
   onToggleSourcesDrawer: () => void;
-  onTriggerUpload: () => void;
   onUploadSelection: (event: ChangeEvent<HTMLInputElement>) => void;
   panelRef: ReturnType<typeof usePanelRef>;
 };
 
 export default function WorkspaceViewerPanel({
+  annotationColorId,
+  annotationEnabled,
+  annotationTool,
   atlasCanvasActive,
   children,
   drawerContent,
   fileInputRef,
+  headerToolbar,
   inkSurfaceKey,
   isInkSaving,
-  isUploading,
   rightCollapsed,
   savedInkStrokes,
   sourcesDrawerOpen,
   testMode,
-  totalSourceCount,
+  textAnnotationMode,
+  textAnnotationStyle,
   uploadAccept,
   viewerSurfaceTitle,
-  viewerVisionLabel,
-  visionUploadLabel,
-  visionSourcesLabel,
+  onAnnotationColorChange,
+  onAnnotationEnabledChange,
+  onAnnotationToolChange,
   onSaveInk,
   onRightPanelCollapsedChange,
+  onTextAnnotationModeChange,
+  onTextAnnotationStyleChange,
   onToggleRightPanel,
   onToggleSourcesDrawer,
-  onTriggerUpload,
   onUploadSelection,
   panelRef,
 }: WorkspaceViewerPanelProps) {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const inkPopoverRef = useRef<HTMLDivElement | null>(null);
   const drawingRef = useRef<{ pointerId: number; stroke: WikiInkStroke } | null>(null);
-  const [inkEnabled, setInkEnabled] = useState(false);
-  const [inkPopoverOpen, setInkPopoverOpen] = useState(false);
-  const [inkTool, setInkTool] = useState<WikiInkTool>('pen');
-  const [inkColorId, setInkColorId] = useState<WikiInkColorId>('cyan');
+  const [annotationPopoverOpen, setAnnotationPopoverOpen] = useState(false);
   const [inkStrokes, setInkStrokes] = useState<WikiInkStroke[]>(savedInkStrokes);
   const [activeInkStroke, setActiveInkStroke] = useState<WikiInkStroke | null>(null);
   const [inkViewport, setInkViewport] = useState({ width: 0, height: 0 });
-  const atlasInkAvailable = atlasCanvasActive && !rightCollapsed;
-  const activeInkStyle = INK_STYLES.find((style) => style.id === inkColorId) ?? INK_STYLES[0];
-  const ActiveInkIcon = inkTool === 'highlighter' ? Highlighter : PenTool;
-  const activeInkLabel = inkTool === 'highlighter' ? '형광펜' : '잉크펜';
-  const activeInkColor = inkTool === 'highlighter' ? activeInkStyle.highlighterColor : activeInkStyle.penColor;
+  const annotationAvailable = atlasCanvasActive && !rightCollapsed;
+  const inkTool = annotationTool === 'highlighter' ? 'highlighter' : 'pen';
+  const inkToolActive = annotationTool === 'pen' || annotationTool === 'highlighter';
+  const inkEnabled = annotationAvailable && annotationEnabled && inkToolActive;
+  const activeInkStyle = INK_STYLES.find((style) => style.id === annotationColorId) ?? INK_STYLES[0];
+  const ActiveToolIcon = annotationTool === 'text' ? Type : annotationTool === 'highlighter' ? Highlighter : PenTool;
+  const activeToolLabel = annotationTool === 'text' ? '텍스트' : annotationTool === 'highlighter' ? '형광펜' : '잉크펜';
+  const activeToolColor = annotationTool === 'highlighter' ? activeInkStyle.highlighterColor : activeInkStyle.penColor;
   const savedInkSnapshot = useMemo(() => JSON.stringify(savedInkStrokes), [savedInkStrokes]);
   const currentInkSnapshot = useMemo(() => JSON.stringify(inkStrokes), [inkStrokes]);
   const hasInkChanges = currentInkSnapshot !== savedInkSnapshot;
@@ -116,22 +134,22 @@ export default function WorkspaceViewerPanel({
         : '비어 있음';
 
   useEffect(() => {
-    if (!atlasInkAvailable) {
-      setInkEnabled(false);
-      setInkPopoverOpen(false);
+    if (!annotationAvailable) {
+      onAnnotationEnabledChange(false);
+      setAnnotationPopoverOpen(false);
     }
-  }, [atlasInkAvailable]);
+  }, [annotationAvailable, onAnnotationEnabledChange]);
 
   useEffect(() => {
-    setInkEnabled(false);
-    setInkPopoverOpen(false);
+    onAnnotationEnabledChange(false);
+    setAnnotationPopoverOpen(false);
     setInkStrokes(savedInkStrokes);
     setActiveInkStroke(null);
     drawingRef.current = null;
-  }, [inkSurfaceKey, savedInkSnapshot]);
+  }, [inkSurfaceKey, onAnnotationEnabledChange, savedInkSnapshot]);
 
   useEffect(() => {
-    if (!inkPopoverOpen) {
+    if (!annotationPopoverOpen) {
       return undefined;
     }
 
@@ -143,12 +161,12 @@ export default function WorkspaceViewerPanel({
       if (inkPopoverRef.current?.contains(targetNode)) {
         return;
       }
-      setInkPopoverOpen(false);
+      setAnnotationPopoverOpen(false);
     };
 
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
-        setInkPopoverOpen(false);
+        setAnnotationPopoverOpen(false);
       }
     };
 
@@ -159,7 +177,7 @@ export default function WorkspaceViewerPanel({
       document.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [inkPopoverOpen]);
+  }, [annotationPopoverOpen]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -182,13 +200,18 @@ export default function WorkspaceViewerPanel({
       updateViewport();
     });
     resizeObserver.observe(stage);
+    Array.from(stage.children).forEach((child) => {
+      if (child instanceof HTMLElement && !child.classList.contains('atlas-ink-overlay')) {
+        resizeObserver.observe(child);
+      }
+    });
     window.addEventListener('resize', updateViewport);
 
     return () => {
       resizeObserver.disconnect();
       window.removeEventListener('resize', updateViewport);
     };
-  }, [children, atlasInkAvailable, inkSurfaceKey]);
+  }, [children, annotationAvailable, inkSurfaceKey]);
 
   function pointFromEvent(
     event: React.PointerEvent<SVGSVGElement>,
@@ -210,7 +233,7 @@ export default function WorkspaceViewerPanel({
     const { x, y } = pointFromEvent(event);
     const stroke: WikiInkStroke = {
       path: `M ${x.toFixed(1)} ${y.toFixed(1)}`,
-      tool: inkTool,
+      tool: inkTool as WikiInkTool,
       style: activeInkStyle,
     };
     drawingRef.current = { pointerId: event.pointerId, stroke };
@@ -250,13 +273,13 @@ export default function WorkspaceViewerPanel({
     }
   }
 
-  function handleInkPrimaryAction(): void {
-    if (!inkEnabled) {
-      setInkEnabled(true);
-      setInkPopoverOpen(true);
+  function handleAnnotationPrimaryAction(): void {
+    if (!annotationEnabled) {
+      onAnnotationEnabledChange(true);
+      setAnnotationPopoverOpen(true);
       return;
     }
-    setInkPopoverOpen((current) => !current);
+    setAnnotationPopoverOpen((current) => !current);
   }
 
   return (
@@ -269,78 +292,69 @@ export default function WorkspaceViewerPanel({
       collapsedSize={0}
       onResize={(panelSize) => onRightPanelCollapsedChange(panelSize.asPercentage <= 0.5)}
       className="workspace-panel-item"
-    >
-      <div className={`panel-inner workspace-viewer-panel no-border-radius-left ${rightCollapsed ? 'panel-collapsed-inner' : ''}`}>
-        <div className={`panel-header ${testMode ? '' : 'viewer-panel-toolbar'}`} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-          <div className="panel-header-copy" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px' }}>
-            {testMode && <div className="header-icon"><BookOpen size={18} /></div>}
-            <h3 style={{ margin: 0 }}>{viewerSurfaceTitle}</h3>
-            <span className={`viewer-vision-badge ${testMode ? 'viewer-vision-badge-test' : ''}`} style={{ marginTop: 0 }}>
-              {viewerVisionLabel}
-            </span>
-          </div>
+      >
+        <div className={`panel-inner workspace-viewer-panel no-border-radius-left ${rightCollapsed ? 'panel-collapsed-inner' : ''}`}>
+          <div className={`panel-header ${testMode ? '' : 'viewer-panel-toolbar'}`} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+            <div className="panel-header-copy" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px' }}>
+              {testMode && <div className="header-icon"><BookOpen size={18} /></div>}
+              <h3 style={{ margin: 0 }}>{viewerSurfaceTitle}</h3>
+            </div>
 
-          <div className={`viewer-utility-bar ${testMode ? '' : 'viewer-utility-bar-minimal'}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: 0, border: 'none', background: 'transparent' }}>
-            <button
-              className={`viewer-utility-btn ${sourcesDrawerOpen ? 'active' : ''}`}
-              type="button"
-              onClick={onToggleSourcesDrawer}
-            >
-              <FileText size={13} />
-              <span>{`${visionSourcesLabel} (${totalSourceCount})`}</span>
-              <ChevronDown size={11} className={`sources-chevron ${sourcesDrawerOpen ? 'open' : ''}`} />
-            </button>
-            <button
-              className="viewer-utility-btn"
-              type="button"
-              onClick={onTriggerUpload}
-              disabled={isUploading}
-            >
-              <Upload size={13} />
-              <span>{visionUploadLabel}</span>
-            </button>
-            {atlasInkAvailable && (
-              <div
-                ref={inkPopoverRef}
-                className={`viewer-ink-popover-anchor ${inkPopoverOpen ? 'open' : ''}`}
+            <div className={`viewer-utility-bar ${testMode ? '' : 'viewer-utility-bar-minimal'}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: 0, border: 'none', background: 'transparent' }}>
+              {headerToolbar}
+              {annotationAvailable && (
+                <div
+                  ref={inkPopoverRef}
+                className={`viewer-ink-popover-anchor ${annotationPopoverOpen ? 'open' : ''}`}
               >
                 <button
-                  className={`viewer-utility-btn ${inkEnabled ? 'active' : ''}`}
+                  className={`viewer-utility-btn ${annotationEnabled ? 'active' : ''}`}
                   type="button"
-                  onClick={handleInkPrimaryAction}
-                  title={inkEnabled ? '잉크 도구 열기' : '낙서 시작'}
+                  onClick={handleAnnotationPrimaryAction}
+                  title={annotationEnabled ? '편집 도구 열기' : '주석 시작'}
                 >
-                  <ActiveInkIcon size={13} />
-                  <span>{activeInkLabel}</span>
+                  <ActiveToolIcon size={13} />
+                  <span>{activeToolLabel}</span>
                   <span
                     className="viewer-ink-current-dot"
-                    style={{ ['--ink-current-color' as string]: activeInkColor }}
+                    style={{ ['--ink-current-color' as string]: activeToolColor }}
                     aria-hidden="true"
                   />
                 </button>
-                {inkPopoverOpen && (
-                  <div className="viewer-ink-popover" role="dialog" aria-label="Ink tools">
+                {annotationPopoverOpen && (
+                  <div className="viewer-ink-popover" role="dialog" aria-label="Annotation tools">
                     <div className="viewer-ink-popover-header">
-                      <strong>Ink Tools</strong>
+                      <strong>Annotation Tools</strong>
                       <button
                         type="button"
                         className="viewer-ink-popover-close"
-                        onClick={() => setInkPopoverOpen(false)}
+                        onClick={() => setAnnotationPopoverOpen(false)}
                       >
                         완료
                       </button>
                     </div>
                     <div className={`viewer-ink-status ${hasInkChanges ? 'is-dirty' : ''}`}>
-                      <span>{inkStatusLabel}</span>
-                      <span>{`${inkStrokes.length} stroke${inkStrokes.length === 1 ? '' : 's'}`}</span>
+                      <span>{annotationTool === 'text' ? (annotationEnabled ? '본문 편집 활성' : '본문 편집 대기') : inkStatusLabel}</span>
+                      <span>{annotationTool === 'text' ? (textAnnotationMode === 'edit' ? '텍스트 수정' : '텍스트 추가') : `${inkStrokes.length} stroke${inkStrokes.length === 1 ? '' : 's'}`}</span>
                     </div>
-                    <div className="viewer-ink-mode-switch" role="group" aria-label="Ink tools">
+                    <div className="viewer-ink-mode-switch" role="group" aria-label="Annotation tools">
                       <button
                         type="button"
-                        className={`viewer-ink-mode-btn ${inkTool === 'pen' ? 'active' : ''}`}
+                        className={`viewer-ink-mode-btn ${annotationTool === 'text' ? 'active' : ''}`}
                         onClick={() => {
-                          setInkEnabled(true);
-                          setInkTool('pen');
+                          onAnnotationEnabledChange(true);
+                          onAnnotationToolChange('text');
+                        }}
+                      >
+                        <Type size={13} />
+                        텍스트
+                      </button>
+                      <button
+                        type="button"
+                        className={`viewer-ink-mode-btn ${annotationTool === 'pen' ? 'active' : ''}`}
+                        onClick={() => {
+                          onAnnotationEnabledChange(true);
+                          onAnnotationToolChange('pen');
                         }}
                       >
                         <PenTool size={13} />
@@ -348,67 +362,121 @@ export default function WorkspaceViewerPanel({
                       </button>
                       <button
                         type="button"
-                        className={`viewer-ink-mode-btn ${inkTool === 'highlighter' ? 'active' : ''}`}
+                        className={`viewer-ink-mode-btn ${annotationTool === 'highlighter' ? 'active' : ''}`}
                         onClick={() => {
-                          setInkEnabled(true);
-                          setInkTool('highlighter');
+                          onAnnotationEnabledChange(true);
+                          onAnnotationToolChange('highlighter');
                         }}
                       >
                         <Highlighter size={13} />
                         형광펜
                       </button>
                     </div>
-                    <div className="viewer-ink-color-row" role="group" aria-label="Ink colors">
+                    {annotationTool === 'text' && (
+                      <>
+                        <div className="viewer-annotation-submode-switch" role="group" aria-label="Text annotation mode">
+                          <button
+                            type="button"
+                            className={`viewer-annotation-submode-btn ${textAnnotationMode === 'add' ? 'active' : ''}`}
+                            onClick={() => onTextAnnotationModeChange('add')}
+                          >
+                            텍스트 추가
+                          </button>
+                          <button
+                            type="button"
+                            className={`viewer-annotation-submode-btn ${textAnnotationMode === 'edit' ? 'active' : ''}`}
+                            onClick={() => onTextAnnotationModeChange('edit')}
+                          >
+                            텍스트 수정
+                          </button>
+                        </div>
+                        <div className="viewer-annotation-style-row">
+                          <span className="viewer-annotation-style-label">Size</span>
+                          <div className="viewer-annotation-style-controls">
+                            {(['sm', 'md', 'lg'] as const).map((size) => (
+                              <button
+                                key={size}
+                                type="button"
+                                className={`viewer-annotation-style-btn ${textAnnotationStyle.size === size ? 'active' : ''}`}
+                                onClick={() => onTextAnnotationStyleChange({ ...textAnnotationStyle, size })}
+                              >
+                                {size === 'sm' ? 'Compact' : size === 'lg' ? 'Large' : 'Default'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="viewer-annotation-style-row">
+                          <span className="viewer-annotation-style-label">Weight</span>
+                          <div className="viewer-annotation-style-controls">
+                            {(['regular', 'strong'] as const).map((weight) => (
+                              <button
+                                key={weight}
+                                type="button"
+                                className={`viewer-annotation-style-btn ${textAnnotationStyle.weight === weight ? 'active' : ''}`}
+                                onClick={() => onTextAnnotationStyleChange({ ...textAnnotationStyle, weight })}
+                              >
+                                {weight === 'strong' ? 'Bold' : 'Regular'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    <div className="viewer-ink-color-row" role="group" aria-label="Annotation colors">
                       {INK_STYLES.map((style) => (
                         <button
                           key={style.id}
                           type="button"
-                          className={`viewer-ink-color-swatch ${inkColorId === style.id ? 'active' : ''}`}
+                          className={`viewer-ink-color-swatch ${annotationColorId === style.id ? 'active' : ''}`}
                           style={{
                             ['--ink-swatch-color' as string]:
-                              inkTool === 'highlighter' ? style.highlighterColor : style.penColor,
+                              annotationTool === 'highlighter' ? style.highlighterColor : style.penColor,
                           }}
-                          title={`${inkTool === 'highlighter' ? '형광펜' : '잉크펜'} ${style.label}`}
-                          aria-label={`${inkTool === 'highlighter' ? '형광펜' : '잉크펜'} ${style.label}`}
+                          title={`${annotationTool === 'text' ? '텍스트' : annotationTool === 'highlighter' ? '형광펜' : '잉크펜'} ${style.label}`}
+                          aria-label={`${annotationTool === 'text' ? '텍스트' : annotationTool === 'highlighter' ? '형광펜' : '잉크펜'} ${style.label}`}
                           onClick={() => {
-                            setInkEnabled(true);
-                            setInkColorId(style.id);
+                            onAnnotationEnabledChange(true);
+                            onAnnotationColorChange(style.id);
                           }}
                         />
                       ))}
                     </div>
                     <div className="viewer-ink-popover-actions">
+                      {annotationTool !== 'text' && (
+                        <>
+                          <button
+                            className="viewer-utility-btn"
+                            type="button"
+                            onClick={() => {
+                              setInkStrokes([]);
+                              setActiveInkStroke(null);
+                              drawingRef.current = null;
+                            }}
+                            disabled={inkStrokes.length === 0 && !activeInkStroke}
+                            title="낙서 지우기"
+                          >
+                            <Trash2 size={13} />
+                            <span>지우기</span>
+                          </button>
+                          <button
+                            className="viewer-utility-btn"
+                            type="button"
+                            onClick={() => onSaveInk(inkStrokes)}
+                            disabled={!hasInkChanges || isInkSaving}
+                            title="낙서 저장"
+                          >
+                            <span>{isInkSaving ? '저장 중' : '저장'}</span>
+                          </button>
+                        </>
+                      )}
                       <button
                         className="viewer-utility-btn"
                         type="button"
                         onClick={() => {
-                          setInkStrokes([]);
-                          setActiveInkStroke(null);
-                          drawingRef.current = null;
+                          onAnnotationEnabledChange(false);
+                          setAnnotationPopoverOpen(false);
                         }}
-                        disabled={inkStrokes.length === 0 && !activeInkStroke}
-                        title="낙서 지우기"
-                      >
-                        <Trash2 size={13} />
-                        <span>지우기</span>
-                      </button>
-                      <button
-                        className="viewer-utility-btn"
-                        type="button"
-                        onClick={() => onSaveInk(inkStrokes)}
-                        disabled={!hasInkChanges || isInkSaving}
-                        title="낙서 저장"
-                      >
-                        <span>{isInkSaving ? '저장 중' : '저장'}</span>
-                      </button>
-                      <button
-                        className="viewer-utility-btn"
-                        type="button"
-                        onClick={() => {
-                          setInkEnabled(false);
-                          setInkPopoverOpen(false);
-                        }}
-                        title="낙서 종료"
+                        title="편집 종료"
                       >
                         <span>끄기</span>
                       </button>
@@ -450,18 +518,26 @@ export default function WorkspaceViewerPanel({
             className={`atlas-ink-stage ${inkEnabled ? 'is-inking' : ''}`}
           >
             {children}
-            {atlasInkAvailable && inkViewport.width > 0 && inkViewport.height > 0 && (
+            {annotationAvailable && inkToolActive && inkViewport.width > 0 && inkViewport.height > 0 && (
               <svg
                 className={`atlas-ink-overlay ${inkEnabled ? 'is-enabled' : ''} atlas-ink-overlay--${inkTool}`}
                 width={inkViewport.width}
                 height={inkViewport.height}
                 viewBox={`0 0 ${inkViewport.width} ${inkViewport.height}`}
+                style={{ width: `${inkViewport.width}px`, height: `${inkViewport.height}px` }}
                 onPointerDown={handleInkPointerDown}
                 onPointerMove={handleInkPointerMove}
                 onPointerUp={finalizeInkPointer}
                 onPointerCancel={finalizeInkPointer}
                 onPointerLeave={finalizeInkPointer}
               >
+                <rect
+                  className="atlas-ink-hit-area"
+                  x="0"
+                  y="0"
+                  width={inkViewport.width}
+                  height={inkViewport.height}
+                />
                 {inkStrokes.map((stroke, index) => (
                   <path
                     key={`ink-path-${index}`}

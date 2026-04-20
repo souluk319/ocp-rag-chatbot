@@ -10,6 +10,7 @@ from play_book_studio.retrieval import SessionContext
 from .answer_text import (
     align_answer_to_grounded_commands,
     ensure_korean_product_terms,
+    guard_first_step_grounding,
     normalize_answer_markup_blocks,
     normalize_answer_text,
     restore_readable_paragraphs,
@@ -107,6 +108,11 @@ def generate_grounded_answer_text(
         citations=citations,
     )
     answer_text = shape_actionable_ops_answer(
+        answer_text,
+        query=query,
+        citations=citations,
+    )
+    answer_text = guard_first_step_grounding(
         answer_text,
         query=query,
         citations=citations,

@@ -14,6 +14,8 @@ function App() {
         <Route path="/studio" element={<WorkspacePage />} />
         <Route path="/workspace" element={<Navigate to="/studio" replace />} />
         <Route path="/playbook-library" element={<PlaybookLibraryPage />} />
+        <Route path="/playbook-library/control-tower" element={<PlaybookLibraryPage />} />
+        <Route path="/playbook-library/repository" element={<PlaybookLibraryPage />} />
       </Routes>
     </Router>
   );

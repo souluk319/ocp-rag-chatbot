@@ -21,8 +21,16 @@ from .wiki_user_overlay_targets import (
     resolve_overlay_target,
 )
 
-VALID_OVERLAY_KINDS = {"favorite", "check", "note", "recent_position", "ink"}
+VALID_OVERLAY_KINDS = {"favorite", "check", "note", "recent_position", "ink", "edited_card"}
 VALID_INK_TOOLS = {"pen", "highlighter"}
+VALID_EDITED_TEXT_TONES = {"amber", "ink", "teal", "cyan", "rose", "violet", "lime"}
+VALID_EDITED_TEXT_SIZES = {"sm", "md", "lg"}
+VALID_EDITED_TEXT_WEIGHTS = {"regular", "strong"}
+DEFAULT_EDITED_TEXT_STYLE = {
+    "tone": "amber",
+    "size": "md",
+    "weight": "regular",
+}
 DEFAULT_INK_STYLES = {
     "cyan": {
         "id": "cyan",
@@ -95,7 +103,10 @@ def _overlay_timestamp(value: str) -> str:
 
 
 def _overlay_signal_weight(kind: str) -> int:
-    return {"favorite": 4, "check": 3, "note": 2, "ink": 2, "recent_position": 1}.get(str(kind or "").strip(), 0)
+    return {"edited_card": 5, "favorite": 4, "check": 3, "note": 2, "ink": 2, "recent_position": 1}.get(
+        str(kind or "").strip(),
+        0,
+    )
 
 
 def _normalize_ink_style(value: Any) -> dict[str, str]:
@@ -132,6 +143,68 @@ def _normalize_ink_strokes(value: Any) -> list[dict[str, Any]]:
     return normalized
 
 
+def _normalize_edited_text_style(value: Any) -> dict[str, str]:
+    payload = dict(value) if isinstance(value, dict) else {}
+    tone = str(payload.get("tone") or "").strip().lower()
+    size = str(payload.get("size") or "").strip().lower()
+    weight = str(payload.get("weight") or "").strip().lower()
+    return {
+        "tone": tone if tone in VALID_EDITED_TEXT_TONES else DEFAULT_EDITED_TEXT_STYLE["tone"],
+        "size": size if size in VALID_EDITED_TEXT_SIZES else DEFAULT_EDITED_TEXT_STYLE["size"],
+        "weight": weight if weight in VALID_EDITED_TEXT_WEIGHTS else DEFAULT_EDITED_TEXT_STYLE["weight"],
+    }
+
+
+def _normalize_ratio(value: Any, *, fallback: float) -> float:
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return fallback
+    return max(0.0, min(1.0, numeric))
+
+
+def _normalize_text_annotations(value: Any, default_anchor: str) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    normalized: list[dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        kind = str(item.get("kind") or "").strip().lower()
+        if kind not in {"add", "edit"}:
+            continue
+        text = str(item.get("text") or "").strip()
+        if not text:
+            continue
+        anchor = str(item.get("anchor") or default_anchor).strip()
+        if not anchor:
+            continue
+        block_path = str(item.get("block_path") or "").strip()
+        if kind == "edit" and not block_path:
+            continue
+        normalized.append(
+            {
+                "annotation_id": str(item.get("annotation_id") or f"ant-{uuid4().hex[:12]}").strip()
+                or f"ant-{uuid4().hex[:12]}",
+                "kind": kind,
+                "anchor": anchor,
+                "text": text,
+                "style": _normalize_edited_text_style(item.get("style")),
+                "x_ratio": _normalize_ratio(item.get("x_ratio"), fallback=0.08),
+                "y_ratio": _normalize_ratio(item.get("y_ratio"), fallback=0.12),
+                "block_path": block_path,
+            }
+        )
+    return normalized
+
+
+def _anchor_from_target_ref(target_ref: str) -> str:
+    normalized = str(target_ref or "").strip()
+    if normalized.startswith("section:") and "#" in normalized:
+        return normalized.split("#", 1)[1].strip()
+    return ""
+
+
 def _save_overlay_document(root_dir: Path, payload: dict[str, Any]) -> None:
     _overlay_document_path(root_dir).write_text(
         json.dumps(payload, ensure_ascii=False, indent=2),
@@ -140,7 +213,7 @@ def _save_overlay_document(root_dir: Path, payload: dict[str, Any]) -> None:
 
 
 def _upsert_policy(kind: str) -> bool:
-    return kind in {"favorite", "check", "recent_position", "ink"}
+    return kind in {"favorite", "check", "recent_position", "ink", "edited_card"}
 
 
 def list_wiki_user_overlays(root_dir: Path, *, user_id: str) -> dict[str, Any]:
@@ -246,6 +319,7 @@ def _build_personalized_next_plays(root_dir: Path, user_items: list[dict[str, An
             "check": "체크 완료 후 다음 경로",
             "note": "개인 메모 기반",
             "ink": "낙서 기반",
+            "edited_card": "수정본 기반",
             "recent_position": "최근 위치 기반",
         }.get(kind, "overlay 기반")
         candidates: list[dict[str, Any]] = []
@@ -298,6 +372,7 @@ def build_wiki_overlay_signal_payload(root_dir: Path, *, user_id: str | None = N
             "check_count": int(kind_counter.get("check", 0)),
             "note_count": int(kind_counter.get("note", 0)),
             "ink_count": int(kind_counter.get("ink", 0)),
+            "edited_card_count": int(kind_counter.get("edited_card", 0)),
             "recent_position_count": int(kind_counter.get("recent_position", 0)),
             "target_count": target_count,
             "user_count": user_count,
@@ -330,6 +405,7 @@ def build_wiki_overlay_signal_payload(root_dir: Path, *, user_id: str | None = N
             "check_count": sum(1 for item in user_items if str(item.get("kind") or "") == "check"),
             "note_count": sum(1 for item in user_items if str(item.get("kind") or "") == "note"),
             "ink_count": sum(1 for item in user_items if str(item.get("kind") or "") == "ink"),
+            "edited_card_count": sum(1 for item in user_items if str(item.get("kind") or "") == "edited_card"),
             "recent_position_count": sum(1 for item in user_items if str(item.get("kind") or "") == "recent_position"),
             "recent_targets": recent_targets[:6],
             "recommended_next_plays": _build_personalized_next_plays(root_dir, user_items),
@@ -340,7 +416,7 @@ def build_wiki_overlay_signal_payload(root_dir: Path, *, user_id: str | None = N
 def save_wiki_user_overlay(root_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
     kind = str(payload.get("kind") or "").strip()
     if kind not in VALID_OVERLAY_KINDS:
-        raise ValueError("kind는 favorite, check, note, ink, recent_position 중 하나여야 합니다.")
+        raise ValueError("kind는 favorite, check, note, ink, edited_card, recent_position 중 하나여야 합니다.")
     user_id = str(payload.get("user_id") or "").strip()
     if not user_id:
         raise ValueError("user_id가 필요합니다.")
@@ -369,6 +445,30 @@ def save_wiki_user_overlay(root_dir: Path, payload: dict[str, Any]) -> dict[str,
     if kind == "ink":
         record["title"] = str(payload.get("title") or "").strip()
         record["strokes"] = _normalize_ink_strokes(payload.get("strokes"))
+    if kind == "edited_card":
+        card_title = str(payload.get("card_title") or payload.get("title") or "").strip()
+        source_anchor = str(payload.get("source_anchor") or "").strip() or _anchor_from_target_ref(target_ref)
+        source_viewer_path = str(payload.get("source_viewer_path") or payload.get("viewer_path") or "").strip()
+        text_annotations = _normalize_text_annotations(
+            payload.get("text_annotations") or record["payload"].get("text_annotations"),
+            source_anchor,
+        )
+        record["title"] = str(payload.get("title") or card_title).strip()
+        record["card_title"] = card_title or record["title"]
+        record["summary"] = str(payload.get("summary") or "").strip()
+        record["body"] = str(payload.get("body") or "").strip()
+        record["pinned"] = bool(payload.get("pinned", True))
+        record["strokes"] = _normalize_ink_strokes(payload.get("strokes"))
+        record["text_style"] = _normalize_edited_text_style(payload.get("text_style"))
+        record["text_annotations"] = text_annotations
+        record["payload"]["text_annotations"] = text_annotations
+        record["source_anchor"] = source_anchor
+        record["source_viewer_path"] = source_viewer_path
+        record["document_id"] = str(payload.get("document_id") or f"edc-{uuid4().hex[:12]}").strip()
+        record["document_title"] = str(payload.get("document_title") or "").strip() or (
+            f"{record['card_title']} 수정본" if record["card_title"] else "카드 수정본"
+        )
+        record["document_label"] = str(payload.get("document_label") or "").strip() or "card_edit_snapshot"
     if kind == "favorite":
         record["title"] = str(payload.get("title") or "").strip()
         record["summary"] = str(payload.get("summary") or "").strip()
@@ -381,6 +481,10 @@ def save_wiki_user_overlay(root_dir: Path, payload: dict[str, Any]) -> dict[str,
             if str(item.get("user_id") or "").strip() == user_id and str(item.get("kind") or "").strip() == kind and str(item.get("target_ref") or "").strip() == target_ref:
                 record["overlay_id"] = str(item.get("overlay_id") or record["overlay_id"])
                 record["created_at"] = str(item.get("created_at") or record["created_at"])
+                if kind == "edited_card":
+                    record["document_id"] = str(item.get("document_id") or record.get("document_id") or "").strip() or record["document_id"]
+                    record["document_title"] = str(item.get("document_title") or record.get("document_title") or "").strip() or record["document_title"]
+                    record["document_label"] = str(item.get("document_label") or record.get("document_label") or "").strip() or record["document_label"]
                 new_items.append(record)
                 replaced = True
                 continue

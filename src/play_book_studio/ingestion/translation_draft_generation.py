@@ -23,6 +23,9 @@ from .normalize import extract_document_ast, project_normalized_sections
 from .source_first import (
     SOURCE_BRANCH,
     SOURCE_REPO_URL,
+    derive_official_docs_legal_notice_url,
+    derive_official_docs_license_or_terms,
+    derive_source_repo_updated_at,
     resolve_repo_binding,
     source_mirror_root,
 )
@@ -106,6 +109,19 @@ def _source_repo_runtime_entry(settings: Settings, entry: SourceManifestEntry) -
     missing = [str(path) for path in source_paths if not path.exists()]
     if missing:
         raise ValueError(f"missing repo source files for {entry.book_slug}: {', '.join(missing[:3])}")
+    legal_notice_url = str(entry.legal_notice_url or derive_official_docs_legal_notice_url(entry)).strip()
+    license_or_terms = str(
+        entry.license_or_terms
+        or derive_official_docs_license_or_terms(entry, legal_notice_url=legal_notice_url)
+    ).strip()
+    updated_at = str(
+        entry.updated_at
+        or derive_source_repo_updated_at(
+            settings.root_dir,
+            source_relative_paths=source_relative_paths,
+            mirror_root=mirror_root,
+        )
+    ).strip()
     runtime_entry = SourceManifestEntry(
         **{
             **entry.to_dict(),
@@ -121,9 +137,12 @@ def _source_repo_runtime_entry(settings: Settings, entry: SourceManifestEntry) -
             "source_relative_path": source_relative_path,
             "source_relative_paths": source_relative_paths,
             "source_mirror_root": str(mirror_root),
+            "legal_notice_url": legal_notice_url,
+            "license_or_terms": license_or_terms,
+            "updated_at": updated_at,
+            "translation_source_url": str(entry.translation_source_url or entry.resolved_source_url or entry.source_url).strip(),
             "fallback_source_url": "",
             "fallback_viewer_path": "",
-            "translation_source_url": "",
         }
     )
     return runtime_entry, source_paths
@@ -176,8 +195,10 @@ def generate_translation_drafts(
     slugs: list[str] | None = None,
     force_collect: bool = False,
     force_regenerate: bool = False,
+    manifest_path: Path | None = None,
 ) -> dict[str, object]:
-    entries = read_manifest(settings.translation_draft_manifest_path)
+    draft_manifest_path = manifest_path or settings.translation_draft_manifest_path
+    entries = read_manifest(draft_manifest_path)
     selected = [
         entry for entry in entries
         if not slugs or entry.book_slug in set(slugs)
@@ -334,6 +355,7 @@ def generate_translation_drafts(
         "errors": errors,
         "draft_manualbook_audit": manualbook_audit,
         "output_targets": {
+            "translation_draft_manifest_path": str(draft_manifest_path),
             "normalized_docs_path": str(_normalized_docs_path(settings)),
             "chunks_path": str(_chunks_path(settings)),
             "playbook_documents_path": str(_playbook_documents_path(settings)),
