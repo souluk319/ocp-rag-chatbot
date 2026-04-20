@@ -1,0 +1,30 @@
+{
+  "task_id": "demo_runbook_packet_20260420",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": false,
+  "cwd": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "python_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio\\.venv\\Scripts\\python.exe",
+  "worktree_path": "C:\\Users\\soulu\\cywell\\ocp-play-studio\\ocp-play-studio",
+  "write_scope": [
+    "docs/ocp420_assignment_demo_runbook.md",
+    "scripts/run_submission_demo_checks.ps1",
+    "reports/execution_harness/demo_runbook_packet_20260420/*"
+  ],
+  "target_outputs": [
+    "human-run demo runbook aligns 5 validated simulator scenarios to the assignment rubric",
+    "demo preparation script reduces friction before a live presentation"
+  ],
+  "validation_commands": [
+    "Get-Content docs\\ocp420_assignment_demo_runbook.md",
+    "powershell -ExecutionPolicy Bypass -File scripts\\run_submission_demo_checks.ps1"
+  ],
+  "git_ref_snapshot": {
+    "head_ref": "feat/ocp29-presentation-cutdown",
+    "head_sha": "7d2395cee8974a77d5e2b48073412581a630c72c",
+    "upstream_ref": "origin/main",
+    "upstream_sha": "e87fa0c562c5e277305617e1eea36c112aa01b27",
+    "origin_main_sha": "e87fa0c562c5e277305617e1eea36c112aa01b27"
+  },
+  "status": "completed"
+}

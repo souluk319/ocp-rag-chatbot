@@ -1,0 +1,34 @@
+{
+  "status": "completed",
+  "completed_at_utc": "2026-04-20T01:10:00+00:00",
+  "git_ref_snapshot": {
+    "head_ref": "feat/ocp29-presentation-cutdown",
+    "head_sha": "7d2395cee8974a77d5e2b48073412581a630c72c",
+    "origin_main_sha": "e87fa0c562c5e277305617e1eea36c112aa01b27"
+  },
+  "deliverables": {
+    "demo_runbook_path": "docs/ocp420_assignment_demo_runbook.md",
+    "demo_prep_script_path": "scripts/run_submission_demo_checks.ps1"
+  },
+  "runbook_contents": {
+    "scenario_count": 5,
+    "includes_short_order": true,
+    "includes_full_order": true,
+    "includes_eval_mapping": true,
+    "includes_operator_talking_points": true,
+    "includes_code_anchors": true,
+    "includes_fallback_plan": true
+  },
+  "validation": {
+    "runbook_readback": "passed",
+    "demo_prep_script_health": "passed"
+  },
+  "runtime_snapshot": {
+    "live_runtime_url": "http://127.0.0.1:8765",
+    "llm_model": "Qwen/Qwen3.5-9B",
+    "embedding_model": "dragonkue/bge-m3-ko",
+    "reranker_enabled": true,
+    "qdrant_collection": "openshift_docs",
+    "graph_mode": "auto"
+  }
+}
