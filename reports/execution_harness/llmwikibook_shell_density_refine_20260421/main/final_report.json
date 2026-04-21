@@ -1,0 +1,47 @@
+{
+  "task_id": "llmwikibook_shell_density_refine_20260421",
+  "lane_id": "main",
+  "status": "completed",
+  "summary": "Reduced the remaining shell density inside the additive LLMWikiBook surface by slimming the left shelf card and nav rhythm, narrowing the sidecar, and simplifying Studio cards into quieter editing context blocks while preserving the existing reader and annotation capabilities.",
+  "artifacts": [
+    "presentation-ui/src/pages/LlmWikiBookPage.tsx",
+    "presentation-ui/src/pages/llmwikibook/llmWikiBookShell.css",
+    "reports/execution_harness/llmwikibook_shell_density_refine_20260421/main/llmwikibook-shell-density-refine-smoke.png",
+    "reports/execution_harness/llmwikibook_shell_density_refine_20260421/main/llmwikibook-shell-density-refine-studio-smoke.png"
+  ],
+  "validations": [
+    {
+      "name": "frontend build",
+      "command": "npm --prefix presentation-ui run build",
+      "result": "passed"
+    },
+    {
+      "name": "frontend preview rebuild",
+      "command": "docker compose up -d --build --no-deps --force-recreate frontend",
+      "result": "passed"
+    },
+    {
+      "name": "canonical route HTTP smoke",
+      "command": "Invoke-WebRequest -UseBasicParsing http://127.0.0.1:5173/llmwikibook",
+      "result": "passed",
+      "evidence": "HTTP 200"
+    },
+    {
+      "name": "reader shell visual smoke",
+      "command": "headless Chrome screenshot http://127.0.0.1:5173/llmwikibook",
+      "result": "passed",
+      "evidence": "reports/execution_harness/llmwikibook_shell_density_refine_20260421/main/llmwikibook-shell-density-refine-smoke.png"
+    },
+    {
+      "name": "studio sidecar visual smoke",
+      "command": "Chrome DevTools protocol click on Studio toggle followed by screenshot capture",
+      "result": "passed",
+      "evidence": "reports/execution_harness/llmwikibook_shell_density_refine_20260421/main/llmwikibook-shell-density-refine-studio-smoke.png"
+    }
+  ],
+  "follow_ups": [
+    "If the next packet wants a stricter GitBook calm shell, trim the official shelf list with progressive reveal or family grouping rather than a long always-open stack.",
+    "Tune the inner viewer editorial opener so the document hero matches the calmer outer shell even more tightly.",
+    "Consider a dedicated Studio-only smoke harness now that sidecar verification is becoming part of the acceptance loop."
+  ]
+}

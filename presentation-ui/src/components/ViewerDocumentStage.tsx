@@ -125,6 +125,43 @@ const VIEWER_READER_POLISH = `
       padding: 24px 20px 48px !important;
     }
   }
+
+  :host([data-viewer-variant="editorial"]) .viewer-root {
+    background: transparent;
+    color: #182230;
+  }
+
+  :host([data-viewer-variant="editorial"]) .viewer-root main {
+    width: min(760px, 100%) !important;
+    max-width: 760px !important;
+    padding: 0 0 72px !important;
+  }
+
+  :host([data-viewer-variant="editorial"]) .viewer-root .hero {
+    margin-bottom: 28px !important;
+  }
+
+  :host([data-viewer-variant="editorial"]) .viewer-root .section-card {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin-bottom: 34px !important;
+  }
+
+  :host([data-viewer-variant="editorial"]) .viewer-root .code-block {
+    background: #f5f7fb !important;
+    border: 1px solid #d9e0ea !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+  }
+
+  :host([data-viewer-variant="editorial"]) .viewer-root .table-wrap {
+    border-radius: 14px !important;
+    border: 1px solid #dde4ef !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
 `;
 
 const VIEWER_ANNOTATION_POLISH = `
@@ -467,6 +504,7 @@ export default function ViewerDocumentStage({
   onSaveTextAnnotation,
   onRemoveTextAnnotation,
   className,
+  surfaceVariant = 'default',
 }: {
   viewerDocument: ViewerDocumentPayload;
   currentViewerPath?: string;
@@ -485,6 +523,7 @@ export default function ViewerDocumentStage({
     annotationId: string,
   ) => void;
   className?: string;
+  surfaceVariant?: 'default' | 'editorial';
 }) {
   const shellRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -519,6 +558,7 @@ export default function ViewerDocumentStage({
     if (!host) {
       return;
     }
+    host.dataset.viewerVariant = surfaceVariant;
     const root = host.shadowRoot ?? host.attachShadow({ mode: 'open' });
     shadowRootRef.current = root;
     root.replaceChildren();
@@ -806,7 +846,7 @@ export default function ViewerDocumentStage({
       wrapperRef.current = null;
       root.removeEventListener('click', handleClick);
     };
-  }, [viewerDocument.bodyClassName, viewerDocument.html, inlineStylesKey]);
+  }, [surfaceVariant, viewerDocument.bodyClassName, viewerDocument.html, inlineStylesKey]);
 
   useEffect(() => {
     const host = hostRef.current;

@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Navigate, Routes, Route } from 'react-router-d
 import LandingPage from './pages/LandingPage';
 import ProjectDetailsPage from './pages/ProjectDetailsPage';
 import WorkspacePage from './pages/WorkspacePage';
+import LlmWikiBookPage from './pages/LlmWikiBookPage';
 import PlaybookLibraryPage from './pages/PlaybookLibraryPage';
 import './index.css';
 
@@ -12,6 +13,8 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/details" element={<ProjectDetailsPage />} />
         <Route path="/studio" element={<WorkspacePage />} />
+        <Route path="/llmwikibook" element={<LlmWikiBookPage />} />
+        <Route path="/studio-v2" element={<Navigate to="/llmwikibook" replace />} />
         <Route path="/workspace" element={<Navigate to="/studio" replace />} />
         <Route path="/playbook-library" element={<PlaybookLibraryPage />} />
         <Route path="/playbook-library/control-tower" element={<PlaybookLibraryPage />} />

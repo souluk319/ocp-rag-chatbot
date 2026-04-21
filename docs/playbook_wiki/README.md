@@ -63,6 +63,25 @@ last_updated: 2026-04-20
    - 가장 엄격한 품질 기준선
    - viewer/chat/corpus same-truth reference lane 정의
 
+11. `reference_board_v1.md`
+   - 역할별 reference board
+   - steal / avoid / adapt 판단표
+   - 다음 구체화 회의용 질문 축
+
+12. `gitbook_inspired_viewer_shell_spec_v1.md`
+   - GitBook-inspired reader shell spec
+   - left rail / center reading stage / right context rail / studio sidecar 정의
+   - viewer와 editor의 경계
+
+13. `viewer_shell_wireframe_v1.md`
+   - 구현 직전 수준의 viewer shell 와이어
+   - panel responsibility, viewport rule, mode layout
+
+14. `studio_interaction_contract_v1.md`
+   - Reader Mode / Studio Mode 전환 계약
+   - note / ink / inserted_text_card / edited_card 저장 단위
+   - source truth와 user layer의 경계
+
 ## 이 폴더의 역할
 
 이 문서들은 active contract를 대체하지 않는다.

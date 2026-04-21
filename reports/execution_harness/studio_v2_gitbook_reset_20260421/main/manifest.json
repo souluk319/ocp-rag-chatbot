@@ -1,0 +1,65 @@
+{
+  "task_id": "studio_v2_gitbook_reset_20260421",
+  "lane_id": "main",
+  "role": "main",
+  "major_task": true,
+  "parallel_execution_required": true,
+  "cwd": "C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio",
+  "python_path": ".venv/Scripts/python.exe",
+  "worktree_path": "C:/Users/soulu/cywell/ocp-play-studio/ocp-play-studio",
+  "write_scope": [
+    "presentation-ui/src/App.tsx",
+    "presentation-ui/src/pages/StudioV2Page.tsx",
+    "presentation-ui/src/pages/studio-v2/*",
+    "presentation-ui/src/pages/studioV2Support.ts",
+    "reports/execution_harness/studio_v2_gitbook_reset_20260421/main/*"
+  ],
+  "target_outputs": [
+    "Distinct /studio-v2 reader-first shell that no longer depends on WorkspaceViewerPanel or WorkspacePage.css",
+    "GitBook/Starlight-inspired visual grammar with PBS studio sidecar",
+    "Overlay contract preserved for note/ink/edited_card save and restore",
+    "Build-valid frontend and route-ready /studio-v2 surface"
+  ],
+  "validation_commands": [
+    "npm --prefix presentation-ui run build",
+    "browser smoke for /studio-v2: route load, reader/studio mode switch, note/ink/edit skeleton visibility"
+  ],
+  "git_ref_snapshot": {
+    "head_ref": "feat/playbook-upgrade-renewal",
+    "head_sha": "cac30499eeb5f3f1c9361644e3c2b3572b5c6b8f",
+    "upstream_ref": "origin/main",
+    "upstream_sha": "e87fa0c562c5e277305617e1eea36c112aa01b27",
+    "origin_main_sha": "e87fa0c562c5e277305617e1eea36c112aa01b27"
+  },
+  "companion_lane_plan": [
+    {
+      "lane_id": "explorer_shell_audit",
+      "role": "explorer",
+      "agent_id": "019dabc3-146e-7d40-8447-090c35a00ac9",
+      "nickname": "Nash",
+      "purpose": "legacy dependency audit and rewrite boundary"
+    },
+    {
+      "lane_id": "explorer_visual_grammar",
+      "role": "explorer",
+      "agent_id": "019dabc3-296b-70e1-a16a-3375656aaf61",
+      "nickname": "Tesla",
+      "purpose": "GitBook/Starlight-inspired shell grammar and steal/avoid checklist"
+    },
+    {
+      "lane_id": "explorer_runtime_integration",
+      "role": "explorer",
+      "agent_id": "019dabc3-3e68-7241-83ce-40a19b1d18dc",
+      "nickname": "Mendel",
+      "purpose": "minimal reusable runtime primitives and extraction boundary"
+    },
+    {
+      "lane_id": "worker_shell_scaffold",
+      "role": "worker",
+      "agent_id": "019dabc3-5376-7e60-a096-d83dc4cffe33",
+      "nickname": "Schrodinger",
+      "purpose": "new presentational shell scaffold under presentation-ui/src/pages/studio-v2/"
+    }
+  ],
+  "status": "completed"
+}

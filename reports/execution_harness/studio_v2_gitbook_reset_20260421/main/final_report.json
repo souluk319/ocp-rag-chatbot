@@ -1,0 +1,42 @@
+{
+  "task_id": "studio_v2_gitbook_reset_20260421",
+  "lane_id": "main",
+  "status": "completed",
+  "summary": "Studio-v2 was reset into a distinct reader-first shell with separate light editorial grammar, preserved note/ink/edited_card contracts, and reader-mode overlay suppression for a cleaner first impression.",
+  "artifacts": [
+    "presentation-ui/src/pages/StudioV2Page.tsx",
+    "presentation-ui/src/pages/studio-v2/StudioV2Shell.tsx",
+    "presentation-ui/src/pages/studio-v2/StudioV2ReaderPane.tsx",
+    "presentation-ui/src/pages/studio-v2/studioV2Shell.css",
+    "presentation-ui/src/pages/studioV2Support.ts",
+    "presentation-ui/src/components/ViewerDocumentStage.tsx",
+    "reports/execution_harness/studio_v2_gitbook_reset_20260421/main/studio-v2-smoke-refined-loaded-v2.png"
+  ],
+  "validations": [
+    {
+      "name": "frontend build",
+      "command": "npm --prefix presentation-ui run build",
+      "result": "passed"
+    },
+    {
+      "name": "frontend preview rebuild",
+      "command": "docker compose up -d --build --no-deps --force-recreate frontend",
+      "result": "passed"
+    },
+    {
+      "name": "route smoke",
+      "command": "GET http://127.0.0.1:5173/studio-v2",
+      "result": "passed"
+    },
+    {
+      "name": "visual smoke",
+      "command": "headless chrome screenshot with virtual-time-budget=7000",
+      "result": "passed"
+    }
+  ],
+  "follow_ups": [
+    "Move studio-v2 page orchestration into hooks/support modules once the shell alpha is accepted.",
+    "Tune left/right rail density and studio sidecar defaults after user review.",
+    "Implement studio-v2 specific inserted_text_card workflow after reader shell alpha is approved."
+  ]
+}
