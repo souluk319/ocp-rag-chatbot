@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import './MetricsFooter.css';
+import { ROUTES } from '../app/routes';
 import { loadDataControlRoom } from '../lib/runtimeApi';
 
 export default function MetricsFooter() {
@@ -89,7 +90,7 @@ export default function MetricsFooter() {
         </div>
 
         <div className="footer-cta">
-          <Link to="/details" className="btn-primary">
+          <Link to={ROUTES.pbsDetails} className="btn-primary">
             제품 소개
           </Link>
         </div>

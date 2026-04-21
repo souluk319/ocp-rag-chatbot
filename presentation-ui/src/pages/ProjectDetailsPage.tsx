@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Book, ShieldCheck, Layers, MessageSquare, PlaySquare } from 'lucide-react';
 import gsap from 'gsap';
+import { buildSharedLandingHref } from '../app/routes';
 import './ProjectDetailsPage.css';
 
 export default function ProjectDetailsPage() {
@@ -21,7 +22,7 @@ export default function ProjectDetailsPage() {
       {/* Sidebar Navigation */}
       <nav className="details-sidebar glass-panel">
         <div className="sidebar-header">
-          <Link to="/" className="back-link">
+          <Link to={buildSharedLandingHref('pbs')} className="back-link">
             <ArrowLeft size={20} />
             <span>Back to Home</span>
           </Link>

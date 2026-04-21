@@ -1,9 +1,0 @@
-{
-  "task_id": "wiki_runtime_viewer_rebuild_20260417",
-  "lane_id": "runtime",
-  "role": "worker",
-  "status": "pending",
-  "code_paths": [],
-  "artifacts": [],
-  "validation": []
-}

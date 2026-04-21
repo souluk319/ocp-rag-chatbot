@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { Link } from 'react-router-dom';
 import { Sparkles, ArrowRight, Languages } from 'lucide-react';
+import { ROUTES } from '../app/routes';
 import './Hero.css';
 
 export default function Hero() {
@@ -61,7 +62,7 @@ export default function Hero() {
         </p>
 
         <div className="hero-actions">
-          <Link to="/studio" className="primary-cta">
+          <Link to={ROUTES.pbsStudio} className="primary-cta">
             <span>Launch Studio</span>
             <ArrowRight size={18} />
           </Link>

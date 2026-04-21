@@ -1,9 +1,0 @@
-{
-  "task_id": "relation_asset_cleanup_20260416",
-  "lane_id": "reviewer",
-  "role": "reviewer",
-  "status": "pending",
-  "code_paths": [],
-  "artifacts": [],
-  "validation": []
-}

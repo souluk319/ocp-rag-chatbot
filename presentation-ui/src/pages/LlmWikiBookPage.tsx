@@ -10,6 +10,7 @@ import {
   StickyNote,
   Type,
 } from 'lucide-react';
+import { ROUTES, buildSharedLandingHref } from '../app/routes';
 import type {
   CustomerPackDraft,
   ViewerPageMode,
@@ -859,15 +860,15 @@ export default function LlmWikiBookPage() {
       title={currentDocumentTitle}
       subtitle={currentDocumentSubtitle}
       leading={(
-        <Link to="/playbook-library" className="llmwikibook-button llmwikibook-button--ghost" aria-label="Playbook Library로 이동">
+            <Link to={ROUTES.pbsPlaybookLibrary} className="llmwikibook-button llmwikibook-button--ghost" aria-label="Playbook Library로 이동">
           <ArrowLeft size={15} />
         </Link>
       )}
       breadcrumbs={(
         <>
-          <Link to="/" className="llmwikibook-inline-link">Home</Link>
+              <Link to={buildSharedLandingHref('pbs')} className="llmwikibook-inline-link">Home</Link>
           <span>/</span>
-          <Link to="/playbook-library" className="llmwikibook-inline-link">Playbook Library</Link>
+              <Link to={ROUTES.pbsPlaybookLibrary} className="llmwikibook-inline-link">Playbook Library</Link>
           <span>/</span>
           <span>LLMWikiBook</span>
         </>

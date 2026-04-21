@@ -6,6 +6,7 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 presentation-ui/dist/
+presentation-ui/node_modules/
 artifacts/
 /archive/
 /_quarantine/
@@ -23,6 +24,10 @@ reports/build_logs/ui_server_stderr.log
 reports/build_logs/*.out.log
 reports/build_logs/*.err.log
 reports/build_logs/task_scheduler/
+reports/demo_simulator/
+reports/execution_harness/
+reports/multiturn/
+reports/technical_notes/
 reports/execution_harness/**/chrome-headless-profile*/
 validation_report.json
 tmp_customer_pack_live/
@@ -39,6 +44,7 @@ study.md
 src/ocp_rag_v2.egg-info/
 C:/
 tmp/
+tmp_qdrant_smoke_chunks.jsonl
 PRD.md
 CANONICAL_AST_DESIGN.md
 CODE_READING_GUIDE.md
@@ -53,3 +59,8 @@ STRUCTURE_REFACTOR_BACKLOG.md
 SYSTEM_ROOT_CAUSE_AUDIT.md
 TEAM_OPS.md
 VENDOR_NOTES.md
+docs/playbook_wiki/
+docs/arrange_26.04.18*.md
+docs/ocp420_assignment_*.md
+docs/pipeline_toolchain_detail.md
+docs/retrieval_flow.md

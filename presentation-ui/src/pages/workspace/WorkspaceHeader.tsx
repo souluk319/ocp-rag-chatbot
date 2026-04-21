@@ -1,5 +1,6 @@
 import { ChevronDown, Languages, Sparkles, Moon, Sun } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { buildSharedLandingHref } from '../../app/routes';
 
 type WorkspaceHeaderProps = {
   packDropdownOpen: boolean;
@@ -33,7 +34,7 @@ export default function WorkspaceHeader({
   return (
     <header className="workspace-nav">
       <div className="nav-left">
-        <Link to="/" className="nav-logo-link">
+        <Link to={buildSharedLandingHref('pbs')} className="nav-logo-link">
           <div className="logo-icon">
             <Sparkles size={20} />
           </div>

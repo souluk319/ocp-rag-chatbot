@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { Link } from 'react-router-dom';
 import { MessageSquare, BookOpen, MonitorPlay } from 'lucide-react';
+import { ROUTES } from '../app/routes';
 import './ProductSurfaces.css';
 
 export default function ProductSurfaces() {
@@ -89,7 +90,7 @@ export default function ProductSurfaces() {
       <div className="surfaces-grid">
 
         <Link
-          to="/studio"
+          to={ROUTES.pbsStudio}
           className="surface-card glass-panel"
           ref={el => { cardsRef.current[0] = el; }}
         >
@@ -104,7 +105,7 @@ export default function ProductSurfaces() {
         </Link>
 
         <Link
-          to="/playbook-library"
+          to={ROUTES.pbsPlaybookLibrary}
           className="surface-card glass-panel"
           ref={el => { cardsRef.current[1] = el; }}
         >
@@ -119,7 +120,7 @@ export default function ProductSurfaces() {
         </Link>
 
         <Link
-          to="/playbook-library"
+          to={ROUTES.pbsControlTower}
           className="surface-card glass-panel"
           ref={el => { cardsRef.current[2] = el; }}
         >
