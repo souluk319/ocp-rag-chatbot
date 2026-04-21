@@ -14,11 +14,10 @@ artifacts/
 data/bronze/raw_html/
 data/bronze/source_bundles/
 data/silver/normalized_docs.jsonl
-data/silver_ko/translation_drafts/
-data/gold_corpus_ko/chunks.jsonl
-data/gold_corpus_ko/bm25_corpus.jsonl
-data/gold_manualbook_ko/playbook_documents.jsonl
-data/gold_manualbook_ko/playbooks/
+# incorporation baseline keeps the three curated datasets below in Git:
+# - data/silver_ko
+# - data/gold_corpus_ko
+# - data/gold_manualbook_ko
 reports/build_logs/
 reports/build_logs/ui_server_stdout.log
 reports/build_logs/ui_server_stderr.log
