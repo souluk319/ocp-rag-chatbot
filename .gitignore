@@ -23,6 +23,7 @@ reports/build_logs/ui_server_stderr.log
 reports/build_logs/*.out.log
 reports/build_logs/*.err.log
 reports/build_logs/task_scheduler/
+reports/execution_harness/**/chrome-headless-profile*/
 validation_report.json
 tmp_customer_pack_live/
 #

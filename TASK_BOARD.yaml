@@ -6,6 +6,7 @@ product_status: award_winning_enterprise_product
 renewal_mode: refinement_hardening_validation
 change_policy: execute_customer_order_within_existing_pbs_architecture
 current_stage: renewal_hardening_validation
+active_priority_lane: goal_first_manufacturing_runway
 current_order:
   deliverable: ocp_operator_playbook_package
   audience: ocp_operators
@@ -25,6 +26,48 @@ principles:
 - local_worklog_buffering
 - worktree_isolated_lanes
 - parallel_explore_build_review
+- goal_first_over_implementation_reuse
+- grade_truth_before_surface_expansion
+goal_first_priority_override:
+  effective_date: '2026-04-21'
+  reason: deep_research_strategy_aligned_with_fixed_product_goal
+  locked_goal: documents must be upgraded into reader_grade_playbooks and chat_grade_corpora from shared truth
+  execution_rules:
+  - preserve_pbs_architecture_and_surface_model
+  - judge_existing_implementation_by_goal_contribution_not_reuse_preference
+  - lock_grade_rubric_and_canonical_truth_before_parser_or_renderer_expansion
+  - route_low_quality_documents_through_grade_and_repair_loop
+  active_runway:
+  - id: G0
+    packet: goal_first_strategy_and_foundation_audit
+    status: done
+  - id: G1
+    packet: goal_first_grade_rubric_packet
+    status: done
+  - id: G2
+    packet: wiki_ast_v2_packet
+    status: done
+  - id: G3
+    packet: task_board_reprojection_packet
+    status: done
+  - id: G4
+    packet: quality_gate_engine_packet
+    status: done
+  - id: G5
+    packet: parser_router_and_document_inspector_packet
+    status: pending
+  - id: G6
+    packet: ppt_dual_path_packet
+    status: pending
+  - id: G7
+    packet: repair_planner_packet
+    status: pending
+  - id: G8
+    packet: knowledge_grade_dashboard_packet
+    status: pending
+  - id: G9
+    packet: renderer_corpus_annotation_rebind_packet
+    status: pending
 owners:
   product_architect:
     role: contract_reset_product_surface
@@ -994,6 +1037,119 @@ phases:
       tests:
       - representative_five_books_cover_lists_code_figures_relations_and_stress
       - real_data_viewer_validation_packet_records_pass_fail_by_quality_axis
+- id: W7
+  name: goal_first_manufacturing_runway
+  goal: 새 고정목표를 실행 보드에 재투영해 knowledge manufacturing core 활주로를 명시적으로 잠근다.
+  epics:
+  - id: W7-E1
+    name: foundation_packets
+    tasks:
+    - id: W7-E1-T1
+      title: goal-first 전략과 foundation audit 을 문서와 하네스 기준으로 고정한다
+      owner: product_architect
+      status: done
+      outputs:
+      - docs/playbook_wiki/goal_first_upgrade_operation_v1.md
+      - reports/execution_harness/GOAL-FIRST-FOUNDATION-AUDIT-20260421/main/foundation_audit_report.json
+      - reports/execution_harness/GOAL-FIRST-FOUNDATION-AUDIT-20260421/main/final_report.json
+      tests:
+      - goal_first_strategy_doc_exists
+      - foundation_audit_report_marks_task_board_reprojection_as_open_blocker_before_reprojection
+    - id: W7-E1-T2
+      title: goal-first grade rubric 을 잠가 fail gate 와 승급 판정 기준을 확정한다
+      owner: judge
+      status: done
+      outputs:
+      - docs/playbook_wiki/goal_first_grade_rubric_v1.md
+      - reports/execution_harness/GOAL-FIRST-GRADE-RUBRIC-20260421/main/final_report.json
+      tests:
+      - goal_first_grade_rubric_doc_exists
+      - rubric_defines_blocked_artifact_bronze_silver_gold_and_promoted
+    - id: W7-E1-T3
+      title: Wiki AST v2 를 공통 truth contract 와 schema 로 잠근다
+      owner: knowledge_engineer
+      status: done
+      outputs:
+      - docs/playbook_wiki/wiki_ast_v2_contract_v1.md
+      - schemas/wiki_ast_v2.schema.json
+      - reports/execution_harness/WIKI-AST-V2-20260421/main/final_report.json
+      tests:
+      - wiki_ast_v2_contract_doc_exists
+      - wiki_ast_v2_schema_exists_and_is_valid_json
+    - id: W7-E1-T4
+      title: TASK_BOARD 에 goal-first 활주로를 재투영해 후속 packet 실행 순서를 고정한다
+      owner: product_architect
+      status: done
+      outputs:
+      - TASK_BOARD.yaml
+      - reports/execution_harness/TASK-BOARD-REPROJECTION-20260421/main/final_report.json
+      tests:
+      - task_board_contains_goal_first_priority_override
+      - task_board_contains_w7_goal_first_manufacturing_runway
+  - id: W7-E2
+    name: core_runway
+    tasks:
+    - id: W7-E2-T1
+      title: quality gate engine packet 으로 pass fail evidence 와 fail gate taxonomy 를 코드로 연결한다
+      owner: judge
+      status: done
+      outputs:
+      - src/play_book_studio/ingestion/quality_gate.py
+      - tests/test_quality_gate_engine.py
+      - reports/execution_harness/QUALITY-GATE-ENGINE-20260421/main/final_report.json
+      tests:
+      - quality_gate_packet_emits_axis_scores_fail_gates_and_evidence
+      - quality_gate_engine_targeted_pytest_passes
+    - id: W7-E2-T2
+      title: document inspector 와 parser router packet 으로 형식별 작전 선택과 route evidence 를 고정한다
+      owner: knowledge_engineer
+      status: pending
+      outputs:
+      - docs/playbook_wiki
+      - src/play_book_studio
+      - reports/execution_harness
+      tests:
+      - parser_router_packet_records_route_candidates_choice_and_fallback_reason
+    - id: W7-E2-T3
+      title: PPT dual path packet 으로 OOXML 구조와 rendered slide evidence 를 함께 다루는 lane 을 만든다
+      owner: knowledge_engineer
+      status: pending
+      outputs:
+      - docs/playbook_wiki
+      - src/play_book_studio
+      - reports/execution_harness
+      tests:
+      - ppt_dual_path_packet_preserves_slide_trace_and_rendered_evidence
+    - id: W7-E2-T4
+      title: repair planner packet 으로 failure taxonomy 기반 재시도 전략과 budget discipline 을 붙인다
+      owner: product_architect
+      status: pending
+      outputs:
+      - docs/playbook_wiki
+      - src/play_book_studio
+      - reports/execution_harness
+      tests:
+      - repair_planner_packet_emits_issue_strategy_expected_gain_and_attempt_budget
+    - id: W7-E2-T5
+      title: knowledge grade dashboard packet 으로 왜 합격 또는 차단됐는지 제품 표면에 드러낸다
+      owner: platform_engineer
+      status: pending
+      outputs:
+      - presentation-ui
+      - src/play_book_studio
+      - reports/execution_harness
+      tests:
+      - dashboard_packet_surfaces_grade_score_fail_gates_and_repair_recommendations
+    - id: W7-E2-T6
+      title: renderer corpus annotation rebind packet 으로 AST 기반 shared truth 배선을 viewer chat annotation 까지 다시 잠근다
+      owner: platform_engineer
+      status: pending
+      outputs:
+      - src/play_book_studio
+      - presentation-ui
+      - reports/execution_harness
+      tests:
+      - viewer_chat_annotation_paths_resolve_back_to_ast_block_truth
 legacy_execution_guard_compat:
   note: test compatibility markers for shared execution guard contract
   tasks:
