@@ -51,15 +51,19 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = build_parser().parse_args()
     settings = load_settings(ROOT)
+    promotion_kwargs = {
+        "slugs": [slug.strip() for slug in args.slugs if slug.strip()] or None,
+        "generate_first": args.generate_first,
+        "force_collect": args.force_collect,
+        "force_regenerate": args.force_regenerate,
+        "sync_qdrant": True,
+        "refresh_synthesis_report": True,
+    }
+    if args.manifest_path:
+        promotion_kwargs["manifest_path"] = Path(args.manifest_path).expanduser().resolve()
     report = promote_translation_gold(
         settings,
-        slugs=[slug.strip() for slug in args.slugs if slug.strip()] or None,
-        generate_first=args.generate_first,
-        force_collect=args.force_collect,
-        force_regenerate=args.force_regenerate,
-        sync_qdrant=True,
-        refresh_synthesis_report=True,
-        manifest_path=(Path(args.manifest_path).expanduser().resolve() if args.manifest_path else None),
+        **promotion_kwargs,
     )
     report_path = DEFAULT_REPORT_PATH
     report_path.parent.mkdir(parents=True, exist_ok=True)

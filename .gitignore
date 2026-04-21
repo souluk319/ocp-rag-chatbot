@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+node_modules/
 presentation-ui/dist/
 presentation-ui/node_modules/
 artifacts/
@@ -39,7 +40,10 @@ tmp_customer_pack_live/
 env
 .claude/
 .internal/
-AGENTS.md
+materialization
+reports/eval_reports/
+reports/tmp_repo_hygiene_audit.json
+!AGENTS.md
 study.md
 src/ocp_rag_v2.egg-info/
 C:/
