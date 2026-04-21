@@ -4,26 +4,15 @@
 
 핵심 원칙은 단순하다.
 
-- `main` 은 코드와 계약, 최소 runtime 표면만 남긴다.
+- `main` 은 편입에 필요한 코드와 최소 runtime 표면만 남긴다.
 - 대용량 데이터, 생성 산출물, ops/task board, 대규모 스크립트 묶음은 Git 밖으로 뺀다.
 - 정리 담당자는 이 저장소를 `합치기용 기준선`으로만 보고, 추가 데이터는 필요할 때만 외부에서 받는다.
-
-## 먼저 읽을 문서
-
-이 저장소를 이어받을 때는 아래 순서만 보면 된다.
-
-1. `AGENTS.md`
-2. `PROJECT.md`
-3. `RUNTIME_ARCHITECTURE_CONTRACT.md`
-4. `EXECUTION_HARNESS_CONTRACT.md`
-5. `SECURITY_BOUNDARY_CONTRACT.md`
 
 ## 이 브랜치에 남긴 것
 
 - PBS 앱 코드
 - backend/runtime 핵심 Python 패키지
 - shared landing + partner namespace shell
-- active contract 문서
 - schemas / manifests
 - 최소 active runtime data
   - `data/wiki_runtime_books`
